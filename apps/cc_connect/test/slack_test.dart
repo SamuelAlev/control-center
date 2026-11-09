@@ -255,6 +255,7 @@ Future<TestResponse> _event(
   String team = _team,
   String secret = 'signing-secret',
   DateTime? eventTime,
+  Map<String, Object?> envelope = const {},
 }) => _hook(
   harness,
   '/v1/hooks/slack/events',
@@ -264,8 +265,10 @@ Future<TestResponse> _event(
       'api_app_id': appId,
       'team_id': team,
       'event_id': eventId,
-      'event_time': (eventTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000,
+      'event_time':
+          (eventTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000,
       'event': event,
+      ...envelope,
     }),
   ),
   secret: secret,
@@ -394,40 +397,93 @@ void main() {
       expect(again.teamId, _team);
     });
 
+    test('a second sign-in for a team being connected stops before any '
+        'exchange', () async {
+      final first = await _slackOidc(harness, slack, a);
+      expect(first.oidc.status, 303);
+      final second = await _slackOidc(harness, slack, b);
+      expect(second.oidc.status, 409);
+      expect(second.oidc.body, contains('already being connected'));
+      expect(second.botState, isNull);
+      expect(slack.botExchanges, 0);
+      // The first one still completes.
+      final callback = await harness.browser(
+        '/oauth/slack/callback?code=bot-code&state=${first.botState}',
+      );
+      final done = await harness.browser(
+        '/oauth/slack/done',
+        cookie: cookieFrom(callback),
+      );
+      final claim = await harness.call(
+        a,
+        'POST',
+        '/v1/oauth/slack/claim',
+        body: OAuthClaimRequest(
+          loginId: first.loginId,
+          confirmCode: confirmCodeFrom(done.body)!,
+          codeVerifier: first.pkce.verifier,
+          workspaceId: 'ws1',
+        ).toJson(),
+      );
+      expect(claim.status, 200, reason: claim.body);
+      // Once it finished, the team is free for the next sign-in.
+      final third = await _slackOidc(harness, slack, a);
+      expect(third.oidc.status, 303);
+    });
+
     test(
-      'a second sign-in for a team being connected stops before any '
-      'exchange',
+      'an abandoned reservation is taken over by exactly one login',
       () async {
         final first = await _slackOidc(harness, slack, a);
         expect(first.oidc.status, 303);
+        // The first login is abandoned: its reservation is free to take.
+        await harness.service.context.burnLogin(first.loginId);
         final second = await _slackOidc(harness, slack, b);
-        expect(second.oidc.status, 409);
-        expect(second.oidc.body, contains('already being connected'));
-        expect(second.botState, isNull);
-        expect(slack.botExchanges, 0);
-        // The first one still completes.
+        expect(second.oidc.status, 303);
+        expect(
+          await harness.service.context.state.get('slackclaim:$_team'),
+          second.loginId,
+        );
+        // The taker is live, so a third login waits its turn.
+        final third = await _slackOidc(harness, slack, a);
+        expect(third.oidc.status, 409);
+      },
+    );
+
+    test(
+      'a claim whose reservation another login took never exchanges',
+      () async {
+        final hop = await _slackOidc(harness, slack, a);
         final callback = await harness.browser(
-          '/oauth/slack/callback?code=bot-code&state=${first.botState}',
+          '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
         );
         final done = await harness.browser(
           '/oauth/slack/done',
           cookie: cookieFrom(callback),
+        );
+        await harness.service.context.state.set(
+          'slackclaim:$_team',
+          'someone-else',
+          const Duration(minutes: 5),
         );
         final claim = await harness.call(
           a,
           'POST',
           '/v1/oauth/slack/claim',
           body: OAuthClaimRequest(
-            loginId: first.loginId,
+            loginId: hop.loginId,
             confirmCode: confirmCodeFrom(done.body)!,
-            codeVerifier: first.pkce.verifier,
+            codeVerifier: hop.pkce.verifier,
             workspaceId: 'ws1',
           ).toJson(),
         );
-        expect(claim.status, 200, reason: claim.body);
-        // Once it finished, the team is free for the next sign-in.
-        final third = await _slackOidc(harness, slack, a);
-        expect(third.oidc.status, 303);
+        expect(claim.json, {'error': 'needs_sign_in'});
+        expect(slack.botExchanges, 0);
+        // The other login's reservation is untouched.
+        expect(
+          await harness.service.context.state.get('slackclaim:$_team'),
+          'someone-else',
+        );
       },
     );
 
@@ -474,7 +530,7 @@ void main() {
           workspaceId: 'ws1',
         ).toJson(),
       );
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'needs_sign_in'});
       expect(slack.revoked, hasLength(1));
       expect(await harness.service.context.bindings.slack('T0OTHER'), isNull);
     });
@@ -505,7 +561,7 @@ void main() {
             workspaceId: 'ws1',
           ).toJson(),
         );
-        expect(claim.json, {'error': 'access_denied'});
+        expect(claim.json, {'error': 'needs_sign_in'});
         expect(slack.revoked, isEmpty);
         expect(
           (await harness.service.context.bindings.slack('T0VICTIM'))?.installId,
@@ -584,6 +640,96 @@ void main() {
             fresh: true,
           ))?.installId,
           b.installId,
+        );
+      },
+    );
+
+    test(
+      'the binding keeps the bot user Slack names in tokens_revoked',
+      () async {
+        await _signInSlack(harness, slack, a);
+        final bound = await harness.service.context.bindings.slack(
+          _team,
+          fresh: true,
+        );
+        expect(bound?.botUserId, _botUser);
+      },
+    );
+
+    test('tokens_revoked frees the team only for its own bot user', () async {
+      await _signInSlack(harness, slack, a);
+      Future<String?> boundInstall() async =>
+          (await harness.service.context.bindings.slack(
+            _team,
+            fresh: true,
+          ))?.installId;
+      // A person's token, then another bot user: nothing to free.
+      await _event(harness, {
+        'type': 'tokens_revoked',
+        'tokens': {
+          'oauth': [_user],
+        },
+      }, eventId: 'EvOauth');
+      await _event(harness, {
+        'type': 'tokens_revoked',
+        'tokens': {
+          'bot': ['U0OTHERBOT'],
+        },
+      }, eventId: 'EvOtherBot');
+      expect(await boundInstall(), a.installId);
+      await _event(harness, {
+        'type': 'tokens_revoked',
+        'tokens': {
+          'bot': [_botUser],
+        },
+      }, eventId: 'EvOurBot');
+      expect(await boundInstall(), isNull);
+    });
+
+    test(
+      'an uninstall delivered for another team\'s installation frees nothing',
+      () async {
+        await _signInSlack(harness, slack, a);
+        await _event(
+          harness,
+          {'type': 'app_uninstalled'},
+          eventId: 'EvPartner',
+          envelope: {
+            'authorizations': [
+              {'team_id': 'T0PARTNER', 'user_id': 'U0X', 'is_bot': true},
+            ],
+          },
+        );
+        await _event(
+          harness,
+          {'type': 'app_uninstalled'},
+          eventId: 'EvOrgWide',
+          envelope: {
+            'authorizations': [
+              {'team_id': null, 'enterprise_id': 'E0ORG', 'is_bot': true},
+            ],
+          },
+        );
+        expect(
+          (await harness.service.context.bindings.slack(
+            _team,
+            fresh: true,
+          ))?.installId,
+          a.installId,
+        );
+        await _event(
+          harness,
+          {'type': 'app_uninstalled'},
+          eventId: 'EvOurs',
+          envelope: {
+            'authorizations': [
+              {'team_id': _team, 'user_id': _botUser, 'is_bot': true},
+            ],
+          },
+        );
+        expect(
+          await harness.service.context.bindings.slack(_team, fresh: true),
+          isNull,
         );
       },
     );

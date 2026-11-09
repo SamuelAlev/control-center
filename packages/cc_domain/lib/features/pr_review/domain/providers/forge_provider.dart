@@ -57,12 +57,6 @@ class ForgeProviderRegistry {
 
   final Map<ForgeHost, ForgeProviderFactory> _registry;
 
-  /// The forges that currently have a factory registered.
-  Iterable<ForgeHost> get registeredForges => _registry.keys;
-
-  /// Whether [forge] has a registered factory.
-  bool supports(ForgeHost forge) => _registry.containsKey(forge);
-
   /// Returns the [PrReviewRepository] for `ctx.repo.forge`, or
   /// [EmptyPrReviewRepository] when that forge has no factory.
   PrReviewRepository resolve(ForgeProviderContext ctx) {

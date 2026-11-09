@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -9,7 +10,7 @@ import 'package:test/test.dart';
 
 /// Replays one scripted turn per call and captures everything the loop built:
 /// the messages, the tool catalog and the per-request config.
-class _CapturingProvider implements LlmProviderPort, LlmDeferredToolSupport {
+class _CapturingProvider extends LlmProviderPort {
   _CapturingProvider(this.script, {this.supportsDeferral = true});
 
   final List<List<LlmEvent>> script;
@@ -96,6 +97,7 @@ class _FoldingCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     if (folded) {
       return const HarnessCompactionResult.unchanged(0);
@@ -236,8 +238,10 @@ void main() {
             provider: provider,
             config: AgentLoopConfig(
               model: 'm',
-              compactor: compactor,
-              contextWindow: 200000,
+              compaction: LoopCompactionConfig(
+                compactor: compactor,
+                contextWindow: 200000,
+              ),
             ),
           )
           .toList();
@@ -424,8 +428,8 @@ void main() {
               provider: provider,
               config: AgentLoopConfig(
                 model: 'claude-sonnet-4-5',
-                callLedger: ledger,
-                tokenCalibration: calibration,
+                guards: LoopGuardConfig(callLedger: ledger),
+                compaction: LoopCompactionConfig(tokenCalibration: calibration),
               ),
             )
             .toList();

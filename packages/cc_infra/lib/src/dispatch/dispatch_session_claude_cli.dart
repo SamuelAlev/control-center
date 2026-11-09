@@ -70,9 +70,7 @@ extension _ClaudeCliMethods on DispatchSession {
               'https://docs.anthropic.com/en/docs/claude-code',
         ),
       );
-      unawaited(_closeRunLog(exitCode: 127));
-      addEvent(DoneEvent());
-      _completeRun();
+      _finish(exitCode: 127);
       return;
     }
 
@@ -87,9 +85,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // before the sandbox profile is built from it. This is the terminal
       // report, and it shares its sentence with what the gate showed.
       addEvent(ErrorEvent(content: claudeRefusalDetail(spent)));
-      unawaited(_closeRunLog(exitCode: 126));
-      addEvent(DoneEvent());
-      _completeRun();
+      _finish(exitCode: 126);
       return;
     }
 
@@ -115,9 +111,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // one layer up instead.
       if (!await _gateOnClaudeSignIn(detail: detail)) {
         addEvent(_claudeErrorEvent(detail, auth: true));
-        unawaited(_closeRunLog(exitCode: 126));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 126);
         return;
       }
     }
@@ -128,7 +122,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // handed a flag it will reject — and must never be sent a delta prompt with
     // no session to attach it to.
     final capabilities = await ClaudeCliBackend.detectCapabilities(claudePath);
-    _claudeCapabilities = capabilities;
+    _claude.capabilities = capabilities;
     final compactOnly = _claudeCompactOnly;
     final startedIn = conversationId;
     if (workspaceId != null && startedIn != null) {
@@ -187,7 +181,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // own prompt gate is off.
     final hookSettings = AgentRunLease.claudeHookSettings(_gatewayLease);
     final permissionMode = _claudePermissionMode(mode);
-    _claudeMcpExpected = mcpConfigPath != null || mcpServers != null;
+    _claude.mcpExpected = mcpConfigPath != null || mcpServers != null;
 
     // Everything a resumed session would silently inherit from the OLD
     // process — model, effort, permission surface, the Control Center mode, the
@@ -234,9 +228,7 @@ extension _ClaudeCliMethods on DispatchSession {
       addEvent(
         DebugEvent(content: '[claude] no native session left to compact'),
       );
-      unawaited(_closeRunLog(exitCode: 0));
-      addEvent(DoneEvent());
-      _completeRun();
+      _finish(exitCode: 0);
       return;
     }
     if (parts != null && resumeRecord != null && !capabilities.supportsResume) {
@@ -248,15 +240,15 @@ extension _ClaudeCliMethods on DispatchSession {
         ),
       );
     }
-    _claudeResumeRecord = activeResumeRecord;
-    _claudeResumeId = activeResumeRecord?.sessionId;
-    _claudeDeltaPrompt = delta;
+    _claude.resumeRecord = activeResumeRecord;
+    _claude.resumeId = activeResumeRecord?.sessionId;
+    _claude.deltaPrompt = delta;
     // The ledger continues from the resumed session's persisted baseline ONLY
     // when the CLI will actually restore those totals: Claude makes them
     // durable on a normal exit alone, and versions before 2.1.277 never restore
     // them. Otherwise the figures a resumed call reports are its own, and
     // deltaing them against an old baseline would swallow the difference.
-    _claudeLedger = ClaudeAccountingLedger(
+    _claude.ledger = ClaudeAccountingLedger(
       baseline:
           activeResumeRecord != null && activeResumeRecord.cliRestoresTotals
           ? ClaudeAccountingBaseline(
@@ -271,9 +263,9 @@ extension _ClaudeCliMethods on DispatchSession {
     // This dispatch's own attribution, independent of the native session's
     // cumulative counters so a reset or an account switch cannot erase earlier
     // attempts from the run's reported spend.
-    _claudeDispatchTotals = ClaudeDispatchTotals();
-    _claudeInit = null;
-    _claudeNativeSessionId = _claudeResumeId;
+    _claude.dispatchTotals = ClaudeDispatchTotals();
+    _claude.init = null;
+    _claude.nativeSessionId = _claude.resumeId;
     if (activeResumeRecord != null && parts != null) {
       addEvent(
         DebugEvent(
@@ -299,43 +291,7 @@ extension _ClaudeCliMethods on DispatchSession {
       capabilities: capabilities,
     );
 
-    final handle = await onResolveHandle(
-      sessionId: sandboxSessionId,
-      spec: SandboxSpec(
-        sessionId: sandboxSessionId,
-        workspaceId: wsId,
-        agentId: agentId,
-        bindMounts: _bindMounts(),
-        guestWorkdir: agentDirHostPath,
-        networkEnabled: _networkEnabled,
-        mode: mode,
-        protectedPaths: await _protectedPaths(),
-        runnerStateDirs: _runnerStateDirs,
-        execGrantRoots: await _execGrants(wsId),
-        loopbackPorts: _gatewayLoopbackPorts,
-        environmentScope: _environment.scope,
-        superviseProcessGroup: true,
-      ),
-      emit: addEvent,
-    );
-
-    if (handle.state == SandboxState.error) {
-      // Destroy before throwing: the handle is already registered in the
-      // adapter's map, and the throw skips the cooldown scheduling that would
-      // otherwise clean it up — so an error-state handle (plus its broadcast
-      // controller) was retained until a same-session re-dispatch.
-      try {
-        await deps.sandbox.destroy(handle);
-      } on Object catch (e) {
-        CcInfraLog.warning(
-          'dispatch $dispatchId: destroy after launch '
-          'failure also failed: $e',
-        );
-      }
-      throw StateError('sandbox launch failed: ${handle.error}');
-    }
-
-    _activeHandle = handle;
+    final handle = await _launchSandbox(sandboxSessionId, wsId);
     eventsSub = deps.sandbox.events(handle).listen(_forwardSandboxEvent);
 
     // Preflight the claude invocation (NOT the prompt — it's free-form text
@@ -411,8 +367,8 @@ extension _ClaudeCliMethods on DispatchSession {
     // starts with nothing of its own, yet the turn behind it did work, so a
     // second failure must never send it back to the replay-the-prompt paths.
     var turnProducedOutput = false;
-    _claudeSubagents = _openClaudeSubagents();
-    _claudeSteered.clear();
+    _claude.subagents = _openClaudeSubagents();
+    _claude.steered.clear();
     _steering.onEnqueued = _scheduleClaudeSteeringPump;
     var steeringAnnounced = false;
     // A zero exit alone is not a completed turn: Claude can exit before
@@ -428,8 +384,8 @@ extension _ClaudeCliMethods on DispatchSession {
       // Claude Code's own auto-compactions in this attempt.
       var compactions = 0;
 
-      _claudeToolNames.clear();
-      _claudeParser = ClaudeStreamJsonParser(
+      _claude.toolNames.clear();
+      _claude.parser = ClaudeStreamJsonParser(
         ClaudeStreamJsonCallbacks(
           onText: (delta) {
             producedOutput = true;
@@ -445,8 +401,8 @@ extension _ClaudeCliMethods on DispatchSession {
             // A tool call IS the useful work for a tool-first run (the stage's
             // own definition), so it closes `firstUsefulText` too.
             _noteClaudeModelDelta(useful: true);
-            _claudeToolNames[tu.id] = tu.name;
-            _claudeSubagents?.noteSpawnCall(tu);
+            _claude.toolNames[tu.id] = tu.name;
+            _claude.subagents?.noteSpawnCall(tu);
             addEvent(
               ToolCallEvent(
                 toolName: tu.name,
@@ -460,12 +416,12 @@ extension _ClaudeCliMethods on DispatchSession {
               ToolResultEvent(
                 toolCallId: tr.id,
                 outputs: tr.outputs,
-                toolName: _claudeToolNames.remove(tr.id),
+                toolName: _claude.toolNames.remove(tr.id),
                 isError: tr.isError,
                 images: tr.images,
               ),
             );
-            final subagents = _claudeSubagents;
+            final subagents = _claude.subagents;
             if (subagents != null) {
               unawaited(subagents.complete(tr));
             }
@@ -474,14 +430,14 @@ extension _ClaudeCliMethods on DispatchSession {
           // rows in this turn.
           onSubagent: (event) {
             producedOutput = true;
-            _claudeSubagents?.onEvent(event);
+            _claude.subagents?.onEvent(event);
           },
           // Occupancy, not spend: the size of the newest main-thread call,
           // measured against the agent's configured window, else the one the
           // `--model` id runs with. A setting the model cannot honour is
           // shown as set — the run, not the meter, is where it fails.
           onCallUsage: (u) {
-            _claudeContextTokens = u.contextTokens;
+            _claude.contextTokens = u.contextTokens;
             addEvent(
               ContextWindowEvent(
                 contextTokens: u.contextTokens,
@@ -532,7 +488,7 @@ extension _ClaudeCliMethods on DispatchSession {
           // an attempt that spent tokens and then failed over to the next
           // account must still be counted.
           onUsage: (usage) {
-            _claudeCacheTtl = usage.cacheTtl ?? _claudeCacheTtl;
+            _claude.cacheTtl = usage.cacheTtl ?? _claude.cacheTtl;
             _onClaudeResultUsage(usage);
           },
           // Held, not emitted: a capacity failure we are about to retry is not
@@ -559,7 +515,7 @@ extension _ClaudeCliMethods on DispatchSession {
       final continuing = continueSessionId;
       continueSessionId = null;
       if (continuing != null) {
-        _claudeResumeId = continuing;
+        _claude.resumeId = continuing;
       }
       // Closed by `_closeClaudeStdin`, at the turn's result or after exec.
       // ignore: close_sinks
@@ -574,8 +530,8 @@ extension _ClaudeCliMethods on DispatchSession {
             ? kClaudeIdleCompactionPrompt
             : continuing != null
             ? kClaudeContinueAfterSignInPrompt
-            : i == 0 && _claudeResumeId != null
-            ? _claudeDeltaPrompt ?? prompt
+            : i == 0 && _claude.resumeId != null
+            ? _claude.deltaPrompt ?? prompt
             : prompt,
         mcpServers: mcpServers,
       );
@@ -587,17 +543,17 @@ extension _ClaudeCliMethods on DispatchSession {
 
       addEvent(DebugEvent(content: '[claude] launching claude -p…'));
       _sawProcessStderr = false;
-      _claudeSawFirstStdout = false;
-      _claudeSawFirstModelDelta = false;
-      _claudeSawFirstUseful = false;
-      _claudeAttemptStartedAt = DateTime.now();
+      _claude.sawFirstStdout = false;
+      _claude.sawFirstModelDelta = false;
+      _claude.sawFirstUseful = false;
+      _claude.attemptStartedAt = DateTime.now();
       // `--resume` belongs to ONE account's config directory. A failover
       // attempt runs on a different account with a different store of
       // sessions, so it starts fresh rather than pointing at a session that
       // does not exist there.
       final attemptArgv = <String>[
         claudePath,
-        ...((continuing != null || i == 0) && _claudeResumeId != null
+        ...((continuing != null || i == 0) && _claude.resumeId != null
             ? ClaudeCliBackend.buildClaudeArgs(
                 modelId: modelId,
                 permissionMode: permissionMode,
@@ -606,7 +562,7 @@ extension _ClaudeCliMethods on DispatchSession {
                 settingsJson: hookSettings,
                 autoCompactWindow: autoCompactWindow,
                 effortLevel: effortLevel,
-                resumeSessionId: _claudeResumeId,
+                resumeSessionId: _claude.resumeId,
                 capabilities: capabilities,
               )
             : claudeFlags),
@@ -628,7 +584,12 @@ extension _ClaudeCliMethods on DispatchSession {
       } finally {
         _closeClaudeStdin();
       }
-      _claudeParser = null;
+      // The adapter emits every line before `exec` returns, but the event
+      // stream delivers them asynchronously: yield until what is queued has
+      // been parsed. Nulling the parser first turned a late `result` line into
+      // raw transcript text, or lost the turn's final usage.
+      await _drainSandboxEvents();
+      _claude.parser = null;
       if (_cancelSource.isCancelled) {
         break;
       }
@@ -675,10 +636,10 @@ extension _ClaudeCliMethods on DispatchSession {
         // session there would make a later run resume an id that directory
         // does not hold. The record keeps the last state that account actually
         // produced.
-        _claudeResumeId = null;
-        _claudeNativeSessionId = null;
-        _claudePersistDisabled = true;
-        _claudeLedger = ClaudeAccountingLedger();
+        _claude.resumeId = null;
+        _claude.nativeSessionId = null;
+        _claude.persistDisabled = true;
+        _claude.ledger = ClaudeAccountingLedger();
         continue;
       }
       // The last account's sign-in is dead and the turn has said nothing.
@@ -702,7 +663,7 @@ extension _ClaudeCliMethods on DispatchSession {
           // this scope loaded — a failover in between left both describing the
           // other account, and deltaing this account's figures against them (or
           // persisting them under this scope) would corrupt the lineage.
-          final record = _claudeResumeRecord;
+          final record = _claude.resumeRecord;
           final parts0 = promptParts;
           final restoredDelta =
               record != null &&
@@ -713,10 +674,10 @@ extension _ClaudeCliMethods on DispatchSession {
               : null;
           // An untracked window cannot be sent as a delta on this retry either.
           final restoredRecord = restoredDelta != null ? record : null;
-          _claudeResumeId = restoredRecord?.sessionId;
-          _claudeDeltaPrompt = restoredDelta;
-          _claudeNativeSessionId = _claudeResumeId;
-          _claudeLedger = ClaudeAccountingLedger(
+          _claude.resumeId = restoredRecord?.sessionId;
+          _claude.deltaPrompt = restoredDelta;
+          _claude.nativeSessionId = _claude.resumeId;
+          _claude.ledger = ClaudeAccountingLedger(
             baseline: restoredRecord != null && restoredRecord.cliRestoresTotals
                 ? ClaudeAccountingBaseline(
                     cumulativeCostUsd: restoredRecord.cumulativeCostUsd,
@@ -727,7 +688,7 @@ extension _ClaudeCliMethods on DispatchSession {
                   )
                 : null,
           );
-          _claudePersistDisabled = false;
+          _claude.persistDisabled = false;
           continue;
         }
         addEvent(_claudeErrorEvent(detail, auth: true));
@@ -738,7 +699,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // redo (and duplicate) that work, so park for a login on the account it
       // ran on and then CONTINUE the native session that holds it — what a
       // person does in Claude Code itself: sign in again, then "continue".
-      final sessionToContinue = _claudeNativeSessionId;
+      final sessionToContinue = _claude.nativeSessionId;
       if (failure != null &&
           failure.isAuth &&
           turnProducedOutput &&
@@ -798,8 +759,6 @@ extension _ClaudeCliMethods on DispatchSession {
     if (exitCode == 0 && completedTurn && !compactOnly) {
       _reportClaudeTurnSettled();
     }
-    unawaited(_closeRunLog(exitCode: exitCode));
-
     if (exitCode == 127) {
       addEvent(
         ErrorEvent(
@@ -818,8 +777,7 @@ extension _ClaudeCliMethods on DispatchSession {
     } else {
       addEvent(DebugEvent(content: '[claude] claude exited cleanly (code 0)'));
     }
-    addEvent(DoneEvent());
-    _completeRun();
+    _finish(exitCode: exitCode);
   }
 
   /// The turn's `result`. Anything still queued — follow-ups included — starts
@@ -829,7 +787,7 @@ extension _ClaudeCliMethods on DispatchSession {
   /// was the successful FINAL turn, so an interrupted queued turn cannot
   /// advance the persisted delivery cursor.
   bool _onClaudeTurnEnded({required bool failed}) {
-    final stdin = _claudeStdin;
+    final stdin = _claude.stdin;
     if (stdin == null) {
       return false;
     }
@@ -857,8 +815,8 @@ extension _ClaudeCliMethods on DispatchSession {
   /// Closes any Claude subagent still open: its parent process is gone, so
   /// its spawn call will never return.
   Future<void> _closeClaudeSubagents() async {
-    final subagents = _claudeSubagents;
-    _claudeSubagents = null;
+    final subagents = _claude.subagents;
+    _claude.subagents = null;
     await subagents?.closeAll();
   }
 
@@ -935,7 +893,7 @@ extension _ClaudeCliMethods on DispatchSession {
       'standing=${promptParts?.standingRevision ?? ''}',
       // Native sessions retain both the original environment and its credit
       // instructions. A preference/profile change must start a fresh session.
-      'git=${jsonEncode(_gitIdentityEnv)}',
+      'git=${jsonEncode(_run.identity.gitEnv)}',
       'mcp=${sha256.convert(utf8.encode(mcp))}',
       'settings=${sha256.convert(utf8.encode(settingsJson ?? ''))}',
       'append=${ClaudeCliBackend.appendedSystemPrompt(hasControlCenterMcp: hasControlCenterMcp)}',
@@ -973,12 +931,12 @@ extension _ClaudeCliMethods on DispatchSession {
     final store = deps.claudeSessionStore;
     final scope = _claudeScope(policy);
     if (store == null || scope == null) {
-      _claudeScopeKey = scope?.storageKey;
-      _claudePolicyKey = policy;
+      _claude.scopeKey = scope?.storageKey;
+      _claude.policyKey = policy;
       return null;
     }
-    _claudeScopeKey = scope.storageKey;
-    _claudePolicyKey = policy;
+    _claude.scopeKey = scope.storageKey;
+    _claude.policyKey = policy;
     try {
       final record = await store.load(
         workspaceId: scope.workspaceId,
@@ -1043,13 +1001,13 @@ extension _ClaudeCliMethods on DispatchSession {
     // A failover attempt runs on another account whose session ids do not live
     // in this scope's directory; writing there would make a later resume point
     // at a session that directory does not hold.
-    if (_claudePersistDisabled) {
+    if (_claude.persistDisabled) {
       return;
     }
     final store = deps.claudeSessionStore;
-    final storeKey = _claudeScopeKey;
-    final policy = _claudePolicyKey;
-    final sessionId = _claudeNativeSessionId;
+    final storeKey = _claude.scopeKey;
+    final policy = _claude.policyKey;
+    final sessionId = _claude.nativeSessionId;
     final ws = workspaceId;
     if (store == null ||
         storeKey == null ||
@@ -1060,8 +1018,8 @@ extension _ClaudeCliMethods on DispatchSession {
         ws.isEmpty) {
       return;
     }
-    final ledger = _claudeLedger;
-    final previous = _claudeResumeRecord;
+    final ledger = _claude.ledger;
+    final previous = _claude.resumeRecord;
     final now = DateTime.now().toUtc();
     final baseline = ledger?.baseline;
     // A compaction sent the session nothing, so whatever arrived in the
@@ -1112,7 +1070,7 @@ extension _ClaudeCliMethods on DispatchSession {
     );
     try {
       await store.save(workspaceId: ws, record: record);
-      _claudeResumeRecord = record;
+      _claude.resumeRecord = record;
     } on Object catch (e) {
       CcInfraLog.warning('claude-session: save failed for $storeKey: $e');
     }
@@ -1133,29 +1091,29 @@ extension _ClaudeCliMethods on DispatchSession {
   /// capabilities, so an older build is not credited with durability it does
   /// not have.
   bool get _claudeCliRestoresTotals =>
-      _claudeCapabilities?.restoresSessionTotals ?? false;
+      _claude.capabilities?.restoresSessionTotals ?? false;
 
   /// Startup metadata arrived. Records the native session id, reports what the
   /// CLI actually resolved (model, tool surface, MCP errors, capabilities) and
   /// the startup time — measured separately from model latency, and NEVER
   /// presented as provider TTFB, which the CLI hides.
   void _onClaudeInit(ClaudeInitMetadata init) {
-    _claudeInit = init;
+    _claude.init = init;
     final sessionId = init.sessionId;
     if (sessionId != null) {
-      if (_claudeResumeId != null && _claudeResumeId != sessionId) {
+      if (_claude.resumeId != null && _claude.resumeId != sessionId) {
         addEvent(
           DebugEvent(
             content:
-                '[claude] resumed session ${_claudeResumeId!} continued as '
+                '[claude] resumed session ${_claude.resumeId!} continued as '
                 '$sessionId',
           ),
         );
       }
-      _claudeNativeSessionId = sessionId;
+      _claude.nativeSessionId = sessionId;
     }
 
-    final started = _claudeAttemptStartedAt;
+    final started = _claude.attemptStartedAt;
     final startupMs = started == null
         ? null
         : DateTime.now().difference(started).inMilliseconds;
@@ -1167,7 +1125,7 @@ extension _ClaudeCliMethods on DispatchSession {
         DebugEvent(
           content:
               '[claude] native-session: id=$sessionId '
-              'resumed=${_claudeResumeId != null}',
+              'resumed=${_claude.resumeId != null}',
         ),
       );
     }
@@ -1182,7 +1140,7 @@ extension _ClaudeCliMethods on DispatchSession {
             ', tools=${init.tools.length}'
             ', mcp[$mcp]'
             '${startupMs == null ? '' : ', startup ${startupMs}ms (incl. MCP discovery/connect)'}'
-            '${_claudeResumeId == null ? '' : ', resumed=${_claudeResumeId!}'}',
+            '${_claude.resumeId == null ? '' : ', resumed=${_claude.resumeId!}'}',
       ),
     );
     if (!init.hasControlCenterTools && init.tools.isNotEmpty) {
@@ -1195,7 +1153,7 @@ extension _ClaudeCliMethods on DispatchSession {
           '[claude] no mcp__* tools in this session — the control-center tool '
           'surface did not connect.';
       addEvent(
-        _claudeMcpExpected
+        _claude.mcpExpected
             ? ErrorEvent(content: content)
             : DebugEvent(content: content),
       );
@@ -1239,9 +1197,9 @@ extension _ClaudeCliMethods on DispatchSession {
   /// the ledger's baseline no longer describes anything. A reset may also mint
   /// a new native session id, which is what later turns resume.
   void _onClaudeConversationReset(String? sessionId) {
-    _claudeLedger?.reset();
+    _claude.ledger?.reset();
     if (sessionId != null && sessionId.isNotEmpty) {
-      _claudeNativeSessionId = sessionId;
+      _claude.nativeSessionId = sessionId;
       unawaited(_persistClaudeRecord(normalExit: false));
     }
     addEvent(
@@ -1264,16 +1222,16 @@ extension _ClaudeCliMethods on DispatchSession {
   ///   double-counting that summing `total_cost_usd` across queued turns (or
   ///   across a resume) produces.
   void _onClaudeResultUsage(ClaudeUsage usage) {
-    final ledger = _claudeLedger ??= ClaudeAccountingLedger();
+    final ledger = _claude.ledger ??= ClaudeAccountingLedger();
     final turn = ledger.record(usage);
     // Fold this turn's delta into the DISPATCH's own totals: the run-level
     // snapshot is built from these, so an earlier dispatch's spend (restored
     // into the native session's counters) never inflates this run and a reset
     // or account failover never erases what this run already spent.
-    _claudeDispatchTotals.add(turn);
+    _claude.dispatchTotals.add(turn);
     // The CLI's OWN model, from `system/init` — the id it actually serves,
     // which can differ from the requested `--model`.
-    final servingModel = _claudeInit?.model ?? modelId;
+    final servingModel = _claude.init?.model ?? modelId;
     final provider = _claudeProvider;
     // Locally priced API usage is an ESTIMATE; only an established subscription
     // lane is `subscription`. An `ANTHROPIC_API_KEY` takes precedence over
@@ -1281,13 +1239,13 @@ extension _ClaudeCliMethods on DispatchSession {
     // flat-fee usage.
     // Missing amounts stay nullable; unknown provenance uses the domain's
     // conservative estimate basis rather than claiming a reported figure.
-    final basis = _claudeDispatchTotals.costUnavailable
+    final basis = _claude.dispatchTotals.costUnavailable
         ? CostBasis.estimated
         : _claudeCostBasis();
     // Lineage, so the resume-vs-reconstruction experiment scores from data:
     // which native session produced this usage, and whether it was resumed.
-    final nativeSessionId = _claudeNativeSessionId;
-    final resumed = _claudeResumeId != null;
+    final nativeSessionId = _claude.nativeSessionId;
+    final resumed = _claude.resumeId != null;
 
     addEvent(
       UsageEvent(
@@ -1313,7 +1271,7 @@ extension _ClaudeCliMethods on DispatchSession {
       ),
     );
 
-    final totals = _claudeDispatchTotals;
+    final totals = _claude.dispatchTotals;
     // Every result carries reconciled observed counters: whole-tree model
     // deltas when available, known main-loop usage otherwise. Missing model
     // counters are credited once if a later full snapshot fills the gap.
@@ -1343,7 +1301,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // current so the next turn resumes the LATEST session.
     final resultSessionId = usage.sessionId;
     if (resultSessionId != null && resultSessionId.isNotEmpty) {
-      _claudeNativeSessionId = resultSessionId;
+      _claude.nativeSessionId = resultSessionId;
     }
     unawaited(_persistClaudeRecord(normalExit: false));
   }
@@ -1357,7 +1315,7 @@ extension _ClaudeCliMethods on DispatchSession {
   /// subscription lanes count as `subscription`; everything else is the CLI's
   /// client-side ESTIMATE, which is also all `total_cost_usd` ever is.
   CostBasis _claudeCostBasis() {
-    final source = _claudeInit?.apiKeySource?.toLowerCase();
+    final source = _claude.init?.apiKeySource?.toLowerCase();
     final hasApiKey =
         (callerEnv['ANTHROPIC_API_KEY']?.isNotEmpty ?? false) ||
         (adapterEnvOverride['ANTHROPIC_API_KEY']?.isNotEmpty ?? false) ||
@@ -1384,8 +1342,8 @@ extension _ClaudeCliMethods on DispatchSession {
   /// once each, and nothing it cannot: the CLI hides the provider request, so
   /// there is no truthful "requestSent" or provider TTFB to report.
   void _noteClaudeModelDelta({bool useful = false}) {
-    if (!_claudeSawFirstModelDelta) {
-      _claudeSawFirstModelDelta = true;
+    if (!_claude.sawFirstModelDelta) {
+      _claude.sawFirstModelDelta = true;
       addEvent(
         StageTimingEvent(
           stage: RunStage.firstModelDelta,
@@ -1393,12 +1351,12 @@ extension _ClaudeCliMethods on DispatchSession {
           durationMs: _claudeAttemptDurationMs(),
           source: RunTimingSource.adapter,
           provider: _claudeProvider,
-          modelId: _claudeInit?.model ?? modelId,
+          modelId: _claude.init?.model ?? modelId,
         ),
       );
     }
-    if (useful && !_claudeSawFirstUseful) {
-      _claudeSawFirstUseful = true;
+    if (useful && !_claude.sawFirstUseful) {
+      _claude.sawFirstUseful = true;
       addEvent(
         StageTimingEvent(
           stage: RunStage.firstUsefulText,
@@ -1406,7 +1364,7 @@ extension _ClaudeCliMethods on DispatchSession {
           durationMs: _claudeAttemptDurationMs(),
           source: RunTimingSource.adapter,
           provider: _claudeProvider,
-          modelId: _claudeInit?.model ?? modelId,
+          modelId: _claude.init?.model ?? modelId,
         ),
       );
     }
@@ -1416,8 +1374,8 @@ extension _ClaudeCliMethods on DispatchSession {
   /// boundary the adapter can see. Called from the shared sandbox-event
   /// forwarder, which is also where the line is parsed.
   void _noteClaudeFirstStdout() {
-    if (!_claudeSawFirstStdout) {
-      _claudeSawFirstStdout = true;
+    if (!_claude.sawFirstStdout) {
+      _claude.sawFirstStdout = true;
       addEvent(
         StageTimingEvent(
           stage: RunStage.firstResponseByte,
@@ -1425,7 +1383,7 @@ extension _ClaudeCliMethods on DispatchSession {
           durationMs: _claudeAttemptDurationMs(),
           source: RunTimingSource.transport,
           provider: _claudeProvider,
-          modelId: _claudeInit?.model ?? modelId,
+          modelId: _claude.init?.model ?? modelId,
         ),
       );
     }
@@ -1440,7 +1398,7 @@ extension _ClaudeCliMethods on DispatchSession {
       DateTime.now().difference(runStartedAt).inMilliseconds;
 
   int? _claudeAttemptDurationMs() {
-    final start = _claudeAttemptStartedAt;
+    final start = _claude.attemptStartedAt;
     return start == null
         ? null
         : DateTime.now().difference(start).inMilliseconds;
@@ -1449,20 +1407,50 @@ extension _ClaudeCliMethods on DispatchSession {
   /// The provider name stamped on this run's usage events.
   String get _claudeProvider => 'anthropic';
 
+  /// Records an account's failure for later dispatches. Never throws: the
+  /// record is a hint for the NEXT run's account choice, and a store that
+  /// fails to write it must not abort the failover THIS run is in the middle
+  /// of (the rate-limit path always swallowed it; these sites did not).
   Future<void> _reportClaudeAccountFailure(
     String accountId,
     ClaudeTerminalError failure,
   ) async {
     if (failure.isCapacity) {
-      await onClaudeAccountExhausted?.call(
-        accountId: accountId,
-        resetsAt: failure.resetsAt,
-      );
+      await _reportClaudeAccountExhausted(accountId, failure.resetsAt);
       return;
     }
-    await onClaudeAccountAuthFailed?.call(
-      accountId: accountId,
-      reason: redactSecrets(failure.message),
-    );
+    try {
+      await onClaudeAccountAuthFailed?.call(
+        accountId: accountId,
+        reason: redactSecrets(failure.message),
+      );
+    } on Object catch (e, st) {
+      CcInfraLog.error(
+        'dispatch $dispatchId: recording the sign-in failure of Claude '
+        'account $accountId failed',
+        e,
+        st,
+      );
+    }
+  }
+
+  /// Records that [accountId] hit its plan limit. Never throws.
+  Future<void> _reportClaudeAccountExhausted(
+    String accountId,
+    DateTime? resetsAt,
+  ) async {
+    try {
+      await onClaudeAccountExhausted?.call(
+        accountId: accountId,
+        resetsAt: resetsAt,
+      );
+    } on Object catch (e, st) {
+      CcInfraLog.error(
+        'dispatch $dispatchId: recording the plan limit of Claude account '
+        '$accountId failed',
+        e,
+        st,
+      );
+    }
   }
 }

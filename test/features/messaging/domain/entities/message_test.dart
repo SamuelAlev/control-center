@@ -102,8 +102,12 @@ void main() {
   });
 
   group('SenderType enum', () {
-    test('has user and agent values', () {
-      expect(SenderType.values, [SenderType.user, SenderType.agent]);
+    test('has user, agent and system values', () {
+      expect(SenderType.values, [
+        SenderType.user,
+        SenderType.agent,
+        SenderType.system,
+      ]);
     });
   });
 

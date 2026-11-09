@@ -16,29 +16,10 @@ class EnvProviderCredentialStore implements ProviderCredentialStore {
   final Map<String, String> _env;
 
   /// Recognized env var names per provider id, in priority order.
-  static const Map<String, List<String>> envKeys = {
-    'anthropic': ['ANTHROPIC_API_KEY'],
-    'openai': ['OPENAI_API_KEY'],
-    // Metered Codex Responses (API key). The ChatGPT subscription is OAuth
-    // only — this var does not enable that lane.
-    'codex': ['OPENAI_CODEX_API_KEY'],
-    'openrouter': ['OPENROUTER_API_KEY'],
-    'google': ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
-    'deepseek': ['DEEPSEEK_API_KEY'],
-    'mistral': ['MISTRAL_API_KEY'],
-    'xai': ['XAI_API_KEY'],
-    'zai': ['ZAI_API_KEY', 'ZHIPU_API_KEY'],
-    // The same account key as `zai`; a separate var so a headless server can
-    // provision the coding-plan lane without also enabling the pay-as-you-go
-    // one (which a plan-only account cannot call — it answers 1113).
-    'zai-coding': ['ZAI_CODING_API_KEY'],
-    // Kimi Code is absent by design: the plan issues no API key, so there is no
-    // env var that could enable it — it is reachable only via OAuth.
-    'moonshotai': ['MOONSHOT_API_KEY'],
-    // Optional Cursor session token. Prefer the OAuth login in Settings —
-    // this is for headless servers that already hold a Bearer.
-    'cursor': ['CURSOR_API_KEY'],
-  };
+  static final Map<String, List<String>> envKeys = Map.unmodifiable({
+    for (final meta in harnessProviderMetas.values)
+      if (meta.envKeys.isNotEmpty) meta.id: meta.envKeys,
+  });
 
   @override
   Future<ProviderCredential?> activeCredential(String providerId) async {

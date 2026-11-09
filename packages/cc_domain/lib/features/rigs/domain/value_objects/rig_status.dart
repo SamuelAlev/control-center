@@ -7,9 +7,11 @@ enum RigPhase {
   /// Reachable and accepting actions.
   ready,
 
-  /// Idle-parked. The guest is stopped (zero CPU) but still resident; the next
-  /// action wakes it. Parking is NOT free: a parked guest still holds its RAM,
-  /// which is why the reaper counts memory, not sessions.
+  /// Parked, in one of the two ways [RigParkKind] tells apart: idled with its
+  /// vCPUs paused and its RAM still resident (the next action wakes it), or
+  /// an environment rig stopped with its disks kept (a start resumes it).
+  /// Neither is free: both stay in the resident budget, which is why the
+  /// reaper counts memory, not sessions.
   parked,
 
   /// Shutting down.
@@ -63,7 +65,8 @@ enum RigCloseReason {
   /// that could extend its own life indefinitely is not ephemeral.
   ttlExpired,
 
-  /// The conversation that owned it ended.
+  /// The space that owned it went away. The wire name predates rigs being
+  /// keyed by space; the rig's owner id is the space's id.
   conversationEnded,
 
   /// The workspace was deleted, or the viewer lost membership of it.
@@ -73,7 +76,12 @@ enum RigCloseReason {
   serverShutdown,
 
   /// The backend failed underneath it (hypervisor died, worker lease lost).
-  backendFailure;
+  backendFailure,
+
+  /// Evicted to make room for another rig under the resident-memory budget.
+  /// Not [idleTimeout]: it may have been used a minute ago, and was only the
+  /// least recently used when memory ran out.
+  memoryPressure;
 
   /// Stable wire/storage string.
   String get wire => name;
@@ -112,7 +120,7 @@ sealed class RigStatus {
       case RigPhase.ready:
         return const RigReady();
       case RigPhase.parked:
-        return const RigParked();
+        return RigParked(RigParkKind.fromDetail(detail));
       case RigPhase.closing:
         return const RigClosing();
       case RigPhase.closed:
@@ -179,20 +187,43 @@ class RigReady extends RigStatus {
   int get hashCode => RigPhase.ready.hashCode;
 }
 
-/// Idle-parked: stopped, still resident, wakes on the next action.
+/// The two ways a rig is parked.
+enum RigParkKind {
+  /// Idled out: vCPUs paused, RAM resident, the next action wakes it.
+  idle,
+
+  /// An environment rig whose stack was stopped: the VM is shut down with
+  /// its disks kept, and only a start brings it back. Actions do not.
+  stopped;
+
+  /// Stable wire/storage string, kept in the status detail column.
+  String get wire => name;
+
+  /// Reads [detail] back; anything unknown is [idle], the original meaning.
+  static RigParkKind fromDetail(String? detail) =>
+      detail == RigParkKind.stopped.wire ? stopped : idle;
+}
+
+/// Parked: see [RigParkKind] for which way.
 class RigParked extends RigStatus {
   /// Creates a [RigParked].
-  const RigParked();
+  const RigParked([this.kind = RigParkKind.idle]);
+
+  /// Idled or stopped.
+  final RigParkKind kind;
 
   @override
   RigPhase get phase => RigPhase.parked;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RigParked;
+  String? get detail => kind == RigParkKind.stopped ? kind.wire : null;
 
   @override
-  int get hashCode => RigPhase.parked.hashCode;
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RigParked && other.kind == kind;
+
+  @override
+  int get hashCode => Object.hash(RigPhase.parked, kind);
 }
 
 /// Shutting down.

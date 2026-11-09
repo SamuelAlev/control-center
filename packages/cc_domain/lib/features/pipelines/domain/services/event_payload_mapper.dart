@@ -27,6 +27,10 @@ String _lastPathSegment(String path) {
 ///
 /// Compile-time curated — no reflection. Add new event types here as
 /// new pipeline templates are introduced.
+///
+/// Every payload must carry `workspace_id`: [PipelineTriggerDispatcher] offers
+/// an event only to the triggers of that workspace and drops an event that
+/// names none, rather than firing the matching trigger of every workspace.
 class EventPayloadMapper {
   EventPayloadMapper._();
 
@@ -40,6 +44,7 @@ class EventPayloadMapper {
         'pr_number': event.prNumber,
         'pr_title': event.prTitle,
         'author': event.author,
+        if (event.workspaceId != null) 'workspace_id': event.workspaceId,
       };
     }
     if (event is PullRequestPublished) {
@@ -73,6 +78,7 @@ class EventPayloadMapper {
         'sender_name': event.senderName,
         'content_preview': event.contentPreview,
         'is_agent_message': event.isAgentMessage,
+        if (event.workspaceId != null) 'workspace_id': event.workspaceId,
       };
     }
     if (event is TicketCreated) {
@@ -90,13 +96,17 @@ class EventPayloadMapper {
       };
     }
     if (event is TicketCompleted) {
-      return {'ticket_id': event.ticketId};
+      return {'ticket_id': event.ticketId, 'workspace_id': event.workspaceId};
     }
     if (event is TicketFailed) {
-      return {'ticket_id': event.ticketId, 'error_message': event.errorMessage};
+      return {
+        'ticket_id': event.ticketId,
+        'workspace_id': event.workspaceId,
+        'error_message': event.errorMessage,
+      };
     }
     if (event is TicketCancelled) {
-      return {'ticket_id': event.ticketId};
+      return {'ticket_id': event.ticketId, 'workspace_id': event.workspaceId};
     }
     if (event is BudgetThresholdCrossed) {
       return {
@@ -105,6 +115,7 @@ class EventPayloadMapper {
         'spent_cents': event.spentCents,
         'budget_cents': event.budgetCents,
         'is_hard_stop': event.isHardStop,
+        'workspace_id': event.workspaceId,
       };
     }
     if (event is TicketAssigned) {

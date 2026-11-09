@@ -1,4 +1,3 @@
-import 'package:cc_domain/features/presence/domain/value_objects/participant_presence.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:test/test.dart';
 
@@ -38,28 +37,59 @@ void main() {
       hub.dispose();
     });
 
-    test('humans and agents share ONE roster (co-equal principals)', () {
+    test('a heartbeat with unchanged state keeps the entry alive without '
+        'waking watchers', () async {
+      var now = DateTime(2026, 7, 10, 12);
+      final hub = PresenceHub(now: () => now);
+      final emissions = <List<Map<String, dynamic>>>[];
+      final sub = hub
+          .watch('ws1', minInterval: Duration.zero)
+          .listen(emissions.add);
+      await Future<void>.delayed(Duration.zero);
+      void beat() => hub.publishHuman(
+        workspaceId: 'ws1',
+        userId: 'u1',
+        displayName: 'Sam',
+        update: const {
+          'a': 'online',
+          'l': {'t': 'sp', 'c': 'chan-1'},
+        },
+      );
+      beat();
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(2));
+
+      now = now.add(const Duration(seconds: 25));
+      beat();
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(2), reason: 'no state changed');
+      now = now.add(const Duration(seconds: 25));
+      expect(hub.sweep(), 0, reason: 'the heartbeat still refreshed expiry');
+      await sub.cancel();
+      hub.dispose();
+    });
+
+    test('a rename reaches the cache and the live roster at once', () async {
       final hub = PresenceHub();
+      var lookups = 0;
+      Future<String?> lookup() async {
+        lookups++;
+        return 'Sam';
+      }
+
+      expect(await hub.displayNameFor('u1', lookup), 'Sam');
+      expect(await hub.displayNameFor('u1', lookup), 'Sam');
+      expect(lookups, 1);
       hub.publishHuman(
         workspaceId: 'ws1',
         userId: 'u1',
         displayName: 'Sam',
         update: const {'a': 'online'},
       );
-      hub.publishAgent(
-        workspaceId: 'ws1',
-        agentId: 'a1',
-        displayName: 'Architect',
-        status: const AgentLiveStatus(
-          state: AgentLiveState.running,
-          costUsd: 0.42,
-        ),
-      );
-      final roster = hub.snapshot('ws1');
-      expect(roster, hasLength(2));
-      final agent = roster.firstWhere((e) => e['p'] == 'agent:a1');
-      expect((agent['ag'] as Map)['s'], 'running');
-      expect((agent['ag'] as Map)['c'], 0.42);
+      hub.renameUser('u1', 'Samuel');
+      expect(hub.snapshot('ws1').single['n'], 'Samuel');
+      expect(await hub.displayNameFor('u1', lookup), 'Samuel');
+      expect(lookups, 1);
       hub.dispose();
     });
 

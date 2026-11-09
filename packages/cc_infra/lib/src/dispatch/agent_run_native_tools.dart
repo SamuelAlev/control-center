@@ -51,7 +51,14 @@ class _NativeToolAction {
     }
     final root = grant.worktreeRoot;
     final target = _resolved(raw, relativeTo: root);
-    final owned = [?root, ...grant.runnerStateDirs].map(_resolved);
+    // Both sides resolved: the overlay reaches its worktrees through a
+    // `repos` symlink, so a write there lands in a shared root, not under
+    // [root] — which is why those roots are the run's own ground too.
+    final owned = [
+      ?root,
+      ...grant.sharedWorktreeRoots,
+      ...grant.runnerStateDirs,
+    ].map(_resolved);
     final inside = owned.any((dir) => p.isWithin(dir, target));
     return _NativeToolAction(
       'write: $target',

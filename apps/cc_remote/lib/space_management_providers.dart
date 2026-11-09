@@ -217,7 +217,8 @@ final remoteSpaceAutonomyProvider = StreamProvider.autoDispose
           );
     });
 
-/// Github branch suggestions for linked repositories in the active workspace.
+/// Branch suggestions for linked repositories in the active workspace, from
+/// each repo's own forge.
 final remoteRepoBranchesProvider = FutureProvider.autoDispose
     .family<List<String>, (String, String, String)>((ref, key) async {
       final client = ref.watch(rpcClientProvider).value;
@@ -225,7 +226,7 @@ final remoteRepoBranchesProvider = FutureProvider.autoDispose
           ref.watch(activeWorkspaceIdProvider).value != key.$1) {
         return [];
       }
-      final data = await client.call('github.repoBranches', {
+      final data = await client.call('forge.repoBranches', {
         'workspace_id': key.$1,
         'owner': key.$2,
         'repo': key.$3,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/merge_flyout_button.dart';
@@ -353,7 +354,14 @@ class _PrMoreActionsMenuState extends ConsumerState<_PrMoreActionsMenu> {
                 ),
               CcTile(
                 leading: const Icon(AppIcons.externalLink, size: 16),
-                title: Text(l10n.openOnGithub),
+                // The PR's own forge: a GitLab MR does not open "on GitHub".
+                title: Text(
+                  l10n.openOnForge(
+                    (ref.watch(prRepoRowProvider(widget.prRef))?.forge ??
+                            ForgeHost.github)
+                        .displayName,
+                  ),
+                ),
                 onTap: () {
                   _controller.hide();
                   openExternalUrl(widget.pr.htmlUrl);

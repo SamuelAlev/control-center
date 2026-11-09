@@ -1,4 +1,17 @@
 {
+  "steeringForceSendFailed": "Couldn't send that now: {error}",
+  "@steeringForceSendFailed": {
+    "description": "Toast when \"Stop and send\" on a queued steering card was refused or failed.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswerNotDelivered": "Your answer wasn't delivered. It may already be answered, or the agent stopped waiting.",
+  "@questionAnswerNotDelivered": {
+    "description": "Shown under a question form when the server refused the answer (already answered elsewhere or the agent stopped waiting)."
+  },
   "succeeded": "Succeeded",
   "@succeeded": {
     "description": "Run status: the run finished successfully (green status dot)"
@@ -1770,7 +1783,6 @@
   "@addGif": {
     "description": "Add GIF"
   },
-  "addGithubRepoPrompt": "Add at least one GitHub repository to see pull requests",
   "addLocalCheckoutDescription": "Add a local checkout to start targeting it from this workspace.",
   "@addLocalCheckoutDescription": {
     "description": "Add a local checkout to start targeting it from this workspace."
@@ -5489,13 +5501,9 @@
   "@pipelineStepDurationLabel": {
     "description": "Step detail label: run duration"
   },
-  "pipelineStepBranch": "Branch",
   "pipelineStepViewConversation": "View conversation",
   "@pipelineStepViewConversation": {
     "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
-  },
-  "@pipelineStepBranch": {
-    "description": "Step detail label: parallel branch index"
   },
   "pipelineStepError": "Error",
   "@pipelineStepError": {
@@ -6326,8 +6334,6 @@
   "agentQuestionTimeLeft": "Time left to answer",
   "agentQuestionFreeformOptionHint": "Describe in your own words…",
   "reviewRequested": "Review requested",
-  "connectGitHubHint": "Sign in to GitHub in Settings → Workspace → Profile & identity → Code hosting",
-  "connectGitHubToLoadPrs": "Connect GitHub to load pull requests",
   "noRepositoriesConfigured": "No repositories configured",
   "openedAgo": "Opened {age}",
   "@openedAgo": {
@@ -7058,8 +7064,6 @@
   "openPullRequest": "Open a pull request",
   "composePrSubtitle": "From a branch you've pushed — no agents or tickets involved",
   "createAsDraft": "Create as draft",
-  "composePrNoRepo": "No GitHub repository selected",
-  "composePrNoRepoHint": "Select a workspace with a GitHub-linked repository to open a pull request.",
   "composePrPickBranches": "Pick a base and compare branch to preview the changes.",
   "composePrNothingToCompare": "There are no changes between these branches.",
   "repository": "Repository",
@@ -14940,6 +14944,32 @@
   "@signInErrorInvalidCode": {
     "description": "Sign-in failure: wrong confirmation code"
   },
+  "signInErrorTooManyCodes": "Too many wrong codes. Start the sign-in again.",
+  "@signInErrorTooManyCodes": {
+    "description": "Sign-in failure: too many wrong confirmation codes ended the attempt"
+  },
+  "signInErrorStaleRequest": "This sign-in is no longer valid. Start it again.",
+  "@signInErrorStaleRequest": {
+    "description": "Sign-in failure: the server no longer knows this attempt"
+  },
+  "signInErrorInvalidRequest": "The server couldn't read this sign-in request. Start it again.",
+  "@signInErrorInvalidRequest": {
+    "description": "Sign-in failure: the server could not read the request"
+  },
+  "signInErrorRateLimited": "Too many sign-in attempts right now. Wait a minute, then try again.",
+  "@signInErrorRateLimited": {
+    "description": "Sign-in failure: too many sign-in attempts right now"
+  },
+  "signInErrorStoreFailed": "{provider} accepted the sign-in, but the server couldn't save it. Try again.",
+  "@signInErrorStoreFailed": {
+    "description": "Sign-in failure: the grant came back but the server could not store it",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
   "signInErrorProviderUnavailable": "{provider} isn't responding right now. Try again in a few minutes.",
   "@signInErrorProviderUnavailable": {
     "description": "Sign-in failure: the provider is down",
@@ -14994,7 +15024,7 @@
   "@signInErrorInstallationBoundElsewhere": {
     "description": "Sign-in failure: the installation belongs to another server"
   },
-  "signInErrorTeamBoundElsewhere": "This Linear workspace is already connected to another Control Center server.",
+  "signInErrorTeamBoundElsewhere": "This Slack workspace is already connected to another Control Center server.",
   "@signInErrorTeamBoundElsewhere": {
     "description": "Sign-in failure: the Linear team belongs to another server"
   },
@@ -15587,5 +15617,59 @@
   "workspaceProviderAppSwitchAction": "Switch app",
   "@workspaceProviderAppSwitchAction": {
     "description": "Confirm button that switches which app a workspace uses for a provider"
+  },
+  "openOnForge": "Open on {forge}",
+  "@openOnForge": {
+    "description": "Menu item that opens the pull request on its code host's website",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "prFilesTruncatedNotice": "Showing the first {count} files. {forge} doesn't list the rest.",
+  "@prFilesTruncatedNotice": {
+    "description": "Warning above a pull request's file list when the code host capped its file listing, so only part of the change is shown",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "Bitbucket"
+      },
+      "count": {
+        "type": "int",
+        "example": "1000"
+      }
+    }
+  },
+  "connectForgeToLoadPrs": "Connect a code host to load pull requests",
+  "@connectForgeToLoadPrs": {
+    "description": "Empty state when no code host (GitHub, GitLab, Bitbucket) is connected"
+  },
+  "connectForgeHint": "Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting",
+  "@connectForgeHint": {
+    "description": "Hint under the empty state pointing at the code hosting settings"
+  },
+  "addForgeRepoPrompt": "Add at least one repository on GitHub, GitLab or Bitbucket to see pull requests",
+  "@addForgeRepoPrompt": {
+    "description": "Hint when the workspace has no repository on a supported code host"
+  },
+  "composePrNoForgeRepo": "No code-hosted repository selected",
+  "@composePrNoForgeRepo": {
+    "description": "Compose screen empty state: no repository on a code host is selected"
+  },
+  "composePrNoForgeRepoHint": "Select a workspace with a repository on GitHub, GitLab or Bitbucket to open a pull request.",
+  "@composePrNoForgeRepoHint": {
+    "description": "Compose screen hint explaining which repositories can open a pull request"
+  },
+  "composePrForgeNotConnected": "Connect {forge} to open a pull request in this repository",
+  "@composePrForgeNotConnected": {
+    "description": "Compose screen empty state when the repository's code host is not connected",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
   }
 }

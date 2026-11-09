@@ -83,7 +83,12 @@ Finder _richTextContaining(String substring) {
 }
 
 /// The PR identity PrHeaderSection is keyed by in this suite.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 42,
+  forge: null,
+);
 
 void main() {
   group('PrHeaderSection', () {

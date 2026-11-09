@@ -8,9 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The server is stateless — it holds no per-session workspace — so each
 /// request must name its own workspace. `RemoteRpcClient` injects this active id
 /// into every `call`/`subscribe` whose args don't already carry one. This sink
-/// seeds it and follows every change, so all transports (web, desktop-remote,
-/// in-process) scope to the workspace the user is viewing without any
-/// server-side binding. Kept alive by `ControlCenterApp`.
+/// is the client's ONLY writer: it seeds the id and follows every change, so
+/// every connection (web, desktop local or remote) scopes to the workspace the
+/// user is viewing. Read by the session build before anything subscribes, and
+/// kept alive by `ControlCenterApp`.
 ///
 /// It only ever *reads* [rpcClientProvider] (a one-shot `ref.read`, never a
 /// `watch`), so it adds no dependency edge and stays out of the

@@ -16,6 +16,7 @@ class HarnessProviderMeta {
     required this.displayName,
     required this.authMethods,
     this.modelsDevProviderId,
+    this.envKeys = const [],
   });
 
   /// Provider id (e.g. `anthropic`, `openai`).
@@ -33,6 +34,11 @@ class HarnessProviderMeta {
   /// still inherits context, output ceiling and modalities. Null means [id]
   /// is already the models.dev id.
   final String? modelsDevProviderId;
+
+  /// Environment variables that supply an API key for this provider, in
+  /// precedence order (the env credential store reads these). Empty for a
+  /// provider no env var can enable — an OAuth-only plan issues no key.
+  final List<String> envKeys;
 
   /// Id to look up in the models.dev catalog.
   String get catalogProviderId => modelsDevProviderId ?? id;
@@ -58,11 +64,13 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
     id: 'anthropic',
     displayName: 'Anthropic',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['ANTHROPIC_API_KEY'],
   ),
   'openai': HarnessProviderMeta(
     id: 'openai',
     displayName: 'OpenAI',
     authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+    envKeys: ['OPENAI_API_KEY'],
   ),
   // ChatGPT Plus/Pro (and Team) via the Codex Responses backend. Same public
   // OAuth client as the Codex CLI / oh-my-pi; usage is `/wham/usage`, not a
@@ -72,37 +80,46 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
     displayName: 'Codex',
     authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
     modelsDevProviderId: 'openai',
+    // Metered Codex Responses only; the ChatGPT subscription is OAuth-only.
+    envKeys: ['OPENAI_CODEX_API_KEY'],
   ),
   // Cursor Ultra / Pro via the unofficial AgentService (HTTP/2 Connect).
   'cursor': HarnessProviderMeta(
     id: 'cursor',
     displayName: 'Cursor',
     authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+    // Optional session token for headless servers; prefer the OAuth login.
+    envKeys: ['CURSOR_API_KEY'],
   ),
   'openrouter': HarnessProviderMeta(
     id: 'openrouter',
     displayName: 'OpenRouter',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['OPENROUTER_API_KEY'],
   ),
   'google': HarnessProviderMeta(
     id: 'google',
     displayName: 'Google Gemini',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
   ),
   'deepseek': HarnessProviderMeta(
     id: 'deepseek',
     displayName: 'DeepSeek',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['DEEPSEEK_API_KEY'],
   ),
   'mistral': HarnessProviderMeta(
     id: 'mistral',
     displayName: 'Mistral',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['MISTRAL_API_KEY'],
   ),
   'xai': HarnessProviderMeta(
     id: 'xai',
     displayName: 'xAI',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['XAI_API_KEY'],
   ),
   // The z.ai open platform, billed per token against the account's
   // pay-as-you-go balance.
@@ -111,6 +128,7 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
     displayName: 'z.ai',
     authMethods: [HarnessAuthMethod.apiKey],
     modelsDevProviderId: 'zhipuai',
+    envKeys: ['ZAI_API_KEY', 'ZHIPU_API_KEY'],
   ),
   // The GLM Coding Plan: the SAME account key as `zai`, but a different host
   // that bills the subscription instead of the balance. z.ai serves the plan
@@ -124,16 +142,22 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
     displayName: 'z.ai GLM Coding Plan',
     authMethods: [HarnessAuthMethod.apiKey],
     modelsDevProviderId: 'zhipuai',
+    // The same account key as `zai`, under its own var so a headless server
+    // can enable the plan lane without the pay-as-you-go one (which a
+    // plan-only account cannot call — it answers 1113).
+    envKeys: ['ZAI_CODING_API_KEY'],
   ),
   // The Moonshot open platform, billed per token against a `MOONSHOT_API_KEY`.
   'moonshotai': HarnessProviderMeta(
     id: 'moonshotai',
     displayName: 'Moonshot (Kimi API)',
     authMethods: [HarnessAuthMethod.apiKey],
+    envKeys: ['MOONSHOT_API_KEY'],
   ),
   // The Kimi Code plan: a different host, a different account and no API key
   // to paste — the plan is only reachable through the Kimi Code OAuth device
   // login, so this is the one built-in provider that is OAuth-only.
+  // No env var: the Kimi Code plan issues no API key (OAuth only).
   'kimi-code': HarnessProviderMeta(
     id: 'kimi-code',
     displayName: 'Kimi Code',

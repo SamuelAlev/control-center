@@ -98,24 +98,18 @@ class PeerAgentMessaging {
     );
   }
 
-  /// Returns the existing agent-DM space between the two agents, or creates a
-  /// new one ([SpaceKind.agentPeer]) when none exists. Reuse matches on the
-  /// exact set of non-human participants, so a fresh space is only minted the
-  /// first time this pair converses.
-  Future<Space> resolveOrCreateAgentDm({
+  /// The existing agent-DM space between the two agents, or null — without
+  /// creating anything, so guards can run against it before any side effect.
+  Future<Space?> findAgentDm({
     required String workspaceId,
     required String toAgentId,
-    required String toAgentName,
     String? fromAgentId,
-    String? fromAgentName,
   }) async {
     final target = <String>{
       toAgentId,
       if (fromAgentId != null && fromAgentId.isNotEmpty) fromAgentId,
     };
-    final spaces = await _messaging
-        .watchSpacesByWorkspace(workspaceId)
-        .first;
+    final spaces = await _messaging.watchSpacesByWorkspace(workspaceId).first;
     for (final space in spaces) {
       if (space.kind != SpaceKind.agentPeer) {
         continue;
@@ -132,6 +126,32 @@ class PeerAgentMessaging {
         return space;
       }
     }
+    return null;
+  }
+
+  /// Returns the existing agent-DM space between the two agents, or creates a
+  /// new one ([SpaceKind.agentPeer]) when none exists. Reuse matches on the
+  /// exact set of non-human participants, so a fresh space is only minted the
+  /// first time this pair converses.
+  Future<Space> resolveOrCreateAgentDm({
+    required String workspaceId,
+    required String toAgentId,
+    required String toAgentName,
+    String? fromAgentId,
+    String? fromAgentName,
+  }) async {
+    final existing = await findAgentDm(
+      workspaceId: workspaceId,
+      toAgentId: toAgentId,
+      fromAgentId: fromAgentId,
+    );
+    if (existing != null) {
+      return existing;
+    }
+    final target = <String>{
+      toAgentId,
+      if (fromAgentId != null && fromAgentId.isNotEmpty) fromAgentId,
+    };
     final name = (fromAgentName != null && fromAgentName.isNotEmpty)
         ? '$fromAgentName ↔ $toAgentName'
         : 'DM with $toAgentName';

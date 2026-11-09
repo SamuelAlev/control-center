@@ -54,17 +54,32 @@ bool environmentHasLiveParts(EnvironmentStatus status) =>
 (String, CcStatusTone) environmentComponentStateDisplay(
   AppLocalizations l10n,
   String state,
-) => switch (state) {
-  'pending' => (l10n.pipelineStatusPending, CcStatusTone.neutral),
-  'starting' => (l10n.rigPhaseStarting, CcStatusTone.caution),
-  'ready' => (l10n.rigPhaseReady, CcStatusTone.positive),
-  'running' => (l10n.running, CcStatusTone.positive),
-  'completed' => (l10n.pipelineStatusCompleted, CcStatusTone.positive),
-  'stopped' => (l10n.stopped, CcStatusTone.neutral),
-  'closed' => (l10n.closed, CcStatusTone.neutral),
-  'crashed' => (l10n.environmentStateCrashed, CcStatusTone.negative),
-  'failed' => (l10n.failed, CcStatusTone.negative),
-  _ => (state, CcStatusTone.neutral),
+) => switch (EnvironmentComponentPhase.tryParse(state)) {
+  EnvironmentComponentPhase.pending => (
+    l10n.pipelineStatusPending,
+    CcStatusTone.neutral,
+  ),
+  EnvironmentComponentPhase.starting || EnvironmentComponentPhase.waiting => (
+    l10n.rigPhaseStarting,
+    CcStatusTone.caution,
+  ),
+  EnvironmentComponentPhase.ready => (
+    l10n.rigPhaseReady,
+    CcStatusTone.positive,
+  ),
+  EnvironmentComponentPhase.running => (l10n.running, CcStatusTone.positive),
+  EnvironmentComponentPhase.completed => (
+    l10n.pipelineStatusCompleted,
+    CcStatusTone.positive,
+  ),
+  EnvironmentComponentPhase.stopped => (l10n.stopped, CcStatusTone.neutral),
+  EnvironmentComponentPhase.closed => (l10n.closed, CcStatusTone.neutral),
+  EnvironmentComponentPhase.crashed => (
+    l10n.environmentStateCrashed,
+    CcStatusTone.negative,
+  ),
+  EnvironmentComponentPhase.failed => (l10n.failed, CcStatusTone.negative),
+  null => (state, CcStatusTone.neutral),
 };
 
 /// What a run's status reads as.

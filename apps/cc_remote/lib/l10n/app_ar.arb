@@ -203,6 +203,7 @@
     }
   },
   "teammate": "زميل",
+  "systemSender": "النظام",
   "agent": "وكيل",
   "attachFile": "إرفاق ملف",
   "messageHint": "رسالة",
@@ -268,8 +269,8 @@
   },
   "reposNotReadable": "تعذّرت قراءة: \u2068{names}\u2069",
   "installationSuspendedTitle": "تم تعليق تثبيت GitHub App",
-  "installationSuspendedBody": "يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.",
-  "installationSuspendedNotice": "تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.",
+  "installationSuspendedBody": "يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub.",
+  "installationSuspendedNotice": "تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -963,6 +964,10 @@
   "credentialsConnectCodePrompt": "أدخل الرمز المعروض في المتصفح",
   "credentialsConnectCodeMalformed": "لا يبدو هذا رمز تسجيل دخول. تتكون الرموز من 8 أحرف وأرقام.",
   "credentialsSignInInvalidCode": "هذا الرمز لا يطابق تسجيل الدخول هذا. تحقّق منه وحاول مرة أخرى.",
+  "credentialsSignInTooManyCodes": "رموز خاطئة كثيرة جدًا. ابدأ تسجيل الدخول من جديد.",
+  "credentialsSignInRetryLater": "خدمة تسجيل الدخول لا تستجيب الآن. انتظر دقيقة ثم حاول مرة أخرى.",
+  "credentialsSignInRefused": "رُفض تسجيل الدخول. ابدأه من جديد ووافق على كل الأذونات المطلوبة.",
+  "credentialsSignInNotSaved": "نجح تسجيل الدخول، لكن تعذّر على الخادم حفظه. حاول مرة أخرى.",
   "credentialsSignInUnavailable": "لم يُعدّ تسجيل الدخول إلى {provider} على هذا الخادم بعد.",
   "credentialsSignInPhoneUnreachable": "لا يمكن الوصول إلى عنوان رد تسجيل الدخول لهذا الخادم بشكل آمن من الهاتف. سجّل الدخول من تطبيق سطح المكتب، أو اطلب من مالك الخادم إعداد عنوان HTTPS عام.",
   "credentialsLoginTimedOut": "انتهت صلاحية تسجيل الدخول. ابدأ محاولة جديدة.",

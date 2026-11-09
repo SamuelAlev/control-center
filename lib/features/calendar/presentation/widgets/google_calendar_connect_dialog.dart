@@ -1,8 +1,11 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
-import 'package:cc_data/cc_data.dart' show SignInLaneMode;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInLaneMode;
 import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,6 +23,14 @@ Future<void> showGoogleCalendarConnectDialog(
   WidgetRef ref, {
   required String workspaceId,
 }) async {
+  // A demo signs nobody in: `oauth.begin` is absent there, and opening the
+  // sign-in dialog only to render its raw "Unknown op" error read as a bug.
+  if (ref.read(isDemoServerProvider)) {
+    CcToastScope.of(
+      context,
+    ).show(AppLocalizations.of(context).demoUnavailableTitle);
+    return;
+  }
   final startedAt = DateTime.now();
   final analytics = ref.read(analyticsProvider);
   final attempt = await showProviderSignInDialog(

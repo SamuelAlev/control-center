@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 /// A provider that replays one scripted list of [LlmEvent]s per `complete()`
 /// call. When the script runs out it repeats the last entry (useful for
 /// max-turns tests).
-class _ScriptedProvider implements LlmProviderPort {
+class _ScriptedProvider extends LlmProviderPort {
   _ScriptedProvider(this.script);
 
   final List<List<LlmEvent>> script;
@@ -137,7 +137,9 @@ void main() {
           userMessage: 'hi',
           tools: const [],
           provider: provider,
-          config: AgentLoopConfig(transcriptStore: store, transcriptKey: 'k'),
+          config: AgentLoopConfig(
+            transcript: LoopTranscriptConfig(store: store, key: 'k'),
+          ),
         )
         .toList();
 
@@ -218,7 +220,9 @@ void main() {
           tools: [tool],
           provider: provider,
           config: AgentLoopConfig(
-            approvalCallback: (t, a) async => const ToolGateDecision.deny(),
+            tools: LoopToolConfig(
+              approvalCallback: (t, a) async => const ToolGateDecision.deny(),
+            ),
           ),
         )
         .toList();
@@ -251,9 +255,11 @@ void main() {
             tools: [tool],
             provider: provider,
             config: AgentLoopConfig(
-              approvalCallback: (t, a) async => const ToolGateDecision.deny(
-                reason: 'plan mode denies fileWriteOutsideWorktree',
-                remediation: 'Call `submit_plan` instead.',
+              tools: LoopToolConfig(
+                approvalCallback: (t, a) async => const ToolGateDecision.deny(
+                  reason: 'plan mode denies fileWriteOutsideWorktree',
+                  remediation: 'Call `submit_plan` instead.',
+                ),
               ),
             ),
           )
@@ -456,7 +462,7 @@ void main() {
           provider: provider,
           config: const AgentLoopConfig(
             maxTurns: 2,
-            toolTimeout: Duration(milliseconds: 50),
+            tools: LoopToolConfig(toolTimeout: Duration(milliseconds: 50)),
           ),
         )
         .toList()
@@ -525,7 +531,9 @@ void main() {
           tools: const [],
           provider: provider,
           cancel: source.token,
-          config: AgentLoopConfig(pauseGate: gate),
+          config: AgentLoopConfig(
+            steering: LoopSteeringConfig(pauseGate: gate),
+          ),
         )
         .forEach(events.add);
 
@@ -565,7 +573,9 @@ void main() {
           tools: const [],
           provider: provider,
           cancel: source.token,
-          config: const AgentLoopConfig(maxProviderRetries: 2),
+          config: const AgentLoopConfig(
+            guards: LoopGuardConfig(maxProviderRetries: 2),
+          ),
         )
         .forEach(events.add);
 
@@ -592,7 +602,9 @@ void main() {
           userMessage: 'go',
           tools: const [],
           provider: provider,
-          config: const AgentLoopConfig(maxProviderRetries: 2),
+          config: const AgentLoopConfig(
+            guards: LoopGuardConfig(maxProviderRetries: 2),
+          ),
         )
         .toList();
     expect(
@@ -617,7 +629,9 @@ void main() {
           userMessage: 'go',
           tools: [tool],
           provider: provider,
-          config: const AgentLoopConfig(budget: HarnessBudget(tokenBudget: 50)),
+          config: const AgentLoopConfig(
+            guards: LoopGuardConfig(budget: HarnessBudget(tokenBudget: 50)),
+          ),
         )
         .toList();
     expect((events.last as LoopDone).reason, LoopDoneReason.budgetExhausted);
@@ -655,7 +669,7 @@ void main() {
             tools: [tool],
             provider: provider,
             config: const AgentLoopConfig(
-              budget: HarnessBudget(tokenBudget: 50),
+              guards: LoopGuardConfig(budget: HarnessBudget(tokenBudget: 50)),
             ),
           )
           .toList();
@@ -700,7 +714,9 @@ void main() {
             tools: [tool],
             provider: provider,
             config: AgentLoopConfig(
-              externalBudgetExceeded: () => tool.calls.isNotEmpty,
+              guards: LoopGuardConfig(
+                externalBudgetExceeded: () => tool.calls.isNotEmpty,
+              ),
             ),
           )
           .toList();
@@ -732,11 +748,13 @@ void main() {
           tools: [tool],
           provider: provider,
           config: AgentLoopConfig(
-            externalBudgetPressure: () {
-              final fired = pressure;
-              pressure = true;
-              return !fired; // true on the first poll, false after.
-            },
+            guards: LoopGuardConfig(
+              externalBudgetPressure: () {
+                final fired = pressure;
+                pressure = true;
+                return !fired; // true on the first poll, false after.
+              },
+            ),
           ),
         )
         .toList();
@@ -1041,18 +1059,24 @@ void main() {
               chunks: 100,
             ),
             config: const AgentLoopConfig(
-              turnTimeout: Duration(milliseconds: 60),
+              guards: LoopGuardConfig(turnTimeout: Duration(milliseconds: 60)),
             ),
           )
           .toList();
 
       expect(events.last, isA<LoopDone>());
       expect((events.last as LoopDone).reason, LoopDoneReason.error);
+      // A failure the host can see: exactly one LoopError right before the
+      // done, so the host's exit code is non-zero (it used to exit 0).
+      final errors = events.whereType<LoopError>().toList();
+      expect(errors, hasLength(1));
+      expect(errors.single.code, 'turn_timeout');
       expect(
-        events.whereType<LoopNotice>().map((e) => e.message).join(),
+        errors.single.message,
         contains('wall-clock'),
         reason: 'the run has to say WHY it stopped, or it reads as a crash',
       );
+      expect(events[events.length - 2], isA<LoopError>());
       // It stopped early: nowhere near all 100 chunks were delivered.
       expect(events.whereType<LoopTextDelta>().length, lessThan(100));
     });
@@ -1069,7 +1093,9 @@ void main() {
                 const LlmDone(stopReason: LlmStopReason.endTurn),
               ],
             ]),
-            config: const AgentLoopConfig(turnTimeout: Duration(minutes: 30)),
+            config: const AgentLoopConfig(
+              guards: LoopGuardConfig(turnTimeout: Duration(minutes: 30)),
+            ),
           )
           .toList();
 
@@ -1098,7 +1124,7 @@ void main() {
 
 /// Emits [chunks] tiny text deltas [gap] apart, then finishes — a slow-loris
 /// provider stream in miniature.
-class _DrippingProvider implements LlmProviderPort {
+class _DrippingProvider extends LlmProviderPort {
   const _DrippingProvider({required this.gap, required this.chunks});
 
   final Duration gap;

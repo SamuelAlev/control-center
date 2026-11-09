@@ -1,9 +1,13 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_summary.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +29,11 @@ class QuestionBubble extends ConsumerStatefulWidget {
 
 class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
   bool _submitting = false;
+
+  /// Set when the server refused the answer (someone else answered first, the
+  /// agent stopped waiting, or no repo grant). The agent never received it,
+  /// so the form stays and says so instead of pretending it was delivered.
+  bool _rejected = false;
 
   /// Set when the countdown runs out here, before the server's own expiry
   /// write arrives — or when it never will (the server restarted mid-wait).
@@ -62,7 +71,7 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
         widget.message.isQuestionExpired) {
       return null;
     }
-    final raw = _meta['answer'];
+    final raw = _meta[kQuestionAnswerKey];
     return raw is Map
         ? AgentQuestionAnswer.fromJson(raw.cast<String, dynamic>())
         : const AgentQuestionAnswer();
@@ -72,11 +81,23 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
     if (_submitting) {
       return;
     }
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _rejected = false;
+    });
     try {
       await ref
-          .read(agentQuestionServiceProvider)
-          .submitAnswer(ref.requireWorkspaceId(), widget.message, answer);
+          .read(questionAnswerSubmitterProvider)
+          .submit(
+            workspaceId: ref.requireWorkspaceId(),
+            messageId: widget.message.id,
+            metadata: widget.message.metadata,
+            answer: answer,
+          );
+    } on Object {
+      if (mounted) {
+        setState(() => _rejected = true);
+      }
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -112,6 +133,14 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
               expiresAt: widget.message.questionExpiresAt,
               timeout: widget.message.questionTimeout,
               onExpired: () => setState(() => _expiredLocally = true),
+              extraBody: _rejected
+                  ? Text(
+                      AppLocalizations.of(context).questionAnswerNotDelivered,
+                      style: CcTypography.caption.copyWith(
+                        color: resolveTokens(context).textErrorPrimary,
+                      ),
+                    )
+                  : null,
             ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
@@ -100,7 +101,8 @@ class PipelineRunRow extends StatelessWidget {
     );
 
     final isManual =
-        run.triggerEventType == null || run.triggerEventType == 'manual';
+        run.triggerEventType == null ||
+        run.triggerEventType == PipelineTrigger.manualEventType;
     final isWatch =
         run.triggerEventType == IndexCodeTemplate.watchTriggerEventType;
     // The glyph's tooltip NAMES the trigger and, where one was recorded, its

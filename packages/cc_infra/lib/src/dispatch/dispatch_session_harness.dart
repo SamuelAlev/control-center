@@ -22,7 +22,7 @@ extension _DispatchSessionHarness on DispatchSession {
     required ScopedCredentials scoped,
     required String wsId,
   }) async {
-    _harnessActive = true;
+    _harness.begin();
     // The moment a harness loop becomes drainable: the steering queue service
     // wires this session's drain notifications and flushes any
     // persisted-but-undelivered steering rows into the run here (a queued row
@@ -60,9 +60,7 @@ extension _DispatchSessionHarness on DispatchSession {
       );
       if (!DispatchSession._harnessAuthSatisfied(credential)) {
         addEvent(ErrorEvent(content: detail, source: 'harness'));
-        unawaited(_closeRunLog(exitCode: 127));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 127);
         return;
       }
     }
@@ -85,15 +83,11 @@ extension _DispatchSessionHarness on DispatchSession {
           continue;
         }
         addEvent(ErrorEvent(content: e.toString(), source: 'harness'));
-        unawaited(_closeRunLog(exitCode: 126));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 126);
         return;
       } on Object catch (e) {
         addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
-        unawaited(_closeRunLog(exitCode: 127));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 127);
         return;
       }
     }
@@ -330,7 +324,7 @@ extension _DispatchSessionHarness on DispatchSession {
 
     final harnessToolEnv = <String, String>{
       ...scoped.environment,
-      ..._gitIdentityEnv,
+      ..._run.identity.gitEnv,
     };
     // `bash` pushes through the gateway exactly like a CLI adapter's shell.
     final lease = _gatewayLease;
@@ -349,6 +343,11 @@ extension _DispatchSessionHarness on DispatchSession {
       'loop' => () => accounting.subtreeCostMicros >= sessionCostCapMicros,
       _ => null,
     };
+
+    // Built further down; declared here so the subagent spawners (which run
+    // only once the loop is going) hand them to every nested run.
+    Advisor? advisor;
+    AgentLoopHooks? hooks;
 
     // 2. Assemble tools.
     final registry = _buildHarnessRegistry(
@@ -374,6 +373,8 @@ extension _DispatchSessionHarness on DispatchSession {
             budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
             approval: approval,
+            parentAdvisor: advisor,
+            parentHooks: hooks,
           ),
         ),
       ),
@@ -415,6 +416,8 @@ extension _DispatchSessionHarness on DispatchSession {
             budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
             approval: approval,
+            parentAdvisor: advisor,
+            parentHooks: hooks,
           );
           workerRuns.add(run);
           try {
@@ -473,7 +476,6 @@ extension _DispatchSessionHarness on DispatchSession {
         ),
       );
     }
-    Advisor? advisor;
     if (runConfig.advisorEnabled) {
       final watchdogContext = await loadWatchdogContext(
         agentDirHostPath,
@@ -545,7 +547,7 @@ extension _DispatchSessionHarness on DispatchSession {
         );
       }
     }
-    final hooks = runConfig.hasHooks
+    hooks = runConfig.hasHooks
         ? ShellAgentLoopHooks(
             cwd: agentDirHostPath,
             environment: ChildProcess.environmentFor(toolchain: true),
@@ -580,59 +582,61 @@ extension _DispatchSessionHarness on DispatchSession {
       topK: generation.topK,
       effort: effectiveEffort,
       cacheKey: conversationId,
-      toolTimeout: const Duration(minutes: 30),
-      approvalCallback: approval,
-      callLedger: accounting.ledger,
-      tokenCalibration: deps.tokenCalibration,
-      maxParallelToolCalls: runConfig.maxParallelToolCalls,
-      overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
-      observationIngest: ToolObservationIngest(
-        store: deps.toolOutputStore,
-        retainMinTokens: runConfig.compaction.policy == CompactionPolicy.current
-            ? 0
-            : kToolOutputRetentionMinTokens,
+      tools: LoopToolConfig(
+        toolTimeout: const Duration(minutes: 30),
+        approvalCallback: approval,
+        maxParallelToolCalls: runConfig.maxParallelToolCalls,
+        overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
+        observationIngest: ToolObservationIngest(
+          store: deps.toolOutputStore,
+          retainMinTokens:
+              runConfig.compaction.policy == CompactionPolicy.current
+              ? 0
+              : kToolOutputRetentionMinTokens,
+        ),
+        autoApprove: false,
       ),
-      autoApprove: false,
-      pauseGate: _pauseGate,
-      contract: profile.toCompletionContract(),
-      budget: const HarnessBudget(),
-      externalBudgetExceeded: budgetExceeded,
-      externalBudgetPressure: switch (parsedCommand.command) {
-        'goal' || 'loop' =>
-          () => accounting.subtreeCostMicros * 5 >= sessionCostCapMicros * 4,
-        _ => null,
-      },
-      streamRules: runConfig.streamRules,
-      advisor: advisor,
-      advisorEveryTurns: runConfig.advisorEveryTurns,
-      hooks: hooks,
-      steering: _steering,
-      contextWindow: window,
-      compactor: SnapcompactCompactor(
-        fallback: DefaultHarnessCompactor(
-          summarizer: LlmHarnessSummarizer(provider),
-          config: runConfig.compaction,
-          calibration: deps.tokenCalibration,
+      guards: LoopGuardConfig(
+        callLedger: accounting.ledger,
+        contract: profile.toCompletionContract(),
+        externalBudgetExceeded: budgetExceeded,
+        externalBudgetPressure: switch (parsedCommand.command) {
+          'goal' || 'loop' =>
+            () => accounting.subtreeCostMicros * 5 >= sessionCostCapMicros * 4,
+          _ => null,
+        },
+      ),
+      compaction: LoopCompactionConfig(
+        tokenCalibration: deps.tokenCalibration,
+        contextWindow: window,
+        compactor: buildHarnessCompactor(
+          summaryProvider: provider,
           providerId: providerId,
           modelId: parsed.model ?? provider.defaultModel,
-          economics: CompactionEconomics(
-            cache: ProviderCacheEconomics.forProvider(providerId),
-          ),
+          config: runConfig.compaction,
+          calibration: deps.tokenCalibration,
+          readerHasVision: modelInfo?.supportsImageInput ?? false,
+          // Seed the source the previous run left behind, so an image it
+          // retained can still be recovered by this run's compactions.
+          retainedSnapshotSource: resumed?.retainedSnapshotSource,
+          preferSnapshots: runConfig.snapshotCompaction,
         ),
-        modelId: qualifiedModel,
-        readerHasVision: modelInfo?.supportsImageInput ?? false,
-        providerId: providerId,
-        // Seed the source the previous run left behind, so an image it
-        // retained can still be recovered by this run's compactions.
-        retainedSource: resumed?.retainedSnapshotSource,
-        preferSnapshots: runConfig.snapshotCompaction,
-        config: runConfig.compaction,
       ),
-      transcriptStore: deps.transcriptStore,
-      transcriptKey: _transcriptKey,
-      initialCheckpoints: _resumedCheckpoints,
-      initialSnapshotSource: resumed?.retainedSnapshotSource,
-      transcriptMetadata: _promptCursorMetadata(resumed),
+      steering: LoopSteeringConfig(
+        pauseGate: _harness.pauseGate,
+        streamRules: runConfig.streamRules,
+        advisor: advisor,
+        advisorEveryTurns: runConfig.advisorEveryTurns,
+        hooks: hooks,
+        queue: _steering,
+      ),
+      transcript: LoopTranscriptConfig(
+        store: deps.transcriptStore,
+        key: _transcriptKey,
+        initialCheckpoints: _harness.resumedCheckpoints,
+        initialSnapshotSource: resumed?.retainedSnapshotSource,
+        metadata: _promptCursorMetadata(resumed),
+      ),
     );
     final context = HarnessToolContext(
       workingDirectory: agentDirHostPath,
@@ -696,39 +700,33 @@ extension _DispatchSessionHarness on DispatchSession {
         config: config,
         cancel: _cancelSource.token,
       )) {
+        if (event is LoopToolCallStart ||
+            (event is LoopTextDelta && event.text.trim().isNotEmpty)) {
+          markUsefulWork();
+        }
+        // Text, thinking, retractions, tool calls/results and errors map the
+        // same way for every host; see harnessTranscriptEvent.
+        final transcriptEvent = await harnessTranscriptEvent(
+          event,
+          imageRefs: _toolImageRefs,
+        );
+        if (transcriptEvent != null) {
+          addEvent(transcriptEvent);
+        }
         switch (event) {
-          case LoopTextDelta(:final text):
-            if (text.trim().isNotEmpty) {
-              markUsefulWork();
-            }
-            addEvent(TextEvent(content: text));
-          case LoopThinkingDelta(:final thinking):
-            addEvent(ThinkingEvent(content: thinking));
-          case LoopToolCallStart(
-            :final toolName,
-            :final toolUseId,
-            :final args,
-          ):
-            markUsefulWork();
+          case LoopTextDelta() ||
+              LoopThinkingDelta() ||
+              LoopToolCallStart() ||
+              LoopToolCallResult():
+            break;
+          case LoopTurnDiscarded(:final reason):
+            // The retraction above drops the abandoned attempt's deltas, or
+            // the retried answer would render after a half-written copy.
             addEvent(
-              ToolCallEvent(
-                toolName: toolName,
-                toolCallId: toolUseId,
-                inputs: args,
-              ),
-            );
-          case LoopToolCallResult(
-            :final toolName,
-            :final toolUseId,
-            :final result,
-          ):
-            addEvent(
-              ToolResultEvent(
-                toolCallId: toolUseId,
-                outputs: result.content,
-                toolName: toolName,
-                isError: result.isError,
-                images: await _toolImageRefs(toolName, result),
+              DebugEvent(
+                content:
+                    '[harness] discarded a partial model attempt '
+                    '(${reason ?? 'retry'}).',
               ),
             );
           case LoopUsage():
@@ -738,7 +736,7 @@ extension _DispatchSessionHarness on DispatchSession {
           case LoopNotice(:final message):
             addEvent(DebugEvent(content: '[harness] $message'));
           case LoopToolsActivated(:final names, :final trigger):
-            _activatedToolNames.addAll(names);
+            _harness.activatedToolNames.addAll(names);
             addEvent(
               DebugEvent(
                 content:
@@ -759,28 +757,35 @@ extension _DispatchSessionHarness on DispatchSession {
             :final tokensBefore,
             :final tokensAfter,
           ):
-            if (summarized) {
+            // `summarized` is a MODEL-written summary only; a structural
+            // digest still folds history, so it counts as a compaction too.
+            if (summarized || messagesFolded > 0) {
               compactions++;
             }
             addEvent(
               DebugEvent(
                 content:
                     '[harness] context '
-                    '${summarized ? 'compacted' : 'pruned'}: '
+                    '${summarized
+                        ? 'compacted'
+                        : messagesFolded > 0
+                        ? 'folded'
+                        : 'pruned'}: '
                     '$messagesFolded messages folded, '
                     '$tokensBefore→$tokensAfter tokens.',
               ),
             );
-          case LoopError(:final message, :final code):
+          case LoopError():
             exitCode = 1;
-            addEvent(
-              ErrorEvent(content: message, code: code, source: 'harness'),
-            );
           case LoopDone(:final reason, :final unmetContractId):
             if (reason == LoopDoneReason.budgetExhausted) {
               addEvent(
                 DebugEvent(content: '[harness] stopped: budget exhausted.'),
               );
+            } else if (reason == LoopDoneReason.error) {
+              // The loop pairs every failure with a LoopError, which already
+              // set this; keyed here too so a failure can never exit 0.
+              exitCode = 1;
             } else if (reason == LoopDoneReason.providerOutputLost) {
               exitCode = 1;
               addEvent(
@@ -818,8 +823,7 @@ extension _DispatchSessionHarness on DispatchSession {
       runFailure = e;
       addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
     } finally {
-      _harnessActive = false;
-      _pauseGate.resume();
+      _harness.end();
       for (final kernel in _kernels.values) {
         unawaited(kernel.dispose());
       }
@@ -839,13 +843,8 @@ extension _DispatchSessionHarness on DispatchSession {
         }
       }
       await accounting.flush();
-      try {
-        await _closeRunLog(exitCode: exitCode, error: runFailure);
-      } on Object catch (error) {
-        CcInfraLog.warning('Harness run-log close failed: $error');
-      }
-      addEvent(DoneEvent());
-      _completeRun();
+      _finish(exitCode: exitCode, error: runFailure);
+      await _finishing;
     }
   }
 
@@ -1000,7 +999,7 @@ extension _DispatchSessionHarness on DispatchSession {
         return null;
       }
       final trimmed = trimTranscriptForResume(loaded);
-      _resumedCheckpoints = trimmed.checkpoints;
+      _harness.resumedCheckpoints = trimmed.checkpoints;
       return trimmed;
     } on Object catch (e) {
       CcInfraLog.warning('transcript resume failed: $e');

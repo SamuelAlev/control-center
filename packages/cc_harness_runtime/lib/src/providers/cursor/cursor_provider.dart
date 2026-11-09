@@ -21,7 +21,7 @@ final _resourceExhausted = RegExp(r'resource.?exhausted', caseSensitive: false);
 /// Cursor execs (shell/read/write) are declined so the harness loop stays the
 /// executor. A new `conversationId` is minted per [complete] so a poisoned
 /// conversation cannot stick `resource_exhausted` on later turns.
-class CursorProvider implements LlmProviderPort {
+class CursorProvider extends LlmProviderPort {
   /// Creates a [CursorProvider].
   CursorProvider({
     this._accessToken,
@@ -126,10 +126,7 @@ class CursorProvider implements LlmProviderPort {
 
     final CursorRunSession session;
     try {
-      session = await _transport.openRun(
-        accessToken: token,
-        baseUrl: _baseUrl,
-      );
+      session = await _transport.openRun(accessToken: token, baseUrl: _baseUrl);
     } on CursorTransportException catch (e) {
       yield _mapTransportError(e);
       yield const LlmDone(stopReason: LlmStopReason.unknown);
@@ -204,9 +201,7 @@ class CursorProvider implements LlmProviderPort {
             }
             if (kv.isGet) {
               final data = packed.store[blobIdHex(kv.blobId)] ?? Uint8List(0);
-              session.send(
-                encodeKvGetBlobResult(id: kv.id, blobData: data),
-              );
+              session.send(encodeKvGetBlobResult(id: kv.id, blobData: data));
             } else {
               packed.store[blobIdHex(kv.blobId)] = Uint8List.fromList(
                 kv.blobData,

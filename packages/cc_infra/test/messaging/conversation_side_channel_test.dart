@@ -214,7 +214,7 @@ class _Factory extends HarnessProviderFactory {
   }
 }
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   _Provider(this.reply, this.calls);
   final String reply;
   final List<_Call> calls;

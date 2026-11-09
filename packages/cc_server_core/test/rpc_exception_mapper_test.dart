@@ -1,4 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
@@ -15,6 +17,17 @@ RhttpStatusCodeException _status(
 );
 
 void main() {
+  test('a surface the forge lacks is a named validation error', () {
+    final mapped = mapAppExceptionToRpc(
+      const ForgeUnsupportedError(ForgeHost.gitlab, 'issueSearch'),
+    );
+    expect(mapped?.code, RpcErrorCodes.validation);
+    expect(mapped?.data, {
+      'unsupported_capability': 'issueSearch',
+      'forge': 'gitlab',
+    });
+  });
+
   // cc_infra forge clients deliberately let an unhandled status through as a raw
   // [RhttpException] (GitLab/Bitbucket's optional-status branches), so the RPC
   // boundary must classify it instead of reporting a generic internal error.

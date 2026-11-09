@@ -21,8 +21,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Every code-hosting forge, connected or not, with the one action each needs.
 ///
-/// ONE card, rendered by both onboarding and Settings → Integrations, so the
-/// two surfaces cannot drift apart.
+/// ONE card, rendered by both onboarding and Settings → Workspace → Profile &
+/// identity → Code hosting, so the two surfaces cannot drift apart.
 ///
 /// All supported forges are always shown, including the ones with no
 /// credential: an operator cannot connect a forge they cannot see. GitHub is
@@ -184,7 +184,7 @@ class ForgeConnectionRow extends ConsumerWidget {
     try {
       if (lane != null) {
         await disconnectProviderLane(ref, lane, workspaceId: scope);
-        ref.invalidate(forgeConnectionsProvider);
+        invalidateForgeState(ref.invalidate);
       } else {
         await clearForgeToken(ref, forge);
       }
@@ -220,6 +220,13 @@ class ForgeConnectionRow extends ConsumerWidget {
             : l10n.signInUnavailable(signInProviderName(lane));
       }
       return l10n.notConnected;
+    }
+    // Authenticated by the server's read, but the person's own grant lapsed
+    // (revoked, expired, voided by a Connect key rotation): saying "Signed in
+    // as X" here while every action refuses is the drift this row exists to
+    // prevent.
+    if (c.needsSignIn && lane != null) {
+      return l10n.signInErrorNeedsSignIn(signInProviderName(lane));
     }
     final who = c.username.isEmpty
         ? l10n.signedIn

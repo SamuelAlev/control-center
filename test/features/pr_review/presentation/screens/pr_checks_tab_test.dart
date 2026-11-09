@@ -16,7 +16,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/misc.dart';
 
 /// PR identity the suite's ChecksTabs (and their key-locked provider overrides) use.
-const _prRef = (workspaceId: 'ws', repoFullName: 'acme/one', number: 7);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'acme/one',
+  number: 7,
+  forge: null,
+);
 
 CheckRun _check({
   required String name,
@@ -202,83 +207,91 @@ void main() {
     },
   );
 
-  testWidgets('matrix jobs group onto their node instead of trailing the selected job as a flat list', (tester) async {
-    const runId = 900;
-    const shardTemplate =
-        r' (shard ${{ matrix.shard }}/${{ strategy.job-total }})';
-    final graph = WorkflowGraph(
-      name: 'Test CI',
-      jobs: [
-        WorkflowJobNode(id: 'lint-typecheck', name: 'Lint & Typecheck'),
-        WorkflowJobNode(
-          id: 'component-tests',
-          name: 'Component Tests$shardTemplate',
-        ),
-        WorkflowJobNode(
-          id: 'rte-component-tests',
-          name: 'RTE Component Tests$shardTemplate',
-        ),
-      ],
-    );
-    var jobId = 100;
-    CheckRun passed(String name) => _check(
-      name: name,
-      status: CheckRunStatus.completed,
-      conclusion: CheckRunConclusion.success,
-      jobId: jobId++,
-      workflowRunId: runId,
-      completedAt: DateTime(2024, 6, 15, 10),
-    );
-    final checks = [
-      passed('Lint & Typecheck'),
-      for (var i = 1; i <= 4; i++) passed('Component Tests (shard $i/4)'),
-      for (var i = 1; i <= 4; i++) passed('RTE Component Tests (shard $i/4)'),
-    ];
-
-    await tester.pumpWidget(
-      _wrap(
-        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
-        overrides: [
-          prWorkflowGraphProvider.overrideWith(
-            (ref, key) async => key.workflowRunId == runId ? graph : null,
+  testWidgets(
+    'matrix jobs group onto their node instead of trailing the selected job as a flat list',
+    (tester) async {
+      const runId = 900;
+      const shardTemplate =
+          r' (shard ${{ matrix.shard }}/${{ strategy.job-total }})';
+      final graph = WorkflowGraph(
+        name: 'Test CI',
+        jobs: [
+          WorkflowJobNode(id: 'lint-typecheck', name: 'Lint & Typecheck'),
+          WorkflowJobNode(
+            id: 'component-tests',
+            name: 'Component Tests$shardTemplate',
           ),
-          prJobRunDetailProvider.overrideWith(
-            (ref, key) => Stream.value(
-              JobRunDetail(
-                jobId: key.jobId,
-                status: CheckRunStatus.completed,
-                conclusion: CheckRunConclusion.success,
-              ),
-            ),
+          WorkflowJobNode(
+            id: 'rte-component-tests',
+            name: 'RTE Component Tests$shardTemplate',
           ),
         ],
-      ),
-    );
-    await _expandWorkflow(tester);
+      );
+      var jobId = 100;
+      CheckRun passed(String name) => _check(
+        name: name,
+        status: CheckRunStatus.completed,
+        conclusion: CheckRunConclusion.success,
+        jobId: jobId++,
+        workflowRunId: runId,
+        completedAt: DateTime(2024, 6, 15, 10),
+      );
+      final checks = [
+        passed('Lint & Typecheck'),
+        for (var i = 1; i <= 4; i++) passed('Component Tests (shard $i/4)'),
+        for (var i = 1; i <= 4; i++) passed('RTE Component Tests (shard $i/4)'),
+      ];
 
-    // Every shard landed on its node, so nothing spills into the flat tail
-    // under the selected job.
-    for (var i = 1; i <= 4; i++) {
-      expect(find.text('Component Tests (shard $i/4)'), findsNothing);
-      expect(find.text('RTE Component Tests (shard $i/4)'), findsNothing);
-    }
+      await tester.pumpWidget(
+        _wrap(
+          ChecksTab(
+            prRef: _prRef,
+            checks: checks,
+            isLoading: false,
+            error: null,
+          ),
+          overrides: [
+            prWorkflowGraphProvider.overrideWith(
+              (ref, key) async => key.workflowRunId == runId ? graph : null,
+            ),
+            prJobRunDetailProvider.overrideWith(
+              (ref, key) => Stream.value(
+                JobRunDetail(
+                  jobId: key.jobId,
+                  status: CheckRunStatus.completed,
+                  conclusion: CheckRunConclusion.success,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      await _expandWorkflow(tester);
 
-    // The two matrix nodes are labelled by their job id, GitHub-style and
-    // carry their child count.
-    expect(find.text('Matrix: component-tests'), findsOneWidget);
-    expect(find.text('Matrix: rte-component-tests'), findsOneWidget);
-    expect(find.text('4 jobs'), findsNWidgets(2));
-    // The single-run job keeps its authored name.
-    expect(find.text('Lint & Typecheck'), findsOneWidget);
+      // Every shard landed on its node, so nothing spills into the flat tail
+      // under the selected job.
+      for (var i = 1; i <= 4; i++) {
+        expect(find.text('Component Tests (shard $i/4)'), findsNothing);
+        expect(find.text('RTE Component Tests (shard $i/4)'), findsNothing);
+      }
 
-    // Selecting a matrix node breaks it out into one chip per shard.
-    await tester.tap(find.text('Matrix: component-tests'));
-    await tester.pump();
-    await tester.pump();
-    for (var i = 1; i <= 4; i++) {
-      expect(find.text('$i/4'), findsOneWidget);
-    }
-  });
+      // The two matrix nodes are labelled by their job id, GitHub-style and
+      // carry their child count.
+      expect(find.text('Matrix: component-tests'), findsOneWidget);
+      expect(find.text('Matrix: rte-component-tests'), findsOneWidget);
+      expect(find.text('4 jobs'), findsNWidgets(2));
+      // The single-run job keeps its authored name.
+      expect(find.text('Lint & Typecheck'), findsOneWidget);
+
+      // Selecting a matrix node breaks it out into one chip per shard.
+      await tester.tap(find.text('Matrix: component-tests'));
+      await tester.pump();
+      await tester.pump();
+      for (var i = 1; i <= 4; i++) {
+        expect(find.text('$i/4'), findsOneWidget);
+      }
+    },
+  );
 
   testWidgets('a finished node shows its duration; the header shows '
       'completion time', (tester) async {

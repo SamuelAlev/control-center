@@ -1,7 +1,6 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/presentation/widgets/github_installations_group.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/forge/providers/workspace_github_providers.dart';
@@ -31,10 +30,7 @@ class WorkspaceGitHubIdentityCard extends ConsumerWidget {
     if (status == null || workspace == null) {
       return const SizedBox.shrink();
     }
-    return _WorkspaceGitHubIdentityBody(
-      workspace: workspace,
-      status: status,
-    );
+    return _WorkspaceGitHubIdentityBody(workspace: workspace, status: status);
   }
 }
 
@@ -57,30 +53,34 @@ class _WorkspaceGitHubIdentityBodyState
   bool _testing = false;
 
   Future<void> _setMode(GithubAuthMode mode) async {
-    await ref.read(workspaceRepositoryProvider).upsert(
-      widget.workspace.copyWith(
-        githubAuthMode: mode,
-        githubAppId: mode == GithubAuthMode.app
-            ? widget.workspace.githubAppId
-            : '',
-        updatedAt: DateTime.now(),
-      ),
-    );
-    ref
-      ..invalidate(workspaceGitHubStatusProvider)
-      ..invalidate(oauthLanesProvider)
-      ..invalidate(forgeConnectionsProvider);
+    await ref
+        .read(workspaceRepositoryProvider)
+        .upsert(
+          widget.workspace.copyWith(
+            githubAuthMode: mode,
+            githubAppId: mode == GithubAuthMode.app
+                ? widget.workspace.githubAppId
+                : '',
+            updatedAt: DateTime.now(),
+          ),
+        );
+    ref.invalidate(workspaceGitHubStatusProvider);
+    invalidateForgeState(ref.invalidate);
   }
 
   Future<void> _setAppId(String appId) async {
-    await ref.read(workspaceRepositoryProvider).upsert(
-      widget.workspace.copyWith(
-        githubAppId: appId,
-        githubAuthMode: GithubAuthMode.app,
-        updatedAt: DateTime.now(),
-      ),
-    );
+    await ref
+        .read(workspaceRepositoryProvider)
+        .upsert(
+          widget.workspace.copyWith(
+            githubAppId: appId,
+            githubAuthMode: GithubAuthMode.app,
+            updatedAt: DateTime.now(),
+          ),
+        );
+    // A new App id changes which GitHub identity the workspace acts as.
     ref.invalidate(workspaceGitHubStatusProvider);
+    invalidateForgeState(ref.invalidate);
   }
 
   Future<void> _test() async {
@@ -101,10 +101,9 @@ class _WorkspaceGitHubIdentityBodyState
       );
     } on Object catch (e) {
       if (mounted) {
-        CcToastScope.of(context).show(
-          l10n.failedWithError('$e'),
-          variant: CcToastVariant.danger,
-        );
+        CcToastScope.of(
+          context,
+        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {
@@ -155,8 +154,7 @@ class _WorkspaceGitHubIdentityBodyState
                   configured: status.app.hasPrivateKey,
                   secret: true,
                   multiline: true,
-                  onSet: (v) =>
-                      saveWorkspaceGitHubApp(ref, {'private_key': v}),
+                  onSet: (v) => saveWorkspaceGitHubApp(ref, {'private_key': v}),
                 ),
                 Align(
                   alignment: AlignmentDirectional.centerStart,
@@ -187,8 +185,7 @@ class _WorkspaceGitHubIdentityBodyState
                 ProviderAppSecretField(
                   title: l10n.providerClientId,
                   value: status.app.clientId,
-                  onSet: (v) =>
-                      saveWorkspaceGitHubApp(ref, {'client_id': v}),
+                  onSet: (v) => saveWorkspaceGitHubApp(ref, {'client_id': v}),
                 ),
                 ProviderAppSecretField(
                   title: l10n.providerClientSecret,

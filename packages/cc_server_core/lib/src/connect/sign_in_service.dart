@@ -6,8 +6,12 @@ import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
+import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/connect/connect_client.dart';
+import 'package:cc_server_core/src/connect/connect_error_messages.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
+
+part 'sign_in_types.dart';
 
 /// This server's callback URL for an own-app [lane], under an HTTP [origin]
 /// (`https://host:9030`).
@@ -17,284 +21,6 @@ import 'package:cc_server_core/src/identity/provider_token.dart';
 /// operator registers with the provider, so Settings shows it verbatim.
 Uri providerOAuthRedirectUri(String origin, String lane) =>
     Uri.parse('$origin/oauth/$lane/callback');
-
-/// Where a lane's sign-in runs right now.
-enum SignInMode {
-  /// The server's own app: the browser comes back to this server.
-  own,
-
-  /// Control Center Connect: the browser comes back to Connect, which shows
-  /// a confirmation code.
-  connect,
-
-  /// Nothing configured.
-  unavailable;
-
-  /// The wire spelling.
-  String get wire => name;
-}
-
-/// An own-app OAuth client for one lane. The token and authorize endpoints
-/// are the provider's fixed ones; only the client credentials vary.
-final class OwnOAuthApp {
-  /// Creates the client description.
-  const OwnOAuthApp({
-    required this.authorize,
-    required this.token,
-    required this.clientId,
-    required this.scopes,
-    this.clientSecret = '',
-    this.scopeSeparator = ' ',
-    this.extraAuthorizeParams = const {},
-  });
-
-  /// The provider's authorize endpoint.
-  final Uri authorize;
-
-  /// The provider's token endpoint.
-  final Uri token;
-
-  /// The operator's client id.
-  final String clientId;
-
-  /// The operator's client secret; empty for a public PKCE client.
-  final String clientSecret;
-
-  /// The fixed scope set for the lane; empty when the provider takes none.
-  final List<String> scopes;
-
-  /// How the provider joins scopes in the authorize URL.
-  final String scopeSeparator;
-
-  /// Fixed extra authorize parameters (`prompt`, `actor`, `access_type`).
-  final Map<String, String> extraAuthorizeParams;
-}
-
-/// Thrown when a lane is configured halfway: partial own credentials never
-/// mix with Connect, so the honest answer is a setup error.
-final class SignInMisconfigured implements Exception {
-  /// Creates the error.
-  const SignInMisconfigured(this.message);
-
-  /// What the operator has to fix.
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-/// The identity behind a freshly minted own-app token.
-typedef SignInIdentity = ({String id, String login});
-
-/// A finished sign-in, handed to the lane to store.
-final class SignInResult {
-  /// Creates the result.
-  const SignInResult({
-    required this.lane,
-    required this.userId,
-    required this.workspaceId,
-    required this.slot,
-    required this.token,
-    this.grant,
-  });
-
-  /// Which lane.
-  final ConnectOAuthLane lane;
-
-  /// The person who signed in (from the authenticated session, never a
-  /// client argument).
-  final String userId;
-
-  /// The workspace the sign-in was started from, if any.
-  final String? workspaceId;
-
-  /// The credential slot: a workspace id, or null for the person's global
-  /// slot.
-  final String? slot;
-
-  /// The credential. Sealed for a Connect lane (access token for memory
-  /// only); a plain token for an own app or a Linear exchange.
-  final ProviderToken token;
-
-  /// The raw Connect grant, for lanes that need its extra fields (Slack's
-  /// team and bot ids).
-  final SealedGrant? grant;
-}
-
-/// One lane's server-side half: what app it uses and where its credential
-/// lives. The sign-in service owns the browser round-trip and the exchange.
-abstract interface class SignInLaneBinding {
-  /// The lane.
-  ConnectOAuthLane get lane;
-
-  /// The own app for [workspaceId], or null to route through Connect.
-  /// Throws [SignInMisconfigured] for partial own credentials.
-  Future<OwnOAuthApp?> ownApp(String? workspaceId);
-
-  /// Whether this lane may route through Connect for [workspaceId] at all.
-  /// A workspace on its own GitHub App never does.
-  Future<bool> allowsConnect(String? workspaceId);
-
-  /// The credential slot a sign-in from [workspaceId] lands in: the
-  /// workspace id, or null for the person's global slot.
-  Future<String?> slotFor(String? workspaceId);
-
-  /// Resolves who an own-app access token belongs to.
-  Future<SignInIdentity> identify(String accessToken);
-
-  /// Stores a finished sign-in.
-  Future<void> store(SignInResult result);
-
-  /// [userId]'s grant in this lane as seen from [workspaceId], or null when
-  /// there is none. Workspace-level lanes (`linear_app`, `slack`) answer for
-  /// the workspace and ignore [userId].
-  Future<LaneConnection?> connection(String userId, String? workspaceId);
-
-  /// Deletes the grant [connection] reports, revoking it upstream where the
-  /// provider allows.
-  Future<void> disconnect(String userId, String? workspaceId);
-}
-
-/// One lane's current grant, as reported to clients. Never carries a token.
-final class LaneConnection {
-  /// Creates the report.
-  const LaneConnection({
-    required this.lane,
-    required this.connected,
-    this.account = '',
-    this.accountId = '',
-    this.workspaceSlot = false,
-    this.source = SignInMode.own,
-    this.needsSignIn = false,
-  });
-
-  /// Which lane.
-  final ConnectOAuthLane lane;
-
-  /// Whether a usable grant is stored.
-  final bool connected;
-
-  /// Login, email or display name.
-  final String account;
-
-  /// The provider's immutable account id.
-  final String accountId;
-
-  /// True when the grant lives in the workspace slot.
-  final bool workspaceSlot;
-
-  /// Own app or Connect.
-  final SignInMode source;
-
-  /// True when a grant exists but must be renewed by signing in again.
-  final bool needsSignIn;
-
-  /// The wire shape.
-  Map<String, Object?> toJson() => {
-    'lane': lane.wire,
-    'connected': connected,
-    'account': account,
-    'account_id': accountId,
-    'slot': workspaceSlot ? 'workspace' : 'global',
-    'source': source.wire,
-    'needs_sign_in': needsSignIn,
-  };
-}
-
-/// The lifecycle of one started sign-in.
-enum SignInStatus {
-  /// Waiting for the browser (own) or the confirmation code (Connect).
-  pending,
-
-  /// Stored.
-  succeeded,
-
-  /// Refused, expired or failed; [SignInAttempt.error] says why.
-  failed;
-
-  /// The wire spelling.
-  String get wire => name;
-}
-
-/// A started sign-in, as reported to the client that started it.
-final class SignInAttempt {
-  SignInAttempt._({
-    required this.loginId,
-    required this.lane,
-    required this.mode,
-    required this.userId,
-    required this.workspaceId,
-    required this.slot,
-    required this.verifier,
-    required this.expiresAt,
-    required this.url,
-    this.state = '',
-    this.redirectUri,
-    this.clientId = '',
-  });
-
-  /// Opaque handle; for Connect it is Connect's login id (the deep link
-  /// carries it back), for an own app a fresh random id.
-  final String loginId;
-
-  /// Which lane.
-  final ConnectOAuthLane lane;
-
-  /// Own app or Connect.
-  final SignInMode mode;
-
-  /// The person.
-  final String userId;
-
-  /// The workspace it started from.
-  final String? workspaceId;
-
-  /// The credential slot.
-  final String? slot;
-
-  /// The PKCE verifier. Never leaves this process.
-  final String verifier;
-
-  /// When it stops being completable.
-  final DateTime expiresAt;
-
-  /// Where to send the browser.
-  final Uri url;
-
-  /// Own-app `state`.
-  final String state;
-
-  /// Own-app redirect URI, reused verbatim for the exchange.
-  final Uri? redirectUri;
-
-  /// The client id the exchange must use (own app, or Connect's Linear
-  /// client for the Linear code exchange).
-  final String clientId;
-
-  /// Current status.
-  SignInStatus status = SignInStatus.pending;
-
-  /// The connected account, when it succeeded.
-  String account = '';
-
-  /// A stable failure code: `access_denied`, `expired`, `scope_mismatch`,
-  /// `invalid_code`, `provider_unavailable`, `exchange_failed`, …
-  String error = '';
-
-  int _attempts = 0;
-
-  /// The wire shape for the client.
-  Map<String, Object?> toJson() => {
-    'login_id': loginId,
-    'lane': lane.wire,
-    'mode': mode.wire,
-    'url': url.toString(),
-    'expires_at': expiresAt.toUtc().toIso8601String(),
-    'status': status.wire,
-    if (account.isNotEmpty) 'account': account,
-    if (error.isNotEmpty) 'error': error,
-  };
-}
 
 /// Runs every browser sign-in this server offers (GitHub, Google, Linear,
 /// Linear app, Slack), in own-app or Connect mode.
@@ -387,8 +113,6 @@ class ProviderSignInService {
     required String userId,
     required String origin,
     String? workspaceId,
-    ConnectOAuthPurpose purpose = ConnectOAuthPurpose.signIn,
-    int? installationId,
   }) async {
     final binding = _bindings[lane];
     if (binding == null) {
@@ -466,13 +190,13 @@ class ProviderSignInService {
           OAuthStartRequest(
             workspaceId: slot ?? globalWorkspaceScope,
             codeChallenge: pkce.challenge,
-            purpose: purpose,
-            installationId: installationId,
           ),
           expectedClientId: clientId,
         );
       } on ConnectException catch (e) {
-        throw AuthException(_connectMessage(e.code));
+        throw AuthException(
+          connectErrorMessage(e.code, ConnectErrorContext.signIn),
+        );
       }
       final expires = started.expiresAt.isBefore(_now().add(pendingTtl))
           ? started.expiresAt
@@ -515,15 +239,17 @@ class ProviderSignInService {
     }
     if (attempt.status == SignInStatus.pending &&
         !_now().isBefore(attempt.expiresAt)) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'expired';
+      attempt._fail(SignInFailure.expired);
     }
     return attempt;
   }
 
   /// Finishes a Connect sign-in with the confirmation code the approving
   /// browser showed (typed, or carried by the deep link).
+  ///
+  /// A wrong code is not an exception: the attempt comes back pending with
+  /// [SignInAttempt.codeError] set, or failed with
+  /// [SignInFailure.invalidCode] once the codes ran out.
   Future<SignInAttempt> complete({
     required String loginId,
     required String confirmCode,
@@ -543,9 +269,10 @@ class ProviderSignInService {
     }
     final code = normaliseConfirmCode(confirmCode);
     if (code == null) {
-      _countAttempt(attempt);
-      throw const AuthException('That code is not valid. Check it and retry.');
+      _countWrongCode(attempt);
+      return attempt;
     }
+    attempt.codeError = null;
     // A login claims once at Connect: a second completion while the first is
     // in flight (the deep link and a typed code) would come back
     // `stale_request` and mark a succeeding sign-in failed.
@@ -573,27 +300,20 @@ class ProviderSignInService {
         ),
       );
     } on ConnectException catch (e) {
-      // Connect answers a wrong code `access_denied` and counts it against
-      // the same budget; anything that consumed the login answers
-      // `stale_request` on the retry.
-      if (e.code == ConnectErrorCode.invalidRequest ||
-          e.code == ConnectErrorCode.accessDenied) {
-        _countAttempt(attempt);
-        if (attempt.status != SignInStatus.pending) {
-          return attempt;
-        }
-        throw const AuthException(
-          'That code did not match. Check it and retry.',
-        );
+      // Connect counts a wrong code against the same budget; anything that
+      // consumed the login answers `stale_request` on the retry.
+      if (e.code == ConnectErrorCode.codeMismatch) {
+        _countWrongCode(attempt);
+        return attempt;
       }
-      attempt
-        ..status = SignInStatus.failed
-        ..error = e.code.wire;
+      attempt._fail(SignInFailure.fromConnect(e.code));
       return attempt;
     }
+    // The login is spent at Connect from here on: whatever happens, the
+    // attempt ends succeeded or failed, never pending.
+    SealedGrant? grant;
     try {
       final ProviderToken token;
-      SealedGrant? grant;
       switch (attempt.lane) {
         case ConnectOAuthLane.linear || ConnectOAuthLane.linearApp:
           // Connect relays only Linear's one-time code; this server exchanges
@@ -626,7 +346,9 @@ class ProviderSignInService {
             appId: grant.appId,
           );
       }
-      await binding.store(
+      await _store(
+        attempt,
+        binding,
         SignInResult(
           lane: attempt.lane,
           userId: attempt.userId,
@@ -636,19 +358,56 @@ class ProviderSignInService {
           grant: grant,
         ),
       );
-      attempt
-        ..status = SignInStatus.succeeded
-        ..account = token.accountLogin;
     } on FormatException {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'provider_unavailable';
+      attempt._fail(SignInFailure.providerUnavailable);
     } on _ExchangeRefused catch (e) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = e.code;
+      attempt._fail(e.code);
+    } on _StoreFailed {
+      // A grant this server could not keep must not stay live upstream: a
+      // Slack install holds the team's single bot token.
+      final seal = grant?.seal ?? '';
+      if (attempt.lane == ConnectOAuthLane.slack && seal.isNotEmpty) {
+        try {
+          await connect.slackRevoke(
+            SealRequest(
+              seal: seal,
+              workspaceId: attempt.slot ?? globalWorkspaceScope,
+            ),
+          );
+        } on ConnectException catch (e) {
+          CcHostLog.warning(
+            'sign-in: revoking an unstored Slack grant failed (${e.code})',
+          );
+        }
+      }
+      attempt._fail(SignInFailure.storeFailed);
+    } on Object catch (e) {
+      CcHostLog.warning('sign-in: ${attempt.lane.wire} claim failed ($e)');
+      attempt._fail(SignInFailure.providerUnavailable);
     }
     return attempt;
+  }
+
+  /// Stores [result] and marks [attempt] succeeded; a store that throws is
+  /// [_StoreFailed].
+  Future<void> _store(
+    SignInAttempt attempt,
+    SignInLaneBinding binding,
+    SignInResult result,
+  ) async {
+    try {
+      await binding.store(result);
+    } on Object catch (e, st) {
+      CcHostLog.error(
+        'sign-in: storing a ${attempt.lane.wire} grant failed',
+        e,
+        st,
+      );
+      throw const _StoreFailed();
+    }
+    attempt
+      ..status = SignInStatus.succeeded
+      ..account = result.token.accountLogin;
   }
 
   /// Completes an own-app sign-in from `/oauth/<lane>/callback`.
@@ -667,23 +426,17 @@ class ProviderSignInService {
     }
     final segments = requestUri.pathSegments;
     if (segments.length != 3 || segments[1] != attempt.lane.wire) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'invalid_request';
+      attempt._fail(SignInFailure.invalidRequest);
       throw const AuthException('This sign-in link is no longer valid.');
     }
     if (!_now().isBefore(attempt.expiresAt)) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'expired';
+      attempt._fail(SignInFailure.expired);
       throw const AuthException('This sign-in took too long — try again.');
     }
     final error = query['error'];
     final code = query['code'];
     if (error != null || code == null || code.isEmpty) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'access_denied';
+      attempt._fail(SignInFailure.accessDenied);
       throw const AuthException('The sign-in was cancelled or refused.');
     }
     final binding = _bindings[attempt.lane]!;
@@ -691,15 +444,11 @@ class ProviderSignInService {
     try {
       own = await binding.ownApp(attempt.workspaceId);
     } on SignInMisconfigured catch (e) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'misconfigured';
+      attempt._fail(SignInFailure.misconfigured);
       throw AuthException(e.message);
     }
     if (own == null || own.clientId != attempt.clientId) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'misconfigured';
+      attempt._fail(SignInFailure.misconfigured);
       throw const AuthException(
         'The app credentials changed while you were signing in.',
       );
@@ -716,7 +465,9 @@ class ProviderSignInService {
         expectedScopes: own.scopes,
         binding: binding,
       );
-      await binding.store(
+      await _store(
+        attempt,
+        binding,
         SignInResult(
           lane: attempt.lane,
           userId: attempt.userId,
@@ -725,15 +476,15 @@ class ProviderSignInService {
           token: token,
         ),
       );
-      attempt
-        ..status = SignInStatus.succeeded
-        ..account = token.accountLogin;
       return attempt;
     } on _ExchangeRefused catch (e) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = e.code;
+      attempt._fail(e.code);
       throw AuthException(e.message);
+    } on _StoreFailed {
+      attempt._fail(SignInFailure.storeFailed);
+      throw const AuthException(
+        'The sign-in worked, but this server could not save it. Try again.',
+      );
     }
   }
 
@@ -749,12 +500,19 @@ class ProviderSignInService {
     String? workspaceId,
   }) async {
     if (expired.isSealed) {
-      final choice = await connect.settings.choice();
-      if (!choice.enabled ||
-          canonicalConnectBaseUrl(choice.baseUrl) != expired.connectOrigin) {
-        // Connect off or pointed elsewhere: the grant is fine, only
-        // unreachable from here until the setting comes back.
-        return const RefreshUnavailable();
+      switch (await connect.sealStanding(
+        connectOrigin: expired.connectOrigin,
+        sealInstallId: expired.sealInstallId,
+      )) {
+        case SealStanding.parked:
+          // Connect off or pointed elsewhere: the grant is fine, only
+          // unreachable from here until the setting comes back.
+          return const RefreshUnavailable();
+        case SealStanding.dead:
+          // Sealed for another install identity: Connect can never open it.
+          return const RefreshRejected();
+        case SealStanding.usable:
+          break;
       }
       try {
         final grant = await connect.refresh(
@@ -889,21 +647,21 @@ class ProviderSignInService {
       });
     } on Object {
       throw const _ExchangeRefused(
-        'provider_unavailable',
+        SignInFailure.providerUnavailable,
         'The provider could not be reached. Try again.',
       );
     }
     final error = decoded['error'];
     if (error != null) {
       throw _ExchangeRefused(
-        'exchange_failed',
+        SignInFailure.exchangeFailed,
         'The provider refused the sign-in ($error).',
       );
     }
     final token = _tokenFrom(decoded, appId: clientId);
     if (token == null) {
       throw const _ExchangeRefused(
-        'exchange_failed',
+        SignInFailure.exchangeFailed,
         'The provider returned no token.',
       );
     }
@@ -914,10 +672,10 @@ class ProviderSignInService {
           : splitScopes(raw is String ? raw : null);
       if (!scopesExactlyMatch(granted, expectedScopes)) {
         throw const _ExchangeRefused(
-          'scope_mismatch',
+          SignInFailure.scopeMismatch,
           'The provider granted different access than Control Center asks '
-              'for, so the sign-in was refused. Try again and approve the '
-              'requested access as shown.',
+          'for, so the sign-in was refused. Try again and approve the '
+          'requested access as shown.',
         );
       }
     }
@@ -926,9 +684,9 @@ class ProviderSignInService {
       // standing credential nobody can rotate.
       if (!token.accessToken.startsWith('ghu_') || token.expiresAt == null) {
         throw const _ExchangeRefused(
-          'exchange_failed',
+          SignInFailure.exchangeFailed,
           'This GitHub App issues tokens that never expire. Turn on '
-              '"Expire user authorization tokens" in the app settings.',
+          '"Expire user authorization tokens" in the app settings.',
         );
       }
     }
@@ -937,13 +695,13 @@ class ProviderSignInService {
       who = await binding.identify(token.accessToken);
     } on Object {
       throw const _ExchangeRefused(
-        'provider_unavailable',
+        SignInFailure.providerUnavailable,
         'The provider did not say who signed in. Try again.',
       );
     }
     if (who.id.isEmpty) {
       throw const _ExchangeRefused(
-        'exchange_failed',
+        SignInFailure.exchangeFailed,
         'The provider did not say who signed in.',
       );
     }
@@ -988,7 +746,11 @@ class ProviderSignInService {
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
     request.write(Uri(queryParameters: body).query);
     final response = await request.close().timeout(_httpTimeout);
-    final raw = await _readBounded(response);
+    final raw = await readBoundedText(
+      response,
+      maxBytes: _maxResponseBytes,
+      timeout: _httpTimeout,
+    );
     Object? decoded;
     try {
       decoded = jsonDecode(raw);
@@ -1004,23 +766,12 @@ class ProviderSignInService {
     throw HttpException('HTTP ${response.statusCode}');
   }
 
-  static Future<String> _readBounded(HttpClientResponse response) async {
-    final chunks = <int>[];
-    await for (final chunk in response.timeout(_httpTimeout)) {
-      chunks.addAll(chunk);
-      if (chunks.length > _maxResponseBytes) {
-        throw const HttpException('oversized reply');
-      }
-    }
-    return utf8.decode(chunks, allowMalformed: true);
-  }
-
-  void _countAttempt(SignInAttempt attempt) {
-    attempt._attempts++;
-    if (attempt._attempts >= maxConfirmAttempts) {
-      attempt
-        ..status = SignInStatus.failed
-        ..error = 'invalid_code';
+  void _countWrongCode(SignInAttempt attempt) {
+    attempt._wrongCodes++;
+    if (attempt._wrongCodes >= maxConfirmAttempts) {
+      attempt._fail(SignInFailure.invalidCode);
+    } else {
+      attempt.codeError = SignInFailure.codeMismatch;
     }
   }
 
@@ -1041,22 +792,15 @@ class ProviderSignInService {
       }
     }
   }
-
-  static String _connectMessage(ConnectErrorCode code) => switch (code) {
-    ConnectErrorCode.installBlocked =>
-      'Control Center Connect refused this server. Check Settings → Connect.',
-    ConnectErrorCode.rateLimited =>
-      'Too many sign-ins right now. Try again in a minute.',
-    ConnectErrorCode.accessDenied =>
-      'Control Center Connect answered with an unexpected sign-in link, so '
-          'it was not opened.',
-    _ => 'Control Center Connect is unreachable right now. Try again shortly.',
-  };
 }
 
 final class _ExchangeRefused implements Exception {
   const _ExchangeRefused(this.code, this.message);
 
-  final String code;
+  final SignInFailure code;
   final String message;
+}
+
+final class _StoreFailed implements Exception {
+  const _StoreFailed();
 }

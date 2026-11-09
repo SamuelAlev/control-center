@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cc_harness/tools.dart';
+import 'package:cc_harness_runtime/src/context/markdown_frontmatter.dart';
 import 'package:path/path.dart' as p;
 
 /// Discovers file-defined subagents (markdown + YAML-ish frontmatter: base,
@@ -11,7 +12,10 @@ import 'package:path/path.dart' as p;
 /// built-in name.
 class HarnessAgentScanner {
   /// Creates a [HarnessAgentScanner].
-  const HarnessAgentScanner({this.maxAgents = 40, this.maxBodyBytes = 64 * 1024});
+  const HarnessAgentScanner({
+    this.maxAgents = 40,
+    this.maxBodyBytes = 64 * 1024,
+  });
 
   /// Cap on how many definitions are returned.
   final int maxAgents;
@@ -78,16 +82,11 @@ class HarnessAgentScanner {
     } on Object {
       return null;
     }
-    if (!raw.startsWith('---')) {
+    final frontmatter = MarkdownFrontmatter.parse(raw);
+    if (!frontmatter.hasHeader) {
       return null;
     }
-    final headerStart = raw.indexOf('\n', 3);
-    final headerEnd = raw.indexOf('\n---', 3);
-    if (headerStart < 0 || headerEnd < 0 || headerStart > headerEnd) {
-      return null;
-    }
-    final bodyStart = raw.indexOf('\n', headerEnd + 1);
-    final body = bodyStart < 0 ? '' : raw.substring(bodyStart + 1).trim();
+    final body = frontmatter.body.trim();
     if (body.isEmpty) {
       return null;
     }
@@ -107,16 +106,7 @@ class HarnessAgentScanner {
     int? maxTurns;
     var readSummarize = true;
 
-    for (final line in raw.substring(headerStart + 1, headerEnd).split('\n')) {
-      final idx = line.indexOf(':');
-      if (idx <= 0) {
-        continue;
-      }
-      final key = line.substring(0, idx).trim().toLowerCase();
-      final value = line
-          .substring(idx + 1)
-          .trim()
-          .replaceAll(RegExp(r'''^['"]|['"]$'''), '');
+    for (final MapEntry(:key, :value) in frontmatter.fields.entries) {
       switch (key) {
         case 'description':
           description = value;

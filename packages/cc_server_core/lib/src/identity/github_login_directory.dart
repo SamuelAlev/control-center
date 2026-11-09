@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
@@ -24,26 +26,47 @@ class GitHubLoginDirectory {
     this.ttl = const Duration(minutes: 5),
     DateTime Function()? now,
     DomainEventBus? eventBus,
+    Stream<({String userId, String? workspaceId})>? githubSignInChanges,
   }) : _now = now ?? DateTime.now {
+    eventBus?.on<WorkspaceMemberAdded>().listen(
+      (event) => invalidate(event.workspaceId),
+    );
     eventBus?.on<WorkspaceMemberRemoved>().listen(
       (event) => invalidate(event.workspaceId),
     );
     eventBus?.on<WorkspaceMemberRoleChanged>().listen(
       (event) => invalidate(event.workspaceId),
     );
+    // A sign-in or disconnect must reach the PR bridge at once: a member's
+    // first comment after signing in would otherwise be refused for up to
+    // [ttl]. A global sign-in is seen by every workspace that inherits it.
+    githubSignInChanges?.listen((change) {
+      final workspaceId = change.workspaceId;
+      if (workspaceId == null || workspaceId.isEmpty) {
+        invalidateAll();
+      } else {
+        invalidate(workspaceId);
+      }
+    });
   }
 
   final WorkspaceMembershipRepository _members;
   final GitHubCredentialLookup _credentials;
 
-  /// How long credential mappings are trusted. Membership removals and role
-  /// changes invalidate the index immediately through membership events; TTL
-  /// bounds credential changes without re-reading every token per comment.
+  /// How long credential mappings are trusted. Membership events and GitHub
+  /// sign-in changes invalidate the index immediately; the TTL only bounds
+  /// what no event reports (a credential edited outside this process).
   final Duration ttl;
 
   final DateTime Function() _now;
 
   final Map<String, _WorkspaceIndex> _byWorkspace = {};
+
+  /// Bumped per workspace by [invalidate] (and for all by [invalidateAll]),
+  /// so an index built from reads taken before an invalidation is never
+  /// cached over it.
+  final Map<String, int> _generation = {};
+  int _allGeneration = 0;
 
   /// The member of [workspaceId] who signed in to GitHub as account
   /// [accountId], or null.
@@ -70,6 +93,7 @@ class GitHubLoginDirectory {
     if (cached != null && _now().difference(cached.builtAt) < ttl) {
       return cached;
     }
+    final generation = (_generation[workspaceId] ?? 0, _allGeneration);
     final members = await _members.getForWorkspace(workspaceId);
     final accounts = <String, String>{};
     for (final member in members) {
@@ -82,11 +106,15 @@ class GitHubLoginDirectory {
       // oldest-first), so a duplicate claim is deterministic.
       accounts.putIfAbsent(accountId, () => member.userId);
     }
-    return _byWorkspace[workspaceId] = _WorkspaceIndex(
+    final index = _WorkspaceIndex(
       members: members,
       accounts: accounts,
       builtAt: _now(),
     );
+    if (generation == (_generation[workspaceId] ?? 0, _allGeneration)) {
+      _byWorkspace[workspaceId] = index;
+    }
+    return index;
   }
 
   WorkspaceMember? _memberById(List<WorkspaceMember> members, String userId) =>
@@ -94,7 +122,16 @@ class GitHubLoginDirectory {
 
   /// Drops the cached index for [workspaceId] (e.g. after a membership or
   /// credential change the caller knows about).
-  void invalidate(String workspaceId) => _byWorkspace.remove(workspaceId);
+  void invalidate(String workspaceId) {
+    _byWorkspace.remove(workspaceId);
+    _generation[workspaceId] = (_generation[workspaceId] ?? 0) + 1;
+  }
+
+  /// Drops every cached index (a global sign-in changed).
+  void invalidateAll() {
+    _byWorkspace.clear();
+    _allGeneration++;
+  }
 }
 
 class _WorkspaceIndex {

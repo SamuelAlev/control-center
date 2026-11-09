@@ -12,13 +12,16 @@ import 'package:go_router/go_router.dart';
 
 /// Whether [connections] say this workspace has no working forge sign-in.
 ///
-/// Only a real answer counts: `forgeConnectionsProvider` resolves to an empty
-/// list when the server could not be asked, and an unreachable server is not
-/// evidence that anyone signed out. A real answer lists every supported forge.
+/// Only a real answer counts: a `forgeConnectionsProvider` that could not ask
+/// the server has no value (or keeps its last one), and an unreachable server
+/// is not evidence that anyone signed out. A real answer lists every
+/// supported forge. A connection the server reports as authenticated but
+/// whose person grant lapsed ([ForgeConnection.needsSignIn]: revoked, expired
+/// or voided by a Connect key rotation) is not a working sign-in either.
 bool needsForgeSignIn(List<ForgeConnection>? connections) =>
     connections != null &&
     connections.isNotEmpty &&
-    !connections.any((c) => c.authenticated);
+    !connections.any((c) => c.authenticated && !c.needsSignIn);
 
 /// Workspaces whose missing-sign-in warning was dismissed this session.
 ///

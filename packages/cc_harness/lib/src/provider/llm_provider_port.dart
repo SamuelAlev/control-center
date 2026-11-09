@@ -188,15 +188,165 @@ class LlmDone extends LlmEvent {
   final LlmUsage? usage;
 }
 
+/// What KIND of failure an [LlmError] is, independent of any one provider's
+/// wording.
+///
+/// Every layer that reacts to a provider failure (the loop's overflow recovery,
+/// the fallback chain's rotation, the host's messaging) used to re-derive this
+/// from `code`/`message` substrings, each with its own phrase list — and the
+/// lists drifted: "tokens per minute exceeded" matched the loop's overflow
+/// heuristic and forced a compaction for what was a rate limit. The kind is
+/// decided ONCE, where the error is built (or by [classify] from the same
+/// inputs), and read everywhere else.
+enum LlmErrorKind {
+  /// The request is larger than the model's context window. Retrying the same
+  /// request cannot succeed; shrinking it (compaction) can.
+  contextOverflow,
+
+  /// Request/token rate limit (429, "per minute"). Recovers after a backoff.
+  rateLimit,
+
+  /// The provider is temporarily over capacity (overloaded / 5xx).
+  overloaded,
+
+  /// The account's balance, quota or billing is exhausted. Target-specific: a
+  /// different credential may succeed, the same one will not.
+  quota,
+
+  /// The credential was rejected (401/403, invalid key, revoked token).
+  auth,
+
+  /// The model or endpoint does not exist for this credential (404).
+  notFound,
+
+  /// The request itself is malformed — every target would reject it the same.
+  invalidRequest,
+
+  /// Transport failure before or during the stream (connection reset, DNS).
+  transport,
+
+  /// The provider broke the stream protocol (duplicate ids, empty response).
+  protocol,
+
+  /// Anything not recognised.
+  unknown;
+
+  /// Whether a different provider/credential might succeed where this one
+  /// failed (auth, quota, missing model, capacity).
+  bool get isTargetSpecific => switch (this) {
+    LlmErrorKind.auth ||
+    LlmErrorKind.quota ||
+    LlmErrorKind.notFound ||
+    LlmErrorKind.rateLimit ||
+    LlmErrorKind.overloaded => true,
+    _ => false,
+  };
+
+  /// Whether the error is a capacity signal (rate limit / overload / quota).
+  bool get isCapacity =>
+      this == LlmErrorKind.rateLimit ||
+      this == LlmErrorKind.overloaded ||
+      this == LlmErrorKind.quota;
+
+  /// Classifies a failure from its wire [code], [message] and optional HTTP
+  /// [httpStatus]. The single place provider phrasing is interpreted.
+  ///
+  /// Order matters: rate limits are checked BEFORE context overflow because
+  /// their messages also talk about tokens being exceeded ("tokens per minute
+  /// exceeded", "TPM limit"), and quota is checked before invalid-request
+  /// because Anthropic reports an exhausted prepaid balance as a 400
+  /// `invalid_request_error` ("credit balance is too low").
+  static LlmErrorKind classify({
+    String? code,
+    String message = '',
+    int? httpStatus,
+  }) {
+    final c = (code ?? '').toLowerCase();
+    final m = message.toLowerCase();
+    if (c.contains('quota') ||
+        c.contains('billing') ||
+        c.contains('credit') ||
+        c == '1113' ||
+        m.contains('insufficient_quota') ||
+        m.contains('credit balance') ||
+        m.contains('billing')) {
+      return LlmErrorKind.quota;
+    }
+    if (httpStatus == 429 ||
+        c.contains('rate_limit') ||
+        c.contains('429') ||
+        c.contains('resource_exhausted') ||
+        m.contains('rate limit') ||
+        m.contains('rate_limit') ||
+        m.contains('per minute') ||
+        m.contains('per day') ||
+        m.contains('tokens per') ||
+        m.contains('requests per') ||
+        RegExp(r'\b[tr]pm\b').hasMatch(m)) {
+      return LlmErrorKind.rateLimit;
+    }
+    if (c.contains('context_length') ||
+        c.contains('context_window') ||
+        c.contains('context_overflow') ||
+        m.contains('context length') ||
+        m.contains('context window') ||
+        m.contains('maximum context') ||
+        m.contains('context_length_exceeded') ||
+        m.contains('prompt is too long') ||
+        m.contains('too many tokens') ||
+        m.contains('input is too long') ||
+        (m.contains('token') && m.contains('exceed'))) {
+      return LlmErrorKind.contextOverflow;
+    }
+    if (c.contains('overloaded') ||
+        c == 'api_error' ||
+        c.contains('unavailable') ||
+        (httpStatus != null && httpStatus >= 500) ||
+        RegExp(r'^http_5\d\d$').hasMatch(c)) {
+      return LlmErrorKind.overloaded;
+    }
+    if (httpStatus == 401 ||
+        httpStatus == 403 ||
+        c.contains('auth') ||
+        c.contains('permission') ||
+        c.contains('401') ||
+        c.contains('403') ||
+        c == 'invalid_api_key') {
+      return LlmErrorKind.auth;
+    }
+    if (httpStatus == 404 || c.contains('404') || c.contains('model')) {
+      return LlmErrorKind.notFound;
+    }
+    if (httpStatus == 400 ||
+        c.contains('400') ||
+        c.contains('invalid_request')) {
+      return LlmErrorKind.invalidRequest;
+    }
+    if (c == 'duplicate_tool_call_id' || c == 'empty_response') {
+      return LlmErrorKind.protocol;
+    }
+    if (c == 'stream_error' || m.contains('request failed')) {
+      return LlmErrorKind.transport;
+    }
+    return LlmErrorKind.unknown;
+  }
+}
+
 /// A provider-level error. Terminates the stream.
 class LlmError extends LlmEvent {
   /// Creates an error event.
+  ///
+  /// [kind] is the typed classification; when omitted it is derived from
+  /// [code] and [message] by [LlmErrorKind.classify]. Providers that know the
+  /// HTTP status pass `LlmErrorKind.classify(..., httpStatus: status)` so the
+  /// status, not the phrasing, decides.
   const LlmError(
     this.message, {
     this.code,
     this.retryable = false,
     this.retryAfterMs,
-  });
+    LlmErrorKind? kind,
+  }) : _kind = kind; // ignore: prefer_initializing_formals — public name `kind`
 
   /// Human-readable message.
   final String message;
@@ -204,6 +354,12 @@ class LlmError extends LlmEvent {
   /// Machine-readable classification (e.g. `rate_limit_error`,
   /// `authentication_error`, `overloaded_error`) used for retry decisions.
   final String? code;
+
+  final LlmErrorKind? _kind;
+
+  /// The typed failure kind. Read this instead of matching [code]/[message].
+  LlmErrorKind get kind =>
+      _kind ?? LlmErrorKind.classify(code: code, message: message);
 
   /// Whether the loop may retry after backoff.
   final bool retryable;
@@ -332,31 +488,6 @@ class LlmToolSchema {
     deferLoading: deferLoading ?? this.deferLoading,
   );
 }
-
-/// A provider that can defer tool definitions natively (Anthropic's tool
-/// search: `defer_loading` + `tool_reference` blocks).
-///
-/// A capability interface rather than a member of [LlmProviderPort] so the many
-/// existing implementations and test doubles stay valid, and so a caller must
-/// ask explicitly instead of assuming every provider caches tools the same way
-/// — sending `defer_loading` to an endpoint that does not understand it is a
-/// rejected request, not a no-op.
-abstract interface class LlmDeferredToolSupport {
-  /// Whether this provider can defer tool loading for [model] (null = the
-  /// provider's default model).
-  bool supportsDeferredTools({String? model});
-}
-
-/// Whether [provider] can defer tool loading for [model].
-///
-/// The single check to use instead of `provider is LlmDeferredToolSupport`
-/// (which would answer `true` for a wrapper whose delegate cannot).
-bool providerSupportsDeferredTools(LlmProviderPort provider, {String? model}) =>
-    switch (provider) {
-      final LlmDeferredToolSupport capability =>
-        capability.supportsDeferredTools(model: model),
-      _ => false,
-    };
 
 /// A provider that can report which concrete provider/model actually served the
 /// most recent request (credential rotation and cross-provider fallback chains
@@ -567,7 +698,17 @@ class ProviderModel {
 /// Implementations live in the infrastructure layer (they own HTTP). The agent
 /// loop depends only on this port, so it is provider-agnostic and the same
 /// loop drives Anthropic, OpenAI, a local model, or a mock.
-abstract interface class LlmProviderPort {
+///
+/// Leaf providers `extends` this class and inherit the conservative defaults
+/// (no native tool deferral). DECORATORS (usage observers, budget guards,
+/// fallback chains) `implements` it instead, so the compiler forces them to
+/// forward every capability explicitly — a capability that lived on a separate
+/// opt-in interface was silently dropped the day a new wrapper forgot to
+/// re-declare it.
+abstract class LlmProviderPort {
+  /// Const base constructor for subclasses.
+  const LlmProviderPort();
+
   /// Human-readable provider name (e.g. `Anthropic`).
   String get displayName;
 
@@ -589,4 +730,13 @@ abstract interface class LlmProviderPort {
   /// list when the endpoint is unreachable or unsupported — the caller then
   /// falls back to the models.dev catalog.
   Future<List<ProviderModel>> listModels();
+
+  /// Whether this provider can defer tool loading for [model] (null = the
+  /// provider's default model) natively — Anthropic's tool search:
+  /// `defer_loading` + `tool_reference` blocks.
+  ///
+  /// False by default: sending `defer_loading` to an endpoint that does not
+  /// understand it is a rejected request, not a no-op. A wrapper answers for
+  /// its delegate(s).
+  bool supportsDeferredTools({String? model}) => false;
 }

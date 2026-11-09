@@ -167,7 +167,12 @@ class CredentialsScreen extends ConsumerWidget {
                             connected:
                                 forgeById[forge.wire]?.authenticated ?? false,
                             username: forgeById[forge.wire]?.username ?? '',
-                            statusError: forgeById[forge.wire]?.error,
+                            // A lapsed person grant reads as connected on
+                            // the server; show it as needing attention.
+                            statusError:
+                                forgeById[forge.wire]?.needsSignIn ?? false
+                                ? l.credentialsSignInAgain
+                                : forgeById[forge.wire]?.error,
                             hostManaged:
                                 forgeById[forge.wire]?.source ==
                                 ForgeCredentialSource.environment,

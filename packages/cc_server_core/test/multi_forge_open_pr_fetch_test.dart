@@ -146,7 +146,7 @@ void main() {
         ),
       });
 
-      final result = await adapter.fetchGroups([gh, gl, bb]);
+      final result = await adapter.fetchGroups([gh, gl, bb], workspaceId: 'ws');
 
       expect(result.resolvedRepoIds, {'web', 'api', 'docs'});
       expect(result.groups.map((g) => g.repo.id).toSet(), {
@@ -181,7 +181,7 @@ void main() {
       await adapter.fetchGroups([
         _repo('web', ForgeHost.github),
         _repo('api', ForgeHost.gitlab),
-      ]);
+      ], workspaceId: 'ws');
 
       expect(github.fetchCalls, 1);
       expect(gitlab.fetchCalls, 1);
@@ -204,7 +204,7 @@ void main() {
       final result = await adapter.fetchGroups([
         _repo('web', ForgeHost.github),
         _repo('docs', ForgeHost.bitbucket),
-      ]);
+      ], workspaceId: 'ws');
 
       expect(result.resolvedRepoIds, {'web'});
       expect(result.groups.single.repo.id, 'web');
@@ -222,7 +222,7 @@ void main() {
       final result = await adapter.fetchGroups([
         _repo('web', ForgeHost.github),
         _repo('api', ForgeHost.gitlab),
-      ]);
+      ], workspaceId: 'ws');
 
       // GitLab has no adapter (no credential), so its repo is absent from the
       // resolved set — never routed to GitHub's client by accident.
@@ -236,15 +236,30 @@ void main() {
       });
 
       expect(
-        (await adapter.probeRepo(_repo('web', ForgeHost.github), null)).changed,
+        (await adapter.probeRepo(
+          _repo('web', ForgeHost.github),
+          null,
+          workspaceId: 'ws',
+        )).changed,
         isTrue,
       );
       expect(
-        await adapter.wasMerged(_repo('web', ForgeHost.github), 1),
+        await adapter.wasMerged(
+          _repo('web', ForgeHost.github),
+          1,
+          workspaceId: 'ws',
+        ),
         isTrue,
       );
       // An unregistered forge answers "unknown", never "closed".
-      expect(await adapter.wasMerged(_repo('x', ForgeHost.gitlab), 1), isNull);
+      expect(
+        await adapter.wasMerged(
+          _repo('x', ForgeHost.gitlab),
+          1,
+          workspaceId: 'ws',
+        ),
+        isNull,
+      );
     });
 
     test(
@@ -258,6 +273,7 @@ void main() {
           await adapter.fetchBranchHistory(
             _repo('web', ForgeHost.github),
             'space/a',
+            workspaceId: 'ws',
           ),
           isEmpty,
         );
@@ -265,6 +281,7 @@ void main() {
           await adapter.fetchBranchHistory(
             _repo('api', ForgeHost.gitlab),
             'space/a',
+            workspaceId: 'ws',
           ),
           isNull,
         );
@@ -272,6 +289,7 @@ void main() {
           await adapter.fetchBranchHistory(
             _repo('docs', ForgeHost.bitbucket),
             'space/a',
+            workspaceId: 'ws',
           ),
           isNull,
         );
@@ -287,6 +305,7 @@ void main() {
         final probe = await adapter.probeRepo(
           _repo('x', ForgeHost.gitlab),
           null,
+          workspaceId: 'ws',
         );
         expect(probe.changed, isFalse);
       },
@@ -303,7 +322,7 @@ void main() {
         final overlays = await adapter.fetchChecks([
           _repo('web', ForgeHost.github),
           _repo('api', ForgeHost.gitlab),
-        ]);
+        ], workspaceId: 'ws');
 
         expect(overlays.keys, ['web']);
       },

@@ -1,8 +1,9 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 
 /// Converts a UTC instant to/from a named timezone's wall-clock. Injected so
-/// the scheduler stays pure-Dart; the default identity converter treats every
-/// schedule as UTC.
+/// the scheduler stays pure-Dart: the server passes `TimezoneZoneConverter`
+/// (cc_infra); the default identity converter treats every schedule as UTC and
+/// is for tests.
 typedef ZoneConverter = DateTime Function(DateTime input, String timezone);
 
 DateTime _identity(DateTime input, String timezone) => input;
@@ -38,7 +39,8 @@ class CronEvaluation {
 /// (**CatchUpLatestOnly**).
 ///
 /// Handles both schedule forms:
-/// * `every:<seconds>` interval triggers (driven by `lastFiredAt`).
+/// * `every:<seconds>` interval triggers, fired once per epoch-aligned slot
+///   (driven by `lastFiredAt`).
 /// * standard cron triggers (driven by `nextRunAt`, evaluated in the trigger's
 ///   timezone via the injected [ZoneConverter]s).
 class PipelineCronScheduler {
@@ -64,22 +66,42 @@ class PipelineCronScheduler {
     return const CronEvaluation.idle();
   }
 
+  /// Interval triggers fire once per epoch-aligned slot of [intervalSeconds]:
+  /// slot `k` covers `[k·interval, (k+1)·interval)` since the Unix epoch, and
+  /// a fire is recorded *for* its slot's start.
+  ///
+  /// The slot — not the tick that noticed it — is the idempotency key, so two
+  /// hosts ticking in the same slot, or a tick that re-fires after a failed
+  /// `setSchedule`, claim the same `cron_executions` row and only one of them
+  /// starts a run.
   CronEvaluation _evaluateInterval(
     PipelineTrigger trigger,
     DateTime now,
     int intervalSeconds,
   ) {
+    if (intervalSeconds <= 0) {
+      // Rejected on write; a row that predates the check must not fire on
+      // every tick.
+      return const CronEvaluation.idle();
+    }
     final period = Duration(seconds: intervalSeconds);
+    DateTime slotOf(DateTime t) {
+      final ms = t.toUtc().millisecondsSinceEpoch;
+      final step = period.inMilliseconds;
+      return DateTime.fromMillisecondsSinceEpoch(ms - (ms % step), isUtc: true);
+    }
+
+    final current = slotOf(now);
     final last = trigger.lastFiredAt?.toUtc();
     if (last == null) {
       return CronEvaluation(
         shouldFire: true,
-        plannedAt: now,
-        nextRunAt: now.add(period),
+        plannedAt: current,
+        nextRunAt: current.add(period),
       );
     }
     final skip = trigger.catchUpPolicy == CronCatchUpPolicy.skip;
-    var due = last.add(period);
+    var due = slotOf(last).add(period);
     // Skipping doesn't move `lastFiredAt`, so the slot a skip resumes at only
     // lives in `nextRunAt`. Deriving `due` from `lastFiredAt` alone would see
     // the same missed slot on every tick and the trigger would never fire
@@ -91,15 +113,22 @@ class PipelineCronScheduler {
     if (now.isBefore(due)) {
       return CronEvaluation.idle(nextRunAt: due);
     }
-    // A whole extra period past the due slot only happens after downtime.
-    // Under the skip policy, don't run late: resume at the next future slot.
-    if (skip && now.isAfter(due.add(period))) {
-      return CronEvaluation.idle(nextRunAt: now.add(period));
+    // More than a whole period overdue — only after downtime. Under the skip
+    // policy, don't run late: resume at the next slot boundary. Lateness is
+    // measured from when the trigger last became due (a full period after its
+    // last fire, or the slot a skip resumed at), so a fire that merely
+    // crossed a slot boundary is on time.
+    final elapsedDue = last.add(period);
+    final overdueSince = resume != null && skip && resume.isAfter(elapsedDue)
+        ? resume
+        : elapsedDue;
+    if (skip && now.difference(overdueSince) >= period) {
+      return CronEvaluation.idle(nextRunAt: current.add(period));
     }
     return CronEvaluation(
       shouldFire: true,
-      plannedAt: now,
-      nextRunAt: now.add(period),
+      plannedAt: current,
+      nextRunAt: current.add(period),
     );
   }
 

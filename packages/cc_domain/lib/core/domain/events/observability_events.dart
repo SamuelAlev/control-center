@@ -60,6 +60,7 @@ class ActivityLogged implements DomainEvent {
 class BudgetThresholdCrossed implements DomainEvent {
   /// Creates a [BudgetThresholdCrossed] event.
   const BudgetThresholdCrossed({
+    required this.workspaceId,
     required this.scopeType,
     required this.scopeId,
     required this.spentCents,
@@ -67,6 +68,10 @@ class BudgetThresholdCrossed implements DomainEvent {
     required this.isHardStop,
     required this.occurredAt,
   });
+
+  /// Workspace whose budget was crossed. Pipeline triggers are offered only
+  /// the events of their own workspace.
+  final String workspaceId;
 
   /// Scope of the budget (e.g. "workspace", "user").
   final String scopeType;

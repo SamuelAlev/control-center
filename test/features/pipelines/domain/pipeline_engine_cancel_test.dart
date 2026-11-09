@@ -60,7 +60,6 @@ class _FakeRunRepo implements PipelineRunRepository {
       inputJson: current.inputJson,
       outputJson: current.outputJson,
       errorMessage: errorMessage ?? current.errorMessage,
-      branchIndex: current.branchIndex,
       attemptCount: current.attemptCount,
       startedAt: current.startedAt,
       finishedAt: finishedAt ?? current.finishedAt,

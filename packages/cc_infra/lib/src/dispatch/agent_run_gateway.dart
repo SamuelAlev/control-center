@@ -12,6 +12,7 @@ import 'package:cc_domain/features/guardrails/domain/services/shell_action_class
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
@@ -37,7 +38,9 @@ class AgentRunGrant {
     this.repoName,
     this.identity,
     this.worktreeRoot,
+    this.sharedWorktreeRoots = const [],
     this.runnerStateDirs = const [],
+    this.autonomy,
   });
 
   /// Workspace the run belongs to — every rule is resolved against it.
@@ -75,6 +78,17 @@ class AgentRunGrant {
 
   /// The run's working tree. A native write inside it is the agent's own work.
   final String? worktreeRoot;
+
+  /// The space's shared worktrees the run's overlay links to (`repos/`).
+  ///
+  /// A write through the overlay's `repos` symlink resolves to these, outside
+  /// [worktreeRoot] — so without them every edit of a checked-out repo was
+  /// classed as a write outside the worktree and asked about.
+  final List<String> sharedWorktreeRoots;
+
+  /// Reads the run's space autonomy dial, per decision (the operator can turn
+  /// it mid-run). Null applies the policy alone.
+  final Future<AutonomyLevel?> Function()? autonomy;
 
   /// Directories the runner keeps its own state in, such as a Claude account's
   /// config dir. Plan mode writes its plan file there.
@@ -385,6 +399,14 @@ class AgentRunGateway {
   /// secret → minted write credentials per `owner/name`, revoked on [close].
   final Map<String, Map<String, ScopedCredentials>> _writeTokens = {};
 
+  /// secret → `owner/name` → the mint in flight, so concurrent pushes share
+  /// one credential instead of each minting and overwriting the last.
+  final Map<String, Map<String, Future<String?>>> _writeTokenMints = {};
+
+  /// secret → withdrawals of approvals still waiting on a human, completed
+  /// when the run's lease closes so its prompts come down with it.
+  final Map<String, Set<Completer<void>>> _pendingAsks = {};
+
   static final Random _random = Random.secure();
 
   /// Registers a run and returns its lease, or null when the gateway is not
@@ -427,6 +449,13 @@ class AgentRunGateway {
     }
     _grants.remove(lease.secret);
     _shellPushApprovals.remove(lease.secret);
+    _writeTokenMints.remove(lease.secret);
+    for (final ask
+        in _pendingAsks.remove(lease.secret) ?? const <Completer<void>>{}) {
+      if (!ask.isCompleted) {
+        ask.complete();
+      }
+    }
     final minted = _writeTokens.remove(lease.secret);
     for (final credentials in minted?.values ?? const <ScopedCredentials>[]) {
       try {
@@ -470,10 +499,13 @@ class AgentRunGateway {
     } on Object catch (e, st) {
       CcInfraLog.warning('agent gateway: $path failed: $e\n$st');
       try {
+        // The detail stays in the server log. An exception from the forward
+        // or the broker can carry a credential, and this body is read by the
+        // agent the request came from.
         return await _plain(
           request,
           HttpStatus.internalServerError,
-          'The Control Center gateway failed: $e',
+          'The Control Center gateway failed; the server log has the details.',
         );
       } on Object {
         // Headers were already sent; the client sees a cut connection.
@@ -525,6 +557,7 @@ class AgentRunGateway {
         agentId: grant.agentId,
         mode: grant.mode,
         actingUserId: grant.actingUserId,
+        autonomy: await _autonomyOf(grant),
       ),
       tool,
       arguments,
@@ -561,6 +594,7 @@ class AgentRunGateway {
       return _nativeToolDecision(
         request,
         grant,
+        secret,
         _NativeToolAction.of(decoded['tool_name'], input, grant),
       );
     }
@@ -601,30 +635,29 @@ class AgentRunGateway {
     // read-only by its own rules and still runs `git diff`, and the read-only
     // mode profiles deny `processSpawn` wholesale. What the command DOES is
     // what the operator's rules are about.
-    final verdict = await _guard
-        .check(
-          workspaceId: grant.workspaceId,
+    final verdict = await _askWithDeadline(
+      secret,
+      (withdrawn) async => _guard.check(
+        workspaceId: grant.workspaceId,
+        classes: classes,
+        command: command,
+        spaceId: grant.spaceId,
+        conversationId: grant.conversationId,
+        agentId: grant.agentId,
+        mode: grant.mode,
+        actionSummary: 'bash: $command',
+        approvalRationale: description,
+        onBehalfOfUserId: grant.actingUserId,
+        runId: grant.runId,
+        request: ActionRequest(
           classes: classes,
           command: command,
-          spaceId: grant.spaceId,
-          conversationId: grant.conversationId,
-          agentId: grant.agentId,
-          mode: grant.mode,
-          actionSummary: 'bash: $command',
-          approvalRationale: description,
-          onBehalfOfUserId: grant.actingUserId,
-          runId: grant.runId,
-          request: ActionRequest(
-            classes: classes,
-            command: command,
-            refs: pushRefs ?? const [],
-          ),
-        )
-        .timeout(
-          hookDecisionDeadline,
-          onTimeout: () =>
-              const GuardVerdict.deny('Nobody answered the approval in time.'),
-        );
+          refs: pushRefs ?? const [],
+        ),
+        autonomy: await _autonomyOf(grant),
+        withdrawn: withdrawn,
+      ),
+    );
     if (verdict.allowed &&
         verdict.prompted &&
         classes.contains(ActionClass.gitPush)) {
@@ -645,6 +678,7 @@ class AgentRunGateway {
   Future<void> _nativeToolDecision(
     HttpRequest request,
     AgentRunGrant grant,
+    String secret,
     _NativeToolAction? action,
   ) async {
     if (action == null) {
@@ -654,29 +688,70 @@ class AgentRunGateway {
         reason: 'Control Center: invalid tool permission request.',
       );
     }
-    final verdict = await _guard
-        .check(
-          workspaceId: grant.workspaceId,
-          classes: action.request.classes,
-          spaceId: grant.spaceId,
-          conversationId: grant.conversationId,
-          agentId: grant.agentId,
-          mode: grant.mode,
-          actionSummary: action.summary,
-          onBehalfOfUserId: grant.actingUserId,
-          runId: grant.runId,
-          request: action.request,
-        )
-        .timeout(
-          hookDecisionDeadline,
-          onTimeout: () =>
-              const GuardVerdict.deny('Nobody answered the approval in time.'),
-        );
+    final verdict = await _askWithDeadline(
+      secret,
+      (withdrawn) async => _guard.check(
+        workspaceId: grant.workspaceId,
+        classes: action.request.classes,
+        spaceId: grant.spaceId,
+        conversationId: grant.conversationId,
+        agentId: grant.agentId,
+        mode: grant.mode,
+        actionSummary: action.summary,
+        onBehalfOfUserId: grant.actingUserId,
+        runId: grant.runId,
+        request: action.request,
+        autonomy: await _autonomyOf(grant),
+        withdrawn: withdrawn,
+      ),
+    );
     return _hookDecision(
       request,
       allowed: verdict.allowed,
       reason: 'Control Center policy: ${verdict.reason ?? 'denied'}',
     );
+  }
+
+  /// Runs one policy check that may wait on a human, bounded by
+  /// [hookDecisionDeadline]. At the deadline — or when the run's lease closes
+  /// first — the approval is WITHDRAWN, not just abandoned: it used to stay on
+  /// the operator's screen, answerable, after the hook had already denied.
+  Future<GuardVerdict> _askWithDeadline(
+    String secret,
+    Future<GuardVerdict> Function(Future<void> withdrawn) ask,
+  ) async {
+    final withdraw = Completer<void>();
+    final pending = _pendingAsks.putIfAbsent(secret, () => {})..add(withdraw);
+    try {
+      return await ask(withdraw.future).timeout(
+        hookDecisionDeadline,
+        onTimeout: () =>
+            const GuardVerdict.deny('Nobody answered the approval in time.'),
+      );
+    } finally {
+      if (!withdraw.isCompleted) {
+        withdraw.complete();
+      }
+      pending.remove(withdraw);
+      if (pending.isEmpty && identical(_pendingAsks[secret], pending)) {
+        _pendingAsks.remove(secret);
+      }
+    }
+  }
+
+  /// The run's autonomy dial, or null when it has none or the read failed
+  /// (the policy alone then decides, which is the fail-closed default).
+  static Future<AutonomyLevel?> _autonomyOf(AgentRunGrant grant) async {
+    final read = grant.autonomy;
+    if (read == null) {
+      return null;
+    }
+    try {
+      return await read();
+    } on Object catch (e) {
+      CcInfraLog.warning('agent gateway: autonomy lookup failed: $e');
+      return null;
+    }
   }
 
   /// Only the exact `allow` response lets the command hook exit successfully.
@@ -939,6 +1014,7 @@ class AgentRunGateway {
               onBehalfOfUserId: grant.actingUserId,
               runId: grant.runId,
               request: pushRequest,
+              autonomy: await _autonomyOf(grant),
             );
       if (!verdict.allowed) {
         // Drain what git is still sending before answering, so it reads the
@@ -1171,13 +1247,38 @@ class AgentRunGateway {
     return check != null && await check(grant.workspaceId, owner, name);
   }
 
+  /// The write token for `owner/name` on this run, minted at most once at a
+  /// time: concurrent pushes used to mint in parallel, the second overwriting
+  /// the first's cache entry without revoking it — a live write credential
+  /// nothing would ever revoke.
   Future<String?> _writeToken(
     AgentRunGrant grant,
     String secret,
     String owner,
     String name,
-  ) async {
+  ) {
     final key = '${owner.toLowerCase()}/${name.toLowerCase()}';
+    final flights = _writeTokenMints.putIfAbsent(secret, () => {});
+    final inFlight = flights[key];
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final mint = _mintWriteToken(grant, secret, key, owner, name);
+    flights[key] = mint;
+    return mint.whenComplete(() {
+      if (identical(_writeTokenMints[secret]?[key], mint)) {
+        _writeTokenMints[secret]!.remove(key);
+      }
+    });
+  }
+
+  Future<String?> _mintWriteToken(
+    AgentRunGrant grant,
+    String secret,
+    String key,
+    String owner,
+    String name,
+  ) async {
     final cache = _writeTokens.putIfAbsent(secret, () => {});
     final cached = cache[key];
     final expiresAt = cached?.expiresAt;
@@ -1197,15 +1298,27 @@ class AgentRunGateway {
       workspaceId: grant.workspaceId,
     );
     final token = minted.environment['GH_TOKEN'];
-    if (token == null || token.isEmpty) {
-      await _broker.revoke(minted.handle);
+    // The lease closed while the mint was out: nothing will revoke this one
+    // later, so it is revoked now and the push gets no token.
+    final closed = !_grants.containsKey(secret);
+    if (token == null || token.isEmpty || closed) {
+      await _revokeQuietly(minted.handle);
       return null;
     }
-    if (cached != null) {
-      unawaited(_broker.revoke(cached.handle));
-    }
+    final replaced = cache[key];
     cache[key] = minted;
+    if (replaced != null && replaced.handle != minted.handle) {
+      unawaited(_revokeQuietly(replaced.handle));
+    }
     return token;
+  }
+
+  Future<void> _revokeQuietly(String handle) async {
+    try {
+      await _broker.revoke(handle);
+    } on Object catch (e) {
+      CcInfraLog.warning('agent gateway: revoke failed: $e');
+    }
   }
 
   Future<void> _forward(

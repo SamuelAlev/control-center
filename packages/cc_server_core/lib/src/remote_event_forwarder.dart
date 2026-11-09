@@ -242,8 +242,12 @@ class RemoteEventForwarder {
     _forward(rigClosedFrame(event));
   }
 
+  /// Forwards a notification frame only to the session user it targets
+  /// ([notificationTargetsUser], the one "who is notified" rule), so clients
+  /// render what arrives instead of re-deriving the routing.
   void _forward(NotificationFrame? frame) {
-    if (frame == null) {
+    if (frame == null ||
+        !notificationTargetsUser(frame.method, frame.params, userId)) {
       return;
     }
     _deliver(frame.method, frame.params);

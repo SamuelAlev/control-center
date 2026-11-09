@@ -50,7 +50,12 @@ class EnvironmentComponentRow extends StatelessWidget {
 
   /// States whose detail line is worth a line of its own. A healthy part's
   /// detail repeats what its state already says.
-  static const _explained = {'failed', 'crashed', 'starting', 'pending'};
+  static const _explained = {
+    EnvironmentComponentPhase.failed,
+    EnvironmentComponentPhase.crashed,
+    EnvironmentComponentPhase.starting,
+    EnvironmentComponentPhase.pending,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +116,7 @@ class EnvironmentComponentRow extends StatelessWidget {
             if (detail != null &&
                 detail.isNotEmpty &&
                 failure == null &&
-                _explained.contains(component.state))
+                _explained.contains(component.phase))
               Padding(
                 padding: const EdgeInsetsDirectional.only(
                   start: 14 + AppSpacing.sm,

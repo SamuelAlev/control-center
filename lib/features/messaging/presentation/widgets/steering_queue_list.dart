@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_card.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart'
@@ -181,19 +182,32 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
     if (workspaceId == null) {
       return;
     }
-    final delivered = force
-        ? await forceSteeringCard(
-            ref,
-            workspaceId: workspaceId,
-            key: key,
-            messageId: messageId,
-          )
-        : await deliverSteeringCard(
-            ref,
-            workspaceId: workspaceId,
-            key: key,
-            messageId: messageId,
-          );
+    final bool delivered;
+    try {
+      delivered = force
+          ? await forceSteeringCard(
+              ref,
+              workspaceId: workspaceId,
+              key: key,
+              messageId: messageId,
+            )
+          : await deliverSteeringCard(
+              ref,
+              workspaceId: workspaceId,
+              key: key,
+              messageId: messageId,
+            );
+    } on RemoteRpcException catch (e) {
+      // A refusal (the role may steer but not stop runs) or a failed stop:
+      // the card stays queued, and the user is told why.
+      if (mounted) {
+        CcToastScope.maybeOf(context)?.show(
+          AppLocalizations.of(context).steeringForceSendFailed(e.message),
+          variant: CcToastVariant.danger,
+        );
+      }
+      return;
+    }
     if (delivered || !mounted) {
       return;
     }

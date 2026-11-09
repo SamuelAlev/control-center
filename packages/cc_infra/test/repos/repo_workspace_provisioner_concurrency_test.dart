@@ -8,6 +8,7 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/repos/repo_workspace_provisioner.dart';
 import 'package:path/path.dart' as p;
@@ -61,13 +62,14 @@ void main() {
   String worktreePath() =>
       p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
 
-  Future<String> provision(String agentSlug) =>
+  Future<SpaceWorkspace> provision(String agentSlug) =>
       provisioner.ensureSpaceWorkspace(
-        workspaceId: 'ws-1',
-        spaceId: 'sp-1',
-        agentSlug: agentSlug,
-        fallbackDir: '',
-        repoAllowlist: const {'repo-1'},
+        SpaceWorkspaceRequest(
+          workspaceId: 'ws-1',
+          spaceId: 'sp-1',
+          agentSlug: agentSlug,
+          repoAllowlist: const {'repo-1'},
+        ),
       );
 
   test('overlapping provisions of one space materialize the repo once', () async {
@@ -124,8 +126,14 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 10));
     copy.complete();
 
-    expect(await stopped, '', reason: 'the stopped run still reports stop');
-    expect(await retry, isNot(''));
+    expect(
+      await stopped,
+      const SpaceWorkspaceUnavailable(
+        SpaceWorkspaceUnavailableReason.cancelled,
+      ),
+      reason: 'the stopped run still reports stop',
+    );
+    expect(await retry, isA<SpaceWorkspaceReady>());
     expect(registry.rows, hasLength(1));
     expect(Directory(worktreePath()).existsSync(), isTrue);
   });
@@ -154,10 +162,11 @@ void main() {
     );
 
     await wide.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-2',
-      agentSlug: 'alice',
-      fallbackDir: '',
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-2',
+        agentSlug: 'alice',
+      ),
     );
 
     expect(isolation.provisioned, hasLength(3));

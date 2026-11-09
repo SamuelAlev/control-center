@@ -19,12 +19,16 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+import 'package:cc_infra/src/network/forge_branch_history.dart';
+import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
 import 'package:cc_infra/src/network/github_graphql_client.dart';
 import 'package:cc_infra/src/network/models/github_check_run.dart';
 import 'package:cc_infra/src/network/models/github_job_run.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
 import 'package:cc_infra/src/network/models/github_reaction.dart';
+import 'package:cc_infra/src/network/models/github_review.dart';
 import 'package:cc_infra/src/network/models/github_workflow_run.dart';
 import 'package:cc_infra/src/network/pr_review_mapper.dart';
 import 'package:cc_infra/src/network/workflow_graph_parser.dart';
@@ -41,7 +45,12 @@ import 'package:rhttp/rhttp.dart';
 ///
 /// One instance serves exactly one `owner/repo` pair; the coordinate is fixed
 /// at construction and no method takes it again.
-class GitHubForgePrClient implements ForgePrClient {
+class GitHubForgePrClient
+    implements
+        ForgePrClient,
+        ForgeBranchPrHistoryClient,
+        ForgeMergeSignalsClient,
+        ForgeOpenPrPagingClient {
   /// Creates a [GitHubForgePrClient] for [owner]/[repo] over [_client].
   GitHubForgePrClient({
     required this._client,
@@ -71,10 +80,9 @@ class GitHubForgePrClient implements ForgePrClient {
   /// `owner/repo`, the form [PullRequest.repoFullName] carries.
   String get _repoFullName => '$owner/$repo';
 
-  /// Narrows the port's transport-free [Object] token back to a rhttp
-  /// [CancelToken]. Anything else (including null) means "no cancellation".
-  static CancelToken? _token(Object? cancelToken) =>
-      cancelToken is CancelToken ? cancelToken : null;
+  /// Maps the port's domain cancellation onto rhttp's [CancelToken].
+  static CancelToken? _token(ForgeCancelToken? cancelToken) =>
+      rhttpCancelTokenFor(cancelToken);
 
   /// Whether [error] is a rhttp request cancellation, which callers treat as a
   /// benign teardown signal rather than a failure.
@@ -85,7 +93,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<PullRequest?> getPullRequest(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final gh = await _client.pr.getPullRequest(
       owner,
@@ -113,7 +121,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequests({
     int limit = 100,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final specs = [(owner: owner, name: repo)];
@@ -170,7 +178,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<List<PullRequest>> listMergedByAuthor(
     String login, {
     int limit = 50,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final result = await _client.pr.searchClosedPullRequestsByAuthor(
       owner,
@@ -192,28 +200,114 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<bool?> wasMerged(int prNumber, {Object? cancelToken}) async {
+  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
     try {
-      final gh = await _client.pr.getPullRequest(
-        owner,
-        repo,
-        prNumber,
-        cancelToken: _token(cancelToken),
+      // GitHub reports a merged PR as `closed` + `merged_at`; the mapper
+      // promotes that to merged, and a still-open PR (one pushed off the
+      // first page of a long list) answers null rather than "closed".
+      return mergeOutcomeOf(
+        await getPullRequest(prNumber, cancelToken: cancelToken),
       );
-      // A PR the poller can no longer resolve (404, revoked access, transient
-      // failure) is "unknown", never "closed unmerged" — reporting a merge that
-      // did not happen would fire the wrong lifecycle event.
-      if (gh == null) {
-        return null;
+    } on Object catch (e) {
+      if (_isCancellation(e)) {
+        rethrow;
       }
-      return gh.mergedAt != null;
-    } on Object {
       return null;
     }
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {Object? cancelToken}) {
+  Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequestsPage(
+    int page,
+  ) async {
+    final result = await _client.pr.listOpenPullRequestsPage(
+      owner,
+      repo,
+      page: page,
+    );
+    return (
+      prs: [
+        for (final gh in result.items)
+          pullRequestFromGitHub(gh, repoFullName: _repoFullName),
+      ],
+      hasMore: result.hasMore,
+    );
+  }
+
+  @override
+  Future<List<PullRequest>> listPullRequestsForBranch(String branch) async {
+    final prs = await collectBranchHistory(
+      forgeName: 'GitHub',
+      branch: branch,
+      fetchPage: (page) async {
+        final batch = await _client.pr.listBranchPullRequestsPage(
+          owner,
+          repo,
+          branch,
+          page: page,
+        );
+        return (items: batch.items, hasMore: batch.hasMore);
+      },
+      headRefOf: (gh) => gh.headRef,
+      numberOf: (gh) => gh.number,
+    );
+    return [
+      for (final gh in prs)
+        pullRequestFromGitHub(gh, repoFullName: _repoFullName),
+    ];
+  }
+
+  // ── Merge signals (author notifications) ───────────────────────────────
+
+  @override
+  Future<PrMergeableState> mergeState(int prNumber) async {
+    final gh = await _client.pr.getPullRequest(owner, repo, prNumber);
+    if (gh == null || gh.mergeableState.isEmpty) {
+      return PrMergeableState.unknown;
+    }
+    return PrMergeableState.fromString(gh.mergeableState);
+  }
+
+  @override
+  Future<String?> latestApprover(int prNumber) async {
+    final reviews = await _client.pr.listPullRequestReviews(
+      owner,
+      repo,
+      prNumber,
+    );
+    GitHubReview? newest;
+    for (final review in reviews) {
+      if (review.state != GitHubReviewState.approved) {
+        continue;
+      }
+      final at = review.submittedAt;
+      final best = newest?.submittedAt;
+      if (newest == null ||
+          (at != null && (best == null || at.isAfter(best)))) {
+        newest = review;
+      }
+    }
+    final login = newest?.user?.login;
+    return (login == null || login.isEmpty) ? null : login;
+  }
+
+  @override
+  Future<({String name, String? url})?> firstFailingCheck(int prNumber) async {
+    final gh = await _client.pr.getPullRequest(owner, repo, prNumber);
+    final sha = gh?.headSha;
+    if (sha == null || sha.isEmpty) {
+      return null;
+    }
+    for (final run in await _client.pr.listCheckRuns(owner, repo, sha)) {
+      if (run.isFailing) {
+        return (name: run.name, url: run.htmlUrl);
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) {
     return _client.pr.getPullRequestDiff(
       owner,
       repo,
@@ -223,10 +317,10 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<List<PrFile>> listFiles(
+  Future<PrFileListing> listFiles(
     int prNumber, {
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     // GitHub caps its files endpoint at 3 000 entries (30 pages of 100) and the
     // page stream stops there on its own; a smaller [limit] just stops sooner.
@@ -241,16 +335,22 @@ class GitHubForgePrClient implements ForgePrClient {
         files.add(prFileFromGitHub(gh));
       }
       if (limit != null && files.length >= limit) {
-        return List<PrFile>.unmodifiable(files.take(limit));
+        return PrFileListing(List<PrFile>.unmodifiable(files.take(limit)));
       }
     }
-    return List<PrFile>.unmodifiable(files);
+    return PrFileListing(
+      List<PrFile>.unmodifiable(files),
+      truncated: files.length >= githubFilesApiLimit,
+    );
   }
+
+  /// GitHub's ceiling on the files endpoint: past it the list is partial.
+  static const int githubFilesApiLimit = 3000;
 
   @override
   Future<List<PrCommit>> listCommits(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final commits = await _client.pr.listAllPullRequestCommits(
       owner,
@@ -264,7 +364,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrFile>> listCommitFiles(
     String sha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final files = await _client.pr.getCommitFiles(
       owner,
@@ -278,7 +378,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrReviewSubmission>> listReviews(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final reviews = await _client.pr.listPullRequestReviews(
       owner,
@@ -292,7 +392,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrReviewReactions>> listReviewReactions(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final sets = await _client.graphql.listReviewReactions(
       owner: owner,
@@ -315,7 +415,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrCodeReviewComment>> listReviewComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final comments = await _client.pr.listPullRequestReviewComments(
       owner,
@@ -329,7 +429,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrReviewThreadState>> listReviewThreadStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final threads = await _client.graphql.listReviewThreads(
       owner: owner,
@@ -351,7 +451,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<IssueComment>> listIssueComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final comments = await _client.pr.listIssueComments(
       owner,
@@ -365,7 +465,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrTimelineEvent>> listTimelineEvents(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final events = await _client.pr.listTimelineEvents(
       owner,
@@ -382,7 +482,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<CheckRun>> listCheckRuns(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     // Fetch check runs and workflow runs concurrently — the check-runs API only
@@ -520,7 +620,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<CommitStatus>> listCommitStatuses(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final statuses = await _client.pr.listCommitStatuses(
       owner,
@@ -535,7 +635,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<String> getFileContent(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) {
     return _client.content.getFileContent(
       owner,
@@ -550,7 +650,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<Uint8List> getFileBytes(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) {
     return _client.content.getFileBytes(
       owner,
@@ -564,7 +664,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<Map<String, PrFileViewedState>> getFileViewedStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final raw = await _client.graphql.getFileViewedStates(
       owner: owner,
@@ -591,7 +691,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<PrReviewerState> getReviewerState(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final state = await _client.graphql.getPullRequestReviewState(
       owner: owner,
@@ -606,7 +706,7 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<PrUser?> getAuthenticatedUser({Object? cancelToken}) async {
+  Future<PrUser?> getAuthenticatedUser({ForgeCancelToken? cancelToken}) async {
     final user = await _client.content.getAuthenticatedUser(
       cancelToken: _token(cancelToken),
     );
@@ -622,7 +722,7 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<List<PrUser>> listAssignableUsers({Object? cancelToken}) {
+  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken}) {
     // GraphQL, not REST: the REST assignees list is a Simple User and carries
     // no display name.
     return _client.graphql.listAssignableUsers(
@@ -634,10 +734,10 @@ class GitHubForgePrClient implements ForgePrClient {
 
   @override
   Future<List<PrReviewerCandidate>> listRequestableReviewers({
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
-    final users = await listAssignableUsers(cancelToken: token);
+    final users = await listAssignableUsers(cancelToken: cancelToken);
     final teams = await _client.pr.listRequestableTeams(
       owner,
       repo,
@@ -658,7 +758,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<PrUser>> listSuggestedReviewers(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) {
     return _client.graphql.getSuggestedReviewers(
       owner: owner,
@@ -679,10 +779,10 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<List<ForgeBranch>> listBranches({
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
-    final defaultBranch = await getDefaultBranch(cancelToken: token);
+    final defaultBranch = await getDefaultBranch(cancelToken: cancelToken);
     final activity = await _client.graphql.listBranchesWithActivity(
       owner,
       repo,
@@ -715,7 +815,7 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<String> getDefaultBranch({Object? cancelToken}) async {
+  Future<String> getDefaultBranch({ForgeCancelToken? cancelToken}) async {
     try {
       return await _client.pr.getDefaultBranch(
         owner,
@@ -736,7 +836,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<ForgeBranchComparison?> compareBranches({
     required String base,
     required String head,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     try {
       final comparison = await _client.pr.compareBranches(
@@ -772,7 +872,7 @@ class GitHubForgePrClient implements ForgePrClient {
   /// `PULL_REQUEST_TEMPLATE/` directory keep their humanized filename, which
   /// cannot collide with that key (the humanizer turns `_` into a space).
   @override
-  Future<Map<String, String>> listPrTemplates({Object? cancelToken}) async {
+  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) async {
     final templates = await _client.graphql.fetchPullRequestTemplates(
       owner,
       repo,
@@ -790,7 +890,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<JobRunDetail?> getJobRunDetail(
     int jobId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final job = await _client.pr.getJobRun(
@@ -820,7 +920,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<WorkflowGraph?> getWorkflowGraph(
     int workflowRunId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final run = await _client.pr.getWorkflowRun(
@@ -862,7 +962,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required String body,
     int? startLine,
     String? startSide,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final comment = await _client.pr.postReviewComment(
       owner,
@@ -885,7 +985,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     required String parentCommentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.replyToReviewComment(
       owner,
@@ -901,7 +1001,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> postIssueComment({
     required int prNumber,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.createIssueComment(
       owner,
@@ -917,7 +1017,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     required String commentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.updateIssueComment(
       owner,
@@ -932,7 +1032,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> deleteIssueComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.deleteIssueComment(
       owner,
@@ -946,7 +1046,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.deleteReviewComment(
       owner,
@@ -973,7 +1073,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     required String threadId,
     required bool resolved,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.graphql.setReviewThreadResolved(
       threadId: threadId,
@@ -983,14 +1083,14 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<void> submitReview({
+  Future<int?> submitReview({
     required int prNumber,
     required ForgeReviewVerdict verdict,
     String? body,
-    List<Map<String, dynamic>> comments = const [],
-    Object? cancelToken,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
   }) async {
-    await _client.pr.submitReview(
+    final review = await _client.pr.submitReview(
       owner,
       repo,
       prNumber: prNumber,
@@ -1000,9 +1100,12 @@ class GitHubForgePrClient implements ForgePrClient {
         ForgeReviewVerdict.comment => 'COMMENT',
       },
       body: body,
-      comments: comments.isEmpty ? null : comments,
+      comments: comments.isEmpty
+          ? null
+          : [for (final c in comments) c.toWire()],
       cancelToken: _token(cancelToken),
     );
+    return review.id;
   }
 
   @override
@@ -1011,7 +1114,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required ForgeMergeMethod method,
     String? commitTitle,
     String? commitMessage,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final result = await _client.pr.mergePullRequest(
       owner,
@@ -1030,7 +1133,7 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<void> closePullRequest(int prNumber, {Object? cancelToken}) async {
+  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) async {
     await _client.pr.closePullRequest(
       owner,
       repo,
@@ -1043,7 +1146,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> setPullRequestDraft({
     required int prNumber,
     required bool draft,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     // GraphQL-only on GitHub: REST cannot write `draft` after creation.
     await _client.graphql.setPullRequestDraft(
@@ -1062,7 +1165,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required String headBranch,
     required String baseBranch,
     bool draft = false,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final created = await _client.pr.createPullRequest(
       owner,
@@ -1085,7 +1188,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     String? title,
     String? body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (title == null && body == null) {
       return;
@@ -1106,7 +1209,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required String prExternalId,
     required String path,
     required bool viewed,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     if (viewed) {
@@ -1128,7 +1231,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     // GitHub caps assignees at 10 per call — chunk larger requests.
     for (final chunk in _chunk(logins, _assigneesPerCall)) {
@@ -1146,7 +1249,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     for (final chunk in _chunk(logins, _assigneesPerCall)) {
       await _client.pr.removeAssignees(
@@ -1160,7 +1263,7 @@ class GitHubForgePrClient implements ForgePrClient {
   }
 
   @override
-  Future<List<PrLabel>> listLabels({Object? cancelToken}) async {
+  Future<List<PrLabel>> listLabels({ForgeCancelToken? cancelToken}) async {
     final labels = await _client.pr.listLabels(
       owner,
       repo,
@@ -1181,7 +1284,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> addLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.pr.addLabels(
     owner,
     repo,
@@ -1194,7 +1297,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<void> removeLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.pr.removeLabels(
     owner,
     repo,
@@ -1218,7 +1321,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     List<String> userLogins = const [],
     List<String> teamSlugs = const [],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.requestReviewers(
       owner,
@@ -1235,7 +1338,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     List<String> userLogins = const [],
     List<String> teamSlugs = const [],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.pr.removeRequestedReviewers(
       owner,
@@ -1252,7 +1355,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required ForgeReactionTarget target,
     required String targetId,
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     // A review summary's reactions have no REST endpoint — they only exist
     // on the GraphQL review node, listed per PR and matched by databaseId.
@@ -1327,7 +1430,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required int prNumber,
     required String content,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     // A review summary is the one target with no REST lane: both the subject
@@ -1509,7 +1612,7 @@ class GitHubForgePrClient implements ForgePrClient {
     required String path,
     required String base64Content,
     required String message,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) {
     return _client.content.createFileContent(
       owner,
@@ -1524,7 +1627,7 @@ class GitHubForgePrClient implements ForgePrClient {
   // ── Stacks ─────────────────────────────────────────────────────────────
 
   @override
-  Future<List<PrStack>> listStacks({int? prNumber, Object? cancelToken}) async {
+  Future<List<PrStack>> listStacks({int? prNumber, ForgeCancelToken? cancelToken}) async {
     // Single page (100 stacks): a repo realistically has a handful and the
     // [prNumber] filter always fits in one page.
     final result = await _client.pr.listStacks(
@@ -1539,7 +1642,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<PrStack> createStack({
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final stack = await _client.pr.createStack(
       owner,
@@ -1554,7 +1657,7 @@ class GitHubForgePrClient implements ForgePrClient {
   Future<PrStack?> addToStack({
     required int stackNumber,
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final stack = await _client.pr.addToStack(
       owner,
@@ -1569,7 +1672,7 @@ class GitHubForgePrClient implements ForgePrClient {
   @override
   Future<PrStack?> unstack({
     required int stackNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final stack = await _client.pr.unstack(
       owner,

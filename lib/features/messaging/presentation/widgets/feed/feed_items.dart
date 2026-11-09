@@ -75,7 +75,9 @@ List<FeedItem> buildFeedItems(
   bool dividerInserted = false;
   bool isUnread(Message m) =>
       readFrontier != null &&
-      m.senderType == SenderType.agent &&
+      // Agent output and server notices both count; only the reader's own
+      // side (human messages) never does.
+      m.senderType != SenderType.user &&
       m.createdAt.isAfter(readFrontier);
   final unreadCount = messages.where(isUnread).length;
 

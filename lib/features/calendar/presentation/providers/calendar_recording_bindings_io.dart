@@ -1,7 +1,7 @@
 // Desktop binding for the calendar "record this event as a meeting" hook.
 //
-// Delegates to the real meeting recorder (native audio capture + on-device
-// transcription) — desktop-only.
+// Delegates to the desktop meeting recorder, which captures audio natively and
+// streams it to the connected server for transcription.
 library;
 
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';

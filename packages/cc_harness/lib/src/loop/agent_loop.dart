@@ -90,6 +90,29 @@ class LoopTurnComplete extends AgentLoopEvent {
   final HarnessMessage message;
 }
 
+/// A provider attempt was abandoned after some of its deltas had already been
+/// streamed (a retryable mid-stream error, a stream-rule restart, or a
+/// context-overflow recovery). The turn is re-issued from scratch.
+///
+/// [text] and [thinking] are exactly what the discarded attempt streamed via
+/// [LoopTextDelta] / [LoopThinkingDelta]; none of it entered the model's
+/// history. A host that recorded those deltas must drop them, or the
+/// transcript shows words the model never said as far as the next turn knows.
+class LoopTurnDiscarded extends AgentLoopEvent {
+  /// Creates a turn-discarded event.
+  const LoopTurnDiscarded({this.text = '', this.thinking = '', this.reason});
+
+  /// The visible text the discarded attempt streamed.
+  final String text;
+
+  /// The reasoning text the discarded attempt streamed.
+  final String thinking;
+
+  /// Why the attempt was discarded (the provider error code, `stream_rule`
+  /// or `context_overflow`), for diagnostics.
+  final String? reason;
+}
+
 /// Token usage for a turn.
 class LoopUsage extends AgentLoopEvent {
   /// Creates a usage event.
@@ -147,7 +170,10 @@ class LoopCompaction extends AgentLoopEvent {
     required this.tokensAfter,
   });
 
-  /// True when an anchored summary was produced; false for a prune-only pass.
+  /// True only when a MODEL wrote the anchored summary. A fold whose summary
+  /// fell back to (or was configured as) the deterministic structural digest
+  /// reports false with a non-zero [messagesFolded]; a prune- or mask-only
+  /// pass reports false with [messagesFolded] 0.
   final bool summarized;
 
   /// Number of messages folded into the summary.
@@ -306,6 +332,18 @@ class HarnessBudget {
 }
 
 /// Configuration for a single agent-loop run.
+///
+/// The model call itself is configured here; everything else is grouped by
+/// concern ([tools], [guards], [compaction], [steering], [transcript]). Every
+/// group defaults to the historical behaviour, so a caller names only the
+/// groups it changes:
+///
+/// ```dart
+/// const AgentLoopConfig(
+///   maxTurns: 4,
+///   tools: LoopToolConfig(autoApprove: false),
+/// )
+/// ```
 class AgentLoopConfig {
   /// Creates a loop config.
   const AgentLoopConfig({
@@ -320,35 +358,11 @@ class AgentLoopConfig {
     this.cacheEnabled = true,
     this.cacheKey,
     this.purpose = LlmCallPurpose.main,
-    this.callLedger,
-    this.tokenCalibration,
-    this.observationIngest,
-    this.approvalCallback,
-    this.autoApprove = true,
-    this.budget = const HarnessBudget(),
-    this.externalBudgetExceeded,
-    this.externalBudgetPressure,
-    this.maxProviderRetries = 3,
-    this.maxParallelToolCalls = 4,
-    this.overlapReadOnlyTools = false,
-    this.toolTimeout,
-    this.turnTimeout = const Duration(minutes: 30),
-    this.contextWindow,
-    this.compactor,
-    this.selfAgentName = 'assistant',
-    this.hooks,
-    this.streamRules = const [],
-    this.advisor,
-    this.advisorEveryTurns = 3,
-    this.checklistStaleAfterTurns = 4,
-    this.steering,
-    this.pauseGate,
-    this.contract,
-    this.transcriptStore,
-    this.transcriptKey,
-    this.initialCheckpoints = const {},
-    this.initialSnapshotSource,
-    this.transcriptMetadata = const {},
+    this.tools = const LoopToolConfig(),
+    this.guards = const LoopGuardConfig(),
+    this.compaction = const LoopCompactionConfig(),
+    this.steering = const LoopSteeringConfig(),
+    this.transcript = const LoopTranscriptConfig(),
   });
 
   static const String _defaultSystemPrompt =
@@ -361,7 +375,7 @@ class AgentLoopConfig {
   /// Max loop iterations before stopping with [LoopDoneReason.maxTurns].
   /// Null (the default) means NO turn ceiling: the loop runs until the model
   /// stops on its own, a budget bites, or the caller cancels. Long-running
-  /// work is bounded by [budget] and [externalBudgetExceeded] plus the
+  /// work is bounded by [LoopGuardConfig.budget] and [LoopGuardConfig.externalBudgetExceeded] plus the
   /// doom-loop repetition guard — a hard iteration count kills legitimate
   /// long tasks (migrations, fan-out cleanup) and saves nothing that the
   /// repetition guard doesn't catch earlier.
@@ -395,16 +409,34 @@ class AgentLoopConfig {
   /// Attribution for this loop's model turns; auxiliary calls set their own.
   final LlmCallPurpose purpose;
 
-  /// The ledger shared by every observed provider serving this run. When
-  /// supplied, token budgets use it instead of adding streamed usage again.
-  final ProviderCallLedger? callLedger;
+  /// How tool calls run.
+  final LoopToolConfig tools;
 
-  /// Per-provider/model prompt calibration shared with the compactor.
-  final TokenCalibration? tokenCalibration;
+  /// What bounds the run.
+  final LoopGuardConfig guards;
 
-  /// Model-facing observation shaping and durable original-output retention.
-  /// Raw tool completion events are never replaced by this compacted copy.
-  final ToolObservationIngest? observationIngest;
+  /// History compaction.
+  final LoopCompactionConfig compaction;
+
+  /// What can redirect the run while it works.
+  final LoopSteeringConfig steering;
+
+  /// History persistence and resume.
+  final LoopTranscriptConfig transcript;
+}
+
+/// How the loop runs the tools a model turn calls: approval, parallelism,
+/// deadlines and how a result is shaped for the model.
+class LoopToolConfig {
+  /// Creates the tools part of an [AgentLoopConfig].
+  const LoopToolConfig({
+    this.approvalCallback,
+    this.autoApprove = true,
+    this.maxParallelToolCalls = 4,
+    this.overlapReadOnlyTools = false,
+    this.toolTimeout,
+    this.observationIngest,
+  });
 
   /// Confirmation gate for write / exec tools.
   final ToolApprovalCallback? approvalCallback;
@@ -414,25 +446,6 @@ class AgentLoopConfig {
   /// it is denied — a fail-closed posture the product layer opts into so a
   /// missing approver can never silently ungate privileged tools.
   final bool autoApprove;
-
-  /// Optional goal budget.
-  final HarnessBudget budget;
-
-  /// External budget check, polled at every turn boundary: when it returns
-  /// true the loop stops with [LoopDoneReason.budgetExhausted]. Lets the host
-  /// impose a budget in units the harness knows nothing about (a priced cost
-  /// cap in cents lives at the dispatch layer, which alone can price usage).
-  final bool Function()? externalBudgetExceeded;
-
-  /// Soft variant of [externalBudgetExceeded], also polled at every turn
-  /// boundary: the first true poll injects a one-shot "approaching the budget
-  /// — wrap up NOW" steer so the model consolidates (persists notes, writes
-  /// its handoff) before the hard check ends the run mid-task. With no turn
-  /// ceiling this restores what the ceiling's pre-end warning turns did.
-  final bool Function()? externalBudgetPressure;
-
-  /// Max retries on retryable provider errors (rate-limit / overloaded).
-  final int maxProviderRetries;
 
   /// How many parallel-safe tool calls from one turn run at a time. A free
   /// slot immediately starts the next call in the same independent region;
@@ -464,6 +477,44 @@ class AgentLoopConfig {
   /// floor under the ones that don't.
   final Duration? toolTimeout;
 
+  /// Model-facing observation shaping and durable original-output retention.
+  /// Raw tool completion events are never replaced by this compacted copy.
+  final ToolObservationIngest? observationIngest;
+}
+
+/// What bounds a run: budgets, provider retries, the per-turn wall clock,
+/// the shared usage ledger and the deliverable it owes.
+class LoopGuardConfig {
+  /// Creates the guards part of an [AgentLoopConfig].
+  const LoopGuardConfig({
+    this.budget = const HarnessBudget(),
+    this.externalBudgetExceeded,
+    this.externalBudgetPressure,
+    this.maxProviderRetries = 3,
+    this.turnTimeout = const Duration(minutes: 30),
+    this.callLedger,
+    this.contract,
+  });
+
+  /// Optional goal budget.
+  final HarnessBudget budget;
+
+  /// External budget check, polled at every turn boundary: when it returns
+  /// true the loop stops with [LoopDoneReason.budgetExhausted]. Lets the host
+  /// impose a budget in units the harness knows nothing about (a priced cost
+  /// cap in cents lives at the dispatch layer, which alone can price usage).
+  final bool Function()? externalBudgetExceeded;
+
+  /// Soft variant of [externalBudgetExceeded], also polled at every turn
+  /// boundary: the first true poll injects a one-shot "approaching the budget
+  /// — wrap up NOW" steer so the model consolidates (persists notes, writes
+  /// its handoff) before the hard check ends the run mid-task. With no turn
+  /// ceiling this restores what the ceiling's pre-end warning turns did.
+  final bool Function()? externalBudgetPressure;
+
+  /// Max retries on retryable provider errors (rate-limit / overloaded).
+  final int maxProviderRetries;
+
   /// Wall-clock ceiling on a SINGLE provider turn. Null disables it.
   ///
   /// Budgets and stop conditions are otherwise only evaluated at turn
@@ -478,6 +529,30 @@ class AgentLoopConfig {
   /// latency target — a turn that hits it was not going to finish.
   final Duration? turnTimeout;
 
+  /// The ledger shared by every observed provider serving this run. When
+  /// supplied, token budgets use it instead of adding streamed usage again.
+  final ProviderCallLedger? callLedger;
+
+  /// The deliverable this run owes. Null (the default) keeps the historical
+  /// behavior exactly: "no tool calls" ends the run as
+  /// [LoopDoneReason.completed].
+  ///
+  /// When set, the loop nudges once at the point it would otherwise complete
+  /// and, if still unmet, ends with [LoopDoneReason.contractUnmet] instead of
+  /// silently reporting success.
+  final CompletionContract? contract;
+}
+
+/// When and how the history is compacted to fit the context window.
+class LoopCompactionConfig {
+  /// Creates the compaction part of an [AgentLoopConfig].
+  const LoopCompactionConfig({
+    this.contextWindow,
+    this.compactor,
+    this.tokenCalibration,
+    this.selfAgentName = 'assistant',
+  });
+
   /// The model's context window in tokens. Null disables compaction.
   final int? contextWindow;
 
@@ -485,8 +560,26 @@ class AgentLoopConfig {
   /// compaction (history grows unbounded — the pre-compaction behavior).
   final HarnessCompactor? compactor;
 
+  /// Per-provider/model prompt calibration shared with the compactor.
+  final TokenCalibration? tokenCalibration;
+
   /// Display name used to label the agent's turns in compaction summaries.
   final String selfAgentName;
+}
+
+/// What can redirect a run while it works: lifecycle hooks, stream rules,
+/// the advisor, the checklist nudge, queued user messages and take-over.
+class LoopSteeringConfig {
+  /// Creates the steering part of an [AgentLoopConfig].
+  const LoopSteeringConfig({
+    this.hooks,
+    this.streamRules = const [],
+    this.advisor,
+    this.advisorEveryTurns = 3,
+    this.checklistStaleAfterTurns = 4,
+    this.queue,
+    this.pauseGate,
+  });
 
   /// Optional lifecycle hooks (start/end + pre/post-tool gate). Null = none.
   final AgentLoopHooks? hooks;
@@ -518,34 +611,37 @@ class AgentLoopConfig {
   /// at the top of each turn (so a message typed while the agent is working
   /// reaches it without a new dispatch) and the follow-up lane is consumed when
   /// the model would otherwise stop (so queued work continues the same run).
-  final SteeringQueue? steering;
+  final SteeringQueue? queue;
 
   /// Pauses the loop at the next clean turn boundary (take-over, PRD 16 §8).
   /// Null = never pauses.
   final PauseGate? pauseGate;
+}
 
-  /// The deliverable this run owes. Null (the default) keeps the historical
-  /// behavior exactly: "no tool calls" ends the run as
-  /// [LoopDoneReason.completed].
-  ///
-  /// When set, the loop nudges once at the point it would otherwise complete
-  /// and, if still unmet, ends with [LoopDoneReason.contractUnmet] instead of
-  /// silently reporting success.
-  final CompletionContract? contract;
+/// Where the run persists its history, and what a resumed run restores.
+class LoopTranscriptConfig {
+  /// Creates the transcript part of an [AgentLoopConfig].
+  const LoopTranscriptConfig({
+    this.store,
+    this.key,
+    this.initialCheckpoints = const {},
+    this.initialSnapshotSource,
+    this.metadata = const {},
+  });
 
   /// Where the loop persists its history at each turn boundary, so a later
   /// run can continue this conversation for real rather than from a summary.
   ///
   /// Null (the default) keeps the historical behaviour exactly: nothing is
   /// written and every run starts fresh.
-  final HarnessTranscriptStore? transcriptStore;
+  final HarnessTranscriptStore? store;
 
-  /// The key [transcriptStore] saves under — a conversation id, typically.
+  /// The key [store] saves under — a conversation id, typically.
   ///
   /// Required alongside the store: without it the loop would have to invent a
   /// key, and two runs inventing different keys for one conversation is the
   /// same as not persisting at all.
-  final String? transcriptKey;
+  final String? key;
 
   /// Checkpoint labels restored from a previous run, as indices into the
   /// caller-seeded [AgentLoop.run] history.
@@ -576,15 +672,19 @@ class AgentLoopConfig {
   /// saved record, so a host that changes its cursor after the run updates the
   /// record itself (`HarnessTranscript.copyWith(metadata: …)`) rather than
   /// expecting the kernel to know when its state changed.
-  final Map<String, Object?> transcriptMetadata;
+  final Map<String, Object?> metadata;
 }
 
 /// The built-in agent loop: send messages → call the model → execute tools →
 /// loop until a stop condition.
 abstract interface class AgentLoop {
   /// Runs the loop for [userMessage] against [provider] with [tools].
-  /// [history] is caller-owned and appended in place. Stream ends with one
-  /// [LoopDone] (or [LoopError] then [LoopDone]).
+  /// [history] is caller-owned and appended in place. The stream ends with
+  /// exactly one [LoopDone] on every path; a failure outcome
+  /// ([LoopDoneReason.error], [LoopDoneReason.providerOutputLost]) is preceded
+  /// by exactly one [LoopError], so a host can derive its exit status from the
+  /// error alone. Every terminal path first saves the transcript (when a
+  /// store is configured) at its last clean boundary.
   ///
   /// [userImages] attach to the user turn but stay separate from [userMessage]
   /// text. [deferredTools] schemas withhold until first use / activateTools;

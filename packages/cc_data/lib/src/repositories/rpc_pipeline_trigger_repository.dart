@@ -4,8 +4,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.da
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// A [PipelineTriggerRepository] backed by the RPC client — the thin-client
-/// data path.
+/// A [PipelineTriggerConfigRepository] backed by the RPC client — the
+/// thin-client data path.
 ///
 /// Implements the domain interface over the host's `pipeline_trigger.*` ops +
 /// the `pipeline_trigger.watchForWorkspace` subscription, mapping the
@@ -13,10 +13,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// persistence and enforces workspace ownership; this client never touches a
 /// database.
 ///
-/// Two reads are cross-workspace by design — [enabledForEvent] and [scheduled]
-/// — because the trigger dispatcher fans an event out to every workspace's
-/// matching triggers, then filters per-event.
-class RpcPipelineTriggerRepository implements PipelineTriggerRepository {
+/// The dispatcher's and scheduler's reads and writes (`enabledForEvent`,
+/// `scheduled`, `markFired`, ...) are server-side only and have no op.
+class RpcPipelineTriggerRepository implements PipelineTriggerConfigRepository {
   /// Creates an [RpcPipelineTriggerRepository] over [client].
   RpcPipelineTriggerRepository(RemoteRpcClient client)
     : _remote = RemotePipelineTriggerRepository(client);
@@ -78,12 +77,6 @@ class RpcPipelineTriggerRepository implements PipelineTriggerRepository {
   }
 
   @override
-  Future<List<PipelineTrigger>> enabledForEvent(String eventType) async {
-    final dtos = await _remote.enabledForEvent(eventType);
-    return dtos.map(_fromDto).toList();
-  }
-
-  @override
   Stream<List<PipelineTrigger>> watchForWorkspace(String workspaceId) => _remote
       .watchForWorkspace(workspaceId)
       .map((dtos) => dtos.map(_fromDto).toList());
@@ -99,38 +92,5 @@ class RpcPipelineTriggerRepository implements PipelineTriggerRepository {
       }
       rethrow;
     }
-  }
-
-  @override
-  Future<List<PipelineTrigger>> scheduled() async {
-    final dtos = await _remote.scheduled();
-    return dtos.map(_fromDto).toList();
-  }
-
-  @override
-  Future<void> markFired(String workspaceId, String id, DateTime when) =>
-      _remote.markFired(workspaceId, id, when);
-
-  @override
-  Future<void> setSchedule(
-    String workspaceId,
-    String id, {
-    DateTime? nextRunAt,
-    DateTime? lastFiredAt,
-  }) {
-    // The cron scheduler runs server-side against the Drift-backed repository;
-    // it never persists schedule state through the thin-client RPC path.
-    throw UnsupportedError(
-      'setSchedule is server-side only (the cron scheduler owns it).',
-    );
-  }
-
-  @override
-  Future<PipelineTrigger?> byWebhookToken(String token) {
-    // Webhook routing resolves the trigger server-side from the inbound token;
-    // a thin client never looks a trigger up by its secret.
-    throw UnsupportedError(
-      'byWebhookToken is server-side only (the webhook handler owns it).',
-    );
   }
 }

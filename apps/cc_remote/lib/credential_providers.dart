@@ -19,13 +19,9 @@ final remoteForgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
   final client = await ref.watch(rpcClientProvider.future);
   final workspaceId = await ref.watch(activeWorkspaceIdProvider.future);
   if (workspaceId == null) return const [];
-  final data = await client.call('forge.listConnections', {
-    'workspace_id': workspaceId,
-  });
-  return [
-    for (final row in data['connections'] as List? ?? const [])
-      if (row is Map) ForgeConnection.fromJson(row.cast<String, dynamic>()),
-  ];
+  // The same read the desktop uses, so a lapsed sign-in shows here too
+  // instead of "Signed in as X" over refusals.
+  return RemoteForgeConnections(client).list(workspaceId: workspaceId);
 });
 
 /// The caller's remote ticketing identities (local tickets need no token).

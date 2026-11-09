@@ -489,6 +489,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get teammate => 'Rekan tim';
 
   @override
+  String get systemSender => 'Sistem';
+
+  @override
   String get agent => 'Agen';
 
   @override
@@ -640,12 +643,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub, atau hubungkan token yang memiliki akses.';
+    return 'Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Instalasi GitHub App ditangguhkan. Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub, atau hubungkan token yang memiliki akses.';
+    return 'Instalasi GitHub App ditangguhkan. Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub.';
   }
 
   @override
@@ -2581,6 +2584,22 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Kode itu tidak cocok dengan proses masuk ini. Periksa lalu coba lagi.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Terlalu banyak kode yang salah. Mulai ulang proses masuk.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Layanan masuk tidak merespons saat ini. Tunggu satu menit, lalu coba lagi.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Proses masuk ditolak. Mulai ulang dan setujui semua izin yang diminta.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Proses masuk berhasil, tetapi server tidak dapat menyimpannya. Coba lagi.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

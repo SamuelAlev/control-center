@@ -10,19 +10,19 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Active title-bar chip controller, exposed so the `sys.workspace-switcher`
-/// keybinding can toggle the popover from outside the widget tree.
-CcOverlayController? _activeChipController;
+/// The mounted title-bar chip's popover, so the `sys.workspace-switcher`
+/// keybinding can toggle it from outside the widget tree.
+class WorkspaceSwitcherHandle {
+  CcOverlayController? _controller;
 
-/// Toggles the workspace switcher popover on the title-bar chip. No-op if
-/// the chip isn't currently mounted.
-void toggleWorkspaceSwitcher(BuildContext rootContext) {
-  final controller = _activeChipController;
-  if (controller == null) {
-    return;
-  }
-  controller.toggle();
+  /// Toggles the switcher popover; a no-op while no chip is mounted.
+  void toggle() => _controller?.toggle();
 }
+
+/// The session's [WorkspaceSwitcherHandle].
+final workspaceSwitcherHandleProvider = Provider<WorkspaceSwitcherHandle>(
+  (ref) => WorkspaceSwitcherHandle(),
+);
 
 /// Compact workspace selector designed for the 40px title bar.
 ///
@@ -62,18 +62,20 @@ class TitleBarWorkspaceChip extends ConsumerStatefulWidget {
 
 class _TitleBarWorkspaceChipState extends ConsumerState<TitleBarWorkspaceChip> {
   late final CcOverlayController _controller;
+  late final WorkspaceSwitcherHandle _handle;
 
   @override
   void initState() {
     super.initState();
     _controller = CcOverlayController();
-    _activeChipController = _controller;
+    _handle = ref.read(workspaceSwitcherHandleProvider);
+    _handle._controller = _controller;
   }
 
   @override
   void dispose() {
-    if (identical(_activeChipController, _controller)) {
-      _activeChipController = null;
+    if (identical(_handle._controller, _controller)) {
+      _handle._controller = null;
     }
     _controller.dispose();
     super.dispose();

@@ -1,5 +1,7 @@
 import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_domain/features/skills/domain/ports/skill_source_port.dart';
+import 'package:cc_harness_runtime/cc_harness_runtime.dart'
+    show MarkdownFrontmatter;
 import 'package:cc_infra/src/network/github_api_client.dart';
 
 /// [SkillSourcePort] over the GitHub REST API: the skill catalogs of
@@ -60,12 +62,44 @@ class GitHubSkillSourceAdapter implements SkillSourcePort {
   /// scan gate and the lock hash text, and a skill is documentation and small
   /// scripts, not datasets).
   static const Set<String> _binaryExtensions = {
-    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp', '.svgz',
-    '.pdf', '.zip', '.gz', '.tar', '.tgz', '.bz2', '.7z', '.rar',
-    '.woff', '.woff2', '.ttf', '.otf', '.eot',
-    '.mp3', '.mp4', '.mov', '.avi', '.webm', '.wav', '.flac',
-    '.dylib', '.so', '.dll', '.exe', '.bin', '.wasm', '.class',
-    '.onnx', '.db', '.sqlite',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.webp',
+    '.ico',
+    '.bmp',
+    '.svgz',
+    '.pdf',
+    '.zip',
+    '.gz',
+    '.tar',
+    '.tgz',
+    '.bz2',
+    '.7z',
+    '.rar',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.otf',
+    '.eot',
+    '.mp3',
+    '.mp4',
+    '.mov',
+    '.avi',
+    '.webm',
+    '.wav',
+    '.flac',
+    '.dylib',
+    '.so',
+    '.dll',
+    '.exe',
+    '.bin',
+    '.wasm',
+    '.class',
+    '.onnx',
+    '.db',
+    '.sqlite',
   };
 
   @override
@@ -150,7 +184,7 @@ class GitHubSkillSourceAdapter implements SkillSourcePort {
         candidate.skillFilePath,
         ref,
       );
-      final front = _parseFrontmatter(content);
+      final front = MarkdownFrontmatter.parse(content);
       final frontName = front['name'];
       if (frontName != null && frontName.isNotEmpty) {
         name = frontName;
@@ -280,42 +314,6 @@ class GitHubSkillSourceAdapter implements SkillSourcePort {
       return false;
     }
     return _binaryExtensions.contains(rel.substring(dot).toLowerCase());
-  }
-
-  /// Parses the simple `key: value` pairs of a `SKILL.md` frontmatter block.
-  /// Deliberately not a YAML parser: the frontmatter this needs is flat
-  /// strings, and a malformed block must degrade to defaults, not throw.
-  static Map<String, String> _parseFrontmatter(String content) {
-    final out = <String, String>{};
-    final trimmed = content.trimLeft();
-    if (!trimmed.startsWith('---')) {
-      return out;
-    }
-    final end = trimmed.indexOf('\n---', 3);
-    if (end == -1) {
-      return out;
-    }
-    for (final line in trimmed.substring(3, end).split('\n')) {
-      final idx = line.indexOf(':');
-      if (idx <= 0) {
-        continue;
-      }
-      final key = line.substring(0, idx).trim();
-      final value = _unquote(line.substring(idx + 1).trim());
-      if (value.isNotEmpty) {
-        out[key] = value;
-      }
-    }
-    return out;
-  }
-
-  static String _unquote(String value) {
-    if (value.length >= 2 &&
-        ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'")))) {
-      return value.substring(1, value.length - 1);
-    }
-    return value;
   }
 }
 

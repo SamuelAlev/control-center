@@ -203,7 +203,7 @@ final class GitHubApi {
 
   static Map<String, String> _apiHeaders(String token) => {
     'accept': 'application/vnd.github+json',
-    'x-github-api-version': '2022-11-28',
+    'x-github-api-version': githubApiVersion,
     'authorization': 'Bearer $token',
   };
 
@@ -431,7 +431,7 @@ final class GitHubApi {
         },
         headers: {
           'accept': 'application/vnd.github+json',
-          'x-github-api-version': '2022-11-28',
+          'x-github-api-version': githubApiVersion,
           'authorization': _basic(secret),
         },
       ),
@@ -479,7 +479,7 @@ final class GitHubApi {
             {'access_token': token},
             headers: {
               'accept': 'application/vnd.github+json',
-              'x-github-api-version': '2022-11-28',
+              'x-github-api-version': githubApiVersion,
               'authorization': _basic(secret),
             },
           ),

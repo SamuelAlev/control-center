@@ -71,6 +71,7 @@ class AgentAwaitingInput implements DomainEvent {
     this.conversationId,
     this.agentId,
     this.agentName,
+    this.runId,
   });
 
   /// Workspace the waiting run belongs to.
@@ -98,6 +99,9 @@ class AgentAwaitingInput implements DomainEvent {
 
   /// The waiting agent's display name, when known.
   final String? agentName;
+
+  /// The waiting run (run-log id), when known.
+  final String? runId;
 
   @override
   final DateTime occurredAt;

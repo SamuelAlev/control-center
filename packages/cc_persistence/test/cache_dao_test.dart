@@ -36,6 +36,23 @@ void main() {
       expect(result, 'v2');
     });
 
+    test('putIfAbsent lets exactly one concurrent claim win', () async {
+      final results = await Future.wait([
+        for (var i = 0; i < 5; i++)
+          db.cacheDao.putIfAbsent('ws-1', 'takeover', 'sp-1', 'claim-$i'),
+      ]);
+      expect(results.where((won) => won), hasLength(1));
+      final winner = results.indexOf(true);
+      expect(
+        await db.cacheDao.read('ws-1', 'takeover', 'sp-1'),
+        'claim-$winner',
+      );
+      expect(
+        await db.cacheDao.putIfAbsent('ws-2', 'takeover', 'sp-1', 'other'),
+        isTrue,
+      );
+    });
+
     test('different workspaceId are isolated', () async {
       await db.cacheDao.put('ws-1', 'prDetail', '42', 'ws1-data');
       await db.cacheDao.put('ws-2', 'prDetail', '42', 'ws2-data');

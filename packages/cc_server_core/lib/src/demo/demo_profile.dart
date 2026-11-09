@@ -247,6 +247,13 @@ class DemoProfile {
     'workspace.export',
     // Names backup files on the server's disk; the demo keeps none.
     'workspace.listBackups',
+    // CROSS-WORKSPACE BY DESIGN lookups with no membership gate at the
+    // dispatcher: rows of EVERY visitor's workspace pass through them, and
+    // only the handler's per-row membership filter stands between visitors.
+    // The server's own listener calls the repository in-process; no client
+    // surface needs either op, so the demo refuses them outright.
+    'orchestration.approvedNeedingMaterialization',
+    'orchestration.forPipelineRunAnyWorkspace',
     // The other `pr.*` one-shots dial GitHub. `pr.closedByAuthorForWorkspace`
     // is admitted: the demo answers it from the seeded cache (see
     // `DemoMergedHistory`) so the inbox's "Merging and recently merged"
@@ -320,6 +327,7 @@ class DemoProfile {
     'steering.delete',
     'steering.reorder',
     'steering.deliver',
+    'steering.forceSend',
     'autonomy.setForSpace',
     'checker.setForSpace',
     'takeover.begin',
@@ -390,21 +398,15 @@ class DemoProfile {
     'playbook.save',
     'playbook.delete',
     // Pipeline rows live in the visitor's own workspace database. Runs stay
-    // history: start/retry/kill are refused below, and the engine, dispatcher,
+    // history (run rows are never wire-writable on any host; deleting one is
+    // the only run write, refused here): start/retry/kill are refused below,
+    // and the engine, dispatcher,
     // scheduler and webhook handler are unwired, so a saved graph never
     // starts. Template and trigger writes are the editor. `pipeline.bashScript`
     // is refused inside upsert (`rejectBashNodes`) — that body is `bash -c`
     // on this host. These three still declare processSpawn for a real host;
     // [executionClassExempt] is why the class net does not also refuse them.
-    'pipeline_run.insertRun',
-    'pipeline_run.updateRun',
-    'pipeline_run.updateRunState',
     'pipeline_run.deleteRun',
-    'pipeline_run.insertStepRun',
-    'pipeline_run.updateStepRun',
-    'pipeline_run.restartStepRun',
-    'pipeline_run.deleteStepRun',
-    'pipeline_run.incrementCost',
     'pipeline_template.deleteById',
     'pipeline_template.upsert',
     'pipeline_trigger.deleteById',
@@ -531,8 +533,7 @@ class DemoProfile {
     'agents.killProcesses',
     // Pipeline execution. Authoring is allowed above; starting is not. The
     // engine port is null, so these ops are also absent — the names are the
-    // belt if that port is wired by mistake. `markFired` records a fire, it
-    // does not author a graph. Playbook run and plan/orchestration approve
+    // belt if that port is wired by mistake. Playbook run and plan/orchestration approve
     // are the same engine through another door. `review_hub.start` fans the
     // `pr_review` pipeline. The bash body stays registered but never
     // `Process.start` (see `enableBashScript`), and upsert refuses the body.
@@ -540,7 +541,6 @@ class DemoProfile {
     'pipeline.cancel',
     'pipeline.retry',
     'pipeline.killStep',
-    'pipeline_trigger.markFired',
     'playbook.run',
     'orchestration.approve',
     'orchestration.approveNodes',
@@ -824,6 +824,9 @@ class DemoProfile {
     'space_read.watchUserSpaceReads',
     // Install-wide telemetry decision; carries no workspace data and is
     // read-only on this lane.
+    // The take-over marker of one owned space (read-only, like
+    // `takeover.status`).
+    'takeover.watch',
     'telemetry.watch',
     'team.watchMembersOf',
     'team.watchTeamsForWorkspace',

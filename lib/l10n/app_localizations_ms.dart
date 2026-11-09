@@ -9,6 +9,15 @@ class AppLocalizationsMs extends AppLocalizations {
   AppLocalizationsMs([String locale = 'ms']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Tidak dapat menghantarnya sekarang: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Jawapan anda tidak dihantar. Mungkin ia sudah dijawab, atau ejen telah berhenti menunggu.';
+
+  @override
   String get succeeded => 'Berjaya';
 
   @override
@@ -2609,10 +2618,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get addGif => 'Tambah GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Tambah sekurang-kurangnya satu repositori GitHub untuk melihat pull request';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5926,9 +5931,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Tempoh';
 
   @override
-  String get pipelineStepBranch => 'Cawangan';
-
-  @override
   String get pipelineStepViewConversation => 'Lihat perbualan';
 
   @override
@@ -7018,14 +7020,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get reviewRequested => 'Semakan diminta';
 
   @override
-  String get connectGitHubHint =>
-      'Log masuk ke GitHub dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Sambung GitHub untuk memuatkan pull request';
-
-  @override
   String get noRepositoriesConfigured => 'Tiada repositori dikonfigurasikan';
 
   @override
@@ -7683,13 +7677,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Cipta sebagai draf';
-
-  @override
-  String get composePrNoRepo => 'Tiada repositori GitHub dipilih';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Pilih ruang kerja dengan repositori terpaut GitHub untuk membuka pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16837,6 +16824,27 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kod itu tidak sepadan dengan log masuk ini. Semak dan cuba lagi.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Terlalu banyak kod yang salah. Mulakan semula log masuk.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Log masuk ini tidak lagi sah. Mulakannya semula.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Pelayan tidak dapat membaca permintaan log masuk ini. Mulakannya semula.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Terlalu banyak percubaan log masuk sekarang. Tunggu seminit, kemudian cuba lagi.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider menerima log masuk, tetapi pelayan tidak dapat menyimpannya. Cuba lagi.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider tidak bertindak balas sekarang. Cuba lagi dalam beberapa minit.';
   }
@@ -16867,7 +16875,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Ruang kerja Linear ini sudah disambungkan ke pelayan Control Center lain.';
+      'Ruang kerja Slack ini sudah disambungkan ke pelayan Control Center lain.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17300,4 +17308,38 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Tukar apl';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Buka di $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Memaparkan $count fail pertama. $forge tidak menyenaraikan selebihnya.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Sambungkan hos kod untuk memuatkan permintaan tarik';
+
+  @override
+  String get connectForgeHint =>
+      'Sambungkan GitHub, GitLab atau Bitbucket dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Tambahkan sekurang-kurangnya satu repositori di GitHub, GitLab atau Bitbucket untuk melihat permintaan tarik';
+
+  @override
+  String get composePrNoForgeRepo => 'Tiada repositori yang dihoskan dipilih';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Pilih ruang kerja dengan repositori di GitHub, GitLab atau Bitbucket untuk membuka permintaan tarik.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Sambungkan $forge untuk membuka permintaan tarik dalam repositori ini';
+  }
 }

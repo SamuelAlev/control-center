@@ -493,6 +493,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get teammate => 'Teammitglied';
 
   @override
+  String get systemSender => 'System';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -646,12 +649,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Für $names wird nur der zuletzt bekannte Stand angezeigt. Setze die Installation auf GitHub fort oder verbinde ein Token mit Zugriff.';
+    return 'Für $names wird nur der zuletzt bekannte Stand angezeigt. Setze die Installation auf GitHub fort.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App-Installation ist ausgesetzt. Für $names wird nur der zuletzt bekannte Stand angezeigt. Setze die Installation auf GitHub fort oder verbinde ein Token mit Zugriff.';
+    return 'GitHub App-Installation ist ausgesetzt. Für $names wird nur der zuletzt bekannte Stand angezeigt. Setze die Installation auf GitHub fort.';
   }
 
   @override
@@ -2614,6 +2617,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Dieser Code passt nicht zu dieser Anmeldung. Prüfen Sie ihn und versuchen Sie es erneut.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Zu viele falsche Codes. Starten Sie die Anmeldung neu.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Der Anmeldedienst antwortet gerade nicht. Warten Sie eine Minute und versuchen Sie es dann erneut.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Die Anmeldung wurde abgelehnt. Starten Sie sie neu und genehmigen Sie alle angeforderten Berechtigungen.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Die Anmeldung hat funktioniert, aber der Server konnte sie nicht speichern. Versuchen Sie es erneut.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
-import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/connect_settings.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:test/test.dart';
 
-/// Connect with a GitHub lane whose claim answers are scripted.
+/// Connect with GitHub and Slack lanes whose claim answers are scripted.
 final class _FakeConnect extends ConnectClient {
   _FakeConnect(FileSecretsStore secrets)
     : super(
@@ -21,6 +20,11 @@ final class _FakeConnect extends ConnectClient {
 
   final List<FutureOr<Map<String, Object?>> Function()> claims = [];
   int claimCalls = 0;
+  final List<SealRequest> slackRevokes = [];
+
+  @override
+  Future<void> slackRevoke(SealRequest request) async =>
+      slackRevokes.add(request);
 
   @override
   Future<ConnectConfig?> usableConfig() async => ConnectConfig(
@@ -31,6 +35,7 @@ final class _FakeConnect extends ConnectClient {
       clientId: 'Iv1test',
       appSlug: 'cc-test',
     ),
+    slack: const SlackLaneConfig(appId: 'A1', clientId: 'slack.client'),
   );
 
   @override
@@ -52,10 +57,12 @@ final class _FakeConnect extends ConnectClient {
 }
 
 final class _Lane implements SignInLaneBinding {
+  _Lane([this.lane = ConnectOAuthLane.github]);
+
   final List<SignInResult> stored = [];
 
   @override
-  ConnectOAuthLane get lane => ConnectOAuthLane.github;
+  final ConnectOAuthLane lane;
 
   @override
   Future<OwnOAuthApp?> ownApp(String? workspaceId) async => null;
@@ -70,8 +77,17 @@ final class _Lane implements SignInLaneBinding {
   Future<SignInIdentity> identify(String accessToken) =>
       throw UnimplementedError();
 
+  /// When set, storing throws it.
+  Object? storeError;
+
   @override
-  Future<void> store(SignInResult result) async => stored.add(result);
+  Future<void> store(SignInResult result) async {
+    final error = storeError;
+    if (error != null) {
+      throw error;
+    }
+    stored.add(result);
+  }
 
   @override
   Future<LaneConnection?> connection(
@@ -115,23 +131,22 @@ void main() {
   );
 
   test(
-    'a mistyped code can be retried (Connect answers it access_denied)',
+    'a mistyped code can be retried (Connect answers code_mismatch)',
     () async {
       final attempt = await begin();
       connect.claims
-        ..add(() => throw const ConnectException(ConnectErrorCode.accessDenied))
+        ..add(() => throw const ConnectException(ConnectErrorCode.codeMismatch))
         ..add(_grant);
 
-      await expectLater(
-        service.complete(
-          loginId: attempt.loginId,
-          confirmCode: 'AAAAAAAA',
-          userId: 'user-1',
-          workspaceId: 'ws-1',
-        ),
-        throwsA(isA<AuthException>()),
+      final wrong = await service.complete(
+        loginId: attempt.loginId,
+        confirmCode: 'AAAAAAAA',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
       );
-      expect(attempt.status, SignInStatus.pending);
+      expect(wrong.status, SignInStatus.pending);
+      expect(wrong.codeError, SignInFailure.codeMismatch);
+      expect(wrong.toJson()['code_error'], 'code_mismatch');
 
       final done = await service.complete(
         loginId: attempt.loginId,
@@ -140,9 +155,110 @@ void main() {
         workspaceId: 'ws-1',
       );
       expect(done.status, SignInStatus.succeeded);
+      expect(done.codeError, isNull);
       expect(lane.stored.single.token.seal, 'v1.sealed');
     },
   );
+
+  test(
+    'a provider refusal after the code matched is not a wrong code',
+    () async {
+      final attempt = await begin();
+      connect.claims.add(
+        () => throw const ConnectException(ConnectErrorCode.needsSignIn),
+      );
+
+      final failed = await service.complete(
+        loginId: attempt.loginId,
+        confirmCode: 'AAAAAAAA',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
+      );
+      expect(failed.status, SignInStatus.failed);
+      expect(failed.error, SignInFailure.needsSignIn);
+      expect(failed.codeError, isNull);
+    },
+  );
+
+  test('five wrong codes end the attempt as invalid_code', () async {
+    final attempt = await begin();
+    for (var i = 0; i < 5; i++) {
+      connect.claims.add(
+        () => throw const ConnectException(ConnectErrorCode.codeMismatch),
+      );
+    }
+    for (var i = 0; i < 5; i++) {
+      await service.complete(
+        loginId: attempt.loginId,
+        confirmCode: 'AAAAAAAA',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
+      );
+    }
+    expect(attempt.status, SignInStatus.failed);
+    expect(attempt.error, SignInFailure.invalidCode);
+  });
+
+  test(
+    'a grant the server cannot store fails the attempt, never pending',
+    () async {
+      final attempt = await begin();
+      lane.storeError = StateError('disk full');
+      connect.claims.add(_grant);
+
+      final failed = await service.complete(
+        loginId: attempt.loginId,
+        confirmCode: 'AAAAAAAA',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
+      );
+      expect(failed.status, SignInStatus.failed);
+      expect(failed.error, SignInFailure.storeFailed);
+      expect(failed.toJson()['error'], 'store_failed');
+      expect(connect.slackRevokes, isEmpty, reason: 'only Slack is revoked');
+    },
+  );
+
+  test('a Slack install the server cannot store is revoked upstream: it '
+      "holds the team's only bot token", () async {
+    final slack = _Lane(ConnectOAuthLane.slack)
+      ..storeError = StateError('disk full');
+    service.register(slack);
+    final attempt = await service.begin(
+      lane: ConnectOAuthLane.slack,
+      userId: 'user-1',
+      origin: '',
+      workspaceId: 'ws-1',
+    );
+    connect.claims.add(_grant);
+
+    final failed = await service.complete(
+      loginId: attempt.loginId,
+      confirmCode: 'AAAAAAAA',
+      userId: 'user-1',
+      workspaceId: 'ws-1',
+    );
+    expect(failed.status, SignInStatus.failed);
+    expect(failed.error, SignInFailure.storeFailed);
+    final revoke = connect.slackRevokes.single;
+    expect(revoke.seal, 'v1.sealed');
+    expect(revoke.workspaceId, 'ws-1');
+    expect(slack.stored, isEmpty);
+  });
+
+  test('a malformed grant fails the attempt as provider_unavailable', () async {
+    final attempt = await begin();
+    connect.claims.add(() => {'nonsense': true});
+
+    final failed = await service.complete(
+      loginId: attempt.loginId,
+      confirmCode: 'AAAAAAAA',
+      userId: 'user-1',
+      workspaceId: 'ws-1',
+    );
+    expect(failed.status, SignInStatus.failed);
+    expect(failed.error, SignInFailure.providerUnavailable);
+  });
 
   test('a second completion while the first claims does not fail it', () async {
     final attempt = await begin();

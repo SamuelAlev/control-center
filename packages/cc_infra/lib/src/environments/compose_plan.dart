@@ -174,6 +174,34 @@ class ComposePublishedPort {
 /// The lease key of a published port.
 String composePortKey(String service, int target) => '$service.$target';
 
+/// A compose project found by its name alone, with no file.
+///
+/// Everything but planning and `up` goes through one of these: the
+/// containers carry their own config, so stopping, destroying, reading or
+/// exec'ing into a stack needs neither the worktree's compose file nor a
+/// port lease. Its commands run in [stateDir], never the worktree, so
+/// Compose has no compose file of the repo's to pick up on its own.
+class ComposeProject {
+  /// Creates a [ComposeProject].
+  const ComposeProject({
+    required this.environmentId,
+    this.stateDir,
+    this.environment = const {},
+  });
+
+  /// The environment.
+  final String environmentId;
+
+  /// Its state directory, or null when it has none any more.
+  final String? stateDir;
+
+  /// Variables for `docker compose`.
+  final Map<String, String> environment;
+
+  /// The compose project.
+  String get projectName => composeProjectName(environmentId);
+}
+
 /// What a compose operation needs to know about its environment.
 class ComposeContext {
   /// Creates a [ComposeContext].
@@ -218,6 +246,13 @@ class ComposeContext {
 
   /// The compose project.
   String get projectName => composeProjectName(environmentId);
+
+  /// The project by name, for everything but planning and `up`.
+  ComposeProject get project => ComposeProject(
+    environmentId: environmentId,
+    stateDir: stateDir,
+    environment: environment,
+  );
 
   /// The generated override.
   String get overridePath => composeOverridePath(stateDir);

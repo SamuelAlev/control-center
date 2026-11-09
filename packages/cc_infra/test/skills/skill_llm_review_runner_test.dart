@@ -228,7 +228,7 @@ class _FakeFactory extends HarnessProviderFactory {
 }
 
 /// Wraps the canned provider and records the rendered user prompt.
-class _PromptCapture implements LlmProviderPort {
+class _PromptCapture extends LlmProviderPort {
   _PromptCapture(this._inner, this._factory);
 
   final LlmProviderPort _inner;
@@ -261,7 +261,7 @@ class _PromptCapture implements LlmProviderPort {
 }
 
 /// A provider that streams a fixed list of events then completes.
-class _CannedProvider implements LlmProviderPort {
+class _CannedProvider extends LlmProviderPort {
   _CannedProvider(this.events);
   final List<LlmEvent> events;
 
@@ -287,7 +287,7 @@ class _CannedProvider implements LlmProviderPort {
 
 /// A provider that never emits and never completes — drives the runner into
 /// its timeout.
-class _HangingProvider implements LlmProviderPort {
+class _HangingProvider extends LlmProviderPort {
   @override
   Stream<LlmEvent> complete({
     required List<HarnessMessage> messages,

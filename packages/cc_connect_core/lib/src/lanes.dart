@@ -36,9 +36,34 @@ enum ConnectOAuthLane {
     return null;
   }
 
-  /// The callback segment the provider redirects to first. Slack's first hop
-  /// is the OIDC pre-check; its bot install has its own callback.
-  String get firstCallbackSegment => this == slack ? 'slack_oidc' : wire;
+  /// The callback segment the provider redirects to on [hop], or null when
+  /// the lane has no such hop. Slack's first hop is the OIDC pre-check; its
+  /// bot install has its own callback. The one source of every Connect
+  /// redirect URI and of the callback routes Connect serves.
+  String? callbackSegment(ConnectCallbackHop hop) => switch ((this, hop)) {
+    (slack, ConnectCallbackHop.first) => 'slack_oidc',
+    (slack, ConnectCallbackHop.bot) => 'slack',
+    (_, ConnectCallbackHop.first) => wire,
+    (_, ConnectCallbackHop.bot) => null,
+  };
+
+  /// The callback segment the provider redirects to first.
+  String get firstCallbackSegment => callbackSegment(ConnectCallbackHop.first)!;
+
+  /// The lane and hop a callback [segment] belongs to, or null for a segment
+  /// Connect does not serve.
+  static ({ConnectOAuthLane lane, ConnectCallbackHop hop})? fromCallbackSegment(
+    String segment,
+  ) {
+    for (final lane in values) {
+      for (final hop in ConnectCallbackHop.values) {
+        if (lane.callbackSegment(hop) == segment) {
+          return (lane: lane, hop: hop);
+        }
+      }
+    }
+    return null;
+  }
 
   /// The provider this lane authenticates against.
   ConnectProvider get provider => switch (this) {
@@ -46,6 +71,26 @@ enum ConnectOAuthLane {
     google => ConnectProvider.google,
     linear || linearApp => ConnectProvider.linear,
     slack => ConnectProvider.slack,
+  };
+}
+
+/// One provider redirect of a browser sign-in. Every lane has a [first]
+/// hop; Slack's bot install is a second.
+enum ConnectCallbackHop {
+  /// The provider's first redirect (Slack: the OIDC pre-check).
+  first,
+
+  /// Slack's bot install, after the pre-check passed.
+  bot;
+
+  /// The wire spelling inside a `state` mapping.
+  String get wire => name;
+
+  /// Parses a wire value; null when unknown.
+  static ConnectCallbackHop? fromWire(Object? wire) => switch (wire) {
+    'first' => first,
+    'bot' => bot,
+    _ => null,
   };
 }
 

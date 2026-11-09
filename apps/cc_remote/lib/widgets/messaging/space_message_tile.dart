@@ -10,6 +10,7 @@ import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/live_turns.dart';
 import 'package:cc_remote/widgets/agent_transcript.dart';
 import 'package:cc_remote/widgets/messaging/sent_attachments.dart';
+import 'package:cc_remote/widgets/messaging/space_message_sender.dart';
 import 'package:cc_remote/widgets/messaging/user_question_tile.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -195,11 +196,12 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
     final streamComplete = view.streamComplete;
     final showTranscript = view.showTranscript;
     final l10n = AppLocalizations.of(context);
-    final agentName = isHuman
-        ? ((widget.userNames[m.senderId]?.isNotEmpty ?? false)
-              ? widget.userNames[m.senderId]!
-              : l10n.teammate)
-        : (meta?['agentName'] as String?) ?? m.senderType;
+    final agentName = spaceMessageSenderLabel(
+      m,
+      userNames: widget.userNames,
+      agentName: meta?['agentName'] as String?,
+      l10n: l10n,
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(

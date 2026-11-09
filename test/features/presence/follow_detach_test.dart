@@ -4,6 +4,8 @@ import 'package:control_center/features/presence/providers/follow_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/active_workspace.dart';
+
 void main() {
   group('followShouldDetach (pure, PRD 16 §4 "follow until you act")', () {
     test('stays attached before any programmatic navigation has happened', () {
@@ -112,7 +114,9 @@ void main() {
   group('FollowedPrincipalNotifier', () {
     test('toggle follows, then detaches on a second toggle of the same '
         'principal', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [activeWorkspaceIdOverride()],
+      );
       addTearDown(container.dispose);
       const alice = UserPrincipal('alice');
       const bob = UserPrincipal('bob');
@@ -133,7 +137,9 @@ void main() {
     });
 
     test('detach is a no-op when nobody is followed', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [activeWorkspaceIdOverride()],
+      );
       addTearDown(container.dispose);
       container.read(followedPrincipalProvider.notifier).detach();
       expect(container.read(followedPrincipalProvider), isNull);

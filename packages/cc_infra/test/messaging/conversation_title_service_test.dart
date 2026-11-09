@@ -760,7 +760,7 @@ class _FakeFactory extends HarnessProviderFactory {
   }
 }
 
-class _RecordingProvider implements LlmProviderPort {
+class _RecordingProvider extends LlmProviderPort {
   _RecordingProvider(
     this.providerId,
     this.model,

@@ -40,8 +40,8 @@ String? onboardingGuard(
 ) {
   final gate = gateNotifier.value;
   final loc = state.matchedLocation;
-  final isSplash = loc == splashRoute;
-  final isOnboarding = loc.startsWith(onboardingRoute);
+  final isSplash = isAtRoute(loc, splashRoute);
+  final isOnboarding = isAtRoute(loc, onboardingRoute);
 
   if (gate == OnboardingGate.loading) {
     return isSplash ? null : splashRoute;

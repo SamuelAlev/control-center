@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_infra/src/context/snapcompact.dart';
@@ -91,6 +92,7 @@ class SnapcompactCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     final useSnapshots = readerHasVision && preferSnapshots;
     if (!useSnapshots) {
@@ -101,6 +103,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         reservedOutputTokens: reservedOutputTokens,
         selfAgentName: selfAgentName,
         force: force,
+        cancel: cancel,
       );
     }
 
@@ -130,6 +133,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         reservedOutputTokens: reservedOutputTokens,
         selfAgentName: selfAgentName,
         force: force,
+        cancel: cancel,
       );
     }
 
@@ -150,6 +154,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         reservedOutputTokens: reservedOutputTokens,
         selfAgentName: selfAgentName,
         force: force,
+        cancel: cancel,
       );
     }
 
@@ -200,6 +205,7 @@ class SnapcompactCompactor implements HarnessCompactor {
     required int reservedOutputTokens,
     required String selfAgentName,
     required bool force,
+    required CancellationToken cancel,
   }) async {
     final rehydrated = rehydrateSnapcompactHistory(history, _retainedSource);
     final rehydratedChanged = !identical(rehydrated, history);
@@ -211,8 +217,9 @@ class SnapcompactCompactor implements HarnessCompactor {
       reservedOutputTokens: reservedOutputTokens,
       selfAgentName: selfAgentName,
       force: force,
+      cancel: cancel,
     );
-    if (rehydratedChanged) {
+    if (rehydratedChanged && !cancel.isCancelled) {
       // The fallback mutates the list it was given; adopt it back into the
       // caller-owned list.
       history
@@ -227,7 +234,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         _retainedSource = '';
       }
     }
-    if (rehydratedChanged && !result.changed) {
+    if (rehydratedChanged && !cancel.isCancelled && !result.changed) {
       return HarnessCompactionResult(
         changed: true,
         summarized: false,

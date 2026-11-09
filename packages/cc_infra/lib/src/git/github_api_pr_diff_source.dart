@@ -19,23 +19,31 @@ class GitHubApiPrDiffSource implements PrDiffSource {
   Stream<PrFilesLoad> watchFiles(PrSourceRequest req) async* {
     final cancelToken = CancelToken();
     final accumulator = <PrFile>[];
-
-    await for (final page in _client.pr.streamPullRequestFiles(
-      req.owner,
-      req.repo,
-      req.prNumber,
-      cancelToken: cancelToken,
-    )) {
-      for (final gh in page) {
-        accumulator.add(prFileFromGitHub(gh));
+    var finished = false;
+    try {
+      await for (final page in _client.pr.streamPullRequestFiles(
+        req.owner,
+        req.repo,
+        req.prNumber,
+        cancelToken: cancelToken,
+      )) {
+        for (final gh in page) {
+          accumulator.add(prFileFromGitHub(gh));
+        }
+        yield PrFilesLoad(files: List<PrFile>.unmodifiable(accumulator));
       }
-      yield PrFilesLoad(files: List<PrFile>.unmodifiable(accumulator));
+      finished = true;
+      yield PrFilesLoad(
+        files: List<PrFile>.unmodifiable(accumulator),
+        isComplete: true,
+      );
+    } finally {
+      // A listener that leaves mid-walk (the PR closed, the tab switched)
+      // aborts the in-flight page instead of letting it run to the end.
+      if (!finished) {
+        await cancelToken.cancel();
+      }
     }
-
-    yield PrFilesLoad(
-      files: List<PrFile>.unmodifiable(accumulator),
-      isComplete: true,
-    );
   }
 
   @override

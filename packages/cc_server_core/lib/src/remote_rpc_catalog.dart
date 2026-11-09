@@ -106,7 +106,6 @@ import 'package:cc_domain/features/orchestration/domain/entities/orchestration_p
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/usecases/save_orchestration_revision_use_case.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
@@ -196,9 +195,12 @@ import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/catalog/pending_question_watch.dart';
 import 'package:cc_server_core/src/catalog/pipeline_shell_guard.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
+import 'package:cc_server_core/src/catalog/presence_visibility.dart';
+import 'package:cc_server_core/src/catalog/repo_link_guard.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/space_provisioning_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
+import 'package:cc_server_core/src/catalog/steering_force_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
@@ -210,6 +212,7 @@ import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 import 'package:cc_server_core/src/demo/demo_review_service.dart';
+import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -322,10 +325,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // the AGENT — this one. The human answers in a CLIENT, which persists the
   // answer by writing the question message's metadata through
   // `messaging.updateMessage`. That write never touches this process's
-  // completer map, so without a hook here the asking agent sits out its whole
-  // timeout while the form already reads "answered". `messaging.updateMessage`
-  // therefore hands every metadata write to this service, which ignores
-  // anything that is not an answered question. Optional: when null the
+  // completer map, so `messaging.updateMessage` hands an answer for a
+  // question to `deliverAnswer`, which claims the waiter, runs the
+  // first-answer-wins write and completes the agent. Optional: when null the
   // `ask_user` tool is simply not offered.
   AgentQuestionService? agentQuestions,
   required WorkspaceRepository workspaceRepository,
@@ -645,11 +647,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // `acp.listModels` is `workspaceScoped: false`. Absent when null → the thin
   // client gets an empty model list.
   AcpModelRepository? acpModels,
-  // Per-forge credential store, backing the `forge.*` and
-  // `credentials.*ForgeToken` ops. SECURITY: connection status crosses the
-  // wire, tokens never do. Absent when null → those ops are not declared and
-  // the client shows every forge disconnected.
-  ForgeCredentialPort? forgeCredentials,
+  // Per-forge connection state (`forge.listConnections`, the callers' own
+  // per-forge logins). Absent when null → the op is not declared and the
+  // client shows every forge disconnected.
+  ForgeConnectionView? forgeConnections,
+  // Per-forge token store, backing `credentials.*ForgeToken`. SECURITY:
+  // connection status crosses the wire, tokens never do. Absent when null →
+  // those ops are not declared.
+  ForgeTokenStore? forgeTokens,
   // The SERVER's own app identity (GitHub App, Linear app), backing
   // `providerApps.*`. Operator-only; absent when null.
   ProviderAppSettings? providerApps,
@@ -661,12 +666,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // [actingUserId]. Backs the compose-PR reads (branches, default branch,
   // comparison, templates) so the composer works the same on every forge. Null
   // → those ops degrade to empty.
-  ForgePrClient Function(
-    Repo repo,
-    String? actingUserId, {
-    String? workspaceId,
-  })?
-  buildForgePrClient,
+  ForgePrClientResolver? buildForgePrClient,
   // Detects the OS-native sandbox capabilities of the SERVER's machine (which
   // backends are available + the recommended one) for the Settings → Sandboxing
   // page. The sandbox runs on the host, so detection is a host-local capability
@@ -911,15 +911,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // `messaging.watchMessages` (segments on message rows). Every `dispatch.*` op
   // uses `ctx.workspaceId!` and asserts space ownership.
   MessagingPort? messagingDispatch,
+  // The durable steering queue behind `steering.forceSend` (the other
+  // `steering.*` ops reach it through [messagingDispatch]).
+  SteeringQueueService? steeringQueue,
   // Runs the pipeline EXECUTOR (the `PipelineEngine`) on the SERVER so a
   // thin/web client can start / cancel / retry a pipeline run and kill a single
   // step, with the work executing server-side. The engine owns run-state
   // persistence (the Drift DB) and drives the dispatch stack (sandbox /
-  // cc_natives indexer), so only a host that constructs the
-  // engine wires it (the desktop in-process host). A pure-Dart headless
-  // cc_server does NOT construct the engine, so it leaves this null → the
-  // `pipeline.*` ops are simply absent and a web client connected to it degrades
-  // to "pipelines run on the server host". Every `pipeline.*` op is
+  // cc_natives indexer); `cc_server` constructs it and wires it here. Null
+  // (tests, a catalog built without an engine) leaves the `pipeline.*` ops
+  // absent. Every `pipeline.*` op is
   // workspace-scoped: it sources `ctx.workspaceId!` (never a client arg) and
   // validates run/step ownership via `loadOwnedPipelineRun` before acting
   // (workspace-isolation invariant).
@@ -1232,6 +1233,56 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       }
     }
     return false;
+  }
+
+  /// The presence roster as [userId] may see it (see [PresenceViewer]).
+  /// Same grant model as [viewerTraceRestricted]: admins and members granted
+  /// every linked repo see everything; a missing membership row fails closed;
+  /// absent identity wiring (single-user test catalogs) redacts nothing.
+  Future<PresenceViewer> presenceViewerFor(
+    String workspaceId,
+    String userId,
+  ) async {
+    final members = membershipRepository;
+    if (members == null) {
+      return const PresenceViewer.unrestricted();
+    }
+    final member = await members.getMember(workspaceId, userId);
+    if (member != null && member.role.isAdmin) {
+      return const PresenceViewer.unrestricted();
+    }
+    final grants = member == null
+        ? const <String, RepoGrantLevel>{}
+        : await members.getRepoGrants(workspaceId, userId);
+    bool readable(String repoId) =>
+        (grants[repoId] ?? RepoGrantLevel.none).allowsRead;
+    final repos = await workspaceRepository
+        .watchReposForWorkspace(workspaceId)
+        .first;
+    if (member != null && repos.every((r) => readable(r.id))) {
+      return const PresenceViewer.unrestricted();
+    }
+    return PresenceViewer.restricted(
+      readableRepoIds: {
+        for (final r in repos)
+          if (readable(r.id)) r.id,
+      },
+      repoIdsByCoordinate: {
+        for (final r in repos)
+          if (r.remoteOwner.isNotEmpty && r.remoteName.isNotEmpty)
+            '${r.remoteOwner}/${r.remoteName}'.toLowerCase(): r.id,
+      },
+      canReadSpace: (spaceId) async {
+        if (member == null) {
+          return false;
+        }
+        final spaceRepos = await isolatedRepoRepository.forSpace(
+          workspaceId,
+          spaceId,
+        );
+        return spaceRepos.every((r) => readable(r.repoId));
+      },
+    );
   }
 
   /// Filter durable feed rows before serializing them. Repo names and PR
@@ -1601,6 +1652,28 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     ];
   }
 
+  /// Whether [callerId] may receive a row of [workspaceId] from an unscoped
+  /// CROSS-WORKSPACE BY DESIGN lookup.
+  ///
+  /// Those ops exist because the event that triggers them carries no
+  /// workspace id, so the dispatcher's membership gate never runs. Each row
+  /// carries its own workspace, and this is the gate on it: the server owner
+  /// and members of that workspace see it, nobody else. Without it any
+  /// signed-in guest could list every workspace's approved orchestrations or
+  /// worktree rows — on a public demo, every other visitor's. Absent identity
+  /// wiring (single-user test catalogs) filters nothing, like the redaction
+  /// helpers above.
+  Future<bool> callerSeesWorkspace(String callerId, String workspaceId) async {
+    if (callerId == serverOwnerUserId) {
+      return true;
+    }
+    final members = identityMembers;
+    if (members == null) {
+      return true;
+    }
+    return await members.getMember(workspaceId, callerId) != null;
+  }
+
   // The HTTP redemption endpoint derived from the advertised RPC URL
   // (ws(s)://host:port/rpc → http(s)://host:port/invites/redeem). Empty when
   // the host advertises no reachable URL — the client then composes the link
@@ -1959,9 +2032,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   ForgePrClient? forgeClientFor(
     Repo repo,
     String? actingUserId, {
-    String? workspaceId,
+    required String workspaceId,
   }) => repo.hasForgeRemote
-      ? buildForgePrClient?.call(repo, actingUserId, workspaceId: workspaceId)
+      ? buildForgePrClient?.call(
+          repo,
+          workspaceId: workspaceId,
+          actingUserId: actingUserId,
+        )
       : null;
 
   /// [userId] is the caller: it gates repo access, keys the cache and is
@@ -2409,17 +2486,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (update is! Map) {
             throw const ValidationException('presence must be an object');
           }
-          String displayName = ctx.userId;
-          if (userRepository != null) {
-            final cached = _presenceNameCache[ctx.userId];
-            if (cached != null) {
-              displayName = cached;
-            } else {
-              final user = await userRepository.getById(ctx.userId);
-              displayName = user?.displayName ?? ctx.userId;
-              _presenceNameCache[ctx.userId] = displayName;
-            }
-          }
+          final users = userRepository;
+          final displayName = users == null
+              ? ctx.userId
+              : await presenceHub.displayNameFor(
+                  ctx.userId,
+                  () async => (await users.getById(ctx.userId))?.displayName,
+                );
           presenceHub.publishHuman(
             workspaceId: ctx.workspaceId!,
             userId: ctx.userId,
@@ -2467,11 +2540,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 (await userRepository.getById(ctx.userId))?.displayName ??
                 ctx.userId;
           }
+          // The holder hands back; an admin may end one left behind.
           return takeoverService.handBack(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
             userId: ctx.userId,
             displayName: displayName,
+            asAdmin: ctx.role?.isAdmin ?? false,
             note: ctx.args['note'] as String? ?? '',
           );
         },
@@ -2836,6 +2911,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             gitAuthorEmail: optional('git_author_email'),
           );
           await identityUsers.upsert(updated);
+          if (displayName != null) {
+            presenceHub?.renameUser(ctx.userId, displayName);
+          }
           return {'user': userToWire(updated, includeOnboarding: true)};
         },
       ),
@@ -3752,16 +3830,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.workspaceId!,
           repo.id,
         );
-        // A new link, or one retargeted at another forge repository, is
-        // checked against the caller's own access before automation may
-        // mint for it.
-        final retargeted =
-            existing == null ||
-            existing.forge != repo.forge ||
-            existing.remoteOwner.toLowerCase() !=
-                repo.remoteOwner.toLowerCase() ||
-            existing.remoteName.toLowerCase() != repo.remoteName.toLowerCase();
-        if (retargeted && repo.hasForgeRemote) {
+        // A new link, or one retargeted at another forge repository, lets
+        // automation mint for that repository: only a workspace admin may
+        // make it, and only for a repository their own sign-in can see.
+        if (isNewForgeLink(existing, repo)) {
+          requireRepoLinkAdmin(ctx);
           await verifyRepoLink?.call(
             workspaceId: ctx.workspaceId!,
             userId: ctx.userId,
@@ -3816,13 +3889,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final repo = await useCase.execute(
             ctx.args['path'] as String,
             workspaceId: ctx.workspaceId!,
-            verify: verifyRepoLink == null
-                ? null
-                : (repo) => verifyRepoLink(
-                    workspaceId: ctx.workspaceId!,
-                    userId: ctx.userId,
-                    repo: repo,
-                  ),
+            // A new link: admin only, as in `repos.upsert`.
+            verify: (repo) async {
+              requireRepoLinkAdmin(ctx);
+              await verifyRepoLink?.call(
+                workspaceId: ctx.workspaceId!,
+                userId: ctx.userId,
+                repo: repo,
+              );
+            },
           );
           return {'repo': repoToWire(repo)};
         },
@@ -3934,14 +4009,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // their own reads as disconnected even on a server whose app identity is
     // configured — "connected" here means "I signed in", which is the question
     // the onboarding gate and the account row are asking.
-    if (forgeCredentials != null)
+    if (forgeConnections != null)
       RepoOp(
         name: 'forge.listConnections',
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async => {
           'connections': [
-            for (final c in await forgeCredentials.connections(
+            for (final c in await forgeConnections.connections(
               userId: ctx.userId,
               workspaceId: await overlayWorkspaceIdChecked(ctx),
             ))
@@ -3949,33 +4024,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ],
         },
       ),
-    // Re-probes one forge and refreshes the caller's cached viewer identity.
-    // Backs the "test connection" affordance, so it deliberately hits the
-    // network rather than reporting the cached verdict.
-    if (forgeCredentials != null)
-      RepoOp(
-        name: 'forge.testConnection',
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          final forge = ForgeHost.fromWire(ctx.args['forge'] as String?);
-          if (!forge.isSupported) {
-            throw const NotFoundException('Missing or invalid argument: forge');
-          }
-          return (await forgeCredentials.testConnection(
-            forge,
-            userId: ctx.userId,
-            workspaceId: await overlayWorkspaceIdChecked(ctx),
-          )).toJson();
-        },
-      ),
     // Stores the CALLER's own GitLab or Bitbucket token. GitHub is sign-in
     // only: a pasted GitHub token is refused by `ForgeCredentials.setToken`.
     //
     // Strictly self-service: the target is always `ctx.userId`, so there is no
     // admin gate and no way to write another member's. Tokens are read per
-    // call, so the next request uses it.
-    if (forgeCredentials != null)
+    // call, so the next request uses it. Answers the connection probed with
+    // the new token, so a rejected paste reads as such at once.
+    if (forgeTokens != null)
       RepoOp(
         name: 'credentials.setForgeToken',
         kind: RepoOpKind.mutate,
@@ -3989,21 +4045,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (token is! String) {
             throw const NotFoundException('Missing or invalid argument: token');
           }
-          final workspaceId = await overlayWorkspaceIdChecked(ctx);
-          await forgeCredentials.setToken(
+          return (await forgeTokens.setToken(
             forge,
             token,
             userId: ctx.userId,
-            workspaceId: workspaceId,
-          );
-          return (await forgeCredentials.testConnection(
-            forge,
-            userId: ctx.userId,
-            workspaceId: workspaceId,
+            workspaceId: await overlayWorkspaceIdChecked(ctx),
           )).toJson();
         },
       ),
-    if (forgeCredentials != null)
+    if (forgeTokens != null)
       RepoOp(
         name: 'credentials.clearForgeToken',
         kind: RepoOpKind.mutate,
@@ -4013,7 +4063,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (!forge.isSupported) {
             throw const NotFoundException('Missing or invalid argument: forge');
           }
-          await forgeCredentials.clearToken(
+          await forgeTokens.clearToken(
             forge,
             userId: ctx.userId,
             workspaceId: await overlayWorkspaceIdChecked(ctx),
@@ -6541,22 +6591,29 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               (rawAnswer['skipped'] != null && rawAnswer['skipped'] is! bool)) {
             throw const ValidationException('Invalid question answer');
           }
-          final answer = AgentQuestionAnswer.fromJson(rawAnswer).toJson();
-          final accepted = await workspaceDbs
-              .of(ctx.workspaceId!)
-              .messagingDao
-              .answerQuestion(messageId, answer);
-          if (!accepted) {
-            throw const ValidationException(
-              'This question has already been answered or closed',
-            );
+          final answer = AgentQuestionAnswer.fromJson(rawAnswer);
+          final dao = workspaceDbs.of(ctx.workspaceId!).messagingDao;
+          // The waiter is claimed before the conditional write and completed
+          // after it, so "ok" here always means the agent received this
+          // answer — a timeout or abandonment that won the race is reported
+          // to the human instead of acknowledged.
+          final delivery = await agentQuestions.deliverAnswer(
+            messageId,
+            answer,
+            persist: () => dao.answerQuestion(messageId, answer.toJson()),
+          );
+          switch (delivery) {
+            case QuestionAnswerDelivery.delivered:
+              return {'ok': true};
+            case QuestionAnswerDelivery.notPending:
+              throw const ValidationException(
+                'This question is no longer awaiting an answer',
+              );
+            case QuestionAnswerDelivery.notPersisted:
+              throw const ValidationException(
+                'This question has already been answered or closed',
+              );
           }
-          agentQuestions.resolveFromMetadata(messageId, {
-            ...?existing.metadata,
-            'answered': true,
-            'answer': answer,
-          });
-          return {'ok': true};
         }
         if (existing.isUserQuestion && typedMetadata != null) {
           throw const ValidationException(
@@ -6576,10 +6633,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           content: ctx.args['content'] as String?,
           metadata: typedMetadata,
         );
-        // This is where an `ask_user` answer crosses back from the client to
-        // the blocked agent. Runs after the write so the persisted state and
-        // the resumed run cannot disagree; a no-op for every other update.
-        agentQuestions?.resolveFromMetadata(messageId, typedMetadata);
         return {'ok': true};
       },
     ),
@@ -7368,6 +7421,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
           return {'delivered': delivered};
         },
+      ),
+      // `steering.forceSend` ("send now" when no run can take the card).
+      ...buildSteeringForceOps(
+        steeringQueue: steeringQueue,
+        dispatch: dispatch,
+        assertSpaceOwned: assertSpaceOwned,
+        resolveRoleDefinition: steeringRoleResolver(
+          members: membershipRepository,
+          roles: workspaceRoleRepository,
+        ),
       ),
       // `/compact`: force an anchored-compaction pass over the conversation so
       // it can continue within the model's context window. The user's command
@@ -10229,7 +10292,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final repos = await isolatedRepoRepository.forSpaceAcrossWorkspaces(
           ctx.args['space_id'] as String,
         );
-        return {'repos': repos.map(isolatedRepoToWire).toList()};
+        return {
+          'repos': [
+            for (final r in repos)
+              if (await callerSeesWorkspace(ctx.userId, r.workspaceId))
+                isolatedRepoToWire(r),
+          ],
+        };
       },
     ),
     // CROSS-WORKSPACE BY DESIGN: teardown lookup by ticket id (ticket events
@@ -10244,7 +10313,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final repos = await isolatedRepoRepository.forTicketAcrossWorkspaces(
           ctx.args['ticket_id'] as String,
         );
-        return {'repos': repos.map(isolatedRepoToWire).toList()};
+        return {
+          'repos': [
+            for (final r in repos)
+              if (await callerSeesWorkspace(ctx.userId, r.workspaceId))
+                isolatedRepoToWire(r),
+          ],
+        };
       },
     ),
     RepoOp(
@@ -10623,7 +10698,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (ghRepos.isEmpty) {
           return {'authenticated': true, 'repos': <Map<String, dynamic>>[]};
         }
-        final groups = await fetch(ghRepos, workspaceId: ctx.workspaceId);
+        final groups = await fetch(ghRepos, workspaceId: ctx.workspaceId!);
         return {
           'authenticated': true,
           'repos': [
@@ -10631,8 +10706,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               {
                 'repo_id': g.repo.id,
                 'repo_full_name': g.repo.fullName,
-                'github_owner': g.repo.remoteOwner,
-                'github_repo_name': g.repo.remoteName,
                 'has_more': g.hasMore,
                 'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
               },
@@ -10921,166 +10994,50 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // Run SERVER-SIDE on the host's gh client; the thin client holds no token.
-    // Every owner/repo arg is validated against the bound workspace's linked
-    // repos before the fetch (workspace isolation). Null `githubRead` (no gh
-    // token) → empty/degraded results, mirroring the PR-list `authenticated`
-    // gate.
-    RepoOp(
-      name: 'github.repoBranches',
-      kind: RepoOpKind.read,
-      requiredArgs: ['owner', 'repo'],
-      handler: (ctx) async {
-        final matched = await requireWorkspaceForgeRepo(
-          ctx.workspaceId!,
-          ctx.args['owner'] as String,
-          ctx.args['repo'] as String,
-          userId: ctx.userId,
-        );
-        final client = forgeClientFor(
-          matched,
-          ctx.userId,
-          workspaceId: ctx.workspaceId,
-        );
-        if (client == null) {
-          return {'branches': <String>[]};
-        }
-        final branches = await client.listBranches();
-        // The CALLER's own branches lead the picker — that is almost always
-        // what they are about to open a PR from. Resolved per forge AND per
-        // caller: the same human is a different account on each forge, and
-        // the server's viewer login is not this member's.
-        final me =
-            (await forgeCredentials?.viewerLogin(
-                      matched.forge,
-                      userId: ctx.userId,
-                      workspaceId: ctx.workspaceId,
-                    ) ??
-                    '')
-                .toLowerCase();
-        final mine = <String>[];
-        final others = <String>[];
-        for (final b in branches) {
-          (me.isNotEmpty && b.lastCommitAuthor.toLowerCase() == me
-                  ? mine
-                  : others)
-              .add(b.name);
-        }
-        return {
-          'branches': [...mine, ...others],
-        };
-      },
-    ),
-    RepoOp(
-      name: 'github.defaultBranch',
-      kind: RepoOpKind.read,
-      requiredArgs: ['owner', 'repo'],
-      handler: (ctx) async {
-        final matched = await requireWorkspaceForgeRepo(
-          ctx.workspaceId!,
-          ctx.args['owner'] as String,
-          ctx.args['repo'] as String,
-          userId: ctx.userId,
-        );
-        final client = forgeClientFor(
-          matched,
-          ctx.userId,
-          workspaceId: ctx.workspaceId,
-        );
-        if (client == null) {
-          return {'branch': ''};
-        }
-        return {'branch': await client.getDefaultBranch()};
-      },
-    ),
-    RepoOp(
-      name: 'github.prTemplates',
-      kind: RepoOpKind.read,
-      requiredArgs: ['owner', 'repo'],
-      handler: (ctx) async {
-        final matched = await requireWorkspaceForgeRepo(
-          ctx.workspaceId!,
-          ctx.args['owner'] as String,
-          ctx.args['repo'] as String,
-          userId: ctx.userId,
-        );
-        final client = forgeClientFor(
-          matched,
-          ctx.userId,
-          workspaceId: ctx.workspaceId,
-        );
-        if (client == null || !client.capabilities.prTemplates) {
-          return {'templates': <Map<String, dynamic>>[]};
-        }
-        final templates = await client.listPrTemplates();
-        return {
-          'templates': [
-            for (final entry in templates.entries)
-              {
-                'name': entry.key,
-                'body': entry.value,
-                // The conventional single template is the default; with several
-                // the composer lets the operator pick.
-                'is_default': templates.length == 1,
-              },
-          ],
-        };
-      },
-    ),
-    RepoOp(
-      name: 'github.compareBranches',
-      kind: RepoOpKind.read,
-      requiredArgs: ['owner', 'repo', 'base', 'head'],
-      handler: (ctx) async {
-        final matched = await requireWorkspaceForgeRepo(
-          ctx.workspaceId!,
-          ctx.args['owner'] as String,
-          ctx.args['repo'] as String,
-          userId: ctx.userId,
-        );
-        final client = forgeClientFor(
-          matched,
-          ctx.userId,
-          workspaceId: ctx.workspaceId,
-        );
-        if (client == null) {
-          return {'comparison': null};
-        }
-        final c = await client.compareBranches(
-          base: ctx.args['base'] as String,
-          head: ctx.args['head'] as String,
-        );
-        if (c == null) {
-          return {'comparison': null};
-        }
-        return {
-          'comparison': {
-            'files': [for (final f in c.files) prFileToWire(f)],
-            'commits': [for (final cm in c.commits) prCommitToWire(cm)],
-            'additions': c.additions,
-            'deletions': c.deletions,
-            'total_commits': c.totalCommits,
-          },
-        };
-      },
-    ),
+    // The compose-PR reads (`forge.repoBranches`, `forge.defaultBranch`,
+    // `forge.prTemplates`, `forge.compareBranches`) live in
+    // `catalog/forge_compose_ops.dart`.
     RepoOp(
       name: 'github.prContent',
       kind: RepoOpKind.read,
       requiredArgs: ['owner', 'repo', 'number'],
       handler: (ctx) async {
-        final read = githubRead;
-        if (read == null) {
-          return {'content': null};
-        }
         final owner = ctx.args['owner'] as String;
         final repo = ctx.args['repo'] as String;
-        await requireWorkspaceForgeRepo(
+        final matched = await requireWorkspaceForgeRepo(
           ctx.workspaceId!,
           owner,
           repo,
           userId: ctx.userId,
         );
+        // Off GitHub the body comes from the repo's own forge: asking
+        // github.com about a GitLab project's coordinate reads someone else's
+        // repository (or nothing).
+        if (matched.forge != ForgeHost.github) {
+          final client = forgeClientFor(
+            matched,
+            ctx.userId,
+            workspaceId: ctx.workspaceId!,
+          );
+          final pr = await client?.getPullRequest(
+            (ctx.args['number'] as num).toInt(),
+          );
+          if (pr == null) {
+            return {'content': null};
+          }
+          return {
+            'content': {
+              'body': pr.body,
+              'body_html': ?pr.bodyHtml,
+              'changed_files': pr.changedFiles,
+              'commits_count': pr.commitsCount,
+            },
+          };
+        }
+        final read = githubRead;
+        if (read == null) {
+          return {'content': null};
+        }
         final pc = await read.prContent(
           owner,
           repo,
@@ -11105,18 +11062,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.read,
       requiredArgs: ['owner', 'repo', 'query'],
       handler: (ctx) async {
-        final read = githubRead;
-        if (read == null) {
-          return {'issues': <Map<String, dynamic>>[]};
-        }
         final owner = ctx.args['owner'] as String;
         final repo = ctx.args['repo'] as String;
-        await requireWorkspaceForgeRepo(
+        final matched = await requireWorkspaceForgeRepo(
           ctx.workspaceId!,
           owner,
           repo,
           userId: ctx.userId,
         );
+        // Issue search is a GitHub search API; no other forge's port has it.
+        if (matched.forge != ForgeHost.github) {
+          throw ForgeUnsupportedError(matched.forge, 'issueSearch');
+        }
+        final read = githubRead;
+        if (read == null) {
+          return {'issues': <Map<String, dynamic>>[]};
+        }
         final issues = await read.searchIssues(
           owner,
           repo,
@@ -11135,18 +11096,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.read,
       requiredArgs: ['owner', 'repo'],
       handler: (ctx) async {
-        final read = githubRead;
-        if (read == null) {
-          return {'permission': 'none'};
-        }
         final owner = ctx.args['owner'] as String;
         final repo = ctx.args['repo'] as String;
-        await requireWorkspaceForgeRepo(
+        final matched = await requireWorkspaceForgeRepo(
           ctx.workspaceId!,
           owner,
           repo,
           userId: ctx.userId,
         );
+        // The permission read is GitHub's `GET /repos` permissions block; a
+        // GitLab or Bitbucket coordinate must not be looked up on github.com.
+        if (matched.forge != ForgeHost.github) {
+          throw ForgeUnsupportedError(matched.forge, 'repoPermission');
+        }
+        final read = githubRead;
+        if (read == null) {
+          return {'permission': 'none'};
+        }
         return {
           'permission': await read.repoPermission(
             owner,
@@ -11446,18 +11412,39 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.read,
       requiredArgs: ['owner', 'repo', 'page'],
       handler: (ctx) async {
-        final read = githubRead;
-        if (read == null) {
-          return {'prs': <Map<String, dynamic>>[], 'has_more': false};
-        }
         final owner = ctx.args['owner'] as String;
         final repo = ctx.args['repo'] as String;
-        await requireWorkspaceForgeRepo(
+        final matched = await requireWorkspaceForgeRepo(
           ctx.workspaceId!,
           owner,
           repo,
           userId: ctx.userId,
         );
+        // Every other forge pages through its own client; one without
+        // paging says so rather than answering from github.com.
+        if (matched.forge != ForgeHost.github) {
+          final client = forgeClientFor(
+            matched,
+            ctx.userId,
+            workspaceId: ctx.workspaceId!,
+          );
+          if (client == null) {
+            return {'prs': <Map<String, dynamic>>[], 'has_more': false};
+          }
+          if (!client.capabilities.has(ForgeCapability.openListPaging)) {
+            throw ForgeUnsupportedError(matched.forge, 'openListPaging');
+          }
+          final page = await (client as ForgeOpenPrPagingClient)
+              .listOpenPullRequestsPage((ctx.args['page'] as num).toInt());
+          return {
+            'prs': [for (final pr in page.prs) pullRequestToWire(pr)],
+            'has_more': page.hasMore,
+          };
+        }
+        final read = githubRead;
+        if (read == null) {
+          return {'prs': <Map<String, dynamic>>[], 'has_more': false};
+        }
         final page = await read.openPrPage(
           owner,
           repo,
@@ -11534,47 +11521,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'links': links.map(ticketLinkToWire).toList()};
       },
     ),
-    // The PipelineRun DAO exposes ID-only lookups (getRun/watchRun) and step
-    // ops keyed only by run/step id — an ID is NOT a scoping boundary, so each
-    // op below fetches the owning run and asserts run.workspaceId ==
-    // ctx.workspaceId, denying foreign access loudly (workspace-isolation
-    // invariant). These two helpers are the single ownership chokepoint.
-    RepoOp(
-      name: 'pipeline_run.insertRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run'],
-      handler: (ctx) async {
-        final run = pipelineRunFromWire(
-          (ctx.args['run'] as Map).cast<String, dynamic>(),
-        );
-        if (run.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Pipeline run belongs to a different workspace',
-          );
-        }
-        await pipelineRunRepository.insertRun(run);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.updateRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run'],
-      handler: (ctx) async {
-        final run = pipelineRunFromWire(
-          (ctx.args['run'] as Map).cast<String, dynamic>(),
-        );
-        if (run.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Pipeline run belongs to a different workspace',
-          );
-        }
-        // Guard against retargeting an existing foreign run via the wire id.
-        await assertPipelineRunOwned(ctx.workspaceId!, run.id);
-        await pipelineRunRepository.updateRun(run);
-        return {'ok': true};
-      },
-    ),
+    // Pipeline runs are READ-ONLY over RPC. Run and step-run rows are written
+    // only by the server-side `PipelineEngine` (through the repository
+    // directly); a client drives a run through the `pipeline.*` engine ops
+    // below. A wire-writable run row let a member name an admin as the run's
+    // requester (which `pipeline.retry` then carried forward), choose the id
+    // that becomes the run's working directory, or flip status under the
+    // engine.
+    //
+    // The DAO exposes ID-only lookups (getRun/watchRun) and step reads keyed
+    // only by run/step id — an ID is NOT a scoping boundary, so each op below
+    // fetches the owning run and asserts run.workspaceId == ctx.workspaceId,
+    // denying foreign access loudly (workspace-isolation invariant).
     RepoOp(
       name: 'pipeline_run.getRun',
       kind: RepoOpKind.read,
@@ -11592,52 +11550,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline run belongs to a different workspace',
           );
         }
-        return {'run': pipelineRunToWire(run)};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.updateRunState',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run_id', 'state'],
-      handler: (ctx) async {
-        await assertPipelineRunOwned(
-          ctx.workspaceId!,
-          ctx.args['run_id'] as String,
-        );
-        await pipelineRunRepository.updateRunState(
-          ctx.args['run_id'] as String,
-          (ctx.args['state'] as Map).cast<String, dynamic>(),
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.incrementCost',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run_id', 'cents', 'tokens'],
-      handler: (ctx) async {
-        await assertPipelineRunOwned(
-          ctx.workspaceId!,
-          ctx.args['run_id'] as String,
-        );
-        await pipelineRunRepository.incrementCost(
-          ctx.args['run_id'] as String,
-          (ctx.args['cents'] as num).toInt(),
-          (ctx.args['tokens'] as num).toInt(),
-        );
-        return {'ok': true};
-      },
-    ),
-    // CROSS-WORKSPACE BY DESIGN: the resume-on-startup reconciler needs every
-    // non-terminal run across all workspaces (mirrors
-    // PipelineRunRepository.nonTerminalRuns, a documented startup-reconciler
-    // exemption). The server still authenticates the device.
-    RepoOp(
-      name: 'pipeline_run.nonTerminalRuns',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final runs = await pipelineRunRepository.nonTerminalRuns();
-        return {'runs': runs.map(pipelineRunToWire).toList()};
+        return {'run': pipelineRunToWire(run, withSnapshot: true)};
       },
     ),
     RepoOp(
@@ -11654,119 +11567,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
     RepoOp(
-      name: 'pipeline_run.activeRunCountForTemplate',
-      kind: RepoOpKind.read,
-      requiredArgs: ['template_id'],
-      handler: (ctx) async {
-        final count = await pipelineRunRepository.activeRunCountForTemplate(
-          workspaceId: ctx.workspaceId!,
-          templateId: ctx.args['template_id'] as String,
-          excludeTriggerEventTypes:
-              ((ctx.args['exclude_trigger_event_types'] as List?) ?? const [])
-                  .whereType<String>()
-                  .toSet(),
-        );
-        return {'count': count};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.nextQueuedRunForTemplate',
-      kind: RepoOpKind.read,
-      requiredArgs: ['template_id'],
-      handler: (ctx) async {
-        final run = await pipelineRunRepository.nextQueuedRunForTemplate(
-          workspaceId: ctx.workspaceId!,
-          templateId: ctx.args['template_id'] as String,
-        );
-        return {'run': run == null ? null : pipelineRunToWire(run)};
-      },
-    ),
-    RepoOp(
       name: 'pipeline_run.deleteRun',
       kind: RepoOpKind.mutate,
       requiredArgs: ['run_id'],
       handler: (ctx) async {
-        // The repository delete is already scoped by (workspaceId, runId), so a
-        // foreign run is simply not matched.
-        await pipelineRunRepository.deleteRun(
+        // Removing a FINISHED run from history. A live run belongs to the
+        // engine: deleting its row would strand whatever it is executing, so
+        // it has to be cancelled first.
+        final run = await loadOwnedPipelineRun(
           ctx.workspaceId!,
           ctx.args['run_id'] as String,
         );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.insertStepRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['step_run'],
-      handler: (ctx) async {
-        final stepRun = pipelineStepRunFromWire(
-          (ctx.args['step_run'] as Map).cast<String, dynamic>(),
-        );
-        // The parent run must belong to the bound workspace.
-        await assertPipelineRunOwned(ctx.workspaceId!, stepRun.pipelineRunId);
-        await pipelineRunRepository.insertStepRun(stepRun);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.updateStepRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['step_run_id'],
-      handler: (ctx) async {
-        await assertPipelineStepRunOwned(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-        );
-        final status = ctx.args['status'];
-        await pipelineRunRepository.updateStepRun(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-          status: status is String
-              ? PipelineStepStatus.fromString(status)
-              : null,
-          inputJson: ctx.args['input_json'] as String?,
-          outputJson: ctx.args['output_json'] as String?,
-          spaceId: ctx.args['space_id'] as String?,
-          errorMessage: ctx.args['error_message'] as String?,
-          errorStackTrace: ctx.args['error_stack_trace'] as String?,
-          finishedAt: ctx.args['finished_at'] is String
-              ? DateTime.parse(ctx.args['finished_at'] as String)
-              : null,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.restartStepRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['step_run_id', 'started_at'],
-      handler: (ctx) async {
-        await assertPipelineStepRunOwned(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-        );
-        await pipelineRunRepository.restartStepRun(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-          startedAt: DateTime.parse(ctx.args['started_at'] as String),
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_run.deleteStepRun',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['step_run_id'],
-      handler: (ctx) async {
-        await assertPipelineStepRunOwned(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-        );
-        await pipelineRunRepository.deleteStepRun(
-          ctx.workspaceId!,
-          ctx.args['step_run_id'] as String,
-        );
+        if (!run.isTerminal) {
+          throw const ValidationException(
+            'Cancel the pipeline run before deleting it',
+          );
+        }
+        await pipelineRunRepository.deleteRun(ctx.workspaceId!, run.id);
         return {'ok': true};
       },
     ),
@@ -11802,12 +11619,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'step_run': pipelineStepRunToWire(stepRun)};
       },
     ),
-    // These are NOT the data-layer `pipeline_run.*` ops above (which read/write
-    // run rows); they drive the live `PipelineEngine` (start/cancel/retry a run,
-    // kill a step). The engine runs only on a host that constructs it (the
-    // desktop in-process host), so the whole block is gated on `pipeline != null`
-    // and is simply absent on a headless server (web-against-headless degrades to
-    // "pipelines run on the server host"). Each op is workspace-scoped: it uses
+    // These are NOT the data-layer `pipeline_run.*` reads above; they drive the
+    // live `PipelineEngine` (start/cancel/retry a run, kill a step) — the only
+    // way a client changes a run. `cc_server` always constructs the engine; the
+    // block is gated on `pipeline != null` for hosts that do not (the public
+    // demo, catalog tests). Each op is workspace-scoped: it uses
     // `ctx.workspaceId!` (never a client arg) and validates run/step ownership
     // via `loadOwnedPipelineRun` before touching the engine (isolation
     // invariant). `resumeAll` is deliberately NOT exposed — it is a global
@@ -12619,22 +12435,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Bash steps are not available in the demo',
           );
         }
-        // A shell step is operator code on this host. Creating one, or editing
-        // a pipeline that already has one, is an admin decision.
-        if (!(ctx.role?.isAdmin ?? false) &&
-            (hasShellStep(definition) ||
-                hasShellStep(
-                  await pipelineTemplateRepository.getById(
-                    ctx.workspaceId!,
-                    definition.templateId,
-                  ),
-                ))) {
-          throw const AuthException(
-            'Only a workspace admin can create or edit a pipeline with a '
-            'shell step',
-          );
-        }
-        await pipelineTemplateRepository.upsert(definition);
+        // `isBuiltIn` is the server's to decide, shell steps and steps behind
+        // an armed trigger are admin decisions — see the helper.
+        await pipelineTemplateRepository.upsert(
+          await preparePipelineTemplateWrite(
+            ctx,
+            templates: pipelineTemplateRepository,
+            triggers: pipelineTriggerRepository,
+            incoming: definition,
+          ),
+        );
         return {'ok': true};
       },
     ),
@@ -12670,11 +12480,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline trigger belongs to a different workspace',
           );
         }
-        await requireAdminForShellTriggers(ctx, pipelineTemplateRepository, [
-          trigger.templateId,
-        ]);
-        await pipelineTriggerRepository.insert(trigger);
-        return {'ok': true};
+        // Template exists, schedule parses, token minted here (never the
+        // client's), arming authority — see the helper.
+        final prepared = await preparePipelineTriggerWrite(
+          ctx,
+          templates: pipelineTemplateRepository,
+          incoming: trigger,
+        );
+        await pipelineTriggerRepository.insert(prepared);
+        return {'ok': true, 'trigger': pipelineTriggerEntityToWire(prepared)};
       },
     ),
     RepoOp(
@@ -12696,12 +12510,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.workspaceId!,
           trigger.id,
         );
-        await requireAdminForShellTriggers(ctx, pipelineTemplateRepository, [
-          trigger.templateId,
-          ?previous?.templateId,
-        ]);
-        await pipelineTriggerRepository.update(trigger);
-        return {'ok': true};
+        if (previous == null) {
+          throw const NotFoundException('Pipeline trigger not found');
+        }
+        final prepared = await preparePipelineTriggerWrite(
+          ctx,
+          templates: pipelineTemplateRepository,
+          incoming: trigger,
+          previous: previous,
+        );
+        await pipelineTriggerRepository.update(prepared);
+        return {'ok': true, 'trigger': pipelineTriggerEntityToWire(prepared)};
       },
     ),
     RepoOp(
@@ -12741,22 +12560,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'triggers': triggers.map(pipelineTriggerEntityToWire).toList()};
       },
     ),
-    // CROSS-WORKSPACE BY DESIGN: the trigger dispatcher fans a domain event out
-    // to every workspace's matching triggers, then filters each candidate by
-    // the event's own workspaceId before firing. Mirrors
-    // PipelineTriggerRepository.enabledForEvent (the documented exemption).
-    RepoOp(
-      name: 'pipeline_trigger.enabledForEvent',
-      kind: RepoOpKind.read,
-      requiredArgs: ['event_type'],
-      workspaceScoped: false,
-      handler: (ctx) async {
-        final triggers = await pipelineTriggerRepository.enabledForEvent(
-          ctx.args['event_type'] as String,
-        );
-        return {'triggers': triggers.map(pipelineTriggerEntityToWire).toList()};
-      },
-    ),
+    // The dispatcher's and the scheduler's cross-workspace reads
+    // (`enabledForEvent`, `scheduled`) and the scheduler's bookkeeping
+    // (`markFired`) are server-side only: an enabled trigger row carries its
+    // webhook token, which is both the inbound route and the HMAC secret.
     RepoOp(
       name: 'pipeline_trigger.getById',
       kind: RepoOpKind.read,
@@ -12777,47 +12584,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         }
         return {'trigger': pipelineTriggerEntityToWire(trigger)};
-      },
-    ),
-    // CROSS-WORKSPACE BY DESIGN: the scheduler enumerates all enabled scheduled
-    // triggers across every workspace, then fires each against its own
-    // workspace. Mirrors PipelineTriggerRepository.scheduled (the documented
-    // exemption).
-    RepoOp(
-      name: 'pipeline_trigger.scheduled',
-      kind: RepoOpKind.read,
-      requiredArgs: const [],
-      workspaceScoped: false,
-      handler: (ctx) async {
-        final triggers = await pipelineTriggerRepository.scheduled();
-        return {'triggers': triggers.map(pipelineTriggerEntityToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'pipeline_trigger.markFired',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['id', 'when'],
-      handler: (ctx) async {
-        // ID-only lookup is not a scoping boundary; load + validate ownership
-        // before mutating the fired-at cursor.
-        final existing = await pipelineTriggerRepository.getById(
-          ctx.workspaceId!,
-          ctx.args['id'] as String,
-        );
-        if (existing == null) {
-          throw const NotFoundException('Pipeline trigger not found');
-        }
-        if (existing.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Pipeline trigger belongs to a different workspace',
-          );
-        }
-        await pipelineTriggerRepository.markFired(
-          ctx.workspaceId!,
-          existing.id,
-          DateTime.parse(ctx.args['when'] as String),
-        );
-        return {'ok': true};
       },
     ),
     RepoOp(
@@ -12907,7 +12673,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final o = await orchestrationRepository.forPipelineRunAnyWorkspace(
           ctx.args['pipeline_run_id'] as String,
         );
-        return {'orchestration': o == null ? null : orchestrationToWire(o)};
+        final visible =
+            o != null && await callerSeesWorkspace(ctx.userId, o.workspaceId);
+        return {'orchestration': visible ? orchestrationToWire(o) : null};
       },
     ),
     // CROSS-WORKSPACE BY DESIGN: startup materialization-resume scans approved
@@ -12922,7 +12690,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       handler: (ctx) async {
         final list = await orchestrationRepository
             .approvedNeedingMaterialization();
-        return {'orchestrations': list.map(orchestrationToWire).toList()};
+        return {
+          'orchestrations': [
+            for (final o in list)
+              if (await callerSeesWorkspace(ctx.userId, o.workspaceId))
+                orchestrationToWire(o),
+          ],
+        };
       },
     ),
 
@@ -13017,6 +12791,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           }
         }
         final id = await workspaceRepository.upsert(toStore);
+        if (previous != null &&
+            (previous.githubAuthMode != toStore.githubAuthMode ||
+                previous.githubAppId != toStore.githubAppId)) {
+          // Another GitHub identity: nothing the previous one minted for
+          // this workspace may be served again.
+          workspaceGitHubApps?.identityChanged(id);
+        }
         if (isNew) {
           final members = identityMembers;
           if (members != null &&
@@ -13079,6 +12860,24 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             throw const AuthException(
               'Deleting a workspace requires its owner role',
             );
+          }
+        }
+        // Its machines go first, while their rows can still be written: a
+        // deleted workspace's rig would otherwise run to its TTL.
+        final machines = rigs;
+        if (machines != null) {
+          try {
+            for (final rig in await machines.list(id)) {
+              if (!rig.status.phase.isTerminal) {
+                await machines.close(
+                  workspaceId: id,
+                  rigId: rig.id,
+                  reason: RigCloseReason.workspaceGone,
+                );
+              }
+            }
+          } on Object catch (e) {
+            CcInfraLog.warning('rigs of workspace $id not closed: $e');
           }
         }
         await workspaceRepository.delete(id);
@@ -13810,7 +13609,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // The workspace roster: humans + agents as co-equal principals. The
     // `tier` arg picks the consumer's coalescing budget (`summary` = phone).
     // Workspace-scoped: membership is enforced before the stream opens, so
-    // presence never crosses a workspace boundary.
+    // presence never crosses a workspace boundary. Within the workspace each
+    // subscriber sees only the loci, typing/spotlight spaces and claims its
+    // own repo grants reach (`presenceViewerFor`). The viewer is re-resolved
+    // at most every [PresenceCadence.heartbeat], so a revoked grant stops
+    // leaking within one heartbeat without a grant lookup per cursor move.
     if (presenceHub != null)
       WatchQuery(
         name: 'presence.watch',
@@ -13818,9 +13621,36 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final tier = ctx.args['tier'] == 'summary'
               ? PresenceCadence.summaryTierMinInterval
               : PresenceCadence.fullTierMinInterval;
-          return presenceHub
-              .watch(ctx.workspaceId!, minInterval: tier)
-              .map((roster) => {'participants': roster});
+          final workspaceId = ctx.workspaceId!;
+          PresenceViewer? viewer;
+          DateTime? resolvedAt;
+          return presenceHub.watch(workspaceId, minInterval: tier).asyncMap((
+            roster,
+          ) async {
+            final now = DateTime.now();
+            if (viewer == null ||
+                now.difference(resolvedAt!) >= PresenceCadence.heartbeat) {
+              viewer = await presenceViewerFor(workspaceId, ctx.userId);
+              resolvedAt = now;
+            }
+            return {'participants': await viewer!.redact(roster)};
+          });
+        },
+      ),
+    // The take-over marker for one space, live: the composer's lock and the
+    // banner follow it instead of polling `takeover.status`.
+    if (takeoverService != null)
+      WatchQuery(
+        name: 'takeover.watch',
+        handler: (ctx) async* {
+          final spaceId = ctx.args['space_id'];
+          if (spaceId is! String || spaceId.isEmpty) {
+            throw const ValidationException('space_id is required');
+          }
+          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          yield* takeoverService
+              .watch(ctx.workspaceId!, spaceId)
+              .map((marker) => {'takeover': marker});
         },
       ),
     if (identityUsers != null &&
@@ -14892,7 +14722,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             (run) => {
               'run': run == null || run.workspaceId != ctx.workspaceId
                   ? null
-                  : pipelineRunToWire(run),
+                  : pipelineRunToWire(run, withSnapshot: true),
             },
           ),
     ),
@@ -15401,17 +15231,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           userId: ctx.userId,
         );
         final includePatches = ctx.args['include_patches'] != false;
+        // Loads rather than bare lists, for `truncated`: a forge that capped
+        // its listing must not reach the reader as the whole change. Empty
+        // loads (clone progress, a failed first read) are skipped, as
+        // `watchFiles` always did.
         yield* repo
-            .watchFiles(
-              (ctx.args['pr_number'] as num).toInt(),
-              includePatches: includePatches,
-            )
+            .watchFilesLoad((ctx.args['pr_number'] as num).toInt())
+            .where((load) => load.files.isNotEmpty)
             .map(
-              (files) => {
+              (load) => {
                 'files': [
-                  for (final f in files)
+                  for (final f in load.files)
                     prFileToWire(f, includePatch: includePatches),
                 ],
+                if (load.truncated) 'truncated': true,
               },
             );
       },
@@ -15769,8 +15602,3 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
 
   return (ops: ops, watch: watch);
 }
-
-/// Display names for `presence.update` entries, cached so cursor-cadence
-/// updates never turn into per-call user lookups. Names change rarely; a
-/// stale entry self-heals on server restart (presence is ephemeral anyway).
-final Map<String, String> _presenceNameCache = {};

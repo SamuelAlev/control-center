@@ -72,7 +72,7 @@ class EnvironmentProcessBody extends StatelessWidget {
               component.id,
             ),
           ),
-        if (live && component.state != 'stopped')
+        if (live && component.phase != EnvironmentComponentPhase.stopped)
           EnvironmentActionButton(
             spaceKey: spaceKey,
             actionKey: 'stop:${component.id}',

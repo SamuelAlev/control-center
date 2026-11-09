@@ -9,6 +9,15 @@ class AppLocalizationsHe extends AppLocalizations {
   AppLocalizationsHe([String locale = 'he']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'לא ניתן לשלוח את זה עכשיו: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'התשובה שלך לא נמסרה. ייתכן שכבר נענתה, או שהסוכן הפסיק להמתין.';
+
+  @override
   String get succeeded => 'הצליחה';
 
   @override
@@ -2593,10 +2602,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get addGif => 'הוספת GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'הוסיפו לפחות מאגר GitHub אחד כדי לראות בקשות משיכה';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5900,9 +5905,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get pipelineStepDurationLabel => 'משך';
 
   @override
-  String get pipelineStepBranch => 'ענף';
-
-  @override
   String get pipelineStepViewConversation => 'הצגת השיחה';
 
   @override
@@ -6987,13 +6989,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get reviewRequested => 'התבקשה סקירה';
 
   @override
-  String get connectGitHubHint =>
-      'היכנסו ל-GitHub תחת הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד';
-
-  @override
-  String get connectGitHubToLoadPrs => 'חברו את GitHub כדי לטעון בקשות משיכה';
-
-  @override
   String get noRepositoriesConfigured => 'לא הוגדרו מאגרים';
 
   @override
@@ -7664,13 +7659,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get createAsDraft => 'יצירה כטיוטה';
-
-  @override
-  String get composePrNoRepo => 'לא נבחר מאגר GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'בחרו סביבת עבודה עם מאגר המקושר ל-GitHub כדי לפתוח בקשת משיכה.';
 
   @override
   String get composePrPickBranches =>
@@ -16811,6 +16799,27 @@ class AppLocalizationsHe extends AppLocalizations {
       'הקוד הזה לא תואם לכניסה הזו. בדקו אותו ונסו שוב.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'יותר מדי קודים שגויים. התחילו את ההתחברות מחדש.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'ההתחברות הזו כבר לא תקפה. התחילו אותה מחדש.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'השרת לא הצליח לקרוא את בקשת ההתחברות הזו. התחילו אותה מחדש.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'יותר מדי ניסיונות התחברות כרגע. המתינו דקה ונסו שוב.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider אישר את ההתחברות, אבל השרת לא הצליח לשמור אותה. נסו שוב.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider לא מגיב כרגע. נסו שוב בעוד כמה דקות.';
   }
@@ -16841,7 +16850,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'סביבת העבודה הזו ב-Linear כבר מחוברת לשרת Control Center אחר.';
+      'סביבת העבודה הזו ב-Slack כבר מחוברת לשרת Control Center אחר.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17274,4 +17283,38 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'החלף אפליקציה';
+
+  @override
+  String openOnForge(String forge) {
+    return 'פתיחה ב-$forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'מוצגים $count הקבצים הראשונים. $forge לא מציג את השאר.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'חברו שירות אחסון קוד כדי לטעון בקשות משיכה';
+
+  @override
+  String get connectForgeHint =>
+      'חברו את GitHub,‏ GitLab או Bitbucket תחת הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'הוסיפו לפחות מאגר אחד ב-GitHub,‏ GitLab או Bitbucket כדי לראות בקשות משיכה';
+
+  @override
+  String get composePrNoForgeRepo => 'לא נבחר מאגר מתארח';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'בחרו סביבת עבודה עם מאגר ב-GitHub,‏ GitLab או Bitbucket כדי לפתוח בקשת משיכה.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'חברו את $forge כדי לפתוח בקשת משיכה במאגר הזה';
+  }
 }

@@ -19,6 +19,7 @@ class AskUserTool extends HarnessTool {
     required this._conversationId,
     this._askedByAgentId,
     this._askedByName,
+    this._runId,
     this._maxOptions = 8,
   });
 
@@ -28,25 +29,14 @@ class AskUserTool extends HarnessTool {
   final String _conversationId;
   final String? _askedByAgentId;
   final String? _askedByName;
+  final String? _runId;
   final int _maxOptions;
 
   @override
   String get name => 'ask_user';
 
   @override
-  String get description =>
-      'Ask the operator a structured question. This is the ONLY way to ask '
-      'them anything: it renders a form in the conversation and the run waits '
-      'for the answer. Never write a question as a chat message — that ends '
-      'the turn and they have to re-prompt. Use it when the answer changes '
-      'what you build and you cannot settle it from the code, the request, or '
-      'a sensible default (a preference between real alternatives, a missing '
-      'requirement, an ambiguity whose readings lead to different work). Do '
-      'NOT use it to report progress, to ask permission (the approval gate '
-      'handles that), or to confirm something you can verify yourself. Offer '
-      'concrete {label, description?} options when you can; set '
-      'allow_free_text when the list may not cover the answer; set '
-      'multi_select when several options may apply.';
+  String get description => kAskUserToolDescription;
 
   /// Read tier: asking a question mutates nothing. The tool gathers the human's
   /// own input, so it is never itself approval-gated.
@@ -110,22 +100,28 @@ class AskUserTool extends HarnessTool {
       return HarnessToolResult.error(error);
     }
 
-    final answer = await _port.ask(
-      AgentQuestionRequest(
-        workspaceId: _workspaceId,
-        spaceId: _spaceId,
-        conversationId: _conversationId,
-        question: parsed.question,
-        context: parsed.context,
-        options: parsed.options,
-        allowFreeText: parsed.allowFreeText,
-        multiSelect: parsed.multiSelect,
-        askedByAgentId: _askedByAgentId,
-        askedByName: _askedByName,
-      ),
-      // A stopped run leaves nobody to read the answer; close the form.
-      abandoned: context.cancel?.whenCancelled,
-    );
+    final AgentQuestionAnswer? answer;
+    try {
+      answer = await _port.ask(
+        AgentQuestionRequest(
+          workspaceId: _workspaceId,
+          spaceId: _spaceId,
+          conversationId: _conversationId,
+          question: parsed.question,
+          context: parsed.context,
+          options: parsed.options,
+          allowFreeText: parsed.allowFreeText,
+          multiSelect: parsed.multiSelect,
+          askedByAgentId: _askedByAgentId,
+          askedByName: _askedByName,
+          runId: _runId,
+        ),
+        // A stopped run leaves nobody to read the answer; close the form.
+        abandoned: context.cancel?.whenCancelled,
+      );
+    } on ArgumentError catch (e) {
+      return HarnessToolResult.error('${e.message}');
+    }
 
     final outcome = AskUserOutcome.fromAnswer(answer);
     return outcome.isError

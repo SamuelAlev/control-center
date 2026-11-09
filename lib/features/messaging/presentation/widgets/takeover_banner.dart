@@ -10,9 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Slim banner shown in the conversation pane while a take-over of this
 /// space's worktree is active (PRD 16 §8). Shows who holds it; when it's
-/// the current user, offers a "Hand back" action. Polls
-/// [takeoverStatusProvider] (no server subscription exists for this) and
-/// keeps this client's `worktree` soft-claim in sync while mounted.
+/// the current user, offers a "Hand back" action. Follows
+/// [takeoverStatusProvider] (the `takeover.watch` subscription) and keeps
+/// this client's `worktree` soft-claim in sync while mounted.
 class TakeoverBanner extends ConsumerWidget {
   /// Creates a [TakeoverBanner] for [spaceId].
   const TakeoverBanner({super.key, required this.spaceId});
@@ -117,6 +117,6 @@ class TakeoverBanner extends ConsumerWidget {
       );
       return;
     }
-    ref.invalidate(takeoverStatusProvider(spaceId));
+    // No refresh: `takeover.watch` delivers the cleared marker.
   }
 }

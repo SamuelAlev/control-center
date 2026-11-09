@@ -179,7 +179,13 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
         return;
       }
       setState(() => _sending = false);
-      showPrError(context, ref, e, (l) => l.failedToPostReply('$e'));
+      showPrError(
+        context,
+        ref,
+        e,
+        (l) => l.failedToPostReply('$e'),
+        prRef: widget.controller.pr,
+      );
     }
   }
 

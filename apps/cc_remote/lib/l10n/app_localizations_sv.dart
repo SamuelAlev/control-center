@@ -488,6 +488,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get teammate => 'Kollega';
 
   @override
+  String get systemSender => 'System';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -641,12 +644,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Visar senast kända data för $names. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.';
+    return 'Visar senast kända data för $names. Återuppta installationen på GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App-installationen är avstängd. Visar senast kända data för $names. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.';
+    return 'GitHub App-installationen är avstängd. Visar senast kända data för $names. Återuppta installationen på GitHub.';
   }
 
   @override
@@ -2592,6 +2595,22 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Koden hör inte till den här inloggningen. Kontrollera den och försök igen.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'För många felaktiga koder. Starta inloggningen igen.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Inloggningstjänsten svarar inte just nu. Vänta en minut och försök igen.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Inloggningen nekades. Starta den igen och godkänn alla begärda behörigheter.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Inloggningen fungerade, men servern kunde inte spara den. Försök igen.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

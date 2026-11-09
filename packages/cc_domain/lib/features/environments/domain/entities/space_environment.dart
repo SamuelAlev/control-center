@@ -1,6 +1,68 @@
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:collection/collection.dart';
 
+/// Where one component stands, or one compose service of it.
+///
+/// The one list of these: writers use [wire], readers [tryParse] and the
+/// getters, so "is it up" is decided once instead of per screen.
+enum EnvironmentComponentPhase {
+  /// Not started yet.
+  pending,
+
+  /// Coming up.
+  starting,
+
+  /// A container that runs but has not passed its healthcheck.
+  waiting,
+
+  /// A process or app that runs, with no readiness check.
+  running,
+
+  /// Up and answering.
+  ready,
+
+  /// A task or one-shot service that finished cleanly.
+  completed,
+
+  /// Broke while starting or running.
+  failed,
+
+  /// A process or app that exited on its own with an error.
+  crashed,
+
+  /// Stopped on purpose; start brings it back.
+  stopped,
+
+  /// An app window that was closed.
+  closed;
+
+  /// Stable wire string.
+  String get wire => name;
+
+  /// Parses [wire], or null for an unknown value.
+  static EnvironmentComponentPhase? tryParse(String? wire) {
+    for (final phase in values) {
+      if (phase.name == wire) {
+        return phase;
+      }
+    }
+    return null;
+  }
+
+  /// Something runs, or is on its way up.
+  bool get isLive => this == running || this == ready || this == starting;
+
+  /// Something runs and can be opened or used now.
+  bool get isUp => this == running || this == ready;
+
+  /// It broke.
+  bool get isFailed => this == failed || this == crashed;
+
+  /// Nothing runs and nothing is coming.
+  bool get isDown =>
+      this == failed || this == stopped || this == closed || this == crashed;
+}
+
 /// Where one component stands.
 class EnvironmentComponentState {
   /// Creates an [EnvironmentComponentState].
@@ -47,9 +109,13 @@ class EnvironmentComponentState {
   /// Component kind.
   final String kind;
 
-  /// `pending`, `starting`, `ready`, `completed`, `stopped`, `failed`,
-  /// `running`, `closed` or `crashed`.
+  /// The wire form of an [EnvironmentComponentPhase]. Read it through
+  /// [phase]; a string a newer build wrote stays readable here.
   final String state;
+
+  /// What [state] means, or null for a value this build does not know.
+  EnvironmentComponentPhase? get phase =>
+      EnvironmentComponentPhase.tryParse(state);
 
   /// What to show.
   final String? label;

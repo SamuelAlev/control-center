@@ -9,6 +9,15 @@ class AppLocalizationsHu extends AppLocalizations {
   AppLocalizationsHu([String locale = 'hu']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Most nem sikerült elküldeni: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'A válaszod nem lett kézbesítve. Lehet, hogy már megválaszolták, vagy az ügynök már nem vár.';
+
+  @override
   String get succeeded => 'Sikeres';
 
   @override
@@ -2615,10 +2624,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get addGif => 'GIF hozzáadása';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Adjon hozzá legalább egy GitHub-tárolót a pull requestek megtekintéséhez';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5941,9 +5946,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Időtartam';
 
   @override
-  String get pipelineStepBranch => 'Ág';
-
-  @override
   String get pipelineStepViewConversation => 'Beszélgetés megtekintése';
 
   @override
@@ -7041,14 +7043,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get reviewRequested => 'Átnézést kértek';
 
   @override
-  String get connectGitHubHint =>
-      'Jelentkezzen be a GitHubra itt: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Csatlakoztassa a GitHubot a pull requestek betöltéséhez';
-
-  @override
   String get noRepositoriesConfigured => 'Nincsenek beállított tárolók';
 
   @override
@@ -7707,13 +7701,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Létrehozás piszkozatként';
-
-  @override
-  String get composePrNoRepo => 'Nincs kiválasztott GitHub-tároló';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Válasszon GitHubhoz kapcsolt tárolóval rendelkező munkaterületet a pull request megnyitásához.';
 
   @override
   String get composePrPickBranches =>
@@ -16883,6 +16870,27 @@ class AppLocalizationsHu extends AppLocalizations {
       'Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Túl sok hibás kód. Indítsa újra a bejelentkezést.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Ez a bejelentkezés már nem érvényes. Indítsa újra.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'A szerver nem tudta beolvasni ezt a bejelentkezési kérést. Indítsa újra.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Most túl sok a bejelentkezési kísérlet. Várjon egy percet, majd próbálja újra.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return 'A(z) $provider elfogadta a bejelentkezést, de a szerver nem tudta menteni. Próbálja újra.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return 'A(z) $provider most nem válaszol. Próbáld újra néhány perc múlva.';
   }
@@ -16913,7 +16921,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Ez a Linear-munkaterület már egy másik Control Center-szerverhez csatlakozik.';
+      'Ez a Slack-munkaterület már egy másik Control Center-szerverhez csatlakozik.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17349,4 +17357,38 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Alkalmazás váltása';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Megnyitás itt: $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Az első $count fájl látható. A(z) $forge a többit nem listázza.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Csatlakoztasson egy kódtárhelyet a pull requestek betöltéséhez';
+
+  @override
+  String get connectForgeHint =>
+      'Csatlakoztassa a GitHubot, GitLabot vagy Bitbucketet itt: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Adjon hozzá legalább egy GitHubon, GitLabon vagy Bitbucketen lévő tárolót a pull requestek megtekintéséhez';
+
+  @override
+  String get composePrNoForgeRepo => 'Nincs kiválasztva tárhelyen lévő tároló';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Válasszon egy munkaterületet, amelyben van GitHubon, GitLabon vagy Bitbucketen lévő tároló, hogy pull requestet nyisson.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Csatlakoztassa ezt: $forge, hogy pull requestet nyisson ebben a tárolóban';
+  }
 }

@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/repos/repo_workspace_provisioner.dart';
 import 'package:path/path.dart' as p;
@@ -66,14 +67,15 @@ void main() {
     File(p.join(orphanPath(), 'leftover.txt')).writeAsStringSync('stale');
 
     await provisioner.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentSlug: '_pr',
-      fallbackDir: '',
-      prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/shop-ui',
-      prBranch: 'pr/42',
-      repoAllowlist: const {'repo-1'},
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: '_pr',
+        prHeadRef: 'refs/pull/42/head',
+        prHeadRepoFullName: 'acme/shop-ui',
+        prBranch: 'pr/42',
+        repoAllowlist: const {'repo-1'},
+      ),
     );
 
     expect(isolation.destroyed, [
@@ -93,14 +95,15 @@ void main() {
 
   test('a clean destination is provisioned without a teardown', () async {
     await provisioner.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentSlug: '_pr',
-      fallbackDir: '',
-      prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/shop-ui',
-      prBranch: 'pr/42',
-      repoAllowlist: const {'repo-1'},
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: '_pr',
+        prHeadRef: 'refs/pull/42/head',
+        prHeadRepoFullName: 'acme/shop-ui',
+        prBranch: 'pr/42',
+        repoAllowlist: const {'repo-1'},
+      ),
     );
 
     expect(isolation.destroyed, isEmpty);
@@ -122,14 +125,15 @@ void main() {
     );
 
     await provisioner.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentSlug: '_pr',
-      fallbackDir: '',
-      prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/shop-ui',
-      prBranch: 'pr/42',
-      repoAllowlist: const {'repo-1'},
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: '_pr',
+        prHeadRef: 'refs/pull/42/head',
+        prHeadRepoFullName: 'acme/shop-ui',
+        prBranch: 'pr/42',
+        repoAllowlist: const {'repo-1'},
+      ),
     );
 
     expect(isolation.destroyed, isEmpty);

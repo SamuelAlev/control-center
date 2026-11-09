@@ -164,6 +164,19 @@ class SteeringQueue {
     );
   }
 
+  /// A read-only view for a NESTED run (a subagent) working on this queue's
+  /// behalf.
+  ///
+  /// The parent is blocked on the subagent's tool call while it runs, so a
+  /// message the user sends meanwhile would otherwise wait — possibly for
+  /// many minutes — until the subagent returned. The view lets the running
+  /// subagent SEE each steering and aside message once (so it can react now)
+  /// without consuming it: the messages stay queued and the parent still
+  /// drains them at its next turn, firing [onDrained] exactly once. Follow-ups
+  /// are the parent's alone (they decide whether the PARENT stops), so the
+  /// view never surfaces them. Anything enqueued through the view lands here.
+  SteeringQueue nestedView() => _NestedSteeringView(this);
+
   /// Removes and returns every steering-lane message in FIFO order.
   ///
   /// Returns an empty list when the lane is empty; the lane is cleared. Every
@@ -231,4 +244,56 @@ class SteeringQueue {
     }
     return drained;
   }
+}
+
+/// See [SteeringQueue.nestedView].
+class _NestedSteeringView extends SteeringQueue {
+  _NestedSteeringView(this._parent);
+
+  final SteeringQueue _parent;
+
+  /// Messages already surfaced to the nested run, by identity.
+  final Set<SteeringMessage> _seen = Set<SteeringMessage>.identity();
+
+  List<SteeringMessage> _unseen(SteeringChannel channel) => [
+    for (final message in _parent.peek(channel))
+      if (_seen.add(message)) message,
+  ];
+
+  @override
+  void enqueue(SteeringMessage message) => _parent.enqueue(message);
+
+  @override
+  void pushFront(SteeringMessage message) => _parent.pushFront(message);
+
+  @override
+  bool removeByRef(String? ref) => _parent.removeByRef(ref);
+
+  @override
+  List<SteeringMessage> drainSteering() => _unseen(SteeringChannel.steering);
+
+  @override
+  List<SteeringMessage> drainAside() => _unseen(SteeringChannel.aside);
+
+  @override
+  List<SteeringMessage> drainFollowUp() => const <SteeringMessage>[];
+
+  @override
+  List<SteeringMessage> peek(SteeringChannel channel) => [
+    if (channel != SteeringChannel.followUp)
+      for (final message in _parent.peek(channel))
+        if (!_seen.contains(message)) message,
+  ];
+
+  @override
+  bool get hasSteering => peek(SteeringChannel.steering).isNotEmpty;
+
+  @override
+  bool get hasAside => peek(SteeringChannel.aside).isNotEmpty;
+
+  @override
+  bool get hasFollowUp => false;
+
+  @override
+  bool get isEmpty => !hasSteering && !hasAside;
 }

@@ -19,10 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// about the environment as a whole.
 String? failingComponentId(SpaceEnvironment environment) => environment
     .components
-    .firstWhereOrNull(
-      (component) =>
-          component.state == 'failed' || component.state == 'crashed',
-    )
+    .firstWhereOrNull((component) => component.phase?.isFailed ?? false)
     ?.id;
 
 /// An environment that exists: what it is, where it answers, and each part.

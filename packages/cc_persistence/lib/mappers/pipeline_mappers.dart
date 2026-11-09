@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_attempt.dart';
@@ -32,20 +33,27 @@ PipelineRunsTableCompanion pipelineRunToCompanion(PipelineRun run) {
     parentPipelineRunId: Value(run.parentPipelineRunId),
     parentStepId: Value(run.parentStepId),
     templateVersion: Value(run.templateVersion),
+    templateSnapshotJson: run.templateSnapshot != null
+        ? Value(jsonEncode(run.templateSnapshot!.toJson()))
+        : const Value.absent(),
     totalCostCents: Value(run.totalCostCents),
     totalTokens: Value(run.totalTokens),
     dryRun: Value(run.dryRun),
+    isProjection: Value(run.isProjection),
   );
 }
 
 /// Converts a domain [PipelineRun] to a Drift companion for UPDATE.
 ///
-/// Identical to [pipelineRunToCompanion] except that the three columns a
-/// caller's snapshot must never speak for are left absent, so an update writes
-/// nothing to them:
+/// Identical to [pipelineRunToCompanion] except that the columns a caller's
+/// snapshot must never speak for are left absent, so an update writes nothing
+/// to them:
 ///
+/// * `template_snapshot_json` — the graph the run was pinned to at insert.
+///   It never changes, and a run rebuilt without it must not erase it.
 /// * `state_json` — merged by `PipelineDao.updateRunState` under the engine's
 ///   per-run state lock, from branches a terminal transition never saw.
+/// * `is_projection` — fixed by the reporter that inserted the row.
 /// * `total_cost_cents` / `total_tokens` — accumulated by
 ///   `PipelineDao.incrementRunCost` as each dispatched agent finishes, which is
 ///   the same instant the run completes.
@@ -57,6 +65,8 @@ PipelineRunsTableCompanion pipelineRunToUpdateCompanion(PipelineRun run) {
   final full = pipelineRunToCompanion(run);
   return full.copyWith(
     stateJson: const Value.absent(),
+    templateSnapshotJson: const Value.absent(),
+    isProjection: const Value.absent(),
     totalCostCents: const Value.absent(),
     totalTokens: const Value.absent(),
   );
@@ -91,10 +101,29 @@ PipelineRun pipelineRunFromRow(PipelineRunsTableData row) {
     parentPipelineRunId: row.parentPipelineRunId,
     parentStepId: row.parentStepId,
     templateVersion: row.templateVersion,
+    templateSnapshot: _snapshotFromJson(row.templateSnapshotJson),
     totalCostCents: row.totalCostCents,
     totalTokens: row.totalTokens,
     dryRun: row.dryRun,
+    isProjection: row.isProjection,
   );
+}
+
+/// Decodes `template_snapshot_json`. A run that predates snapshots has none,
+/// and a malformed one degrades to none: the engine then falls back to the
+/// live template, exactly as it did before snapshots existed.
+PipelineDefinition? _snapshotFromJson(String? json) {
+  if (json == null || json.isEmpty) {
+    return null;
+  }
+  try {
+    final decoded = jsonDecode(json);
+    return decoded is Map<String, dynamic>
+        ? PipelineDefinition.fromJson(decoded)
+        : null;
+  } on Object {
+    return null;
+  }
 }
 
 /// Converts a Drift step run row to a domain [PipelineStepRun].
@@ -108,7 +137,6 @@ PipelineStepRun stepRunFromRow(PipelineStepRunsTableData row) {
     outputJson: row.outputJson,
     spaceId: row.spaceId,
     errorMessage: row.errorMessage,
-    branchIndex: row.branchIndex,
     attemptCount: row.attemptCount,
     priorAttempts: _attemptHistoryFromJson(row.attemptHistory),
     startedAt: row.startedAt,
@@ -143,7 +171,6 @@ PipelineStepRunsTableCompanion stepRunToCompanion(PipelineStepRun stepRun) {
     status: Value(stepRun.status.toStorageString()),
     inputJson: Value(stepRun.inputJson),
     spaceId: Value(stepRun.spaceId),
-    branchIndex: Value(stepRun.branchIndex),
     startedAt: Value(stepRun.startedAt),
     // Round-trip finishedAt so a row inserted already-terminal (e.g. a router
     // branch recorded as `skipped`) doesn't read back as still running.

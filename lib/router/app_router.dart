@@ -304,7 +304,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       context,
       state,
       gateNotifier,
-      () => ref.read(activeWorkspaceIdProvider),
+      () => landingWorkspaceIdFor(
+        remembered: ref.read(activeWorkspaceIdProvider),
+        workspaces: ref.read(workspacesProvider).value,
+      ),
     ),
     routes: [
       GoRoute(
@@ -383,6 +386,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         owner: state.pathParameters['owner']!,
                         repo: state.pathParameters['repo']!,
                         prNumber: prNumber,
+                        forge: prForgeFromQuery(state.uri.queryParameters),
                         // The focused workbench tab rides as `?tab=` (same
                         // convention as the space page).
                         focusedTabKey: state.uri.queryParameters['tab'],

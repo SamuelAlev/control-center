@@ -287,8 +287,8 @@ void main() {
     expect(h.loop.userMessages, hasLength(1));
     final config = h.loop.configs.single;
     expect(config.maxTurns, isNull);
-    expect(config.budget.isActive, isFalse);
-    expect(config.externalBudgetExceeded, isNotNull);
+    expect(config.guards.budget.isActive, isFalse);
+    expect(config.guards.externalBudgetExceeded, isNotNull);
     expect(events.whereType<DoneEvent>().single.outcome, isNull);
   });
 
@@ -302,8 +302,8 @@ void main() {
 
     final config = h.loop.configs.single;
     expect(config.maxTurns, isNull);
-    expect(config.budget.isActive, isFalse);
-    expect(config.externalBudgetExceeded, isNotNull);
+    expect(config.guards.budget.isActive, isFalse);
+    expect(config.guards.externalBudgetExceeded, isNotNull);
   });
 
   test('/plan runs uncapped without the cost guard', () async {
@@ -316,8 +316,8 @@ void main() {
 
     final config = h.loop.configs.single;
     expect(config.maxTurns, isNull);
-    expect(config.budget.isActive, isFalse);
-    expect(config.externalBudgetExceeded, isNull);
+    expect(config.guards.budget.isActive, isFalse);
+    expect(config.guards.externalBudgetExceeded, isNull);
   });
 
   test('plain chat runs uncapped without the cost guard', () async {
@@ -330,8 +330,8 @@ void main() {
 
     final config = h.loop.configs.single;
     expect(config.maxTurns, isNull);
-    expect(config.budget.isActive, isFalse);
-    expect(config.externalBudgetExceeded, isNull);
+    expect(config.guards.budget.isActive, isFalse);
+    expect(config.guards.externalBudgetExceeded, isNull);
   });
 
   test('a ceiling end reason does not chain a second segment', () async {
@@ -372,7 +372,7 @@ void main() {
         autonomyResolver: (workspaceId, spaceId, agentId) async =>
             spaceId == 'space-1' ? 'proposeOnly' : 'actFreely',
         onRun: (config) async {
-          gate = await config.approvalCallback!(WriteTool(), {
+          gate = await config.tools.approvalCallback!(WriteTool(), {
             'path': 'change.txt',
             'content': 'unsafe',
           });
@@ -410,7 +410,7 @@ void main() {
       script: [const LoopDone(LoopDoneReason.completed)],
       actionGuard: guard,
       onRun: (config) async {
-        gate = await config.approvalCallback!(WriteTool(), {
+        gate = await config.tools.approvalCallback!(WriteTool(), {
           'path': 'change.txt',
           'content': 'unsafe',
         });
@@ -460,7 +460,7 @@ void main() {
             confirmationPort: approver,
             autonomyResolver: (_, _, _) async => 'actFreely',
             onRun: (config) async {
-              gate = await config.approvalCallback!(_PolicyTool(effect), {
+              gate = await config.tools.approvalCallback!(_PolicyTool(effect), {
                 'path': 'target.txt',
               });
             },
@@ -499,7 +499,7 @@ void main() {
         connectApprover: false,
         autonomyResolver: (_, _, _) async => 'actFreely',
         onRun: (config) async {
-          gate = await config.approvalCallback!(
+          gate = await config.tools.approvalCallback!(
             _PolicyTool(ActionClass.prCreate),
             {},
           );

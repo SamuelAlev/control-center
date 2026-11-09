@@ -135,7 +135,7 @@ class RigSpec {
   /// every image and volume of the stack, and 16 is also the most the backend
   /// accepts, because it cannot restart a machine with a larger disk.
   factory RigSpec.environment({
-    required String conversationId,
+    required String spaceId,
     required String environmentId,
     required String worktreePath,
     required List<String> egressAllowlist,
@@ -154,7 +154,7 @@ class RigSpec {
     idleTimeout: Duration(hours: ttlHours),
     worktreePath: worktreePath,
     imageId: environmentImageId,
-    conversationId: conversationId,
+    conversationId: spaceId,
     slotId: environmentId,
     openedByUserId: openedByUserId,
     netBackend: RigNetBackend.virtioNet,

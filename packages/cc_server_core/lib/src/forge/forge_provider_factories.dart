@@ -7,17 +7,14 @@ import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart'
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_server_core/src/cached_pr_review_repository.dart';
+import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 import 'package:cc_server_core/src/pr_review/forge_client_pr_diff_source.dart';
 import 'package:rhttp/rhttp.dart';
-
-/// Builds the [ForgePrClient] for one repository on one forge.
-typedef ForgePrClientBuilder =
-    ForgePrClient Function({required String owner, required String repo});
 
 /// Server-side [ForgeProviderFactory] for any forge.
 ///
 /// Every forge's factory is this same class with a different
-/// [ForgePrClientBuilder]: the caching, drafts, diff sources and event
+/// [ForgePrClientResolver]: the caching, drafts, diff sources and event
 /// plumbing above the client are identical, so the only thing that varies is
 /// which vendor API the client speaks. That is the whole point of the
 /// abstraction — adding a forge means adding an adapter, not a repository.
@@ -31,7 +28,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
   ForgeRepositoryFactory({
     required this.forge,
     required WorkspaceDatabaseManager workspaceDbs,
-    required this._buildClient,
+    required this._clientFor,
     required this._localGitSource,
     required this._buildApiDiffSource,
     this._eventBus,
@@ -43,9 +40,9 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
   final ForgeHost forge;
 
   final WorkspaceDatabaseManager _dbs;
-  final ForgePrClientBuilder _buildClient;
+  final ForgePrClientResolver _clientFor;
   final PrDiffSource _localGitSource;
-  final PrDiffSource Function() _buildApiDiffSource;
+  final PrDiffSource Function(ForgePrClient client) _buildApiDiffSource;
   final DomainEventBus? _eventBus;
   final PrChangeSignals? _changeSignals;
   final BlobStore? _blobStore;
@@ -61,16 +58,18 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
         'member it acts for: its cache rows are that member\'s alone.',
       );
     }
+    final client = _clientFor(
+      ctx.repo,
+      workspaceId: ctx.workspaceId,
+      actingUserId: userId,
+    );
     return CachedPrReviewRepository(
       db: _dbs.of(ctx.workspaceId),
       cacheMemberId: ctx.linkedToWorkspace ? null : userId,
-      forgeClient: _buildClient(
-        owner: ctx.repo.remoteOwner,
-        repo: ctx.repo.remoteName,
-      ),
+      forgeClient: client,
       owner: ctx.repo.remoteOwner,
       repo: ctx.repo.remoteName,
-      apiDiffSource: _buildApiDiffSource(),
+      apiDiffSource: _buildApiDiffSource(client),
       localDiffSource: _localGitSource,
       localCheckoutPath: ctx.repo.path,
       eventBus: _eventBus,
@@ -113,9 +112,12 @@ ForgeProviderRegistry buildForgeProviderRegistry({
       ForgeRepositoryFactory(
         forge: forge,
         workspaceDbs: workspaceDbs,
-        buildClient: forgePrClientBuilder(forge, httpClient),
+        // The registry is per actor: [httpClient] already carries whose
+        // credential every call rides.
+        clientFor: forgePrClientBuilder(forge, httpClient),
         localGitSource: localGitSource,
-        buildApiDiffSource: () => forgeApiDiffSource(forge, httpClient),
+        buildApiDiffSource: (client) =>
+            forgeApiDiffSource(forge, httpClient, client),
         eventBus: eventBus,
         changeSignals: changeSignals,
         blobStore: blobStore,
@@ -126,26 +128,29 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   return ForgeProviderRegistry(factories);
 }
 
-/// The client builder for [forge] over [httpClient].
-ForgePrClientBuilder forgePrClientBuilder(
+/// The client resolver for [forge] over [httpClient], whose transport already
+/// carries the credential (so the workspace and actor only choose the repo).
+ForgePrClientResolver forgePrClientBuilder(
   ForgeHost forge,
   RhttpClient httpClient,
 ) => switch (forge) {
-  ForgeHost.github => ({required owner, required repo}) => GitHubForgePrClient(
-    client: GitHubApiClient(httpClient),
-    owner: owner,
-    repo: repo,
-  ),
-  ForgeHost.gitlab => ({required owner, required repo}) => GitLabForgePrClient(
-    client: GitLabApiClient(httpClient),
-    owner: owner,
-    repo: repo,
-  ),
+  ForgeHost.github =>
+    (repo, {required workspaceId, actingUserId}) => GitHubForgePrClient(
+      client: GitHubApiClient(httpClient),
+      owner: repo.remoteOwner,
+      repo: repo.remoteName,
+    ),
+  ForgeHost.gitlab =>
+    (repo, {required workspaceId, actingUserId}) => GitLabForgePrClient(
+      client: GitLabApiClient(httpClient),
+      owner: repo.remoteOwner,
+      repo: repo.remoteName,
+    ),
   ForgeHost.bitbucket =>
-    ({required owner, required repo}) => BitbucketForgePrClient(
+    (repo, {required workspaceId, actingUserId}) => BitbucketForgePrClient(
       client: BitbucketApiClient(httpClient),
-      owner: owner,
-      repo: repo,
+      owner: repo.remoteOwner,
+      repo: repo.remoteName,
     ),
   ForgeHost.local => throw ArgumentError.value(
     forge,
@@ -154,12 +159,16 @@ ForgePrClientBuilder forgePrClientBuilder(
   ),
 };
 
-/// The API-backed diff source for [forge] over [httpClient].
+/// The API-backed diff source for [forge] over [httpClient], for the
+/// repository [client] is pinned to.
 ///
 /// Only GitHub ships a dedicated API diff source today; the others serve their
 /// diff through the client and reuse the generic path.
-PrDiffSource forgeApiDiffSource(ForgeHost forge, RhttpClient httpClient) =>
-    switch (forge) {
-      ForgeHost.github => GitHubApiPrDiffSource(GitHubApiClient(httpClient)),
-      _ => ForgeClientPrDiffSource(forgePrClientBuilder(forge, httpClient)),
-    };
+PrDiffSource forgeApiDiffSource(
+  ForgeHost forge,
+  RhttpClient httpClient,
+  ForgePrClient client,
+) => switch (forge) {
+  ForgeHost.github => GitHubApiPrDiffSource(GitHubApiClient(httpClient)),
+  _ => ForgeClientPrDiffSource(client),
+};

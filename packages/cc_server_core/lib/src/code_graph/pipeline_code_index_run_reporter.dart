@@ -92,7 +92,8 @@ class PipelineCodeIndexRunReporter implements CodeIndexRunReporter {
     try {
       final stale = await _runs.nonTerminalRuns();
       for (final run in stale) {
-        if (run.triggerEventType != IndexCodeTemplate.watchTriggerEventType) {
+        if (!run.isProjection ||
+            run.triggerEventType != IndexCodeTemplate.watchTriggerEventType) {
           continue;
         }
         final now = _now();
@@ -270,6 +271,9 @@ class _PipelineCodeIndexRun implements CodeIndexRun {
         templateId: IndexCodeTemplate.id,
         workspaceId: workspaceId,
         status: status,
+        // The watcher owns this run, not the engine: it holds no slot of the
+        // template's `maxParallelRuns`.
+        isProjection: true,
         triggerEventType: IndexCodeTemplate.watchTriggerEventType,
         triggerPayload: {
           'workspace_id': workspaceId,

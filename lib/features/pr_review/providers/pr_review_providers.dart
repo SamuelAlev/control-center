@@ -20,13 +20,19 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.d
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
+    show ForgeCapability;
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show capabilitiesForProvider;
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -34,21 +40,34 @@ import 'package:control_center/features/workspaces/providers/workspace_scope.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Provides the VCS provider registry — flipped to the cc_data
-/// [RpcForgeProviderFactory] over the desktop's in-process RPC server (the
-/// composition flip). The UI resolves PR-review repositories over RPC; the
-/// host owns GitHub auth, the SWR disk cache, the diff sources and draft
-/// persistence. Server-side EXECUTION wires the Dao-backed
-/// `GitHubForgeProviderFactory` into the catalog instead (see
-/// `remoteRpcCatalogProvider`).
-final forgeProviderRegistryProvider = Provider<ForgeProviderRegistry>((ref) {
-  return ForgeProviderRegistry([
-    RpcForgeProviderFactory(ref.watch(rpcClientProvider)),
-  ]);
-});
+/// Builds the review repository for one linked repo.
+///
+/// Over RPC there is ONE implementation for every forge: the host resolves the
+/// forge adapter from the repo row ([Repo.forge]) and owns auth, the SWR disk
+/// cache, the diff sources and draft persistence, so the client never picks
+/// an adapter. (A per-forge client registry used to sit here with only a
+/// GitHub entry, which resolved every GitLab and Bitbucket repo to an empty
+/// repository.) A repo with no forge remote has nothing to review.
+final prReviewRepositoryFactoryProvider =
+    Provider<PrReviewRepository Function(ForgeProviderContext ctx)>((ref) {
+      final client = ref.watch(rpcClientProvider);
+      return (ctx) => ctx.repo.hasForgeRemote
+          ? RpcPrReviewRepository(
+              client,
+              workspaceId: ctx.workspaceId,
+              owner: ctx.repo.remoteOwner,
+              repo: ctx.repo.remoteName,
+            )
+          : const EmptyPrReviewRepository();
+    });
 
-/// Identifies one pull request the way GitHub does: the workspace context, the
+/// Identifies one pull request: the workspace context, the forge and the
 /// `owner/repo` it lives in, and the number.
+///
+/// `forge` is part of the identity because one workspace may link the same
+/// `owner/name` on two forges. Null means "not stated" (a link built before
+/// the forge rode in the URL, a notification payload): it resolves to the
+/// only repo with that coordinate, GitHub's when two share it.
 ///
 /// A PR number is unique only *within* its repo, so the coords ARE the
 /// identity: every PR-keyed provider below takes a [PrRef] and resolves its
@@ -57,7 +76,12 @@ final forgeProviderRegistryProvider = Provider<ForgeProviderRegistry>((ref) {
 /// updated on a deferred microtask — let a cross-repo hop subscribe the NEW
 /// number against the PREVIOUS repo for a frame, which is exactly the
 /// wrong-repo `GET /repos/<other-repo>/pulls/<n>` 404 class.)
-typedef PrRef = ({String workspaceId, String repoFullName, int number});
+typedef PrRef = ({
+  String workspaceId,
+  String repoFullName,
+  int number,
+  ForgeHost? forge,
+});
 
 /// The linked [Repo] row for this [PrRef]'s `owner/repo`, or null while the
 /// workspace's repo rows haven't resolved or don't link that repo.
@@ -66,12 +90,13 @@ typedef PrRef = ({String workspaceId, String repoFullName, int number});
 /// active repo or a route-synced scope. Null means "can't answer yet", never
 /// "try another repo".
 final prRepoRowProvider = Provider.autoDispose.family<Repo?, PrRef>((ref, pr) {
-  final slash = pr.repoFullName.indexOf('/');
-  if (slash <= 0 || slash == pr.repoFullName.length - 1) {
+  // Last-slash split: a GitLab `group/sub/project` has `group/sub` as owner.
+  final parts = splitRepoFullName(pr.repoFullName);
+  if (parts == null) {
     return null;
   }
-  final owner = pr.repoFullName.substring(0, slash).toLowerCase();
-  final name = pr.repoFullName.substring(slash + 1).toLowerCase();
+  final owner = parts.owner.toLowerCase();
+  final name = parts.name.toLowerCase();
   final repoSnapshot = ref.watch(reposForWorkspaceProvider(pr.workspaceId));
   // A transient failure (a retried RPC error) keeps answering from the rows
   // Riverpod retained: flipping to null tore down every PR subscription and
@@ -81,15 +106,54 @@ final prRepoRowProvider = Provider.autoDispose.family<Repo?, PrRef>((ref, pr) {
       (!repoSnapshot.hasValue || isAuthoritativeRpcError(repoSnapshot.error))) {
     return null;
   }
-  final repos = repoSnapshot.value ?? const <Repo>[];
-  for (final r in repos) {
-    if (r.remoteOwner.toLowerCase() == owner &&
-        r.remoteName.toLowerCase() == name) {
-      return r;
-    }
-  }
-  return null;
+  return matchRepoForPr(
+    repoSnapshot.value ?? const <Repo>[],
+    owner: owner,
+    name: name,
+    forge: pr.forge,
+  );
 });
+
+/// Whether the forge hosting [PrRef]'s repo offers a [ForgeCapability].
+///
+/// False while the repo row is unknown: an affordance the server may refuse
+/// stays hidden rather than flashing in and failing.
+final prSupportsProvider = Provider.autoDispose
+    .family<bool, (PrRef, ForgeCapability)>((ref, key) {
+      final repo = ref.watch(prRepoRowProvider(key.$1));
+      if (repo == null) {
+        return false;
+      }
+      return ref.watch(capabilitiesForProvider(repo.forge)).has(key.$2);
+    });
+
+/// The repo among [repos] a PR on `owner/name` (and [forge], when stated)
+/// belongs to. Coordinates match case-insensitively; with no forge stated the
+/// only match wins, and when two forges share the coordinate GitHub's does
+/// (what every forge-less link has always meant).
+Repo? matchRepoForPr(
+  List<Repo> repos, {
+  required String owner,
+  required String name,
+  ForgeHost? forge,
+}) {
+  final o = owner.toLowerCase();
+  final n = name.toLowerCase();
+  final matches = [
+    for (final r in repos)
+      if (r.remoteOwner.toLowerCase() == o &&
+          r.remoteName.toLowerCase() == n &&
+          (forge == null || r.forge == forge))
+        r,
+  ];
+  if (matches.length <= 1 || forge != null) {
+    return matches.firstOrNull;
+  }
+  return matches.firstWhere(
+    (r) => r.forge == ForgeHost.github,
+    orElse: () => matches.first,
+  );
+}
 
 /// The review repository bound to this [PrRef]'s own `owner/repo`, or null
 /// while [prRepoRowProvider] hasn't resolved.
@@ -105,8 +169,7 @@ final prRepositoryProvider = Provider.autoDispose
       if (repo == null) {
         return null;
       }
-      final registry = ref.watch(forgeProviderRegistryProvider);
-      return registry.resolve(
+      return ref.watch(prReviewRepositoryFactoryProvider)(
         ForgeProviderContext(repo: repo, workspaceId: pr.workspaceId),
       );
     });
@@ -236,7 +299,7 @@ bool isAuthoritativeRpcError(Object? error) =>
 /// a PR number is meaningless outside its repo, and this provider's binding is
 /// exactly the mutable selection state it must never ride.
 ///
-/// Resolved over RPC ([RpcForgeProviderFactory]); GitHub auth lives on the HOST,
+/// Resolved over RPC ([RpcPrReviewRepository]); GitHub auth lives on the HOST,
 /// not this thin client, so this does NOT gate on a client-local token — the
 /// server serves the PR-review surface from its own gh-authenticated client
 /// (and degrades to an empty repository there when it holds no token). Gating on
@@ -247,8 +310,7 @@ final prReviewRepositoryProvider = Provider<PrReviewRepository>((ref) {
   if (workspace == null || repo == null) {
     return const EmptyPrReviewRepository();
   }
-  final registry = ref.watch(forgeProviderRegistryProvider);
-  return registry.resolve(
+  return ref.watch(prReviewRepositoryFactoryProvider)(
     ForgeProviderContext(repo: repo, workspaceId: workspace.id),
   );
 });
@@ -256,21 +318,26 @@ final prReviewRepositoryProvider = Provider<PrReviewRepository>((ref) {
 /// Provides the full [PrFilesLoad] stream so the UI can react to clone
 /// progress (phase, message) as well as the file list itself.
 ///
-/// Over RPC the repository is the cc_data [RpcPrReviewRepository], whose domain
-/// surface exposes only `watchFiles` (the host owns the clone/SWR machinery), so
-/// this wraps that stream as a completed load. Clone-progress phases are not
-/// streamed over the wire (a known limitation of the RPC PR-files path); the
-/// final file list still arrives.
+/// Over RPC each emission is a completed load carrying the forge's
+/// `truncated` flag (the host owns the clone/SWR machinery). Clone-progress
+/// phases are not streamed over the wire (a known limitation of the RPC
+/// PR-files path); the final file list still arrives.
 final prFilesLoadProvider = StreamProvider.autoDispose
     .family<PrFilesLoad, PrRef>((ref, pr) {
       return _prStream(
         ref,
         pr,
-        (repository) => repository
-            .watchFiles(pr.number)
-            .map((files) => PrFilesLoad(files: files, isComplete: true)),
+        (repository) => repository.watchFilesLoad(pr.number),
       );
     });
+
+/// Whether the PR's forge capped its file listing, so the diff on screen is
+/// not the whole change.
+final prFilesTruncatedProvider = Provider.autoDispose.family<bool, PrRef>(
+  (ref, pr) => ref.watch(
+    prFilesLoadProvider(pr).select((load) => load.value?.truncated ?? false),
+  ),
+);
 
 /// Stream of pull request details, keyed by the PR's own `(owner, repo)`.
 final prDetailProvider = StreamProvider.autoDispose.family<PullRequest?, PrRef>(
@@ -417,7 +484,8 @@ final peekPrContentProvider = FutureProvider.autoDispose
       }
       try {
         // Fetched SERVER-SIDE over RPC (the thin client holds no GitHub token);
-        // the host validates (owner, repo) is linked to the bound workspace.
+        // the host validates (owner, repo) is linked to the call's workspace
+        // (the client stamps the active one).
         final data = await ref.watch(rpcClientProvider).call(
           'github.prContent',
           {'owner': key.owner, 'repo': key.repo, 'number': key.number},
@@ -722,7 +790,10 @@ final prJobRunDetailProvider = StreamProvider.autoDispose
       return _watchJobDetail(repository, key.jobId);
     });
 
-Stream<JobRunDetail?> _watchJobDetail(PrReviewRepository repository, int jobId) {
+Stream<JobRunDetail?> _watchJobDetail(
+  PrReviewRepository repository,
+  int jobId,
+) {
   const interval = Duration(seconds: 4);
   const maxLogWaitPolls = 15; // ~1 min of post-completion log waiting
   late final StreamController<JobRunDetail?> controller;
@@ -784,34 +855,38 @@ Stream<JobRunDetail?> _watchJobDetail(PrReviewRepository repository, int jobId) 
       if (repository is RpcPrReviewRepository) {
         // The first frame can paint persisted steps/logs before polling.
         // Hold the revalidation only while this accordion has a listener.
-        snapshot = repository.watchJobRunDetail(jobId).listen(
-          (detail) {
-            if (!stopped) {
-              controller.add(detail);
-              hasData = true;
-              schedule(() => unawaited(poll()));
-            }
-          },
-          onError: (Object error, StackTrace stack) {
-            if (stopped) {
-              return;
-            }
-            if (!hasData || authoritativeError(error)) {
-              stopped = true;
-              controller.addError(error, stack);
-              unawaited(controller.close());
-            } else {
-              schedule(() => unawaited(poll()));
-            }
-          },
-          onDone: () {
-            if (!stopped && !hasData) {
-              stopped = true;
-              controller.addError(StateError('Job detail stream ended empty'));
-              unawaited(controller.close());
-            }
-          },
-        );
+        snapshot = repository
+            .watchJobRunDetail(jobId)
+            .listen(
+              (detail) {
+                if (!stopped) {
+                  controller.add(detail);
+                  hasData = true;
+                  schedule(() => unawaited(poll()));
+                }
+              },
+              onError: (Object error, StackTrace stack) {
+                if (stopped) {
+                  return;
+                }
+                if (!hasData || authoritativeError(error)) {
+                  stopped = true;
+                  controller.addError(error, stack);
+                  unawaited(controller.close());
+                } else {
+                  schedule(() => unawaited(poll()));
+                }
+              },
+              onDone: () {
+                if (!stopped && !hasData) {
+                  stopped = true;
+                  controller.addError(
+                    StateError('Job detail stream ended empty'),
+                  );
+                  unawaited(controller.close());
+                }
+              },
+            );
       } else {
         unawaited(poll());
       }
@@ -941,8 +1016,8 @@ final repoScopedPrReviewRepositoryProvider = Provider.autoDispose
       if (!isLinked) {
         return const EmptyPrReviewRepository();
       }
-      // Flipped to RPC: the sidebar resolves a repo-scoped repository over the
-      // in-process server, which owns the shared workspace-wide SWR disk cache —
+      // The sidebar resolves a repo-scoped repository over RPC; the connected
+      // server owns the shared workspace-wide SWR disk cache —
       // so a read here hits the same `prDetail` cache the detail screen
       // populates. The host re-validates the (owner, repo) link before
       // returning any row.
@@ -975,8 +1050,8 @@ final spacePrDetailProvider = StreamProvider.autoDispose
     });
 
 /// Stream of *every* review-space association for a space — a space can
-/// carry multiple PRs across one or more repos. Workspace-scoped (the host /
-/// DAO scopes by the bound workspace). Local DB stream / RPC subscription.
+/// carry multiple PRs across one or more repos. Workspace-scoped: an RPC
+/// subscription the host scopes to [activeWorkspaceIdProvider]'s workspace.
 final spaceReviewAssociationsProvider = StreamProvider.autoDispose
     .family<List<ReviewSpaceAssociation>, String>((ref, spaceId) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
@@ -1038,7 +1113,9 @@ final spacePrsResolvedProvider = Provider.autoDispose.family<bool, String>((
   spaceId,
 ) {
   final associations = ref.watch(spaceReviewAssociationsProvider(spaceId));
-  if (!associations.hasValue || associations.hasError || associations.isLoading) {
+  if (!associations.hasValue ||
+      associations.hasError ||
+      associations.isLoading) {
     return false;
   }
   var resolved = true;
@@ -1085,7 +1162,7 @@ final repoPermissionProvider = FutureProvider.autoDispose
     .family<String, RepoKey>((ref, key) async {
       // Resolved SERVER-SIDE over RPC: the host uses ITS authenticated gh user
       // (the thin client holds no token) and validates (owner, repo) is linked
-      // to the bound workspace.
+      // to the call's workspace (the client stamps the active one).
       try {
         final data = await ref.watch(rpcClientProvider).call(
           'github.repoPermission',
@@ -1145,9 +1222,9 @@ final prCanEditProvider = Provider.autoDispose.family<bool, PrRef>((ref, pr) {
   if (!detail.loaded) {
     return false;
   }
-  final login = ref.watch(
-    githubUserProvider.select((u) => u.value?.login.toLowerCase() ?? ''),
-  );
+  // The viewer's login on THIS PR's forge — a GitHub login never matches a
+  // GitLab author.
+  final login = ref.watch(currentUserLoginForPrProvider(pr)).toLowerCase();
   final isAuthor = login.isNotEmpty && detail.author == login;
   return isAuthor || ref.watch(prRepoWriteAccessProvider(pr));
 });

@@ -126,6 +126,7 @@ Widget _tab(PullRequest pr) => PrSourceControlTab(
     workspaceId: kTestWorkspaceId,
     repoFullName: pr.repoFullName,
     number: pr.number,
+    forge: null,
   ),
   onOpenInEditor: (_) {},
 );
@@ -153,6 +154,7 @@ void main() {
             workspaceId: 'ws',
             repoFullName: 'helix/evalkit',
             number: 412,
+            forge: null,
           ),
           onOpenInEditor: (_) {},
         ),

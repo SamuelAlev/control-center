@@ -145,12 +145,37 @@ abstract class _EnvironmentServiceBase {
   /// Viewer rigs by `<environment>/<component>`.
   final Map<String, String> _appWindows = {};
 
-  /// Spaces whose worktrees are being released, by `<workspace>/<space>`.
-  final Set<String> _releasing = {};
+  /// Spaces whose worktrees are being released, by `<workspace>/<space>`,
+  /// counted: two releases can overlap, and the first to finish must not
+  /// admit a start while the other is still tearing down.
+  final Map<String, int> _releasing = {};
+
+  /// The release in flight per `<workspace>/<space>`. `SpaceDeleted` reaches
+  /// [WorktreeTaskPort.beforeRelease] twice, through this service's listener
+  /// and the worktree GC's; the second joins the first instead of tearing
+  /// down alongside it.
+  final Map<String, Future<void>> _releases = {};
+
+  bool _isReleasing(String workspaceId, String spaceId) =>
+      (_releasing['$workspaceId/$spaceId'] ?? 0) > 0;
 
   /// Fork spaces whose worktrees are moving to a new head, by
   /// `<workspace>/<space>`. Nothing starts there until they arrive.
   final Set<String> _movingHeads = {};
+
+  /// When a forced teardown last left something behind, by environment.
+  /// Maintenance retries those, but not on every pass.
+  final Map<String, DateTime> _teardownFailedAt = {};
+
+  /// How long a teardown that left something behind waits before the next try.
+  static const Duration _teardownRetry = Duration(minutes: 5);
+
+  /// Whether a forced teardown of [env] may run now: never tried, or the last
+  /// try that left something behind was [_teardownRetry] ago.
+  bool _teardownDue(SpaceEnvironment env) {
+    final failed = _teardownFailedAt[env.id];
+    return failed == null || _d.now().difference(failed) >= _teardownRetry;
+  }
 
   /// Throwaway spaces of running `testDefinition`s.
   final Map<String, EnvironmentSpaceInfo> _testSpaces = {};
@@ -200,6 +225,9 @@ abstract class _EnvironmentServiceBase {
   }
 
   /// Applies [change] to the stored row, in order with every other write.
+  ///
+  /// The one writer of environment rows: a status move that
+  /// [EnvironmentStatus.canBecome] refuses keeps the stored status.
   Future<SpaceEnvironment?> _update(
     String workspaceId,
     String id,
@@ -212,7 +240,16 @@ abstract class _EnvironmentServiceBase {
       if (row == null) {
         return null;
       }
-      final updated = change(row);
+      var updated = change(row);
+      if (!row.status.canBecome(updated.status)) {
+        // A late report (a poll, a process exit) racing a stop or teardown:
+        // the mutation in progress owns the status, the rest still lands.
+        CcInfraLog.warning(
+          'environment $id: kept ${row.status.wire}, refused '
+          '${updated.status.wire}',
+        );
+        updated = updated.copyWith(status: row.status);
+      }
       await _d.environments.save(updated);
       _announce(row, updated);
       return updated;

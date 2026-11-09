@@ -5,8 +5,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provider-governance repository (PRD 05), over RPC on both desktop and web —
-/// the host (in-process on desktop, remote on web) owns the `provider_policies`
-/// table.
+/// the connected `cc_server` owns the `provider_policies` table.
 final providerPolicyRepositoryProvider = Provider<ProviderPolicyRepository>(
   (ref) => RpcProviderPolicyRepository(ref.watch(rpcClientProvider)),
 );

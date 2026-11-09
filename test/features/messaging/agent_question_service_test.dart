@@ -196,21 +196,24 @@ void main() {
       },
     );
 
-    test('returns null without posting when conversationId is empty', () async {
+    test('refuses without posting when conversationId is empty', () async {
       final repo = _FakeMessagingRepo();
       final service = AgentQuestionService(
         repo,
         conversations: _FakeConversations(),
       );
-      final answer = await service.ask(
-        const AgentQuestionRequest(
-          workspaceId: _workspaceId,
-          spaceId: '',
-          conversationId: '',
-          question: 'orphan question',
+      // A missing destination is a caller bug, not a "nobody answered".
+      await expectLater(
+        service.ask(
+          const AgentQuestionRequest(
+            workspaceId: _workspaceId,
+            spaceId: '',
+            conversationId: '',
+            question: 'orphan question',
+          ),
         ),
+        throwsArgumentError,
       );
-      expect(answer, isNull);
       expect(repo.sent, isEmpty);
     });
 
@@ -264,7 +267,7 @@ void main() {
       expect(closed['expired'], true);
       expect(closed['question'], 'unanswered');
       expect(closed.containsKey('answer'), isFalse);
-      expect(service.resolveFromMetadata(posted.id, closed), isFalse);
+      expect(service.isPending(posted.id), isFalse);
     });
 
     test('an indefinite wait carries no deadline', () async {
@@ -311,13 +314,14 @@ void main() {
         messageType: MessageType.userQuestion,
         createdAt: DateTime(2024),
       );
-      await service.submitAnswer(
+      final outcome = await service.submitAnswer(
         _workspaceId,
         ghost,
         const AgentQuestionAnswer(),
       );
-      // Updating still happens (best-effort) but no completer to resolve.
-      expect(repo.updates.containsKey('nope'), isTrue);
+      // Nobody is waiting, so nothing is written and the human is told so.
+      expect(outcome, QuestionAnswerDelivery.notPending);
+      expect(repo.updates.containsKey('nope'), isFalse);
     });
   });
 }

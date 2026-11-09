@@ -234,7 +234,12 @@ exit "$status"
       final target = parts.skip(1).join(' ');
       return ParsedLine(
         processName: processName,
-        violation: SandboxViolation(action: action, target: target, raw: line),
+        violation: SandboxViolation(
+          action: action,
+          target: target,
+          raw: line,
+          pid: int.tryParse(procMatch?.group(2) ?? ''),
+        ),
       );
     } catch (_) {
       return null;

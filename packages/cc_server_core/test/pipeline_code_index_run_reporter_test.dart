@@ -89,6 +89,7 @@ void main() {
     expect(run.templateId, IndexCodeTemplate.id);
     expect(run.status, PipelineRunStatus.running);
     expect(run.triggerEventType, IndexCodeTemplate.watchTriggerEventType);
+    expect(run.isProjection, isTrue, reason: 'it must hold no engine slot');
     expect(run.triggerPayload?['repo_id'], 'repo-a');
     expect(run.triggerPayload?['repo_local_path'], '/tmp/repo-a');
 

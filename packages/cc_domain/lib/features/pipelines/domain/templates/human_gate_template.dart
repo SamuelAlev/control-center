@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_step_resume_listener.dart'
     show PipelineStepResumeListener;
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
@@ -48,7 +49,7 @@ void registerHumanGateBody(
 
   registry.registerBody(BuiltInBodyKeys.humanGate, (ctx) async {
     final workspaceId = ctx.workspaceId;
-    final def = await templateRepository.getById(workspaceId, ctx.templateId);
+    final def = await ctx.pinnedDefinition(templateRepository);
     final config = def?.step(ctx.stepId)?.config;
     if (config == null) {
       return StepResult.failed(

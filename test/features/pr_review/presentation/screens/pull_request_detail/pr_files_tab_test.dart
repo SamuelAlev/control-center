@@ -66,7 +66,12 @@ Widget _wrapSliver(Widget child) {
 }
 
 /// The PR identity FilesTab is keyed by in this suite.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 42,
+  forge: null,
+);
 
 void main() {
   group('FilesTab', () {

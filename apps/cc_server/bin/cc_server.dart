@@ -76,6 +76,9 @@ Future<void> _runServer(List<String> args) async {
     // what to do instead and end the process.
     stderr.writeln(e.message);
     exit(78);
+  } on ConnectEnvironmentInvalid catch (e) {
+    stderr.writeln(e.message);
+    exit(78);
   } on SocketException catch (e) {
     // A failed bind must END the process. The guarded zone only RECORDS an
     // uncaught error, so without this the server stayed alive with no listener

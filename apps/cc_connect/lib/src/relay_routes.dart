@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_connect/src/binding_store.dart';
 import 'package:cc_connect/src/context.dart';
 import 'package:cc_connect/src/http_io.dart';
 import 'package:cc_connect/src/provider_slack.dart';
@@ -134,25 +135,28 @@ final class RelayRoutes {
       return;
     }
     final type = event['type'];
-    if (type == 'app_uninstalled' ||
-        (type == 'tokens_revoked' && _revokesBot(event['tokens']))) {
+    if (type == 'app_uninstalled' || type == 'tokens_revoked') {
       // Slack reports the app gone from the workspace (an admin uninstall
       // or a revoked bot token): the team is free to bind again. Only once
-      // per event, and only for the binding that existed when it happened:
-      // a retry or replay inside the signature window must not free a team
-      // that has been connected again since.
-      if (!await ctx.state.putIfAbsent(
-        'slackev:$eventId',
-        '1',
-        slackQueueTtl,
-      )) {
+      // per event, only for the team the event was delivered for, and only
+      // for the binding that existed when it happened: a retry or replay
+      // inside the signature window must not free a team that has been
+      // connected again since.
+      if (!_aboutTeam(json, team) ||
+          !await ctx.state.putIfAbsent(
+            'slackev:$eventId',
+            '1',
+            slackQueueTtl,
+          )) {
         return;
       }
       final bound = await ctx.bindings.slack(team, fresh: true);
       final at = json['event_time'];
       if (bound == null ||
           at is! int ||
-          at < bound.boundAt.millisecondsSinceEpoch ~/ 1000) {
+          at < bound.boundAt.millisecondsSinceEpoch ~/ 1000 ||
+          (type == 'tokens_revoked' &&
+              !_revokesBoundBot(event['tokens'], bound))) {
         if (bound != null) {
           ctx.log.event('slack.release_ignored', {
             'team': ctx.log.tag(team),
@@ -230,12 +234,33 @@ final class RelayRoutes {
     ctx.signal.notify(binding.installId);
   }
 
-  static bool _revokesBot(Object? tokens) {
+  /// Whether an uninstall event is about [team] alone: every authorization
+  /// Slack lists for the delivery names that team (an event delivered for a
+  /// Slack Connect partner's installation, or an organization-wide one with
+  /// no team, never frees a team).
+  static bool _aboutTeam(Map<Object?, Object?> json, String team) {
+    final authorizations = json['authorizations'];
+    if (authorizations == null) {
+      return true;
+    }
+    if (authorizations is! List || authorizations.isEmpty) {
+      return false;
+    }
+    return authorizations.every((a) => a is Map && a['team_id'] == team);
+  }
+
+  /// Whether `tokens_revoked` names [bound]'s bot. A binding recorded before
+  /// the bot's user id was kept frees on any revoked bot token of this app
+  /// in its team, which is the only bot this app has there.
+  static bool _revokesBoundBot(Object? tokens, SlackTeamBinding bound) {
     if (tokens is! Map) {
       return false;
     }
     final bot = tokens['bot'];
-    return bot is List && bot.isNotEmpty;
+    if (bot is! List || bot.isEmpty) {
+      return false;
+    }
+    return bound.botUserId.isEmpty || bot.contains(bound.botUserId);
   }
 
   /// `POST /v1/hooks/slack/commands`: queue a bounded reference and answer
@@ -388,11 +413,4 @@ final class RelayRoutes {
     final gifs = await api.gifs(query);
     return KlipyGifsResponse(gifs: gifs).toJson();
   }
-
-  /// `POST /v1/chat/{provider}/act`: reserved for future unscoped chat bots
-  /// (Discord, Telegram). Always `provider_unavailable` today.
-  Future<Object?> chatAct(ConnectCaller caller, Map<String, Object?> body) =>
-      Future.error(
-        const ConnectException(ConnectErrorCode.providerUnavailable),
-      );
 }

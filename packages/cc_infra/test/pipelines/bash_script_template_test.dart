@@ -353,6 +353,65 @@ void main() {
         expect(res.mutatedState!['bash_runDir'], contains(runDir.path));
       });
 
+      test('keeps the last lines a script prints right before exit', () async {
+        // No trailing sleep: the output used to be cut the moment the process
+        // exited, dropping whatever was still buffered.
+        final res = await run(
+          script: r"printf 'one\ntwo\nlast-line'",
+          outputKey: 'msg',
+        );
+        expect(res.isFailed, isFalse);
+        expect(res.mutatedState!['msg'], 'one\ntwo\nlast-line');
+      });
+
+      PipelineStepDefinition pinned(String script, {int? timeoutMs}) =>
+          PipelineStepDefinition(
+            id: 'bash',
+            kind: StepKind.listen,
+            bodyKey: BuiltInBodyKeys.bashScript,
+            config: PipelineNodeConfig(
+              script: script,
+              outputKey: 'msg',
+              timeoutMs: timeoutMs,
+            ),
+          );
+
+      test('runs the pinned script, not the live template', () async {
+        final registry = build(script: 'echo live', stepId: 'bash');
+        final res = await registry.body(BuiltInBodyKeys.bashScript)(
+          PipelineContext(
+            pipelineRunId: 'run-1',
+            templateId: 'tpl-1',
+            stepId: 'bash',
+            stepRunId: 'sr-1',
+            workspaceId: 'ws-1',
+            state: const {},
+            step: pinned('echo pinned'),
+          ),
+        );
+        expect(res.mutatedState!['msg'], 'pinned');
+      });
+
+      test('a script that outlives its timeout is stopped and fails', () async {
+        final registry = build(script: 'unused', stepId: 'bash');
+        final watch = Stopwatch()..start();
+        final res = await registry.body(BuiltInBodyKeys.bashScript)(
+          PipelineContext(
+            pipelineRunId: 'run-1',
+            templateId: 'tpl-1',
+            stepId: 'bash',
+            stepRunId: 'sr-1',
+            workspaceId: 'ws-1',
+            state: const {},
+            step: pinned('sleep 30', timeoutMs: 300),
+          ),
+        );
+        expect(res.isFailed, isTrue);
+        expect(res.errorMessage, contains('timed out'));
+        expect(watch.elapsed, lessThan(const Duration(seconds: 10)));
+        expect(kBashScriptDefaultTimeout, const Duration(minutes: 30));
+      });
+
       test('non-zero exit fails with the stderr tail', () async {
         final res = await run(
           script: 'echo oops 1>&2\nsleep 0.1\nexit 7',
@@ -424,34 +483,31 @@ void main() {
         expect(res.mutatedState!['out'], '[]');
       });
 
-      test(
-        'an untrusted value is one literal word wherever the placeholder '
-        'sits',
-        () async {
-          const attack =
-              r"a'; echo PWNED; echo 'b $(echo SUB) `echo TICK`"
-              '\necho NEWLINE';
-          for (final script in [
-            'echo {{title}}',
-            "echo '{{title}}'",
-            'echo "{{title}}"',
-            r'echo "$(printf %s {{title}})"',
-            "echo pre-{{title}}-post # a comment's apostrophe",
-          ]) {
-            final res = await run(
-              script: '$script\nsleep 0.1',
-              outputKey: 'out',
-              trigger: {'title': attack},
-            );
-            expect(res.isFailed, isFalse, reason: script);
-            final out = res.mutatedState!['out'] as String;
-            expect(out, contains(r"a'; echo PWNED"), reason: script);
-            expect(out, contains(r'$(echo SUB) `echo TICK`'), reason: script);
-            expect(out.split('\n'), hasLength(2), reason: script);
-            expect(out, isNot(contains('\nPWNED')), reason: script);
-          }
-        },
-      );
+      test('an untrusted value is one literal word wherever the placeholder '
+          'sits', () async {
+        const attack =
+            r"a'; echo PWNED; echo 'b $(echo SUB) `echo TICK`"
+            '\necho NEWLINE';
+        for (final script in [
+          'echo {{title}}',
+          "echo '{{title}}'",
+          'echo "{{title}}"',
+          r'echo "$(printf %s {{title}})"',
+          "echo pre-{{title}}-post # a comment's apostrophe",
+        ]) {
+          final res = await run(
+            script: '$script\nsleep 0.1',
+            outputKey: 'out',
+            trigger: {'title': attack},
+          );
+          expect(res.isFailed, isFalse, reason: script);
+          final out = res.mutatedState!['out'] as String;
+          expect(out, contains(r"a'; echo PWNED"), reason: script);
+          expect(out, contains(r'$(echo SUB) `echo TICK`'), reason: script);
+          expect(out.split('\n'), hasLength(2), reason: script);
+          expect(out, isNot(contains('\nPWNED')), reason: script);
+        }
+      });
 
       test(
         'streams at least one output snapshot to the run repository',

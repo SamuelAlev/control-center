@@ -996,6 +996,12 @@ abstract class AppLocalizations {
   /// **'Teammate'**
   String get teammate;
 
+  /// Display name for a message the server itself posted (takeover notices, delegation outcomes).
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get systemSender;
+
   /// Fallback display name for an agent message.
   ///
   /// In en, this message translates to:
@@ -1263,13 +1269,13 @@ abstract class AppLocalizations {
   /// Empty-inbox body when the GitHub App installation is suspended.
   ///
   /// In en, this message translates to:
-  /// **'Showing last known data for {names}. Resume the installation on GitHub, or connect a token.'**
+  /// **'Showing last known data for {names}. Resume the installation on GitHub.'**
   String installationSuspendedBody(String names);
 
   /// Inline notice on inbox and PR list when the GitHub App installation is suspended.
   ///
   /// In en, this message translates to:
-  /// **'GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub, or connect a token.'**
+  /// **'GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub.'**
   String installationSuspendedNotice(String names);
 
   /// PR lifecycle: a draft pull request.
@@ -4618,6 +4624,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That code doesn\'t match this sign-in. Check it and try again.'**
   String get credentialsSignInInvalidCode;
+
+  /// Shown when too many wrong sign-in confirmation codes ended the attempt
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong codes. Start the sign-in again.'**
+  String get credentialsSignInTooManyCodes;
+
+  /// Shown when the sign-in provider, Connect or the server is not answering or is rate limiting
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in service isn\'t responding right now. Wait a minute, then try again.'**
+  String get credentialsSignInRetryLater;
+
+  /// Shown when the provider refused the sign-in or granted the wrong permissions
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in was refused. Start it again and approve every requested permission.'**
+  String get credentialsSignInRefused;
+
+  /// Shown when the sign-in worked but the server could not store the grant
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in worked, but the server couldn\'t save it. Try again.'**
+  String get credentialsSignInNotSaved;
 
   /// Shown on a GitHub or Linear card when the server has neither its own app nor Connect for that sign-in
   ///

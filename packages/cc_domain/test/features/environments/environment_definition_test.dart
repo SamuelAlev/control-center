@@ -600,6 +600,96 @@ void main() {
       expect(issues, contains(contains('{name}')));
     });
 
+    test('after waits only for an earlier component that starts', () {
+      List<String> issuesOf(List<Map<String, dynamic>> components) {
+        final json = _minimal()..['components'] = components;
+        return validateEnvironmentDefinition(
+          EnvironmentDefinition.fromJson(json),
+        ).map((issue) => issue.message).toList();
+      }
+
+      final web = {
+        'kind': 'process',
+        'id': 'web',
+        'port': 'web',
+        'command': ['a'],
+      };
+      expect(
+        issuesOf([
+          {
+            ...web,
+            'after': ['web'],
+          },
+        ]),
+        contains(contains('can not wait for itself')),
+      );
+      expect(
+        issuesOf([
+          {
+            ...web,
+            'after': ['ghost'],
+          },
+        ]),
+        contains(contains('Unknown component ghost')),
+      );
+      // A forward reference is also the only way to write a cycle.
+      expect(
+        issuesOf([
+          {
+            ...web,
+            'after': ['api'],
+          },
+          {
+            'kind': 'process',
+            'id': 'api',
+            'port': 'api',
+            'command': ['b'],
+            'after': ['web'],
+          },
+        ]),
+        contains(contains('api is declared after this component')),
+      );
+      expect(
+        issuesOf([
+          {
+            'kind': 'task',
+            'id': 'deps',
+            'when': ['provision'],
+            'command': ['npm', 'ci'],
+          },
+          {
+            ...web,
+            'after': ['deps'],
+          },
+        ]),
+        contains(contains('never starts with the stack')),
+      );
+      expect(
+        issuesOf([
+          {'kind': 'compose', 'id': 'db'},
+          {
+            ...web,
+            'after': ['db'],
+          },
+        ]),
+        isEmpty,
+      );
+    });
+
+    test('an environment runs one compose component', () {
+      final json = _minimal()
+        ..['components'] = [
+          {'kind': 'compose', 'id': 'one'},
+          {'kind': 'compose', 'id': 'two'},
+        ];
+      expect(
+        validateEnvironmentDefinition(
+          EnvironmentDefinition.fromJson(json),
+        ).map((issue) => issue.path),
+        contains('components[1]'),
+      );
+    });
+
     test('worktree tasks can not be gated by options', () {
       final json = _minimal()
         ..['options'] = [

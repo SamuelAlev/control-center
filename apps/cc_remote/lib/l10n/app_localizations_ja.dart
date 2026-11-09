@@ -479,6 +479,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get teammate => 'チームメイト';
 
   @override
+  String get systemSender => 'システム';
+
+  @override
   String get agent => 'エージェント';
 
   @override
@@ -627,12 +630,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return '$names の最終既知データを表示しています。GitHubでインストールを再開するか、アクセス権のあるトークンを接続してください。';
+    return '$names の最終既知データを表示しています。GitHubでインストールを再開してください。';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub Appのインストールが停止されています。$names の最終既知データを表示しています。GitHubでインストールを再開するか、アクセス権のあるトークンを接続してください。';
+    return 'GitHub Appのインストールが停止されています。$names の最終既知データを表示しています。GitHubでインストールを再開してください。';
   }
 
   @override
@@ -2514,6 +2517,21 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'このコードはこのサインインと一致しません。確認してもう一度お試しください。';
+
+  @override
+  String get credentialsSignInTooManyCodes => '誤ったコードが多すぎます。サインインをやり直してください。';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'サインインサービスが現在応答していません。1分待ってからもう一度お試しください。';
+
+  @override
+  String get credentialsSignInRefused =>
+      'サインインが拒否されました。もう一度開始し、要求されたすべての権限を承認してください。';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'サインインは成功しましたが、サーバーが保存できませんでした。もう一度お試しください。';
 
   @override
   String credentialsSignInUnavailable(String provider) {

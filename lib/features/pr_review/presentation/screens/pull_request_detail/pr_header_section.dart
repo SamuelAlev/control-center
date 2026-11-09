@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
+    show ForgeCapability;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
@@ -90,6 +92,11 @@ class PrHeaderSection extends ConsumerWidget {
       readChild: markdown,
     );
 
+    // Reactions are a forge capability; a forge without them gets no adder
+    // that the server would refuse.
+    final reactionsSupported = ref.watch(
+      prSupportsProvider((prRef, ForgeCapability.reactions)),
+    );
     final reactionBar = Padding(
       padding: const EdgeInsets.only(top: 12),
       child: ReactionBar(
@@ -112,7 +119,7 @@ class PrHeaderSection extends ConsumerWidget {
       children: [
         PrMetaStrip(pr: pr, prRef: prRef),
         body,
-        reactionBar,
+        if (reactionsSupported) reactionBar,
       ],
     );
   }

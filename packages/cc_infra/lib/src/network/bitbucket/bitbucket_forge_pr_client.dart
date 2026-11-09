@@ -19,10 +19,12 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_infra/src/network/bitbucket/bitbucket_api_client.dart';
 import 'package:cc_infra/src/network/bitbucket/bitbucket_pr_mapper.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
+import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:rhttp/rhttp.dart';
 
 /// Bitbucket Cloud adapter for [ForgePrClient].
@@ -67,7 +69,7 @@ class BitbucketForgePrClient
   @override
   Future<PullRequest?> getPullRequest(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final pr = await _client.getPullRequest(
       owner,
@@ -92,7 +94,7 @@ class BitbucketForgePrClient
   @override
   Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequests({
     int limit = _defaultListLimit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final page = await _client.listPullRequestsPage(
       owner,
@@ -128,7 +130,7 @@ class BitbucketForgePrClient
   Future<List<PullRequest>> listMergedByAuthor(
     String login, {
     int limit = _defaultListLimit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final handle = login.trim();
     if (handle.isEmpty) {
@@ -150,7 +152,9 @@ class BitbucketForgePrClient
         cancelToken: token,
       );
       if (page.items.isNotEmpty) {
-        return page.items.map(_toDomain).toList(growable: false);
+        final prs = page.items.map(_toDomain).toList();
+        sortMostRecentlyMergedFirst(prs);
+        return List<PullRequest>.unmodifiable(prs);
       }
     }
     return const <PullRequest>[];
@@ -170,23 +174,12 @@ class BitbucketForgePrClient
   /// "could not tell". A cancellation still propagates — that is the caller
   /// standing down, not the forge failing to answer.
   @override
-  Future<bool?> wasMerged(int prNumber, {Object? cancelToken}) async {
+  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
     try {
-      final pr = await _client.getPullRequest(
-        owner,
-        repo,
-        prNumber,
-        cancelToken: _token(cancelToken),
+      return mergeOutcomeOf(
+        await getPullRequest(prNumber, cancelToken: cancelToken),
       );
-      if (pr == null) {
-        return null;
-      }
-      return switch (pr.state.toUpperCase()) {
-        'MERGED' => true,
-        'DECLINED' || 'SUPERSEDED' => false,
-        _ => null,
-      };
-    } on RhttpException catch (e) {
+    } on Object catch (e) {
       if (e is RhttpCancelException) {
         rethrow;
       }
@@ -195,7 +188,7 @@ class BitbucketForgePrClient
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {Object? cancelToken}) =>
+  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) =>
       _client.getPullRequestDiff(
         owner,
         repo,
@@ -215,17 +208,17 @@ class BitbucketForgePrClient
   /// N files — so a capped call still pays for the whole diff.
   ///
   /// Very large pull requests are truncated by
-  /// `BitbucketApiClient.maxPages` (1000 diffstat entries); callers that need
-  /// completeness past that fall back to the local git source.
+  /// `BitbucketApiClient.maxPages` (1000 diffstat entries), which the listing
+  /// reports as [PrFileListing.truncated].
   /// {@endtemplate}
   @override
-  Future<List<PrFile>> listFiles(
+  Future<PrFileListing> listFiles(
     int prNumber, {
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
-    final entries = await _client.listPullRequestDiffstat(
+    final diffstat = await _client.listPullRequestDiffstat(
       owner,
       repo,
       prNumber,
@@ -239,19 +232,20 @@ class BitbucketForgePrClient
     );
     final patches = patchesByPathFromUnifiedDiff(diff);
     final files = <PrFile>[
-      for (final entry in entries)
+      for (final entry in diffstat.items)
         prFileFromBitbucket(entry, patch: patches[entry.path] ?? ''),
     ];
     if (limit != null && limit > 0 && files.length > limit) {
-      return files.sublist(0, limit);
+      return PrFileListing(files.sublist(0, limit));
     }
-    return files;
+    return PrFileListing(files, truncated: diffstat.truncated);
   }
+
 
   @override
   Future<List<PrCommit>> listCommits(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final commits = await _client.listPullRequestCommits(
       owner,
@@ -269,7 +263,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrFile>> listCommitFiles(
     String sha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final entries = await _client.listDiffstat(
@@ -294,7 +288,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrReviewSubmission>> listReviews(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final pr = await _client.getPullRequest(
       owner,
@@ -316,7 +310,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrCodeReviewComment>> listReviewComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final comments = await _client.listPullRequestComments(
       owner,
@@ -337,7 +331,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrReviewThreadState>> listReviewThreadStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => const <PrReviewThreadState>[];
 
   @override
@@ -345,7 +339,7 @@ class BitbucketForgePrClient
     required int prNumber,
     required String threadId,
     required bool resolved,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(
     ForgeHost.bitbucket,
     'commentThreadResolution',
@@ -354,7 +348,7 @@ class BitbucketForgePrClient
   @override
   Future<List<IssueComment>> listIssueComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final comments = await _client.listPullRequestComments(
       owner,
@@ -380,7 +374,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrTimelineEvent>> listTimelineEvents(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final activity = await _client.listPullRequestActivity(
       owner,
@@ -401,7 +395,7 @@ class BitbucketForgePrClient
   @override
   Future<List<CheckRun>> listCheckRuns(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final statuses = await _client.listCommitStatuses(
       owner,
@@ -415,7 +409,7 @@ class BitbucketForgePrClient
   @override
   Future<List<CommitStatus>> listCommitStatuses(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final statuses = await _client.listCommitStatuses(
       owner,
@@ -430,7 +424,7 @@ class BitbucketForgePrClient
   Future<String> getFileContent(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.getFileContent(
     owner,
     repo,
@@ -443,7 +437,7 @@ class BitbucketForgePrClient
   Future<Uint8List> getFileBytes(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.getFileBytes(
     owner,
     repo,
@@ -457,7 +451,7 @@ class BitbucketForgePrClient
   @override
   Future<Map<String, PrFileViewedState>> getFileViewedStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'viewedStateSync');
 
@@ -468,7 +462,7 @@ class BitbucketForgePrClient
   @override
   Future<PrReviewerState> getReviewerState(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final pr = await _client.getPullRequest(
       owner,
@@ -483,7 +477,7 @@ class BitbucketForgePrClient
   }
 
   @override
-  Future<PrUser?> getAuthenticatedUser({Object? cancelToken}) async {
+  Future<PrUser?> getAuthenticatedUser({ForgeCancelToken? cancelToken}) async {
     final user = await _client.getCurrentUser(cancelToken: _token(cancelToken));
     return user == null ? null : prUserFromBitbucket(user);
   }
@@ -494,7 +488,7 @@ class BitbucketForgePrClient
   /// is the pool — which is also why `listAssignableUsers` and
   /// [listRequestableReviewers] resolve to the same people.
   @override
-  Future<List<PrUser>> listAssignableUsers({Object? cancelToken}) async {
+  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken}) async {
     final members = await _listMembers(_token(cancelToken));
     return members.map(prUserFromBitbucket).toList(growable: false);
   }
@@ -505,7 +499,7 @@ class BitbucketForgePrClient
   /// `teamReviewers` capability being false.
   @override
   Future<List<PrReviewerCandidate>> listRequestableReviewers({
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final members = await _listMembers(_token(cancelToken));
     return <PrReviewerCandidate>[
@@ -523,7 +517,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrUser>> listSuggestedReviewers(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final users = await _client.listDefaultReviewers(
       owner,
@@ -542,7 +536,7 @@ class BitbucketForgePrClient
   @override
   Future<List<ForgeBranch>> listBranches({
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final branches = await _client.listBranches(
@@ -560,7 +554,7 @@ class BitbucketForgePrClient
   }
 
   @override
-  Future<String> getDefaultBranch({Object? cancelToken}) =>
+  Future<String> getDefaultBranch({ForgeCancelToken? cancelToken}) =>
       _client.getDefaultBranch(owner, repo, cancelToken: _token(cancelToken));
 
   /// Compares [base] with [head] as what a PR between them would contain.
@@ -573,7 +567,7 @@ class BitbucketForgePrClient
   Future<ForgeBranchComparison?> compareBranches({
     required String base,
     required String head,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final spec = '$head..$base';
@@ -627,13 +621,13 @@ class BitbucketForgePrClient
   /// Always throws: Bitbucket Cloud has no repository-stored pull request
   /// description templates. Capability: `prTemplates`.
   @override
-  Future<Map<String, String>> listPrTemplates({Object? cancelToken}) =>
+  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'prTemplates');
 
   /// Always throws: a Bitbucket build status has no steps or logs behind it.
   /// Capability: `ciJobDetail`.
   @override
-  Future<JobRunDetail?> getJobRunDetail(int jobId, {Object? cancelToken}) =>
+  Future<JobRunDetail?> getJobRunDetail(int jobId, {ForgeCancelToken? cancelToken}) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'ciJobDetail');
 
   /// Always throws: Bitbucket publishes no job dependency graph.
@@ -641,7 +635,7 @@ class BitbucketForgePrClient
   @override
   Future<WorkflowGraph?> getWorkflowGraph(
     int workflowRunId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'ciJobDetail');
 
   // ── Writes ───────────────────────────────────────────────────────────────
@@ -666,7 +660,7 @@ class BitbucketForgePrClient
     required String body,
     int? startLine,
     String? startSide,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final onOldSide = side.toUpperCase() == 'LEFT';
     final comment = await _client.createPullRequestComment(
@@ -695,7 +689,7 @@ class BitbucketForgePrClient
     required int prNumber,
     required String parentCommentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final parentId = int.tryParse(parentCommentId.trim());
     if (parentId == null) {
@@ -721,7 +715,7 @@ class BitbucketForgePrClient
   Future<void> postIssueComment({
     required int prNumber,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.createPullRequestComment(
       owner,
@@ -739,7 +733,7 @@ class BitbucketForgePrClient
     required int prNumber,
     required String commentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final id = int.tryParse(commentId.trim());
     if (id == null) {
@@ -765,7 +759,7 @@ class BitbucketForgePrClient
   Future<void> deleteIssueComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final id = int.tryParse(commentId.trim());
     if (id == null) {
@@ -788,7 +782,7 @@ class BitbucketForgePrClient
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) {
     // Bitbucket stores timeline comments and inline comments on one resource.
     return deleteIssueComment(
@@ -811,12 +805,12 @@ class BitbucketForgePrClient
   /// non-empty [body] — a comment-only review with nothing to say is a caller
   /// bug, not a no-op — and throws [ArgumentError] otherwise.
   @override
-  Future<void> submitReview({
+  Future<int?> submitReview({
     required int prNumber,
     required ForgeReviewVerdict verdict,
     String? body,
-    List<Map<String, dynamic>> comments = const [],
-    Object? cancelToken,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     // Bitbucket has no pending-review state at all (`pendingReviewBatching` is
@@ -827,12 +821,12 @@ class BitbucketForgePrClient
       await postReviewComment(
         prNumber: prNumber,
         commitSha: '',
-        path: c['path'] as String? ?? '',
-        line: (c['line'] as num?)?.toInt() ?? 0,
-        side: c['side'] as String? ?? 'RIGHT',
-        body: c['body'] as String? ?? '',
-        startLine: (c['start_line'] as num?)?.toInt(),
-        startSide: c['start_side'] as String?,
+        path: c.path,
+        line: c.line,
+        side: c.side,
+        body: c.body,
+        startLine: c.isMultiLine ? c.startLine : null,
+        startSide: c.isMultiLine ? (c.startSide ?? c.side) : null,
         cancelToken: cancelToken,
       );
     }
@@ -855,7 +849,7 @@ class BitbucketForgePrClient
         },
         cancelToken: token,
       );
-      return;
+      return null;
     }
 
     if (text.isNotEmpty) {
@@ -883,6 +877,8 @@ class BitbucketForgePrClient
       case ForgeReviewVerdict.comment:
         break;
     }
+    // A Bitbucket verdict is a participant state, not an addressable record.
+    return null;
   }
 
   /// Merges a pull request.
@@ -905,7 +901,7 @@ class BitbucketForgePrClient
     required ForgeMergeMethod method,
     String? commitTitle,
     String? commitMessage,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final message = <String>[
       if (commitTitle != null && commitTitle.isNotEmpty) commitTitle,
@@ -942,7 +938,7 @@ class BitbucketForgePrClient
   /// Declines a pull request — Bitbucket's spelling of closing without
   /// merging.
   @override
-  Future<void> closePullRequest(int prNumber, {Object? cancelToken}) =>
+  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) =>
       _client.declinePullRequest(
         owner,
         repo,
@@ -960,7 +956,7 @@ class BitbucketForgePrClient
   Future<void> setPullRequestDraft({
     required int prNumber,
     required bool draft,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'draftToggle');
 
@@ -977,7 +973,7 @@ class BitbucketForgePrClient
     required String headBranch,
     required String baseBranch,
     bool draft = false,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final created = await _client.createPullRequest(
       owner,
@@ -1010,7 +1006,7 @@ class BitbucketForgePrClient
     required int prNumber,
     String? title,
     String? body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final payload = <String, dynamic>{'title': ?title, 'description': ?body};
     if (payload.isEmpty) {
@@ -1033,7 +1029,7 @@ class BitbucketForgePrClient
     required String prExternalId,
     required String path,
     required bool viewed,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'viewedStateSync');
 
@@ -1043,7 +1039,7 @@ class BitbucketForgePrClient
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'assignees');
 
   /// Always throws: see [addAssignees].
@@ -1051,13 +1047,13 @@ class BitbucketForgePrClient
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'assignees');
 
   /// Always throws: a Bitbucket Cloud pull request has no labels.
   /// Capability: `labels`.
   @override
-  Future<List<PrLabel>> listLabels({Object? cancelToken}) =>
+  Future<List<PrLabel>> listLabels({ForgeCancelToken? cancelToken}) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
 
   /// Always throws: see [listLabels].
@@ -1065,7 +1061,7 @@ class BitbucketForgePrClient
   Future<void> addLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
 
   /// Always throws: see [listLabels].
@@ -1073,7 +1069,7 @@ class BitbucketForgePrClient
   Future<void> removeLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
 
   /// Adds reviewers to a pull request.
@@ -1094,7 +1090,7 @@ class BitbucketForgePrClient
     required int prNumber,
     List<String> userLogins = const [],
     List<String> teamSlugs = const [],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _mutateReviewers(
     prNumber: prNumber,
     userLogins: userLogins,
@@ -1110,7 +1106,7 @@ class BitbucketForgePrClient
     required int prNumber,
     List<String> userLogins = const [],
     List<String> teamSlugs = const [],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _mutateReviewers(
     prNumber: prNumber,
     userLogins: userLogins,
@@ -1126,7 +1122,7 @@ class BitbucketForgePrClient
     required ForgeReactionTarget target,
     required String targetId,
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'reactions');
 
   /// Always throws: Bitbucket has no reaction API.
@@ -1134,7 +1130,7 @@ class BitbucketForgePrClient
   @override
   Future<List<PrReviewReactions>> listReviewReactions(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'reactions');
 
   /// Always throws: Bitbucket has no reaction API.
@@ -1146,7 +1142,7 @@ class BitbucketForgePrClient
     required int prNumber,
     required String content,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'reactions');
 
   /// Always throws: Bitbucket has no comment-attachment upload comparable to
@@ -1158,7 +1154,7 @@ class BitbucketForgePrClient
     required String path,
     required String base64Content,
     required String message,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'uploadContent');
 
   // ── Stacks ───────────────────────────────────────────────────────────────
@@ -1166,14 +1162,14 @@ class BitbucketForgePrClient
   /// Always throws: Bitbucket has no stacked-pull-request concept.
   /// Capability: `stacks`.
   @override
-  Future<List<PrStack>> listStacks({int? prNumber, Object? cancelToken}) =>
+  Future<List<PrStack>> listStacks({int? prNumber, ForgeCancelToken? cancelToken}) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   /// Always throws: see [listStacks]. Capability: `stacks`.
   @override
   Future<PrStack> createStack({
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   /// Always throws: see [listStacks]. Capability: `stacks`.
@@ -1181,12 +1177,12 @@ class BitbucketForgePrClient
   Future<PrStack?> addToStack({
     required int stackNumber,
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   /// Always throws: see [listStacks]. Capability: `stacks`.
   @override
-  Future<PrStack?> unstack({required int stackNumber, Object? cancelToken}) =>
+  Future<PrStack?> unstack({required int stackNumber, ForgeCancelToken? cancelToken}) =>
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   // ── Internals ────────────────────────────────────────────────────────────
@@ -1220,7 +1216,7 @@ class BitbucketForgePrClient
     required List<String> userLogins,
     required List<String> teamSlugs,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (teamSlugs.isNotEmpty) {
       throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'teamReviewers');
@@ -1285,11 +1281,7 @@ class BitbucketForgePrClient
     }, cancelToken: token);
   }
 
-  /// Narrows the port's untyped cancellation handle to rhttp's [CancelToken].
-  ///
-  /// The port keeps it [Object] so `cc_domain` never learns about rhttp; a
-  /// handle of any other type is simply not a cancellation this adapter can
-  /// honour and is dropped rather than throwing.
-  static CancelToken? _token(Object? cancelToken) =>
-      cancelToken is CancelToken ? cancelToken : null;
+  /// Maps the port's domain cancellation onto rhttp's [CancelToken].
+  static CancelToken? _token(ForgeCancelToken? cancelToken) =>
+      rhttpCancelTokenFor(cancelToken);
 }

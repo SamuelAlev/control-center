@@ -1,9 +1,10 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/comment_action_cluster.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/comment_action_model.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -235,7 +236,7 @@ class _PrCommentActionsState extends ConsumerState<PrCommentActions> {
     final permission = (!detailLoaded || owner.isEmpty || repo.isEmpty)
         ? null
         : ref.watch(repoPermissionProvider((owner: owner, repo: repo))).value;
-    final viewer = ref.watch(githubUserProvider).value?.login;
+    final viewer = ref.watch(currentUserLoginForPrProvider(widget.prRef));
     final isAuthor = commentIsAuthor(widget.authorLogin, viewer);
     final canDelete = canDeleteComment(
       isAuthor: isAuthor,

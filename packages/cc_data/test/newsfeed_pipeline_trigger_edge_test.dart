@@ -360,44 +360,6 @@ void main() {
         isA<Map>(),
       );
     });
-
-    test('markFired forwards the workspace + id + ISO-8601 when', () async {
-      await RpcPipelineTriggerRepository(
-        client,
-      ).markFired('ws1', 'pt9', DateTime.utc(2026, 2));
-      final args = host.lastCall('pipeline_trigger.markFired')!.args;
-      expect(args['workspace_id'], 'ws1');
-      expect(args['id'], 'pt9');
-      expect(args['when'], '2026-02-01T00:00:00.000Z');
-    });
-
-    test('server-only ops throw UnsupportedError', () async {
-      final repo = RpcPipelineTriggerRepository(client);
-      expect(
-        () => repo.setSchedule('ws1', 'pt1', nextRunAt: DateTime.utc(2026)),
-        throwsUnsupportedError,
-      );
-      expect(() => repo.byWebhookToken('tok'), throwsUnsupportedError);
-    });
-
-    test('enabledForEvent + scheduled forward cross-workspace', () async {
-      host.callResults['pipeline_trigger.enabledForEvent'] = {
-        'triggers': [triggerWire],
-      };
-      host.callResults['pipeline_trigger.scheduled'] = {
-        'triggers': [
-          {
-            ...triggerWire,
-            'id': 'pt2',
-            'event_type': 'schedule',
-            'interval_seconds': 60,
-          },
-        ],
-      };
-      final repo = RpcPipelineTriggerRepository(client);
-      expect((await repo.enabledForEvent('PrMerged')).single.id, 'pt1');
-      expect((await repo.scheduled()).single.id, 'pt2');
-    });
   });
 }
 

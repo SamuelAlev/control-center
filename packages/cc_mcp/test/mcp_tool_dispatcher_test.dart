@@ -36,6 +36,19 @@ class _ScopeProbeTool extends McpTool {
   }
 }
 
+/// Declares the delegation identities `ask_agent`/`delegate_ticket` take.
+class _DelegationProbe extends _ScopeProbeTool {
+  @override
+  Map<String, dynamic> get inputSchema => {
+    'type': 'object',
+    'properties': {
+      'workspace_id': {'type': 'string'},
+      'from_agent_id': {'type': 'string'},
+      'delegated_by_agent_id': {'type': 'string'},
+    },
+  };
+}
+
 class _ForcedScopeProbe extends _ScopeProbeTool {
   @override
   Set<String> get forcedScopeKeys => const {'space_id', 'agent_id'};
@@ -277,6 +290,65 @@ void main() {
         expect(probe.lastArgs!['space_id'], 'sp-own');
         expect(probe.lastArgs!['agent_id'], 'agent-own');
       });
+
+      test(
+        'a forged delegation identity is overridden by the caller',
+        () async {
+          final probe = _DelegationProbe();
+          final scopedDispatcher = McpToolDispatcher(
+            registry: McpToolRegistry([probe]),
+          );
+
+          await scopedDispatcher.handleScopedRequest(
+            JsonRpcRequest(
+              method: 'tools/call',
+              params: {
+                'name': 'scope_probe',
+                'arguments': {
+                  'workspace_id': 'ws-own',
+                  'from_agent_id': 'agent-victim',
+                  'delegated_by_agent_id': 'agent-victim',
+                },
+              },
+              id: 4,
+            ),
+            scope: const McpCallScope(
+              workspaceId: 'ws-own',
+              agentId: 'agent-own',
+            ),
+          );
+
+          expect(probe.lastArgs!['from_agent_id'], 'agent-own');
+          expect(probe.lastArgs!['delegated_by_agent_id'], 'agent-own');
+        },
+      );
+
+      test(
+        'a delegation identity without a trusted caller is dropped',
+        () async {
+          final probe = _DelegationProbe();
+          final scopedDispatcher = McpToolDispatcher(
+            registry: McpToolRegistry([probe]),
+          );
+
+          await scopedDispatcher.handleScopedRequest(
+            JsonRpcRequest(
+              method: 'tools/call',
+              params: {
+                'name': 'scope_probe',
+                'arguments': {
+                  'workspace_id': 'ws-own',
+                  'from_agent_id': 'agent-victim',
+                },
+              },
+              id: 5,
+            ),
+            scope: const McpCallScope(workspaceId: 'ws-own'),
+          );
+
+          expect(probe.lastArgs!.containsKey('from_agent_id'), isFalse);
+        },
+      );
 
       test(
         'no scope means verbatim arguments (Inspector/user tooling path)',

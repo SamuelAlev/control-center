@@ -468,6 +468,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get teammate => '队友';
 
   @override
+  String get systemSender => '系统';
+
+  @override
   String get agent => '智能体';
 
   @override
@@ -615,12 +618,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return '正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装，或连接具有访问权限的令牌。';
+    return '正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装。';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App 安装已被暂停。正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装，或连接具有访问权限的令牌。';
+    return 'GitHub App 安装已被暂停。正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装。';
   }
 
   @override
@@ -2469,6 +2472,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get credentialsSignInInvalidCode => '该代码与此次登录不匹配。请检查后重试。';
 
   @override
+  String get credentialsSignInTooManyCodes => '错误代码次数过多。请重新开始登录。';
+
+  @override
+  String get credentialsSignInRetryLater => '登录服务当前没有响应。请等待一分钟后重试。';
+
+  @override
+  String get credentialsSignInRefused => '登录被拒绝。请重新开始并批准所有请求的权限。';
+
+  @override
+  String get credentialsSignInNotSaved => '登录成功，但服务器无法保存。请重试。';
+
+  @override
   String credentialsSignInUnavailable(String provider) {
     return '此服务器尚未设置 $provider 登录。';
   }
@@ -2540,6 +2555,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get failureUnreachable => '無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試';
 
   @override
+  String get systemSender => '系統';
+
+  @override
   String get credentialsConnectCodePrompt => '輸入瀏覽器中顯示的代碼';
 
   @override
@@ -2547,6 +2565,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get credentialsSignInInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String get credentialsSignInTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
+
+  @override
+  String get credentialsSignInRetryLater => '登入服務目前沒有回應。請等待一分鐘後再試一次。';
+
+  @override
+  String get credentialsSignInRefused => '登入遭到拒絕。請重新開始並核准所有要求的權限。';
+
+  @override
+  String get credentialsSignInNotSaved => '登入成功，但伺服器無法儲存。請再試一次。';
 
   @override
   String credentialsSignInUnavailable(String provider) {
@@ -3027,6 +3057,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get teammate => '隊友';
 
   @override
+  String get systemSender => '系統';
+
+  @override
   String get agent => '代理';
 
   @override
@@ -3174,12 +3207,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String installationSuspendedBody(String names) {
-    return '正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝，或連線具有存取權限的權杖。';
+    return '正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝。';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App 安裝已暫停。正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝，或連線具有存取權限的權杖。';
+    return 'GitHub App 安裝已暫停。正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝。';
   }
 
   @override
@@ -5025,6 +5058,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get credentialsSignInInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String get credentialsSignInTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
+
+  @override
+  String get credentialsSignInRetryLater => '登入服務目前沒有回應。請等待一分鐘後再試一次。';
+
+  @override
+  String get credentialsSignInRefused => '登入遭到拒絕。請重新開始並核准所有要求的權限。';
+
+  @override
+  String get credentialsSignInNotSaved => '登入成功，但伺服器無法儲存。請再試一次。';
 
   @override
   String credentialsSignInUnavailable(String provider) {

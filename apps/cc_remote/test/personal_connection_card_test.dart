@@ -80,7 +80,11 @@ class _Host {
   }
 }
 
-Map<String, dynamic> _attempt(String status, {String mode = 'connect'}) => {
+Map<String, dynamic> _attempt(
+  String status, {
+  String mode = 'connect',
+  String? codeError,
+}) => {
   'login_id': 'login-1234567890abcdef12',
   'lane': 'github',
   'mode': mode,
@@ -90,6 +94,7 @@ Map<String, dynamic> _attempt(String status, {String mode = 'connect'}) => {
       .add(const Duration(minutes: 10))
       .toIso8601String(),
   'status': status,
+  'code_error': ?codeError,
 };
 
 Future<void> _mount(WidgetTester tester, _Host host, Widget card) async {
@@ -249,7 +254,7 @@ void main() {
     addTearDown(host.close);
     host.onCall = (op, args) => switch (op) {
       'oauth.begin' || 'oauth.status' => _attempt('pending'),
-      'oauth.complete' => throw StateError('wrong code'),
+      'oauth.complete' => _attempt('pending', codeError: 'code_mismatch'),
       _ => throw StateError('Unexpected RPC: $op'),
     };
     await _mount(
@@ -269,6 +274,34 @@ void main() {
     await _settle(tester);
 
     expect(find.textContaining("doesn't match this sign-in"), findsOne);
+    expect(find.text('Confirm'), findsOne);
+  });
+
+  testWidgets('a failed call is not reported as a wrong code', (tester) async {
+    final host = _Host();
+    addTearDown(host.close);
+    host.onCall = (op, args) => switch (op) {
+      'oauth.begin' || 'oauth.status' => _attempt('pending'),
+      'oauth.complete' => throw StateError('socket closed'),
+      _ => throw StateError('Unexpected RPC: $op'),
+    };
+    await _mount(
+      tester,
+      host,
+      _github(
+        info: const SignInLaneInfo(
+          lane: ConnectOAuthLane.github,
+          mode: SignInLaneMode.connect,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Sign in with browser'));
+    await _settle(tester);
+    await tester.enterText(find.byType(EditableText), 'ABCDEFGH');
+    await tester.tap(find.text('Confirm'));
+    await _settle(tester);
+
+    expect(find.textContaining("doesn't match this sign-in"), findsNothing);
     expect(find.text('Confirm'), findsOne);
   });
 

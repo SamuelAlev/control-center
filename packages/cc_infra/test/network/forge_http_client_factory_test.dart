@@ -190,6 +190,28 @@ void main() {
       },
     );
 
+    test('an unavailable credential fails locally as that status, never as an '
+        'anonymous request', () async {
+      final auth = ForgeAuthInterceptor(
+        forge: ForgeHost.github,
+        tokenLookup: (_) async => 'unused',
+        requestTokenLookup: (_, _, _) async =>
+            throw const ForgeCredentialUnavailable(404, 'no grant'),
+        bitbucketUsername: () => '',
+      );
+
+      await expectLater(
+        auth.beforeRequest(_request()),
+        throwsA(
+          isA<RhttpStatusCodeException>()
+              .having((e) => e.statusCode, 'statusCode', 404)
+              .having((e) => jsonDecode(e.body as String), 'body', {
+                'message': 'no grant',
+              }),
+        ),
+      );
+    });
+
     test('the token is read per request, not captured at build time', () async {
       // The whole point of the lazy lookup: a token pasted into Settings must
       // apply to the next call, with no client rebuild and no restart.

@@ -29,10 +29,6 @@ Future<Directory> modelsRootDir() => _paths.modelsRoot();
 /// Root for installed tree-sitter native libraries used by the code indexer.
 Future<Directory> grammarsRootDir() => _paths.grammarsRoot();
 
-/// Per-pipeline-run working directory: `<root>/pipelines/<pipelineRunId>/`.
-Future<Directory> pipelineRunDir(String pipelineRunId) =>
-    _paths.pipelineRunDir(pipelineRunId);
-
 /// Per-meeting working directory: `<root>/meetings/<meetingId>/`.
 Future<Directory> meetingAudioDir(String meetingId) =>
     _paths.meetingAudioDir(meetingId);

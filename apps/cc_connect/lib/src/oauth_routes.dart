@@ -18,6 +18,9 @@ import 'package:crypto/crypto.dart' as crypto;
 const ConnectException _denied = ConnectException(
   ConnectErrorCode.accessDenied,
 );
+const ConnectException _mismatch = ConnectException(
+  ConnectErrorCode.codeMismatch,
+);
 const ConnectException _stale = ConnectException(ConnectErrorCode.staleRequest);
 const ConnectException _invalid = ConnectException(
   ConnectErrorCode.invalidRequest,
@@ -65,10 +68,6 @@ final class OAuthRoutes {
     if (!isPkceChallenge(request.codeChallenge)) {
       throw _invalid;
     }
-    if (lane != ConnectOAuthLane.github &&
-        request.purpose != ConnectOAuthPurpose.signIn) {
-      throw _invalid;
-    }
     final hint = request.loginHint;
     if (hint.isNotEmpty &&
         (lane != ConnectOAuthLane.google ||
@@ -100,17 +99,18 @@ final class OAuthRoutes {
       installId: caller.installId,
       workspaceId: request.workspaceId,
       codeChallenge: request.codeChallenge,
-      purpose: request.purpose,
       confirmCode: newConfirmCode(),
       expiresAt: ctx.now().add(loginTtl),
-      installationId: request.installationId,
       oidcNonce: lane == ConnectOAuthLane.slack ? b64url(randomBytes(16)) : '',
     );
     final state = b64url(randomBytes(32));
-    await ctx.saveLogin(login);
+    if (!await ctx.saveLogin(login)) {
+      // A login id collision: never overwrite somebody's login.
+      throw _unavailable;
+    }
     await ctx.state.set(
       'state:$state',
-      jsonEncode({'login': login.id, 'hop': 'first'}),
+      jsonEncode({'login': login.id, 'hop': ConnectCallbackHop.first.wire}),
       loginTtl,
     );
     final url = _authorizeUrl(
@@ -223,17 +223,19 @@ final class OAuthRoutes {
     }
     final decoded = jsonDecode(mapping);
     final loginId = decoded is Map ? decoded['login'] : null;
-    final hop = decoded is Map ? decoded['hop'] : null;
+    final hop = ConnectCallbackHop.fromWire(
+      decoded is Map ? decoded['hop'] : null,
+    );
     final login = loginId is String ? await ctx.login(loginId) : null;
     if (login == null) {
       return sendStaticPage(response, StaticPage.expired);
     }
-    final expected = switch (segment) {
-      'slack_oidc' => login.lane == ConnectOAuthLane.slack && hop == 'first',
-      'slack' => login.lane == ConnectOAuthLane.slack && hop == 'bot',
-      _ => login.lane.wire == segment && hop == 'first',
-    };
-    if (!expected) {
+    final route = ConnectOAuthLane.fromCallbackSegment(segment);
+    if (route == null ||
+        hop == null ||
+        route.lane != login.lane ||
+        route.hop != hop ||
+        login.nextHop != hop) {
       await ctx.burnLogin(login.id);
       return sendStaticPage(response, StaticPage.expired);
     }
@@ -246,11 +248,17 @@ final class OAuthRoutes {
       ctx.log.event('oauth.declined', {'lane': login.lane.wire});
       return sendStaticPage(response, StaticPage.declined);
     }
-    if (segment == 'slack_oidc') {
+    if (login.lane == ConnectOAuthLane.slack &&
+        hop == ConnectCallbackHop.first) {
       return _slackPrecheck(response, login, code);
     }
-    login.providerCode = code;
-    await ctx.saveLogin(login);
+    final authorized = login.advance(
+      Authorized(providerCode: code, slack: login.slackPrecheck),
+    );
+    if (!await ctx.saveLogin(authorized)) {
+      // Burned or advanced by another request meanwhile.
+      return sendStaticPage(response, StaticPage.expired);
+    }
     final cookie = b64url(randomBytes(32));
     await ctx.state.set(
       'done:${_sha(cookie)}',
@@ -278,7 +286,9 @@ final class OAuthRoutes {
       final (_, creds, api) = await ctx.slackLane();
       final identity = await api.oidcIdentity(
         code: code,
-        redirectUri: _callback('slack_oidc').toString(),
+        redirectUri: _callback(
+          ConnectOAuthLane.slack.callbackSegment(ConnectCallbackHop.first)!,
+        ).toString(),
         nonce: login.oidcNonce,
       );
       final bound = await ctx.bindings.slack(identity.teamId, fresh: true);
@@ -298,23 +308,30 @@ final class OAuthRoutes {
       if (!await ctx.state.putIfAbsent(reservation, login.id, ttl)) {
         final holder = await ctx.state.get(reservation);
         // A reservation whose login was abandoned (expired or burned) is
-        // free; one mid-exchange or still live is not.
-        if (holder != null &&
-            (holder.startsWith(_slackExchanging) ||
-                await ctx.login(holder) != null)) {
+        // free; one mid-exchange or still live is not. Taking it over is
+        // compare-and-set: of two logins that both found it abandoned, one
+        // wins and the other is told an install is in progress.
+        final abandoned =
+            holder != null &&
+            !holder.startsWith(_slackExchanging) &&
+            await ctx.login(holder) == null;
+        if (!abandoned ||
+            !await ctx.state.replace(reservation, holder, login.id, ttl)) {
           await ctx.burnLogin(login.id);
           return await sendStaticPage(response, StaticPage.slackInProgress);
         }
-        await ctx.state.set(reservation, login.id, ttl);
       }
-      login
-        ..slackTeamId = identity.teamId
-        ..slackUserId = identity.userId;
-      await ctx.saveLogin(login);
+      final checked = login.advance(
+        SlackPrechecked(teamId: identity.teamId, userId: identity.userId),
+      );
+      if (!await ctx.saveLogin(checked)) {
+        await ctx.burnLogin(login.id);
+        return await sendStaticPage(response, StaticPage.expired);
+      }
       final state = b64url(randomBytes(32));
       await ctx.state.set(
         'state:$state',
-        jsonEncode({'login': login.id, 'hop': 'bot'}),
+        jsonEncode({'login': login.id, 'hop': ConnectCallbackHop.bot.wire}),
         login.expiresAt.difference(ctx.now()),
       );
       return await sendSeeOther(
@@ -322,7 +339,9 @@ final class OAuthRoutes {
         Uri.https('slack.com', '/oauth/v2/authorize', {
           'client_id': creds.clientId,
           'scope': slackBotScopes.join(','),
-          'redirect_uri': _callback('slack').toString(),
+          'redirect_uri': _callback(
+            ConnectOAuthLane.slack.callbackSegment(ConnectCallbackHop.bot)!,
+          ).toString(),
           'state': state,
           'team': identity.teamId,
         }),
@@ -350,7 +369,7 @@ final class OAuthRoutes {
     }
     final loginId = await ctx.state.get('done:${_sha(cookie)}');
     final login = loginId == null ? null : await ctx.login(loginId);
-    if (login == null || login.lane != lane || login.providerCode.isEmpty) {
+    if (login == null || login.lane != lane || login.providerCode == null) {
       return sendStaticPage(response, StaticPage.expired);
     }
     return sendPage(
@@ -382,11 +401,14 @@ final class OAuthRoutes {
       throw _stale;
     }
     // Another install's login is answered like a wrong code, without
-    // spending that login's attempts.
+    // spending that login's attempts; so is a claim before the provider
+    // redirected back (no code has been shown yet, so none can be right).
+    final providerCode = login.providerCode;
     if (login.installId != caller.installId ||
         login.lane != lane ||
-        login.workspaceId != request.workspaceId) {
-      throw _denied;
+        login.workspaceId != request.workspaceId ||
+        providerCode == null) {
+      throw _mismatch;
     }
     final attempts = await ctx.state.increment(
       'attempts:${login.id}',
@@ -394,7 +416,7 @@ final class OAuthRoutes {
     );
     if (attempts > maxClaimAttempts) {
       await ctx.burnLogin(login.id);
-      throw _denied;
+      throw _mismatch;
     }
     final code = normaliseConfirmCode(request.confirmCode);
     final verifierOk =
@@ -404,7 +426,7 @@ final class OAuthRoutes {
           login.codeChallenge,
         );
     final codeOk = code != null && constantTimeEquals(code, login.confirmCode);
-    if (!codeOk || !verifierOk || login.providerCode.isEmpty) {
+    if (!codeOk || !verifierOk) {
       if (attempts >= maxClaimAttempts) {
         await ctx.burnLogin(login.id);
       }
@@ -413,7 +435,7 @@ final class OAuthRoutes {
         'count': attempts,
         'install': ctx.log.tag(caller.installId),
       });
-      throw _denied;
+      throw _mismatch;
     }
     // Single use: of two concurrent correct claims exactly one proceeds.
     if (await ctx.state.take('login:${login.id}') == null) {
@@ -422,7 +444,14 @@ final class OAuthRoutes {
     await ctx.state.delete('attempts:${login.id}');
     final binding = caller.binding(login.workspaceId);
     try {
-      return await _exchangeClaim(caller, lane, login, request, binding);
+      return await _exchangeClaim(
+        caller,
+        lane,
+        login,
+        providerCode,
+        request,
+        binding,
+      );
     } on ConnectException catch (e) {
       // The code and verifier were right; the provider, or what it handed
       // back, was not. Say why: nothing else would.
@@ -432,6 +461,12 @@ final class OAuthRoutes {
         'reason': e.reason,
         'install': ctx.log.tag(caller.installId),
       });
+      // The login is spent either way. A grant the provider refused (wrong
+      // scopes, another app, an identity mismatch) is "sign in again", never
+      // `access_denied`: the server must not read it as a wrong code.
+      if (e.code == ConnectErrorCode.accessDenied) {
+        throw ConnectException(ConnectErrorCode.needsSignIn, reason: e.reason);
+      }
       rethrow;
     }
   }
@@ -440,25 +475,32 @@ final class OAuthRoutes {
     ConnectCaller caller,
     ConnectOAuthLane lane,
     StagedLogin login,
+    String providerCode,
     OAuthClaimRequest request,
     SealBinding binding,
   ) async {
     final result = switch (lane) {
       ConnectOAuthLane.github => await _claimGitHub(
-        login,
+        providerCode,
         request.codeVerifier,
         binding,
       ),
       ConnectOAuthLane.google => await _claimGoogle(
         login,
+        providerCode,
         request.codeVerifier,
         binding,
       ),
       ConnectOAuthLane.linear || ConnectOAuthLane.linearApp => LinearCodeGrant(
-        code: login.providerCode,
-        redirectUri: _callback(lane.wire).toString(),
+        code: providerCode,
+        redirectUri: _callback(lane.firstCallbackSegment).toString(),
       ).toJson(),
-      ConnectOAuthLane.slack => await _claimSlack(caller, login, binding),
+      ConnectOAuthLane.slack => await _claimSlack(
+        caller,
+        login,
+        providerCode,
+        binding,
+      ),
     };
     ctx.log.event('oauth.claimed', {
       'lane': lane.wire,
@@ -468,14 +510,16 @@ final class OAuthRoutes {
   }
 
   Future<Map<String, Object?>> _claimGitHub(
-    StagedLogin login,
+    String providerCode,
     String verifier,
     SealBinding binding,
   ) async {
     final (_, creds, api) = await ctx.githubLane();
     final tokens = await api.exchangeCode(
-      code: login.providerCode,
-      redirectUri: _callback('github').toString(),
+      code: providerCode,
+      redirectUri: _callback(
+        ConnectOAuthLane.github.firstCallbackSegment,
+      ).toString(),
       codeVerifier: verifier,
     );
     final user = await api.user(tokens.access);
@@ -499,13 +543,16 @@ final class OAuthRoutes {
 
   Future<Map<String, Object?>> _claimGoogle(
     StagedLogin login,
+    String providerCode,
     String verifier,
     SealBinding binding,
   ) async {
     final (_, creds, api) = await ctx.googleLane();
     final tokens = await api.exchangeCode(
-      code: login.providerCode,
-      redirectUri: _callback('google').toString(),
+      code: providerCode,
+      redirectUri: _callback(
+        ConnectOAuthLane.google.firstCallbackSegment,
+      ).toString(),
       codeVerifier: verifier,
     );
     Future<Never> refuse(String reason) async {
@@ -564,47 +611,74 @@ final class OAuthRoutes {
   Future<Map<String, Object?>> _claimSlack(
     ConnectCaller caller,
     StagedLogin login,
+    String providerCode,
     SealBinding binding,
   ) async {
     final (_, creds, api) = await ctx.slackLane();
-    if (login.slackTeamId.isEmpty) {
+    final precheck = login.slackPrecheck;
+    if (precheck == null) {
       throw _denied;
     }
-    final reservation = _slackClaimKey(login.slackTeamId);
-    if (await ctx.state.get(reservation) != login.id) {
-      // The reservation lapsed or another login holds it: exchanging now
-      // would rotate a token someone else may already hold.
-      throw _denied;
-    }
+    final reservation = _slackClaimKey(precheck.teamId);
     final exchanging = '$_slackExchanging${login.id}';
-    await ctx.state.set(reservation, exchanging, const Duration(minutes: 2));
+    // Compare-and-set from this login's reservation to "exchanging": when it
+    // lapsed or another login holds it, exchanging now would rotate a token
+    // someone else may already hold.
+    if (!await ctx.state.replace(
+      reservation,
+      login.id,
+      exchanging,
+      _slackExchangeTtl,
+    )) {
+      throw _denied;
+    }
     try {
-      return await _exchangeSlack(caller, login, binding, creds, api);
+      return await _exchangeSlack(
+        caller,
+        login,
+        precheck,
+        providerCode,
+        binding,
+        creds,
+        api,
+      );
     } finally {
-      if (await ctx.state.get(reservation) == exchanging) {
-        await ctx.state.delete(reservation);
+      // Only this exchange's own mark: one that lapsed may have been taken.
+      try {
+        await ctx.state.deleteIf(reservation, exchanging);
+      } on Object {
+        // Lapses after [_slackExchangeTtl].
       }
     }
   }
 
   static String _slackClaimKey(String teamId) => 'slackclaim:$teamId';
 
+  /// How long an exchange holds a team's reservation: a code exchange,
+  /// `auth.test`, an admin lookup and the bind, each bounded by the upstream
+  /// timeout, with room to spare.
+  static const Duration _slackExchangeTtl = Duration(minutes: 2);
+
   static const String _slackExchanging = 'exchanging:';
 
   Future<Map<String, Object?>> _exchangeSlack(
     ConnectCaller caller,
     StagedLogin login,
+    SlackPrechecked precheck,
+    String providerCode,
     SealBinding binding,
     SlackCredentials creds,
     SlackApi api,
   ) async {
-    final current = await ctx.bindings.slack(login.slackTeamId, fresh: true);
+    final current = await ctx.bindings.slack(precheck.teamId, fresh: true);
     if (current != null && current.installId != caller.installId) {
       throw const ConnectException(ConnectErrorCode.teamBoundElsewhere);
     }
     final grant = await api.oauthAccess(
-      code: login.providerCode,
-      redirectUri: _callback('slack').toString(),
+      code: providerCode,
+      redirectUri: _callback(
+        ConnectOAuthLane.slack.callbackSegment(ConnectCallbackHop.bot)!,
+      ).toString(),
     );
     Future<Never> refuse(ConnectErrorCode code) async {
       // Never call `auth.revoke` on a workspace already bound to a different
@@ -622,10 +696,10 @@ final class OAuthRoutes {
     if (grant.appId != creds.appId ||
         grant.isEnterpriseInstall ||
         !scopesExactlyMatch(grant.scopes, slackBotScopes) ||
-        grant.teamId != login.slackTeamId ||
+        grant.teamId != precheck.teamId ||
         (grant.authedUserId.isNotEmpty &&
-            login.slackUserId.isNotEmpty &&
-            grant.authedUserId != login.slackUserId)) {
+            precheck.userId.isNotEmpty &&
+            grant.authedUserId != precheck.userId)) {
       return refuse(ConnectErrorCode.accessDenied);
     }
     final auth = await api.authTest(grant.access);
@@ -638,7 +712,7 @@ final class OAuthRoutes {
         !await api.isWorkspaceAdmin(
           grant.access,
           teamId: grant.teamId,
-          userId: login.slackUserId,
+          userId: precheck.userId,
         )) {
       ctx.log.event('slack.bind_refused_not_admin', {
         'team': ctx.log.tag(grant.teamId),
@@ -651,6 +725,7 @@ final class OAuthRoutes {
         teamId: grant.teamId,
         installId: caller.installId,
         botId: auth.botId,
+        botUserId: grant.botUserId,
         appId: creds.appId,
         boundAt: ctx.now(),
       ),
@@ -731,10 +806,12 @@ final class OAuthRoutes {
       return sendStaticPage(response, StaticPage.githubNotInstalled);
     }
     try {
+      final lane = await ctx.githubLane();
       final grant = await grants.resolveGitHub(
         ConnectCaller(installId: ticket['install_id'] as String),
         ticket['workspace_id'] as String,
         ticket['seal'] as String,
+        lane: lane,
         minRemaining: const Duration(minutes: 1),
         rotate: false,
       );
@@ -742,6 +819,7 @@ final class OAuthRoutes {
         grant,
         installationId,
         ticket['install_id'] as String,
+        lane: lane,
       );
       return await sendStaticPage(response, switch (outcome) {
         AuthorizeOutcome.bound => StaticPage.githubInstalled,

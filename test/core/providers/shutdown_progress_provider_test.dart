@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart'
-    show RemoteRpcClient, ServerBuild, ServerConnectionPhase, ServerConnectionStatus;
+    show
+        RemoteRpcClient,
+        ServerBuild,
+        ServerConnectionPhase,
+        ServerConnectionStatus;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/server_connection_status_provider.dart';
 import 'package:control_center/core/providers/shutdown_progress_provider.dart';
@@ -190,6 +194,40 @@ void main() {
       );
       await pump();
       expect(c.read(shutdownProgressProvider).active, isFalse);
+    },
+  );
+
+  test(
+    'a shutdown this app started (quitting) survives the connection drop',
+    () async {
+      // H1: the bundled server exits before the window closes; the overlay
+      // must keep covering the app through that drop instead of flashing it.
+      final notifs = StreamController<JsonRpcNotification>.broadcast();
+      final status = StreamController<ServerConnectionStatus>.broadcast();
+      final c = ProviderContainer(
+        overrides: [
+          rpcClientProvider.overrideWithValue(_FakeRpcClient(notifs.stream)),
+          serverConnectionStatusProvider.overrideWith((ref) => status.stream),
+        ],
+      );
+      addTearDown(() {
+        c.dispose();
+        status.close();
+        notifs.close();
+      });
+      c.listen(shutdownProgressProvider, (_, _) {});
+      status.add(
+        const ServerConnectionStatus(phase: ServerConnectionPhase.connected),
+      );
+      await Future<void>.delayed(Duration.zero);
+      c.read(shutdownProgressProvider.notifier).begin();
+
+      status.add(
+        const ServerConnectionStatus(phase: ServerConnectionPhase.reconnecting),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(shutdownProgressProvider).active, isTrue);
+      expect(c.read(shutdownProgressProvider).initiatedHere, isTrue);
     },
   );
 }

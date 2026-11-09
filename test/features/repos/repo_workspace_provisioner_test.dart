@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_harness/cancellation.dart';
@@ -336,10 +337,11 @@ void main() {
       );
 
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'space-pr',
-        agentSlug: 'qa',
-        fallbackDir: '/agent/dir',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'space-pr',
+          agentSlug: 'qa',
+        ),
       );
 
       expect(isolation.provisions.map((c) => c.name), ['under-review']);
@@ -367,10 +369,11 @@ void main() {
       );
 
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'ch',
-        agentSlug: 'dev',
-        fallbackDir: '/fallback',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'ch',
+          agentSlug: 'dev',
+        ),
       );
       expect(isolation.provisions.map((c) => c.name), ['first']);
       // The fake isolation port records the call without touching disk, and
@@ -380,10 +383,11 @@ void main() {
 
       selection = const SpaceCheckoutScope(repoIds: {'r-1', 'r-2'});
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'ch',
-        agentSlug: 'dev',
-        fallbackDir: '/fallback',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'ch',
+          agentSlug: 'dev',
+        ),
       );
 
       // `first` appears exactly once across both runs: the second run reused it.
@@ -411,10 +415,11 @@ void main() {
       );
 
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'space-pr',
-        agentSlug: 'qa',
-        fallbackDir: '/agent/dir',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'space-pr',
+          agentSlug: 'qa',
+        ),
       );
 
       // The branch is the PR's, not a `space/<id>` scratch branch — the agent
@@ -437,11 +442,12 @@ void main() {
       );
 
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'space-1',
-        agentSlug: 'dev',
-        fallbackDir: '/agent/dir',
-        repoAllowlist: const {'r-2'},
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'space-1',
+          agentSlug: 'dev',
+          repoAllowlist: const {'r-2'},
+        ),
       );
 
       expect(isolation.provisions.map((c) => c.name), ['two']);
@@ -461,15 +467,18 @@ void main() {
             const SpaceCheckoutScope(repoIds: <String>{}),
       );
 
-      final dir = await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'space-1',
-        agentSlug: 'dev',
-        fallbackDir: '/agent/dir',
+      final dir = _overlay(
+        await p.ensureSpaceWorkspace(
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'space-1',
+            agentSlug: 'dev',
+          ),
+        ),
       );
 
       expect(isolation.provisions, isEmpty);
-      expect(dir, '/agent/dir');
+      expect(dir, 'unavailable:noRepos');
     });
 
     test('no scope resolver keeps the every-repo behaviour', () async {
@@ -485,10 +494,11 @@ void main() {
       );
 
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'space-1',
-        agentSlug: 'dev',
-        fallbackDir: '/agent/dir',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'space-1',
+          agentSlug: 'dev',
+        ),
       );
 
       expect(isolation.provisions.map((c) => c.name), ['one', 'two']);
@@ -509,10 +519,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'space-1',
-          agentSlug: 'dev',
-          fallbackDir: '/agent/dir',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'space-1',
+            agentSlug: 'dev',
+          ),
         );
 
         expect(isolation.provisions.map((c) => c.name), ['one']);
@@ -523,46 +534,38 @@ void main() {
   group('RepoWorkspaceProvisioner', () {
     // ── Guard paths ──────────────────────────────────────────────────────
 
-    test(
-      'returns the fallback dir when the workspace has no linked repos',
-      () async {
-        final p = _build(
-          registry: _FakeRegistry(),
-          isolation: _FakeIsolation(),
-        );
-        final dir = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/agent/dir',
-        );
-        expect(dir, '/agent/dir');
-      },
-    );
-
-    test('returns the fallback dir when workspaceId is empty', () async {
+    test('reports no repos when the workspace has no linked repos', () async {
       final p = _build(registry: _FakeRegistry(), isolation: _FakeIsolation());
-      expect(
+      final dir = _overlay(
         await p.ensureSpaceWorkspace(
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
+        ),
+      );
+      expect(dir, 'unavailable:noRepos');
+    });
+
+    test('a request without a workspace or space is refused', () {
+      // Nothing to provision means nowhere to run: the request says so
+      // rather than quietly handing back somebody else's directory.
+      expect(
+        () => SpaceWorkspaceRequest(
           workspaceId: '',
           spaceId: 'ch',
           agentSlug: 'dev',
-          fallbackDir: '/fallback',
         ),
-        '/fallback',
+        throwsArgumentError,
       );
-    });
-
-    test('returns the fallback dir when spaceId is empty', () async {
-      final p = _build(registry: _FakeRegistry(), isolation: _FakeIsolation());
       expect(
-        await p.ensureSpaceWorkspace(
+        () => SpaceWorkspaceRequest(
           workspaceId: 'w-1',
           spaceId: '',
           agentSlug: 'dev',
-          fallbackDir: '/fallback',
         ),
-        '/fallback',
+        throwsArgumentError,
       );
     });
 
@@ -587,11 +590,14 @@ void main() {
             filesystem: fs,
           );
 
-          final dir = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch-12345678',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+          final dir = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch-12345678',
+                agentSlug: 'dev',
+              ),
+            ),
           );
 
           // cwd is the per-agent overlay, NOT the space root.
@@ -634,11 +640,14 @@ void main() {
           filesystem: fs,
         );
 
-        final cwd = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch-12345678',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final cwd = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch-12345678',
+              agentSlug: 'dev',
+            ),
+          ),
         );
         // Simulate cc_server writing the token-bearing config into the overlay.
         File(
@@ -748,13 +757,14 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch-12345678',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
-          ticketKey: 'OMP-42',
-          ticketTitle: 'Fix the thing',
-          branchType: 'bugfix',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch-12345678',
+            agentSlug: 'dev',
+            ticketKey: 'OMP-42',
+            ticketTitle: 'Fix the thing',
+            branchType: 'bugfix',
+          ),
         );
 
         // BranchTemplateResolver renders {type}/{ticket-key}-{slug}
@@ -796,13 +806,14 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-77',
-          spaceId: 'ch-12345678',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
-          ticketKey: 'OMP-42',
-          ticketTitle: 'Fix the thing',
-          branchType: 'bugfix',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-77',
+            spaceId: 'ch-12345678',
+            agentSlug: 'dev',
+            ticketKey: 'OMP-42',
+            ticketTitle: 'Fix the thing',
+            branchType: 'bugfix',
+          ),
         );
 
         expect(asked, ['w-77'], reason: 'the workspace id was not threaded');
@@ -830,13 +841,14 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch-12345678',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
-          ticketId: 't-42',
-          ticketKey: 'OMP-42',
-          ticketTitle: 'Fix the thing',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch-12345678',
+            agentSlug: 'dev',
+            ticketId: 't-42',
+            ticketKey: 'OMP-42',
+            ticketTitle: 'Fix the thing',
+          ),
         );
 
         expect(registry.rows.first.ticketId, 't-42');
@@ -866,10 +878,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
         );
 
         // slugify('my-awesome-repo!!') → 'my-awesome-repo'
@@ -897,10 +910,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
         );
 
         expect(isolation.provisions.first.name, 'my-repo-id');
@@ -930,10 +944,11 @@ void main() {
           );
 
           await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch',
+              agentSlug: 'dev',
+            ),
           );
 
           final call = isolation.provisions.first;
@@ -965,10 +980,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
         );
 
         expect(isolation.provisions.first.fetchToken, isNull);
@@ -995,15 +1011,18 @@ void main() {
           githubToken: (_, _) async => throw Exception('auth failed'),
         );
 
-        final dir = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final dir = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch',
+              agentSlug: 'dev',
+            ),
+          ),
         );
 
         // Should not crash; no token is passed when the lookup throws.
-        expect(dir, isNot('/fallback'));
+        expect(dir, isNot(startsWith('unavailable')));
         expect(isolation.provisions.first.fetchToken, isNull);
       } finally {
         tempDir.deleteSync(recursive: true);
@@ -1048,11 +1067,14 @@ void main() {
             filesystem: fs,
           );
 
-          final dir = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+          final dir = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+              ),
+            ),
           );
 
           expect(dir, '${tempDir.path}/w-1/spaces/ch/agents/dev');
@@ -1101,11 +1123,14 @@ void main() {
             filesystem: fs,
           );
 
-          final dir = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+          final dir = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+              ),
+            ),
           );
 
           expect(dir, '${tempDir.path}/w-1/spaces/ch/agents/dev');
@@ -1164,11 +1189,14 @@ void main() {
           filesystem: fs,
         );
 
-        final dir = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch-12',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final dir = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch-12',
+              agentSlug: 'dev',
+            ),
+          ),
         );
 
         // Should still return the per-agent cwd (not fallback)
@@ -1187,30 +1215,30 @@ void main() {
 
     // ── Top-level exception resilience ───────────────────────────────────
 
-    test(
-      'ensureSpaceWorkspace returns fallbackDir on top-level error',
-      () async {
-        // WorkspaceRepository that throws on watchReposForWorkspace
-        final thrower = _ThrowingWorkspaces();
-        final p = RepoWorkspaceProvisioner(
-          filesystem: FakeFilesystemPort(),
-          isolation: _FakeIsolation(),
-          registry: _FakeRegistry(),
-          workspaces: thrower,
-          githubToken: (_, _) async => '',
-          branchTemplate: (_) async => '{type}/{ticket-key}-{slug}',
-        );
+    test('ensureSpaceWorkspace reports a top-level error as failed', () async {
+      // WorkspaceRepository that throws on watchReposForWorkspace
+      final thrower = _ThrowingWorkspaces();
+      final p = RepoWorkspaceProvisioner(
+        filesystem: FakeFilesystemPort(),
+        isolation: _FakeIsolation(),
+        registry: _FakeRegistry(),
+        workspaces: thrower,
+        githubToken: (_, _) async => '',
+        branchTemplate: (_) async => '{type}/{ticket-key}-{slug}',
+      );
 
-        final dir = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/safe-fallback',
-        );
+      final dir = _overlay(
+        await p.ensureSpaceWorkspace(
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
+        ),
+      );
 
-        expect(dir, '/safe-fallback');
-      },
-    );
+      expect(dir, 'unavailable:failed');
+    });
 
     // ── Per-agent overlay ────────────────────────────────────────────────
 
@@ -1233,11 +1261,14 @@ void main() {
             filesystem: fs,
           );
 
-          final cwd = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+          final cwd = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+              ),
+            ),
           );
 
           final reposLink = Link(path.join(cwd, 'repos'));
@@ -1267,11 +1298,14 @@ void main() {
             filesystem: fs,
           );
 
-          final cwd = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            fallbackDir: '/fallback',
+          final cwd = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+              ),
+            ),
           );
 
           expect(File(path.join(cwd, '.mcp.json')).existsSync(), isFalse);
@@ -1308,12 +1342,15 @@ void main() {
             filesystem: fs,
           );
 
-          final cwd = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            agentConfigDir: agentConfigDir,
-            fallbackDir: '/fallback',
+          final cwd = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+                agentConfigDir: agentConfigDir,
+              ),
+            ),
           );
 
           final mdLink = Link(path.join(cwd, 'AGENTS.md'));
@@ -1351,17 +1388,23 @@ void main() {
             filesystem: fs,
           );
 
-          final cwdA = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'alice',
-            fallbackDir: '/fallback',
+          final cwdA = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'alice',
+              ),
+            ),
           );
-          final cwdB = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'bob',
-            fallbackDir: '/fallback',
+          final cwdB = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'bob',
+              ),
+            ),
           );
 
           // Distinct per-agent overlays.
@@ -1407,19 +1450,25 @@ void main() {
             filesystem: fs,
           );
 
-          final cwdA = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            conversationId: 'conv-a',
-            fallbackDir: '/fallback',
+          final cwdA = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+                conversationId: 'conv-a',
+              ),
+            ),
           );
-          final cwdB = await p.ensureSpaceWorkspace(
-            workspaceId: 'w-1',
-            spaceId: 'ch',
-            agentSlug: 'dev',
-            conversationId: 'conv-b',
-            fallbackDir: '/fallback',
+          final cwdB = _overlay(
+            await p.ensureSpaceWorkspace(
+              SpaceWorkspaceRequest(
+                workspaceId: 'w-1',
+                spaceId: 'ch',
+                agentSlug: 'dev',
+                conversationId: 'conv-b',
+              ),
+            ),
           );
 
           final agents = '${tempDir.path}/w-1/spaces/ch/agents';
@@ -1456,18 +1505,24 @@ void main() {
           filesystem: fs,
         );
 
-        final first = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final first = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch',
+              agentSlug: 'dev',
+            ),
+          ),
         );
         // Re-dispatch: reuses the same overlay + repos symlink (no throw, same path).
-        final second = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final second = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch',
+              agentSlug: 'dev',
+            ),
+          ),
         );
 
         expect(second, first);
@@ -1571,10 +1626,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: '12345678901234',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: '12345678901234',
+            agentSlug: 'dev',
+          ),
         );
 
         expect(isolation.provisions.first.branch, 'space/12345678');
@@ -1726,17 +1782,20 @@ void main() {
           filesystem: FakeFilesystemPort()..baseDir = tempDir.path,
         );
 
-        final dir = await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+        final dir = _overlay(
+          await p.ensureSpaceWorkspace(
+            SpaceWorkspaceRequest(
+              workspaceId: 'w-1',
+              spaceId: 'ch',
+              agentSlug: 'dev',
+            ),
+          ),
         );
 
         expect(isolation.provisions, hasLength(1));
         expect(
           dir,
-          '/fallback',
+          'unavailable:cancelled',
           reason: 'an interrupted provision has no overlay to hand back',
         );
         expect(p.isSpaceProvisioningCancelled('w-1', 'ch'), isTrue);
@@ -1756,10 +1815,11 @@ void main() {
 
       p.cancelSpaceProvisioning('w-1', 'ch');
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'ch',
-        agentSlug: 'dev',
-        fallbackDir: '/fallback',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'ch',
+          agentSlug: 'dev',
+        ),
       );
       expect(
         isolation.provisions,
@@ -1769,10 +1829,11 @@ void main() {
 
       p.clearSpaceProvisioningCancellation('w-1', 'ch');
       await p.ensureSpaceWorkspace(
-        workspaceId: 'w-1',
-        spaceId: 'ch',
-        agentSlug: 'dev',
-        fallbackDir: '/fallback',
+        SpaceWorkspaceRequest(
+          workspaceId: 'w-1',
+          spaceId: 'ch',
+          agentSlug: 'dev',
+        ),
       );
       expect(isolation.provisions, hasLength(1));
     });
@@ -1820,10 +1881,11 @@ void main() {
         );
 
         await p.ensureSpaceWorkspace(
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          agentSlug: 'dev',
-          fallbackDir: '/fallback',
+          SpaceWorkspaceRequest(
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            agentSlug: 'dev',
+          ),
         );
 
         expect(isolation.destroyed, [legacy.path]);
@@ -2010,3 +2072,9 @@ class _ThrowingIsolation implements RepoIsolationPort {
     destroyed.add(path);
   }
 }
+
+/// The overlay path, or `unavailable:<reason>` when none was prepared.
+String _overlay(SpaceWorkspace workspace) => switch (workspace) {
+  SpaceWorkspaceReady(:final path) => path,
+  SpaceWorkspaceUnavailable(:final reason) => 'unavailable:${reason.name}',
+};

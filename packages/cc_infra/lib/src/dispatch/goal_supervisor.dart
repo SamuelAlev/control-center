@@ -31,7 +31,7 @@ typedef GoalDispatcher =
 
 /// Posts a system message into the goal's space. Wired by the runtime to
 /// `MessagingService.postSystemMessage` (senderId 'system', senderType
-/// 'agent', messageType 'system' — the take-over refusal shape).
+/// 'system', messageType 'system' — the take-over refusal shape).
 typedef GoalSystemMessageSender =
     Future<void> Function({
       required String workspaceId,

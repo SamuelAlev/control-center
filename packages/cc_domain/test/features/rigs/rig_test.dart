@@ -80,6 +80,30 @@ void main() {
       expect(held.agentMayAct, isTrue);
     });
 
+    test('input is admitted from nobody\'s hold or one\'s own', () {
+      const person = UserPrincipal('u1');
+      const agent = AgentPrincipal('agent1');
+      expect(rig().admitsInput(agent), isTrue);
+      expect(rig(controller: person).admitsInput(person), isTrue);
+      expect(rig(controller: person).admitsInput(agent), isFalse);
+      expect(
+        rig(controller: person).admitsInput(const UserPrincipal('u2')),
+        isFalse,
+      );
+    });
+
+    test('a person may take an agent\'s hold, never another person\'s', () {
+      const person = UserPrincipal('u1');
+      const agent = AgentPrincipal('agent1');
+      expect(rig(controller: agent).mayTakeControl(person), isTrue);
+      expect(rig(controller: person).mayTakeControl(agent), isFalse);
+      expect(
+        rig(controller: person).mayTakeControl(const UserPrincipal('u2')),
+        isFalse,
+      );
+      expect(rig().mayTakeControl(agent), isTrue);
+    });
+
     test('releasing clears the hold and its timestamp', () {
       final held = rig(
         controller: const UserPrincipal('u1'),
@@ -133,8 +157,10 @@ void main() {
         const RigProvisioning(step: 'Creating the disk overlay'),
         const RigReady(),
         const RigParked(),
+        const RigParked(RigParkKind.stopped),
         const RigClosing(),
         const RigClosed(RigCloseReason.idleTimeout),
+        const RigClosed(RigCloseReason.memoryPressure),
         const RigFailed('qemu exited immediately'),
       ]) {
         final restored = RigStatus.fromStorage(
@@ -144,6 +170,12 @@ void main() {
         );
         expect(restored, status);
       }
+    });
+
+    test('an idle park and a deliberate stop are different facts', () {
+      expect(const RigParked(), isNot(const RigParked(RigParkKind.stopped)));
+      expect(const RigParked().detail, isNull);
+      expect(const RigParked(RigParkKind.stopped).detail, 'stopped');
     });
 
     test('an unreadable phase reads as failed, never as running', () {

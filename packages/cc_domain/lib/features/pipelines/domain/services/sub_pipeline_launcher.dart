@@ -16,6 +16,7 @@ class SubPipelineLauncher {
     Map<String, dynamic>? triggerPayload,
     required String parentPipelineRunId,
     required String parentStepId,
+    String? dedupKey,
     bool dryRun = false,
   }) {
     final e = engine;
@@ -28,6 +29,7 @@ class SubPipelineLauncher {
       triggerPayload: triggerPayload,
       parentPipelineRunId: parentPipelineRunId,
       parentStepId: parentStepId,
+      dedupKey: dedupKey,
       dryRun: dryRun,
     );
   }

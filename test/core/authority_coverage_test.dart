@@ -88,7 +88,7 @@ void main() {
       'oauth.lanes', 'oauth.begin', 'oauth.complete', 'oauth.status',
       'oauth.connections', 'oauth.disconnect',
       'providers.list', 'providers.listModels',
-      'forge.capabilities', 'forge.listConnections', 'forge.testConnection',
+      'forge.capabilities', 'forge.listConnections',
       'ticketing.listConnections', 'github.currentUser', 'github.teamProfile',
       'github.userProfile',
       // In-handler gates (owner/admin/membership checks inside the handler,
@@ -114,7 +114,6 @@ void main() {
       'isolated_repo.forTicketAcrossWorkspaces',
       'orchestration.approvedNeedingMaterialization',
       'orchestration.forPipelineRunAnyWorkspace',
-      'pipeline_trigger.enabledForEvent', 'pipeline_trigger.scheduled',
       'users.list', 'credential_gate.resolve',
       // The worker lane: authenticated by worker credentials at its own
       // chokepoint, not by human workspace roles.
@@ -214,6 +213,8 @@ void main() {
       'reactions.watchForSpace', 'space_read.watchUserLastReadAt',
       'space_read.watchUserSpaceReads',
       'presence.watch',
+      // The take-over marker, the stream twin of the `takeover.status` read.
+      'takeover.watch',
       // Work surfaces (tickets, plans, PRs, reviews, todos, memory, teams).
       'goals.watchForWorkspace', 'isolated_repo.watchForWorkspace',
       'members.watchForWorkspace', 'memory_domain.watchForWorkspace',

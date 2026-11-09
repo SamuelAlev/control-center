@@ -372,15 +372,15 @@ const Map<String, String> _clientConstructionAllowlist = {
 };
 
 const Map<String, String> _handRolledAuthAllowlist = {
-  'packages/cc_server_core/lib/src/forge/github_clients.dart':
-      'GitHubClients itself.',
+  'packages/cc_server_core/lib/src/forge/github_rest.dart':
+      "GitHubClients' REST transport: the App-authenticated /applications "
+      'calls, the bare reads that bound a mint, and revocation. Callers '
+      'hand it the credential GitHubClients chose.',
   'packages/cc_infra/lib/src/network/github/github_app_client.dart':
       'Transport primitive: App JWT requests.',
   'packages/cc_server_core/lib/src/forge/forge_viewer_probe.dart':
       'Identifies the bearer of a token a person just supplied, before it '
       'is stored.',
-  'packages/cc_server_core/lib/src/connect/github_sign_in_lane.dart':
-      'Identifies the user token a sign-in just issued.',
   'packages/cc_server_core/lib/src/cc_server_runtime.dart':
       "The media proxy fetches a private GitHub attachment with the viewer's "
       'own person token, for GitHub hosts only.',

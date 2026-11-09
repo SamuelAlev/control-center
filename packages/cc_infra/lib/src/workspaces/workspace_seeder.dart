@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
@@ -22,17 +25,32 @@ import 'package:uuid/uuid.dart';
 /// preserving the user's enabled choice), so a re-seed never duplicates.
 class WorkspaceSeeder {
   /// Creates a [WorkspaceSeeder] over the workspace-scoped write surfaces.
+  ///
+  /// [settingsRepository] holds the ledger of built-in triggers already seeded
+  /// (see [seededTriggersSettingKey]); without one, a deleted built-in trigger
+  /// is re-created on the next reconcile.
   const WorkspaceSeeder({
     required this._agentRepository,
     required this._filesystem,
     required this._templateRepository,
     required this._triggerRepository,
-  });
+    WorkspaceSettingsRepository? settingsRepository,
+  }) : _settings = settingsRepository;
 
   final AgentRepository _agentRepository;
   final WorkspaceFilesystemPort _filesystem;
   final PipelineTemplateRepository _templateRepository;
   final PipelineTriggerRepository _triggerRepository;
+  final WorkspaceSettingsRepository? _settings;
+
+  /// Workspace setting holding the `templateId|eventType` keys of every
+  /// built-in trigger this workspace has had, as a JSON list.
+  ///
+  /// It is the tombstone that makes deleting a built-in trigger stick: a
+  /// key in the ledger with no row is one the user removed, so the reconcile
+  /// that runs on every boot leaves it removed instead of re-creating it.
+  static const String seededTriggersSettingKey =
+      'pipelines.seeded_builtin_triggers';
 
   /// Seeds the CEO + specialist agents and the built-in pipeline templates for a
   /// freshly created [workspaceId]. [adapterId]/[modelId] are stamped on the
@@ -242,9 +260,12 @@ class WorkspaceSeeder {
       return;
     }
     final existing = await _triggerRepository.forWorkspace(workspaceId);
+    final ledger = await _readSeededLedger(workspaceId);
+    final ledgerBefore = ledger.length;
     for (final spec in specs) {
       final key = '$templateId|${spec.eventType}';
       if (existingKeys.contains(key)) {
+        ledger.add(key);
         // One repair, deliberately narrow: the repository-cleanup sweep shipped
         // as an opt-in weekly schedule, so on every existing workspace the row
         // sits DISABLED and the garbage collection never runs — worktree rows,
@@ -269,6 +290,10 @@ class WorkspaceSeeder {
         }
         continue;
       }
+      if (ledger.contains(key)) {
+        // Seeded before and gone now: the user deleted it. Leave it deleted.
+        continue;
+      }
       await _triggerRepository.insert(
         PipelineTrigger(
           id: const Uuid().v4(),
@@ -281,7 +306,44 @@ class WorkspaceSeeder {
         ),
       );
       existingKeys.add(key);
+      ledger.add(key);
     }
+    if (ledger.length != ledgerBefore) {
+      await _writeSeededLedger(workspaceId, ledger);
+    }
+  }
+
+  Future<Set<String>> _readSeededLedger(String workspaceId) async {
+    final settings = _settings;
+    if (settings == null) {
+      return <String>{};
+    }
+    try {
+      final raw = await settings.get(workspaceId, seededTriggersSettingKey);
+      if (raw == null || raw.isEmpty) {
+        return <String>{};
+      }
+      final decoded = jsonDecode(raw);
+      return decoded is List ? decoded.whereType<String>().toSet() : <String>{};
+    } on Object catch (e) {
+      CcInfraLog.warning(
+        'WorkspaceSeeder: unreadable seeded-trigger ledger for $workspaceId: '
+        '$e',
+      );
+      return <String>{};
+    }
+  }
+
+  Future<void> _writeSeededLedger(String workspaceId, Set<String> keys) async {
+    final settings = _settings;
+    if (settings == null) {
+      return;
+    }
+    await settings.set(
+      workspaceId,
+      seededTriggersSettingKey,
+      jsonEncode(keys.toList()..sort()),
+    );
   }
 
   /// Ensures the agentless `index_code` template + its `RepoAdded` trigger exist

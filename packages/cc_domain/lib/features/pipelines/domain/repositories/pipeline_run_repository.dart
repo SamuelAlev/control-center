@@ -2,8 +2,66 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 
-/// Repository interface for persisting pipeline runs and step runs.
-abstract class PipelineRunRepository {
+/// The read side of pipeline-run persistence, plus the one write a person makes
+/// directly: removing a finished run from history ([deleteRun]).
+///
+/// This is everything a client may reach. Run and step-run rows are written
+/// only by the server's `PipelineEngine` through [PipelineRunRepository]: a
+/// client that could write a run row could name its own requester, mint the id
+/// that becomes the run's working directory, or flip a run's status under the
+/// engine. Clients drive runs through `PipelineEnginePort` instead.
+abstract class PipelineRunReader {
+  /// Gets a pipeline run by ID.
+  ///
+  /// The id is enough on purpose: a run is reached from deep links, worker
+  /// callbacks and lifecycle events that carry only `pipelineRunId`.
+  /// Implementations resolve the owning workspace from the id and must not
+  /// search workspaces they were not pointed at. Returns null for an unknown id.
+  Future<PipelineRun?> getRun(String id);
+
+  /// Watches a single pipeline run by ID, emitting on every change.
+  ///
+  /// Resolves the owning workspace from the id, like [getRun].
+  Stream<PipelineRun?> watchRun(String id);
+
+  /// Watches all pipeline runs across every workspace, most recent first — the
+  /// operator's all-workspace view. Workspace surfaces use [watchForWorkspace].
+  Stream<List<PipelineRun>> watchAll();
+
+  /// Watches runs for a specific workspace.
+  Stream<List<PipelineRun>> watchForWorkspace(String workspaceId);
+
+  /// Returns the active non-terminal run for `(templateId, workspaceId,
+  /// dedupKey)`, or null. Used by `PipelineEngine.start` to enforce trigger
+  /// idempotency.
+  Future<PipelineRun?> activeForDedupKey({
+    required String templateId,
+    required String workspaceId,
+    required String dedupKey,
+  });
+
+  /// Deletes a pipeline run (and its step runs via cascade), scoped to
+  /// [workspaceId]. A run belonging to another workspace is not matched.
+  ///
+  /// The client-facing op refuses a run that is still live: deleting the row
+  /// under the engine would strand whatever it is executing.
+  Future<void> deleteRun(String workspaceId, String runId);
+
+  /// Returns all step runs for a pipeline run, whose workspace is resolved from
+  /// [pipelineRunId]. Empty when the run is unknown.
+  Future<List<PipelineStepRun>> stepRunsForPipeline(String pipelineRunId);
+
+  /// Returns a single step run by its ID within [workspaceId], or null.
+  Future<PipelineStepRun?> getStepRunById(String workspaceId, String stepRunId);
+
+  /// Watches all step runs for a pipeline run, whose workspace is resolved from
+  /// [pipelineRunId].
+  Stream<List<PipelineStepRun>> watchStepRunsForPipeline(String pipelineRunId);
+}
+
+/// Repository interface for persisting pipeline runs and step runs — the
+/// engine's full write surface. Server-side only; see [PipelineRunReader].
+abstract class PipelineRunRepository implements PipelineRunReader {
   /// Inserts a new pipeline run.
   Future<void> insertRun(PipelineRun run);
 
@@ -22,19 +80,6 @@ abstract class PipelineRunRepository {
   /// Write state through [updateRunState] and cost through [incrementCost].
   Future<void> updateRun(PipelineRun run);
 
-  /// Gets a pipeline run by ID.
-  ///
-  /// The id is enough on purpose: a run is reached from deep links, worker
-  /// callbacks and lifecycle events that carry only `pipelineRunId`.
-  /// Implementations resolve the owning workspace from the id and must not
-  /// search workspaces they were not pointed at. Returns null for an unknown id.
-  Future<PipelineRun?> getRun(String id);
-
-  /// Watches a single pipeline run by ID, emitting on every change.
-  ///
-  /// Resolves the owning workspace from the id, like [getRun].
-  Stream<PipelineRun?> watchRun(String id);
-
   /// Updates the state JSON for a pipeline run.
   Future<void> updateRunState(String runId, Map<String, dynamic> state);
 
@@ -45,33 +90,16 @@ abstract class PipelineRunRepository {
   /// startup — the reconciler runs before any workspace is chosen.
   Future<List<PipelineRun>> nonTerminalRuns();
 
-  /// Watches all pipeline runs across every workspace, most recent first — the
-  /// operator's all-workspace view. Workspace surfaces use [watchForWorkspace].
-  Stream<List<PipelineRun>> watchAll();
-
-  /// Watches runs for a specific workspace.
-  Stream<List<PipelineRun>> watchForWorkspace(String workspaceId);
-
-  /// Returns the active non-terminal run for `(templateId, workspaceId,
-  /// dedupKey)`, or null. Used by `PipelineEngine.start` to enforce trigger
-  /// idempotency.
-  Future<PipelineRun?> activeForDedupKey({
-    required String templateId,
-    required String workspaceId,
-    required String dedupKey,
-  });
-
   /// Number of runs of [templateId] currently occupying one of the template's
   /// `maxParallelRuns` slots — everything non-terminal except `queued`, which
   /// is by definition what is *waiting* for a slot.
   ///
-  /// Rows whose `triggerEventType` is in [excludeTriggerEventTypes] are not
-  /// counted. Callers pass the projection markers there: those rows mirror work
-  /// the engine does not own, so a slot they held would never be released.
+  /// Projection rows ([PipelineRun.isProjection]) are never counted: they
+  /// mirror work the engine does not own, so a slot they held would never be
+  /// released.
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
   });
 
   /// The oldest `queued` run of [templateId] (FIFO by `startedAt`), or null
@@ -81,10 +109,6 @@ abstract class PipelineRunRepository {
     required String workspaceId,
     required String templateId,
   });
-
-  /// Deletes a pipeline run (and its step runs via cascade), scoped to
-  /// [workspaceId]. A run belonging to another workspace is not matched.
-  Future<void> deleteRun(String workspaceId, String runId);
 
   /// Inserts a new step run. Its owning workspace is that of
   /// [PipelineStepRun.pipelineRunId].
@@ -130,15 +154,4 @@ abstract class PipelineRunRepository {
 
   /// Deletes a single step run row, scoped to [workspaceId].
   Future<void> deleteStepRun(String workspaceId, String stepRunId);
-
-  /// Returns all step runs for a pipeline run, whose workspace is resolved from
-  /// [pipelineRunId]. Empty when the run is unknown.
-  Future<List<PipelineStepRun>> stepRunsForPipeline(String pipelineRunId);
-
-  /// Returns a single step run by its ID within [workspaceId], or null.
-  Future<PipelineStepRun?> getStepRunById(String workspaceId, String stepRunId);
-
-  /// Watches all step runs for a pipeline run, whose workspace is resolved from
-  /// [pipelineRunId].
-  Stream<List<PipelineStepRun>> watchStepRunsForPipeline(String pipelineRunId);
 }

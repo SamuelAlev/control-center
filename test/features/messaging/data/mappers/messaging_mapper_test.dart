@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/message.dart' show SenderType;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/mappers/messaging_mapper.dart';
@@ -265,6 +266,35 @@ void main() {
 
       expect(message.messageType.name, 'system');
       expect(message.isSystem, isTrue);
+      // A row written before `SenderType.system` (agent from `system`) still
+      // decodes as server-authored.
+      expect(message.senderType, SenderType.system);
+    });
+
+    test('decodes stored sender types, unknown never as a human', () {
+      ConversationMessagesTableData row(String senderId, String senderType) =>
+          ConversationMessagesTableData(
+            id: 'm-5',
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+            senderId: senderId,
+            senderType: senderType,
+            content: 'x',
+            messageType: 'text',
+            compacted: false,
+            reverted: false,
+            contentChars: 0,
+            transcriptChars: 0,
+            createdAt: now,
+          );
+      SenderType decode(String senderId, String senderType) =>
+          mapper.messageToDomain(row(senderId, senderType)).senderType;
+
+      expect(decode('u-1', 'user'), SenderType.user);
+      expect(decode('agent-1', 'agent'), SenderType.agent);
+      expect(decode('system', 'system'), SenderType.system);
+      expect(decode('agent-1', 'robot'), SenderType.agent);
+      expect(decode('system', 'robot'), SenderType.system);
     });
 
     test('maps ticket_card message type', () {

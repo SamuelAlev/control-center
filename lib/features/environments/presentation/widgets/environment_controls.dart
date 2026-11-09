@@ -77,10 +77,7 @@ class EnvironmentControls extends ConsumerWidget {
     final canStop =
         (status.isRunning && status != EnvironmentStatus.starting) ||
         (status == EnvironmentStatus.failed &&
-            environment.components.any(
-              (part) =>
-                  const {'running', 'ready', 'starting'}.contains(part.state),
-            ));
+            environment.components.any((part) => part.phase?.isLive ?? false));
     return Wrap(
       spacing: AppSpacing.xs,
       runSpacing: AppSpacing.xs,

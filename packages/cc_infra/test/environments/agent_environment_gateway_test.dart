@@ -5,6 +5,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:test/test.dart';
@@ -122,6 +123,9 @@ class _Guard implements ActionGuardService {
     ActionRequest request = ActionRequest.empty,
     bool canOverride = false,
     String? overrideReason,
+    AutonomyLevel? autonomy,
+    bool autonomyGated = true,
+    Future<void>? withdrawn,
   }) async {
     _harness.guarded.add(classes);
     return _harness.allow

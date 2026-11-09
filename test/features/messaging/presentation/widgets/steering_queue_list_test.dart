@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart'
     show agentRunLogRepositoryProvider;
@@ -89,6 +90,26 @@ class _SteeringPort implements MessagingPort {
     calls.add('deliver');
     delivers.add(messageId);
     return deliverResult;
+  }
+
+  /// What `steering.forceSend` answers; a non-null [forceError] throws it.
+  String forceOutcome = 'stopping';
+  RemoteRpcException? forceError;
+  final forced = <String>[];
+
+  @override
+  Future<String> forceSendSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+  }) async {
+    calls.add('forceSend');
+    forced.add(messageId);
+    if (forceError case final error?) {
+      throw error;
+    }
+    return forceOutcome;
   }
 
   @override
@@ -364,44 +385,54 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
 
-    testWidgets('a run with a lane takes it and keeps working', (tester) async {
-      final port = await pressOn(tester, steerable: false, deliverResult: true);
-      expect(port.delivers, ['b']);
-      expect(port.stops, isEmpty, reason: 'a live lane needs no interruption');
-    });
-
-    testWidgets('no lane stops every run, this card first', (tester) async {
-      final port = await pressOn(
-        tester,
-        steerable: false,
-        deliverResult: false,
-      );
-      expect(port.reorders, [
-        ['b'],
-      ]);
-      expect(port.stops, ['run-1', 'run-2']);
-      expect(port.calls, [
-        'deliver',
-        'reorder',
-        'stop',
-        'stop',
-      ], reason: 'the order must land before run end converts the queue');
-    });
-
-    testWidgets('nothing left to stop says so and stops nothing', (
+    testWidgets('Stop and send is one server call, never a client stop', (
       tester,
     ) async {
-      final port = await pressOn(
-        tester,
-        steerable: false,
-        deliverResult: false,
-        activeRunIds: const [],
-      );
+      final port = await pressOn(tester, steerable: false, deliverResult: true);
+      expect(port.forced, ['b']);
+      expect(port.calls, ['forceSend'], reason: 'the server orders the steps');
       expect(port.stops, isEmpty);
+    });
+
+    testWidgets('a card no longer queued says so', (tester) async {
+      final port = _SteeringPort()..forceOutcome = 'not_queued';
+      final container = await _pump(
+        tester,
+        windowMessages: [_queued('a', 'first', order: 0)],
+        port: port,
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop and send').last);
+      await tester.pump();
+      await tester.pump();
       expect(
         find.text(
           'No running agent can take that right now — it stays queued.',
         ),
+        findsOneWidget,
+      );
+      await drainToast(tester);
+    });
+
+    testWidgets('a refused stop is shown, not swallowed', (tester) async {
+      final port = _SteeringPort()
+        ..forceError = RemoteRpcException(
+          -32001,
+          'your role may not stop runs',
+        );
+      final container = await _pump(
+        tester,
+        windowMessages: [_queued('a', 'first', order: 0)],
+        port: port,
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop and send').last);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.text("Couldn't send that now: your role may not stop runs"),
         findsOneWidget,
       );
       await drainToast(tester);

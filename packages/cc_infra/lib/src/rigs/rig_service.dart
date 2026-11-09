@@ -8,6 +8,8 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/messaging_events.dart'
+    show SpaceDeleted;
 import 'package:cc_domain/core/domain/events/rig_events.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart'
     show ForgeTokenScope;
@@ -29,6 +31,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.da
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_clipboard.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_file_transfer.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_slot_key.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
@@ -37,6 +40,8 @@ import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/adb_client.dart';
 import 'package:cc_infra/src/rigs/browser_engine_attach.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
+import 'package:cc_infra/src/rigs/environment_rig_quarantine.dart'
+    show releaseEnvironmentRigMounts;
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
 import 'package:cc_infra/src/rigs/guest_credential_service.dart';
 import 'package:cc_infra/src/rigs/host_window_rig_driver.dart';
@@ -57,6 +62,8 @@ import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
+part 'rig_service_boot.dart';
+part 'rig_service_budget.dart';
 part 'rig_service_environments.dart';
 part 'rig_service_host_windows.dart';
 part 'rig_service_live_rig.dart';
@@ -199,13 +206,13 @@ class RigService implements RigPort, RigPortsPort {
     tlsContext: () => _devTls?.securityContext(),
   );
 
-  /// Opens in flight, keyed by `(workspace, conversation, exec?)`.
+  /// Opens in flight, keyed by the slot they fill (see [RigSlotKey]).
   ///
   /// `open()` awaits several times before it registers in [_live], so two
   /// concurrent calls for one conversation both saw an empty map and both
   /// booted. Parallel tool calls in a single assistant turn make that
   /// reachable without any adversary. Callers now join the first attempt.
-  final Map<String, Future<Rig>> _opening = {};
+  final Map<RigSlotKey, Future<Rig>> _opening = {};
 
   /// Memory committed to opens that have not registered yet, so the budget
   /// check cannot be passed by six simultaneous callers each seeing the same
@@ -215,6 +222,13 @@ class RigService implements RigPort, RigPortsPort {
   final Uuid _uuid = const Uuid();
   Timer? _reaper;
   bool _disposed = false;
+
+  /// Whether a reaper pass is running. A pass can outlast the interval (a
+  /// teardown waits up to 30 s on a launch), and two passes over one entry
+  /// would park a machine the other is closing.
+  bool _reaping = false;
+
+  StreamSubscription<SpaceDeleted>? _spaceDeletions;
 
   /// Starts the idle/TTL reaper and sweeps anything a previous process left.
   ///
@@ -243,6 +257,17 @@ class RigService implements RigPort, RigPortsPort {
       _smolvm.devTlsSpkiFingerprint = tls.spkiFingerprint;
     }
     _reaper ??= Timer.periodic(_reapInterval, (_) => unawaited(_reap()));
+    // A space's machines go with it. Without this they ran to their TTL.
+    _spaceDeletions ??= _eventBus?.on<SpaceDeleted>().listen(
+      (event) => unawaited(
+        closeForSpace(
+          workspaceId: event.workspaceId,
+          spaceId: event.spaceId,
+        ).catchError((Object e) {
+          CcInfraLog.warning('rig: closing space ${event.spaceId} failed: $e');
+        }),
+      ),
+    );
     CcInfraLog.info(
       'rig: service armed (reap every ${_reapInterval.inSeconds}s)',
     );
@@ -424,16 +449,11 @@ class RigService implements RigPort, RigPortsPort {
     // Join an open already in flight for the same conversation+kind rather
     // than starting a second one. Without this the reuse check above is a
     // check-then-act race across the awaits below.
-    final key = spec.conversationId == null
-        ? null
-        : '$workspaceId/${spec.conversationId}/${spec.surface.wire}/'
-              '${spec.isExec}/'
-              '${spec.surface == RigSurface.browser ? spec.browserEngine.wire : ''}/'
-              // Same discriminator as the reuse match above, for the same
-              // reason: without it a second slot opened while the default is
-              // still booting joins that boot and the caller gets one machine
-              // where it asked for two.
-              '${spec.slotId ?? ''}';
+    // The same key the reuse match above uses, for the same reason: without
+    // the slot in it, a second slot opened while the default is still
+    // booting joins that boot and the caller gets one machine where it asked
+    // for two.
+    final key = RigSlotKey.of(workspaceId, spec);
     if (key == null) {
       return _open(workspaceId, spec, openedBy);
     }
@@ -575,17 +595,8 @@ class RigService implements RigPort, RigPortsPort {
     // through, rather than by asking a model to behave. Observation stays
     // allowed while a human drives: an agent that can still look can still
     // narrate what the human is doing, which is the point of watching.
-    final controller = live.rig.controller;
-    if (action.mutatesGuest &&
-        controller != null &&
-        controller.wire != actor.wire) {
-      return RigActionResult.error(
-        controller.isUser
-            ? 'A person has taken control of this rig. You can still take '
-                  'screenshots and read state, but input is theirs until they '
-                  'hand it back.'
-            : 'Another agent holds control of this rig.',
-      );
+    if (action.mutatesGuest && !live.rig.admitsInput(actor)) {
+      return _heldBy(live.rig.controller!, screenshots: true);
     }
 
     final driver = live.driver;
@@ -879,8 +890,7 @@ class RigService implements RigPort, RigPortsPort {
     if (live == null || live.rig.workspaceId != workspaceId) {
       return null;
     }
-    final controller = live.rig.controller;
-    if (mutating && controller != null && controller.wire != actor.wire) {
+    if (mutating && !live.rig.admitsInput(actor)) {
       return null;
     }
     return live;
@@ -896,17 +906,23 @@ class RigService implements RigPort, RigPortsPort {
     if (live == null || live.rig.workspaceId != workspaceId) {
       return RigActionResult.error('Rig $rigId is not open in this workspace.');
     }
-    final controller = live.rig.controller;
-    if (controller != null && controller.wire != actor.wire) {
-      return RigActionResult.error(
-        controller.isUser
-            ? 'A person has taken control of this rig. You can still read '
-                  'state, but input is theirs until they hand it back.'
-            : 'Another agent holds control of this rig.',
-      );
+    if (!live.rig.admitsInput(actor)) {
+      return _heldBy(live.rig.controller!, screenshots: false);
     }
     return RigActionResult.error('Rig $rigId cannot be driven right now.');
   }
+
+  /// The refusal for input while [controller] holds the rig.
+  static RigActionResult _heldBy(
+    Principal controller, {
+    required bool screenshots,
+  }) => RigActionResult.error(
+    controller.isUser
+        ? 'A person has taken control of this rig. You can still '
+              '${screenshots ? 'take screenshots and ' : ''}read state, but '
+              'input is theirs until they hand it back.'
+        : 'Another agent holds control of this rig.',
+  );
 
   /// Runs [body], turning a surface's refusal into a result rather than an
   /// exception. A caller of the clipboard lane has to say something to a
@@ -1270,18 +1286,11 @@ class RigService implements RigPort, RigPortsPort {
     required Principal actor,
   }) async {
     final live = _requireLive(workspaceId, rigId);
-    final held = live.rig.controller;
-    if (held != null && held.wire != actor.wire) {
-      // A person takes over from an agent unconditionally — the machine is
-      // ultimately theirs, and "the agent is holding the lock" must never be
-      // a reason a human cannot intervene. Everything else (agent from
-      // human, agent from agent, human from another human) stays a refusal.
-      final humanOverridesAgent = actor.isUser && !held.isUser;
-      if (!humanOverridesAgent) {
-        throw StateError(
-          'Control of this rig is already held by ${held.wire}.',
-        );
-      }
+    if (!live.rig.mayTakeControl(actor)) {
+      throw StateError(
+        'Control of this rig is already held by '
+        '${live.rig.controller!.wire}.',
+      );
     }
     live.rig = live.rig.copyWith(
       controller: actor,
@@ -1356,6 +1365,9 @@ class RigService implements RigPort, RigPortsPort {
           ),
         );
       }
+      if (stale != null) {
+        releaseEnvironmentRigMounts(stale);
+      }
       return;
     }
     // An explicit reason from the caller beats the default. "The conversation
@@ -1369,6 +1381,8 @@ class RigService implements RigPort, RigPortsPort {
     _disposed = true;
     _reaper?.cancel();
     _reaper = null;
+    await _spaceDeletions?.cancel();
+    _spaceDeletions = null;
     final all = _live.values.toList();
     for (final live in all) {
       try {
@@ -1379,6 +1393,22 @@ class RigService implements RigPort, RigPortsPort {
     }
     await _ports.dispose();
     await _credentials?.stop();
+  }
+
+  /// Closes every machine of [spaceId], because the space went away.
+  ///
+  /// Window rigs too: closing one leaves the app running, and there is no
+  /// space left to show it in.
+  Future<void> closeForSpace({
+    required String workspaceId,
+    required String spaceId,
+  }) async {
+    for (final live in _live.values.toList()) {
+      if (live.rig.workspaceId == workspaceId &&
+          live.rig.conversationId == spaceId) {
+        await _teardown(live, RigCloseReason.conversationEnded);
+      }
+    }
   }
 
   /// Carries commits made inside [rigId] back to the host worktree.
@@ -1511,11 +1541,10 @@ class RigService implements RigPort, RigPortsPort {
     );
   }
 
-  /// The live EXEC rig serving [conversationId], if there is one.
+  /// The live EXEC rig serving [conversationId], or null.
   ///
   /// Exec specifically: a conversation can have a desktop rig open at the same
   /// time, and a terminal must not be dropped into it.
-  /// The live exec rig for [conversationId], or null.
   ///
   /// [openedByUserId] scopes the reuse to rigs THIS member opened. One rig per
   /// conversation is the feature, but it cannot span members: a rig's
@@ -1678,508 +1707,6 @@ class RigService implements RigPort, RigPortsPort {
     }
   }
 
-  Future<void> _boot(_LiveRig live) async {
-    final rig = live.rig;
-    try {
-      switch (rig.backend) {
-        case EnclosureBackend.androidEmulator:
-          await _bootMobile(live);
-        case EnclosureBackend.iosSimulator:
-          await _bootIos(live);
-        case EnclosureBackend.hostWindow:
-          // `open` refuses this surface before anything reaches a boot.
-          throw StateError('A window rig has nothing to boot.');
-        case EnclosureBackend.smolvm:
-          await _bootSmolvm(live);
-        case EnclosureBackend.qemuHvf:
-        case EnclosureBackend.qemuKvm:
-        case EnclosureBackend.qemuTcg:
-          await _bootQemu(live);
-      }
-    } on Object catch (e, st) {
-      CcInfraLog.error('rig/${rig.id}: boot failed: $e', e, st);
-      await _updateStatus(live, RigFailed('$e'));
-      // A failed boot must release everything it took, or a host that cannot
-      // start rigs slowly fills with half-built ones.
-      await _teardown(live, RigCloseReason.backendFailure, alreadyFailed: true);
-    }
-  }
-
-  /// Whether the rig this boot is building has already been torn down.
-  ///
-  /// Three ways it can be: an explicit close, `disposeAll`, or the entry being
-  /// replaced in `_live`. All three mean the same thing — nothing holds this
-  /// object any more, so anything the boot produces from here on is the boot's
-  /// own to release.
-  bool _bootAborted(_LiveRig live) =>
-      live.closing || _disposed || !_isCurrent(live);
-
-  Future<void> _bootQemu(_LiveRig live) async {
-    final rig = live.rig;
-    // Published BEFORE the first await so a teardown arriving at any point
-    // during the launch has something to wait on.
-    final launched = Completer<void>();
-    live.launched = launched.future;
-    final QemuMachine machine;
-    try {
-      machine = await _qemu.launch(
-        rigId: rig.id,
-        spec: rig.spec,
-        onProgress: (step) =>
-            unawaited(_updateStatus(live, RigProvisioning(step: step))),
-      );
-      if (_bootAborted(live)) {
-        // The close landed while QEMU was starting. Assigning the machine now
-        // would hand it to an object nobody holds: the hypervisor and its
-        // egress proxies would run, unreferenced, until the next server start
-        // swept them. Destroy it here — teardown is waiting on `launched`
-        // precisely so this happens before it returns.
-        await _discardMachine(rig.id, machine);
-        return;
-      }
-      live.machine = machine;
-    } finally {
-      // Completed on every exit, including the throw: teardown awaits this,
-      // and a failed launch that never completes it would hang a close.
-      if (!launched.isCompleted) {
-        launched.complete();
-      }
-    }
-
-    // Watch the machine's death sentinel (the hypervisor itself on QEMU).
-    _watchMachineDeath(live, machine);
-
-    _credentials?.registerRig(
-      rigId: rig.id,
-      workspaceId: rig.workspaceId,
-      conversationId: rig.conversationId ?? rig.id,
-      secret: machine.guestSecret,
-      // The rig's OWN scope, not a default: an agent-opened rig reads, which
-      // is the right floor — a guest's credential helper cannot tell a push
-      // from a fetch, so the push rule cannot be asked per push in there. A
-      // terminal rig is a human at a shell and carries write, which is what
-      // makes `git push` work there.
-      scope: rig.spec.forgeTokenScope,
-      repoOwner: rig.spec.repoOwner,
-      repoName: rig.spec.repoName,
-      // Whose forge access the guest's credentials are bounded by. The spec's
-      // scope is a ceiling, not an authorization.
-      actingUserId: rig.spec.openedByUserId,
-      // The credential allowlist and the egress allowlist are one policy: a
-      // host the guest cannot reach must never be one we hand it a token for.
-      // Note the direction of the implication — being reachable does NOT by
-      // itself grant a credential; `scope` above is what does.
-      allowedHosts: rig.spec.egressAllowlist
-          .where((h) => !h.startsWith('*'))
-          .toSet(),
-    );
-
-    if (rig.spec.worktreePath != null) {
-      final sync = WorktreeSync(
-        sshPort: machine.sshPort,
-        privateKeyPath: machine.privateKeyPath,
-      );
-      // The shell is usable before the worktree lands; the status line says
-      // which stage it is in rather than making the user wait on a blank panel
-      // while a multi-gigabyte repo copies.
-      final result = await sync.syncIn(
-        hostPath: rig.spec.worktreePath!,
-        onProgress: (step) =>
-            unawaited(_updateStatus(live, RigProvisioning(step: step))),
-      );
-      if (!result.ok) {
-        CcInfraLog.warning('rig/${rig.id}: ${result.message}');
-      }
-    }
-
-    // QEMU boots exactly one surface now: the desktop. Browser rigs are
-    // smolvm's — a headless Chromium behind a forwarded CDP port needs no
-    // display device, and the microVM boots it in a fraction of the time.
-    final driver = ComputerRigDriver(machine);
-    if (_bootAborted(live)) {
-      // Teardown already read `driver` (it was null then) and destroyed the
-      // machine, so this one — and the DevTools socket a browser driver holds
-      // — is ours to close. The check and the assignment below share a turn,
-      // so exactly one side owns it.
-      await driver.dispose();
-      return;
-    }
-    live.driver = driver;
-
-    live.rig = live.rig.copyWith(
-      status: const RigReady(),
-      display: machine.display,
-      readyAt: DateTime.now(),
-      lastActivityAt: DateTime.now(),
-    );
-    await _repository.save(rig.workspaceId, live.rig);
-  }
-
-  /// Opens the protocol client for whichever browser the machine booted.
-  Future<BrowserEngineClient> _attachBrowser(SmolvmMachine machine) async {
-    final port = machine.devtoolsPort;
-    if (port == null) {
-      throw StateError('The browser rig has no forwarded automation port.');
-    }
-    return attachBrowserEngine(
-      engine: machine.engine,
-      host: '127.0.0.1',
-      port: port,
-      guestPort:
-          machine.automationGuestPort ?? browserRigEndpointPort(machine.engine),
-    );
-  }
-
-  /// Watches the machine's death sentinel and fails the rig when it drops.
-  ///
-  /// On QEMU the sentinel IS the hypervisor process; on smolvm it is the held
-  /// `machine exec` connection (the CLI spawns the VMM detached). Either way
-  /// a machine that dies on its own otherwise leaves a `ready` row whose
-  /// stream and actions all fail while the panel keeps promising a machine.
-  /// A normal destroy also resolves this future, but by then teardown has
-  /// removed the rig from `_live` and `_isCurrent` is false.
-  void _watchMachineDeath(_LiveRig live, RigMachine machine) {
-    unawaited(
-      machine.process.exitCode.then((code) async {
-        if (!_isCurrent(live)) {
-          return;
-        }
-        // Stopped on purpose, with its disks kept. Resuming re-arms this.
-        if (machine is SmolvmMachine && machine.stopped) {
-          return;
-        }
-        CcInfraLog.warning(
-          'rig/${live.rig.id}: machine exited unexpectedly (code $code)',
-        );
-        await _updateStatus(
-          live,
-          RigFailed('The virtual machine exited unexpectedly (code $code).'),
-        );
-        await _teardown(
-          live,
-          RigCloseReason.backendFailure,
-          alreadyFailed: true,
-        );
-      }),
-    );
-  }
-
-  Future<void> _bootSmolvm(_LiveRig live) async {
-    final rig = live.rig;
-    // Published BEFORE the first await, mirroring _bootQemu, so a teardown
-    // arriving mid-launch has something to wait on.
-    final launched = Completer<void>();
-    live.launched = launched.future;
-    // The workspace's own image, when configured. Failure to READ the
-    // setting degrades to the default image: a settings store hiccup must
-    // not stop terminals from opening.
-    String? imageOverride;
-    try {
-      imageOverride = rig.spec.isEnvironment
-          ? null
-          : await _smolvmImageOverride?.call(
-              rig.workspaceId,
-              exec: rig.spec.isExec,
-            );
-    } on Object catch (e) {
-      CcInfraLog.warning(
-        'rig/${rig.id}: could not read the workspace image override: $e',
-      );
-    }
-    final SmolvmMachine machine;
-    try {
-      machine = await _smolvm.launch(
-        rigId: rig.id,
-        spec: rig.spec,
-        imageOverride: imageOverride,
-        onProgress: (step) =>
-            unawaited(_updateStatus(live, RigProvisioning(step: step))),
-      );
-      if (_bootAborted(live)) {
-        await _discardMachine(rig.id, machine);
-        return;
-      }
-      live.machine = machine;
-    } finally {
-      if (!launched.isCompleted) {
-        launched.complete();
-      }
-    }
-
-    _watchMachineDeath(live, machine);
-
-    // An environment guest runs compose files nobody here reviewed, so it is
-    // never registered: it holds no secret and can mint nothing.
-    if (!rig.spec.isEnvironment) {
-      _credentials?.registerRig(
-        rigId: rig.id,
-        workspaceId: rig.workspaceId,
-        conversationId: rig.conversationId ?? rig.id,
-        secret: machine.guestSecret,
-        // Same floor as the QEMU path: the rig's OWN scope, so an agent-opened
-        // rig reads by default.
-        scope: rig.spec.forgeTokenScope,
-        repoOwner: rig.spec.repoOwner,
-        repoName: rig.spec.repoName,
-        // Whose forge access the guest's credentials are bounded by. The spec's
-        // scope is a ceiling, not an authorization.
-        actingUserId: rig.spec.openedByUserId,
-        // The credential allowlist and the egress allowlist are one policy: a
-        // host the guest cannot reach must never be one we hand it a token for.
-        allowedHosts: rig.spec.egressAllowlist
-            .where((h) => !h.startsWith('*'))
-            .toSet(),
-      );
-    }
-
-    // An environment's worktree is a live mount, not a copy.
-    if (rig.spec.worktreePath != null && !rig.spec.isEnvironment) {
-      final binary = _smolvm.resolvedBinary;
-      if (binary != null) {
-        final sync = WorktreeSync.smolvm(
-          smolvmPath: binary,
-          machineName: machine.name,
-        );
-        final result = await sync.syncIn(
-          hostPath: rig.spec.worktreePath!,
-          onProgress: (step) =>
-              unawaited(_updateStatus(live, RigProvisioning(step: step))),
-        );
-        if (!result.ok) {
-          CcInfraLog.warning('rig/${rig.id}: ${result.message}');
-        }
-      }
-    }
-
-    if (rig.surface == RigSurface.browser) {
-      final binary = _smolvm.resolvedBinary;
-      final microphone = binary == null
-          ? null
-          : _SmolvmBrowserMicrophone(
-              binary: binary,
-              machineName: machine.name,
-              rigId: rig.id,
-            );
-      final driver = BrowserRigDriver(
-        client: await _attachBrowser(machine),
-        viewport: rig.spec.display,
-        onUrlChanged: (url) => unawaited(_browserNavigated(live, url)),
-        audioStreamOpener: () => _openSmolvmBrowserAudio(machine),
-        audioInputSender: microphone?.send,
-        audioInputCloser: microphone?.close,
-      );
-      if (_bootAborted(live)) {
-        await driver.dispose();
-        return;
-      }
-      live.driver = driver;
-      // The home page loaded BEFORE the driver attached, so no navigation
-      // event will ever name it — seed the tracker with where the page is.
-      unawaited(driver.seedCurrentUrl());
-    }
-    // An exec rig deliberately gets NO driver: there is no surface to drive,
-    // and `act` says so rather than pretending a terminal can take a click.
-
-    // Re-checked after every await above (the worktree sync alone can take
-    // minutes): a close that landed mid-boot already wrote the closed row and
-    // destroyed the machine, and saving `ready` over it here would resurrect
-    // a rig the panel can never act on.
-    if (_bootAborted(live)) {
-      return;
-    }
-
-    // Ports: discovery + forwarding for the terminal machine, and the
-    // guest-loopback listeners that let a browser rig in the same
-    // conversation reach its forwarded ports as `localhost:<port>`.
-    final muxPort = machine.portMuxHostPort;
-    if (muxPort != null) {
-      _ports.attachExec(
-        rigId: rig.id,
-        workspaceId: rig.workspaceId,
-        machineName: machine.name,
-        muxHostPort: muxPort,
-        conversationId: rig.conversationId,
-        brokerPort: rig.spec.isEnvironment ? null : _smolvm.credentialPort,
-      );
-    } else if (rig.surface == RigSurface.browser) {
-      _ports.attachBrowser(
-        rigId: rig.id,
-        workspaceId: rig.workspaceId,
-        machineName: machine.name,
-        conversationId: rig.conversationId,
-      );
-    }
-
-    live.rig = live.rig.copyWith(
-      status: const RigReady(),
-      display: machine.display,
-      readyAt: DateTime.now(),
-      lastActivityAt: DateTime.now(),
-    );
-    await _repository.save(rig.workspaceId, live.rig);
-  }
-
-  Future<void> _bootMobile(_LiveRig live) async {
-    final rig = live.rig;
-    await _updateStatus(live, const RigProvisioning(step: 'Finding a device'));
-    final adbPath = await AdbClient.locate();
-    if (adbPath == null) {
-      throw StateError(
-        'adb is not installed, so the mobile surface is unavailable. Install '
-        'the Android platform tools and start an emulator.',
-      );
-    }
-    final devices = await AdbClient.devices(adbPath);
-    if (devices.isEmpty) {
-      throw StateError(
-        'No Android device is attached. Start an emulator, then open the rig '
-        'again.',
-      );
-    }
-    // The serial is chosen ONCE and pinned for the rig's whole life. Every
-    // later command carries `-s <serial>` and `ensureReady` re-checks it, so a
-    // device that disconnects is reported rather than silently swapped for
-    // whichever one ADB would have picked next.
-    final adb = AdbClient(
-      serial: devices.first,
-      adbPath: adbPath,
-      apkRoots: [
-        if (rig.spec.worktreePath != null) rig.spec.worktreePath!,
-        if (_dataDir != null) _dataDir,
-      ],
-    );
-    final booted = await adb.awaitBoot(
-      onProgress: (step) =>
-          unawaited(_updateStatus(live, RigProvisioning(step: step))),
-    );
-    if (!booted) {
-      throw StateError('The device never finished booting.');
-    }
-    final size = await adb.screenSize();
-    final display = size == null
-        ? RigDisplaySize.defaultMobile
-        : RigDisplaySize(size.$1, size.$2);
-    if (_bootAborted(live)) {
-      // No machine of ours to leak here — the emulator was already running and
-      // outlives the rig — but publishing `RigOpened` and a `ready` row for a
-      // session that was closed while `awaitBoot` ran would leave the panel
-      // showing a device it can never act on.
-      return;
-    }
-    live.driver = MobileRigDriver(
-      adb: adb,
-      size: display,
-      onDisplayChanged: (next) => unawaited(_mobileDisplayChanged(live, next)),
-    );
-    _ports.attachAndroid(
-      rigId: live.rig.id,
-      workspaceId: live.rig.workspaceId,
-      conversationId: live.rig.conversationId,
-      reverse: adb.reverse,
-      removeReverse: adb.removeReverse,
-      removeAllReverses: adb.removeAllReverses,
-    );
-    live.rig = live.rig.copyWith(
-      status: const RigReady(),
-      display: display,
-      readyAt: DateTime.now(),
-      lastActivityAt: DateTime.now(),
-    );
-    await _repository.save(rig.workspaceId, live.rig);
-  }
-
-  Future<void> _bootIos(_LiveRig live) async {
-    final backend = _ios;
-    if (backend == null) {
-      throw StateError('iOS Simulator is not configured on this server.');
-    }
-    final launched = Completer<void>();
-    live.launched = launched.future;
-    final IosSimulatorSession session;
-    try {
-      session = await backend.launch(
-        rigId: live.rig.id,
-        onProgress: (step) =>
-            unawaited(_updateStatus(live, RigProvisioning(step: step))),
-      );
-      if (_bootAborted(live)) {
-        await backend.close(session);
-        return;
-      }
-      live.iosSession = session;
-      _watchIosDeath(live, session);
-    } finally {
-      if (!launched.isCompleted) {
-        launched.complete();
-      }
-    }
-    final driver = IosRigDriver(
-      session: session,
-      backend: backend,
-      appRoots: [
-        if (live.rig.spec.worktreePath != null) live.rig.spec.worktreePath!,
-        if (_dataDir != null) _dataDir,
-      ],
-      onDisplayChanged: (display) =>
-          unawaited(_iosDisplayChanged(live, display)),
-    );
-    if (_bootAborted(live)) {
-      await driver.dispose();
-      await backend.close(session);
-      return;
-    }
-    live.driver = driver;
-    final now = DateTime.now();
-    live.rig = live.rig.copyWith(
-      status: const RigReady(),
-      display: session.display,
-      readyAt: now,
-      lastActivityAt: now,
-    );
-    await _repository.save(live.rig.workspaceId, live.rig);
-  }
-
-  Future<void> _iosDisplayChanged(_LiveRig live, RigDisplaySize display) async {
-    if (!_isCurrent(live) || live.rig.display == display) {
-      return;
-    }
-    live.rig = live.rig.copyWith(display: display);
-    await _repository.save(live.rig.workspaceId, live.rig);
-  }
-
-  Future<void> _mobileDisplayChanged(
-    _LiveRig live,
-    RigDisplaySize display,
-  ) async {
-    if (!_isCurrent(live) || live.rig.display == display) {
-      return;
-    }
-    live.rig = live.rig.copyWith(display: display);
-    await _repository.save(live.rig.workspaceId, live.rig);
-  }
-
-  void _watchIosDeath(_LiveRig live, IosSimulatorSession session) {
-    unawaited(
-      session.runner.exitCode.then((code) async {
-        if (!_isCurrent(live) || live.closing) {
-          return;
-        }
-        CcInfraLog.warning(
-          'rig/${live.rig.id}: WebDriverAgent exited unexpectedly (code $code)',
-        );
-        await _updateStatus(
-          live,
-          RigFailed('iOS automation exited unexpectedly (code $code).'),
-        );
-        await _teardown(
-          live,
-          RigCloseReason.backendFailure,
-          alreadyFailed: true,
-        );
-      }),
-    );
-  }
-
   _LiveRig _requireLive(String workspaceId, String rigId) {
     final live = _live[rigId];
     if (live == null || live.rig.workspaceId != workspaceId) {
@@ -2192,36 +1719,15 @@ class RigService implements RigPort, RigPortsPort {
     return live;
   }
 
-  /// Whether two specs name the same browser, ignoring the engine entirely
-  /// on the surfaces that have none.
-  static bool _sameEngine(RigSpec a, RigSpec b) =>
-      a.surface != RigSurface.browser || a.browserEngine == b.browserEngine;
-
+  /// The live rig filling [spec]'s slot, or null. See [RigSlotKey] for what
+  /// makes two machines different.
   _LiveRig? _reusableFor(String workspaceId, RigSpec spec) {
-    final conversationId = spec.conversationId;
-    if (conversationId == null) {
+    final key = RigSlotKey.of(workspaceId, spec);
+    if (key == null) {
       return null;
     }
     for (final live in _live.values) {
-      if (live.rig.workspaceId == workspaceId &&
-          live.rig.conversationId == conversationId &&
-          live.rig.surface == spec.surface &&
-          // An exec rig and a `computer_use` rig share the `computer` surface
-          // and can share a conversation, but the exec image is a shell with
-          // no display server. Reusing one for the other would hand the agent
-          // a machine it cannot see, and the failure would look like a broken
-          // screenshot rather than the wrong machine.
-          live.rig.spec.isExec == spec.isExec &&
-          // Two browser rigs in one conversation are two machines whenever
-          // they run different engines — that is the entire point of opening
-          // a second one. Handing a Firefox tab the Chromium machine would
-          // answer "does this page work in Firefox?" with Chromium.
-          _sameEngine(live.rig.spec, spec) &&
-          // WHICH machine of that kind. Null (the conversation's default) is
-          // what an agent and every pre-slots tab ask for, so those keep
-          // sharing one machine; a named slot is a deliberate second VM and
-          // must never be handed to a caller that did not name it.
-          live.rig.spec.slotId == spec.slotId &&
+      if (RigSlotKey.ofRig(live.rig) == key &&
           // `holdsMachine`, not `isLive`: a rig that is still booting already
           // owns a VM, and matching only live ones makes every "still
           // starting, try again" retry boot another one.
@@ -2239,18 +1745,13 @@ class RigService implements RigPort, RigPortsPort {
   /// row as "this machine". Without this, retrying — or stopping a later
   /// successful machine — resurrected the dump from the attempt that died.
   Future<void> _dismissFailedSiblings(String workspaceId, RigSpec spec) async {
-    final conversationId = spec.conversationId;
-    if (conversationId == null) {
+    final key = RigSlotKey.of(workspaceId, spec);
+    if (key == null) {
       return;
     }
     final now = DateTime.now();
     for (final row in await _repository.list(workspaceId)) {
-      if (row.conversationId != conversationId ||
-          row.surface != spec.surface ||
-          row.spec.isExec != spec.isExec ||
-          !_sameEngine(row.spec, spec) ||
-          row.spec.slotId != spec.slotId ||
-          row.status.phase != RigPhase.failed) {
+      if (row.status.phase != RigPhase.failed || RigSlotKey.ofRig(row) != key) {
         continue;
       }
       await _repository.save(
@@ -2273,12 +1774,75 @@ class RigService implements RigPort, RigPortsPort {
   /// until the next server start reconciles it.
   bool _isCurrent(_LiveRig live) => identical(_live[live.rig.id], live);
 
+  /// Every status write but teardown's goes through here, and is dropped
+  /// once [live] is no longer the registered session.
   Future<void> _updateStatus(_LiveRig live, RigStatus status) async {
     if (!_isCurrent(live)) {
       return;
     }
     live.rig = live.rig.copyWith(status: status);
     await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  /// A boot's last step: the rig is ready, at [display].
+  ///
+  /// Checked like [_updateStatus], and against the boot's own abort: a close
+  /// that landed mid-boot already wrote the closed row, and saving `ready`
+  /// over it would resurrect a rig nothing can act on.
+  Future<void> _markReady(_LiveRig live, RigDisplaySize? display) async {
+    if (_bootAborted(live)) {
+      return;
+    }
+    final now = DateTime.now();
+    live.rig = live.rig.copyWith(
+      status: const RigReady(),
+      display: display,
+      readyAt: now,
+      lastActivityAt: now,
+    );
+    await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  /// Teardown's writes: [live] has left `_live` by then, so [_updateStatus]
+  /// would drop them.
+  Future<void> _writeTerminal(
+    _LiveRig live,
+    RigStatus status, {
+    DateTime? closedAt,
+  }) async {
+    live.rig = live.rig.copyWith(status: status, closedAt: closedAt);
+    await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  /// The launch step every booting backend shares.
+  ///
+  /// [live]'s `launched` is published BEFORE the first await, so a teardown
+  /// landing at any point has something to wait on, and it completes on
+  /// every exit, a throw included, so that wait can't hang a close. A product
+  /// that arrives after a close belongs to nobody: [discard] releases it and
+  /// this returns null. Otherwise [adopt] hands it to [live] in the same turn
+  /// as the check, so exactly one side owns it.
+  Future<T?> _launch<T>(
+    _LiveRig live,
+    Future<T> Function() launch, {
+    required Future<void> Function(T product) discard,
+    required void Function(T product) adopt,
+  }) async {
+    final launched = Completer<void>();
+    live.launched = launched.future;
+    try {
+      final product = await launch();
+      if (_bootAborted(live)) {
+        await discard(product);
+        return null;
+      }
+      adopt(product);
+      return product;
+    } finally {
+      if (!launched.isCompleted) {
+        launched.complete();
+      }
+    }
   }
 
   Future<void> _touch(_LiveRig live) async {
@@ -2415,11 +1979,6 @@ class RigService implements RigPort, RigPortsPort {
     await _updateStatus(live, const RigReady());
   }
 
-  /// Persists a browser rig's current URL as the page itself reports it.
-  ///
-  /// The push matters more than the row: `rig.watchSessions` re-emits on the
-  /// save, which is how the address bar learns about a link the PERSON
-  /// clicked in the canvas — no act() call carries that navigation.
   /// How often a browser rig's URL may be written to its row.
   ///
   /// The same 1 s discipline pointer moves already use, and for the same
@@ -2429,6 +1988,11 @@ class RigService implements RigPort, RigPortsPort {
   /// every RPC read queued behind it.
   static const Duration _urlWriteInterval = Duration(seconds: 1);
 
+  /// Persists a browser rig's current URL as the page itself reports it.
+  ///
+  /// The push matters more than the row: `rig.watchSessions` re-emits on the
+  /// save, which is how the address bar learns about a link the PERSON
+  /// clicked in the canvas — no act() call carries that navigation.
   Future<void> _browserNavigated(_LiveRig live, String url) async {
     if (!_isCurrent(live) || live.rig.currentUrl == url) {
       return;
@@ -2512,6 +2076,11 @@ class RigService implements RigPort, RigPortsPort {
     live.urlWriteTimer = null;
     live.pendingUrlWrite = false;
     _live.remove(live.rig.id);
+    // From here this teardown is the row's only writer: `_isCurrent` is
+    // false, so every other status write is dropped.
+    if (!alreadyFailed) {
+      await _writeTerminal(live, const RigClosing());
+    }
     // A close that lands mid-boot has nothing to destroy YET. Wait for the
     // launch to hand its machine over — bounded, because a launch can take
     // minutes and an RPC caller cannot. On expiry the machine is still not
@@ -2559,12 +2128,9 @@ class RigService implements RigPort, RigPortsPort {
         CcInfraLog.warning('rig/${live.rig.id}: iOS teardown failed: $e');
       }
     }
+    releaseEnvironmentRigMounts(live.rig);
     if (!alreadyFailed) {
-      live.rig = live.rig.copyWith(
-        status: RigClosed(reason),
-        closedAt: DateTime.now(),
-      );
-      await _repository.save(live.rig.workspaceId, live.rig);
+      await _writeTerminal(live, RigClosed(reason), closedAt: DateTime.now());
       await _dismissFailedSiblings(live.rig.workspaceId, live.rig.spec);
     }
     _eventBus?.publish(
@@ -2578,149 +2144,8 @@ class RigService implements RigPort, RigPortsPort {
     CcInfraLog.info('rig/${live.rig.id}: closed (${reason.wire})');
   }
 
-  /// Parks idle rigs, closes long-idle and expired ones.
-  Future<void> _reap() async {
-    if (_disposed) {
-      return;
-    }
-    final now = DateTime.now();
-    for (final live in _live.values.toList()) {
-      final rig = live.rig;
-      // Someone may be using the app with no rig action in sight, and closing
-      // the rig would reclaim nothing. Its opener owns its lifetime.
-      if (rig.surface == RigSurface.window) {
-        continue;
-      }
-      try {
-        if (rig.isExpired(now)) {
-          await _teardown(live, RigCloseReason.ttlExpired);
-          _publishReaped(rig, RigCloseReason.ttlExpired);
-          continue;
-        }
-        if (live.isInUse) {
-          // Somebody has a terminal open or is watching the guest. The hard
-          // TTL above still applies — a pin cannot make a rig immortal — but
-          // idling it out from under a live consumer is what this exists to
-          // prevent.
-          continue;
-        }
-        final idleFor = now.difference(rig.lastActivityAt);
-        if (idleFor > rig.spec.idleTimeout * 2) {
-          await _teardown(live, RigCloseReason.idleTimeout);
-          _publishReaped(rig, RigCloseReason.idleTimeout);
-          continue;
-        }
-        if (idleFor > rig.spec.idleTimeout &&
-            live.machine != null &&
-            !live.machine!.parked) {
-          // Park first, close later. Parking costs the user nothing (the next
-          // action wakes it) and buys back the CPU; closing costs them their
-          // machine, so it waits for twice the idle window.
-          await _parkMachine(live.machine!);
-          await _updateStatus(live, const RigParked());
-          CcInfraLog.info(
-            'rig/${rig.id}: parked after ${idleFor.inMinutes}m idle',
-          );
-        }
-      } on Object catch (e) {
-        CcInfraLog.warning('rig/${rig.id}: reap step failed: $e');
-      }
-    }
-  }
-
-  void _publishReaped(Rig rig, RigCloseReason reason) {
-    _eventBus?.publish(
-      RigReaped(
-        workspaceId: rig.workspaceId,
-        rigId: rig.id,
-        reason: reason,
-        agentId: rig.agentId,
-        occurredAt: DateTime.now(),
-      ),
-    );
-  }
-
-  /// Frees memory until `wantedMb` fits under the budget.
-  ///
-  /// Callers go through [_reserveResident], which holds a lock across this and
-  /// the reservation that follows it.
-  ///
-  /// The budget counts RESIDENT megabytes, not sessions. A parked VM has
-  /// stopped vCPUs and still holds every byte of its RAM, so counting sessions
-  /// would let eight parked 2 GB desktops sit on 16 GB of a laptop and call it
-  /// idle.
   /// Serialises budget check + reservation. See [_reserveResident].
   Future<void> _budgetGate = Future<void>.value();
-
-  /// Committed megabytes right now: every live machine plus every reservation
-  /// an in-flight open is holding.
-  int get _committedMb =>
-      _live.values.fold<int>(0, (sum, l) => sum + l.residentMb) + _reservedMb;
-
-  /// Makes room for [wantedMb] and RESERVES it, atomically.
-  ///
-  /// The check and the reservation have to happen under one lock because the
-  /// check itself awaits evictions. Split, two concurrent opens for different
-  /// conversations both read a total that excluded the other, both passed, and
-  /// the host committed twice its budget — the `_opening` join only dedupes
-  /// the same conversation and kind, so it never saw them.
-  ///
-  /// Throws (and reserves nothing) when even after evicting everything
-  /// evictable there is not enough room.
-  Future<void> _reserveResident(int wantedMb) {
-    final previous = _budgetGate;
-    final done = Completer<void>();
-    _budgetGate = done.future;
-    return previous.then((_) async {
-      try {
-        await _enforceResidentBudget(wantedMb);
-        _reservedMb += wantedMb;
-      } finally {
-        // Released whatever happened: a failed reservation must not wedge
-        // every later open behind a gate that never opens.
-        done.complete();
-      }
-    });
-  }
-
-  Future<void> _enforceResidentBudget(int wantedMb) async {
-    if (_committedMb + wantedMb <= _maxResidentMb) {
-      return;
-    }
-    // Evict least-recently-used first, and never evict one a human is driving.
-    final candidates = _live.values.toList()
-      ..sort((a, b) => a.rig.lastActivityAt.compareTo(b.rig.lastActivityAt));
-    for (final live in candidates) {
-      if (_committedMb + wantedMb <= _maxResidentMb) {
-        return;
-      }
-      // Never evict one somebody is driving, has a terminal in, or is
-      // watching: reclaiming memory from under an open viewer trades a
-      // measurable resource for an unexplainable disappearance.
-      if (live.rig.isHumanControlled ||
-          live.isInUse ||
-          live.rig.surface == RigSurface.window) {
-        continue;
-      }
-      CcInfraLog.info(
-        'rig/${live.rig.id}: evicting to make room '
-        '(${_committedMb}MB committed, ${_maxResidentMb}MB budget)',
-      );
-      // Recomputed from `_live` AFTER the teardown rather than deducted
-      // before it: `_teardown` is what removes the entry, so a running tally
-      // decremented up front counted memory as reclaimed while the eviction
-      // was still in flight.
-      await _teardown(live, RigCloseReason.idleTimeout);
-      _publishReaped(live.rig, RigCloseReason.idleTimeout);
-    }
-    if (_committedMb + wantedMb > _maxResidentMb) {
-      throw StateError(
-        'Not enough memory budget for a ${wantedMb}MB rig: ${_committedMb}MB '
-        'of ${_maxResidentMb}MB is already committed to rigs a person is '
-        'using. Close one first.',
-      );
-    }
-  }
 
   /// Marks sessions the previous process left behind as failed.
   ///
@@ -2731,6 +2156,9 @@ class RigService implements RigPort, RigPortsPort {
     try {
       final stranded = await _repository.listAllLive();
       for (final rig in stranded) {
+        // Its machine died with that process, so whatever it mounted can't
+        // be touched from the guest any more.
+        releaseEnvironmentRigMounts(rig);
         await _repository.save(
           rig.workspaceId,
           rig.copyWith(

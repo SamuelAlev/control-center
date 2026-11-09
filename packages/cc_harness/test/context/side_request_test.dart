@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 /// Records what the side request actually sent, so the cache-preserving shape
 /// can be asserted rather than assumed.
-class _RecordingProvider implements LlmProviderPort {
+class _RecordingProvider extends LlmProviderPort {
   _RecordingProvider(this.script);
   final List<LlmEvent> script;
   List<HarnessMessage>? sentMessages;
@@ -68,10 +68,7 @@ void main() {
     test('does not mutate the live history', () async {
       final provider = _RecordingProvider([const LlmTextDelta('x'), done]);
       final history = [HarnessMessage.user('a')];
-      await SideRequest(provider).ask(
-        history: history,
-        question: 'q',
-      );
+      await SideRequest(provider).ask(history: history, question: 'q');
       expect(
         history,
         hasLength(1),
@@ -95,10 +92,7 @@ void main() {
 
     test('sends no tools at all', () async {
       final provider = _RecordingProvider([const LlmTextDelta('x'), done]);
-      await SideRequest(provider).ask(
-        history: const [],
-        question: 'q',
-      );
+      await SideRequest(provider).ask(history: const [], question: 'q');
       expect(
         provider.sentTools,
         isEmpty,
@@ -111,10 +105,7 @@ void main() {
         const LlmError('upstream exploded'),
       ]);
       expect(
-        await SideRequest(provider).ask(
-          history: const [],
-          question: 'q',
-        ),
+        await SideRequest(provider).ask(history: const [], question: 'q'),
         isNull,
       );
     });
@@ -122,10 +113,7 @@ void main() {
     test('an empty answer is null, not an empty string', () async {
       final provider = _RecordingProvider([const LlmTextDelta('   '), done]);
       expect(
-        await SideRequest(provider).ask(
-          history: const [],
-          question: 'q',
-        ),
+        await SideRequest(provider).ask(history: const [], question: 'q'),
         isNull,
       );
     });

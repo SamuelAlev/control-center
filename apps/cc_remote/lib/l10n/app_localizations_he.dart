@@ -491,6 +491,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get teammate => 'חבר צוות';
 
   @override
+  String get systemSender => 'מערכת';
+
+  @override
   String get agent => 'סוכן';
 
   @override
@@ -643,12 +646,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'מוצגים הנתונים האחרונים הידועים עבור ⁨$names⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.';
+    return 'מוצגים הנתונים האחרונים הידועים עבור ⁨$names⁩. חדש את ההתקנה ב-GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨$names⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.';
+    return 'התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨$names⁩. חדש את ההתקנה ב-GitHub.';
   }
 
   @override
@@ -2569,6 +2572,22 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'הקוד הזה לא תואם לכניסה הזו. בדקו אותו ונסו שוב.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'יותר מדי קודים שגויים. התחילו את ההתחברות מחדש.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'שירות ההתחברות לא מגיב כרגע. המתינו דקה ונסו שוב.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'ההתחברות נדחתה. התחילו אותה מחדש ואשרו את כל ההרשאות המבוקשות.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'ההתחברות הצליחה, אבל השרת לא הצליח לשמור אותה. נסו שוב.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

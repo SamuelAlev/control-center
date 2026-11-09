@@ -21,7 +21,7 @@ class SpaceTakeover {
     required this.stoppedRunIds,
   });
 
-  /// Parses a `takeover` wire map (from `begin`/`status`).
+  /// Parses a `takeover` wire map (from `begin`/`status`/`watch`).
   factory SpaceTakeover.fromWire(Map<String, dynamic> wire) => SpaceTakeover(
     userId: wire['user_id'] as String? ?? '',
     displayName: wire['display_name'] as String? ?? '',
@@ -50,63 +50,21 @@ class SpaceTakeover {
   final List<String> stoppedRunIds;
 }
 
-/// Poll cadence for [TakeoverStatusNotifier] — no server subscription exists
-/// for take-over state (PRD 16 §8), so the header button and conversation
-/// banner poll while mounted.
-const Duration takeoverPollInterval = Duration(seconds: 15);
-
-/// Polls `takeover.status` for one space every [takeoverPollInterval] while
-/// watched, auto-disposing (and cancelling its timer) once unwatched.
-class TakeoverStatusNotifier extends AsyncNotifier<SpaceTakeover?> {
-  /// Creates a [TakeoverStatusNotifier] scoped to [spaceId].
-  TakeoverStatusNotifier(this.spaceId);
-
-  /// The space this status tracks.
-  final String spaceId;
-
-  Timer? _timer;
-
-  @override
-  Future<SpaceTakeover?> build() async {
-    ref.onDispose(() {
-      _timer?.cancel();
-      _timer = null;
-    });
-    _timer = Timer.periodic(takeoverPollInterval, (_) => _refreshSilent());
-    return _fetch();
-  }
-
-  Future<SpaceTakeover?> _fetch() async {
-    final data = await ref.read(rpcClientProvider).call('takeover.status', {
-      'space_id': spaceId,
-    });
-    final raw = data['takeover'];
-    if (raw is! Map) {
-      return null;
-    }
-    return SpaceTakeover.fromWire(raw.cast<String, dynamic>());
-  }
-
-  /// Force-refreshes — called right after a begin/hand-back action so the UI
-  /// doesn't wait out the poll interval.
-  Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(_fetch);
-  }
-
-  Future<void> _refreshSilent() async {
-    final next = await AsyncValue.guard(_fetch);
-    if (next.hasValue) {
-      state = next;
-    }
-  }
-}
-
-/// Per-space take-over status — watched by the header's take-over button
-/// and the conversation pane's take-over banner.
-final takeoverStatusProvider = AsyncNotifierProvider.family
-    .autoDispose<TakeoverStatusNotifier, SpaceTakeover?, String>(
-      TakeoverStatusNotifier.new,
+/// Per-space take-over status, live from `takeover.watch` — watched by the
+/// header's take-over button and the conversation pane's take-over banner.
+/// The server re-emits whenever the marker is claimed or cleared, by anyone,
+/// so no client polls and a hand-back shows up at once on every surface.
+final takeoverStatusProvider = StreamProvider.autoDispose
+    .family<SpaceTakeover?, String>(
+      (ref, spaceId) => ref
+          .watch(rpcClientProvider)
+          .subscribe('takeover.watch', {'space_id': spaceId})
+          .map((data) {
+            final raw = data['takeover'];
+            return raw is Map
+                ? SpaceTakeover.fromWire(raw.cast<String, dynamic>())
+                : null;
+          }),
     );
 
 /// Begins a take-over of [spaceId]'s worktree via `takeover.begin`. Throws

@@ -13,6 +13,26 @@ ConfirmationRequest _req({String spaceId = 'c1'}) => ConfirmationRequest(
 );
 
 void main() {
+  test('a withdrawn request comes down as a deny', () async {
+    final registry = PendingConfirmationRegistry();
+    addTearDown(registry.dispose);
+    final withdraw = Completer<void>();
+    final reg = registry.register(
+      ConfirmationRequest(
+        spaceId: 'c1',
+        title: 'Push to main',
+        detail: 'push',
+        withdrawn: withdraw.future,
+      ),
+    );
+    expect(registry.snapshot, hasLength(1));
+    withdraw.complete();
+    expect(await reg.approved, isFalse);
+    expect(registry.snapshot, isEmpty);
+    // Answering after the withdrawal changes nothing.
+    expect(registry.respond(reg.id, approved: true), isFalse);
+  });
+
   group('PendingConfirmationRegistry', () {
     test(
       'register publishes a pending entry and resolves on approve',

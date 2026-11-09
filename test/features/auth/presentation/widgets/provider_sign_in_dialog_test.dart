@@ -18,6 +18,7 @@ Map<String, dynamic> _attempt({
   String mode = 'connect',
   String status = 'pending',
   String? error,
+  String? codeError,
   String account = '',
 }) => {
   'login_id': 'cx-1',
@@ -31,6 +32,7 @@ Map<String, dynamic> _attempt({
   'status': status,
   'account': account,
   'error': ?error,
+  'code_error': ?codeError,
 };
 
 void main() {
@@ -146,12 +148,13 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('a rejected code shows the server reason and stays open', (
+    testWidgets('a rejected code says it did not match and stays open', (
       tester,
     ) async {
       host.onCall = (op, args) => switch (op) {
         'oauth.begin' => _attempt(),
-        'oauth.complete' => throw StateError('That code does not match.'),
+        'oauth.complete' => _attempt(codeError: 'code_mismatch'),
+        'oauth.status' => _attempt(),
         _ => throw StateError('unexpected op $op'),
       };
       await tester.pumpWidget(scope(launcher()));
@@ -162,7 +165,7 @@ void main() {
       await tester.tap(find.widgetWithText(CcButton, l10n.continueLabel));
       await settle(tester);
 
-      expect(find.textContaining('That code does not match.'), findsOneWidget);
+      expect(find.text(l10n.signInErrorInvalidCode), findsOneWidget);
       expect(find.text(l10n.signInCodePrompt), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });

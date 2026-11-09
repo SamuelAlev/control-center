@@ -416,9 +416,6 @@ final class ConnectServiceConfig {
   /// Rate ceilings.
   final ConnectRateLimits rateLimits;
 
-  /// Whether this Connect serves an offline-signed config (hosted).
-  bool get isHosted => signedConfigPath != null || signedConfigInline != null;
-
   static String _checkedBaseUrl(String publicUrl) {
     final String base;
     try {
@@ -767,6 +764,14 @@ ConnectServiceConfig _fromEnvironment(
     for (final part in text('CONNECT_CONFIG_PUBLIC_KEYS').split(','))
       if (part.trim().isNotEmpty) part.trim(),
   ];
+  if (!signed && configKeys.isNotEmpty) {
+    // Keys to verify against mean this Connect is meant to serve a signed
+    // config; serving the generated one instead would drop the signature.
+    throw const ConnectConfigException(
+      'CONNECT_CONFIG_PUBLIC_KEYS is set but no signed config was given '
+      '(CONNECT_SIGNED_CONFIG_FILE or CONNECT_SIGNED_CONFIG)',
+    );
+  }
   if (signed && configKeys.isEmpty && hostedConfigRootKeys.isEmpty) {
     // A signed config nobody can verify is an unsigned one.
     throw const ConnectConfigException(

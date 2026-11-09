@@ -487,6 +487,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get teammate => 'هم‌تیمی';
 
   @override
+  String get systemSender => 'سیستم';
+
+  @override
   String get agent => 'عامل';
 
   @override
@@ -638,12 +641,12 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.';
+    return 'آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.';
+    return 'نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.';
   }
 
   @override
@@ -2570,6 +2573,22 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'این کد با این ورود جور نیست. آن را بررسی کنید و دوباره امتحان کنید.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'تعداد کدهای اشتباه بیش از حد است. ورود را دوباره شروع کنید.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'سرویس ورود اکنون پاسخ نمی‌دهد. یک دقیقه صبر کنید و دوباره امتحان کنید.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'ورود رد شد. آن را دوباره شروع کنید و همهٔ مجوزهای درخواستی را تأیید کنید.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'ورود انجام شد، اما سرور نتوانست آن را ذخیره کند. دوباره امتحان کنید.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

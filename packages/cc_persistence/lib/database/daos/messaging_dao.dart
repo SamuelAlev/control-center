@@ -439,6 +439,41 @@ LIMIT 1
     return changed == 1;
   }
 
+  /// Closes an unanswered question as expired, atomically: lands only while
+  /// the question is still open (`answered != 1`), so an answer that won the
+  /// race is never overwritten. Returns whether it closed the question.
+  Future<bool> expireQuestion(String messageId) async {
+    final changed = await customUpdate(
+      'UPDATE conversation_messages SET '
+      "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+      "'\$.expired', json('true')), "
+      "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+      "'\$.expired', json('true')) "
+      "WHERE id = ? AND message_type = 'user_question' "
+      "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+      variables: [Variable.withString(messageId)],
+      updates: {conversationMessagesTable},
+      updateKind: UpdateKind.update,
+    );
+    return changed == 1;
+  }
+
+  /// Closes every question created at or before [before] that is still open.
+  /// Boot sweep: question waiters live in server memory, so after a restart
+  /// none of these can be answered any more. Returns how many were closed.
+  Future<int> expireQuestionsCreatedBefore(DateTime before) => customUpdate(
+    'UPDATE conversation_messages SET '
+    "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+    "'\$.expired', json('true')), "
+    "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+    "'\$.expired', json('true')) "
+    "WHERE message_type = 'user_question' AND created_at <= ? "
+    "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+    variables: [Variable<DateTime>(before)],
+    updates: {conversationMessagesTable},
+    updateKind: UpdateKind.update,
+  );
+
   /// Statement behind [watchSpaceActivity].
   ///
   /// Public so a test can `EXPLAIN QUERY PLAN` the exact text the watch runs.
@@ -447,11 +482,18 @@ LIMIT 1
   /// `idx_conversation_messages_live_activity` (covering: no transcript blob).
   /// The question count uses `idx_conversation_messages_messageType`, so it
   /// reads `metadata` only for `user_question` rows.
+  ///
+  /// `last_agent_message_at` is the newest non-human message: agent output
+  /// and server notices (`sender_type = 'system'`) both raise the dot.
+  ///
+  /// An agent-only space (`SpaceKind.isAgentOnly`, stored as `'agentPeer'`)
+  /// never reports `last_agent_message_at`: agent chatter must not raise a
+  /// human unread dot, the same rule the notification wire applies.
   static const spaceActivitySql = r'''
 WITH activity AS MATERIALIZED (
   SELECT space_id, conversation_id,
          MAX(created_at) AS last_message_at,
-         MAX(CASE WHEN sender_type = 'agent' THEN created_at END)
+         MAX(CASE WHEN sender_type <> 'user' THEN created_at END)
            AS last_agent_message_at
   FROM conversation_messages
   WHERE reverted = 0
@@ -468,7 +510,8 @@ questions AS MATERIALIZED (
 SELECT activity.space_id AS space_id,
        activity.conversation_id AS conversation_id,
        activity.last_message_at AS last_message_at,
-       activity.last_agent_message_at AS last_agent_message_at,
+       CASE WHEN spaces.kind = 'agentPeer' THEN NULL
+            ELSE activity.last_agent_message_at END AS last_agent_message_at,
        COALESCE(questions.open_question_count, 0) AS open_question_count
 FROM activity
 JOIN spaces ON spaces.id = activity.space_id
@@ -799,6 +842,45 @@ LIMIT 1
       "WHERE message_type = 'steering' AND conversation_id = ? "
       'AND space_id = ? AND reverted = 0 AND '
       "json_extract(metadata, '\$.steerState') = 'queued'";
+
+  /// Merges [patch] into a steering card's metadata only while the card is
+  /// still in [fromState] (`metadata.steerState`), returning whether it was.
+  ///
+  /// The steering queue's writers race each other: a reorder, an edit, a
+  /// live run draining the card and the run-end conversion can all touch the
+  /// same row. Each used to write back a whole metadata map read moments
+  /// earlier, so a reorder could quietly revert `injected` to `queued`. Here
+  /// the state check, the merge onto the CURRENT metadata and the write share
+  /// one transaction, and [content] / [messageType] change with it.
+  Future<bool> patchSteering(
+    String messageId, {
+    required String fromState,
+    required Map<String, dynamic> patch,
+    String? content,
+    String? messageType,
+  }) => transaction(() async {
+    final row = await getMessageById(messageId);
+    if (row == null) {
+      return false;
+    }
+    final current = switch (row.metadata) {
+      final String raw when raw.isNotEmpty => switch (jsonDecode(raw)) {
+        final Map<String, dynamic> m => m,
+        _ => <String, dynamic>{},
+      },
+      _ => <String, dynamic>{},
+    };
+    if (current['steerState'] != fromState) {
+      return false;
+    }
+    await updateMessage(
+      messageId,
+      content: content,
+      metadata: {...current, ...patch},
+      messageType: messageType,
+    );
+    return true;
+  });
 
   /// Rows for [queuedSteeringSql]. Order is not delivery order; callers sort
   /// by `steerOrder`.

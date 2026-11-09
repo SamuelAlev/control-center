@@ -229,11 +229,11 @@ void main() {
 
     test('closes violations stream', () async {
       final mgr = _testManager();
-      final violations = <SandboxViolation>[];
-      final sub = mgr.violations.listen(violations.add);
+      final done = Completer<void>();
+      final sub = mgr.violations.listen((_) {}, onDone: done.complete);
       await mgr.reset();
-      // After reset the stream is closed; adding events throws.
-      expect(() => mgr.reportLinuxStderr('EPERM post-reset'), throwsStateError);
+      // After reset the stream is closed: its listeners see it end.
+      await done.future.timeout(const Duration(seconds: 1));
       await sub.cancel();
     });
   });
@@ -431,73 +431,47 @@ void main() {
   });
 
   // =========================================================================
-  // Isolation: reportLinuxStderr
+  // Isolation: parseLinuxDenial
   // =========================================================================
-  group('reportLinuxStderr', () {
-    /// Pumps pending microtasks so broadcast stream listeners fire.
-    Future<void> pump() => Future.microtask(() {});
-
-    test('detects "Operation not permitted"', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('bash: /usr/bin/curl: Operation not permitted');
-      await pump();
-      expect(captured, hasLength(1));
-      expect(captured.first.action, 'unknown');
-      expect(captured.first.target, contains('Operation not permitted'));
-      expect(captured.first.raw, contains('Operation not permitted'));
+  group('parseLinuxDenial', () {
+    test('detects "Operation not permitted"', () {
+      final v = SandboxManager.parseLinuxDenial(
+        'bash: /usr/bin/curl: Operation not permitted',
+      );
+      expect(v, isNotNull);
+      expect(v!.action, 'unknown');
+      expect(v.target, contains('Operation not permitted'));
+      expect(v.raw, contains('Operation not permitted'));
     });
 
-    test('detects "EPERM"', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('openat(AT_FDCWD, "/etc/shadow") = -1 EPERM');
-      await pump();
-      expect(captured, hasLength(1));
-      expect(captured.first.target, contains('EPERM'));
+    test('detects "EPERM"', () {
+      final v = SandboxManager.parseLinuxDenial(
+        'openat(AT_FDCWD, "/etc/shadow") = -1 EPERM',
+      );
+      expect(v?.target, contains('EPERM'));
     });
 
-    test('detects "Permission denied"', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('/bin/sh: /root/.bashrc: Permission denied');
-      await pump();
-      expect(captured, hasLength(1));
-      expect(captured.first.target, contains('Permission denied'));
+    test('detects "Permission denied"', () {
+      final v = SandboxManager.parseLinuxDenial(
+        '/bin/sh: /root/.bashrc: Permission denied',
+      );
+      expect(v?.target, contains('Permission denied'));
     });
 
-    test('ignores normal stdout/stderr lines', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('Hello, world!');
-      mgr.reportLinuxStderr('');
-      mgr.reportLinuxStderr('compilation finished successfully');
-      await pump();
-      expect(captured, isEmpty);
+    test('ignores normal stdout/stderr lines', () {
+      expect(SandboxManager.parseLinuxDenial('Hello, world!'), isNull);
+      expect(SandboxManager.parseLinuxDenial(''), isNull);
+      expect(
+        SandboxManager.parseLinuxDenial('compilation finished successfully'),
+        isNull,
+      );
     });
 
-    test('trims target to the line content', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('  EPERM: access denied  ');
-      await pump();
-      expect(captured.single.target, 'EPERM: access denied');
-    });
-
-    test('multiple violations all emitted', () async {
-      final mgr = _testManager();
-      final captured = <SandboxViolation>[];
-      mgr.violations.listen(captured.add);
-      mgr.reportLinuxStderr('Error: EPERM on file A');
-      await pump();
-      mgr.reportLinuxStderr('Error: Operation not permitted on file B');
-      await pump();
-      expect(captured, hasLength(2));
+    test('trims target to the line content', () {
+      expect(
+        SandboxManager.parseLinuxDenial('  EPERM: access denied  ')?.target,
+        'EPERM: access denied',
+      );
     });
   });
 
@@ -511,29 +485,6 @@ void main() {
       final sub2 = mgr.violations.listen((_) {});
       sub1.cancel();
       sub2.cancel();
-    });
-
-    test('delivers violations from reportLinuxStderr', () async {
-      final mgr = _testManager();
-      final c = Completer<SandboxViolation>();
-      mgr.violations.listen(c.complete);
-      mgr.reportLinuxStderr('EPERM access');
-      final v = await c.future.timeout(const Duration(seconds: 1));
-      expect(v.action, 'unknown');
-      expect(v.target, contains('EPERM'));
-    });
-
-    test('multiple listeners all receive the same violation', () async {
-      final mgr = _testManager();
-      final c1 = Completer<SandboxViolation>();
-      final c2 = Completer<SandboxViolation>();
-      mgr.violations.listen(c1.complete);
-      mgr.violations.listen(c2.complete);
-      mgr.reportLinuxStderr('Permission denied: /secret');
-      final v1 = await c1.future.timeout(const Duration(seconds: 1));
-      final v2 = await c2.future.timeout(const Duration(seconds: 1));
-      expect(v1.target, v2.target);
-      expect(v1.raw, v2.raw);
     });
   });
 }

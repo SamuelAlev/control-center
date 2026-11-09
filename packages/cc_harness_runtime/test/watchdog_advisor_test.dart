@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/advisor/advisor_panel.dart';
 import 'package:cc_harness_runtime/src/advisor/watchdog_advisor.dart';
 import 'package:cc_harness_runtime/src/advisor/watchdog_discovery.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// A provider that returns scripted replies and records every request it saw.
-class _RecordingProvider implements LlmProviderPort {
+class _RecordingProvider extends LlmProviderPort {
   _RecordingProvider(this.replies);
 
   /// One entry per `complete` call; each is either a reply string (emitted as a
@@ -229,6 +230,33 @@ void main() {
         }
       },
     );
+
+    test('fresh() shares config but none of the review state', () async {
+      final provider = _RecordingProvider([
+        'concern: handle the null path',
+        'concern: handle the null path',
+      ]);
+      final parent = WatchdogAdvisor(provider, model: 'cheap');
+      expect(await parent.review(_history(3)), isNotNull);
+      final child = parent.fresh();
+      // A subagent's transcript is short and unrelated: the copy reads it from
+      // the top (no inherited cursor) and is not muted by the parent's dedupe.
+      final note = await child.review(_history(1));
+      expect(note, isNotNull);
+      expect(provider.requests.last, hasLength(1));
+      expect(provider.requests.last.single.textContent, contains('turn 0'));
+      expect(provider.models.last, 'cheap');
+    });
+
+    test('AdvisorPanel.freshFor copies known advisors only', () {
+      final watchdog = WatchdogAdvisor(_RecordingProvider(['OK']));
+      final copy = AdvisorPanel.freshFor(watchdog);
+      expect(copy, isA<WatchdogAdvisor>());
+      expect(identical(copy, watchdog), isFalse);
+      final panel = AdvisorPanel.freshFor(AdvisorPanel([watchdog]));
+      expect(panel, isA<AdvisorPanel>());
+      expect((panel! as AdvisorPanel).members.single, isNot(same(watchdog)));
+    });
 
     test('reset re-primes so the next review replays from the top', () async {
       final provider = _RecordingProvider(['OK', 'OK']);

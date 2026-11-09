@@ -7,6 +7,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:meta/meta.dart';
 
@@ -21,6 +22,7 @@ class AgentEnvironmentCaller {
     this.agentId,
     this.mode,
     this.actingUserId,
+    this.autonomy,
   });
 
   /// Workspace of the run.
@@ -43,6 +45,9 @@ class AgentEnvironmentCaller {
 
   /// The member it acts for.
   final String? actingUserId;
+
+  /// The run's space autonomy dial when the command was asked, or null.
+  final AutonomyLevel? autonomy;
 
   /// The principal changes are attributed to.
   Principal get principal => AgentPrincipal(agentId ?? runId ?? conversationId);
@@ -215,6 +220,7 @@ class AgentEnvironmentGateway {
       onBehalfOfUserId: caller.actingUserId,
       runId: caller.runId,
       request: ActionRequest(classes: classes),
+      autonomy: caller.autonomy,
     );
     if (verdict.allowed) {
       return null;

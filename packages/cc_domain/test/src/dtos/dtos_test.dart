@@ -1039,7 +1039,6 @@ void main() {
         'output_json': '{}',
         'space_id': 'c',
         'error_message': 'e',
-        'branch_index': 1,
         'attempt_count': 2,
         'prior_attempts': [
           {
@@ -1052,7 +1051,6 @@ void main() {
         'started_at': 's',
         'finished_at': 'f',
       });
-      expect(dto.branchIndex, 1);
       expect(dto.attemptCount, 2);
       expect(dto.priorAttempts, hasLength(1));
       expect(dto.priorAttempts.single['error_message'], 'boom');
@@ -1061,7 +1059,6 @@ void main() {
       final d = PipelineStepRunDto.fromJson({'id': 'i'});
       expect(d.status, 'pending');
       expect(d.attemptCount, 0);
-      expect(d.branchIndex, isNull);
       expect(d.priorAttempts, isEmpty);
       // No tries, no key: the wire stays lean for the never-retried majority.
       expect(d.toJson().containsKey('prior_attempts'), isFalse);
@@ -2163,7 +2160,6 @@ void main() {
         'output_json': '{"k":1}',
         'space_id': 'c',
         'error_message': 'e',
-        'branch_index': 0,
         'attempt_count': 1,
         'started_at': '2025-01-01T00:00:00.000',
         'finished_at': '2025-01-02T00:00:00.000',
@@ -2172,7 +2168,6 @@ void main() {
       expect(out['output_json'], '{"k":1}');
       expect(out['space_id'], 'c');
       expect(out['error_message'], 'e');
-      expect(out['branch_index'], 0);
       expect(out['finished_at'], '2025-01-02T00:00:00.000');
     });
 

@@ -144,6 +144,14 @@ class PendingConfirmationRegistry {
           });
     _entries[id] = _Entry(entry, completer, timer);
     _emit();
+    // The asker stopped waiting (a hook deadline, a run that ended): take the
+    // prompt down as a deny so nobody answers about work that has moved on.
+    unawaited(
+      request.withdrawn?.then(
+        (_) => cancel(id, approved: false),
+        onError: (Object _) => cancel(id, approved: false),
+      ),
+    );
     return (id: id, approved: completer.future);
   }
 

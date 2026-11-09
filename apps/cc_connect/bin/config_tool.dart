@@ -87,33 +87,19 @@ Future<void> _keygen(Map<String, String> options) async {
   }
   final seed = randomBytes(32);
   await file.parent.create(recursive: true);
-  // Written inside a directory only this user can enter, made 0600, then
-  // renamed into place: no window where another account can open the seed.
-  final private = await file.parent.createTemp('.keygen-');
+  // Created 0600 (never widened, never chmod-ed afterwards), then renamed
+  // into place: no window where another account can open the seed.
   try {
-    if (!Platform.isWindows) {
-      await _chmod('700', private.path);
+    await writePrivateFile(path, seed, overwrite: false);
+  } on FileSystemException {
+    if (file.existsSync()) {
+      throw _UsageError('$path exists; refusing to overwrite a signing seed');
     }
-    final staged = File('${private.path}/seed');
-    await staged.create();
-    if (!Platform.isWindows) {
-      await _chmod('600', staged.path);
-    }
-    await staged.writeAsBytes(seed, flush: true);
-    await staged.rename(path);
-  } finally {
-    await private.delete(recursive: true);
+    rethrow;
   }
   stdout
     ..writeln('seed written to $path (keep it offline)')
     ..writeln('public key: ${await configPublicKeyForSeed(seed)}');
-}
-
-Future<void> _chmod(String mode, String path) async {
-  final result = await Process.run('chmod', [mode, path]);
-  if (result.exitCode != 0) {
-    throw FileSystemException('chmod $mode failed', path);
-  }
 }
 
 Future<List<int>> _readSeed(String path) async {

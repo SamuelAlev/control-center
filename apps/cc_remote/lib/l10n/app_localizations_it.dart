@@ -491,6 +491,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get teammate => 'Collega';
 
   @override
+  String get systemSender => 'Sistema';
+
+  @override
   String get agent => 'Agente';
 
   @override
@@ -642,12 +645,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Vengono mostrati gli ultimi dati noti per $names. Riprendi l\'installazione su GitHub oppure collega un token con accesso.';
+    return 'Vengono mostrati gli ultimi dati noti per $names. Riprendi l\'installazione su GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Installazione GitHub App sospesa. Vengono mostrati gli ultimi dati noti per $names. Riprendi l\'installazione su GitHub oppure collega un token con accesso.';
+    return 'Installazione GitHub App sospesa. Vengono mostrati gli ultimi dati noti per $names. Riprendi l\'installazione su GitHub.';
   }
 
   @override
@@ -2610,6 +2613,22 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Questo codice non corrisponde a questo accesso. Controllalo e riprova.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Troppi codici errati. Avvia di nuovo l\'accesso.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Il servizio di accesso non risponde in questo momento. Attendi un minuto, poi riprova.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'L\'accesso è stato rifiutato. Avvialo di nuovo e approva tutte le autorizzazioni richieste.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'L\'accesso è riuscito, ma il server non è riuscito a salvarlo. Riprova.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

@@ -490,6 +490,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get teammate => 'Spolupracovník';
 
   @override
+  String get systemSender => 'Systém';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -644,12 +647,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.';
+    return 'Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.';
+    return 'Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu.';
   }
 
   @override
@@ -2598,6 +2601,22 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Příliš mnoho chybných kódů. Spusťte přihlášení znovu.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Služba přihlášení právě neodpovídá. Počkejte minutu a zkuste to znovu.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Přihlášení bylo odmítnuto. Spusťte ho znovu a schvalte všechna požadovaná oprávnění.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Přihlášení proběhlo, ale server ho nedokázal uložit. Zkuste to znovu.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

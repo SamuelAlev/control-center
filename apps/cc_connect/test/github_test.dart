@@ -168,6 +168,65 @@ void main() {
       );
     });
 
+    test(
+      'a claim before the provider redirected back spends no attempt',
+      () async {
+        final pkce = PkcePair.generate();
+        final start = await harness.call(
+          a,
+          'POST',
+          '/v1/oauth/github/start',
+          body: OAuthStartRequest(
+            workspaceId: 'ws1',
+            codeChallenge: pkce.challenge,
+          ).toJson(),
+        );
+        final started = OAuthStartResponse.fromJson(start.json);
+        for (var i = 0; i < 8; i++) {
+          final early = await harness.call(
+            a,
+            'POST',
+            '/v1/oauth/github/claim',
+            body: OAuthClaimRequest(
+              loginId: started.loginId,
+              confirmCode: 'ZZZZZZZZ',
+              codeVerifier: pkce.verifier,
+              workspaceId: 'ws1',
+            ).toJson(),
+          );
+          expect(early.json, {'error': 'code_mismatch'});
+        }
+        // The login is intact: the provider's redirect still lands.
+        final state = started.authorizeUrl.queryParameters['state']!;
+        final callback = await harness.browser(
+          '/oauth/github/callback?code=gh-code&state=$state',
+        );
+        expect(callback.status, 303);
+      },
+    );
+
+    test('a start naming another flow or an installation is refused', () async {
+      final pkce = PkcePair.generate();
+      for (final extra in [
+        {'purpose': 'install_github_app'},
+        {'installation_id': 7},
+      ]) {
+        final start = await harness.call(
+          a,
+          'POST',
+          '/v1/oauth/github/start',
+          body: {
+            ...OAuthStartRequest(
+              workspaceId: 'ws1',
+              codeChallenge: pkce.challenge,
+            ).toJson(),
+            ...extra,
+          },
+        );
+        expect(start.json, {'error': 'invalid_request'});
+      }
+    });
+
     test('a wrong confirm code five times burns the login', () async {
       final flow = await browserFlow(harness, a, ConnectOAuthLane.github);
       for (var i = 0; i < 5; i++) {
@@ -183,7 +242,7 @@ void main() {
           ).toJson(),
         );
         expect(wrong.status, 403);
-        expect(wrong.json, {'error': 'access_denied'});
+        expect(wrong.json, {'error': 'code_mismatch'});
       }
       final right = await harness.call(
         a,
@@ -219,7 +278,7 @@ void main() {
           workspaceId: 'ws1',
         ).toJson(),
       );
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'code_mismatch'});
     });
 
     test('a refused exchange logs why, never the code', () async {
@@ -240,7 +299,7 @@ void main() {
           workspaceId: 'ws1',
         ).toJson(),
       );
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'needs_sign_in'});
       final failed = harness.logs.singleWhere(
         (l) => l.contains('"oauth.claim_failed"'),
       );
@@ -272,7 +331,7 @@ void main() {
           workspaceId: 'ws1',
         ).toJson(),
       );
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'needs_sign_in'});
       expect(
         harness.logs.singleWhere((l) => l.contains('"oauth.claim_failed"')),
         contains('github_token_expiry_off'),
@@ -293,7 +352,7 @@ void main() {
             workspaceId: 'ws1',
           ).toJson(),
         );
-        expect(stolen.json, {'error': 'access_denied'});
+        expect(stolen.json, {'error': 'code_mismatch'});
       }
       final own = await harness.call(
         a,
@@ -636,6 +695,28 @@ void main() {
     });
 
     test(
+      'a lock left by a holder that died lapses instead of wedging',
+      () async {
+        final grant = await signInGitHub(harness, a);
+        // A rotation that never finished: its lease outlives it by its TTL
+        // only.
+        await harness.service.context.state.set(
+          'lock:${sealDigest(grant.seal)}',
+          'dead-holder',
+          const Duration(seconds: 1),
+        );
+        final refreshed = await harness.call(
+          a,
+          'POST',
+          '/v1/github/refresh',
+          body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+        );
+        expect(refreshed.status, 200, reason: refreshed.body);
+        expect(github.issued, 2);
+      },
+    );
+
+    test(
       'seals below min_seal_generation or of a retired app need sign-in',
       () async {
         final grant = await signInGitHub(harness, a);
@@ -664,8 +745,110 @@ void main() {
     );
   });
 
+  group('a rotation the state store half-fails', () {
+    late FlakyStateStore state;
+    late Harness flaky;
+    late FakeGitHub flakyGitHub;
+
+    setUp(() async {
+      state = FlakyStateStore();
+      flaky = await Harness.start(allowed: [a], state: state);
+      flakyGitHub = FakeGitHub(flaky.upstream);
+    });
+
+    tearDown(() => flaky.close());
+
+    test(
+      'still answers the rotated seal when the handoff cannot be written',
+      () async {
+        final grant = await signInGitHub(flaky, a);
+        state.failSets.add('handoff:');
+        final refreshed = await flaky.call(
+          a,
+          'POST',
+          '/v1/github/refresh',
+          body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+        );
+        // The old refresh token is spent: the answer is the only copy of
+        // the grant, so it must arrive.
+        expect(refreshed.status, 200, reason: refreshed.body);
+        final next = SealedGrant.fromJson(refreshed.json);
+        expect(next.accessToken, 'ghu_access2');
+        expect(flakyGitHub.issued, 2);
+        expect(
+          flaky.logs.any((l) => l.contains('seal.handoff_unsaved')),
+          isTrue,
+        );
+        // And it works.
+        state.failSets.clear();
+        final again = await flaky.call(
+          a,
+          'POST',
+          '/v1/github/refresh',
+          body: SealRequest(seal: next.seal, workspaceId: 'ws1').toJson(),
+        );
+        expect(again.status, 200);
+      },
+    );
+
+    test('a failed unlock never fails a finished rotation', () async {
+      final grant = await signInGitHub(flaky, a);
+      state.failDeletes.add('lock:');
+      final refreshed = await flaky.call(
+        a,
+        'POST',
+        '/v1/github/refresh',
+        body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+      );
+      expect(refreshed.status, 200, reason: refreshed.body);
+    });
+  });
+
   group('scope', () {
     setUp(() => _scriptInstallations(harness.upstream));
+
+    test('a role GitHub demoted mints the lower scope at once', () async {
+      final grant = await signInGitHub(harness, a);
+      await harness.call(
+        a,
+        'POST',
+        '/v1/github/authorize_server',
+        body: GitHubAuthorizeServerRequest(
+          seal: grant.seal,
+          workspaceId: 'ws1',
+          installationId: 77,
+        ).toJson(),
+      );
+      Future<String> mint() async => GitHubScopedToken.fromJson(
+        (await harness.call(
+          a,
+          'POST',
+          '/v1/github/scope',
+          body: _scopeBody(
+            grant.seal,
+            repoId: 9001,
+            owner: 'acme',
+            name: 'api',
+            scope: 'write',
+          ),
+        )).json,
+      ).grantedScope;
+      expect(await mint(), 'write');
+      // Demoted to read on GitHub: the very next mint sees it, not a
+      // five-minute-old copy of the role.
+      harness.upstream.json(
+        'GET',
+        'https://api.github.com/repos/acme/api',
+        200,
+        {
+          'id': 9001,
+          'private': true,
+          'owner': {'id': 500, 'login': 'acme'},
+          'permissions': {'push': false, 'triage': false, 'pull': true},
+        },
+      );
+      expect(await mint(), 'read');
+    });
 
     test('an unbound organization installation is refused', () async {
       final grant = await signInGitHub(harness, a);
@@ -1000,6 +1183,119 @@ void main() {
       expect(views.first.boundHere, isFalse);
       expect(views.last.boundHere, isTrue);
     });
+
+    test('a scoped token is revoked only with a seal of the account it was '
+        'minted for', () async {
+      harness.upstream.json(
+        'DELETE',
+        'https://api.github.com/applications/Iv23test/token',
+        204,
+        null,
+      );
+      final octo = await signInGitHub(harness, a);
+      final minted = GitHubScopedToken.fromJson(
+        (await harness.call(
+          a,
+          'POST',
+          '/v1/github/scope',
+          body: _scopeBody(
+            octo.seal,
+            repoId: 9003,
+            owner: 'octo',
+            name: 'dotfiles',
+            scope: 'read',
+          ),
+        )).json,
+      );
+      // Another person signs in on the same server.
+      github
+        ..userId = 2002
+        ..login = 'hubot';
+      final hubot = await signInGitHub(harness, a);
+      expect(hubot.accountId, '2002');
+      Future<Map<String, Object?>> revokeWith(String seal) async =>
+          (await harness.call(
+            a,
+            'POST',
+            '/v1/github/revoke',
+            body: GitHubRevokeRequest(
+              workspaceId: 'ws1',
+              seal: seal,
+              scopedToken: minted.accessToken,
+            ).toJson(),
+          )).json;
+      expect(await revokeWith(hubot.seal), {'error': 'access_denied'});
+      expect(
+        harness.upstream.callsTo(
+          'DELETE',
+          'https://api.github.com/applications/Iv23test/token',
+        ),
+        isEmpty,
+      );
+      expect(await revokeWith(octo.seal), {'ok': true});
+      expect(
+        harness.upstream.callsTo(
+          'DELETE',
+          'https://api.github.com/applications/Iv23test/token',
+        ),
+        hasLength(1),
+      );
+    });
+
+    test(
+      'organization lookups run in parallel, at most eight at once',
+      () async {
+        final orgs = [for (var i = 0; i < 20; i++) 'org$i'];
+        harness.upstream.json(
+          'GET',
+          'https://api.github.com/user/installations',
+          200,
+          {
+            'installations': [
+              for (var i = 0; i < orgs.length; i++)
+                {
+                  'id': 1000 + i,
+                  'app_id': 4242,
+                  'target_type': 'Organization',
+                  'account': {'id': 5000 + i, 'login': orgs[i]},
+                  'suspended_at': null,
+                },
+            ],
+          },
+        );
+        var inFlight = 0;
+        var peak = 0;
+        for (final org in orgs) {
+          harness.upstream.on(
+            'GET',
+            'https://api.github.com/orgs/$org/memberships/octo',
+            (_) async {
+              inFlight++;
+              peak = inFlight > peak ? inFlight : peak;
+              await Future<void>.delayed(const Duration(milliseconds: 20));
+              inFlight--;
+              return UpstreamResponse.json(200, {
+                'role': 'admin',
+                'state': 'active',
+              });
+            },
+          );
+        }
+        final grant = await signInGitHub(harness, a);
+        final listed = await harness.call(
+          a,
+          'POST',
+          '/v1/github/installations',
+          body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+        );
+        expect(listed.status, 200, reason: listed.body);
+        final views = GitHubInstallationsResponse.fromJson(listed.json);
+        expect(views.installations, hasLength(orgs.length));
+        expect(views.installations.every((v) => v.callerIsAdmin), isTrue);
+        expect(peak, greaterThan(1));
+        expect(peak, lessThanOrEqualTo(8));
+      },
+    );
 
     test('revoke deletes the grant or one scoped token', () async {
       harness.upstream

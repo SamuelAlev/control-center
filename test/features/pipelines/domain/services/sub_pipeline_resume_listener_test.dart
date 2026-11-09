@@ -301,6 +301,35 @@ void main() {
       },
     );
 
+    test('resumes parent on PipelineRunCancelled (audit H7)', () async {
+      final child = _makeRun(
+        id: 'child-1',
+        status: PipelineRunStatus.cancelled,
+        parentPipelineRunId: 'parent-1',
+        parentStepId: 'step-a',
+      );
+      repository.nextRun = child;
+
+      eventBus.publish(
+        PipelineRunCancelled(
+          workspaceId: 'ws-1',
+          pipelineRunId: 'child-1',
+          templateId: 'tpl-test',
+          occurredAt: _now,
+        ),
+      );
+      await _settle();
+
+      expect(repository.queriedIds, ['child-1']);
+      expect(engine.resumeCalls, hasLength(1));
+      expect(engine.resumeCalls.single.parentRunId, 'parent-1');
+      expect(engine.resumeCalls.single.parentStepId, 'step-a');
+      expect(
+        engine.resumeCalls.single.childRun.status,
+        PipelineRunStatus.cancelled,
+      );
+    });
+
     // -----------------------------------------------------------------------
     // Correct forwarding of fields
     // -----------------------------------------------------------------------

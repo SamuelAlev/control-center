@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
@@ -10,6 +11,7 @@ import 'package:control_center/features/pr_review/presentation/utils/scoped_diff
 import 'package:control_center/features/pr_review/presentation/widgets/pr_clone_progress_card.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_files_truncated_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -176,7 +178,7 @@ class FilesTab extends ConsumerWidget {
     final repoId = prRepoIdFor(ref, pr);
     final spaceId = ref.watch(prSpaceProvider(PrSpaceKey.of(pr))).value;
 
-    return PrDiffView(
+    final diff = PrDiffView(
       key: diffKey,
       files: files,
       comments: comments,
@@ -210,6 +212,26 @@ class FilesTab extends ConsumerWidget {
           viewed: viewed,
         );
       },
+    );
+    // The forge capped its listing: say the diff is partial, never present
+    // it as the whole change.
+    if (scoped || !ref.watch(prFilesTruncatedProvider(prRef))) {
+      return diff;
+    }
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(
+          child: PrFilesTruncatedNotice(
+            forge:
+                ref.watch(prRepoRowProvider(prRef))?.forge ??
+                prRef.forge ??
+                ForgeHost.github,
+            shownCount: allFiles.length,
+            htmlUrl: pr.htmlUrl,
+          ),
+        ),
+        diff,
+      ],
     );
   }
 }

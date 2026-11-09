@@ -5,7 +5,6 @@
 // ignore_for_file: close_sinks, unnecessary_lambdas
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -13,15 +12,17 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
-import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
+import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_process_io.dart';
 import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
+import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 /// `SandboxPort` implementation that wraps each command with the in-project
 /// native sandbox runtime: `sandbox-exec` (Seatbelt) on macOS, `bubblewrap`
@@ -47,8 +48,8 @@ class NativeSandboxAdapter implements SandboxPort {
   final Map<String, Process> _processes = {};
   final Map<String, SandboxConfig> _configs = {};
   final Map<String, SandboxHandle> _handles = {};
+  final Map<String, List<String>> _mounts = {};
   final Set<String> _supervised = {};
-  String? _activeSession;
   StreamSubscription<SandboxViolation>? _violationSub;
 
   @override
@@ -100,6 +101,10 @@ class NativeSandboxAdapter implements SandboxPort {
     if (spec.superviseProcessGroup && Platform.isMacOS) {
       _supervised.add(spec.sessionId);
     }
+    _mounts[spec.sessionId] = [
+      for (final m in spec.bindMounts)
+        if (m.hostPath.isNotEmpty) m.hostPath,
+    ];
     final handle = SandboxHandle(
       sessionId: spec.sessionId,
       backend: SandboxBackend.native,
@@ -152,7 +157,6 @@ class NativeSandboxAdapter implements SandboxPort {
     }
 
     _updateState(handle.sessionId, SandboxState.active);
-    _activeSession = handle.sessionId;
     final controller = _streams[handle.sessionId];
     // `destroy` closes the session's stream while a killed child can still be
     // flushing stdout/stderr (and before its exit code is reaped); adding to
@@ -206,64 +210,133 @@ class NativeSandboxAdapter implements SandboxPort {
     // Always settle stdin — a CLI that reads it hangs forever otherwise.
     settleStdin(process, input: stdinInput, stream: stdinStream);
 
-    void forward(
-      Stream<List<int>> stream,
-      SandboxEventType type, {
-      bool watchEperm = false,
-    }) {
-      // `allowMalformed: true` is load-bearing: the throwing decoder turns one
-      // bad byte from a chatty CLI into a zone-level unhandled error that kills
-      // BOTH forwardings while `exec` keeps awaiting the exit code — the run
-      // then completes with no output and no error.
-      stream
-          .transform(const Utf8Decoder(allowMalformed: true))
-          .transform(const LineSplitter())
-          .listen((line) {
-            emit(SandboxEvent(type: type, content: line));
-            if (watchEperm) {
-              _manager.reportLinuxStderr(line);
-            }
-          }, onError: (Object _) {});
-    }
+    // Linux reports denials only on the child's own stderr, so they are known
+    // to belong to THIS session and go straight onto its stream.
+    final linux = Platform.isLinux || LinuxSandbox.isWsl2();
+    final forwardings = [
+      ProcessLineForwarding.start(
+        process.stdout,
+        (line) =>
+            emit(SandboxEvent(type: SandboxEventType.stdout, content: line)),
+      ),
+      ProcessLineForwarding.start(process.stderr, (line) {
+        emit(SandboxEvent(type: SandboxEventType.stderr, content: line));
+        final violation = linux ? SandboxManager.parseLinuxDenial(line) : null;
+        if (violation != null) {
+          emit(_violationEvent(violation));
+        }
+      }),
+    ];
 
-    forward(process.stdout, SandboxEventType.stdout);
-    forward(
-      process.stderr,
-      SandboxEventType.stderr,
-      // macOS surfaces denials through the log stream; Linux relies on the
-      // child's stderr — feed it back into the manager here.
-      watchEperm: Platform.isLinux || LinuxSandbox.isWsl2(),
-    );
-
-    final exitCode = await _awaitExitWithTimeout(
+    final exitCode = await awaitExitWithTimeout(
       process,
       timeout,
       (message) =>
           emit(SandboxEvent(type: SandboxEventType.stderr, content: message)),
     );
-    _processes.remove(handle.sessionId);
+    // Every line BEFORE the exit event, and before `exec` returns: a caller
+    // that stops parsing once the exec is over (Claude's stream-json reader)
+    // would otherwise lose or misread the last lines — the turn's `result`.
+    await drainForwardings(forwardings);
+    if (identical(_processes[handle.sessionId], process)) {
+      _processes.remove(handle.sessionId);
+    }
     emit(SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode));
     _updateState(handle.sessionId, SandboxState.warm);
-    if (_activeSession == handle.sessionId) {
-      _activeSession = null;
-    }
     return exitCode;
   }
 
-  void _dispatchViolation(SandboxViolation violation) {
-    final id = _activeSession;
-    if (id == null) {
-      return;
-    }
-    final controller = _streams[id];
-    controller?.add(
+  static SandboxEvent _violationEvent(SandboxViolation violation) =>
       SandboxEvent(
         type: SandboxEventType.violation,
         content: '${violation.action} ${violation.target}',
         violation: violation,
-      ),
-    );
+      );
+
+  /// Routes a host-wide denial (macOS `log stream`) to the session it belongs
+  /// to, among every session with a live child.
+  ///
+  /// One `_activeSession` field used to name "the" running session, so with two
+  /// concurrent runs every denial — and the exec-grant offer it triggers —
+  /// went to whichever started last. Now: the session whose child IS the
+  /// denied pid; else the one session whose own directories hold the denied
+  /// path; else, with exactly one live session, that one. A denial that fits
+  /// none of those is dropped rather than shown to (and offered as a grant
+  /// to) a run that did not cause it.
+  void _dispatchViolation(SandboxViolation violation) {
+    final id = sessionForViolation(violation);
+    if (id == null) {
+      if (_processes.isNotEmpty) {
+        CcInfraLog.debug(
+          'sandbox: denial ${violation.action} ${violation.target} matched no '
+          'single live session — not attributed',
+        );
+      }
+      return;
+    }
+    final controller = _streams[id];
+    if (controller != null && !controller.isClosed) {
+      controller.add(_violationEvent(violation));
+    }
   }
+
+  /// The session [violation] belongs to, or null when it cannot be told.
+  String? sessionForViolation(SandboxViolation violation) => routeViolation(
+    violation,
+    livePids: {
+      for (final MapEntry(:key, :value) in _processes.entries) key: value.pid,
+    },
+    rootsOf: _rootsOf,
+  );
+
+  /// Picks the session among [livePids] (session id → its live child's pid)
+  /// that [violation] belongs to: the one whose child is the denied pid; else
+  /// the one session whose directories ([rootsOf]) hold the denied path;
+  /// else, with exactly one live session, that one. Null when none of those
+  /// tell — a guess would offer the wrong run an exec grant.
+  @visibleForTesting
+  static String? routeViolation(
+    SandboxViolation violation, {
+    required Map<String, int> livePids,
+    required List<String> Function(String sessionId) rootsOf,
+  }) {
+    if (livePids.isEmpty) {
+      return null;
+    }
+    final pid = violation.pid;
+    if (pid != null) {
+      for (final MapEntry(:key, :value) in livePids.entries) {
+        if (value == pid) {
+          return key;
+        }
+      }
+    }
+    final target = violation.target;
+    if (p.isAbsolute(target)) {
+      final owners = [
+        for (final id in livePids.keys)
+          if (rootsOf(
+            id,
+          ).any((root) => p.equals(root, target) || p.isWithin(root, target)))
+            id,
+      ];
+      if (owners.length == 1) {
+        return owners.single;
+      }
+      if (owners.length > 1) {
+        return null;
+      }
+    }
+    return livePids.length == 1 ? livePids.keys.single : null;
+  }
+
+  /// The host directories a session's child works in: its bind mounts and
+  /// default working directory.
+  List<String> _rootsOf(String sessionId) => [
+    ...?_mounts[sessionId],
+    if (_handles[sessionId]?.details['workingDirectory'] case final String dir)
+      dir,
+  ];
 
   @override
   Future<void> pause(SandboxHandle handle) async {
@@ -281,25 +354,13 @@ class NativeSandboxAdapter implements SandboxPort {
     // outlives the "destroyed" sandbox, holding its worktree and its egress.
     final process = _processes.remove(handle.sessionId);
     if (process != null) {
-      process.kill();
-      try {
-        await process.exitCode.timeout(const Duration(seconds: 3));
-      } on TimeoutException {
-        process.kill(ProcessSignal.sigkill);
-        try {
-          await process.exitCode.timeout(const Duration(seconds: 2));
-        } on TimeoutException {
-          // Unreapable; nothing further this layer can do.
-        }
-      }
+      await terminateProcess(process);
     }
     _configs.remove(handle.sessionId);
+    _mounts.remove(handle.sessionId);
     _supervised.remove(handle.sessionId);
     await _streams.remove(handle.sessionId)?.close();
     await _manager.disposeSession(handle.sessionId);
-    if (_activeSession == handle.sessionId) {
-      _activeSession = null;
-    }
     _updateState(handle.sessionId, SandboxState.destroyed);
     _handles.remove(handle.sessionId);
   }
@@ -320,21 +381,12 @@ class NativeSandboxAdapter implements SandboxPort {
     }
     _streams.clear();
     _configs.clear();
+    _mounts.clear();
     _handles.clear();
   }
 
-  Future<SandboxConfig> _buildConfigForSpec(SandboxSpec spec) async {
-    final home = Platform.environment['HOME'] ?? '';
-    final runDir = spec.guestWorkdir != null
-        ? '${spec.guestWorkdir}/.cc-runs/${spec.sessionId}'
-        : null;
-    final policy = const SandboxPolicyResolver().resolve(
-      spec: spec,
-      homeDir: home.isNotEmpty ? home : null,
-      runDir: runDir,
-    );
-    return buildSandboxConfigFromPolicy(policy);
-  }
+  Future<SandboxConfig> _buildConfigForSpec(SandboxSpec spec) =>
+      processSandboxConfig(spec);
 
   String? _defaultDirFor(SandboxSpec spec) {
     if (spec.guestWorkdir != null) {
@@ -360,38 +412,5 @@ class NativeSandboxAdapter implements SandboxPort {
     } catch (_) {
       return false;
     }
-  }
-}
-
-/// Awaits [process] with an optional [timeout], killing it (SIGTERM → 2s →
-/// SIGKILL) and reporting exit code 124 — the `timeout(1)` convention — when
-/// the deadline passes.
-///
-/// The [SandboxPort.exec] contract has always declared a `timeout`; no adapter
-/// honoured it, so a chatty (non-silent) agent had NO hard runtime bound at
-/// all — only the dispatch layer's 15-minute silence heuristic, which a
-/// process that prints anything at all never trips.
-Future<int> _awaitExitWithTimeout(
-  Process process,
-  Duration? timeout,
-  void Function(String message)? onTimeoutMessage,
-) async {
-  if (timeout == null) {
-    return process.exitCode;
-  }
-  try {
-    return await process.exitCode.timeout(timeout);
-  } on TimeoutException {
-    onTimeoutMessage?.call(
-      '[sandbox] command exceeded ${timeout.inSeconds}s — terminating',
-    );
-    process.kill();
-    try {
-      await process.exitCode.timeout(const Duration(seconds: 2));
-    } on TimeoutException {
-      process.kill(ProcessSignal.sigkill);
-      await process.exitCode;
-    }
-    return 124;
   }
 }

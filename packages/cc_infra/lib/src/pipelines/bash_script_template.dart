@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
-import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
@@ -13,9 +13,9 @@ import 'package:cc_domain/features/pipelines/domain/services/step_process_regist
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
-import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
@@ -69,10 +69,28 @@ class BashScriptSandbox {
   linkedRepo;
 }
 
+/// How long a shell step may run when its node sets no `timeoutMs`. A script
+/// that hangs (waiting on stdin, a network call with no timeout) would
+/// otherwise hold its run — and a step-concurrency slot — forever.
+const Duration kBashScriptDefaultTimeout = Duration(minutes: 30);
+
+/// How long to wait, after the process exits, for its stdout/stderr to reach
+/// end-of-stream. The last lines a script prints are usually the ones that
+/// explain it; a backgrounded grandchild that inherited the pipes can keep
+/// them open indefinitely, so the wait is bounded.
+const Duration _drainTimeout = Duration(seconds: 5);
+
 /// Registers agentless `pipeline.bashScript`: render `config.script` against
 /// state; run it under [sandbox] with cwd `<data>/pipelines/<pipelineRunId>/`;
 /// stream stdout/stderr (throttled) into the step-run; exit 0 →
 /// `config.outputKey`, else fail with stderr.
+///
+/// The script is the one in the graph the run is pinned to
+/// (`PipelineContext.step`), not the live template: editing a pipeline never
+/// changes what a run already in flight executes. [templateRepository] is only
+/// the fallback for a body invoked outside an engine. The script is killed
+/// after the node's `timeoutMs`, or [kBashScriptDefaultTimeout] when it sets
+/// none.
 void registerBashScriptBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,
@@ -90,11 +108,7 @@ void registerBashScriptBody(
         'bashScript: execution is disabled on this host',
       );
     }
-    final def = await templateRepository.getById(
-      ctx.workspaceId,
-      ctx.templateId,
-    );
-    final stepConfig = def?.step(ctx.stepId)?.config;
+    final stepConfig = await ctx.pinnedStepConfig(templateRepository);
     if (stepConfig == null) {
       return StepResult.failed(
         'bashScript: step "${ctx.stepId}" missing config',
@@ -196,13 +210,51 @@ void registerBashScriptBody(
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(streamer.appendStderr);
+      final drained = Future.wait([
+        stdoutSub.asFuture<void>(),
+        stderrSub.asFuture<void>(),
+      ]);
 
-      final exitCode = await process.exitCode;
+      final limit = stepConfig.timeoutMs != null
+          ? Duration(milliseconds: stepConfig.timeoutMs!)
+          : kBashScriptDefaultTimeout;
+      var timedOut = false;
+      final exitCode = await process.exitCode.timeout(
+        limit,
+        onTimeout: () async {
+          timedOut = true;
+          process.kill(ProcessSignal.sigterm);
+          return process.exitCode.timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              process.kill(ProcessSignal.sigkill);
+              return process.exitCode;
+            },
+          );
+        },
+      );
+      // Read to end-of-stream before reporting: cancelling the moment the
+      // process exits dropped whatever it printed last.
+      try {
+        await drained.timeout(_drainTimeout);
+      } on TimeoutException {
+        CcInfraLog.warning(
+          'bashScript: step "${ctx.stepId}" output still open '
+          '${_drainTimeout.inSeconds}s after exit; dropping the rest',
+        );
+      } on Object catch (e) {
+        CcInfraLog.warning('bashScript: output stream failed: $e');
+      }
       await stdoutSub.cancel();
       await stderrSub.cancel();
       stepProcessRegistry.unregister(ctx.stepRunId);
       await streamer.flush(exitCode: exitCode);
 
+      if (timedOut) {
+        return StepResult.failed(
+          'bash timed out after ${_describe(limit)} and was stopped',
+        );
+      }
       if (exitCode != 0) {
         final tail = streamer.stderrTrimmed.isNotEmpty
             ? streamer.stderrTrimmed
@@ -235,6 +287,10 @@ void registerBashScriptBody(
     }
   });
 }
+
+String _describe(Duration d) => d.inMinutes >= 1 && d.inSeconds % 60 == 0
+    ? '${d.inMinutes}m'
+    : '${d.inSeconds}s';
 
 /// The pipeline's target repository (`repo_full_name` in state or the trigger
 /// payload), minted a `read` token only when it is linked to the workspace.
@@ -281,18 +337,21 @@ Future<SandboxConfig> bashScriptSandboxConfig({
   } on FileSystemException {
     real = runDir;
   }
-  final home = Platform.environment['HOME'];
-  final spec = SandboxSpec(
+  // A shell step runs in its own run directory, not a repo checkout, so
+  // there is no original to protect; network posture and mode are the
+  // agent sandbox's chat defaults.
+  final spec = processSandboxSpec(
     sessionId: sessionId,
     workspaceId: workspaceId,
-    bindMounts: [SandboxBindMount(hostPath: real, guestPath: real)],
-    guestWorkdir: real,
+    workdir: real,
+    networkEnabled: true,
+    mode: Mode.chat,
+    protectedPaths: const [],
+    execGrantRoots: const [],
+    loopbackPorts: const [],
+    environmentScope: null,
   );
-  final policy = const SandboxPolicyResolver().resolve(
-    spec: spec,
-    homeDir: (home != null && home.isNotEmpty) ? home : null,
-    runDir: real,
-  );
+  final policy = processSandboxPolicy(spec, runDir: real);
   final config = await buildSandboxConfigFromPolicy(
     policy.copyWith(
       denyRead: [...policy.denyRead, ...deniedPaths],
@@ -486,7 +545,8 @@ Map<int, _ShellQuote> _quotingAt(String script, Iterable<int> offsets) {
   // One frame per nesting level: its quoting, and the character that closes
   // it (`)` for `$(`, a backtick for a backtick, none for the script).
   final stack = <(_ShellQuote, String)>[(_ShellQuote.none, '')];
-  bool wordStart(int i) => i == 0 || RegExp(r'[\s;&|()]').hasMatch(script[i - 1]);
+  bool wordStart(int i) =>
+      i == 0 || RegExp(r'[\s;&|()]').hasMatch(script[i - 1]);
   for (var i = 0; i < script.length; i++) {
     final (quote, closer) = stack.last;
     if (wanted.contains(i)) {
@@ -566,10 +626,7 @@ String _render(
   Map<String, dynamic> state,
   Map<String, dynamic>? triggerPayload,
 ) {
-  final quoting = _quotingAt(
-    template,
-    _renderer.placeholderOffsets(template),
-  );
+  final quoting = _quotingAt(template, _renderer.placeholderOffsets(template));
   return _renderer
       .render(
         template,

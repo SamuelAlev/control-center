@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/presence/domain/value_objects/participant_presence.dart';
@@ -8,9 +9,9 @@ import 'package:cc_domain/features/presence/domain/value_objects/presence_locus.
 ///
 /// Presence flows client → server (`presence.update`) and the server fans it
 /// out per workspace (`presence.watch`); peers never exchange presence
-/// directly, so the roster is identical regardless of topology mix. Agent
-/// presence is synthesized server-side (agents have no client). Everything
-/// here is **in-memory only** — presence is never written to the database
+/// directly, so the roster is identical regardless of topology mix. The
+/// roster carries humans: an agent's live state is derived by each client from
+/// the run log it already watches. Everything here is **in-memory only** — presence is never written to the database
 /// (the awareness rule) and entries expire [PresenceCadence.expiry] after
 /// their last update (three missed heartbeats).
 class PresenceHub {
@@ -20,6 +21,11 @@ class PresenceHub {
   final DateTime Function() _now;
   final Map<String, Map<String, ParticipantPresence>> _byWorkspace = {};
   final Map<String, StreamController<void>> _signals = {};
+  final Map<String, ({String name, DateTime at})> _names = {};
+
+  /// How long a cached roster name is trusted. [renameUser] heals a rename
+  /// made through `users.updateProfile` at once; this bounds any other path.
+  static const Duration nameTtl = Duration(minutes: 5);
   Timer? _sweepTimer;
   bool _disposed = false;
 
@@ -66,37 +72,71 @@ class PresenceHub {
           : const [],
       updatedAt: _now(),
     );
-    _entries(workspaceId)[principal.wire] = entry;
-    _signal(workspaceId);
+    final entries = _entries(workspaceId);
+    final previous = entries[principal.wire];
+    entries[principal.wire] = entry;
+    // A heartbeat re-sends unchanged state every [PresenceCadence.heartbeat]
+    // only to keep the entry alive. Refreshing `updatedAt` is enough; waking
+    // every watcher for it would re-broadcast the full roster per user per
+    // heartbeat and the lane would never idle.
+    if (previous == null || !_sameState(previous, entry)) {
+      _signal(workspaceId);
+    }
   }
 
-  /// Publishes a synthesized agent presence entry.
-  void publishAgent({
-    required String workspaceId,
-    required String agentId,
-    required String displayName,
-    required AgentLiveStatus status,
-    PresenceLocus? locus,
-    List<SoftClaim> claims = const [],
-  }) {
+  /// Whether [a] and [b] differ only in their receipt time.
+  static bool _sameState(ParticipantPresence a, ParticipantPresence b) {
+    final aw = a.toWire()..remove('u');
+    final bw = b.toWire()..remove('u');
+    return jsonEncode(aw) == jsonEncode(bw);
+  }
+
+  /// The roster name for [userId], looked up through [lookup] at most once
+  /// per [nameTtl]. `presence.update` arrives at cursor cadence, so the name
+  /// is cached here, per hub, rather than read per call.
+  Future<String> displayNameFor(
+    String userId,
+    Future<String?> Function() lookup,
+  ) async {
+    final cached = _names[userId];
+    if (cached != null && _now().difference(cached.at) < nameTtl) {
+      return cached.name;
+    }
+    final name = await lookup() ?? userId;
+    _names[userId] = (name: name, at: _now());
+    return name;
+  }
+
+  /// Applies a rename at once: the cache and every live roster entry for
+  /// [userId] take [displayName], so peers see it without waiting for
+  /// [nameTtl] or the next heartbeat.
+  void renameUser(String userId, String displayName) {
     if (_disposed) {
       return;
     }
-    final principal = Principal.of(PrincipalType.agent, agentId);
-    _entries(workspaceId)[principal.wire] = ParticipantPresence(
-      principal: principal,
-      displayName: displayName,
-      availability: PresenceAvailability.online,
-      locus: locus,
-      agent: status,
-      claims: claims,
-      updatedAt: _now(),
-    );
-    _signal(workspaceId);
+    _names[userId] = (name: displayName, at: _now());
+    final wire = Principal.of(PrincipalType.user, userId).wire;
+    for (final MapEntry(key: workspaceId, value: entries)
+        in _byWorkspace.entries) {
+      final current = entries[wire];
+      if (current == null || current.displayName == displayName) {
+        continue;
+      }
+      entries[wire] = ParticipantPresence(
+        principal: current.principal,
+        displayName: displayName,
+        availability: current.availability,
+        locus: current.locus,
+        typingInSpaceId: current.typingInSpaceId,
+        spotlightSpaceId: current.spotlightSpaceId,
+        claims: current.claims,
+        updatedAt: current.updatedAt,
+      );
+      _signal(workspaceId);
+    }
   }
 
-  /// Removes one participant (agent run ended, human went invisible,
-  /// session closed).
+  /// Removes one participant (went invisible, session closed).
   void remove(String workspaceId, String principalWire) {
     final entries = _byWorkspace[workspaceId];
     if (entries == null || entries.remove(principalWire) == null) {
@@ -247,5 +287,6 @@ class PresenceHub {
     }
     _signals.clear();
     _byWorkspace.clear();
+    _names.clear();
   }
 }

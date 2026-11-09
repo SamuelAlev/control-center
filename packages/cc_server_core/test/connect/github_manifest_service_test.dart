@@ -231,6 +231,56 @@ void main() {
     expect((await apps.status(ProviderApp.github)).state, OwnAppState.none);
   });
 
+  group('an app that is not exactly what this attempt posted is refused', () {
+    for (final (label, edit)
+        in <(String, void Function(Map<String, Object?>, String))>[
+          (
+            'a name that only contains the nonce',
+            (a, nonce) => a['name'] = 'Not Control Center $nonce',
+          ),
+          (
+            'a permission the manifest never asked for',
+            (a, _) => a['permissions'] = {
+              'metadata': 'read',
+              'administration': 'write',
+            },
+          ),
+          (
+            'a higher level than asked',
+            (a, _) => a['permissions'] = {'checks': 'write'},
+          ),
+        ]) {
+      test(label, () async {
+        final svc = service();
+        final flow = startFlow(svc);
+        answer = app(flow.nonce);
+        edit(answer, flow.nonce);
+        await expectLater(
+          svc.complete(
+            Uri.parse('https://cc.example/cb?code=abc&state=${flow.state}'),
+            browserKey: flow.browser,
+          ),
+          throwsA(isA<AuthException>()),
+        );
+        expect((await apps.status(ProviderApp.github)).state, OwnAppState.none);
+      });
+    }
+
+    test('an app holding less than asked is fine', () async {
+      final svc = service();
+      final flow = startFlow(svc);
+      answer = app(flow.nonce)..['permissions'] = {'metadata': 'read'};
+      await svc.complete(
+        Uri.parse('https://cc.example/cb?code=abc&state=${flow.state}'),
+        browserKey: flow.browser,
+      );
+      expect(
+        (await apps.status(ProviderApp.github)).state,
+        OwnAppState.complete,
+      );
+    });
+  });
+
   test(
     'a personal app under someone other than the signed-in owner is refused',
     () async {

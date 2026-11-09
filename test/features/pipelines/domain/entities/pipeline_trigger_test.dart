@@ -190,14 +190,11 @@ void main() {
       },
     );
 
-    test(
-      'equality ignores cronExpression, match, lastFiredAt',
-      timeout: const Timeout.factor(2),
-      () {
-        final a = trigger0(cronExpression: 'every:60', match: {'x': 1});
-        final b = trigger0(cronExpression: null, match: {});
-        expect(a, equals(b));
-      },
-    );
+    test('equality covers cronExpression and match', () {
+      final a = trigger0(cronExpression: 'every:60', match: {'x': 1});
+      final b = trigger0(cronExpression: null, match: {});
+      expect(a, isNot(equals(b)));
+      expect(trigger0(cronExpression: 'every:60', match: {'x': 1}), equals(a));
+    });
   });
 }

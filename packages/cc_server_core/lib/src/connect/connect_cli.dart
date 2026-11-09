@@ -14,9 +14,11 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 /// `cc_server connect status | enable [--url URL] | disable | rotate-key`.
 ///
 /// Reads and writes the same server settings Settings → Connect does, from
-/// the data directory, without starting the server. A running server picks
-/// the change up within its config cache (ten minutes) or on restart; the
-/// Settings screen applies it at once. Returns the process exit code.
+/// the data directory, without starting the server. A running server
+/// notices the changed choice or key on its next Connect config read
+/// (`ConnectSettings.noticeExternalChanges`) and drops what it cached, as the
+/// Settings screen does at once. Returns the process exit code: 78 when
+/// `CC_CONNECT_URL` is unusable, as the server's boot refuses it.
 Future<int> runConnectCommand({
   required List<String> args,
   IOSink? out,
@@ -34,6 +36,14 @@ Future<int> runConnectCommand({
     return 0;
   }
   final environment = environmentWithDotenv();
+  try {
+    ConnectSettings.checkEnvironment(environment);
+  } on ConnectEnvironmentInvalid catch (e) {
+    stderrSink.writeln(
+      'cc_server connect: CC_CONNECT_URL is not usable: ${e.reason}',
+    );
+    return 78;
+  }
   final config = CcServerConfig.resolve(rest, environment: environment);
   Directory(config.dataDir).createSync(recursive: true);
   final db = GlobalDatabase(openGlobalDatabase(dataDir: config.dataDir));

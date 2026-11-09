@@ -73,9 +73,12 @@ class EnvironmentLeaseAllocator {
     if (held != null) {
       return held;
     }
+    // Read once: the mutex holds every other allocator on this host off,
+    // and `tryInsert` catches anything that still lands in between, after
+    // which the table is read again.
+    var leased = _leasedBlocks(await _repository.all());
     for (var block = 0; block < blockCount; block++) {
-      final leases = await _repository.all();
-      if (_isLeased(leases, block)) {
+      if (leased.contains(block)) {
         continue;
       }
       final busy = await _firstListener(block);
@@ -88,6 +91,7 @@ class EnvironmentLeaseAllocator {
       if (await _repository.tryInsert(lease)) {
         return lease;
       }
+      leased = _leasedBlocks(await _repository.all());
     }
     throw EnvironmentLeaseException(
       'No free port block in $firstPort-$lastPort: all $blockCount blocks are '
@@ -118,10 +122,11 @@ class EnvironmentLeaseAllocator {
       return held;
     }
     String? refusal;
+    var leases = await _repository.all();
+    var leased = _leasedBlocks(leases);
     for (final candidate in [
       if (slot != null) slot else ...[for (var n = 1; n <= poolSize; n++) n],
     ]) {
-      final leases = await _repository.all();
       final block = poolBlock(poolKey, candidate);
       if (leases.any(
         (lease) => lease.poolKey == poolKey && lease.poolSlot == candidate,
@@ -129,7 +134,7 @@ class EnvironmentLeaseAllocator {
         refusal = 'Pool slot $candidate of $poolKey is in use';
         continue;
       }
-      if (_isLeased(leases, block)) {
+      if (leased.contains(block)) {
         refusal =
             'The block of pool slot $candidate of $poolKey, ${_first(block)}, '
             'is leased to another environment';
@@ -155,6 +160,8 @@ class EnvironmentLeaseAllocator {
         return lease;
       }
       refusal = 'Pool slot $candidate of $poolKey was just taken';
+      leases = await _repository.all();
+      leased = _leasedBlocks(leases);
     }
     throw EnvironmentLeaseException(
       refusal ?? 'Pool $poolKey has no free slot',
@@ -211,15 +218,28 @@ class EnvironmentLeaseAllocator {
     poolSlot: poolSlot,
   );
 
+  /// Every block of the current range that some lease overlaps.
+  ///
   /// By port range rather than block index: leases outlive a change to the
   /// range setting, and an old lease's index means something else after one.
-  bool _isLeased(List<EnvironmentLease> leases, int block) {
-    final start = _first(block);
-    return leases.any(
-      (lease) =>
-          start < lease.firstPort + lease.size &&
-          lease.firstPort < start + blockSize,
-    );
+  /// One pass over the leases, so a scan of the range costs a set lookup per
+  /// block rather than a pass per block.
+  Set<int> _leasedBlocks(List<EnvironmentLease> leases) {
+    final blocks = <int>{};
+    for (final lease in leases) {
+      final last = lease.firstPort + lease.size - 1;
+      if (lease.size < 1 || last < firstPort || lease.firstPort > lastPort) {
+        continue;
+      }
+      final from = (lease.firstPort - firstPort) ~/ blockSize;
+      final to = (last - firstPort) ~/ blockSize;
+      for (var block = from < 0 ? 0 : from; block <= to; block++) {
+        if (block < blockCount) {
+          blocks.add(block);
+        }
+      }
+    }
+    return blocks;
   }
 
   Future<int?> _firstListener(int block) async {

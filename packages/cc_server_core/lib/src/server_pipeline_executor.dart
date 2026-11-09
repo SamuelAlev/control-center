@@ -224,6 +224,7 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   registerCallFlowBody(
     registry,
     templateRepository: templateRepository,
+    runRepository: runRepository,
     launcher: launcher,
   );
   // The `code.index` body of the `index_code` template (fired by `RepoAdded`).

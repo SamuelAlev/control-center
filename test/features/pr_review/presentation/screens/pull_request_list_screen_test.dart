@@ -184,7 +184,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Pull requests'), findsOneWidget);
-    expect(find.text('Connect GitHub to load pull requests'), findsOneWidget);
+    expect(find.text('Connect a code host to load pull requests'), findsOneWidget);
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(milliseconds: 100));
   });

@@ -135,6 +135,7 @@ class BudgetGovernanceService {
       await _pauseAgent(agent);
       _eventBus?.publish(
         BudgetThresholdCrossed(
+          workspaceId: workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
           spentCents: spent,
@@ -167,6 +168,7 @@ class BudgetGovernanceService {
       );
       _eventBus?.publish(
         BudgetThresholdCrossed(
+          workspaceId: workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
           spentCents: spent,

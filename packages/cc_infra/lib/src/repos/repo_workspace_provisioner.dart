@@ -10,7 +10,6 @@ import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/settings/domain/services/branch_template_resolver.dart';
@@ -19,6 +18,7 @@ import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/repos/space_provisioning_log.dart';
+import 'package:cc_infra/src/repos/worktree_release.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -82,14 +82,20 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     this._spaceExists,
     this._spaceCheckoutScope,
     this._worktreeTasks,
-    this._stacks,
+    SpaceStackRepository? stacks,
     this._provisioningLog,
-  });
+  }) : _releaser = WorktreeReleaser(
+         isolation: _isolation,
+         registry: _registry,
+         worktreeTasks: _worktreeTasks,
+         stacks: stacks,
+       );
 
   final WorkspaceFilesystemPort _filesystem;
   final RepoIsolationPort _isolation;
   final IsolatedRepoRepository _registry;
   final WorkspaceRepository _workspaces;
+
   /// A one-repository read token for [Repo] in a workspace, or null.
   final Future<String?> Function(String workspaceId, Repo repo) _githubToken;
 
@@ -99,9 +105,11 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   /// exactly as before.
   final WorktreeTaskPort? _worktreeTasks;
 
-  /// Stack layers whose branches must be deleted with the worktree on the
-  /// Windows `git worktree` backend. Rift copies die with the directory.
-  final SpaceStackRepository? _stacks;
+  /// Every worktree this provisioner gives up goes through it: environment
+  /// teardown, `archive` tasks, the copy, its stack rows and its row. It
+  /// carries the stack repository whose branches go with a Windows
+  /// `git worktree` copy.
+  final WorktreeReleaser _releaser;
 
   /// Where a materializing worktree narrates itself. Written here rather than
   /// by a caller because a space has two provisioning paths, the background
@@ -186,35 +194,36 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       _cancelled.contains(_key(workspaceId, spaceId));
 
   @override
-  Future<String> ensureSpaceWorkspace({
-    required String workspaceId,
-    required String spaceId,
-    required String agentSlug,
-    required String fallbackDir,
-    String? conversationId,
-    String? agentConfigDir,
-    String? ticketId,
-    String? ticketKey,
-    String? ticketTitle,
-    String branchType = 'feature',
-    String? prHeadRef,
-    String? prHeadRepoFullName,
-    String? prBranch,
-    Set<String>? repoAllowlist,
-    void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoProvisionTasks,
-    CancellationToken? cancel,
-  }) async {
-    if (workspaceId.isEmpty || spaceId.isEmpty) {
-      return fallbackDir;
-    }
+  Future<SpaceWorkspace> ensureSpaceWorkspace(
+    SpaceWorkspaceRequest request,
+  ) async {
+    final SpaceWorkspaceRequest(
+      :workspaceId,
+      :spaceId,
+      :agentSlug,
+      :conversationId,
+      :agentConfigDir,
+      :ticketId,
+      :ticketKey,
+      :ticketTitle,
+      :branchType,
+      :prHeadRef,
+      :prHeadRepoFullName,
+      :prBranch,
+      :repoAllowlist,
+      :onRepoProvision,
+      :onRepoProvisionTasks,
+      :cancel,
+    ) = request;
     final key = _key(workspaceId, spaceId);
     // A stop stands until someone deliberately re-provisions (the banner's
     // Retry, which goes through `SpaceProvisioningService.provision` and clears
     // the mark). Without this, the dispatch path that was already mid-flight
     // when the operator pressed stop would simply start the clone again.
     if (_cancelled.contains(key)) {
-      return fallbackDir;
+      return const SpaceWorkspaceUnavailable(
+        SpaceWorkspaceUnavailableReason.cancelled,
+      );
     }
     // One source per space; concurrent callers share it, so cancelling once
     // interrupts every in-flight run for that space.
@@ -255,7 +264,9 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           ? allRepos
           : allRepos.where((r) => effectiveAllowlist.contains(r.id)).toList();
       if (repos.isEmpty) {
-        return fallbackDir;
+        return const SpaceWorkspaceUnavailable(
+          SpaceWorkspaceUnavailableReason.noRepos,
+        );
       }
       cancelToken.throwIfCancelled();
 
@@ -315,21 +326,26 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       // its conversations — get distinct overlays that share `repos/`. The
       // derived `.mcp.json` is NOT created here — cc_server writes it into the
       // cwd at dispatch time.
-      return await _ensureAgentOverlay(
-        spaceRoot: spaceRoot,
-        overlayName: agentOverlayDirName(agentSlug, conversationId),
-        agentConfigDir: agentConfigDir,
+      return SpaceWorkspaceReady(
+        await _ensureAgentOverlay(
+          spaceRoot: spaceRoot,
+          overlayName: agentOverlayDirName(agentSlug, conversationId),
+          agentConfigDir: agentConfigDir,
+        ),
       );
     } on CancelledException {
       // Expected, not a fault: the operator (or a stopped run) interrupted it.
-      // Same return as any other unfinished provision — the caller reads
-      // [isSpaceProvisioningCancelled] to tell the two apart.
       CcInfraLog.info('space provisioning for $spaceId was cancelled');
-      return fallbackDir;
+      return const SpaceWorkspaceUnavailable(
+        SpaceWorkspaceUnavailableReason.cancelled,
+      );
     } catch (e, st) {
       CcInfraLog.error('ensureSpaceWorkspace failed: $e', e, st);
       _provisioningLog?.write(workspaceId, spaceId, 'Preparation failed: $e');
-      return fallbackDir;
+      return SpaceWorkspaceUnavailable(
+        SpaceWorkspaceUnavailableReason.failed,
+        '$e'.split('\n').first,
+      );
     } finally {
       // Drop the shared source once the last run using it is done, so a space
       // provisioned again later starts from a fresh, un-cancelled token. Only
@@ -466,14 +482,13 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
         return; // reuse
       }
       // Row points at a vanished — or displaced — worktree. Tear down the
-      // stale state and re-create it in the right place.
-      await _isolation.destroy(
-        path: existing.path,
-        sourcePath: existing.sourcePath,
-        backend: existing.backend,
-        branch: existing.branch,
+      // stale state and re-create it in the right place. The space lives on,
+      // and so does its environment.
+      await _releaser.release(
+        [existing],
+        mode: WorktreeReleaseMode.releaseRowsOnly,
+        strict: true,
       );
-      await _registry.deleteById(existing.workspaceId, existing.id);
     }
     // Past the reuse check — a worktree is actually being materialized.
     final repoName = _displayName(repo);
@@ -503,7 +518,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     // reaped only AFTER that doomed attempt had already flipped the whole
     // space to `failed`; reaping it here is the same teardown, one attempt
     // earlier, so the first press works instead of the second.
-    await _reapPartialWorktree(
+    await _releaser.reapUnregistered(
       destPath: p.join(reposDir, name),
       sourcePath: repo.path,
       branch: branch,
@@ -543,7 +558,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       // on disk with no registry row pointing at it — and the next attempt then
       // asks the backend to create a worktree at a path that already exists,
       // which fails forever. Reap it before letting the error out.
-      await _reapPartialWorktree(
+      await _releaser.reapUnregistered(
         destPath: p.join(reposDir, name),
         sourcePath: repo.path,
         branch: branch,
@@ -553,21 +568,19 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
 
     say('$repoName checked out in ${provisioningElapsed(elapsed.elapsed)}');
 
-    final entryId = _uuid.v4();
-    await _registry.upsert(
-      IsolatedRepo(
-        id: entryId,
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        repoId: repo.id,
-        path: result.path,
-        branch: branch,
-        backend: result.backend,
-        sourcePath: repo.path,
-        ticketId: ticketId,
-        createdAt: DateTime.now(),
-      ),
+    final entry = IsolatedRepo(
+      id: _uuid.v4(),
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      repoId: repo.id,
+      path: result.path,
+      branch: branch,
+      backend: result.backend,
+      sourcePath: repo.path,
+      ticketId: ticketId,
+      createdAt: DateTime.now(),
     );
+    await _registry.upsert(entry);
 
     // The worktree is registered — now the repo's `provision` tasks (if any)
     // make it usable (install deps, generate files). Runs only on a
@@ -613,20 +626,11 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           e,
           st,
         );
-        try {
-          await _isolation.destroy(
-            path: result.path,
-            sourcePath: repo.path,
-            backend: result.backend,
-            branch: branch,
-          );
-        } on Object catch (destroyError) {
-          CcInfraLog.warning(
-            'teardown after setup failure failed for ${result.path}: '
-            '$destroyError',
-          );
-        }
-        await _registry.deleteById(workspaceId, entryId);
+        // A rollback is a release like any other: `archive` tasks clean up
+        // whatever the provision tasks got as far as making.
+        await _releaser.release([
+          entry,
+        ], mode: WorktreeReleaseMode.releaseRowsOnly);
         rethrow;
       }
     }
@@ -636,44 +640,18 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   static String _displayName(Repo repo) =>
       repo.remoteName.isNotEmpty ? repo.remoteName : repo.name;
 
-  /// Best-effort teardown of a worktree that was never registered — before a
-  /// provision, so an orphaned copy cannot block it, and after one that failed
-  /// part-way.
-  ///
-  /// A no-op when nothing is there, which is the normal case.
-  ///
-  /// The backend is inferred rather than read back (there is no row to read):
-  /// whichever one a provision would have used on this host. A guess that is
-  /// wrong still ends with the directory gone, which is the part that matters —
-  /// the rift adapter's destroy removes leftovers either way.
-  Future<void> _reapPartialWorktree({
-    required String destPath,
-    required String sourcePath,
-    required String branch,
-  }) async {
-    if (!Directory(destPath).existsSync()) {
-      return;
-    }
-    try {
-      await _isolation.destroy(
-        path: destPath,
-        sourcePath: sourcePath,
-        backend: _isolation.isCowAvailable
-            ? RepoIsolationBackend.rift
-            : RepoIsolationBackend.gitWorktree,
-        branch: branch,
-      );
-    } on Object catch (e) {
-      CcInfraLog.warning('could not reap partial worktree $destPath: $e');
-    }
-  }
-
   @override
   Future<void> releaseSpace({
     required String workspaceId,
     required String spaceId,
   }) async {
-    await _destroyAll(await _registry.forSpace(workspaceId, spaceId));
+    // The space itself goes, so its environment does too, worktrees or not:
+    // one running on the source checkout has no row to be found by.
+    await _releaser.release(
+      await _registry.forSpace(workspaceId, spaceId),
+      mode: WorktreeReleaseMode.teardownEnvironment,
+      spaces: [(workspaceId, spaceId)],
+    );
     await _removeSpaceDir(workspaceId, spaceId);
   }
 
@@ -690,10 +668,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     // Only part of the space goes: its environment stays and reconciles
     // against the repos that are left, which is a degraded state, not data
     // loss.
-    await _destroyAll(wholeSpace: false, [
+    await _releaser.release([
       for (final row in rows)
         if (!keepRepoIds.contains(row.repoId)) row,
-    ]);
+    ], mode: WorktreeReleaseMode.releaseRowsOnly);
     // The space dir itself stays: agents/, the surviving repos/ and the
     // symlinks pointing at them are still live.
   }
@@ -701,7 +679,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   @override
   Future<void> releaseSpaceAnyWorkspace({required String spaceId}) async {
     final rows = await _registry.forSpaceAcrossWorkspaces(spaceId);
-    await _destroyAll(rows);
+    await _releaser.release(
+      rows,
+      mode: WorktreeReleaseMode.teardownEnvironment,
+    );
     // Destroying the worktree rows leaves the space dir behind — the
     // per-agent overlays (with their token-bearing `.mcp.json`) and the empty
     // repos/ tree. Remove the whole space dir for every workspace the
@@ -732,7 +713,13 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
 
   @override
   Future<void> releaseTicket({required String ticketId}) async {
-    await _destroyAll(await _registry.forTicketAcrossWorkspaces(ticketId));
+    // A finished ticket takes its worktrees, not its space: the space's
+    // environment reconciles against what is left, as it does for a
+    // deselected repo.
+    await _releaser.release(
+      await _registry.forTicketAcrossWorkspaces(ticketId),
+      mode: WorktreeReleaseMode.releaseRowsOnly,
+    );
   }
 
   @override
@@ -744,7 +731,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return 0;
     }
     final rows = await _registry.forTicket(workspaceId, ticketId);
-    await _destroyAll(rows);
+    await _releaser.release(rows, mode: WorktreeReleaseMode.releaseRowsOnly);
     return rows.length;
   }
 
@@ -775,19 +762,14 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       if (!directoryGone && !spaceGone) {
         continue;
       }
-      try {
-        await _isolation.destroy(
-          path: row.path,
-          sourcePath: row.sourcePath,
-          backend: row.backend,
-          branch: row.branch,
-          branches: await _stackBranchNames(row),
-        );
-      } catch (e) {
-        CcInfraLog.warning('sweepStale destroy failed for ${row.path}: $e');
-      }
-      await _deleteStackRows(row);
-      await _registry.deleteById(row.workspaceId, row.id);
+      // A gone space takes its environment with it. A vanished directory in a
+      // live space is only that row.
+      await _releaser.release(
+        [row],
+        mode: spaceGone
+            ? WorktreeReleaseMode.teardownEnvironment
+            : WorktreeReleaseMode.releaseRowsOnly,
+      );
       if (spaceGone) {
         orphanedSpaces.add(row.spaceId);
       }
@@ -831,14 +813,18 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       if (!legacy.existsSync()) {
         return;
       }
-      // Through `_destroyAll`, never a bare recursive delete: those worktrees
-      // are real checkouts an agent may have left uncommitted work in, and the
-      // destroy path is what commits it to a `rescue/…` branch first.
+      // Through the releaser, never a bare recursive delete: those worktrees
+      // are real checkouts an agent may have left uncommitted work in, and
+      // the isolation destroy is what saves it as a patch outside the repo
+      // first.
       final displaced = rows
           .where((r) => p.isWithin(legacy.path, r.path))
           .toList();
       if (displaced.isNotEmpty) {
-        await _destroyAll(displaced, wholeSpace: false);
+        await _releaser.release(
+          displaced,
+          mode: WorktreeReleaseMode.releaseRowsOnly,
+        );
       }
       if (legacy.existsSync()) {
         await legacy.delete(recursive: true);
@@ -912,10 +898,11 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       }
       // Any worktree row still pointing inside must be torn down first, or the
       // registry keeps a row for a directory that no longer exists.
-      final rows = await _registry.forSpace(workspaceId, spaceId);
-      if (rows.isNotEmpty) {
-        await _destroyAll(rows);
-      }
+      await _releaser.release(
+        await _registry.forSpace(workspaceId, spaceId),
+        mode: WorktreeReleaseMode.teardownEnvironment,
+        spaces: [(workspaceId, spaceId)],
+      );
       await _removeSpaceDir(workspaceId, spaceId);
       removed++;
       CcInfraLog.info(
@@ -924,82 +911,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       );
     }
     return removed;
-  }
-
-  Future<List<String>> _stackBranchNames(IsolatedRepo row) async {
-    final stacks = _stacks;
-    if (stacks == null) {
-      return const [];
-    }
-    final entries = await stacks.forRepo(
-      row.workspaceId,
-      row.spaceId,
-      row.repoId,
-    );
-    return [for (final entry in entries) entry.branch];
-  }
-
-  Future<void> _deleteStackRows(IsolatedRepo row) async {
-    await _stacks?.deleteForRepo(row.workspaceId, row.spaceId, row.repoId);
-  }
-
-  Future<void> _destroyAll(
-    List<IsolatedRepo> rows, {
-    bool wholeSpace = true,
-  }) async {
-    final tasks = _worktreeTasks;
-    if (tasks != null && wholeSpace) {
-      // Every worktree release passes through here, whichever route asked for
-      // it, so this is where a space's environment goes first: nothing may keep
-      // running against a directory that is about to disappear.
-      final spaces = <(String, String)>{
-        for (final row in rows)
-          if (row.spaceId.isNotEmpty) (row.workspaceId, row.spaceId),
-      };
-      for (final (workspaceId, spaceId) in spaces) {
-        try {
-          await tasks.beforeRelease(workspaceId, spaceId);
-        } catch (e) {
-          CcInfraLog.warning('environment teardown failed for $spaceId: $e');
-        }
-      }
-    }
-    for (final row in rows) {
-      // `archive` tasks run while the worktree is still on disk — their whole
-      // job is cleaning up resources OUTSIDE the worktree, which only makes
-      // sense before the copy goes away. Best-effort by contract (never
-      // throws, bounded by a timeout) and belt-and-braces here: a GC path must
-      // never be blocked by a task.
-      if (tasks != null) {
-        try {
-          await tasks.runArchive(
-            WorktreeTaskContext(
-              workspaceId: row.workspaceId,
-              spaceId: row.spaceId,
-              repoId: row.repoId,
-              worktreePath: row.path,
-              sourcePath: row.sourcePath,
-              isPrWorktree: row.branch.startsWith('pr/'),
-            ),
-          );
-        } catch (e) {
-          CcInfraLog.warning('archive task failed for ${row.path}: $e');
-        }
-      }
-      try {
-        await _isolation.destroy(
-          path: row.path,
-          sourcePath: row.sourcePath,
-          backend: row.backend,
-          branch: row.branch,
-          branches: await _stackBranchNames(row),
-        );
-      } catch (e) {
-        CcInfraLog.warning('destroy failed for ${row.path}: $e');
-      }
-      await _deleteStackRows(row);
-      await _registry.deleteById(row.workspaceId, row.id);
-    }
   }
 
   Future<void> _ensureSymlink(String linkPath, String target) async {

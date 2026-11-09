@@ -180,12 +180,7 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
-  }) => _dao(workspaceId).countActiveForTemplate(
-    workspaceId,
-    templateId,
-    excludeTriggerEventTypes: excludeTriggerEventTypes,
-  );
+  }) => _dao(workspaceId).countActiveForTemplate(workspaceId, templateId);
 
   @override
   Future<PipelineRun?> nextQueuedRunForTemplate({

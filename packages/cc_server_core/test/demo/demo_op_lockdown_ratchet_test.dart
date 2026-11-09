@@ -251,6 +251,11 @@ void main() {
       'workspace.deleteBackup',
       'workspace.export',
       'workspace.import',
+      // Cross-workspace lookups: every visitor's rows sit behind them.
+      'orchestration.approvedNeedingMaterialization',
+      'orchestration.forPipelineRunAnyWorkspace',
+      'isolated_repo.forSpaceAcrossWorkspaces',
+      'isolated_repo.forTicketAcrossWorkspaces',
       'repos.add',
       'skills.install',
       // Pipeline host-exec: start a run by hand. Template upsert and trigger
@@ -261,7 +266,6 @@ void main() {
       'pipeline.cancel',
       'pipeline.retry',
       'pipeline.killStep',
-      'pipeline_trigger.markFired',
       'playbook.run',
       'orchestration.approve',
       'orchestration.approveNodes',

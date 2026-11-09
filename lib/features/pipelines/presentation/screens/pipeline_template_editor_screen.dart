@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
@@ -68,7 +70,17 @@ class _PipelineTemplateEditorScreenState
   PipelineDefinition? _draft;
   String? _selectedStepId;
   String? _selectedTriggerId;
-  bool _dirty = false;
+
+  /// The graph as persisted, with its trigger nodes derived from the trigger
+  /// rows. Trigger rows are the source of truth and are saved the moment they
+  /// change, and so are the trigger nodes derived from them; everything else
+  /// waits for Save. The draft is dirty exactly when it differs from this.
+  PipelineDefinition? _saved;
+
+  bool get _dirty {
+    final draft = _draft;
+    return draft != null && draft != _saved;
+  }
 
   /// Step and trigger selections are mutually exclusive: picking one clears
   /// the other so the right panel never shows two configs at once.
@@ -119,18 +131,39 @@ class _PipelineTemplateEditorScreenState
     }
     setState(() {
       _draft = next;
-      // Expanding the shared seed entry is redone on every open, so it is not
-      // an edit to save. Any other difference means the rows have drifted from
-      // the saved graph, which changes what runs and does need saving.
-      _dirty = next != def && !pipelineHasSharedTriggerEntry(def, rows);
+      _saved = next;
     });
+    // Rows that drifted from the saved graph (a trigger added by an older
+    // build that waited for Save) are repaired now, since the rows already
+    // decide what runs.
+    await _persistTriggerNodes(def, next, rows);
   }
 
   void _markDirty(PipelineDefinition next) {
-    setState(() {
-      _draft = next;
-      _dirty = true;
-    });
+    setState(() => _draft = next);
+  }
+
+  /// Saves [derived] — [stored] with its trigger nodes re-derived from
+  /// [rows] — unless nothing changed or [stored] uses the shared seed entry,
+  /// whose per-row expansion is a view redone on every open.
+  Future<void> _persistTriggerNodes(
+    PipelineDefinition stored,
+    PipelineDefinition derived,
+    List<PipelineTrigger> rows,
+  ) async {
+    if (derived == stored || pipelineHasSharedTriggerEntry(stored, rows)) {
+      return;
+    }
+    try {
+      await ref.read(pipelineTemplateRepositoryProvider).upsert(derived);
+    } on Object catch (e) {
+      if (mounted) {
+        CcToastScope.of(context).show(
+          AppLocalizations.of(context).errorWithDetail('$e'),
+          variant: CcToastVariant.danger,
+        );
+      }
+    }
   }
 
   /// Opens the manual-run settings: whether the template appears on the run
@@ -167,12 +200,9 @@ class _PipelineTemplateEditorScreenState
     try {
       await ref
           .read(pipelineTemplateRepositoryProvider)
-          .upsert(
-            // Saving an edited copy clears the built-in flag so the bootstrap
-            // won't overwrite the user's changes. copyWith preserves the
-            // declared inputs.
-            draft.copyWith(isBuiltIn: false),
-          );
+          // The server clears the built-in flag on any edit, so the bootstrap
+          // won't overwrite the user's changes.
+          .upsert(draft);
     } on Object catch (e) {
       // The repository validates the graph and rejects a broken pipeline
       // (e.g. an undeclared route key or a dangling edge). Surface it.
@@ -185,7 +215,7 @@ class _PipelineTemplateEditorScreenState
       return;
     }
     if (mounted) {
-      setState(() => _dirty = false);
+      setState(() => _saved = draft);
       // Re-watching the templates stream will reflect the persisted copy.
     }
   }
@@ -422,7 +452,8 @@ class _PipelineTemplateEditorScreenState
         templateId: draft.templateId,
         workspaceId: draft.workspaceId,
         enabled: false,
-        webhookToken: const Uuid().v4().replaceAll('-', ''),
+        // No token: the server mints it (it is the route and the HMAC secret,
+        // so a client must never choose it) and the trigger stream delivers it.
       ),
       _ => PipelineTrigger(
         id: id,
@@ -451,7 +482,7 @@ class _PipelineTemplateEditorScreenState
         if (t.id != trigger.id) t,
       trigger,
     ];
-    _applyTriggerSync(draft, rows);
+    await _applyTriggerSync(draft, rows, persist: true);
     if (canvasOffset != null) {
       final placed = _draft;
       if (placed != null && placed.step(id) != null) {
@@ -488,14 +519,12 @@ class _PipelineTemplateEditorScreenState
         for (final t in _triggersOf(draftAfter))
           if (t.id != triggerId) t,
       ];
-      if (remaining.isEmpty) {
-        final next = removePipelineTriggerStep(draftAfter, triggerId);
-        if (next != draftAfter) {
-          _markDirty(_reconcileTerminal(next));
-        }
-      } else {
-        _applyTriggerSync(draftAfter, remaining);
-      }
+      await _applyTriggerSync(
+        draftAfter,
+        remaining,
+        persist: true,
+        removedTriggerId: remaining.isEmpty ? triggerId : null,
+      );
     }
     setState(() {
       if (_selectedTriggerId == triggerId) {
@@ -676,16 +705,38 @@ class _PipelineTemplateEditorScreenState
         const [];
   }
 
-  void _applyTriggerSync(PipelineDefinition draft, List<PipelineTrigger> rows) {
-    final next = syncPipelineTriggerSteps(
-      def: draft,
-      rows: rows,
-      stackPitch: kPipelineEditorTriggerPitch,
-    );
-    if (next == draft) {
-      return;
+  /// Re-derives the trigger nodes of both the draft and the saved graph from
+  /// [rows]. With [persist] (the user added or deleted a trigger here) the
+  /// saved graph's new trigger nodes are written straight away, like the row;
+  /// a change that arrived on the stream only refreshes the view.
+  /// [removedTriggerId] names the last trigger, just deleted, whose node goes
+  /// with it.
+  Future<void> _applyTriggerSync(
+    PipelineDefinition draft,
+    List<PipelineTrigger> rows, {
+    bool persist = false,
+    String? removedTriggerId,
+  }) async {
+    PipelineDefinition derive(PipelineDefinition def) {
+      final next = removedTriggerId != null
+          ? removePipelineTriggerStep(def, removedTriggerId)
+          : syncPipelineTriggerSteps(
+              def: def,
+              rows: rows,
+              stackPitch: kPipelineEditorTriggerPitch,
+            );
+      return next == def ? def : _reconcileTerminal(next);
     }
-    _markDirty(_reconcileTerminal(next));
+
+    final saved = _saved;
+    final savedNext = saved == null ? null : derive(saved);
+    setState(() {
+      _draft = derive(draft);
+      _saved = savedNext;
+    });
+    if (persist && saved != null && savedNext != null) {
+      await _persistTriggerNodes(saved, savedNext, rows);
+    }
   }
 
   @override
@@ -724,7 +775,7 @@ class _PipelineTemplateEditorScreenState
         if (rows == null) {
           return;
         }
-        _applyTriggerSync(current, rows);
+        unawaited(_applyTriggerSync(current, rows));
       });
     }
 

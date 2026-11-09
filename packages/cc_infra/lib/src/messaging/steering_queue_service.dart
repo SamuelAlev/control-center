@@ -56,6 +56,58 @@ typedef AttachmentPathResolver =
 typedef SteeringSessionsFor =
     List<SteeringSessionView> Function(String conversationId);
 
+/// Merges `patch` into a steering card's metadata only while the card is in
+/// `fromState`, onto the CURRENT row, returning whether it was — the
+/// `MessagingDao.patchSteering` primitive. Every queue write goes through it,
+/// so racing writers (a reorder, a live drain, the run-end conversion) can no
+/// longer clobber each other with metadata read moments earlier.
+typedef SteeringPatcher =
+    Future<bool> Function(
+      String workspaceId,
+      String messageId, {
+      required String fromState,
+      required Map<String, dynamic> patch,
+      String? content,
+      String? messageType,
+    });
+
+/// Posts a system line into a conversation (a failed run-end send).
+typedef SteeringNotice =
+    Future<void> Function({
+      required String workspaceId,
+      required String spaceId,
+      required String conversationId,
+      required String text,
+    });
+
+/// What `steering.forceSend` did with a card.
+enum SteeringForceOutcome {
+  /// A live run took the card and keeps working.
+  delivered,
+
+  /// The card is first in the queue and every live run was asked to stop;
+  /// the run-end conversion sends it as the next turn.
+  stopping,
+
+  /// No run was live, so the queue was sent as a normal turn right away.
+  sent,
+
+  /// The card is no longer queued (already injected, converted or deleted).
+  notQueued,
+
+  /// Stopping the runs was needed but the caller may not stop runs.
+  stopRefused;
+
+  /// Wire value.
+  String get wire => switch (this) {
+    delivered => 'delivered',
+    stopping => 'stopping',
+    sent => 'sent',
+    notQueued => 'not_queued',
+    stopRefused => 'stop_refused',
+  };
+}
+
 /// Durable conversation-scoped steering queue (`MessageType.steering`,
 /// `metadata['steerState']`) shown in the strip until a run takes it.
 ///
@@ -75,6 +127,8 @@ class SteeringQueueService {
     required SteeringSessionsFor sessionsForConversation,
     this._queuedSteering,
     this._resolveAttachmentPaths,
+    this._patchSteering,
+    this._postNotice,
   }) : _messaging = messagingRepository,
        _runLogs = runLogRepository,
        _sessionsFor = sessionsForConversation;
@@ -87,6 +141,14 @@ class SteeringQueueService {
   /// Resolves attachment references for live injection. Null injects the
   /// stored text as-is.
   final AttachmentPathResolver? _resolveAttachmentPaths;
+
+  /// The conditional write behind every queue mutation. Null falls back to
+  /// a fresh read + check + [MessagingRepository.updateMessage] (tests); the
+  /// server wires the transactional DAO primitive.
+  final SteeringPatcher? _patchSteering;
+
+  /// Where a failure the user must see is reported. Null only logs.
+  final SteeringNotice? _postNotice;
 
   /// Queued steering cards without a full-conversation scan. Null keeps
   /// [MessagingRepository.getMessages], which tests use.
@@ -170,15 +232,15 @@ class SteeringQueueService {
     if (row == null) {
       return false;
     }
-    await _messaging.updateMessage(
+    if (!await _patch(
       workspaceId,
       messageId,
+      fromState: 'queued',
+      patch: {'editedAt': DateTime.now().millisecondsSinceEpoch},
       content: content.trim(),
-      metadata: {
-        ...?row.metadata,
-        'editedAt': DateTime.now().millisecondsSinceEpoch,
-      },
-    );
+    )) {
+      return false; // Injected or converted in the meantime.
+    }
     final laneText = await _laneText(
       workspaceId: workspaceId,
       spaceId: row.spaceId,
@@ -238,13 +300,23 @@ class SteeringQueueService {
     ordered.addAll(byId.values);
 
     var index = 0;
+    final stillQueued = <Message>[];
     for (final row in ordered) {
-      await _messaging.updateMessage(
+      // Only cards still queued move; one a run drained meanwhile keeps its
+      // `injected` state instead of being written back to `queued`.
+      if (await _patch(
         workspaceId,
         row.id,
-        metadata: {...?row.metadata, 'steerOrder': index++},
-      );
+        fromState: 'queued',
+        patch: {'steerOrder': index},
+      )) {
+        stillQueued.add(row);
+        index++;
+      }
     }
+    ordered
+      ..clear()
+      ..addAll(stillQueued);
     final sessions = _harnessSessions(conversationId);
     if (sessions.isEmpty) {
       return;
@@ -313,16 +385,25 @@ class SteeringQueueService {
       return;
     }
     unawaited(() async {
-      final queued = await _queuedRows(workspaceId, spaceId, conversationId);
-      for (final row in queued) {
-        // Skip what is already in the lane: enqueue pushed it when the row
-        // was written, and a double push would inject the text twice.
-        final alreadyQueued = queue
-            .peek(SteeringChannel.steering)
-            .any((m) => m.ref == row.id);
-        if (!alreadyQueued) {
-          queue.pushSteering(await _rowLaneText(workspaceId, row), ref: row.id);
+      try {
+        final queued = await _queuedRows(workspaceId, spaceId, conversationId);
+        for (final row in queued) {
+          // Skip what is already in the lane: enqueue pushed it when the row
+          // was written, and a double push would inject the text twice.
+          final alreadyQueued = queue
+              .peek(SteeringChannel.steering)
+              .any((m) => m.ref == row.id);
+          if (!alreadyQueued) {
+            queue.pushSteering(
+              await _rowLaneText(workspaceId, row),
+              ref: row.id,
+            );
+          }
         }
+      } on Object catch (e) {
+        CcInfraLog.warning(
+          'SteeringQueueService: replaying queued cards failed: $e',
+        );
       }
     }());
   }
@@ -342,22 +423,26 @@ class SteeringQueueService {
       return;
     }
     unawaited(() async {
-      final row = await _messaging.getMessageById(workspaceId, ref);
-      if (row == null ||
-          row.conversationId != conversationId ||
-          !row.isSteeringQueued) {
-        return;
+      try {
+        final row = await _messaging.getMessageById(workspaceId, ref);
+        if (row == null || row.conversationId != conversationId) {
+          return;
+        }
+        await _patch(
+          workspaceId,
+          ref,
+          fromState: 'queued',
+          patch: {
+            'steerState': 'injected',
+            'steerInjectedAt': DateTime.now().millisecondsSinceEpoch,
+            if (session.runLogId != null) 'steerRunId': session.runLogId,
+          },
+        );
+      } on Object catch (e) {
+        CcInfraLog.warning(
+          'SteeringQueueService: marking card $ref injected failed: $e',
+        );
       }
-      await _messaging.updateMessage(
-        workspaceId,
-        ref,
-        metadata: {
-          ...?row.metadata,
-          'steerState': 'injected',
-          'steerInjectedAt': DateTime.now().millisecondsSinceEpoch,
-          if (session.runLogId != null) 'steerRunId': session.runLogId,
-        },
-      );
     }());
   }
 
@@ -390,41 +475,202 @@ class SteeringQueueService {
         // still the delivery path.
         return;
       }
-      final texts = <String>[];
-      final attachments = <MessageAttachment>[];
+      // Claim each card by converting it (conditional on `queued`, so two
+      // run endings racing here cannot both send it). The follow-up turn
+      // reads the conversation, so the cards must be ordinary messages by
+      // the time it is dispatched. A failed dispatch rolls the claim back:
+      // a card only stays `converted` when its turn was actually sent.
+      final claimed = <Message>[];
       for (final row in queued) {
-        await _messaging.updateMessage(
+        if (await _patch(
           workspaceId,
           row.id,
+          fromState: 'queued',
           messageType: 'text',
-          metadata: {
-            ...?row.metadata,
+          patch: {
             'steerState': 'converted',
             'convertedFromSteering': true,
             'convertedAt': DateTime.now().millisecondsSinceEpoch,
           },
-        );
-        if (row.content.isNotEmpty) {
-          texts.add(row.content);
+        )) {
+          claimed.add(row);
         }
-        attachments.addAll(row.attachments);
       }
-      // The follow-up turn sees the cards' pictures the way a typed message's
-      // would: as images on the turn, and as paths where the text names them.
-      await _dispatchResponder(
+      if (claimed.isEmpty) {
+        return;
+      }
+      final texts = [
+        for (final row in claimed)
+          if (row.content.isNotEmpty) row.content,
+      ];
+      final attachments = [for (final row in claimed) ...row.attachments];
+      try {
+        // The follow-up turn sees the cards' pictures the way a typed
+        // message's would: as images on the turn, and as paths where the
+        // text names them.
+        await _dispatchResponder(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          conversationId: conversationId,
+          content: texts.join('\n\n'),
+          senderUserId: claimed.first.senderId,
+          attachments: attachments,
+          promptImageRefs: [
+            for (final a in attachments)
+              if (a.isImage && a.isUploaded) a.path,
+          ],
+        );
+      } on Object catch (e) {
+        for (final row in claimed) {
+          await _patch(
+            workspaceId,
+            row.id,
+            fromState: 'converted',
+            messageType: 'steering',
+            patch: {
+              'steerState': 'queued',
+              'convertedFromSteering': false,
+              'steerFailedAt': DateTime.now().millisecondsSinceEpoch,
+            },
+          );
+        }
+        await _report(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          conversationId: conversationId,
+          text:
+              "Queued messages couldn't be sent to the agent ($e). They are "
+              'still in the queue.',
+        );
+      }
+    } on Object catch (e) {
+      CcInfraLog.warning('SteeringQueueService: run-end conversion failed: $e');
+    }
+  }
+
+  /// Stop-and-send ("send now" on a card no run can take mid-turn), as one
+  /// server-side step: a run that can take the card takes it; otherwise the
+  /// card moves to the front of the queue and every live run is stopped, so
+  /// the run-end conversion sends it as the next turn. With no run live the
+  /// queue is sent at once.
+  ///
+  /// [mayStop] is the caller's right to stop runs (the `dispatch.stopRun`
+  /// permission), checked before anything is stopped.
+  Future<SteeringForceOutcome> forceSend({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+    required bool mayStop,
+    required Future<void> Function(String runId) stopRun,
+  }) async {
+    if (await deliver(
+      workspaceId: workspaceId,
+      conversationId: conversationId,
+      messageId: messageId,
+    )) {
+      return SteeringForceOutcome.delivered;
+    }
+    if (await _findQueuedRow(workspaceId, conversationId, messageId) == null) {
+      return SteeringForceOutcome.notQueued;
+    }
+    final runs = await _runLogs.activeByConversation(
+      workspaceId,
+      conversationId,
+    );
+    if (runs.isEmpty) {
+      await _promote(workspaceId, spaceId, conversationId, messageId);
+      await handleRunEnded(workspaceId, conversationId, spaceId);
+      return SteeringForceOutcome.sent;
+    }
+    if (!mayStop) {
+      return SteeringForceOutcome.stopRefused;
+    }
+    await _promote(workspaceId, spaceId, conversationId, messageId);
+    for (final run in runs) {
+      await stopRun(run.id);
+    }
+    return SteeringForceOutcome.stopping;
+  }
+
+  /// Moves [messageId] to the front of the conversation's queued cards.
+  Future<void> _promote(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+    String messageId,
+  ) async {
+    final queued = await _queuedRows(workspaceId, spaceId, conversationId);
+    final ordered = [
+      ...queued.where((r) => r.id == messageId),
+      ...queued.where((r) => r.id != messageId),
+    ];
+    var index = 0;
+    for (final row in ordered) {
+      if (await _patch(
+        workspaceId,
+        row.id,
+        fromState: 'queued',
+        patch: {'steerOrder': index},
+      )) {
+        index++;
+      }
+    }
+  }
+
+  /// Applies [patch] through the wired [SteeringPatcher], or — unwired, in
+  /// tests — a fresh read + state check + update.
+  Future<bool> _patch(
+    String workspaceId,
+    String messageId, {
+    required String fromState,
+    required Map<String, dynamic> patch,
+    String? content,
+    String? messageType,
+  }) async {
+    final wired = _patchSteering;
+    if (wired != null) {
+      return wired(
+        workspaceId,
+        messageId,
+        fromState: fromState,
+        patch: patch,
+        content: content,
+        messageType: messageType,
+      );
+    }
+    final row = await _messaging.getMessageById(workspaceId, messageId);
+    // The raw metadata, not [Message.steerState]: that getter answers only
+    // for `steering`-typed rows, and a converted card is `text`.
+    if (row == null || row.metadata?['steerState'] != fromState) {
+      return false;
+    }
+    await _messaging.updateMessage(
+      workspaceId,
+      messageId,
+      content: content,
+      metadata: {...?row.metadata, ...patch},
+      messageType: messageType,
+    );
+    return true;
+  }
+
+  Future<void> _report({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String text,
+  }) async {
+    CcInfraLog.warning('SteeringQueueService: $text');
+    try {
+      await _postNotice?.call(
         workspaceId: workspaceId,
         spaceId: spaceId,
         conversationId: conversationId,
-        content: texts.join('\n\n'),
-        senderUserId: queued.first.senderId,
-        attachments: attachments,
-        promptImageRefs: [
-          for (final a in attachments)
-            if (a.isImage && a.isUploaded) a.path,
-        ],
+        text: text,
       );
     } on Object catch (e) {
-      CcInfraLog.warning('SteeringQueueService: run-end conversion failed: $e');
+      CcInfraLog.warning('SteeringQueueService: posting the notice failed: $e');
     }
   }
 

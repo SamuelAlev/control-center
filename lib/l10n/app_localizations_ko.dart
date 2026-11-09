@@ -9,6 +9,15 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return '지금은 보낼 수 없습니다: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      '답변이 전달되지 않았습니다. 이미 답변되었거나 에이전트가 더 이상 기다리지 않을 수 있습니다.';
+
+  @override
   String get succeeded => '성공';
 
   @override
@@ -2561,9 +2570,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get addGif => 'GIF 추가';
-
-  @override
-  String get addGithubRepoPrompt => '풀 리퀘스트를 보려면 GitHub 리포지토리를 하나 이상 추가하세요';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5798,9 +5804,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pipelineStepDurationLabel => '소요 시간';
 
   @override
-  String get pipelineStepBranch => '브랜치';
-
-  @override
   String get pipelineStepViewConversation => '대화 보기';
 
   @override
@@ -6858,13 +6861,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reviewRequested => '리뷰 요청됨';
 
   @override
-  String get connectGitHubHint =>
-      '설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 GitHub에 로그인하세요';
-
-  @override
-  String get connectGitHubToLoadPrs => '풀 리퀘스트를 불러오려면 GitHub를 연결하세요';
-
-  @override
   String get noRepositoriesConfigured => '구성된 리포지토리가 없습니다';
 
   @override
@@ -7518,13 +7514,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get createAsDraft => '초안으로 만들기';
-
-  @override
-  String get composePrNoRepo => 'GitHub 리포지토리가 선택되지 않았습니다';
-
-  @override
-  String get composePrNoRepoHint =>
-      '풀 리퀘스트를 열려면 GitHub에 연결된 리포지토리가 있는 워크스페이스를 선택하세요.';
 
   @override
   String get composePrPickBranches => '변경 사항을 미리 보려면 베이스와 비교 브랜치를 선택하세요.';
@@ -16436,6 +16425,24 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 코드는 이 로그인과 일치하지 않습니다. 확인한 뒤 다시 시도하세요.';
 
   @override
+  String get signInErrorTooManyCodes => '잘못된 코드를 너무 많이 입력했습니다. 로그인을 다시 시작하세요.';
+
+  @override
+  String get signInErrorStaleRequest => '이 로그인은 더 이상 유효하지 않습니다. 다시 시작하세요.';
+
+  @override
+  String get signInErrorInvalidRequest => '서버가 이 로그인 요청을 읽지 못했습니다. 다시 시작하세요.';
+
+  @override
+  String get signInErrorRateLimited =>
+      '지금은 로그인 시도가 너무 많습니다. 1분 기다린 뒤 다시 시도하세요.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider이(가) 로그인을 수락했지만 서버가 저장하지 못했습니다. 다시 시도하세요.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider이(가) 지금 응답하지 않습니다. 몇 분 뒤에 다시 시도하세요.';
   }
@@ -16466,7 +16473,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      '이 Linear 워크스페이스는 이미 다른 Control Center 서버에 연결되어 있습니다.';
+      '이 Slack 워크스페이스는 이미 다른 Control Center 서버에 연결되어 있습니다.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -16894,4 +16901,37 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => '앱 전환';
+
+  @override
+  String openOnForge(String forge) {
+    return '$forge에서 열기';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return '처음 $count개 파일을 표시합니다. 나머지는 $forge에서 나열하지 않습니다.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => '풀 리퀘스트를 불러오려면 코드 호스팅을 연결하세요';
+
+  @override
+  String get connectForgeHint =>
+      '설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 GitHub, GitLab 또는 Bitbucket을 연결하세요';
+
+  @override
+  String get addForgeRepoPrompt =>
+      '풀 리퀘스트를 보려면 GitHub, GitLab 또는 Bitbucket 저장소를 하나 이상 추가하세요';
+
+  @override
+  String get composePrNoForgeRepo => '선택된 호스팅 저장소가 없습니다';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      '풀 리퀘스트를 열려면 GitHub, GitLab 또는 Bitbucket 저장소가 있는 워크스페이스를 선택하세요.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return '이 저장소에서 풀 리퀘스트를 열려면 $forge을(를) 연결하세요';
+  }
 }

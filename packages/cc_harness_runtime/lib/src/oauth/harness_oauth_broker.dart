@@ -253,8 +253,7 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
     if (refresh == null) {
       return credential;
     }
-    final expiresAt = credential.expiresAt;
-    if (!force && (expiresAt == null || expiresAt.isAfter(DateTime.now()))) {
+    if (!force && !_expired(credential)) {
       return credential;
     }
     if (credential.refreshToken == null || credential.refreshToken!.isEmpty) {
@@ -263,12 +262,12 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
     // Single-flight per account: one run fans out into parallel subagents that
     // all hit expiry at the same moment and a provider that rotates its
     // refresh token would invalidate every racing exchange but one.
-    final key = '${credential.providerId}:${credential.identityKey ?? ''}';
+    final key = _accountKey(credential);
     final inFlight = _refreshes[key];
     if (inFlight != null) {
       return inFlight;
     }
-    final pending = _refresh(refresh, credential);
+    final pending = _refresh(refresh, credential, force: force);
     _refreshes[key] = pending;
     try {
       return await pending;
@@ -277,20 +276,95 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
     }
   }
 
+  /// Refresh tokens the provider REJECTED (revoked / invalid_grant), by
+  /// account. Re-spending one can never succeed, so a revoked credential is
+  /// not re-sent to the token endpoint on every request; a NEW refresh token
+  /// (the user signed in again) clears the entry.
+  final Map<String, String> _rejectedRefreshTokens = {};
+
+  static String _accountKey(ProviderCredential credential) =>
+      '${credential.providerId}:${credential.identityKey ?? ''}';
+
+  static bool _expired(ProviderCredential credential) {
+    final expiresAt = credential.expiresAt;
+    return expiresAt != null && !expiresAt.isAfter(DateTime.now());
+  }
+
   /// Performs the token exchange, persisting the result. Never throws — a
-  /// failed refresh returns the original credential so the caller still has a
-  /// (stale) token to try and the provider's own 401 reports the real cause.
+  /// failed refresh returns the freshest credential known so the caller still
+  /// has a (stale) token to try and the provider's own 401 reports the real
+  /// cause.
+  ///
+  /// Runs INSIDE the single flight and starts by re-reading the store: a
+  /// caller holding a credential captured before an earlier flight finished
+  /// still carries the refresh token that flight already SPENT. Replaying it is
+  /// `invalid_grant` on a rotating provider, which reads as a revocation and
+  /// signs the account out. When the store holds a newer token pair for the
+  /// same account, that pair is the answer and nothing is spent.
   Future<ProviderCredential> _refresh(
     Future<ProviderCredential> Function(ProviderCredential) refresh,
-    ProviderCredential credential,
-  ) async {
+    ProviderCredential credential, {
+    required bool force,
+  }) async {
+    final key = _accountKey(credential);
+    var current = credential;
     try {
-      final refreshed = await refresh(credential);
-      await _store.save(refreshed);
-      return refreshed;
+      final stored = (await _store.credentialsFor(
+        credential.providerId,
+      )).where((c) => c.credentialId == credential.credentialId).firstOrNull;
+      if (stored != null &&
+          stored.method == HarnessAuthMethod.oauth &&
+          (stored.refreshToken ?? '').isNotEmpty) {
+        if (stored.refreshToken != credential.refreshToken ||
+            stored.accessToken != credential.accessToken) {
+          // Someone else already refreshed. A non-expired newer pair is
+          // usable as is — even under `force`, whose 401 was earned by the
+          // caller's OLD access token, not this one.
+          if (!_expired(stored)) {
+            return stored;
+          }
+        }
+        current = stored;
+      }
     } on Object {
-      return credential;
+      // An unreadable store must not block the refresh itself.
     }
+    final spent = current.refreshToken ?? '';
+    if (_rejectedRefreshTokens[key] == spent) {
+      return current;
+    }
+    try {
+      final refreshed = await refresh(current);
+      await _store.save(refreshed);
+      _rejectedRefreshTokens.remove(key);
+      return refreshed;
+    } on Object catch (e) {
+      if (_isRejection(e)) {
+        _rejectedRefreshTokens[key] = spent;
+      }
+      return current;
+    }
+  }
+
+  /// Whether a refresh failure is the provider REJECTING the refresh token
+  /// (revoked, expired, already used) rather than a transient failure worth
+  /// retrying on the next request.
+  static bool _isRejection(Object error) {
+    if (error is HarnessDeviceAuthException) {
+      return true;
+    }
+    if (error is ProviderHttpException) {
+      final status = error.statusCode;
+      final body = error.body.toLowerCase();
+      return status == 401 ||
+          status == 403 ||
+          (status == 400 &&
+              (body.contains('invalid_grant') ||
+                  body.contains('invalid_token') ||
+                  body.contains('revoked') ||
+                  body.contains('expired')));
+    }
+    return false;
   }
 
   Future<void> _bindLoopback(String flowId, _OAuthFlow flow) async {

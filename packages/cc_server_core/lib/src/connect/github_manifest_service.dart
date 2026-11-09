@@ -5,6 +5,9 @@ import 'dart:math';
 import 'package:cc_connect_core/cc_connect_core.dart' show constantTimeEquals;
 import 'package:cc_domain/cc_domain.dart'
     show AuthException, ValidationException;
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart'
+    show gitHubRestApiVersion;
+import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 
 /// One "Create my GitHub App" attempt.
@@ -106,6 +109,30 @@ class GitHubManifestService {
     'members': 'read',
   };
 
+  static String _appName(String nonce) => 'Control Center $nonce';
+
+  static const List<String> _levels = ['read', 'write', 'admin'];
+
+  /// Whether the created app holds a permission the manifest did not ask
+  /// for, or a higher level of one: those are not what this server posted.
+  /// An app holding less is accepted (it just does less).
+  static bool _exceedsRequested(Object? granted) {
+    if (granted is! Map) {
+      return false;
+    }
+    for (final MapEntry(:key, :value) in granted.entries) {
+      final asked = permissions[key];
+      if (asked == null) {
+        return true;
+      }
+      final level = _levels.indexOf('$value');
+      if (level < 0 || level > _levels.indexOf(asked)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   String _token(int bytes) => base64Url
       .encode(List<int>.generate(bytes, (_) => _random.nextInt(256)))
       .replaceAll('=', '');
@@ -172,7 +199,7 @@ class GitHubManifestService {
     final browserKey = _token(32);
     t.browserKey = browserKey;
     final manifest = jsonEncode({
-      'name': 'Control Center ${t.nonce}',
+      'name': _appName(t.nonce),
       'url': t.origin,
       'redirect_url': '${t.origin}$callbackPath',
       'callback_urls': ['${t.origin}/oauth/github/callback'],
@@ -251,19 +278,24 @@ class GitHubManifestService {
     request.headers
       ..set(HttpHeaders.acceptHeader, 'application/vnd.github+json')
       ..set(HttpHeaders.userAgentHeader, 'control-center')
-      ..set('X-GitHub-Api-Version', '2022-11-28');
+      ..set('X-GitHub-Api-Version', gitHubRestApiVersion);
     final response = await request.close().timeout(_timeout);
-    final bytes = <int>[];
-    await for (final chunk in response.timeout(_timeout)) {
-      bytes.addAll(chunk);
-      if (bytes.length > _maxBody) {
-        throw const AuthException('GitHub sent an unexpected answer.');
+    final Object? json;
+    try {
+      final body = await readBoundedText(
+        response,
+        maxBytes: _maxBody,
+        timeout: _timeout,
+      );
+      if (response.statusCode != 201) {
+        throw const AuthException('GitHub did not create the app.');
       }
+      json = jsonDecode(body);
+    } on HttpException {
+      throw const AuthException('GitHub sent an unexpected answer.');
+    } on FormatException {
+      throw const AuthException('GitHub sent an unexpected answer.');
     }
-    if (response.statusCode != 201) {
-      throw const AuthException('GitHub did not create the app.');
-    }
-    final json = jsonDecode(utf8.decode(bytes));
     if (json is! Map) {
       throw const AuthException('GitHub sent an unexpected answer.');
     }
@@ -283,7 +315,10 @@ class GitHubManifestService {
         owner is! Map) {
       throw const AuthException('GitHub sent an incomplete app.');
     }
-    if (!name.contains(match.nonce)) {
+    // The exact name this attempt's manifest posted: the nonce is in no
+    // other attempt's manifest and is spent with this one.
+    if (name != _appName(match.nonce) ||
+        _exceedsRequested(json['permissions'])) {
       throw const AuthException(
         'That app was not created from this server. Start again.',
       );
@@ -296,8 +331,7 @@ class GitHubManifestService {
         ? ownerType != 'Organization' ||
               ownerLogin is! String ||
               ownerLogin.toLowerCase() != match.organization.toLowerCase()
-        : ownerType != 'User' ||
-              (ownerId != null && owner['id'] != ownerId)) {
+        : ownerType != 'User' || (ownerId != null && owner['id'] != ownerId)) {
       throw const AuthException(
         'GitHub created the app under a different account than requested.',
       );

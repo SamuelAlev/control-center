@@ -15,6 +15,8 @@ import 'package:cc_domain/features/environments/domain/entities/space_environmen
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
+import 'package:cc_infra/src/environments/compose_driver.dart'
+    show ComposeServiceState;
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:cc_infra/src/environments/environment_service_ports.dart';
 import 'package:test/test.dart';
@@ -813,6 +815,91 @@ void main() {
       expect(h.commands, isEmpty);
     });
 
+    test('a stack in a rig is polled like one on the host', () async {
+      final rig = FakeRigHost();
+      h = ServiceHarness(root, rigHost: rig);
+      h.addSpace('fork', prNumber: 7, prRepo: 'acme/shop', isFork: true);
+      h.store(
+        definitionJson(
+          [composeJson()],
+          extra: {
+            'policy': {'forkPrs': 'rig'},
+          },
+        ),
+      );
+      final env = await h.ensure(space: 'fork');
+      expect(env.status, EnvironmentStatus.ready);
+
+      rig.serviceStates = const [
+        ComposeServiceState(service: 'web', state: 'failed'),
+      ];
+      await h.service.runMaintenance();
+
+      final row = h.environments.rows[env.id]!;
+      expect(rig.calls, contains('services'));
+      expect(row.status, EnvironmentStatus.degraded);
+      expect(row.components.single.services.single['state'], 'failed');
+    });
+
+    test('a rig whose stack fails is recorded, and torn down', () async {
+      // The rig id is written the moment the rig opens, so a stack that never
+      // comes up still leaves a row that can name the machine to close.
+      final rig = FakeRigHost()
+        ..startFailure = const EnvironmentDriverException(
+          EnvironmentError(
+            code: 'rig-stack-failed',
+            message: 'web never became healthy',
+          ),
+        );
+      h = ServiceHarness(root, rigHost: rig);
+      h.addSpace('fork', prNumber: 7, prRepo: 'acme/shop', isFork: true);
+      h.store(
+        definitionJson(
+          [composeJson()],
+          extra: {
+            'policy': {'forkPrs': 'rig'},
+          },
+        ),
+      );
+      await h.ensure(space: 'fork');
+      final row = h.environments.rows.values.single;
+      expect(row.rigId, 'rig-env');
+      expect(row.status, EnvironmentStatus.failed);
+
+      await h.service.beforeRelease('ws-a', 'fork');
+      expect(rig.calls, contains('destroy'));
+      expect(h.environments.rows, isEmpty);
+    });
+
+    test('a rig exec that throws finishes its run as failed', () async {
+      final rig = FakeRigHost()..execFailure = StateError('guest went away');
+      h = ServiceHarness(root, rigHost: rig);
+      h.addSpace('fork', prNumber: 7, prRepo: 'acme/shop', isFork: true);
+      h.store(
+        definitionJson(
+          [
+            composeJson(),
+            taskJson('migrate', ['start']),
+          ],
+          extra: {
+            'policy': {'forkPrs': 'rig'},
+          },
+        ),
+      );
+      expect((await h.ensure(space: 'fork')).status, EnvironmentStatus.failed);
+      // Every run the failure touched is finished, none left `running`.
+      final runs = h.runs.runs.values.toList();
+      expect(runs, isNotEmpty);
+      expect(
+        runs.map((run) => run.status),
+        everyElement(isNot(EnvironmentRunStatus.running)),
+      );
+      expect(
+        runs.where((run) => (run.error ?? '').contains('guest went away')),
+        isNotEmpty,
+      );
+    });
+
     test('rig with no rig host is a clear error', () async {
       h.store(
         definitionJson(
@@ -1344,16 +1431,42 @@ void main() {
       expect(h.environments.rows, isEmpty);
     });
 
-    test('never throws, and still releases what it can', () async {
+    test('overlapping releases tear the environment down once', () async {
+      h.store(definitionJson([composeJson()]));
+      await h.ensure();
+      // The second call arrives while the first is still tearing down: it
+      // joins that teardown instead of starting its own.
+      final first = h.service.beforeRelease('ws-a', 'space-1');
+      final second = h.service.beforeRelease('ws-a', 'space-1');
+      await Future.wait([first, second]);
+      expect(
+        h.runner.calls.where((call) => call.argv.contains('down')),
+        hasLength(1),
+      );
+      expect(h.environments.rows, isEmpty);
+    });
+
+    test('never throws, and keeps what it could not remove', () async {
       h.store(definitionJson([composeJson()]));
       final env = await h.ensure();
       h.runner.handler = (call) => call.argv.contains('down')
           ? failed(1, stderr: 'daemon gone')
           : h.answer(call);
       await h.service.beforeRelease('ws-a', 'space-1');
+      // The containers still run, and only this row (and its lease) names
+      // them: dropping it would leak their ports for good.
+      final kept = h.environments.rows.values.single;
+      expect(kept.status, EnvironmentStatus.failed);
+      expect(kept.lastError?.code, 'teardown-incomplete');
+      expect(kept.lastError?.message, contains('daemon gone'));
+      expect(h.leases.leases, isNotEmpty);
+      expect(h.routing.routes[env.id], isNull);
+
+      // Once docker answers again, the next release finishes the job.
+      h.runner.handler = h.answer;
+      await h.service.beforeRelease('ws-a', 'space-1');
       expect(h.environments.rows, isEmpty);
       expect(h.leases.leases, isEmpty);
-      expect(h.routing.routes[env.id], isNull);
     });
 
     test('an invalid definition still loses CC\'s own resources', () async {

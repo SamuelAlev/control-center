@@ -49,8 +49,7 @@ Future<void> handleGitHubLink({
 
   if (refInfo is GitHubPrReference) {
     // Case-insensitive, consistent with how the repo is resolved everywhere
-    // else (currentPrRepoProvider / repoInActiveWorkspaceProvider lower-case
-    // before comparing). A case mismatch between the href and the host PR's
+    // else (repoInActiveWorkspaceProvider lower-cases before comparing). A case mismatch between the href and the host PR's
     // stored owner/repo must NOT be misread as a cross-repo hop — that would
     // needlessly switch the active repo (or worse, flip the workspace).
     final isSameRepo =

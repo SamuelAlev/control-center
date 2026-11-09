@@ -18,6 +18,7 @@ export 'src/context/harness_command_scanner.dart';
 export 'src/context/harness_run_config.dart';
 export 'src/context/harness_skill_scanner.dart';
 export 'src/context/llm_harness_summarizer.dart';
+export 'src/context/markdown_frontmatter.dart';
 export 'src/env_provider_credential_store.dart';
 export 'src/file_provider_credential_store.dart';
 export 'src/harness_provider_factory.dart';

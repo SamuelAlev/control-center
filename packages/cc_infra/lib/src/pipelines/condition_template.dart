@@ -122,9 +122,7 @@ Future<PipelineNodeConfig?> _resolveConfig(
   PipelineTemplateRepository repo,
   PipelineContext ctx,
 ) async {
-  final workspaceId = ctx.workspaceId;
-  final def = await repo.getById(workspaceId, ctx.templateId);
-  return def?.step(ctx.stepId)?.config;
+  return ctx.pinnedStepConfig(repo);
 }
 
 /// Recursively evaluates a predicate node to a boolean.

@@ -28,6 +28,8 @@ import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/cc_infra.dart'
     show WorkspaceFilesystemService, HireAgentUseCase;
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
+import 'package:cc_infra/src/dispatch/dispatch_session.dart'
+    show kRunStoppedByUserSummary;
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:uuid/uuid.dart';
 
@@ -255,7 +257,8 @@ class AgentDispatchService {
 
     // Resolve the per-agent overlay cwd (AGENTS.md + .agents + repos symlinks)
     // with isolated CoW worktrees. Reuses any worktree pre-provisioned for a
-    // ticket; degrades to [workingDirectory] (the agent dir) when unavailable.
+    // ticket; [workingDirectory] (the agent dir) when there is nothing to
+    // isolate. A failed preparation refuses the dispatch.
     final resolvedWorkingDirectory = await _resolveWorkingDirectory(
       workspaceId: workspaceId,
       // The SPACE owns the copy-on-write worktree (its conversations share
@@ -714,8 +717,9 @@ class AgentDispatchService {
 
   /// Resolves the agent's working directory to the per-agent overlay in the
   /// SPACE's root (sharing the space's isolated repo worktrees), or returns
-  /// [fallback] (the agent dir) when no provisioner is wired / there is no
-  /// space+workspace context.
+  /// [fallback] (the agent dir) when no provisioner is wired, there is no
+  /// space+workspace context, or the space checks out no repo. Throws when
+  /// the space's preparation failed.
   ///
   /// [agentSlug] and [conversationId] key the overlay
   /// (`agents/<agentOverlayDirName>/`); [agentConfigDir] is the
@@ -737,15 +741,38 @@ class AgentDispatchService {
         spaceId.isEmpty) {
       return fallback;
     }
-    return provisioner.ensureSpaceWorkspace(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      agentSlug: agentSlug,
-      fallbackDir: fallback,
-      conversationId: conversationId,
-      agentConfigDir: agentConfigDir,
-      ticketId: ticketId,
+    final workspace = await provisioner.ensureSpaceWorkspace(
+      SpaceWorkspaceRequest(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentSlug: agentSlug,
+        conversationId: conversationId,
+        agentConfigDir: agentConfigDir,
+        ticketId: ticketId,
+      ),
     );
+    return switch (workspace) {
+      SpaceWorkspaceReady(:final path) => path,
+      // Nothing to isolate: the agent works in its own directory.
+      SpaceWorkspaceUnavailable(
+        reason: SpaceWorkspaceUnavailableReason.noRepos,
+      ) =>
+        fallback,
+      // The caller refuses the run ([_spaceProvisioningStopped]).
+      SpaceWorkspaceUnavailable(
+        reason: SpaceWorkspaceUnavailableReason.cancelled,
+      ) =>
+        fallback,
+      // Running the agent in its global directory instead would do the work
+      // against none of the space's repos, and nobody would know.
+      SpaceWorkspaceUnavailable(
+        reason: SpaceWorkspaceUnavailableReason.failed,
+        :final message,
+      ) =>
+        throw StateError(
+          'Dispatch refused: space $spaceId could not be prepared: $message',
+        ),
+    };
   }
 
   /// Marks [runLog] completed (idempotent) and forgets its dispatch mapping.
@@ -1035,7 +1062,7 @@ class AgentDispatchService {
             existing.copyWith(
               completedAt: DateTime.now(),
               status: RunStatus.error,
-              summary: 'Stopped by user',
+              summary: kRunStoppedByUserSummary,
             ),
             writeCost: false,
           ) ??

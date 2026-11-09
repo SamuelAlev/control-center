@@ -227,10 +227,33 @@ class FakeRigHost implements EnvironmentRigHost {
     required EnvironmentDefinition definition,
     required Map<String, String> worktrees,
     required Map<String, String> environment,
+    Future<void> Function(String rigId)? onRigOpened,
   }) async {
     calls.add('start');
     this.worktrees.add(worktrees);
+    await onRigOpened?.call('rig-env');
+    final failure = startFailure;
+    if (failure != null) {
+      throw failure;
+    }
     return const EnvironmentRigInstance(rigId: 'rig-env');
+  }
+
+  /// When set, [start] opens the rig (reporting its id) and then throws this,
+  /// the way a stack that never comes up does.
+  Object? startFailure;
+
+  /// What [services] reports.
+  List<ComposeServiceState> serviceStates = const [];
+
+  @override
+  Future<List<ComposeServiceState>> services({
+    required String workspaceId,
+    required String rigId,
+    required String environmentId,
+  }) async {
+    calls.add('services');
+    return serviceStates;
   }
 
   @override
@@ -256,8 +279,15 @@ class FakeRigHost implements EnvironmentRigHost {
     Duration? timeout,
   }) async {
     execs.add(argv);
+    final failure = execFailure;
+    if (failure != null) {
+      throw failure;
+    }
     return const EnvironmentExecResult(exitCode: 0, stdout: '', stderr: '');
   }
+
+  /// When set, [exec] throws this, the way a guest that went away does.
+  Object? execFailure;
 }
 
 const principal = UserPrincipal('member');

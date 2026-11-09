@@ -7,11 +7,20 @@ import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dar
     show EnforcementLevel;
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
+import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart';
+
+/// The agent-facing reason when a space's autonomy dial, not the action
+/// policy, refused an action. One sentence for every runtime that applies the
+/// dial, so a refusal reads the same whichever adapter ran the agent.
+const kProposeOnlyReason =
+    "this space's autonomy is set to propose-only; propose the action in a "
+    'message instead and let the operator run it';
 
 /// The verdict of an action-guard check.
 class GuardVerdict {
@@ -256,6 +265,17 @@ class ActionGuardService {
     // unaudited one.
     bool canOverride = false,
     String? overrideReason,
+    // The space's autonomy dial, composed AFTER policy exactly as the
+    // harness gate composes it ([AutonomyComposition]): `proposeOnly` refuses
+    // a gated action policy would allow or ask about; `actFreely` changes
+    // nothing here, because it never overrides a policy `prompt`. [autonomyGated]
+    // is false for an action the dial does not govern (a mode's pinned
+    // output verbs).
+    AutonomyLevel? autonomy,
+    bool autonomyGated = true,
+    // Completes when the caller stops waiting (a hook deadline, a run that
+    // ended): carried onto the confirmation so the prompt is withdrawn.
+    Future<void>? withdrawn,
   }) async {
     if (classes.isEmpty && (command == null || command.isEmpty)) {
       return const GuardVerdict.allow();
@@ -293,6 +313,23 @@ class ActionGuardService {
           runId: runId,
           command: command,
         ),
+      );
+    }
+
+    if (!operatorInitiated &&
+        const AutonomyComposition().compose(
+              decision: res.decision,
+              autonomy: autonomy,
+              isGated: autonomyGated,
+            ) ==
+            AutonomyOutcome.deny &&
+        res.decision != ActionDecision.deny) {
+      // Policy did not refuse; the space's dial did. Audited as the deny that
+      // was applied, with the dial named so the operator can find it.
+      audit(ActionDecision.deny);
+      return GuardVerdict.deny(
+        kProposeOnlyReason,
+        source: res.driving.source,
       );
     }
 
@@ -361,6 +398,7 @@ class ActionGuardService {
             classes: classes,
             command: command,
             rationale: approvalRationale,
+            withdrawn: withdrawn,
           ),
         );
         audit(
@@ -388,6 +426,7 @@ class ActionGuardService {
     String? workspaceId,
     String? agentId,
     ActionRequest request = ActionRequest.empty,
+    Future<void>? withdrawn,
   }) {
     final prompting = res.prompting
         .map((r) => r.actionClass?.wire)
@@ -452,6 +491,7 @@ class ActionGuardService {
       constraintJson: remembered == null
           ? null
           : _rememberConstraintFor(remembered)?.encode(),
+      withdrawn: withdrawn,
     );
   }
 

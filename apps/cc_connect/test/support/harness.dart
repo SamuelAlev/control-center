@@ -95,6 +95,7 @@ final class Harness {
     Map<String, String> env = const {},
     Duration pollTimeout = const Duration(seconds: 25),
     FakeUpstream? upstream,
+    StateStore? state,
   }) async {
     final dir = await Directory.systemTemp.createTemp('cc_connect_test');
     final fake = upstream ?? FakeUpstream();
@@ -108,6 +109,7 @@ final class Harness {
       final service = await ConnectService.start(
         config,
         upstream: fake,
+        state: state,
         logSink: logs.add,
         pollTimeout: pollTimeout,
       );
@@ -248,7 +250,9 @@ String fakeJwt(Map<String, Object?> claims) =>
     '${b64url(utf8.encode(jsonEncode(claims)))}.sig';
 
 /// Scripts a GitHub that issues and rotates tokens. Each rotation bumps a
-/// counter so tests can see whether upstream was called.
+/// counter so tests can see whether upstream was called. Tokens belong to
+/// the person [userId]/[login] named when they were issued (a refresh keeps
+/// the person), so a test can sign a second GitHub account in.
 final class FakeGitHub {
   FakeGitHub(this.upstream, {this.userId = 1001, this.login = 'octo'}) {
     upstream
@@ -257,18 +261,25 @@ final class FakeGitHub {
         if (!_live(call)) {
           return UpstreamResponse.json(401, {'message': 'Bad credentials'});
         }
+        final auth = call.request.headers['authorization'] ?? '';
+        final owner = _owners[auth.replaceFirst('Bearer ', '')]!;
         return UpstreamResponse.json(200, {
-          'id': userId,
-          'login': login,
+          'id': owner.$1,
+          'login': owner.$2,
           'type': 'User',
         });
       });
   }
 
   final FakeUpstream upstream;
-  final int userId;
-  final String login;
+
+  /// The person the next authorization code signs in.
+  int userId;
+
+  /// Their login.
+  String login;
   int issued = 0;
+  final Map<String, (int, String)> _owners = {};
   final Set<String> liveAccess = {};
   final Set<String> liveRefresh = {};
 
@@ -299,10 +310,13 @@ final class FakeGitHub {
         'error_description': 'echo-me-not',
       });
     }
+    var owner = (userId, login);
     if (form['grant_type'] == 'refresh_token') {
-      if (!liveRefresh.remove(form['refresh_token'])) {
+      final spent = form['refresh_token'];
+      if (!liveRefresh.remove(spent)) {
         return UpstreamResponse.json(200, {'error': 'bad_refresh_token'});
       }
+      owner = _owners[spent] ?? owner;
     } else if (form['code'] != 'gh-code') {
       return UpstreamResponse.json(200, {'error': 'bad_verification_code'});
     }
@@ -311,6 +325,8 @@ final class FakeGitHub {
     final refresh = 'ghr_refresh$issued';
     liveAccess.add(access);
     liveRefresh.add(refresh);
+    _owners[access] = owner;
+    _owners[refresh] = owner;
     return UpstreamResponse.json(200, {
       'access_token': access,
       'expires_in': form['grant_type'] == 'refresh_token'
@@ -399,4 +415,73 @@ Future<SealedGrant> signInGitHub(
     throw StateError('claim failed: ${claim.status} ${claim.body}');
   }
   return SealedGrant.fromJson(claim.json);
+}
+
+/// A [MemoryStateStore] whose writes can be made to fail per key prefix.
+final class FlakyStateStore implements StateStore {
+  final MemoryStateStore _inner = MemoryStateStore();
+
+  /// `set` of a key starting with one of these throws.
+  final Set<String> failSets = {};
+
+  /// `deleteIf` of a key starting with one of these throws.
+  final Set<String> failDeletes = {};
+
+  bool _fails(Set<String> prefixes, String key) =>
+      prefixes.any((p) => key.startsWith(p));
+
+  @override
+  Future<String?> get(String key) => _inner.get(key);
+
+  @override
+  Future<void> set(String key, String value, Duration ttl) {
+    if (_fails(failSets, key)) {
+      throw const StateStoreUnavailable('test');
+    }
+    return _inner.set(key, value, ttl);
+  }
+
+  @override
+  Future<bool> putIfAbsent(String key, String value, Duration ttl) =>
+      _inner.putIfAbsent(key, value, ttl);
+
+  @override
+  Future<bool> replace(
+    String key,
+    String expected,
+    String value,
+    Duration ttl,
+  ) => _inner.replace(key, expected, value, ttl);
+
+  @override
+  Future<String?> take(String key) => _inner.take(key);
+
+  @override
+  Future<void> delete(String key) => _inner.delete(key);
+
+  @override
+  Future<bool> deleteIf(String key, String expected) {
+    if (_fails(failDeletes, key)) {
+      throw const StateStoreUnavailable('test');
+    }
+    return _inner.deleteIf(key, expected);
+  }
+
+  @override
+  Future<int> increment(String key, Duration ttl) => _inner.increment(key, ttl);
+
+  @override
+  Future<void> push(
+    String key,
+    String value,
+    Duration ttl, {
+    int maxLength = 1000,
+  }) => _inner.push(key, value, ttl, maxLength: maxLength);
+
+  @override
+  Future<List<String>> drain(String key, {int max = 100}) =>
+      _inner.drain(key, max: max);
+
+  @override
+  Future<void> close() => _inner.close();
 }

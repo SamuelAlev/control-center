@@ -247,56 +247,67 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
     });
   });
 
+  /// The statement behind [resolveAgentWait]; variables are
+  /// `(resolvedAt, workspaceId, method, waitId)`.
+  static const String resolveAgentWaitSql =
+      'UPDATE notification_feed SET params_json = '
+      "json_set(params_json, '\$.${NotificationFeedItem.resolvedAtKey}', ?) "
+      'WHERE workspace_id = ? AND method = ? AND json_valid(params_json) '
+      "AND json_extract(params_json, '\$.$waitIdKey') = ? "
+      "AND json_extract(params_json, '\$.${NotificationFeedItem.resolvedAtKey}') "
+      'IS NULL';
+
   /// Stamps [resolvedAt] onto the `notifications/agent_awaiting_input` items
   /// announcing [waitId] — the wait ended, so the row stops asking anyone to
   /// act. One write for every user: the resolution is a fact about the item,
   /// not a per-user read opinion, so it lives in the item rather than in each
   /// user's states. An item already stamped keeps its first stamp.
-  Future<void> resolveAgentWait(
+  ///
+  /// One conditional statement, no Dart-side decode. The wait-id match is an
+  /// index probe (`idx_notification_feed_wait_id`, an expression index on the
+  /// same `json_extract` under the same `json_valid` guard), so it no longer
+  /// decodes every awaiting-input row inside the serialized write chain. Keep
+  /// the two expressions textually identical or the planner stops using it.
+  Future<int> resolveAgentWait(
     String workspaceId,
     String waitId,
     DateTime resolvedAt,
-  ) => transaction(() async {
-    final rows =
-        await (select(notificationFeedTable)..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) &
-                  t.method.equals(agentAwaitingInputMethod),
-            ))
-            .get();
-    for (final row in rows) {
-      final params = _decodeParams(row.paramsJson);
-      if (params == null ||
-          params[waitIdKey] != waitId ||
-          params[NotificationFeedItem.resolvedAtKey] != null) {
-        continue;
-      }
-      await (update(notificationFeedTable)..where(
-            (t) => t.workspaceId.equals(workspaceId) & t.id.equals(row.id),
-          ))
-          .write(
-            NotificationFeedTableCompanion(
-              paramsJson: Value(
-                jsonEncode({
-                  ...params,
-                  NotificationFeedItem.resolvedAtKey: resolvedAt
-                      .toUtc()
-                      .toIso8601String(),
-                }),
-              ),
-            ),
-          );
-    }
-  });
+  ) => customUpdate(
+    resolveAgentWaitSql,
+    variables: [
+      Variable.withString(resolvedAt.toUtc().toIso8601String()),
+      Variable.withString(workspaceId),
+      Variable.withString(agentAwaitingInputMethod),
+      Variable.withString(waitId),
+    ],
+    updates: {notificationFeedTable},
+    updateKind: UpdateKind.update,
+  );
 
-  static Map<String, dynamic>? _decodeParams(String paramsJson) {
-    try {
-      final params = jsonDecode(paramsJson);
-      return params is Map<String, dynamic> ? params : null;
-    } on FormatException {
-      return null;
-    }
-  }
+  /// Resolves every awaiting-input row recorded at or before [before] that is
+  /// still open. Boot sweep: every wait (approval, credential block, question)
+  /// lives in server memory, so after a restart none recorded earlier can
+  /// still end on its own. Returns how many rows were stamped.
+  Future<int> resolveAgentWaitsRecordedBefore(
+    String workspaceId,
+    DateTime before,
+    DateTime resolvedAt,
+  ) => customUpdate(
+    'UPDATE notification_feed SET params_json = '
+    "json_set(params_json, '\$.${NotificationFeedItem.resolvedAtKey}', ?) "
+    'WHERE workspace_id = ? AND method = ? AND created_at <= ? '
+    'AND json_valid(params_json) '
+    "AND json_extract(params_json, '\$.${NotificationFeedItem.resolvedAtKey}') "
+    'IS NULL',
+    variables: [
+      Variable.withString(resolvedAt.toUtc().toIso8601String()),
+      Variable.withString(workspaceId),
+      Variable.withString(agentAwaitingInputMethod),
+      Variable<DateTime>(before),
+    ],
+    updates: {notificationFeedTable},
+    updateKind: UpdateKind.update,
+  );
 
   static bool _isFromConversation(
     String paramsJson,

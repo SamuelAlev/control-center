@@ -347,6 +347,31 @@ final class RedisStateStore implements StateStore {
     return reply == 'OK';
   }
 
+  /// Compare-and-set in one round trip: Redis runs a script atomically.
+  static const String _replaceScript =
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then "
+      "redis.call('SET', KEYS[1], ARGV[2], 'PX', ARGV[3]) return 1 "
+      'else return 0 end';
+
+  @override
+  Future<bool> replace(
+    String key,
+    String expected,
+    String value,
+    Duration ttl,
+  ) async {
+    final reply = await _one([
+      'EVAL',
+      _replaceScript,
+      '1',
+      _k(key),
+      expected,
+      value,
+      _ms(ttl),
+    ]);
+    return reply == 1;
+  }
+
   @override
   Future<String?> take(String key) async {
     if (!_noGetDel) {
@@ -373,6 +398,17 @@ final class RedisStateStore implements StateStore {
   @override
   Future<void> delete(String key) async {
     await _one(['DEL', _k(key)]);
+  }
+
+  /// Compare-and-delete in one round trip.
+  static const String _deleteIfScript =
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then "
+      "return redis.call('DEL', KEYS[1]) else return 0 end";
+
+  @override
+  Future<bool> deleteIf(String key, String expected) async {
+    final reply = await _one(['EVAL', _deleteIfScript, '1', _k(key), expected]);
+    return reply == 1;
   }
 
   @override

@@ -15,9 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings section for the MCP server configuration.
 ///
 /// Platform-neutral: it reads the seamed [mcpServerControlProvider] +
-/// [mcpServerStatusProvider]. On desktop these resolve to the in-process MCP
-/// server; on web/thin clients they resolve to the connected server's MCP server
-/// over the `mcp.*` RPC ops. When the connected server exposes no MCP control
+/// [mcpServerStatusProvider]. On every client these resolve to the
+/// connected server's MCP server over the `mcp.*` RPC ops. When the connected server exposes no MCP control
 /// (status is `null`), it renders an honest "not available" placeholder.
 ///
 /// The card opens with the three facts that decide whether an external tool can

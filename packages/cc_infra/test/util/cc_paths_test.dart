@@ -35,14 +35,36 @@ void main() {
     });
 
     test('pipelineRunDir and meetingAudioDir are keyed by id', () async {
+      const runId = '3f2b8c1e-9d4a-4e7b-8c2d-1a5f6e7d8c9b';
       expect(
-        (await paths.pipelineRunDir('r1')).path,
-        p.join(sandbox.path, 'pipelines', 'r1'),
+        (await paths.pipelineRunDir(runId)).path,
+        p.join(sandbox.path, 'pipelines', runId),
       );
       expect(
         (await paths.meetingAudioDir('m1')).path,
         p.join(sandbox.path, 'meetings', 'm1'),
       );
+    });
+
+    test('pipelineRunDir refuses an id that is not an engine-minted UUID', () {
+      // The run directory is re-allowed inside the denied data directory for
+      // a shell step, so a traversal id would widen that sandbox.
+      for (final bad in [
+        '../..',
+        '../../etc',
+        'r1',
+        '/abs/path',
+        'a/b',
+        '3F2B8C1E-9D4A-4E7B-8C2D-1A5F6E7D8C9B',
+        '3f2b8c1e-9d4a-4e7b-8c2d-1a5f6e7d8c9b/..',
+      ]) {
+        expect(
+          () => paths.pipelineRunDir(bad),
+          throwsArgumentError,
+          reason: bad,
+        );
+      }
+      expect(Directory(p.join(sandbox.path, 'pipelines')).existsSync(), isFalse);
     });
 
     test('reviewSnapshotDir sanitizes unsafe id characters', () async {

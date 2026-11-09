@@ -314,8 +314,8 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
     if (!isAuthed) {
       return EmptyConfigState(
         icon: AppIcons.gitPullRequest,
-        message: l10n.connectGitHubToLoadPrs,
-        hint: l10n.connectGitHubHint,
+        message: l10n.connectForgeToLoadPrs,
+        hint: l10n.connectForgeHint,
       );
     }
     if (prDataAsync.hasError || repoError != null || reviewedError != null) {
@@ -340,7 +340,7 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
       return EmptyConfigState(
         icon: AppIcons.gitPullRequest,
         message: l10n.noRepositoriesConfigured,
-        hint: l10n.addGithubRepoPrompt,
+        hint: l10n.addForgeRepoPrompt,
         action: CcButton(
           onPressed: () => GoRouter.of(
             context,

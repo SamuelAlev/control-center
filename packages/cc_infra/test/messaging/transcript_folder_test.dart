@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event_codec.dart';
 import 'package:cc_infra/src/messaging/transcript_folder.dart';
 import 'package:test/test.dart';
 
@@ -235,6 +236,68 @@ void main() {
 
       expect(folder.segments, hasLength(1));
       expect(updates, hasLength(before));
+    });
+  });
+
+  group('text retraction (a discarded model attempt)', () {
+    test('trims the open text segment and reports the trimmed snapshot', () {
+      folder
+        ..add(TextEvent(content: 'Final answer: '))
+        ..add(TextEvent(content: 'half an ans'));
+      final charsBefore = folder.transcriptChars;
+      updates.clear();
+
+      folder.add(TextRetractedEvent(text: 'half an ans'));
+
+      expect(folder.snapshot().single, isA<TextSegment>());
+      expect((folder.snapshot().single as TextSegment).text, 'Final answer: ');
+      // Closing the open segment, then the trimmed snapshot that replaces it.
+      final closed = updates.last.update as SegmentClosed;
+      expect((closed.segment as TextSegment).text, 'Final answer: ');
+      expect(updates.last.structural, isTrue);
+      expect(folder.transcriptChars, charsBefore - 'half an ans'.length);
+      // The retried attempt then streams into a fresh segment.
+      folder.add(TextEvent(content: 'the full answer'));
+      expect(folder.currentText(), 'Final answer:\n\nthe full answer');
+    });
+
+    test('withdraws thinking and text across their own segments', () {
+      folder
+        ..add(ThinkingEvent(content: 'let me think'))
+        ..add(TextEvent(content: 'partial'));
+
+      folder.add(TextRetractedEvent(text: 'partial', thinking: 'let me think'));
+
+      final segments = folder.snapshot();
+      expect((segments[0] as ReasoningSegment).text, isEmpty);
+      expect((segments[1] as TextSegment).text, isEmpty);
+      expect(folder.currentText(), isEmpty);
+    });
+
+    test('stops at a tool segment: earlier turns are never touched', () {
+      folder
+        ..add(TextEvent(content: 'before the tool'))
+        ..add(ToolCallEvent(toolName: 'Read', toolCallId: 'a'))
+        ..add(ToolResultEvent(toolCallId: 'a', outputs: 'ok'))
+        ..add(TextEvent(content: 'abc'));
+
+      // Over-long retraction (a provider envelope the extractor shortened)
+      // clamps at the attempt's own text.
+      folder.add(TextRetractedEvent(text: 'xxabc'));
+
+      expect((folder.segments[0] as TextSegment).text, 'before the tool');
+      expect((folder.segments[1] as ToolSegment).outputs, 'ok');
+      expect((folder.segments[2] as TextSegment).text, isEmpty);
+    });
+
+    test('round-trips through the wire codec', () {
+      final wire = AgentProcessEventCodec.toWire(
+        TextRetractedEvent(text: 'a', thinking: 'b'),
+      );
+      final back = AgentProcessEventCodec.fromWire(wire) as TextRetractedEvent;
+      expect(back.text, 'a');
+      expect(back.thinking, 'b');
+      expect(back.type, AgentProcessEventType.textRetracted);
     });
   });
 

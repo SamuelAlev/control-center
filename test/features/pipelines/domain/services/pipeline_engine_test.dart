@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pipeline_events.dart';
@@ -103,7 +104,6 @@ class _FakeRunRepo implements PipelineRunRepository {
       outputJson: outputJson ?? current.outputJson,
       spaceId: spaceId ?? current.spaceId,
       errorMessage: errorMessage ?? current.errorMessage,
-      branchIndex: current.branchIndex,
       attemptCount: current.attemptCount,
       startedAt: current.startedAt,
       finishedAt: finishedAt ?? current.finishedAt,
@@ -128,7 +128,6 @@ class _FakeRunRepo implements PipelineRunRepository {
       inputJson: current.inputJson,
       // The room the previous attempt opened survives; its outcome does not.
       spaceId: current.spaceId,
-      branchIndex: current.branchIndex,
       attemptCount: current.attemptCount,
       startedAt: startedAt,
     );
@@ -171,7 +170,6 @@ class _FakeRunRepo implements PipelineRunRepository {
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
   }) async => runs.values
       .where(
         (r) =>
@@ -179,7 +177,7 @@ class _FakeRunRepo implements PipelineRunRepository {
             r.templateId == templateId &&
             !r.isTerminal &&
             r.status != PipelineRunStatus.queued &&
-            !excludeTriggerEventTypes.contains(r.triggerEventType),
+            !r.isProjection,
       )
       .length;
 
@@ -261,6 +259,58 @@ Future<void> _waitFor(
 }
 
 /// A linear pipeline: trigger → stepA → stepB → terminal.
+/// Seeds a parent run that is waiting on a sub-pipeline at step `call` — the
+/// only state a child's parent link may name.
+Future<PipelineRun> _seedWaitingParent(
+  PipelineRunRepository runs, {
+  String id = 'parent-run',
+  String workspaceId = 'ws',
+  String? requester,
+  String bodyKey = BuiltInBodyKeys.callFlow,
+  PipelineStepStatus stepStatus = PipelineStepStatus.running,
+  PipelineRunStatus status = PipelineRunStatus.running,
+}) async {
+  final parent = PipelineRun(
+    id: id,
+    templateId: 'parent-tpl',
+    workspaceId: workspaceId,
+    status: status,
+    triggerPayload: {kPipelineRequestedByKey: ?requester},
+    startedAt: DateTime(2026),
+    templateSnapshot: PipelineDefinition(
+      templateId: 'parent-tpl',
+      workspaceId: workspaceId,
+      name: 'Parent',
+      steps: [
+        PipelineStepDefinition(
+          id: 'trigger',
+          kind: StepKind.trigger,
+          bodyKey: 'pipeline.trigger',
+        ),
+        PipelineStepDefinition(
+          id: 'call',
+          kind: StepKind.listen,
+          bodyKey: bodyKey,
+          triggers: [
+            const StepTrigger(sourceStepIds: ['trigger']),
+          ],
+        ),
+      ],
+    ),
+  );
+  await runs.insertRun(parent);
+  await runs.insertStepRun(
+    PipelineStepRun(
+      id: '$id-call',
+      pipelineRunId: id,
+      stepId: 'call',
+      status: stepStatus,
+      startedAt: DateTime(2026),
+    ),
+  );
+  return parent;
+}
+
 PipelineDefinition _linearDefinition({
   String templateId = 'tpl',
   String workspaceId = 'ws',
@@ -582,20 +632,13 @@ void main() {
     });
 
     test("a sub-pipeline inherits its parent's requester", () async {
-      final parent = await engine.start(
-        'tpl',
-        workspaceId: 'ws',
-        requestedByUserId: 'alice',
-      );
-      await _waitFor(
-        () => runRepo.runs[parent!.id]?.status == PipelineRunStatus.completed,
-      );
+      final parent = await _seedWaitingParent(runRepo, requester: 'alice');
       final payload = await payloadOf(
         () => engine.start(
           'tpl',
           workspaceId: 'ws',
-          parentPipelineRunId: parent!.id,
-          parentStepId: 'a',
+          parentPipelineRunId: parent.id,
+          parentStepId: 'call',
         ),
       );
       expect(payload![kPipelineRequestedByKey], 'alice');
@@ -3507,16 +3550,17 @@ void main() {
       bodies.registerBody('bodyA', (_) async => StepResult.ok());
       bodies.registerBody('bodyB', (_) async => StepResult.ok());
 
+      await _seedWaitingParent(runRepo, id: 'parent-123');
       final run = await engine.start(
         'tpl',
         workspaceId: 'ws',
         parentPipelineRunId: 'parent-123',
-        parentStepId: 'step-xyz',
+        parentStepId: 'call',
       );
 
       expect(run, isNotNull);
       expect(run!.parentPipelineRunId, 'parent-123');
-      expect(run.parentStepId, 'step-xyz');
+      expect(run.parentStepId, 'call');
 
       await _waitFor(
         () => runRepo.runs[run.id]?.status == PipelineRunStatus.completed,
@@ -3524,7 +3568,66 @@ void main() {
 
       final stored = runRepo.runs[run.id]!;
       expect(stored.parentPipelineRunId, 'parent-123');
-      expect(stored.parentStepId, 'step-xyz');
+      expect(stored.parentStepId, 'call');
+    });
+
+    test('a forged parent link is refused (audit: parent_* trust)', () async {
+      final def = _linearDefinition();
+      templateRepo.seed(def);
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody('bodyA', (_) async => StepResult.ok())
+        ..registerBody('bodyB', (_) async => StepResult.ok());
+
+      Future<PipelineRun?> startUnder(String parentId, String stepId) =>
+          engine.start(
+            'tpl',
+            workspaceId: 'ws',
+            parentPipelineRunId: parentId,
+            parentStepId: stepId,
+          );
+
+      await _seedWaitingParent(runRepo, id: 'other-ws', workspaceId: 'ws-2');
+      await _seedWaitingParent(runRepo, id: 'not-call', bodyKey: 'bodyA');
+      await _seedWaitingParent(
+        runRepo,
+        id: 'idle',
+        stepStatus: PipelineStepStatus.completed,
+      );
+      await _seedWaitingParent(
+        runRepo,
+        id: 'done',
+        status: PipelineRunStatus.completed,
+      );
+      for (final (parentId, stepId) in [
+        ('missing', 'call'),
+        ('other-ws', 'call'),
+        ('not-call', 'call'),
+        ('idle', 'call'),
+        ('done', 'call'),
+      ]) {
+        await expectLater(
+          startUnder(parentId, stepId),
+          throwsA(isA<ValidationException>()),
+          reason: parentId,
+        );
+      }
+      await expectLater(
+        engine.start('tpl', workspaceId: 'ws', parentStepId: 'call'),
+        throwsA(isA<ValidationException>()),
+      );
+      expect(runRepo.runs.values.where((r) => r.templateId == 'tpl'), isEmpty);
+    });
+
+    test('an engine run is never a projection, whatever its marker', () async {
+      templateRepo.seed(_linearDefinition());
+      final run = await engine.start(
+        'tpl',
+        workspaceId: 'ws',
+        triggerEventType: IndexCodeTemplate.watchTriggerEventType,
+      );
+      expect(run, isNotNull);
+      expect(runRepo.runs[run!.id]!.isProjection, isFalse);
     });
 
     test('maxConcurrentSteps semaphore allows parallel execution', () async {
@@ -3986,6 +4089,7 @@ void main() {
             workspaceId: 'ws',
             status: PipelineRunStatus.running,
             triggerEventType: IndexCodeTemplate.watchTriggerEventType,
+            isProjection: true,
             startedAt: DateTime.now(),
           ),
         );
@@ -4606,6 +4710,208 @@ void main() {
         run!.id,
       )).where((sr) => sr.stepId == 'join');
       expect(joinRows, hasLength(1));
+    });
+  });
+  // ── Audit regressions: pinning, finish, liveness, permits ────────────
+
+  group('audit regressions', () {
+    PipelineDefinition fanOut() => PipelineDefinition(
+      templateId: 'fan',
+      workspaceId: 'ws',
+      name: 'Fan',
+      steps: [
+        PipelineStepDefinition(
+          id: 'trigger',
+          kind: StepKind.trigger,
+          bodyKey: 'pipeline.trigger',
+        ),
+        PipelineStepDefinition(
+          id: 'slow',
+          kind: StepKind.listen,
+          bodyKey: 'bodySlow',
+          triggers: [
+            const StepTrigger(sourceStepIds: ['trigger']),
+          ],
+        ),
+        PipelineStepDefinition(
+          id: 'fast',
+          kind: StepKind.listen,
+          bodyKey: 'bodyFast',
+          triggers: [
+            const StepTrigger(sourceStepIds: ['trigger']),
+          ],
+        ),
+        PipelineStepDefinition(
+          id: 'end',
+          kind: StepKind.terminal,
+          bodyKey: '_terminal',
+          triggers: [
+            const StepTrigger(sourceStepIds: ['fast']),
+          ],
+        ),
+      ],
+    );
+
+    test('a run resumes against the graph it was pinned to', () async {
+      templateRepo.seed(_linearDefinition());
+      final seenConfig = <String?>[];
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody('bodyA', (ctx) async {
+          seenConfig.add(ctx.step?.config.outputKey);
+          return StepResult.suspendUntilEvent('wait');
+        })
+        ..registerBody(
+          'bodyB',
+          (_) async => StepResult.ok(mutatedState: {'ran': 'pinned'}),
+        )
+        ..registerBody(
+          'bodyEdited',
+          (_) async => StepResult.ok(mutatedState: {'ran': 'live'}),
+        );
+
+      final run = await engine.start('tpl', workspaceId: 'ws');
+      await _waitFor(() => seenConfig.isNotEmpty);
+      expect(runRepo.runs[run!.id]!.templateSnapshot, isNotNull);
+
+      // Edit the live template while the run waits: stepB now runs another
+      // body.
+      final live = _linearDefinition();
+      templateRepo.seed(
+        live.copyWith(
+          steps: [
+            for (final step in live.steps)
+              step.id == 'stepB'
+                  ? PipelineStepDefinition(
+                      id: 'stepB',
+                      kind: StepKind.listen,
+                      bodyKey: 'bodyEdited',
+                      triggers: step.triggers,
+                    )
+                  : step,
+          ],
+          version: 2,
+        ),
+      );
+      await engine.resumeStep(pipelineRunId: run.id, stepId: 'stepA');
+      await _waitFor(
+        () => runRepo.runs[run.id]?.status == PipelineRunStatus.completed,
+      );
+      expect(runRepo.runs[run.id]!.state['ran'], 'pinned');
+    });
+
+    test('completing a run closes branches still open', () async {
+      templateRepo.seed(fanOut());
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody(
+          'bodySlow',
+          (_) async => StepResult.suspendUntilEvent('never'),
+        )
+        ..registerBody('bodyFast', (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          return StepResult.ok();
+        });
+
+      final run = await engine.start('fan', workspaceId: 'ws');
+      await _waitFor(
+        () => runRepo.runs[run!.id]?.status == PipelineRunStatus.completed,
+      );
+      final slow = (await runRepo.stepRunsForPipeline(
+        run!.id,
+      )).singleWhere((sr) => sr.stepId == 'slow');
+      expect(slow.status, PipelineStepStatus.cancelled);
+    });
+
+    test('the liveness sweep fails a step stuck waiting', () async {
+      final sweeping = PipelineEngine(
+        bodies: bodies,
+        templates: templateRepo,
+        repository: runRepo,
+        agentRunLogRepository: agentRunLogRepo,
+        stepProcessRegistry: registry,
+        eventBus: eventBus,
+        suspendedStepTimeout: Duration.zero,
+      );
+      templateRepo.seed(_linearDefinition());
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody(
+          'bodyA',
+          (_) async => StepResult.suspendUntilEvent('never'),
+        )
+        ..registerBody('bodyB', (_) async => StepResult.ok());
+
+      final run = await sweeping.start('tpl', workspaceId: 'ws');
+      await _waitFor(
+        () => runRepo.steps.values.any(
+          (sr) =>
+              sr.stepId == 'stepA' && sr.status == PipelineStepStatus.running,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await sweeping.sweepStalledSteps();
+
+      expect(runRepo.runs[run!.id]!.status, PipelineRunStatus.failed);
+      final stepA = runRepo.steps.values.singleWhere(
+        (sr) => sr.stepId == 'stepA',
+      );
+      expect(stepA.status, PipelineStepStatus.failed);
+      await sweeping.dispose();
+    });
+
+    test('a node timeout during whileWaiting does not raise the cap', () async {
+      final capped = PipelineEngine(
+        bodies: bodies,
+        templates: templateRepo,
+        repository: runRepo,
+        agentRunLogRepository: agentRunLogRepo,
+        stepProcessRegistry: registry,
+        eventBus: eventBus,
+        maxConcurrentSteps: 1,
+      );
+      final idle = Completer<void>();
+      templateRepo
+        ..seed(
+          _linearDefinition(
+            templateId: 'idler',
+            configA: const PipelineNodeConfig(timeoutMs: 30),
+          ),
+        )
+        ..seed(_linearDefinition(templateId: 'probe'));
+      var running = 0;
+      var peak = 0;
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody('bodyA', (ctx) async {
+          if (ctx.templateId == 'idler') {
+            await ctx.whileWaiting(() => idle.future);
+            return StepResult.ok();
+          }
+          running++;
+          peak = running > peak ? running : peak;
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          running--;
+          return StepResult.ok();
+        })
+        ..registerBody('bodyB', (_) async => StepResult.ok());
+
+      final idler = await capped.start('idler', workspaceId: 'ws');
+      await _waitFor(
+        () => runRepo.runs[idler!.id]?.status == PipelineRunStatus.failed,
+        reason: 'the idle body times out',
+      );
+      final probes = [
+        await capped.start('probe', workspaceId: 'ws'),
+        await capped.start('probe', workspaceId: 'ws'),
+      ];
+      await _waitFor(
+        () => probes.every(
+          (r) => runRepo.runs[r!.id]?.status == PipelineRunStatus.completed,
+        ),
+      );
+      expect(peak, 1, reason: 'one permit, so one body at a time');
+      idle.complete();
     });
   });
 }

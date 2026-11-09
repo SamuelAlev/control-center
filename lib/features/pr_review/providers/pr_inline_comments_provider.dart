@@ -3,6 +3,8 @@ import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repos
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,6 +88,9 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
 
   PrPostingContext? _context;
 
+  /// The viewer's login on this PR's forge, kept current by `build`.
+  String _viewerLogin = '';
+
   @override
   /// Builds the initial comment state from the PR's own repo.
   PrInlineCommentsState build() {
@@ -104,6 +109,13 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
       prDetailProvider(pr).select((d) => d.value?.headSha.isNotEmpty ?? false),
     );
     final headSha = ref.read(prDetailProvider(pr)).value?.headSha ?? '';
+    // Followed, not watched: [_viewerIdentity] uses the latest login at
+    // write time, and a rebuild here would drop the threads being written.
+    ref.listen(
+      currentUserLoginForPrProvider(pr),
+      (_, login) => _viewerLogin = login,
+      fireImmediately: true,
+    );
 
     if (repo != null &&
         repository != null &&
@@ -159,12 +171,16 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
   /// identity is unresolved, which the server-comment stream corrects once
   /// the comment lands.
   ({String author, String? avatarUrl}) _viewerIdentity() {
-    final user = ref.read(githubUserProvider).value;
-    final login = user?.login ?? '';
-    if (user == null || login.isEmpty) {
+    // The login on THIS PR's forge. The avatar comes from the GitHub profile,
+    // so it is only used when that profile is the same account.
+    final login = _viewerLogin;
+    if (login.isEmpty) {
       return (author: 'You', avatarUrl: null);
     }
-    final avatar = user.avatarUrl;
+    final user = ref.read(githubUserProvider).value;
+    final avatar = user != null && user.login.toLowerCase() == login
+        ? user.avatarUrl
+        : '';
     return (author: login, avatarUrl: avatar.isEmpty ? null : avatar);
   }
 
@@ -582,4 +598,4 @@ final prInlineCommentsControllerProvider =
       PrInlineCommentsController,
       PrInlineCommentsState,
       PrRef
->(PrInlineCommentsController.new);
+    >(PrInlineCommentsController.new);

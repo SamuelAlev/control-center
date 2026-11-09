@@ -50,9 +50,13 @@ class _FakeRigRepository implements RigRepository {
   final List<RigActionLogEntry> actionLog = [];
   int _seq = 0;
 
+  /// Hears every saved row, in order.
+  void Function(Rig rig)? onSave;
+
   @override
   Future<void> save(String workspaceId, Rig rig) async {
     rigs[rig.id] = rig;
+    onSave?.call(rig);
   }
 
   @override
@@ -547,6 +551,35 @@ void main() {
     service.debugRegister(rig, driver: driver);
     return rig;
   }
+
+  group('lifecycle records', () {
+    test('a close writes closing before closed', () async {
+      final statuses = <RigStatus>[];
+      final rig = seed();
+      repository.onSave = (saved) {
+        if (saved.id == rig.id) {
+          statuses.add(saved.status);
+        }
+      };
+      await service.close(workspaceId: 'ws1', rigId: rig.id);
+      expect(statuses.map((status) => status.phase), [
+        RigPhase.closing,
+        RigPhase.closed,
+      ]);
+      expect(statuses.last.closeReason, RigCloseReason.requested);
+    });
+
+    test('a deleted space closes its machines and nobody else\'s', () async {
+      seed(id: 'mine', conversationId: 'space-1');
+      seed(id: 'theirs', conversationId: 'space-2');
+      await service.closeForSpace(workspaceId: 'ws1', spaceId: 'space-1');
+      expect(
+        repository.rigs['mine']!.status.closeReason,
+        RigCloseReason.conversationEnded,
+      );
+      expect(repository.rigs['theirs']!.status.phase, RigPhase.ready);
+    });
+  });
 
   group('workspace isolation', () {
     test(

@@ -490,6 +490,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get teammate => 'Csapattárs';
 
   @override
+  String get systemSender => 'Rendszer';
+
+  @override
   String get agent => 'Ügynök';
 
   @override
@@ -643,12 +646,12 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.';
+    return 'A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'A GitHub App telepítése fel van függesztve. A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.';
+    return 'A GitHub App telepítése fel van függesztve. A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.';
   }
 
   @override
@@ -2597,6 +2600,22 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Túl sok hibás kód. Indítsa újra a bejelentkezést.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'A bejelentkezési szolgáltatás most nem válaszol. Várjon egy percet, majd próbálja újra.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'A bejelentkezést elutasították. Indítsa újra, és hagyja jóvá az összes kért engedélyt.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'A bejelentkezés sikerült, de a szerver nem tudta menteni. Próbálja újra.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

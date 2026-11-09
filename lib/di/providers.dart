@@ -1,11 +1,11 @@
 // Web-safe composition root.
-// This half of the app's DI holds ONLY web-safe providers:
-// talk to the active `rpcClientProvider`, a connected `RemoteRpcClient` on both desktop
-// and web (the desktop spawns/connects to `cc_server`, web connects directly — both flip
-// through the same RPC adapters);
-// the GitHub identity + calendar reads (over RPC — the host owns tokens) and the
-// catalog, …) — DECLARED here but RESOLVED through the `provider_bindings.dart` seam
-// (`build*`), which on the VM resolves to RPC adapters (same as web) and on web resolves
+//
+// Every provider here talks to the active `rpcClientProvider`: a connected
+// `RemoteRpcClient` on both desktop and web (the desktop spawns or connects to
+// `cc_server`, web connects directly), so both targets resolve the SAME
+// `cc_data` RPC adapters. The one genuine platform divergence — browser audio
+// capture for the web meeting recorder — goes through
+// `audio_capture_bindings.dart`.
 library;
 
 import 'dart:async';
@@ -59,9 +59,8 @@ import 'package:control_center/core/notifications/notification_sound_service.dar
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/di/audio_capture_bindings.dart';
 import 'package:control_center/di/demo_providers.dart';
-import 'package:control_center/di/provider_bindings.dart';
-import 'package:control_center/features/demo/demo_world.dart';
 import 'package:control_center/features/settings/data/privacy_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -235,117 +234,117 @@ final agentMentionParserProvider = Provider<AgentMentionParser>((ref) {
   return const AgentMentionParser();
 });
 
-//
-// DECLARED here so the screens that read them compile on web; RESOLVED through
-// the `build*` factories from `provider_bindings.dart` — the real desktop
-// implementation on the VM, an honest "not available on web" stub on web.
+// The connected server's host capabilities and host-owned data. Each is the
+// same `cc_data` RPC adapter on desktop and web: the server's machine is the
+// one that has the filesystem, processes, adapters and sandbox, never this
+// client's.
 
-/// Provides the [WorkspaceFilesystemPort] — the local workspace on-disk layout
-/// (agents/skills/conversation dirs). DECLARED here so the agent/skill/PR
-/// screens that read it compile on web; on the VM it resolves to the real
-/// `WorkspaceFilesystemService`, on web to an honest "not available" stub.
+/// The workspace on-disk layout (agents/skills/conversation dirs) on the
+/// SERVER's machine: server-side paths are opaque tokens handed back to other
+/// `fs.*` ops.
 final workspaceFilesystemPortProvider = Provider<WorkspaceFilesystemPort>(
-  buildWorkspaceFilesystemPort,
+  (ref) => RpcWorkspaceFilesystemPort(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [ProcessDetectionPort] (kill-agent on desktop).
+/// The server host's agent process table (`process.detect` / `process.kill`).
 final processDetectionServiceProvider = Provider<ProcessDetectionPort>(
-  buildProcessDetectionService,
+  (ref) => RpcProcessDetectionPort(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [AdapterRepository] (settings → adapters; desktop detection).
+/// The agent-runner CLIs installed on the server host (Settings → Adapters,
+/// `adapter.detectOne` / `adapter.detectAll`).
 final adapterRepositoryProvider = Provider<AdapterRepository>(
-  buildAdapterRepository,
+  (ref) => RpcAdapterRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [AcpModelRepository] (settings → adapters; desktop detection).
+/// The models an adapter advertises, resolved on the server host
+/// (`acp.listModels`).
 final acpModelRepositoryProvider = Provider<AcpModelRepository>(
-  buildAcpModelRepository,
+  (ref) => RpcAcpModelRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [ModelCatalogService] (PRD 05). The host fetches models.dev
-/// and caches it under its data dir; both desktop and web read that document
-/// over `models.catalog`. The catalog is global reference data, so it is not
-/// workspace- or DB-scoped — only governance policy (workspace-scoped) is.
+/// The [ModelCatalogService] (PRD 05). The host fetches models.dev and caches
+/// it under its data dir; clients read that document over `models.catalog`.
+/// The catalog is global reference data, so it is not workspace-scoped — only
+/// governance policy (workspace-scoped) is.
 final modelCatalogServiceProvider = Provider<ModelCatalogService>(
-  buildModelCatalogService,
+  (ref) => ModelCatalogService(
+    source: RpcModelsDevSource(ref.watch(rpcClientProvider)),
+  ),
 );
 
-/// Provides the [CalendarRepository] (over RPC; the cc_server owns the DB).
+/// Synced calendar events and connected accounts (`calendar.*`). Account
+/// connection, RSVP, the sync reconciler, the alert sweep and meeting linking
+/// run inside the server; the RPC repository refuses them.
 final calendarRepositoryProvider = Provider<CalendarRepository>(
-  buildCalendarRepository,
+  (ref) => RpcCalendarRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [WeatherRepository] (over RPC; the cc_server owns the DB). The
-/// soundscapes panel reads the latest snapshot for the active workspace and
-/// forwards refresh / set-location to the host.
+/// The latest weather snapshot for the active workspace (`weather.*`). The
+/// live Open-Meteo fetch and persistence run host-side, so refresh and
+/// location changes forward to the server.
 final weatherRepositoryProvider = Provider<WeatherRepository>(
-  buildWeatherRepository,
+  (ref) => RpcWeatherRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [FontCatalogRepository] (over RPC; the host owns the upstream
-/// fetch and its cache). Feeds the settings font picker.
+/// The font catalogue: the host fetches and caches it, because a client cannot
+/// obtain a Skia-decodable font file from an upstream at all (see
+/// `installHostFontLoader`). Feeds the settings font picker.
 final fontCatalogRepositoryProvider = Provider<FontCatalogRepository>(
-  buildFontCatalogRepository,
+  (ref) => RpcFontCatalogRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [MeetingRepository] (over RPC; the cc_server owns the DB).
+/// Meetings (`meeting.*`). Recording, transcription and summaries run on the
+/// server; clients only capture audio.
 final meetingRepositoryProvider = Provider<MeetingRepository>(
-  buildMeetingRepository,
+  (ref) => RpcMeetingRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [MeetingRecordingControlPort] (over RPC). Used by the web
-/// recorder to stream browser-captured audio to the host; unused on desktop
-/// self-serve (the local native recorder captures in-process).
+/// Streams captured mic/system audio to the host (`meeting.startRecording` /
+/// `ingestAudio` / `stopRecording`): natively captured on desktop,
+/// browser-captured on web.
 final meetingRecordingControlProvider = Provider<MeetingRecordingControlPort>(
-  buildMeetingRecordingControl,
+  (ref) => RpcMeetingRecordingControl(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [DictationControlPort] (over RPC). Drives the composer's
-/// server-backed voice dictation: streams mic PCM to the host and watches
-/// finalized transcript windows (PRD 25 §2).
+/// Drives the composer's server-backed voice dictation: streams mic PCM to the
+/// host and watches finalized transcript windows (PRD 25 §2).
 final dictationControlProvider = Provider<DictationControlPort>(
-  buildDictationControl,
+  (ref) => RpcDictationControl(ref.watch(rpcClientProvider)),
 );
 
-/// Provides a factory for a fresh [MeetingAudioCapturePort] per recording. On
-/// web this builds a browser `WebAudioCapture`; on desktop it throws (the local
-/// native recorder captures in-process and never reads this).
+/// A factory for a fresh [MeetingAudioCapturePort] per recording. On web this
+/// builds a browser `WebAudioCapture`; on desktop it throws (the native
+/// recorder captures itself and never reads this).
 final meetingAudioCaptureFactoryProvider =
     Provider<MeetingAudioCapturePort Function()>(
       buildMeetingAudioCaptureFactory,
     );
 
-/// Provides the [PrLifecycleRepository] (over RPC; the cc_server owns the DB).
+/// PR drafts (`pr_lifecycle.*`): the compose-PR screen reads and writes them;
+/// publishing runs host-side under the server's forge credentials.
 final prLifecycleRepositoryProvider = Provider<PrLifecycleRepository>(
-  buildPrLifecycleRepository,
+  (ref) => RpcPrLifecycleRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [SandboxDetectorPort] — OS-native sandbox detection. The
-/// sandbox runs on the HOST that executes agents, so detection reflects that
-/// host: on the desktop self-serve build it probes the local machine; on a
-/// thin/web client it asks the connected `cc_server` over the `sandbox.detect`
-/// RPC op. DECLARED here so the Settings → Sandboxing page compiles on web (it
-/// must never `import 'dart:io'`); RESOLVED via the `build*` seam.
+/// OS-native sandbox detection. The sandbox runs on the HOST that executes
+/// agents, so detection asks the connected `cc_server` (`sandbox.detect`).
 final sandboxDetectorPortProvider = Provider<SandboxDetectorPort>(
-  buildSandboxDetector,
+  (ref) => RemoteSandboxDetector(ref.watch(rpcClientProvider)),
 );
 
 /// Watches the audit trail for one entity, mapped to domain [ActivityEntry]s
-/// so presentation never touches the database layer. Streamed over RPC from the
-/// server that owns the audit trail (on both desktop and web thin clients).
+/// so presentation never touches the data layer. Streamed over RPC from the
+/// server that owns the audit trail.
 final entityActivityProvider = StreamProvider.autoDispose
     .family<
       List<ActivityEntry>,
       ({String workspaceId, String entityType, String entityId})
-    >((ref, args) {
-      return watchEntityActivity(
-        ref,
-        workspaceId: args.workspaceId,
-        entityType: args.entityType,
-        entityId: args.entityId,
-      );
-    });
+    >(
+      (ref, args) => RemoteActivityLog(
+        ref.watch(rpcClientProvider),
+      ).watchForEntity(args.workspaceId, args.entityType, args.entityId),
+    );
 
 /// How often the viewer lookup is retried while no user has resolved.
 ///
@@ -370,10 +369,19 @@ const Duration kGitHubIdentityRetryInterval = Duration(seconds: 30);
 const Duration kGitHubIdentityRetryMaxInterval = Duration(minutes: 5);
 
 /// Consecutive failed/empty identity lookups, driving the backoff above.
-/// Module-level because the provider is rebuilt by each retry, so per-build
-/// state would reset the backoff on every attempt — which is how a backoff
-/// silently becomes a flat interval.
-int _githubIdentityAttempts = 0;
+///
+/// Held by a provider that is only ever READ, never watched: the identity
+/// provider is rebuilt by each retry, so per-build state would reset the
+/// backoff on every attempt — which is how a backoff silently becomes a flat
+/// interval. Scoped to the container rather than the isolate, so two sessions
+/// (or two tests) never share one count.
+final _githubIdentityAttemptsProvider = Provider<_AttemptCounter>(
+  (ref) => _AttemptCounter(),
+);
+
+class _AttemptCounter {
+  int value = 0;
+}
 
 /// The raw `github.currentUser` answer (`{user, teams}`), retried until a user
 /// resolves.
@@ -382,15 +390,17 @@ int _githubIdentityAttempts = 0;
 /// [githubUserProvider] and [viewerGitHubTeamsProvider] so the two never
 /// double-call the op. Never completes with an error: a failure resolves empty
 /// and schedules a retry, so downstream consumers keep their
-/// "unresolved reads as absent" contract.
-final _viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
+/// "unresolved reads as absent" contract. Invalidated with the rest of the
+/// forge identity by `invalidateForgeState`.
+final viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
   ref,
 ) async {
+  final attempts = ref.read(_githubIdentityAttemptsProvider);
   void retryLater() {
     // Exponential, capped. `1 << n` doubles per consecutive failure and the
     // clamp holds it at the ceiling.
-    final n = _githubIdentityAttempts;
-    _githubIdentityAttempts = n + 1;
+    final n = attempts.value;
+    attempts.value = n + 1;
     final scaled = kGitHubIdentityRetryInterval * (1 << (n > 4 ? 4 : n));
     final delay = scaled > kGitHubIdentityRetryMaxInterval
         ? kGitHubIdentityRetryMaxInterval
@@ -399,17 +409,9 @@ final _viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
     ref.onDispose(timer.cancel);
   }
 
-  // The demo has no forge credential, so this op is absent from its registry
-  // and no amount of retrying will change that. Answer with the fixture
-  // viewer instead: the team membership is what routes the retriever PR's
-  // TEAM review request into the visitor's queue. See `kDemoViewerLogin`.
-  if (ref.watch(isDemoServerProvider)) {
-    return const {
-      'user': {'login': kDemoViewerLogin, 'name': 'Maya Okonkwo'},
-      'teams': [
-        {'org': kDemoViewerOrg, 'slug': kDemoViewerTeamSlug},
-      ],
-    };
+  final demo = ref.watch(demoGitHubIdentityProvider);
+  if (demo != null) {
+    return demo;
   }
 
   try {
@@ -423,7 +425,7 @@ final _viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
       retryLater();
     } else {
       // Resolved: reset the backoff so a LATER failure starts fast again.
-      _githubIdentityAttempts = 0;
+      attempts.value = 0;
     }
     return data;
   } on Object catch (e) {
@@ -437,9 +439,9 @@ final _viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
 });
 
 /// Fetches the authenticated GitHub user profile. Null until the host resolves
-/// one (see [_viewerGitHubIdentityProvider] for the retry).
+/// one (see [viewerGitHubIdentityProvider] for the retry).
 final githubUserProvider = FutureProvider<GitHubUser?>((ref) async {
-  final data = await ref.watch(_viewerGitHubIdentityProvider.future);
+  final data = await ref.watch(viewerGitHubIdentityProvider.future);
   final user = data['user'];
   return user is Map ? GitHubUser.fromJson(user.cast<String, dynamic>()) : null;
 });
@@ -450,7 +452,7 @@ final githubUserProvider = FutureProvider<GitHubUser?>((ref) async {
 final viewerGitHubTeamsProvider = FutureProvider<Map<String, Set<String>>>((
   ref,
 ) async {
-  final data = await ref.watch(_viewerGitHubIdentityProvider.future);
+  final data = await ref.watch(viewerGitHubIdentityProvider.future);
   return parseViewerGitHubTeams(data['teams']);
 });
 

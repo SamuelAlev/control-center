@@ -37,8 +37,7 @@ final prStacksForRepoProvider = FutureProvider.autoDispose
               .join('|'),
         ),
       );
-      final registry = ref.watch(forgeProviderRegistryProvider);
-      final repository = registry.resolve(
+      final repository = ref.watch(prReviewRepositoryFactoryProvider)(
         ForgeProviderContext(repo: repo, workspaceId: workspace.id),
       );
       try {

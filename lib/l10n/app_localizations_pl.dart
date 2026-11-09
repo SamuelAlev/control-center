@@ -9,6 +9,15 @@ class AppLocalizationsPl extends AppLocalizations {
   AppLocalizationsPl([String locale = 'pl']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Nie udało się teraz wysłać: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Twoja odpowiedź nie została dostarczona. Pytanie mogło już zostać odebrane albo agent przestał czekać.';
+
+  @override
   String get succeeded => 'Zakończono pomyślnie';
 
   @override
@@ -2638,10 +2647,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get addGif => 'Dodaj GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Dodaj co najmniej jedno repozytorium GitHub, aby widzieć pull requesty';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -6001,9 +6006,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Czas trwania';
 
   @override
-  String get pipelineStepBranch => 'Gałąź';
-
-  @override
   String get pipelineStepViewConversation => 'Zobacz rozmowę';
 
   @override
@@ -7109,14 +7111,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reviewRequested => 'Poproszono o recenzję';
 
   @override
-  String get connectGitHubHint =>
-      'Zaloguj się do GitHub w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Połącz GitHub, aby wczytać pull requesty';
-
-  @override
   String get noRepositoriesConfigured => 'Nie skonfigurowano repozytoriów';
 
   @override
@@ -7790,13 +7784,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Utwórz jako szkic';
-
-  @override
-  String get composePrNoRepo => 'Nie wybrano repozytorium GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Wybierz obszar roboczy z repozytorium powiązanym z GitHub, aby otworzyć pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -17069,6 +17056,27 @@ class AppLocalizationsPl extends AppLocalizations {
       'Ten kod nie pasuje do tego logowania. Sprawdź go i spróbuj ponownie.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Zbyt wiele błędnych kodów. Rozpocznij logowanie od nowa.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'To logowanie jest już nieważne. Rozpocznij je od nowa.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Serwer nie mógł odczytać tego żądania logowania. Rozpocznij je od nowa.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Zbyt wiele prób logowania w tej chwili. Odczekaj minutę i spróbuj ponownie.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider zaakceptował logowanie, ale serwer nie mógł go zapisać. Spróbuj ponownie.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider teraz nie odpowiada. Spróbuj ponownie za kilka minut.';
   }
@@ -17099,7 +17107,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Ten obszar roboczy Linear jest już połączony z innym serwerem Control Center.';
+      'Ten obszar roboczy Slack jest już połączony z innym serwerem Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17533,4 +17541,38 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Przełącz aplikację';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Otwórz w $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Wyświetlono pierwsze $count plików. $forge nie wyświetla pozostałych.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Połącz hosting kodu, aby wczytać pull requesty';
+
+  @override
+  String get connectForgeHint =>
+      'Połącz GitHub, GitLab lub Bitbucket w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Dodaj co najmniej jedno repozytorium w GitHub, GitLab lub Bitbucket, aby zobaczyć pull requesty';
+
+  @override
+  String get composePrNoForgeRepo => 'Nie wybrano hostowanego repozytorium';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Wybierz obszar roboczy z repozytorium w GitHub, GitLab lub Bitbucket, aby otworzyć pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Połącz $forge, aby otworzyć pull request w tym repozytorium';
+  }
 }

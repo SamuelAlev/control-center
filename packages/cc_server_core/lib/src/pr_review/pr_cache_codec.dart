@@ -14,7 +14,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart
 
 /// Symmetric JSON codecs for the PR-review SWR disk cache.
 ///
-/// Encode/decode must round-trip; unknown fields are preserved where possible.
+/// Encode/decode must round-trip every [PullRequest] field. Decode does NOT
+/// keep fields it does not know: a key added to the wire without a codec
+/// change is dropped on the next cache read.
 class PrCacheCodec {
   const PrCacheCodec._();
 

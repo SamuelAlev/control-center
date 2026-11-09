@@ -340,7 +340,7 @@ class _FakeFactory implements HarnessProviderFactory {
   dynamic noSuchMethod(Invocation invocation) {}
 }
 
-class _FakeProvider implements LlmProviderPort {
+class _FakeProvider extends LlmProviderPort {
   _FakeProvider(this.reply);
 
   final String reply;

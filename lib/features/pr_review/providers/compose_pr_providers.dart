@@ -1,6 +1,4 @@
-import 'package:cc_data/cc_data.dart'
-    show prCommitFromWireDto, prFileFromWireDto;
-import 'package:cc_domain/cc_domain.dart' show PrCommitDto, PrFileDto;
+import 'package:cc_data/cc_data.dart' show RemoteForgeCompose;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -13,12 +11,17 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// The compose-PR reads on the active repo's own forge (`forge.*` ops).
+final forgeComposeProvider = Provider<RemoteForgeCompose>(
+  (ref) => RemoteForgeCompose(ref.watch(rpcClientProvider)),
+);
+
 /// Branch names available on the active repo's remote — the candidate set for
-/// both the head and base of a new PR. Empty when no GitHub-linked repo is
+/// both the head and base of a new PR. Empty when no forge-linked repo is
 /// active.
 ///
-/// Fetched SERVER-SIDE over RPC (the thin client holds no GitHub token): the
-/// host runs the gh query and orders the result for the compose pickers (the
+/// Fetched SERVER-SIDE over RPC (the thin client holds no forge token): the
+/// host asks the repo's own forge and orders the result for the compose pickers (the
 /// server user's branches first, each group most-recent-commit first).
 final repoBranchesProvider = FutureProvider.autoDispose<List<String>>((
   ref,
@@ -27,11 +30,7 @@ final repoBranchesProvider = FutureProvider.autoDispose<List<String>>((
   if (repo == null || !repo.hasForgeRemote) {
     return const <String>[];
   }
-  final data = await ref.watch(rpcClientProvider).call('github.repoBranches', {
-    'owner': repo.remoteOwner,
-    'repo': repo.remoteName,
-  });
-  return [for (final b in (data['branches'] as List? ?? const [])) b as String];
+  return ref.watch(forgeComposeProvider).branches(repo);
 });
 
 /// The branch checked out in a conversation's isolated worktree for the active
@@ -61,18 +60,14 @@ final worktreeBranchProvider = FutureProvider.autoDispose
     });
 
 /// The active repo's default branch (e.g. `main`) — the convenience default for
-/// a new PR's base. Empty when no GitHub-linked repo is active. Resolved
+/// a new PR's base. Empty when no forge-linked repo is active. Resolved
 /// SERVER-SIDE over RPC.
 final defaultBranchProvider = FutureProvider.autoDispose<String>((ref) async {
   final repo = ref.watch(activeRepoProvider);
   if (repo == null || !repo.hasForgeRemote) {
     return '';
   }
-  final data = await ref.watch(rpcClientProvider).call('github.defaultBranch', {
-    'owner': repo.remoteOwner,
-    'repo': repo.remoteName,
-  });
-  return data['branch'] as String? ?? '';
+  return ref.watch(forgeComposeProvider).defaultBranch(repo);
 });
 
 /// A pull-request template offered on the compose screen: a display `name`
@@ -81,8 +76,8 @@ final defaultBranchProvider = FutureProvider.autoDispose<String>((ref) async {
 typedef PrTemplateOption = ({String name, String body, bool isDefault});
 
 /// The active repo's pull-request template(s), discovered SERVER-SIDE over RPC
-/// from the conventional GitHub locations. Empty when the repo has no template
-/// or no GitHub-linked repo is active. Re-fetches when the active repo changes.
+/// from the forge's conventional locations. Empty when the repo has no
+/// template, its forge has none, or no forge-linked repo is active. Re-fetches when the active repo changes.
 final prTemplatesProvider = FutureProvider.autoDispose<List<PrTemplateOption>>((
   ref,
 ) async {
@@ -90,18 +85,7 @@ final prTemplatesProvider = FutureProvider.autoDispose<List<PrTemplateOption>>((
   if (repo == null || !repo.hasForgeRemote) {
     return const <PrTemplateOption>[];
   }
-  final data = await ref.watch(rpcClientProvider).call('github.prTemplates', {
-    'owner': repo.remoteOwner,
-    'repo': repo.remoteName,
-  });
-  return [
-    for (final t in (data['templates'] as List? ?? const []))
-      (
-        name: (t as Map)['name'] as String? ?? '',
-        body: t['body'] as String? ?? '',
-        isDefault: t['is_default'] as bool? ?? false,
-      ),
-  ];
+  return ref.watch(forgeComposeProvider).templates(repo);
 });
 
 /// Key for [branchComparisonProvider]: the base and head branch to diff.
@@ -129,35 +113,18 @@ final branchComparisonProvider = FutureProvider.autoDispose
           key.base == key.head) {
         return null;
       }
-      final data = await ref
-          .watch(rpcClientProvider)
-          .call('github.compareBranches', {
-            'owner': repo.remoteOwner,
-            'repo': repo.remoteName,
-            'base': key.base,
-            'head': key.head,
-          });
-      final c = data['comparison'];
-      if (c is! Map) {
+      final c = await ref
+          .watch(forgeComposeProvider)
+          .compare(repo, base: key.base, head: key.head);
+      if (c == null) {
         return null;
       }
-      final m = c.cast<String, dynamic>();
       return (
-        files: [
-          for (final f in (m['files'] as List? ?? const []))
-            prFileFromWireDto(
-              PrFileDto.fromJson((f as Map).cast<String, dynamic>()),
-            ),
-        ],
-        commits: [
-          for (final cm in (m['commits'] as List? ?? const []))
-            prCommitFromWireDto(
-              PrCommitDto.fromJson((cm as Map).cast<String, dynamic>()),
-            ),
-        ],
-        additions: (m['additions'] as num?)?.toInt() ?? 0,
-        deletions: (m['deletions'] as num?)?.toInt() ?? 0,
-        totalCommits: (m['total_commits'] as num?)?.toInt() ?? 0,
+        files: c.files,
+        commits: c.commits,
+        additions: c.additions,
+        deletions: c.deletions,
+        totalCommits: c.totalCommits,
       );
     });
 
@@ -263,10 +230,8 @@ class ComposePrNotifier extends Notifier<ComposePrState> {
   }
 
   /// Sets the base branch. [fromUser] is false for the automatic fills.
-  void setBase(String branch, {bool fromUser = true}) => state = state.copyWith(
-    base: branch,
-    baseFromUser: fromUser,
-  );
+  void setBase(String branch, {bool fromUser = true}) =>
+      state = state.copyWith(base: branch, baseFromUser: fromUser);
 
   /// Sets the head branch.
   void setHead(String branch) => state = state.copyWith(head: branch);

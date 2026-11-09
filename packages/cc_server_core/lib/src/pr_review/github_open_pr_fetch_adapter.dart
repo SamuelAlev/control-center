@@ -202,25 +202,18 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     return merged;
   }
 
+  /// The per-repo forge client the single-PR lookups share with every other
+  /// forge, so GitHub's answers follow the same port contract.
+  GitHubForgePrClient _forgeClient(Repo repo, {String? workspaceId}) =>
+      GitHubForgePrClient(
+        client: _client(repo, workspaceId: workspaceId),
+        owner: repo.remoteOwner,
+        repo: repo.remoteName,
+      );
+
   @override
-  Future<bool?> wasMerged(
-    Repo repo,
-    int prNumber, {
-    String? workspaceId,
-  }) async {
-    try {
-      final gh = await _client(
-        repo,
-        workspaceId: workspaceId,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      if (gh == null) {
-        return null;
-      }
-      return gh.mergedAt != null;
-    } on Object {
-      return null;
-    }
-  }
+  Future<bool?> wasMerged(Repo repo, int prNumber, {String? workspaceId}) =>
+      _forgeClient(repo, workspaceId: workspaceId).wasMerged(prNumber);
 
   @override
   Future<List<PullRequest>?> fetchBranchHistory(
@@ -228,32 +221,11 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     String branch, {
     String? workspaceId,
   }) async {
-    final prs = <PullRequest>[];
     try {
-      for (var page = 1; page <= 100; page++) {
-        final batch = await _client(repo, workspaceId: workspaceId).pr
-            .listBranchPullRequestsPage(
-              repo.remoteOwner,
-              repo.remoteName,
-              branch,
-              page: page,
-            );
-        for (final gh in batch.items) {
-          if (gh.headRef.isEmpty || gh.number <= 0) {
-            throw FormatException(
-              'GitHub returned a PR without an identity/head ref for '
-              '${repo.fullName}',
-            );
-          }
-          if (gh.headRef == branch) {
-            prs.add(pullRequestFromGitHub(gh, repoFullName: repo.fullName));
-          }
-        }
-        if (!batch.hasMore) {
-          return prs;
-        }
-      }
-      throw StateError('GitHub branch PR history exceeded 100 pages');
+      return await _forgeClient(
+        repo,
+        workspaceId: workspaceId,
+      ).listPullRequestsForBranch(branch);
     } on Object catch (e) {
       CcHostLog.warning(
         'open_pr_poll: branch history failed for ${repo.fullName}: $e',
@@ -269,17 +241,17 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     String? workspaceId,
   }) async {
     try {
-      final gh = await _client(
+      return await _forgeClient(
         repo,
         workspaceId: workspaceId,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      if (gh == null || gh.mergeableState.isEmpty) {
-        return PrMergeableState.unknown;
-      }
-      return PrMergeableState.fromString(gh.mergeableState);
-    } on Object {
+      ).mergeState(prNumber);
+    } on Object catch (e) {
       // Not confirmed. The caller leaves the snapshot alone, so the edge is
       // re-attempted next sweep rather than announced on a failed read.
+      CcHostLog.warning(
+        'open_pr_poll: mergeability lookup failed for '
+        '${repo.fullName}#$prNumber: $e',
+      );
       return PrMergeableState.unknown;
     }
   }
@@ -291,25 +263,15 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     String? workspaceId,
   }) async {
     try {
-      final reviews = await _client(
+      return await _forgeClient(
         repo,
         workspaceId: workspaceId,
-      ).pr.listPullRequestReviews(repo.remoteOwner, repo.remoteName, prNumber);
-      GitHubReview? newest;
-      for (final review in reviews) {
-        if (review.state != GitHubReviewState.approved) {
-          continue;
-        }
-        final at = review.submittedAt;
-        final best = newest?.submittedAt;
-        if (newest == null ||
-            (at != null && (best == null || at.isAfter(best)))) {
-          newest = review;
-        }
-      }
-      final login = newest?.user?.login;
-      return (login == null || login.isEmpty) ? null : login;
-    } on Object {
+      ).latestApprover(prNumber);
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: approver lookup failed for '
+        '${repo.fullName}#$prNumber: $e',
+      );
       return null;
     }
   }
@@ -321,25 +283,15 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     String? workspaceId,
   }) async {
     try {
-      final gh = await _client(
+      return await _forgeClient(
         repo,
         workspaceId: workspaceId,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      final sha = gh?.headSha;
-      if (sha == null || sha.isEmpty) {
-        return null;
-      }
-      final runs = await _client(
-        repo,
-        workspaceId: workspaceId,
-      ).pr.listCheckRuns(repo.remoteOwner, repo.remoteName, sha);
-      for (final run in runs) {
-        if (run.isFailing) {
-          return (name: run.name, url: run.htmlUrl);
-        }
-      }
-      return null;
-    } on Object {
+      ).firstFailingCheck(prNumber);
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: check-run lookup failed for '
+        '${repo.fullName}#$prNumber: $e',
+      );
       return null;
     }
   }

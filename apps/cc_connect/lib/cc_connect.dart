@@ -25,6 +25,7 @@ export 'src/credential_seal.dart'
 export 'src/firestore_binding_store.dart' show FirestoreBindingStore;
 export 'src/gcp_auth.dart' show GcpMetadataTokenSource, GcpTokenSource;
 export 'src/pages.dart' show pageContentSecurityPolicy, pageStyleHash;
+export 'src/private_file.dart' show writePrivateFile;
 export 'src/provider_klipy.dart' show normaliseKlipyResponse;
 export 'src/redis_state_store.dart' show RedisStateStore, StateStoreUnavailable;
 export 'src/relay_routes.dart' show verifySlackSignature;
@@ -39,7 +40,7 @@ export 'src/seal_cipher.dart'
         parseSealKeyring;
 export 'src/secrets.dart' show DualSecret, SecretSource, secretRefreshInterval;
 export 'src/service_config.dart';
-export 'src/state_store.dart' show MemoryStateStore, StateStore;
+export 'src/state_store.dart' show MemoryStateStore, StateLease, StateStore;
 export 'src/upstream_http.dart'
     show
         IoUpstreamHttp,

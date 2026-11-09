@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_infra/cc_infra.dart' show ChildProcess;
+import 'package:cc_infra/cc_paths.dart' show writePrivateFile;
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:path/path.dart' as p;
 
@@ -124,9 +124,8 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     }
   }
 
-  /// Serializes flushes. Two concurrent writes used to race here: both build
-  /// the SAME `<file>.tmp` path and the second `rename` then throws on a file
-  /// the first already moved away.
+  /// Serializes flushes so two writes never interleave their read-merge-write
+  /// (each would otherwise drop the other's keys).
   Future<void> _flush() {
     final queued = _flushChain.then((_) => _flushNow());
     _flushChain = queued.catchError((Object _) {});
@@ -152,14 +151,11 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
       }
     });
     await _file.parent.create(recursive: true);
-    final tmp = File('${_file.path}.tmp');
-    // Restrict the temporary inode BEFORE writing secret bytes. Renaming a
-    // world-readable temporary file and chmod-ing only the destination leaves
-    // a window where both the new VAPID key and every device PSK are readable.
-    await tmp.create();
-    await _restrictPerms(tmp);
-    await tmp.writeAsString(jsonEncode(merged));
-    await tmp.rename(_file.path);
+    // Created owner-only (`creat(2)` 0600) under a fresh name and renamed into
+    // place: there is no instant at which the new VAPID key or any device PSK
+    // sits in a file with a wider mode, and no chmod runs after the fact.
+    await writePrivateFile(_file.path, utf8.encode(jsonEncode(merged)));
+    _deleteLegacyTemporary();
     _cache = merged;
     // Re-stamp against what we just wrote; `_readFromDisk` above stamped the
     // PRE-write file, which would make our own flush look like a foreign write.
@@ -173,18 +169,17 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     });
   }
 
-  /// The secrets file must be owner-only before any secret bytes are written.
-  /// A failed chmod aborts persistence rather than leaving a readable key.
-  Future<void> _restrictPerms(File f) async {
-    if (Platform.isWindows) {
-      return;
-    }
-    final result = await ChildProcess.run('chmod', ['600', f.path]);
-    if (result.exitCode != 0) {
-      throw FileSystemException(
-        'Could not restrict secrets permissions',
-        f.path,
-      );
+  /// Removes the fixed-name `<file>.tmp` that flushes used before they staged
+  /// through [writePrivateFile]. A crash mid-flush could leave it holding a
+  /// full copy of the secrets; nothing reads it any more.
+  void _deleteLegacyTemporary() {
+    try {
+      final legacy = File('${_file.path}.tmp');
+      if (legacy.existsSync()) {
+        legacy.deleteSync();
+      }
+    } on Object {
+      // Best-effort: the live file is already written.
     }
   }
 

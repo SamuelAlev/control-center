@@ -79,6 +79,108 @@ class CancellationTokenSource {
   void cancel([Object? reason]) => _token._cancel(reason);
 }
 
+/// Cancellation-aware stream consumption.
+extension CancellableStream<T> on Stream<T> {
+  /// Forwards this stream, ending promptly when [token] is cancelled.
+  ///
+  /// A plain `await for` only notices cancellation when an EVENT arrives, so an
+  /// idle or wedged stream (a provider that stopped sending) keeps its consumer
+  /// waiting until the source happens to emit. Racing the token against the
+  /// subscription lets the consumer go: nothing is read ahead, events are
+  /// forwarded one at a time, and on cancellation the source subscription is
+  /// cancelled too, which is what lets an observed provider finalize (a usage
+  /// recorder emits when its stream terminates).
+  Stream<T> untilCancelled(CancellationToken token) {
+    late StreamController<T> controller;
+    StreamSubscription<T>? subscription;
+    var finished = false;
+
+    Future<void> release() async {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      await subscription?.cancel();
+      subscription = null;
+      if (!controller.isClosed) {
+        await controller.close();
+      }
+    }
+
+    controller = StreamController<T>(
+      onListen: () {
+        subscription = listen(
+          (event) {
+            if (!finished) {
+              controller.add(event);
+            }
+          },
+          onError: (Object error, StackTrace stack) {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            controller.addError(error, stack);
+            unawaited(controller.close());
+          },
+          onDone: () {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            unawaited(controller.close());
+          },
+        );
+        // An already-cancelled token completes immediately, so a consumer
+        // cancelled before it subscribed stops on the first microtask.
+        unawaited(token.whenCancelled.then((_) => release()));
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
+      onCancel: () async {
+        finished = true;
+        await subscription?.cancel();
+        subscription = null;
+      },
+    );
+    return controller.stream;
+  }
+}
+
+/// Awaits [future] unless [token] is cancelled first, in which case it returns
+/// null without waiting for [future] (whose eventual error is swallowed so an
+/// abandoned operation cannot surface as an unhandled async error).
+///
+/// The caller stops WAITING; whether the work itself stops depends on whether
+/// it honours the token it was handed.
+Future<T?> raceCancellation<T>(Future<T> future, CancellationToken token) {
+  if (token.isCancelled) {
+    unawaited(future.then<void>((_) {}, onError: (Object _) {}));
+    return Future<T?>.value();
+  }
+  final done = Completer<T?>();
+  future.then(
+    (value) {
+      if (!done.isCompleted) {
+        done.complete(value);
+      }
+    },
+    onError: (Object error, StackTrace stack) {
+      if (!done.isCompleted) {
+        done.completeError(error, stack);
+      }
+    },
+  );
+  unawaited(
+    token.whenCancelled.then((_) {
+      if (!done.isCompleted) {
+        done.complete(null);
+      }
+    }),
+  );
+  return done.future;
+}
+
 class _CancellationToken implements CancellationToken {
   bool _cancelled = false;
   Object? _reason;

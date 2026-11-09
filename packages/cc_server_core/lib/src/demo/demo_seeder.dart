@@ -2406,8 +2406,6 @@ class DemoSeeder {
           {
             'repo_id': spec.id,
             'repo_full_name': spec.fullName,
-            'github_owner': kDemoRepoOwner,
-            'github_repo_name': spec.name,
             'has_more': false,
             'prs': byRepo[spec.fullName] ?? const <Map<String, dynamic>>[],
           },

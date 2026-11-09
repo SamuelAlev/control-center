@@ -41,13 +41,7 @@ _wireGitHubIdentity({
       : const RefreshUnavailable();
   // A sealed grant is usable only by the install identity it was sealed to,
   // towards the Connect that sealed it.
-  forgeCredentials.currentSealInstallId = (origin) async {
-    final choice = await connectSettings.choice();
-    if (!choice.enabled || canonicalConnectBaseUrl(choice.baseUrl) != origin) {
-      return null;
-    }
-    return (await connectClient.identity())?.installId;
-  };
+  forgeCredentials.currentSealInstallId = connectClient.installIdFor;
   final githubClients = GitHubClients(
     credentials: forgeCredentials,
     apps: providerApps,
@@ -82,9 +76,18 @@ _wireGitHubIdentity({
   // old one minted is served again.
   providerApps.addListener((provider) {
     if (provider == ProviderApp.github) {
-      githubClients.forgetAll();
+      unawaited(githubClients.forgetAll());
     }
   });
+  // Likewise another Connect or install key, whether chosen in Settings or
+  // by `cc_server connect` from another process (noticed on the next
+  // config read).
+  connectSettings.addListener(() => unawaited(githubClients.forgetAll()));
+  // Likewise a workspace's own App: a saved (rotated) key or a deleted
+  // workspace drops and revokes what that workspace's App minted.
+  workspaceGitHub.addListener(
+    (workspaceId) => unawaited(githubClients.forgetWorkspace(workspaceId)),
+  );
   providerSignIn.register(
     GitHubSignInLane(
       apps: providerApps,
@@ -136,15 +139,35 @@ final class _GitHubAutomation {
 
   /// The GitHub account [userId] signed in with for [workspaceId], or null
   /// when they have none or GitHub cannot say.
+  ///
+  /// A sign-in records the account's id and login, so this answers from
+  /// the stored credential; only a grant that predates those fields asks
+  /// GitHub (once per sign-in, cached by the token it was asked with).
   Future<GitHubUser?> personAccount(String userId, String? workspaceId) async {
-    if (!await _clients.isSignedIn(userId, workspaceId: workspaceId)) {
+    final credential = await _clients.credentials.personCredential(
+      ForgeHost.github,
+      userId,
+      workspaceId: workspaceId,
+    );
+    if (credential == null || credential.accessToken.isEmpty) {
       return null;
     }
+    final id = int.tryParse(credential.accountId) ?? 0;
+    if (id > 0 && credential.accountLogin.isNotEmpty) {
+      return GitHubUser(login: credential.accountLogin, avatarUrl: '', id: id);
+    }
+    final key = '$userId\u0000${workspaceId ?? ''}';
+    final cached = _accounts[key];
+    if (cached != null && cached.token == credential.accessToken) {
+      return cached.user;
+    }
     try {
-      return await _clients
+      final user = await _clients
           .asPerson(userId, workspaceId: workspaceId)
           .content
           .getAuthenticatedUser();
+      _accounts[key] = (token: credential.accessToken, user: user);
+      return user;
     } on Object catch (e) {
       CcHostLog.warning(
         'agent commit identity: GitHub account lookup failed: $e',
@@ -152,6 +175,8 @@ final class _GitHubAutomation {
       return null;
     }
   }
+
+  final _accounts = <String, ({String token, GitHubUser? user})>{};
 
   final _prConversationGateways = <String, GitHubPrConversationGateway>{};
 
@@ -204,7 +229,7 @@ final class _GitHubAutomation {
     } on GitHubScopeRefused catch (e) {
       CcHostLog.warning(
         'github: no ${scope.wire} token for $owner/$repo in workspace '
-        '$workspaceId (${e.code})',
+        '$workspaceId (${e.code.wire})',
       );
       return null;
     }
@@ -243,7 +268,9 @@ List<void Function()> _scheduleRepoLinkSweep(
     try {
       var paused = 0;
       for (final workspace in await workspaces.getAll()) {
-        final repos = await workspaces.watchReposForWorkspace(workspace.id).first;
+        final repos = await workspaces
+            .watchReposForWorkspace(workspace.id)
+            .first;
         paused += await github.sweepLinks(workspace.id, [
           for (final repo in repos)
             if (repo.forge == ForgeHost.github && repo.hasForgeRemote)

@@ -477,6 +477,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get teammate => '팀원';
 
   @override
+  String get systemSender => '시스템';
+
+  @override
   String get agent => '에이전트';
 
   @override
@@ -625,12 +628,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return '$names의 마지막 알려진 데이터를 표시합니다. GitHub에서 설치를 재개하거나 접근 권한이 있는 토큰을 연결하세요.';
+    return '$names의 마지막 알려진 데이터를 표시합니다. GitHub에서 설치를 재개하세요.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App 설치가 일시 중단됨. $names의 마지막 알려진 데이터를 표시합니다. GitHub에서 설치를 재개하거나 접근 권한이 있는 토큰을 연결하세요.';
+    return 'GitHub App 설치가 일시 중단됨. $names의 마지막 알려진 데이터를 표시합니다. GitHub에서 설치를 재개하세요.';
   }
 
   @override
@@ -2517,6 +2520,21 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       '이 코드는 이 로그인과 일치하지 않습니다. 확인한 뒤 다시 시도하세요.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      '잘못된 코드를 너무 많이 입력했습니다. 로그인을 다시 시작하세요.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      '로그인 서비스가 지금 응답하지 않습니다. 1분 기다린 뒤 다시 시도하세요.';
+
+  @override
+  String get credentialsSignInRefused =>
+      '로그인이 거부되었습니다. 다시 시작하고 요청된 모든 권한을 승인하세요.';
+
+  @override
+  String get credentialsSignInNotSaved => '로그인은 되었지만 서버가 저장하지 못했습니다. 다시 시도하세요.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

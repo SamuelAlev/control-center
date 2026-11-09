@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -85,6 +86,7 @@ class PullRequestDetailScreen extends ConsumerStatefulWidget {
     required this.owner,
     required this.repo,
     required this.prNumber,
+    this.forge,
     this.focusedTabKey,
     this.pendingCommentId,
     this.scopedCommits = const {},
@@ -102,6 +104,9 @@ class PullRequestDetailScreen extends ConsumerStatefulWidget {
 
   /// PR number from the route parameters.
   final int prNumber;
+
+  /// The forge the route states (`?forge=`), or null when it states none.
+  final ForgeHost? forge;
 
   /// The focused workbench tab's key from the URL's `?tab=` param, or null
   /// when the URL names no tab (the seeded/restored selection then stands).
@@ -133,6 +138,7 @@ class _PullRequestDetailScreenState
     workspaceId: widget.workspaceId,
     repoFullName: '${widget.owner}/${widget.repo}',
     number: widget.prNumber,
+    forge: widget.forge,
   );
 
   @override
@@ -1090,7 +1096,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           onOpenInEditor: _openFileInEditor,
         );
       case PrTabKinds.chat:
-        return PrChatTab(pr: widget.pr);
+        return PrChatTab(pr: widget.pr, prRef: widget.prRef);
       case PrTabKinds.terminal:
         // A RESTORED enclosed terminal boots a VM the moment it attaches, so
         // it waits for a press — the same rule the rig tabs follow.

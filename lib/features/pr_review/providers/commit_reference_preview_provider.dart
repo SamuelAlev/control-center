@@ -45,11 +45,11 @@ class CommitPreview {
   final String shortSha;
 }
 
-/// Fetches commit preview metadata (title + short SHA) over the in-process RPC
+/// Fetches commit preview metadata (title + short SHA) from the connected
 /// server, which fetches from GitHub and SWR-caches the result workspace-side.
 /// Returns `null` when the commit can't be resolved.
 ///
-/// Flipped to RPC (the composition flip): the host owns GitHub auth + the SWR
+/// The server owns GitHub auth + the SWR
 /// disk cache; this provider holds no token and reaches no database.
 final commitReferencePreviewProvider = FutureProvider.autoDispose
     .family<CommitPreview?, CommitReferenceKey>((ref, key) async {

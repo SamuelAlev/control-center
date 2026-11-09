@@ -156,9 +156,7 @@ class EnvironmentPanel extends ConsumerWidget {
 
   bool _reachable(SpaceEnvironment environment) =>
       environment.status.isRunning ||
-      environment.components.any(
-        (part) => const {'running', 'ready', 'starting'}.contains(part.state),
-      );
+      environment.components.any((part) => part.phase?.isLive ?? false);
 
   Widget _notRunning(
     BuildContext context,

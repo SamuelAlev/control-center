@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -32,6 +33,21 @@ class WatchdogAdvisor implements Advisor {
          projectContext: projectContext,
          extraInstructions: extraInstructions,
        );
+
+  WatchdogAdvisor._fresh(WatchdogAdvisor of)
+    : _provider = of._provider,
+      _model = of._model,
+      _system = of._system,
+      _maxConvoMessages = of._maxConvoMessages,
+      _maxConsecutiveFailures = of._maxConsecutiveFailures,
+      _guard = AdvisorEmissionGuard();
+
+  /// A reviewer with this one's provider, model and instructions but none of
+  /// its state — no conversation, cursor, failure count or dedupe memory.
+  ///
+  /// For a nested run (a subagent): its history is a different transcript, so
+  /// sharing this advisor's cursor would skip or re-read the wrong messages.
+  WatchdogAdvisor fresh() => WatchdogAdvisor._fresh(this);
 
   final LlmProviderPort _provider;
   final String? _model;
@@ -76,7 +92,10 @@ class WatchdogAdvisor implements Advisor {
       'unsure, reply `OK`.';
 
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async {
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async {
     if (_failures >= _maxConsecutiveFailures) {
       return null; // gone quiet for this run until reset()
     }
@@ -102,7 +121,11 @@ class WatchdogAdvisor implements Advisor {
 
     final String reply;
     try {
-      reply = await _complete();
+      reply = await _complete(cancel);
+    } on CancelledException {
+      // The run stopped waiting; a cancellation is not the reviewer failing.
+      _convo.remove(deltaMsg);
+      return null;
     } on Object {
       // Roll the delta back out and leave the cursor put so the next review
       // re-renders it; a run of failures trips the quiet fuse above.
@@ -139,21 +162,24 @@ class WatchdogAdvisor implements Advisor {
     _convo.clear();
   }
 
-  Future<String> _complete() async {
+  Future<String> _complete(CancellationToken cancel) async {
     final buf = StringBuffer();
-    await for (final event in _provider.complete(
-      messages: List.of(_convo),
-      config: LlmCompleteConfig(
-        model: _model,
-        systemPrompt: _system,
-        maxTokens: 256,
-        cacheEnabled: false,
-        // The reviewer spends real tokens on every delta it is shown; tagging
-        // the purpose is what keeps that spend inside the run's accounting
-        // instead of making a heavily-advised run look free upstream.
-        purpose: LlmCallPurpose.advisor,
-      ),
-    )) {
+    await for (final event
+        in _provider
+            .complete(
+              messages: List.of(_convo),
+              config: LlmCompleteConfig(
+                model: _model,
+                systemPrompt: _system,
+                maxTokens: 256,
+                cacheEnabled: false,
+                // The reviewer spends real tokens on every delta it is shown; tagging
+                // the purpose is what keeps that spend inside the run's accounting
+                // instead of making a heavily-advised run look free upstream.
+                purpose: LlmCallPurpose.advisor,
+              ),
+            )
+            .untilCancelled(cancel)) {
       switch (event) {
         case LlmTextDelta(:final text):
           buf.write(text);
@@ -163,6 +189,7 @@ class WatchdogAdvisor implements Advisor {
           break;
       }
     }
+    cancel.throwIfCancelled();
     return buf.toString().trim();
   }
 

@@ -159,6 +159,12 @@ abstract final class AgentProcessEventCodec {
         'ts': ts,
         'content': content,
       },
+      TextRetractedEvent(:final text, :final thinking) => <String, dynamic>{
+        'kind': 'textRetracted',
+        'ts': ts,
+        if (text.isNotEmpty) 'text': text,
+        if (thinking.isNotEmpty) 'thinking': thinking,
+      },
       DoneEvent(:final outcome) => <String, dynamic>{
         'kind': 'done',
         'ts': ts,
@@ -281,6 +287,12 @@ abstract final class AgentProcessEventCodec {
       case 'debug':
         return DebugEvent(
           content: _string(json['content']),
+          timestamp: timestamp,
+        );
+      case 'textRetracted':
+        return TextRetractedEvent(
+          text: _string(json['text']),
+          thinking: _string(json['thinking']),
           timestamp: timestamp,
         );
       case 'done':

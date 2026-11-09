@@ -9,6 +9,9 @@
 /// reason every repository port is bound here.
 library;
 
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:control_center/features/demo/demo_world.dart';
 import 'package:control_center/features/settings/providers/server_connection_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,3 +40,39 @@ final isDemoServerProvider = Provider<bool>((ref) {
   }
   return false;
 });
+
+/// The demo's forge connections, or null on a real server.
+///
+/// A demo server holds no credential and wires no forge port, so
+/// `forge.listConnections` is not in its registry at all. Bound here, at the
+/// composition root, so the production provider carries no demo branch of
+/// its own and — the part that shows — the viewer has an identity, so the
+/// seeded review requests actually address somebody. See `kDemoViewerLogin`.
+final demoForgeConnectionsProvider = Provider<List<ForgeConnection>?>(
+  (ref) => ref.watch(isDemoServerProvider)
+      ? const [
+          ForgeConnection(
+            forge: ForgeHost.github,
+            authenticated: true,
+            username: kDemoViewerLogin,
+            source: ForgeCredentialSource.oauth,
+          ),
+        ]
+      : null,
+);
+
+/// The demo's `github.currentUser` answer, or null on a real server.
+///
+/// The op is absent from a demo's registry and no amount of retrying will
+/// change that. The team membership is what routes the retriever PR's TEAM
+/// review request into the visitor's queue. See `kDemoViewerLogin`.
+final demoGitHubIdentityProvider = Provider<Map<String, dynamic>?>(
+  (ref) => ref.watch(isDemoServerProvider)
+      ? const {
+          'user': {'login': kDemoViewerLogin, 'name': 'Maya Okonkwo'},
+          'teams': [
+            {'org': kDemoViewerOrg, 'slug': kDemoViewerTeamSlug},
+          ],
+        }
+      : null,
+);

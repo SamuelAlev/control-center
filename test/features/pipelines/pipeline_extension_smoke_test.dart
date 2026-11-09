@@ -47,6 +47,7 @@ void main() {
 
     test('maps TicketCompleted to payload with dedup key', () {
       final event = TicketCompleted(
+        workspaceId: 'ws-1',
         ticketId: 'ticket-1',
         occurredAt: DateTime.now(),
       );
@@ -59,6 +60,7 @@ void main() {
 
     test('maps TicketFailed to payload', () {
       final event = TicketFailed(
+        workspaceId: 'ws-1',
         ticketId: 'ticket-2',
         errorMessage: 'boom',
         occurredAt: DateTime.now(),
@@ -73,6 +75,7 @@ void main() {
 
     test('maps BudgetThresholdCrossed to payload', () {
       final event = BudgetThresholdCrossed(
+        workspaceId: 'ws-1',
         scopeType: 'workspace',
         scopeId: 'ws-1',
         spentCents: 1500,

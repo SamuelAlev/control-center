@@ -226,7 +226,7 @@ void main() {
       reason: 'a plain command in a terminal targets this environment',
     );
 
-    final exec = await driver.exec(first, 'cache', ['redis-cli', 'ping']);
+    final exec = await driver.exec(first.context.project, 'cache', ['redis-cli', 'ping']);
     expect(exec.stdout.trim(), 'PONG');
 
     final owned = await driver.ownedContainers();
@@ -235,11 +235,11 @@ void main() {
       hasLength(3),
     );
 
-    await driver.stop(second);
+    await driver.stop(second.context.project);
     expect(await fetch(first.ports['web.80']!), 'first');
 
-    await driver.destroy(first);
-    await driver.destroy(second);
+    await driver.destroy(first.context.project);
+    await driver.destroy(second.context.project);
     expect(containersOf(first.context.environmentId), isEmpty);
     expect(containersOf(second.context.environmentId), isEmpty);
   }, skip: skip);

@@ -147,6 +147,39 @@ void main() {
     expect([for (final g in found) g.id], ['1']);
   });
 
+  test('a handed-out key outlives an outage in memory only', () async {
+    final client = await connectFor(
+      klipyLane: {'mode': 'key', 'app_key': 'CONNECT-KEY'},
+    );
+    final gifs = KlipyGifs(connect: client, transport: () => klipy);
+    await gifs.trending('ws-1');
+    fakeConnect.failConfig = true;
+    await client.configState(refresh: true);
+    await gifs.trending('ws-1');
+    expect(
+      [for (final r in klipy.requests) httpRequestUri(r).path],
+      [
+        '/api/v1/CONNECT-KEY/gifs/trending',
+        '/api/v1/CONNECT-KEY/gifs/trending',
+      ],
+    );
+    final file = File('${dir.path}/${FileSecretsStore.fileName}');
+    expect(
+      file.existsSync() ? file.readAsStringSync() : '',
+      isNot(contains('CONNECT-KEY')),
+      reason: 'never in the secrets file',
+    );
+
+    // A restarted server has only the persisted copy, which holds no key:
+    // GIF search waits for Connect instead of reading a stored secret.
+    final restarted = KlipyGifs(
+      connect: ConnectClient(settings: client.settings),
+      transport: () => klipy,
+    );
+    expect(await restarted.trending('ws-1'), isEmpty);
+    expect(klipy.requests, hasLength(2));
+  });
+
   group("a workspace's own Klipy key", () {
     late WorkspaceProviderAppSettings workspaceApps;
 
@@ -209,6 +242,7 @@ class _FakeConnect {
 
   Map<String, Object?> klipyLane = const {'mode': 'proxy'};
   bool failSearch = false;
+  bool failConfig = false;
   int searches = 0;
   String lastQuery = '';
 
@@ -218,6 +252,10 @@ class _FakeConnect {
     final body = await utf8.decoder.bind(request).join();
     final response = request.response..headers.contentType = ContentType.json;
     switch (request.uri.path) {
+      case '/v1/config' when failConfig:
+        response
+          ..statusCode = HttpStatus.serviceUnavailable
+          ..write(jsonEncode({'error': 'provider_unavailable'}));
       case '/v1/config':
         response.write(
           jsonEncode({

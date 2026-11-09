@@ -9,6 +9,15 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'تعذّر الإرسال الآن: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'لم يتم تسليم إجابتك. ربما تمت الإجابة على السؤال بالفعل، أو توقف الوكيل عن الانتظار.';
+
+  @override
   String get succeeded => 'نجح';
 
   @override
@@ -2620,10 +2629,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get addGif => 'إضافة GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'أضف مستودع GitHub واحدًا على الأقل لعرض طلبات السحب';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5972,9 +5977,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pipelineStepDurationLabel => 'المدة';
 
   @override
-  String get pipelineStepBranch => 'الفرع';
-
-  @override
   String get pipelineStepViewConversation => 'عرض المحادثة';
 
   @override
@@ -7071,13 +7073,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reviewRequested => 'طُلبت مراجعة';
 
   @override
-  String get connectGitHubHint =>
-      'سجّل الدخول إلى GitHub في الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود';
-
-  @override
-  String get connectGitHubToLoadPrs => 'اربط GitHub لتحميل طلبات السحب';
-
-  @override
   String get noRepositoriesConfigured => 'لا مستودعات مُعدّة';
 
   @override
@@ -7761,13 +7756,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get createAsDraft => 'إنشاء كمسودة';
-
-  @override
-  String get composePrNoRepo => 'لم يتم تحديد مستودع GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'حدد مساحة عمل تحتوي على مستودع مرتبط بـ GitHub لفتح طلب سحب.';
 
   @override
   String get composePrPickBranches =>
@@ -17059,6 +17047,27 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذا الرمز لا يطابق تسجيل الدخول هذا. تحقّق منه وحاول مرة أخرى.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'رموز خاطئة كثيرة جدًا. ابدأ تسجيل الدخول من جديد.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'لم يعد تسجيل الدخول هذا صالحًا. ابدأه من جديد.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'تعذّر على الخادم قراءة طلب تسجيل الدخول هذا. ابدأه من جديد.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'محاولات تسجيل دخول كثيرة جدًا الآن. انتظر دقيقة ثم حاول مرة أخرى.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return 'قبِل $provider تسجيل الدخول، لكن تعذّر على الخادم حفظه. حاول مرة أخرى.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return 'لا يستجيب $provider حاليًا. حاول مرة أخرى بعد بضع دقائق.';
   }
@@ -17089,7 +17098,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'مساحة عمل Linear هذه مرتبطة بالفعل بخادم Control Center آخر.';
+      'مساحة عمل Slack هذه مرتبطة بالفعل بخادم Control Center آخر.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17522,4 +17531,37 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'تبديل التطبيق';
+
+  @override
+  String openOnForge(String forge) {
+    return 'فتح على $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'عرض أول $count ملف. لا يعرض $forge الباقي.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => 'اربط مستضيف كود لتحميل طلبات السحب';
+
+  @override
+  String get connectForgeHint =>
+      'اربط GitHub أو GitLab أو Bitbucket في الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'أضف مستودعًا واحدًا على الأقل على GitHub أو GitLab أو Bitbucket لعرض طلبات السحب';
+
+  @override
+  String get composePrNoForgeRepo => 'لم يتم اختيار مستودع مستضاف';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'اختر مساحة عمل تحتوي على مستودع على GitHub أو GitLab أو Bitbucket لفتح طلب سحب.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'اربط $forge لفتح طلب سحب في هذا المستودع';
+  }
 }

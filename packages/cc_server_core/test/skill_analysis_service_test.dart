@@ -90,8 +90,10 @@ void main() {
       bundles.failSlugs.add('boom');
       final outcome = await buildService().analyze(workspaceId: 'ws');
       expect(outcome.results, hasLength(2));
-      expect(outcome.results.firstWhere((r) => r.slug == 'boom').error,
-          isNotNull);
+      expect(
+        outcome.results.firstWhere((r) => r.slug == 'boom').error,
+        isNotNull,
+      );
       expect(outcome.passCount, 1);
     });
   });
@@ -105,24 +107,28 @@ void main() {
 
       final recorded = await buildService().runRecorded(
         workspaceId: 'ws',
-        triggerEventType: SkillAnalysisTemplate.manualProjectionTriggerEventType,
+        triggerEventType:
+            SkillAnalysisTemplate.manualProjectionTriggerEventType,
       );
 
       expect(recorded.runId, isNotNull);
       final run = runs.runs[recorded.runId!]!;
       expect(run.templateId, SkillAnalysisTemplate.id);
       expect(run.status, PipelineRunStatus.completed);
+      expect(run.isProjection, isTrue, reason: 'it must hold no engine slot');
       expect(run.dedupKey, 'skill_analysis:ws');
       expect(recorded.outcome.warnCount, 1);
 
       final steps = runs.stepsFor(recorded.runId!);
       expect(
-        steps.firstWhere((s) => s.stepId == SkillAnalysisTemplate.triggerStepId)
+        steps
+            .firstWhere((s) => s.stepId == SkillAnalysisTemplate.triggerStepId)
             .status,
         PipelineStepStatus.completed,
       );
-      final scanStep =
-          steps.firstWhere((s) => s.stepId == SkillAnalysisTemplate.scanStepId);
+      final scanStep = steps.firstWhere(
+        (s) => s.stepId == SkillAnalysisTemplate.scanStepId,
+      );
       expect(scanStep.status, PipelineStepStatus.completed);
       expect(scanStep.outputJson, contains('"warn":1'));
     });
@@ -136,7 +142,8 @@ void main() {
 
       final recorded = await buildService().runRecorded(
         workspaceId: 'ws',
-        triggerEventType: SkillAnalysisTemplate.manualProjectionTriggerEventType,
+        triggerEventType:
+            SkillAnalysisTemplate.manualProjectionTriggerEventType,
       );
 
       expect(recorded.runId, isNull);
@@ -149,7 +156,8 @@ void main() {
       bundles.installed = ['a'];
       final recorded = await buildService().runRecorded(
         workspaceId: 'ws',
-        triggerEventType: SkillAnalysisTemplate.manualProjectionTriggerEventType,
+        triggerEventType:
+            SkillAnalysisTemplate.manualProjectionTriggerEventType,
       );
       expect(recorded.runId, isNull);
       expect(runs.runs, isEmpty);
@@ -170,7 +178,8 @@ void main() {
 
       final recorded = await buildService().runRecorded(
         workspaceId: 'ws',
-        triggerEventType: SkillAnalysisTemplate.manualProjectionTriggerEventType,
+        triggerEventType:
+            SkillAnalysisTemplate.manualProjectionTriggerEventType,
       );
       expect(recorded.runId, isNull);
       expect(runs.runs.values.where((r) => r.id != 'active'), isEmpty);
@@ -178,46 +187,61 @@ void main() {
   });
 
   group('SkillAnalysisRunReporter.reapInterrupted', () {
-    test('closes its own stale projections, leaves engine runs alone',
-        () async {
-      runs.runs['mine'] = PipelineRun(
-        id: 'mine',
-        templateId: SkillAnalysisTemplate.id,
-        workspaceId: 'ws',
-        status: PipelineRunStatus.running,
-        triggerEventType:
-            SkillAnalysisTemplate.manualProjectionTriggerEventType,
-        startedAt: DateTime(2026, 1, 1),
-      );
-      runs.steps['step'] = PipelineStepRun(
-        id: 'step',
-        pipelineRunId: 'mine',
-        stepId: SkillAnalysisTemplate.scanStepId,
-        status: PipelineStepStatus.running,
-        startedAt: DateTime(2026, 1, 1),
-      );
-      runs.runs['engine'] = PipelineRun(
-        id: 'engine',
-        templateId: SkillAnalysisTemplate.id,
-        workspaceId: 'ws',
-        status: PipelineRunStatus.running,
-        triggerEventType: 'SkillUpdated',
-        startedAt: DateTime(2026, 1, 1),
-      );
+    test(
+      'closes its own stale projections, leaves engine runs alone',
+      () async {
+        runs.runs['mine'] = PipelineRun(
+          id: 'mine',
+          templateId: SkillAnalysisTemplate.id,
+          workspaceId: 'ws',
+          status: PipelineRunStatus.running,
+          isProjection: true,
+          triggerEventType:
+              SkillAnalysisTemplate.manualProjectionTriggerEventType,
+          startedAt: DateTime(2026, 1, 1),
+        );
+        runs.steps['step'] = PipelineStepRun(
+          id: 'step',
+          pipelineRunId: 'mine',
+          stepId: SkillAnalysisTemplate.scanStepId,
+          status: PipelineStepStatus.running,
+          startedAt: DateTime(2026, 1, 1),
+        );
+        runs.runs['engine'] = PipelineRun(
+          id: 'engine',
+          templateId: SkillAnalysisTemplate.id,
+          workspaceId: 'ws',
+          status: PipelineRunStatus.running,
+          triggerEventType: 'SkillUpdated',
+          startedAt: DateTime(2026, 1, 1),
+        );
+        // An engine run that carries the scan op's marker is still the
+        // engine's: the flag decides, not the string.
+        runs.runs['engine-marker'] = PipelineRun(
+          id: 'engine-marker',
+          templateId: SkillAnalysisTemplate.id,
+          workspaceId: 'ws',
+          status: PipelineRunStatus.running,
+          triggerEventType:
+              SkillAnalysisTemplate.manualProjectionTriggerEventType,
+          startedAt: DateTime(2026, 1, 1),
+        );
 
-      final reporter = SkillAnalysisRunReporter(
-        runs,
-        idFactory: () => 'id',
-        now: () => DateTime(2026, 1, 1, 12),
-      );
-      final closed = await reporter.reapInterrupted();
+        final reporter = SkillAnalysisRunReporter(
+          runs,
+          idFactory: () => 'id',
+          now: () => DateTime(2026, 1, 1, 12),
+        );
+        final closed = await reporter.reapInterrupted();
 
-      expect(closed, 1);
-      expect(runs.runs['mine']!.status, PipelineRunStatus.cancelled);
-      expect(runs.steps['step']!.status, PipelineStepStatus.cancelled);
-      // Engine-owned rows are resumable — never reaped.
-      expect(runs.runs['engine']!.status, PipelineRunStatus.running);
-    });
+        expect(closed, 1);
+        expect(runs.runs['mine']!.status, PipelineRunStatus.cancelled);
+        expect(runs.steps['step']!.status, PipelineStepStatus.cancelled);
+        // Engine-owned rows are resumable — never reaped.
+        expect(runs.runs['engine']!.status, PipelineRunStatus.running);
+        expect(runs.runs['engine-marker']!.status, PipelineRunStatus.running);
+      },
+    );
   });
 }
 
@@ -326,8 +350,8 @@ class _FakeTemplates implements PipelineTemplateRepository {
     String workspaceId,
     String templateId,
   ) async => definition == null || definition!.templateId != templateId
-        ? null
-        : definition;
+      ? null
+      : definition;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -362,8 +386,9 @@ class _FakeRunRepo implements PipelineRunRepository {
   }
 
   @override
-  Future<List<PipelineStepRun>> stepRunsForPipeline(String pipelineRunId) async =>
-      stepsFor(pipelineRunId);
+  Future<List<PipelineStepRun>> stepRunsForPipeline(
+    String pipelineRunId,
+  ) async => stepsFor(pipelineRunId);
 
   @override
   Future<void> insertStepRun(PipelineStepRun stepRun) async =>
@@ -394,7 +419,6 @@ class _FakeRunRepo implements PipelineRunRepository {
       outputJson: outputJson ?? current.outputJson,
       spaceId: spaceId ?? current.spaceId,
       errorMessage: errorMessage ?? current.errorMessage,
-      branchIndex: current.branchIndex,
       attemptCount: current.attemptCount,
       startedAt: current.startedAt,
       finishedAt: finishedAt ?? current.finishedAt,

@@ -25,6 +25,8 @@ export 'src/repositories/remote_connect_settings.dart';
 export 'src/repositories/remote_context_repository.dart';
 export 'src/repositories/remote_credential_gate_repository.dart';
 export 'src/repositories/remote_fonts_repository.dart';
+export 'src/repositories/remote_forge_compose.dart';
+export 'src/repositories/remote_forge_connections.dart';
 export 'src/repositories/remote_github_app_setup.dart';
 export 'src/repositories/remote_ide_repository.dart';
 export 'src/repositories/remote_identity_repository.dart';

@@ -3,6 +3,8 @@ import 'package:cc_domain/core/domain/repositories/workspace_membership_reposito
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_server_core/src/notification_wire.dart'
+    show notificationTargetsUser;
 
 /// Resolves a viewer's live workspace, repository and space grants before
 /// applying the feed predicate. Push and RPC reads must use the same boundary;
@@ -55,8 +57,9 @@ Future<List<NotificationFeedItem>> visibleNotificationItemsForUser({
   );
 }
 
-/// Applies the same workspace, recipient, repository and space access checks
-/// for feed subscriptions, item-state writes and push delivery.
+/// Applies the same workspace, recipient ([notificationTargetsUser]),
+/// repository and space access checks for feed subscriptions, item-state
+/// writes and push delivery.
 /// `repoIdsByCoordinate` contains only linked workspace repositories;
 /// `readableRepoIds` is intersected with the viewer's grants (admins receive
 /// all linked IDs).
@@ -79,8 +82,8 @@ Future<List<NotificationFeedItem>> filterNotificationFeedItems({
       continue;
     }
     final params = item.params;
-    final recipient = params['for_user_id'];
-    if (recipient is String && recipient.isNotEmpty && recipient != userId) {
+    // The same "who is notified" rule as the live forwarder and Web Push.
+    if (!notificationTargetsUser(item.method, params, userId)) {
       continue;
     }
     final id = params['repo_id'];

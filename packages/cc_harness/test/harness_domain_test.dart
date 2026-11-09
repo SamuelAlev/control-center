@@ -106,8 +106,8 @@ void main() {
     test('AgentLoopConfig defaults', () {
       const c = AgentLoopConfig();
       expect(c.maxTurns, isNull); // no turn ceiling by default
-      expect(c.autoApprove, isTrue);
-      expect(c.budget.hardStop, isTrue);
+      expect(c.tools.autoApprove, isTrue);
+      expect(c.guards.budget.hardStop, isTrue);
       expect(c.cacheEnabled, isTrue);
       expect(harnessControlToolNames, contains('checkpoint'));
     });

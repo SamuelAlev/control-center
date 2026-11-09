@@ -489,6 +489,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get teammate => 'ساتھی';
 
   @override
+  String get systemSender => 'سسٹم';
+
+  @override
   String get agent => 'ایجنٹ';
 
   @override
@@ -640,12 +643,12 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return '⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔';
+    return '⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App انسٹالیشن معطل ہے. ⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔';
+    return 'GitHub App انسٹالیشن معطل ہے. ⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔';
   }
 
   @override
@@ -2575,6 +2578,22 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'بہت زیادہ غلط کوڈ۔ سائن اِن دوبارہ شروع کریں۔';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'سائن اِن سروس ابھی جواب نہیں دے رہی۔ ایک منٹ انتظار کریں، پھر دوبارہ کوشش کریں۔';
+
+  @override
+  String get credentialsSignInRefused =>
+      'سائن اِن مسترد کر دیا گیا۔ اسے دوبارہ شروع کریں اور تمام مطلوبہ اجازتیں منظور کریں۔';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'سائن اِن ہو گیا، لیکن سرور اسے محفوظ نہیں کر سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String credentialsSignInUnavailable(String provider) {

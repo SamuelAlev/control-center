@@ -20,4 +20,6 @@ export 'src/http_signature.dart';
 export 'src/install_identity.dart';
 export 'src/lanes.dart';
 export 'src/oauth_handoff.dart';
+export 'src/sign_in_failure.dart';
+export 'src/sign_in_lane_mode.dart';
 export 'src/wire.dart';

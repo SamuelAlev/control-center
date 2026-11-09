@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
@@ -200,6 +202,55 @@ void main() {
         (await directory.memberForAccountId('ws1', 1))!.role.canWrite,
         isFalse,
       );
+    });
+
+    test('a GitHub sign-in maps before the cached index expires', () async {
+      final changes =
+          StreamController<({String userId, String? workspaceId})>.broadcast();
+      addTearDown(changes.close);
+      final tokens = <String, ProviderToken?>{};
+      final directory = GitHubLoginDirectory(
+        members: _FakeMembershipRepository([_member('u1')]),
+        credentials: _credentials(tokens),
+        githubSignInChanges: changes.stream,
+      );
+
+      expect(await directory.memberForAccountId('ws1', 1), isNull);
+      tokens['u1'] = _signIn('1', 'octocat');
+      changes.add((userId: 'u1', workspaceId: null));
+      await Future<void>.delayed(Duration.zero);
+      expect((await directory.memberForAccountId('ws1', 1))?.userId, 'u1');
+
+      // Disconnecting drops the mapping as promptly.
+      tokens['u1'] = null;
+      changes.add((userId: 'u1', workspaceId: 'ws1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(await directory.memberForAccountId('ws1', 1), isNull);
+    });
+
+    test('an index built across an invalidation is not cached', () async {
+      final tokens = <String, ProviderToken?>{};
+      final gate = Completer<void>();
+      var reads = 0;
+      final directory = GitHubLoginDirectory(
+        members: _FakeMembershipRepository([_member('u1')]),
+        credentials: (userId, workspaceId) async {
+          reads++;
+          final token = tokens[userId];
+          if (reads == 1) {
+            await gate.future;
+          }
+          return token;
+        },
+      );
+
+      final stale = directory.memberForAccountId('ws1', 1);
+      await Future<void>.delayed(Duration.zero);
+      tokens['u1'] = _signIn('1', 'octocat');
+      directory.invalidate('ws1');
+      gate.complete();
+      expect(await stale, isNull);
+      expect((await directory.memberForAccountId('ws1', 1))?.userId, 'u1');
     });
   });
 }

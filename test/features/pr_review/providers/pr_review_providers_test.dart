@@ -48,6 +48,65 @@ class _RecordingFactory implements ForgeProviderFactory {
 }
 
 void main() {
+  group('matchRepoForPr', () {
+    Repo repoOn(String id, ForgeHost forge) => Repo(
+      id: id,
+      name: 'acme/app',
+      path: '/tmp/$id',
+      forge: forge,
+      remoteOwner: 'acme',
+      remoteName: 'app',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final github = repoOn('gh', ForgeHost.github);
+    final gitlab = repoOn('gl', ForgeHost.gitlab);
+
+    test('a stated forge picks its own repo when two share a name', () {
+      // Two forges, one coordinate: the first match used to win, so a GitLab
+      // MR opened the GitHub repo's PR of the same number.
+      final repos = [github, gitlab];
+      expect(
+        matchRepoForPr(
+          repos,
+          owner: 'ACME',
+          name: 'app',
+          forge: ForgeHost.gitlab,
+        ),
+        gitlab,
+      );
+      expect(
+        matchRepoForPr(
+          repos,
+          owner: 'acme',
+          name: 'app',
+          forge: ForgeHost.github,
+        ),
+        github,
+      );
+    });
+
+    test('an unstated forge takes the only match, or GitHub on a tie', () {
+      expect(matchRepoForPr([gitlab], owner: 'acme', name: 'app'), gitlab);
+      expect(
+        matchRepoForPr([gitlab, github], owner: 'acme', name: 'app'),
+        github,
+      );
+    });
+
+    test('a stated forge never falls back to another forge', () {
+      expect(
+        matchRepoForPr(
+          [github],
+          owner: 'acme',
+          name: 'app',
+          forge: ForgeHost.gitlab,
+        ),
+        isNull,
+      );
+    });
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('prReviewRepositoryProvider', () {
@@ -213,7 +272,12 @@ void main() {
     });
 
     test('fresh empty file snapshot removes a cached nonempty diff', () async {
-      const pr = (workspaceId: 'w', repoFullName: 'o/r', number: 3);
+      const pr = (
+        workspaceId: 'w',
+        repoFullName: 'o/r',
+        number: 3,
+        forge: null,
+      );
       final updates = StreamController<PrFilesLoad>();
       addTearDown(updates.close);
       final container = ProviderContainer(
@@ -430,8 +494,8 @@ void main() {
             reposForWorkspaceProvider(
               'ws',
             ).overrideWith((ref) => Stream.value([appServer, webApp])),
-            forgeProviderRegistryProvider.overrideWith(
-              (ref) => ForgeProviderRegistry([_RecordingFactory(fetches)]),
+            prReviewRepositoryFactoryProvider.overrideWith(
+              (ref) => _RecordingFactory(fetches).create,
             ),
             // The WRONG repo is the active one — the exact setup that produced
             // the wrong-repo 404s.
@@ -452,6 +516,7 @@ void main() {
           workspaceId: 'ws',
           repoFullName: 'controlcenter/repo-a',
           number: 33373,
+          forge: null,
         );
         container.listen(
           prDetailProvider(key),
@@ -476,11 +541,13 @@ void main() {
         workspaceId: 'ws',
         repoFullName: 'controlcenter/repo-a',
         number: 7,
+        forge: null,
       );
       const b = (
         workspaceId: 'ws',
         repoFullName: 'controlcenter/repo-b',
         number: 7,
+        forge: null,
       );
       expect(a == b, isFalse);
       expect(a.hashCode == b.hashCode, isFalse);

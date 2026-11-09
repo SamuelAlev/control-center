@@ -1,32 +1,37 @@
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 
-/// Server-side resolution and storage of per-forge credentials.
+/// The server-secret half of per-forge credentials: the tokens themselves.
 ///
-/// Keyed by forge (one workspace may hold several). Optional `userId`: with a
-/// user → their credential (sign-in/paste); without → app install token, then
-/// server owner's, then environment (webhooks/pollers have no caller).
-/// Precedence is fixed. Tokens never cross the RPC boundary — [connections]
-/// for clients, [tokenFor] server-internal; never log a token.
-abstract interface class ForgeCredentialPort {
+/// Keyed by forge (one workspace may hold several). With a `userId` → that
+/// person's own credential (sign-in or pasted token), nobody else's. Without
+/// one, GitHub answers nothing: automation reaches GitHub only through a
+/// one-repository App token bounded by an accountable human
+/// (`GitHubClients.mintScoped`/`forOwner`), never a person's, the server
+/// owner's or the environment's. A token-only forge (GitLab, Bitbucket) answers
+/// the server owner's pasted token, then the environment, for work no person is
+/// doing.
+///
+/// Server-internal: implementations and callers never let a token cross the
+/// RPC boundary or reach a log. What clients see is [ForgeConnectionView].
+abstract interface class ForgeTokenStore {
   /// The resolved token for [forge], or null when none is configured.
   ///
-  /// Server-internal: callers are the HTTP clients and the git plumbing.
+  /// Callers are the HTTP clients and the git plumbing.
   Future<String?> tokenFor(
     ForgeHost forge, {
     String? userId,
     String? workspaceId,
   });
 
-  /// Stores [token] as [userId]'s credential for [forge]. An empty token
-  /// clears it, falling back to the next source in precedence.
+  /// Stores [token] as [userId]'s credential for [forge] and answers the
+  /// connection as the forge now sees it, probed with the new token so a
+  /// rejected paste reads as unauthenticated with a reason.
   ///
   /// Takes effect immediately: the token is read per request, so a user who
-  /// pastes one does not restart the server to use it.
-  ///
-  /// A GitHub [workspaceId] writes the overlay for that workspace and does
-  /// not overwrite the global onboarding slot.
-  Future<void> setToken(
+  /// pastes one does not restart the server to use it. GitHub is sign-in only
+  /// and refuses a pasted token.
+  Future<ForgeConnection> setToken(
     ForgeHost forge,
     String token, {
     String? userId,
@@ -39,18 +44,15 @@ abstract interface class ForgeCredentialPort {
     String? userId,
     String? workspaceId,
   });
+}
 
+/// The client-view half of per-forge credentials: connection state and
+/// identity, never a token. Backs `forge.listConnections` and every
+/// "is this mine?" lookup on the server.
+abstract interface class ForgeConnectionView {
   /// The current connection state of every supported forge, in
-  /// [ForgeHost.supported] order. Never carries a token.
+  /// [ForgeHost.supported] order.
   Future<List<ForgeConnection>> connections({
-    String? userId,
-    String? workspaceId,
-  });
-
-  /// Re-probes [forge] and returns its connection state, refreshing the cached
-  /// viewer identity. Backs the "test connection" affordance in Settings.
-  Future<ForgeConnection> testConnection(
-    ForgeHost forge, {
     String? userId,
     String? workspaceId,
   });

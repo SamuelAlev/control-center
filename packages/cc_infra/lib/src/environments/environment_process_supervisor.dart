@@ -308,7 +308,7 @@ class _Supervised {
   EnvironmentProcessSpec spec;
   final EnvironmentLogRing ring;
 
-  String state = 'pending';
+  String state = EnvironmentComponentPhase.pending.wire;
   String? detail;
   int restarts = 0;
   int? lastExitCode;
@@ -448,11 +448,11 @@ class EnvironmentProcessSupervisor {
     final key = _key(spec.environmentId, spec.componentId);
     var entry = _entries[key];
     if (entry != null && !entry.exited) {
-      if (entry.state == 'failed' &&
+      if (entry.state == EnvironmentComponentPhase.failed.wire &&
           spec.kind == EnvironmentSupervisedKind.process) {
         // Still running, but its readiness timed out. A new Start is a new
         // chance: probe again rather than repeat the old verdict.
-        _set(entry, 'starting');
+        _set(entry, EnvironmentComponentPhase.starting.wire);
         unawaited(_awaitReadiness(entry, entry.generation));
       }
       return;
@@ -485,8 +485,11 @@ class EnvironmentProcessSupervisor {
     String componentId,
   ) async {
     final entry = _require(environmentId, componentId);
-    bool isFinal(String state) =>
-        const {'ready', 'running'}.contains(state) || _isDown(state);
+    bool isFinal(String state) {
+      final phase = EnvironmentComponentPhase.tryParse(state);
+      return phase != null && (phase.isUp || phase.isDown);
+    }
+
     final state = isFinal(entry.state)
         ? entry.state
         : await entry.changes.stream.firstWhere(isFinal);
@@ -503,7 +506,7 @@ class EnvironmentProcessSupervisor {
   }
 
   static bool _isDown(String state) =>
-      const {'failed', 'stopped', 'closed', 'crashed'}.contains(state);
+      EnvironmentComponentPhase.tryParse(state)?.isDown ?? false;
 
   /// Stops [componentId]: SIGINT to the group, then SIGTERM, then SIGKILL.
   ///
@@ -539,7 +542,9 @@ class EnvironmentProcessSupervisor {
     await entry.ring.flush();
     _set(
       entry,
-      entry.spec.kind == EnvironmentSupervisedKind.app ? 'closed' : 'stopped',
+      entry.spec.kind == EnvironmentSupervisedKind.app
+          ? EnvironmentComponentPhase.closed.wire
+          : EnvironmentComponentPhase.stopped.wire,
     );
   }
 
@@ -788,9 +793,9 @@ class EnvironmentProcessSupervisor {
     );
 
     if (spec.kind == EnvironmentSupervisedKind.app) {
-      _set(entry, 'running');
+      _set(entry, EnvironmentComponentPhase.running.wire);
     } else {
-      _set(entry, 'starting');
+      _set(entry, EnvironmentComponentPhase.starting.wire);
       unawaited(_awaitReadiness(entry, generation));
     }
   }
@@ -841,7 +846,7 @@ class EnvironmentProcessSupervisor {
     final probe = entry.spec.ready;
     if (probe == null ||
         (probe.http == null && probe.tcp == null && probe.logMatch == null)) {
-      _set(entry, 'ready');
+      _set(entry, EnvironmentComponentPhase.ready.wire);
       return;
     }
     final limit = Duration(seconds: probe.timeoutSeconds);
@@ -849,14 +854,14 @@ class EnvironmentProcessSupervisor {
     while (generation == entry.generation && !entry.stopping && !entry.exited) {
       if (await _passes(entry, probe)) {
         if (generation == entry.generation && !entry.exited) {
-          _set(entry, 'ready');
+          _set(entry, EnvironmentComponentPhase.ready.wire);
         }
         return;
       }
       if (elapsed.elapsed > limit) {
         _set(
           entry,
-          'failed',
+          EnvironmentComponentPhase.failed.wire,
           detail: _withLastLines(entry, 'Not ready after ${limit.inSeconds} s'),
         );
         return;
@@ -907,7 +912,9 @@ class EnvironmentProcessSupervisor {
 
     final String state;
     if (spec.kind == EnvironmentSupervisedKind.app) {
-      state = code == 0 ? 'closed' : 'crashed';
+      state = code == 0
+          ? EnvironmentComponentPhase.closed.wire
+          : EnvironmentComponentPhase.crashed.wire;
       _set(
         entry,
         state,
@@ -956,23 +963,23 @@ class EnvironmentProcessSupervisor {
     if (policy == EnvironmentRestartPolicy.never) {
       _set(
         entry,
-        'failed',
+        EnvironmentComponentPhase.failed.wire,
         detail: _withLastLines(entry, 'Exited with code $code'),
       );
-      return 'failed';
+      return EnvironmentComponentPhase.failed.wire;
     }
     if (policy == EnvironmentRestartPolicy.onFailure &&
         entry.failures.length >= failureLimit) {
       _set(
         entry,
-        'failed',
+        EnvironmentComponentPhase.failed.wire,
         detail: _withLastLines(
           entry,
           'Gave up after ${entry.failures.length} failures in '
           '${failureWindow.inMinutes} minutes (last exit code $code)',
         ),
       );
-      return 'failed';
+      return EnvironmentComponentPhase.failed.wire;
     }
     final delay = backoffFor(entry.consecutiveFailures);
     entry
@@ -980,11 +987,11 @@ class EnvironmentProcessSupervisor {
       ..restarts += 1;
     _set(
       entry,
-      'starting',
+      EnvironmentComponentPhase.starting.wire,
       detail: 'Exited with code $code, restarting in ${delay.inSeconds} s',
     );
     entry.backoff = Timer(delay, () => unawaited(_respawn(entry)));
-    return 'starting';
+    return EnvironmentComponentPhase.starting.wire;
   }
 
   /// The delay before the restart after [failures] consecutive failures.
@@ -1008,7 +1015,11 @@ class EnvironmentProcessSupervisor {
       await _spawn(entry);
     } on Object catch (e) {
       if (!entry.stopping) {
-        _set(entry, 'failed', detail: 'Could not restart: $e');
+        _set(
+          entry,
+          EnvironmentComponentPhase.failed.wire,
+          detail: 'Could not restart: $e',
+        );
       }
     }
   }

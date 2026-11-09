@@ -52,7 +52,7 @@ class _Tool extends HarnessTool {
   }
 }
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   _Provider(this.names);
 
   final List<String> names;
@@ -133,7 +133,9 @@ class _Run {
   _Run({
     required List<_Tool> tools,
     required this.history,
-    AgentLoopConfig config = const AgentLoopConfig(maxParallelToolCalls: 2),
+    AgentLoopConfig config = const AgentLoopConfig(
+      tools: LoopToolConfig(maxParallelToolCalls: 2),
+    ),
     CancellationToken? cancel,
     LlmProviderPort? provider,
   }) {
@@ -232,12 +234,14 @@ void main() {
       tools: tools,
       history: [],
       config: AgentLoopConfig(
-        maxParallelToolCalls: 2,
-        autoApprove: false,
-        approvalCallback: (tool, _) async {
-          approvals.add(tool.name);
-          return const ToolGateDecision.allow();
-        },
+        tools: LoopToolConfig(
+          maxParallelToolCalls: 2,
+          autoApprove: false,
+          approvalCallback: (tool, _) async {
+            approvals.add(tool.name);
+            return const ToolGateDecision.allow();
+          },
+        ),
       ),
     );
     addTearDown(() async {
@@ -320,7 +324,9 @@ void main() {
       tools: [read],
       history: history,
       provider: _StreamingProvider([stream.stream]),
-      config: const AgentLoopConfig(overlapReadOnlyTools: true),
+      config: const AgentLoopConfig(
+        tools: LoopToolConfig(overlapReadOnlyTools: true),
+      ),
     );
     addTearDown(() {
       read.complete();
@@ -374,7 +380,9 @@ void main() {
         tools: [write, read],
         history: [],
         provider: _StreamingProvider([stream.stream]),
-        config: const AgentLoopConfig(overlapReadOnlyTools: true),
+        config: const AgentLoopConfig(
+          tools: LoopToolConfig(overlapReadOnlyTools: true),
+        ),
       );
       addTearDown(() {
         write.complete();
@@ -425,7 +433,9 @@ void main() {
         tools: [read],
         history: history,
         provider: _StreamingProvider([first.stream, retry.stream]),
-        config: const AgentLoopConfig(overlapReadOnlyTools: true),
+        config: const AgentLoopConfig(
+          tools: LoopToolConfig(overlapReadOnlyTools: true),
+        ),
       );
       addTearDown(() {
         read.complete();
@@ -522,7 +532,9 @@ void main() {
       history: history,
       cancel: source.token,
       provider: _StreamingProvider([stream.stream]),
-      config: const AgentLoopConfig(overlapReadOnlyTools: true),
+      config: const AgentLoopConfig(
+        tools: LoopToolConfig(overlapReadOnlyTools: true),
+      ),
     );
     addTearDown(() {
       if (!stream.isClosed) {

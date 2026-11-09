@@ -68,7 +68,7 @@ mixin _EnsureOps
     Principal by, {
     Map<String, String> extraEnvironment = const {},
   }) {
-    if (_releasing.contains('${space.workspaceId}/${space.id}')) {
+    if (_isReleasing(space.workspaceId, space.id)) {
       throw _EnvironmentServiceBase._failure(
         'space-releasing',
         'This space is being deleted',

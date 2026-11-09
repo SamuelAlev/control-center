@@ -79,6 +79,7 @@ class McpCallScope {
   /// declares under `properties` are touched. Keys in [force] are overwritten
   /// with the scope's value, or removed when it has no trusted value. Tools
   /// opt in per argument when the argument names this run rather than a target.
+  /// [callerIdentityKeys] are always forced.
   Map<String, dynamic> apply(
     Map<String, dynamic> args,
     Map<String, dynamic> schema, {
@@ -116,8 +117,31 @@ class McpCallScope {
     fillIfEmpty('agent_id', agentId);
     fillIfEmpty('conversation_id', conversationId);
     fillIfEmpty('space_id', spaceId);
+    // Delegation identities name the CALLER on every tool that declares them,
+    // never a model-chosen value: they drive sender attribution, the per-pair
+    // rate limit, the cycle chain and the autonomy/budget lookups. With no
+    // trusted caller the model's value is dropped, so the tool refuses for a
+    // missing argument instead of acting as whoever the model named.
+    for (final key in callerIdentityKeys) {
+      if (!props.containsKey(key)) {
+        continue;
+      }
+      final caller = agentId;
+      if (caller == null || caller.isEmpty) {
+        scoped.remove(key);
+      } else {
+        scoped[key] = caller;
+      }
+    }
     return scoped;
   }
+
+  /// Arguments that always name the calling agent and are therefore FORCED to
+  /// [agentId] by [apply], whatever the tool's `forcedScopeKeys` say.
+  static const Set<String> callerIdentityKeys = {
+    'from_agent_id',
+    'delegated_by_agent_id',
+  };
 
   @override
   bool operator ==(Object other) =>

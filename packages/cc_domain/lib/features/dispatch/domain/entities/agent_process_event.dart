@@ -43,6 +43,9 @@ enum AgentProcessEventType {
   /// "launching claude", "exited cleanly", etc.).
   debug,
 
+  /// Previously streamed text/thinking was withdrawn (a retried model attempt).
+  textRetracted,
+
   /// Done event.
   done,
 }
@@ -72,6 +75,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return 'sandbox_violation';
       case AgentProcessEventType.debug:
         return 'debug';
+      case AgentProcessEventType.textRetracted:
+        return 'text_retracted';
       case AgentProcessEventType.done:
         return 'done';
     }
@@ -103,6 +108,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return AgentProcessEventType.sandboxViolation;
       case 'debug':
         return AgentProcessEventType.debug;
+      case 'text_retracted':
+        return AgentProcessEventType.textRetracted;
       case 'done':
         return AgentProcessEventType.done;
       default:
@@ -543,6 +550,30 @@ class DebugEvent extends AgentProcessEvent {
 
   @override
   final String content;
+}
+
+/// Text and/or thinking the agent ALREADY streamed was withdrawn.
+///
+/// Emitted when a model attempt is abandoned mid-stream and re-issued (a
+/// retryable provider error, a course-correction restart, a context-overflow
+/// recovery): the deltas reached the transcript but never entered the model's
+/// history, so a consumer drops exactly [text] / [thinking] from the tail of
+/// what it recorded.
+class TextRetractedEvent extends AgentProcessEvent {
+  /// Creates a retraction of [text] and [thinking].
+  TextRetractedEvent({this.text = '', this.thinking = '', super.timestamp});
+
+  /// The visible text withdrawn from the end of the transcript.
+  final String text;
+
+  /// The reasoning text withdrawn from the end of the transcript.
+  final String thinking;
+
+  @override
+  AgentProcessEventType get type => AgentProcessEventType.textRetracted;
+
+  @override
+  String get content => '';
 }
 
 /// Agent run completed.

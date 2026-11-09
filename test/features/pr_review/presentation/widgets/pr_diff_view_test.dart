@@ -91,7 +91,12 @@ Widget _wrapSlivers(Widget sliverChild) {
 }
 
 /// The PR identity the inline-comments controller is keyed by.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 1);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 1,
+  forge: null,
+);
 
 PrInlineCommentsController _createController() {
   final container = ProviderContainer(

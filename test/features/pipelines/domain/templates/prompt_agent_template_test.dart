@@ -79,10 +79,8 @@ class _FakeAgentRepo implements AgentRepository {
 /// Minimal [MessagingPort] fake: creates spaces and returns a run-id per
 /// dispatch. The promptAgent body dispatches into the run's conversation.
 class _FakeMessagingPort implements MessagingPort {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -313,7 +311,6 @@ class _FakeRunRepository implements PipelineRunRepository {
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
   }) async => 0;
   @override
   Future<PipelineRun?> nextQueuedRunForTemplate({

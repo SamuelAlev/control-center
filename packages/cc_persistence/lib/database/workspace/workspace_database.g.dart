@@ -21791,6 +21791,17 @@ class $PipelineRunsTableTable extends PipelineRunsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _templateSnapshotJsonMeta =
+      const VerificationMeta('templateSnapshotJson');
+  @override
+  late final GeneratedColumn<String> templateSnapshotJson =
+      GeneratedColumn<String>(
+        'template_snapshot_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _attemptCountMeta = const VerificationMeta(
     'attemptCount',
   );
@@ -21840,6 +21851,21 @@ class $PipelineRunsTableTable extends PipelineRunsTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isProjectionMeta = const VerificationMeta(
+    'isProjection',
+  );
+  @override
+  late final GeneratedColumn<bool> isProjection = GeneratedColumn<bool>(
+    'is_projection',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_projection" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -21860,10 +21886,12 @@ class $PipelineRunsTableTable extends PipelineRunsTable
     parentPipelineRunId,
     parentStepId,
     templateVersion,
+    templateSnapshotJson,
     attemptCount,
     totalCostCents,
     totalTokens,
     dryRun,
+    isProjection,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -22018,6 +22046,15 @@ class $PipelineRunsTableTable extends PipelineRunsTable
         ),
       );
     }
+    if (data.containsKey('template_snapshot_json')) {
+      context.handle(
+        _templateSnapshotJsonMeta,
+        templateSnapshotJson.isAcceptableOrUnknown(
+          data['template_snapshot_json']!,
+          _templateSnapshotJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('attempt_count')) {
       context.handle(
         _attemptCountMeta,
@@ -22049,6 +22086,15 @@ class $PipelineRunsTableTable extends PipelineRunsTable
       context.handle(
         _dryRunMeta,
         dryRun.isAcceptableOrUnknown(data['dry_run']!, _dryRunMeta),
+      );
+    }
+    if (data.containsKey('is_projection')) {
+      context.handle(
+        _isProjectionMeta,
+        isProjection.isAcceptableOrUnknown(
+          data['is_projection']!,
+          _isProjectionMeta,
+        ),
       );
     }
     return context;
@@ -22132,6 +22178,10 @@ class $PipelineRunsTableTable extends PipelineRunsTable
         DriftSqlType.int,
         data['${effectivePrefix}template_version'],
       )!,
+      templateSnapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_snapshot_json'],
+      ),
       attemptCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}attempt_count'],
@@ -22147,6 +22197,10 @@ class $PipelineRunsTableTable extends PipelineRunsTable
       dryRun: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}dry_run'],
+      )!,
+      isProjection: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_projection'],
       )!,
     );
   }
@@ -22234,9 +22288,14 @@ class PipelineRunsTableData extends DataClass
   /// [parentPipelineRunId]). Null for top-level runs.
   final String? parentStepId;
 
-  /// Template version this run was started against — pins the run to the graph
-  /// as it was at start time so an edit mid-run can't silently change it.
+  /// Template version this run was started against.
   final int templateVersion;
+
+  /// The template graph as it was when the run started
+  /// (`PipelineDefinition.toJson`), written once at insert. Resume, retry and
+  /// the run detail read it so a template edit mid-run can't change what the
+  /// run does or shows. Null for runs that predate it (v23).
+  final String? templateSnapshotJson;
 
   /// Which attempt of this run is current, 1-based.
   ///
@@ -22256,6 +22315,11 @@ class PipelineRunsTableData extends DataClass
   /// When true the run is a dry run: dispatch / bash / network side effects
   /// are skipped and steps echo what they would have done.
   final bool dryRun;
+
+  /// When true the row mirrors work owned outside the engine (a projection
+  /// reporter wrote it) and holds no `maxParallelRuns` slot. Written once at
+  /// insert; see `PipelineRun.isProjection`.
+  final bool isProjection;
   const PipelineRunsTableData({
     required this.id,
     required this.templateId,
@@ -22275,10 +22339,12 @@ class PipelineRunsTableData extends DataClass
     this.parentPipelineRunId,
     this.parentStepId,
     required this.templateVersion,
+    this.templateSnapshotJson,
     required this.attemptCount,
     required this.totalCostCents,
     required this.totalTokens,
     required this.dryRun,
+    required this.isProjection,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -22321,10 +22387,14 @@ class PipelineRunsTableData extends DataClass
       map['parent_step_id'] = Variable<String>(parentStepId);
     }
     map['template_version'] = Variable<int>(templateVersion);
+    if (!nullToAbsent || templateSnapshotJson != null) {
+      map['template_snapshot_json'] = Variable<String>(templateSnapshotJson);
+    }
     map['attempt_count'] = Variable<int>(attemptCount);
     map['total_cost_cents'] = Variable<int>(totalCostCents);
     map['total_tokens'] = Variable<int>(totalTokens);
     map['dry_run'] = Variable<bool>(dryRun);
+    map['is_projection'] = Variable<bool>(isProjection);
     return map;
   }
 
@@ -22368,10 +22438,14 @@ class PipelineRunsTableData extends DataClass
           ? const Value.absent()
           : Value(parentStepId),
       templateVersion: Value(templateVersion),
+      templateSnapshotJson: templateSnapshotJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateSnapshotJson),
       attemptCount: Value(attemptCount),
       totalCostCents: Value(totalCostCents),
       totalTokens: Value(totalTokens),
       dryRun: Value(dryRun),
+      isProjection: Value(isProjection),
     );
   }
 
@@ -22405,10 +22479,14 @@ class PipelineRunsTableData extends DataClass
       ),
       parentStepId: serializer.fromJson<String?>(json['parentStepId']),
       templateVersion: serializer.fromJson<int>(json['templateVersion']),
+      templateSnapshotJson: serializer.fromJson<String?>(
+        json['templateSnapshotJson'],
+      ),
       attemptCount: serializer.fromJson<int>(json['attemptCount']),
       totalCostCents: serializer.fromJson<int>(json['totalCostCents']),
       totalTokens: serializer.fromJson<int>(json['totalTokens']),
       dryRun: serializer.fromJson<bool>(json['dryRun']),
+      isProjection: serializer.fromJson<bool>(json['isProjection']),
     );
   }
   @override
@@ -22433,10 +22511,12 @@ class PipelineRunsTableData extends DataClass
       'parentPipelineRunId': serializer.toJson<String?>(parentPipelineRunId),
       'parentStepId': serializer.toJson<String?>(parentStepId),
       'templateVersion': serializer.toJson<int>(templateVersion),
+      'templateSnapshotJson': serializer.toJson<String?>(templateSnapshotJson),
       'attemptCount': serializer.toJson<int>(attemptCount),
       'totalCostCents': serializer.toJson<int>(totalCostCents),
       'totalTokens': serializer.toJson<int>(totalTokens),
       'dryRun': serializer.toJson<bool>(dryRun),
+      'isProjection': serializer.toJson<bool>(isProjection),
     };
   }
 
@@ -22459,10 +22539,12 @@ class PipelineRunsTableData extends DataClass
     Value<String?> parentPipelineRunId = const Value.absent(),
     Value<String?> parentStepId = const Value.absent(),
     int? templateVersion,
+    Value<String?> templateSnapshotJson = const Value.absent(),
     int? attemptCount,
     int? totalCostCents,
     int? totalTokens,
     bool? dryRun,
+    bool? isProjection,
   }) => PipelineRunsTableData(
     id: id ?? this.id,
     templateId: templateId ?? this.templateId,
@@ -22494,10 +22576,14 @@ class PipelineRunsTableData extends DataClass
         : this.parentPipelineRunId,
     parentStepId: parentStepId.present ? parentStepId.value : this.parentStepId,
     templateVersion: templateVersion ?? this.templateVersion,
+    templateSnapshotJson: templateSnapshotJson.present
+        ? templateSnapshotJson.value
+        : this.templateSnapshotJson,
     attemptCount: attemptCount ?? this.attemptCount,
     totalCostCents: totalCostCents ?? this.totalCostCents,
     totalTokens: totalTokens ?? this.totalTokens,
     dryRun: dryRun ?? this.dryRun,
+    isProjection: isProjection ?? this.isProjection,
   );
   PipelineRunsTableData copyWithCompanion(PipelineRunsTableCompanion data) {
     return PipelineRunsTableData(
@@ -22543,6 +22629,9 @@ class PipelineRunsTableData extends DataClass
       templateVersion: data.templateVersion.present
           ? data.templateVersion.value
           : this.templateVersion,
+      templateSnapshotJson: data.templateSnapshotJson.present
+          ? data.templateSnapshotJson.value
+          : this.templateSnapshotJson,
       attemptCount: data.attemptCount.present
           ? data.attemptCount.value
           : this.attemptCount,
@@ -22553,6 +22642,9 @@ class PipelineRunsTableData extends DataClass
           ? data.totalTokens.value
           : this.totalTokens,
       dryRun: data.dryRun.present ? data.dryRun.value : this.dryRun,
+      isProjection: data.isProjection.present
+          ? data.isProjection.value
+          : this.isProjection,
     );
   }
 
@@ -22577,10 +22669,12 @@ class PipelineRunsTableData extends DataClass
           ..write('parentPipelineRunId: $parentPipelineRunId, ')
           ..write('parentStepId: $parentStepId, ')
           ..write('templateVersion: $templateVersion, ')
+          ..write('templateSnapshotJson: $templateSnapshotJson, ')
           ..write('attemptCount: $attemptCount, ')
           ..write('totalCostCents: $totalCostCents, ')
           ..write('totalTokens: $totalTokens, ')
-          ..write('dryRun: $dryRun')
+          ..write('dryRun: $dryRun, ')
+          ..write('isProjection: $isProjection')
           ..write(')'))
         .toString();
   }
@@ -22605,10 +22699,12 @@ class PipelineRunsTableData extends DataClass
     parentPipelineRunId,
     parentStepId,
     templateVersion,
+    templateSnapshotJson,
     attemptCount,
     totalCostCents,
     totalTokens,
     dryRun,
+    isProjection,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -22632,10 +22728,12 @@ class PipelineRunsTableData extends DataClass
           other.parentPipelineRunId == this.parentPipelineRunId &&
           other.parentStepId == this.parentStepId &&
           other.templateVersion == this.templateVersion &&
+          other.templateSnapshotJson == this.templateSnapshotJson &&
           other.attemptCount == this.attemptCount &&
           other.totalCostCents == this.totalCostCents &&
           other.totalTokens == this.totalTokens &&
-          other.dryRun == this.dryRun);
+          other.dryRun == this.dryRun &&
+          other.isProjection == this.isProjection);
 }
 
 class PipelineRunsTableCompanion
@@ -22658,10 +22756,12 @@ class PipelineRunsTableCompanion
   final Value<String?> parentPipelineRunId;
   final Value<String?> parentStepId;
   final Value<int> templateVersion;
+  final Value<String?> templateSnapshotJson;
   final Value<int> attemptCount;
   final Value<int> totalCostCents;
   final Value<int> totalTokens;
   final Value<bool> dryRun;
+  final Value<bool> isProjection;
   final Value<int> rowid;
   const PipelineRunsTableCompanion({
     this.id = const Value.absent(),
@@ -22682,10 +22782,12 @@ class PipelineRunsTableCompanion
     this.parentPipelineRunId = const Value.absent(),
     this.parentStepId = const Value.absent(),
     this.templateVersion = const Value.absent(),
+    this.templateSnapshotJson = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.totalCostCents = const Value.absent(),
     this.totalTokens = const Value.absent(),
     this.dryRun = const Value.absent(),
+    this.isProjection = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PipelineRunsTableCompanion.insert({
@@ -22707,10 +22809,12 @@ class PipelineRunsTableCompanion
     this.parentPipelineRunId = const Value.absent(),
     this.parentStepId = const Value.absent(),
     this.templateVersion = const Value.absent(),
+    this.templateSnapshotJson = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.totalCostCents = const Value.absent(),
     this.totalTokens = const Value.absent(),
     this.dryRun = const Value.absent(),
+    this.isProjection = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        templateId = Value(templateId),
@@ -22734,10 +22838,12 @@ class PipelineRunsTableCompanion
     Expression<String>? parentPipelineRunId,
     Expression<String>? parentStepId,
     Expression<int>? templateVersion,
+    Expression<String>? templateSnapshotJson,
     Expression<int>? attemptCount,
     Expression<int>? totalCostCents,
     Expression<int>? totalTokens,
     Expression<bool>? dryRun,
+    Expression<bool>? isProjection,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -22761,10 +22867,13 @@ class PipelineRunsTableCompanion
         'parent_pipeline_run_id': parentPipelineRunId,
       if (parentStepId != null) 'parent_step_id': parentStepId,
       if (templateVersion != null) 'template_version': templateVersion,
+      if (templateSnapshotJson != null)
+        'template_snapshot_json': templateSnapshotJson,
       if (attemptCount != null) 'attempt_count': attemptCount,
       if (totalCostCents != null) 'total_cost_cents': totalCostCents,
       if (totalTokens != null) 'total_tokens': totalTokens,
       if (dryRun != null) 'dry_run': dryRun,
+      if (isProjection != null) 'is_projection': isProjection,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -22788,10 +22897,12 @@ class PipelineRunsTableCompanion
     Value<String?>? parentPipelineRunId,
     Value<String?>? parentStepId,
     Value<int>? templateVersion,
+    Value<String?>? templateSnapshotJson,
     Value<int>? attemptCount,
     Value<int>? totalCostCents,
     Value<int>? totalTokens,
     Value<bool>? dryRun,
+    Value<bool>? isProjection,
     Value<int>? rowid,
   }) {
     return PipelineRunsTableCompanion(
@@ -22813,10 +22924,12 @@ class PipelineRunsTableCompanion
       parentPipelineRunId: parentPipelineRunId ?? this.parentPipelineRunId,
       parentStepId: parentStepId ?? this.parentStepId,
       templateVersion: templateVersion ?? this.templateVersion,
+      templateSnapshotJson: templateSnapshotJson ?? this.templateSnapshotJson,
       attemptCount: attemptCount ?? this.attemptCount,
       totalCostCents: totalCostCents ?? this.totalCostCents,
       totalTokens: totalTokens ?? this.totalTokens,
       dryRun: dryRun ?? this.dryRun,
+      isProjection: isProjection ?? this.isProjection,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -22880,6 +22993,11 @@ class PipelineRunsTableCompanion
     if (templateVersion.present) {
       map['template_version'] = Variable<int>(templateVersion.value);
     }
+    if (templateSnapshotJson.present) {
+      map['template_snapshot_json'] = Variable<String>(
+        templateSnapshotJson.value,
+      );
+    }
     if (attemptCount.present) {
       map['attempt_count'] = Variable<int>(attemptCount.value);
     }
@@ -22891,6 +23009,9 @@ class PipelineRunsTableCompanion
     }
     if (dryRun.present) {
       map['dry_run'] = Variable<bool>(dryRun.value);
+    }
+    if (isProjection.present) {
+      map['is_projection'] = Variable<bool>(isProjection.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -22919,10 +23040,12 @@ class PipelineRunsTableCompanion
           ..write('parentPipelineRunId: $parentPipelineRunId, ')
           ..write('parentStepId: $parentStepId, ')
           ..write('templateVersion: $templateVersion, ')
+          ..write('templateSnapshotJson: $templateSnapshotJson, ')
           ..write('attemptCount: $attemptCount, ')
           ..write('totalCostCents: $totalCostCents, ')
           ..write('totalTokens: $totalTokens, ')
           ..write('dryRun: $dryRun, ')
+          ..write('isProjection: $isProjection, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23032,17 +23155,6 @@ class $PipelineStepRunsTableTable extends PipelineStepRunsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _branchIndexMeta = const VerificationMeta(
-    'branchIndex',
-  );
-  @override
-  late final GeneratedColumn<int> branchIndex = GeneratedColumn<int>(
-    'branch_index',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _attemptCountMeta = const VerificationMeta(
     'attemptCount',
   );
@@ -23101,7 +23213,6 @@ class $PipelineStepRunsTableTable extends PipelineStepRunsTable
     spaceId,
     errorMessage,
     errorStackTrace,
-    branchIndex,
     attemptCount,
     attemptHistory,
     startedAt,
@@ -23185,15 +23296,6 @@ class $PipelineStepRunsTableTable extends PipelineStepRunsTable
         ),
       );
     }
-    if (data.containsKey('branch_index')) {
-      context.handle(
-        _branchIndexMeta,
-        branchIndex.isAcceptableOrUnknown(
-          data['branch_index']!,
-          _branchIndexMeta,
-        ),
-      );
-    }
     if (data.containsKey('attempt_count')) {
       context.handle(
         _attemptCountMeta,
@@ -23272,10 +23374,6 @@ class $PipelineStepRunsTableTable extends PipelineStepRunsTable
         DriftSqlType.string,
         data['${effectivePrefix}error_stack_trace'],
       ),
-      branchIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}branch_index'],
-      ),
       attemptCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}attempt_count'],
@@ -23335,11 +23433,6 @@ class PipelineStepRunsTableData extends DataClass
   /// Stack trace captured at failure time. Nullable.
   final String? errorStackTrace;
 
-  /// Identifies which parallel branch this step belongs to when multiple
-  /// `.listen()` calls fan out from the same source step. Null for
-  /// non-parallel steps.
-  final int? branchIndex;
-
   /// Number of body attempts so far (retry policy). Persisted so a crash
   /// mid-retry doesn't reset the budget on resume.
   final int attemptCount;
@@ -23365,7 +23458,6 @@ class PipelineStepRunsTableData extends DataClass
     this.spaceId,
     this.errorMessage,
     this.errorStackTrace,
-    this.branchIndex,
     required this.attemptCount,
     required this.attemptHistory,
     required this.startedAt,
@@ -23392,9 +23484,6 @@ class PipelineStepRunsTableData extends DataClass
     }
     if (!nullToAbsent || errorStackTrace != null) {
       map['error_stack_trace'] = Variable<String>(errorStackTrace);
-    }
-    if (!nullToAbsent || branchIndex != null) {
-      map['branch_index'] = Variable<int>(branchIndex);
     }
     map['attempt_count'] = Variable<int>(attemptCount);
     map['attempt_history'] = Variable<String>(attemptHistory);
@@ -23426,9 +23515,6 @@ class PipelineStepRunsTableData extends DataClass
       errorStackTrace: errorStackTrace == null && nullToAbsent
           ? const Value.absent()
           : Value(errorStackTrace),
-      branchIndex: branchIndex == null && nullToAbsent
-          ? const Value.absent()
-          : Value(branchIndex),
       attemptCount: Value(attemptCount),
       attemptHistory: Value(attemptHistory),
       startedAt: Value(startedAt),
@@ -23453,7 +23539,6 @@ class PipelineStepRunsTableData extends DataClass
       spaceId: serializer.fromJson<String?>(json['spaceId']),
       errorMessage: serializer.fromJson<String?>(json['errorMessage']),
       errorStackTrace: serializer.fromJson<String?>(json['errorStackTrace']),
-      branchIndex: serializer.fromJson<int?>(json['branchIndex']),
       attemptCount: serializer.fromJson<int>(json['attemptCount']),
       attemptHistory: serializer.fromJson<String>(json['attemptHistory']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
@@ -23473,7 +23558,6 @@ class PipelineStepRunsTableData extends DataClass
       'spaceId': serializer.toJson<String?>(spaceId),
       'errorMessage': serializer.toJson<String?>(errorMessage),
       'errorStackTrace': serializer.toJson<String?>(errorStackTrace),
-      'branchIndex': serializer.toJson<int?>(branchIndex),
       'attemptCount': serializer.toJson<int>(attemptCount),
       'attemptHistory': serializer.toJson<String>(attemptHistory),
       'startedAt': serializer.toJson<DateTime>(startedAt),
@@ -23491,7 +23575,6 @@ class PipelineStepRunsTableData extends DataClass
     Value<String?> spaceId = const Value.absent(),
     Value<String?> errorMessage = const Value.absent(),
     Value<String?> errorStackTrace = const Value.absent(),
-    Value<int?> branchIndex = const Value.absent(),
     int? attemptCount,
     String? attemptHistory,
     DateTime? startedAt,
@@ -23508,7 +23591,6 @@ class PipelineStepRunsTableData extends DataClass
     errorStackTrace: errorStackTrace.present
         ? errorStackTrace.value
         : this.errorStackTrace,
-    branchIndex: branchIndex.present ? branchIndex.value : this.branchIndex,
     attemptCount: attemptCount ?? this.attemptCount,
     attemptHistory: attemptHistory ?? this.attemptHistory,
     startedAt: startedAt ?? this.startedAt,
@@ -23535,9 +23617,6 @@ class PipelineStepRunsTableData extends DataClass
       errorStackTrace: data.errorStackTrace.present
           ? data.errorStackTrace.value
           : this.errorStackTrace,
-      branchIndex: data.branchIndex.present
-          ? data.branchIndex.value
-          : this.branchIndex,
       attemptCount: data.attemptCount.present
           ? data.attemptCount.value
           : this.attemptCount,
@@ -23563,7 +23642,6 @@ class PipelineStepRunsTableData extends DataClass
           ..write('spaceId: $spaceId, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('errorStackTrace: $errorStackTrace, ')
-          ..write('branchIndex: $branchIndex, ')
           ..write('attemptCount: $attemptCount, ')
           ..write('attemptHistory: $attemptHistory, ')
           ..write('startedAt: $startedAt, ')
@@ -23583,7 +23661,6 @@ class PipelineStepRunsTableData extends DataClass
     spaceId,
     errorMessage,
     errorStackTrace,
-    branchIndex,
     attemptCount,
     attemptHistory,
     startedAt,
@@ -23602,7 +23679,6 @@ class PipelineStepRunsTableData extends DataClass
           other.spaceId == this.spaceId &&
           other.errorMessage == this.errorMessage &&
           other.errorStackTrace == this.errorStackTrace &&
-          other.branchIndex == this.branchIndex &&
           other.attemptCount == this.attemptCount &&
           other.attemptHistory == this.attemptHistory &&
           other.startedAt == this.startedAt &&
@@ -23620,7 +23696,6 @@ class PipelineStepRunsTableCompanion
   final Value<String?> spaceId;
   final Value<String?> errorMessage;
   final Value<String?> errorStackTrace;
-  final Value<int?> branchIndex;
   final Value<int> attemptCount;
   final Value<String> attemptHistory;
   final Value<DateTime> startedAt;
@@ -23636,7 +23711,6 @@ class PipelineStepRunsTableCompanion
     this.spaceId = const Value.absent(),
     this.errorMessage = const Value.absent(),
     this.errorStackTrace = const Value.absent(),
-    this.branchIndex = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.attemptHistory = const Value.absent(),
     this.startedAt = const Value.absent(),
@@ -23653,7 +23727,6 @@ class PipelineStepRunsTableCompanion
     this.spaceId = const Value.absent(),
     this.errorMessage = const Value.absent(),
     this.errorStackTrace = const Value.absent(),
-    this.branchIndex = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.attemptHistory = const Value.absent(),
     this.startedAt = const Value.absent(),
@@ -23672,7 +23745,6 @@ class PipelineStepRunsTableCompanion
     Expression<String>? spaceId,
     Expression<String>? errorMessage,
     Expression<String>? errorStackTrace,
-    Expression<int>? branchIndex,
     Expression<int>? attemptCount,
     Expression<String>? attemptHistory,
     Expression<DateTime>? startedAt,
@@ -23689,7 +23761,6 @@ class PipelineStepRunsTableCompanion
       if (spaceId != null) 'space_id': spaceId,
       if (errorMessage != null) 'error_message': errorMessage,
       if (errorStackTrace != null) 'error_stack_trace': errorStackTrace,
-      if (branchIndex != null) 'branch_index': branchIndex,
       if (attemptCount != null) 'attempt_count': attemptCount,
       if (attemptHistory != null) 'attempt_history': attemptHistory,
       if (startedAt != null) 'started_at': startedAt,
@@ -23708,7 +23779,6 @@ class PipelineStepRunsTableCompanion
     Value<String?>? spaceId,
     Value<String?>? errorMessage,
     Value<String?>? errorStackTrace,
-    Value<int?>? branchIndex,
     Value<int>? attemptCount,
     Value<String>? attemptHistory,
     Value<DateTime>? startedAt,
@@ -23725,7 +23795,6 @@ class PipelineStepRunsTableCompanion
       spaceId: spaceId ?? this.spaceId,
       errorMessage: errorMessage ?? this.errorMessage,
       errorStackTrace: errorStackTrace ?? this.errorStackTrace,
-      branchIndex: branchIndex ?? this.branchIndex,
       attemptCount: attemptCount ?? this.attemptCount,
       attemptHistory: attemptHistory ?? this.attemptHistory,
       startedAt: startedAt ?? this.startedAt,
@@ -23764,9 +23833,6 @@ class PipelineStepRunsTableCompanion
     if (errorStackTrace.present) {
       map['error_stack_trace'] = Variable<String>(errorStackTrace.value);
     }
-    if (branchIndex.present) {
-      map['branch_index'] = Variable<int>(branchIndex.value);
-    }
     if (attemptCount.present) {
       map['attempt_count'] = Variable<int>(attemptCount.value);
     }
@@ -23797,7 +23863,6 @@ class PipelineStepRunsTableCompanion
           ..write('spaceId: $spaceId, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('errorStackTrace: $errorStackTrace, ')
-          ..write('branchIndex: $branchIndex, ')
           ..write('attemptCount: $attemptCount, ')
           ..write('attemptHistory: $attemptHistory, ')
           ..write('startedAt: $startedAt, ')
@@ -96473,10 +96538,12 @@ typedef $$PipelineRunsTableTableCreateCompanionBuilder =
       Value<String?> parentPipelineRunId,
       Value<String?> parentStepId,
       Value<int> templateVersion,
+      Value<String?> templateSnapshotJson,
       Value<int> attemptCount,
       Value<int> totalCostCents,
       Value<int> totalTokens,
       Value<bool> dryRun,
+      Value<bool> isProjection,
       Value<int> rowid,
     });
 typedef $$PipelineRunsTableTableUpdateCompanionBuilder =
@@ -96499,10 +96566,12 @@ typedef $$PipelineRunsTableTableUpdateCompanionBuilder =
       Value<String?> parentPipelineRunId,
       Value<String?> parentStepId,
       Value<int> templateVersion,
+      Value<String?> templateSnapshotJson,
       Value<int> attemptCount,
       Value<int> totalCostCents,
       Value<int> totalTokens,
       Value<bool> dryRun,
+      Value<bool> isProjection,
       Value<int> rowid,
     });
 
@@ -96644,6 +96713,11 @@ class $$PipelineRunsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get templateSnapshotJson => $composableBuilder(
+    column: $table.templateSnapshotJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get attemptCount => $composableBuilder(
     column: $table.attemptCount,
     builder: (column) => ColumnFilters(column),
@@ -96661,6 +96735,11 @@ class $$PipelineRunsTableTableFilterComposer
 
   ColumnFilters<bool> get dryRun => $composableBuilder(
     column: $table.dryRun,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isProjection => $composableBuilder(
+    column: $table.isProjection,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -96790,6 +96869,11 @@ class $$PipelineRunsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get templateSnapshotJson => $composableBuilder(
+    column: $table.templateSnapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get attemptCount => $composableBuilder(
     column: $table.attemptCount,
     builder: (column) => ColumnOrderings(column),
@@ -96807,6 +96891,11 @@ class $$PipelineRunsTableTableOrderingComposer
 
   ColumnOrderings<bool> get dryRun => $composableBuilder(
     column: $table.dryRun,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isProjection => $composableBuilder(
+    column: $table.isProjection,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -96898,6 +96987,11 @@ class $$PipelineRunsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get templateSnapshotJson => $composableBuilder(
+    column: $table.templateSnapshotJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get attemptCount => $composableBuilder(
     column: $table.attemptCount,
     builder: (column) => column,
@@ -96915,6 +97009,11 @@ class $$PipelineRunsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get dryRun =>
       $composableBuilder(column: $table.dryRun, builder: (column) => column);
+
+  GeneratedColumn<bool> get isProjection => $composableBuilder(
+    column: $table.isProjection,
+    builder: (column) => column,
+  );
 
   Expression<T> pipelineStepRunsTableRefs<T extends Object>(
     Expression<T> Function($$PipelineStepRunsTableTableAnnotationComposer a) f,
@@ -96994,10 +97093,12 @@ class $$PipelineRunsTableTableTableManager
                 Value<String?> parentPipelineRunId = const Value.absent(),
                 Value<String?> parentStepId = const Value.absent(),
                 Value<int> templateVersion = const Value.absent(),
+                Value<String?> templateSnapshotJson = const Value.absent(),
                 Value<int> attemptCount = const Value.absent(),
                 Value<int> totalCostCents = const Value.absent(),
                 Value<int> totalTokens = const Value.absent(),
                 Value<bool> dryRun = const Value.absent(),
+                Value<bool> isProjection = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PipelineRunsTableCompanion(
                 id: id,
@@ -97018,10 +97119,12 @@ class $$PipelineRunsTableTableTableManager
                 parentPipelineRunId: parentPipelineRunId,
                 parentStepId: parentStepId,
                 templateVersion: templateVersion,
+                templateSnapshotJson: templateSnapshotJson,
                 attemptCount: attemptCount,
                 totalCostCents: totalCostCents,
                 totalTokens: totalTokens,
                 dryRun: dryRun,
+                isProjection: isProjection,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -97044,10 +97147,12 @@ class $$PipelineRunsTableTableTableManager
                 Value<String?> parentPipelineRunId = const Value.absent(),
                 Value<String?> parentStepId = const Value.absent(),
                 Value<int> templateVersion = const Value.absent(),
+                Value<String?> templateSnapshotJson = const Value.absent(),
                 Value<int> attemptCount = const Value.absent(),
                 Value<int> totalCostCents = const Value.absent(),
                 Value<int> totalTokens = const Value.absent(),
                 Value<bool> dryRun = const Value.absent(),
+                Value<bool> isProjection = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PipelineRunsTableCompanion.insert(
                 id: id,
@@ -97068,10 +97173,12 @@ class $$PipelineRunsTableTableTableManager
                 parentPipelineRunId: parentPipelineRunId,
                 parentStepId: parentStepId,
                 templateVersion: templateVersion,
+                templateSnapshotJson: templateSnapshotJson,
                 attemptCount: attemptCount,
                 totalCostCents: totalCostCents,
                 totalTokens: totalTokens,
                 dryRun: dryRun,
+                isProjection: isProjection,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -97147,7 +97254,6 @@ typedef $$PipelineStepRunsTableTableCreateCompanionBuilder =
       Value<String?> spaceId,
       Value<String?> errorMessage,
       Value<String?> errorStackTrace,
-      Value<int?> branchIndex,
       Value<int> attemptCount,
       Value<String> attemptHistory,
       Value<DateTime> startedAt,
@@ -97165,7 +97271,6 @@ typedef $$PipelineStepRunsTableTableUpdateCompanionBuilder =
       Value<String?> spaceId,
       Value<String?> errorMessage,
       Value<String?> errorStackTrace,
-      Value<int?> branchIndex,
       Value<int> attemptCount,
       Value<String> attemptHistory,
       Value<DateTime> startedAt,
@@ -97252,11 +97357,6 @@ class $$PipelineStepRunsTableTableFilterComposer
 
   ColumnFilters<String> get errorStackTrace => $composableBuilder(
     column: $table.errorStackTrace,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get branchIndex => $composableBuilder(
-    column: $table.branchIndex,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -97353,11 +97453,6 @@ class $$PipelineStepRunsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get branchIndex => $composableBuilder(
-    column: $table.branchIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get attemptCount => $composableBuilder(
     column: $table.attemptCount,
     builder: (column) => ColumnOrderings(column),
@@ -97438,11 +97533,6 @@ class $$PipelineStepRunsTableTableAnnotationComposer
 
   GeneratedColumn<String> get errorStackTrace => $composableBuilder(
     column: $table.errorStackTrace,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get branchIndex => $composableBuilder(
-    column: $table.branchIndex,
     builder: (column) => column,
   );
 
@@ -97537,7 +97627,6 @@ class $$PipelineStepRunsTableTableTableManager
                 Value<String?> spaceId = const Value.absent(),
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String?> errorStackTrace = const Value.absent(),
-                Value<int?> branchIndex = const Value.absent(),
                 Value<int> attemptCount = const Value.absent(),
                 Value<String> attemptHistory = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
@@ -97553,7 +97642,6 @@ class $$PipelineStepRunsTableTableTableManager
                 spaceId: spaceId,
                 errorMessage: errorMessage,
                 errorStackTrace: errorStackTrace,
-                branchIndex: branchIndex,
                 attemptCount: attemptCount,
                 attemptHistory: attemptHistory,
                 startedAt: startedAt,
@@ -97571,7 +97659,6 @@ class $$PipelineStepRunsTableTableTableManager
                 Value<String?> spaceId = const Value.absent(),
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String?> errorStackTrace = const Value.absent(),
-                Value<int?> branchIndex = const Value.absent(),
                 Value<int> attemptCount = const Value.absent(),
                 Value<String> attemptHistory = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
@@ -97587,7 +97674,6 @@ class $$PipelineStepRunsTableTableTableManager
                 spaceId: spaceId,
                 errorMessage: errorMessage,
                 errorStackTrace: errorStackTrace,
-                branchIndex: branchIndex,
                 attemptCount: attemptCount,
                 attemptHistory: attemptHistory,
                 startedAt: startedAt,

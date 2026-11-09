@@ -385,7 +385,7 @@ class WorkspacesTableData extends DataClass
   final bool autoPublishReview;
 
   /// How this workspace authenticates to GitHub for background work
-  /// (`inherit` / `app` / `pat`). Typed because the server reads it on the
+  /// (`inherit` / `app`). Typed because the server reads it on the
   /// credential path — not an opaque `workspace_settings` string.
   final String githubAuthMode;
 

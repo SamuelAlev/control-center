@@ -1,5 +1,5 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
-import 'package:cc_data/cc_data.dart' show SignInFailure;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInFailure;
 import 'package:control_center/l10n/app_localizations.dart';
 
 /// The provider a lane signs in to, as a brand name (never translated).
@@ -52,7 +52,12 @@ String signInFailureMessage(
     SignInFailure.expired => l10n.signInErrorExpired,
     SignInFailure.accessDenied => l10n.signInErrorAccessDenied(provider),
     SignInFailure.scopeMismatch => l10n.signInErrorScopeMismatch(provider),
-    SignInFailure.invalidCode => l10n.signInErrorInvalidCode,
+    SignInFailure.codeMismatch => l10n.signInErrorInvalidCode,
+    SignInFailure.invalidCode => l10n.signInErrorTooManyCodes,
+    SignInFailure.staleRequest => l10n.signInErrorStaleRequest,
+    SignInFailure.invalidRequest => l10n.signInErrorInvalidRequest,
+    SignInFailure.rateLimited => l10n.signInErrorRateLimited,
+    SignInFailure.storeFailed => l10n.signInErrorStoreFailed(provider),
     SignInFailure.providerUnavailable => l10n.signInErrorProviderUnavailable(
       provider,
     ),

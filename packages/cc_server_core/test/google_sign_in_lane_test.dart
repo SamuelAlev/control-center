@@ -250,7 +250,7 @@ void main() {
         service.handleCallback(callback(attempt)),
         throwsA(isA<AuthException>()),
       );
-      expect(attempt.error, 'scope_mismatch');
+      expect(attempt.error, SignInFailure.scopeMismatch);
       expect(await calendar.getAccounts(workspaceId), isEmpty);
       expect(
         await store.raw(
@@ -272,7 +272,7 @@ void main() {
         service.handleCallback(callback(attempt)),
         throwsA(isA<AuthException>()),
       );
-      expect(attempt.error, 'scope_mismatch');
+      expect(attempt.error, SignInFailure.scopeMismatch);
     });
 
     test('a wider grant is refused as firmly', () async {
@@ -283,7 +283,7 @@ void main() {
         service.handleCallback(callback(attempt)),
         throwsA(isA<AuthException>()),
       );
-      expect(attempt.error, 'scope_mismatch');
+      expect(attempt.error, SignInFailure.scopeMismatch);
     });
 
     test('the exact grant becomes the member\'s calendar account', () async {

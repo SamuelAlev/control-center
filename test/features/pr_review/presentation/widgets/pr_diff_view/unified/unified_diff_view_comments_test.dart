@@ -23,6 +23,7 @@ const _prRef = (
   workspaceId: 'ws',
   repoFullName: 'owner/repo',
   number: _prNumber,
+  forge: null,
 );
 
 /// A file whose only hunk adds lines 13..19 — the shape a doc-comment block

@@ -1,18 +1,27 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/app_router.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Writes [activeWorkspaceIdProvider] from the route `:workspaceId` (URL SoT).
 ///
-/// Write-only (never watch) to avoid `rpcClient → activeWorkspaceId` cycles.
-/// Listen to GoRouter's delegate; defer writes to a microtask — delegate
-/// notifies synchronously during build. Own file: depends on `routerProvider`;
-/// putting it in `workspace_providers.dart` cycles with the router and on web
-/// DDC left the provider `null` at first watch.
+/// The only writer of the active workspace from the route: nothing else
+/// derives one. Write-only (never watch) to avoid `rpcClient →
+/// activeWorkspaceId` cycles. Listen to GoRouter's delegate; defer writes to a
+/// microtask — delegate notifies synchronously during build. Own file: depends
+/// on `routerProvider`; putting it in `workspace_providers.dart` cycles with
+/// the router and on web DDC left the provider `null` at first watch.
+///
+/// Also checks the cold-start hint once, against the first workspace list the
+/// server sends: a remembered workspace this server no longer has is
+/// forgotten, and a route already standing on it is sent to the landing
+/// workspace instead. Only the FIRST list: a later emission can lag a
+/// workspace this session just created and navigated into.
 final workspaceUrlSyncProvider = Provider<void>((ref) {
   final router = ref.watch(routerProvider);
 
@@ -73,6 +82,30 @@ final workspaceUrlSyncProvider = Provider<void>((ref) {
   // detaches the exact same reference on dispose. (Redundant notifications
   // schedule cheap no-op syncs — `sync` is idempotent via its `id !=` guard.)
   void scheduleSync() => Future.microtask(sync);
+
+  var checkedHint = false;
+  ref.listen<AsyncValue<List<Workspace>>>(workspacesProvider, (_, next) {
+    final list = next.value;
+    if (checkedHint || disposed || list == null) {
+      return;
+    }
+    checkedHint = true;
+    final hint = ref.read(activeWorkspaceIdProvider);
+    if (hint == null || list.any((w) => w.id == hint)) {
+      return;
+    }
+    String? routeId;
+    try {
+      routeId = router.state.pathParameters['workspaceId'];
+    } on Object {
+      routeId = null;
+    }
+    unawaited(ref.read(activeWorkspaceIdProvider.notifier).forget());
+    if (routeId == hint) {
+      final landing = landingWorkspaceIdFor(remembered: null, workspaces: list);
+      router.go(landing == null ? workspaceListRoute : inboxRoute(landing));
+    }
+  }, fireImmediately: true);
 
   router.routerDelegate.addListener(scheduleSync);
   ref.onDispose(() {

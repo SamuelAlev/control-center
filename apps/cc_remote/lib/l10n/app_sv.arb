@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Kollega",
+  "systemSender": "System",
   "agent": "Agent",
   "attachFile": "Bifoga en fil",
   "messageHint": "Meddelande",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Går inte att läsa: {names}",
   "installationSuspendedTitle": "GitHub App-installationen är avstängd",
-  "installationSuspendedBody": "Visar senast kända data för {names}. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.",
-  "installationSuspendedNotice": "GitHub App-installationen är avstängd. Visar senast kända data för {names}. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.",
+  "installationSuspendedBody": "Visar senast kända data för {names}. Återuppta installationen på GitHub.",
+  "installationSuspendedNotice": "GitHub App-installationen är avstängd. Visar senast kända data för {names}. Återuppta installationen på GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Ange koden som visas i webbläsaren",
   "credentialsConnectCodeMalformed": "Det ser inte ut som en inloggningskod. Koder har 8 bokstäver och siffror.",
   "credentialsSignInInvalidCode": "Koden hör inte till den här inloggningen. Kontrollera den och försök igen.",
+  "credentialsSignInTooManyCodes": "För många felaktiga koder. Starta inloggningen igen.",
+  "credentialsSignInRetryLater": "Inloggningstjänsten svarar inte just nu. Vänta en minut och försök igen.",
+  "credentialsSignInRefused": "Inloggningen nekades. Starta den igen och godkänn alla begärda behörigheter.",
+  "credentialsSignInNotSaved": "Inloggningen fungerade, men servern kunde inte spara den. Försök igen.",
   "credentialsSignInUnavailable": "Inloggning på {provider} är inte konfigurerad på den här servern än.",
   "credentialsSignInPhoneUnreachable": "Serverns återanropsadress för inloggning går inte att nå säkert från en telefon. Logga in från skrivbordsappen eller be serverns ägare att konfigurera en offentlig HTTPS-adress.",
   "credentialsLoginTimedOut": "Inloggningsförsöket har gått ut. Starta ett nytt försök.",

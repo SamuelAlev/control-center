@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
-import 'package:cc_data/cc_data.dart' show SignInLaneMode;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInLaneMode;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';

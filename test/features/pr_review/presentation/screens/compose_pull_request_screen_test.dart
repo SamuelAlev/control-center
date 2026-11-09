@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_generation.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_lifecycle_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
@@ -179,13 +180,18 @@ Widget _wrapComposeScreen(
   bool preFillForm = false,
   List<String> remoteBranches = const <String>[],
   String? worktreeBranch,
+  Set<ForgeHost>? connectedForges,
 }) {
   return ProviderScope(
     overrides: [
       // Auth — the gh CLI status still backs the GitHub row in settings.
-      // The screen's own auth gate is forge-shaped ("any forge connected"),
-      // not token-shaped, so it has to be seeded from the same token.
-      hasAnyForgeConnectedProvider.overrideWith((ref) => token.isNotEmpty),
+      // The screen's own auth gate is the active repo's forge being
+      // connected, not token-shaped, so it is seeded from the same token.
+      connectedForgesProvider.overrideWith(
+        (ref) =>
+            connectedForges ??
+            {if (token.isNotEmpty && repo != null) repo.forge},
+      ),
       // Active repo.
       activeRepoProvider.overrideWith((ref) => repo),
       // Fixed workspace ID and repo ID notifiers.
@@ -302,10 +308,11 @@ void main() {
       await tester.pumpWidget(testWrap(const ComposePullRequestScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('No GitHub repository selected'), findsOneWidget);
+      expect(find.text('No code-hosted repository selected'), findsOneWidget);
       expect(
         find.text(
-          'Select a workspace with a GitHub-linked repository to open a pull request.',
+          'Select a workspace with a repository on GitHub, GitLab or Bitbucket '
+          'to open a pull request.',
         ),
         findsOneWidget,
       );
@@ -334,7 +341,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No GitHub repository selected'), findsOneWidget);
+      expect(find.text('No code-hosted repository selected'), findsOneWidget);
+    });
+
+    testWidgets("another forge's connection does not open the form", (
+      tester,
+    ) async {
+      _setDesktopViewport(tester);
+      await tester.pumpWidget(
+        _wrapComposeScreen(
+          const ComposePullRequestScreen(),
+          repo: _testRepo(),
+          connectedForges: const {ForgeHost.gitlab},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Connect GitHub to open a pull request in this repository'),
+        findsOneWidget,
+      );
     });
   });
 

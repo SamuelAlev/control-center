@@ -1,5 +1,7 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
+import 'package:cc_harness_runtime/src/advisor/watchdog_advisor.dart';
 
 /// Runs several advisors on one turn; only the most severe note reaches the
 /// agent (ties: roster order). Separate advisors keep distinct jobs/models.
@@ -10,8 +12,23 @@ class AdvisorPanel implements Advisor {
   /// The advisors, in the order they were declared.
   final List<Advisor> members;
 
+  /// A stateless copy of [advisor] for a nested run (a subagent), or null when
+  /// [advisor] is not a type known to copy safely — a nested run then goes
+  /// unreviewed rather than sharing the parent's per-transcript state.
+  static Advisor? freshFor(Advisor advisor) => switch (advisor) {
+    WatchdogAdvisor() => advisor.fresh(),
+    AdvisorPanel(:final members) => () {
+      final copies = [for (final member in members) ?freshFor(member)];
+      return copies.isEmpty ? null : AdvisorPanel(copies);
+    }(),
+    _ => null,
+  };
+
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async {
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async {
     if (members.isEmpty) {
       return null;
     }
@@ -21,7 +38,7 @@ class AdvisorPanel implements Advisor {
     final notes = await Future.wait(
       members.map((m) async {
         try {
-          return await m.review(history);
+          return await m.review(history, cancel: cancel);
         } on Object {
           // A failing advisor costs its own note, never the run.
           return null;

@@ -52,7 +52,11 @@ bool canToggleDraft(WidgetRef ref, PullRequest pr, PrRef prRef) {
 /// the viewer owns, reviewing is not the next step; publishing is.
 class MarkReadyForReviewButton extends ConsumerStatefulWidget {
   /// Creates a [MarkReadyForReviewButton] for [pr].
-  const MarkReadyForReviewButton({super.key, required this.pr, required this.prRef});
+  const MarkReadyForReviewButton({
+    super.key,
+    required this.pr,
+    required this.prRef,
+  });
 
   /// The draft pull request to mark ready.
   final PullRequest pr;
@@ -102,7 +106,7 @@ class _MarkReadyForReviewButtonState
         variant: CcToastVariant.success,
       );
     } on Exception catch (e) {
-      if (mounted && offerGitHubSignIn(context, ref, e)) {
+      if (mounted && offerPrSignIn(context, ref, e, prRef: widget.prRef)) {
         return;
       }
       toaster.show(
@@ -198,7 +202,7 @@ Future<bool> confirmAndConvertToDraft(
     );
     return true;
   } on Exception catch (e) {
-    if (context.mounted && offerGitHubSignIn(context, ref, e)) {
+    if (context.mounted && offerPrSignIn(context, ref, e, prRef: prRef)) {
       return false;
     }
     toaster.show(

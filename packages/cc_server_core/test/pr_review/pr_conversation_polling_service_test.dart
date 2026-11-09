@@ -2,7 +2,11 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/cc_infra.dart'
-    show GitHubIssueComment, GitHubReviewComment, GitHubViewerPr;
+    show
+        BotConversationCandidates,
+        GitHubIssueComment,
+        GitHubReviewComment,
+        GitHubViewerPr;
 import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
@@ -90,17 +94,9 @@ class _FakeGateway implements GitHubPrConversationGateway {
         );
 
   @override
-  Future<
-    ({
-      List<GitHubViewerPr> mentioned,
-      List<GitHubViewerPr> botMentioned,
-      List<GitHubViewerPr> shortMentioned,
-      List<GitHubViewerPr> labeled,
-    })
-  >
-  searchCandidates({DateTime? since}) async {
+  Future<BotConversationCandidates> searchCandidates({DateTime? since}) async {
     searchCalls++;
-    return (
+    return BotConversationCandidates(
       mentioned: mentioned,
       botMentioned: botMentioned,
       shortMentioned: shortMentioned,
@@ -151,8 +147,11 @@ class _RecordingSink implements GitHubPrConversationSink {
   final labeled =
       <({String workspaceId, String owner, String repo, int prNumber})>[];
 
+  /// What the next calls answer (an author no member is signed in as yet).
+  GitHubInboundOutcome outcome = GitHubInboundOutcome.done;
+
   @override
-  Future<void> handleInboundComment({
+  Future<GitHubInboundOutcome> handleInboundComment({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -170,10 +169,11 @@ class _RecordingSink implements GitHubPrConversationSink {
       comment: comment,
       isBotThread: isBotThread,
     ));
+    return outcome;
   }
 
   @override
-  Future<void> handleLabeledPullRequest({
+  Future<GitHubInboundOutcome> handleLabeledPullRequest({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -185,6 +185,7 @@ class _RecordingSink implements GitHubPrConversationSink {
       repo: repo,
       prNumber: prNumber,
     ));
+    return outcome;
   }
 
   @override
@@ -352,7 +353,6 @@ void main() {
     await poller.pollOnce();
 
     expect(sink.inbound.single.comment.body, '@usectrl hello?');
-    expect(sink.inbound.single.comment.authorIsBot, isFalse);
   });
 
   test('the author\'s numeric id reaches the bridge', () async {
@@ -447,6 +447,69 @@ void main() {
     await poller.pollOnce();
 
     expect(sink.inbound, hasLength(1));
+  });
+
+  test('an author no member is signed in as is offered again, a bounded '
+      'number of times', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    sink.outcome = GitHubInboundOutcome.authorUnknown;
+
+    for (var i = 0; i < 6; i++) {
+      await poller.pollOnce();
+    }
+
+    // The first offer plus three retries; then the comment stays seen.
+    expect(sink.inbound, hasLength(4));
+  });
+
+  test('a retried comment stops once its author maps', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    sink.outcome = GitHubInboundOutcome.authorUnknown;
+    await poller.pollOnce();
+    sink.outcome = GitHubInboundOutcome.done;
+
+    await poller.pollOnce();
+    await poller.pollOnce();
+
+    expect(sink.inbound, hasLength(2));
+  });
+
+  test('an issue and a review comment sharing an id are both seen', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway
+      ..setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin timeline')])
+      ..setReview('acme', 'app', 7, [_review(11, '@$_botLogin inline')]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.map((i) => i.comment.body).toSet(), {
+      '@$_botLogin timeline',
+      '@$_botLogin inline',
+    });
+  });
+
+  test('a legacy shared comment key still suppresses both kinds', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway
+      ..setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin timeline')])
+      ..setReview('acme', 'app', 7, [_review(11, '@$_botLogin inline')]);
+    poller = build(
+      loadedState: jsonEncode({
+        'v': 2,
+        'watermarks': <String, String>{},
+        'seen': ['c:ws-a:11'],
+      }),
+    );
+
+    await poller.pollOnce();
+
+    expect(sink.inbound, isEmpty);
   });
 
   test('bot-authored comments are skipped entirely (loop guard)', () async {

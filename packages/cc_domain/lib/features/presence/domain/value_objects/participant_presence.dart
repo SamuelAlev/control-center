@@ -39,54 +39,6 @@ enum PresenceAvailability {
       value == 'idle' ? PresenceAvailability.idle : PresenceAvailability.online;
 }
 
-/// Live state of an agent participant (synthesized server-side; agents have
-/// no client of their own).
-class AgentLiveStatus {
-  /// Creates an [AgentLiveStatus].
-  const AgentLiveStatus({required this.state, this.costUsd});
-
-  /// Parses from wire.
-  factory AgentLiveStatus.fromWire(Map<String, dynamic> wire) =>
-      AgentLiveStatus(
-        state: AgentLiveState.fromWire(wire['s'] as String?),
-        costUsd: (wire['c'] as num?)?.toDouble(),
-      );
-
-  /// What the agent is doing right now.
-  final AgentLiveState state;
-
-  /// Running cost of the current run, when known.
-  final double? costUsd;
-
-  /// Serializes to wire.
-  Map<String, dynamic> toWire() => {'s': state.wire, 'c': ?costUsd};
-}
-
-/// The agent-participant states the roster renders (icon + label, never
-/// color-alone).
-enum AgentLiveState {
-  /// Reasoning (no tool running).
-  thinking('thinking'),
-
-  /// Executing (tools/edits in flight).
-  running('running'),
-
-  /// Waiting on a fail-closed approval gate.
-  blockedOnApproval('blocked'),
-
-  /// Finished its latest run just now.
-  done('done');
-
-  const AgentLiveState(this.wire);
-
-  /// Wire name.
-  final String wire;
-
-  /// Parses a wire name, defaulting to [running].
-  static AgentLiveState fromWire(String? value) => AgentLiveState.values
-      .firstWhere((s) => s.wire == value, orElse: () => AgentLiveState.running);
-}
-
 /// A soft-claim on a shared mutable entity ("agent is editing this ticket",
 /// "Sam is editing the worktree") — conflict *visibility*, not a lock
 /// (PRD 16 §14). Ephemeral: claims ride presence and die with it.
@@ -119,10 +71,11 @@ class SoftClaim {
   int get hashCode => Object.hash(entityType, entityId);
 }
 
-/// One participant's ephemeral presence — human or agent, on the SAME lane
-/// and roster (PRD 16 §1/§2). Never persisted (the awareness rule): it lives
-/// in the server's in-memory hub, expires ~30s after the last update and is
-/// broadcast to workspace members only.
+/// One participant's ephemeral presence (PRD 16 §1). Never persisted (the
+/// awareness rule): it lives in the server's in-memory hub, expires ~30s after
+/// the last update and is broadcast to workspace members only, each seeing
+/// the loci their own repo grants reach. The server publishes humans; agent
+/// state comes from the run log, not this lane.
 class ParticipantPresence {
   /// Creates a [ParticipantPresence].
   ParticipantPresence({
@@ -131,7 +84,6 @@ class ParticipantPresence {
     required this.availability,
     this.locus,
     this.typingInSpaceId,
-    this.agent,
     this.spotlightSpaceId,
     this.claims = const [],
     DateTime? updatedAt,
@@ -151,11 +103,6 @@ class ParticipantPresence {
           ? PresenceLocus.fromWire((wire['l'] as Map).cast<String, dynamic>())
           : null,
       typingInSpaceId: wire['ty'] as String?,
-      agent: wire['ag'] is Map
-          ? AgentLiveStatus.fromWire(
-              (wire['ag'] as Map).cast<String, dynamic>(),
-            )
-          : null,
       spotlightSpaceId: wire['sp'] as String?,
       claims: wire['cl'] is List
           ? [
@@ -182,9 +129,6 @@ class ParticipantPresence {
   /// The space they are typing in right now, when any.
   final String? typingInSpaceId;
 
-  /// Live agent state (null for humans).
-  final AgentLiveStatus? agent;
-
   /// The space this participant is presenting (spotlight, PRD 16 §5).
   final String? spotlightSpaceId;
 
@@ -204,7 +148,6 @@ class ParticipantPresence {
     'a': availability.name,
     'l': ?locus?.toWire(),
     'ty': ?typingInSpaceId,
-    'ag': ?agent?.toWire(),
     'sp': ?spotlightSpaceId,
     if (claims.isNotEmpty) 'cl': [for (final c in claims) c.toWire()],
     'u': updatedAt.toIso8601String(),

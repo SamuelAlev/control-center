@@ -100,7 +100,7 @@ class UseCaseAgentCreatePort implements AgentCreatePort {
   }
 }
 
-/// The in-process port used to create agents from the UI and widget tests.
+/// The RPC port used to create agents from the UI and widget tests.
 final agentCreatePortProvider = Provider<AgentCreatePort>(
   (ref) => RpcAgentCreatePort(
     ref.watch(remoteAgentOpsProvider),

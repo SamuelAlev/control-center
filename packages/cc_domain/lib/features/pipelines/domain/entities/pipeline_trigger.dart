@@ -1,4 +1,8 @@
+import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/pipelines/domain/services/cron_schedule.dart';
+import 'package:collection/collection.dart';
+
+const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
 
 /// How a scheduled trigger treats fires it missed while the server was down.
 enum CronCatchUpPolicy {
@@ -10,9 +14,23 @@ enum CronCatchUpPolicy {
   /// time-sensitive jobs where a late run is worse than a skipped one.
   skip;
 
-  /// Parses a stored name, defaulting to [catchUpLatestOnly] for null/unknown.
-  static CronCatchUpPolicy fromName(String? name) => CronCatchUpPolicy.values
-      .firstWhere((p) => p.name == name, orElse: () => catchUpLatestOnly);
+  /// Parses a stored name. Null (never set) is [catchUpLatestOnly], the
+  /// documented default; an unknown name is logged and also reads as
+  /// [catchUpLatestOnly] — the policy that never silently drops a fire.
+  static CronCatchUpPolicy fromName(String? name) {
+    if (name == null || name.isEmpty) {
+      return catchUpLatestOnly;
+    }
+    for (final p in CronCatchUpPolicy.values) {
+      if (p.name == name) {
+        return p;
+      }
+    }
+    CcDomainLog.warning(
+      'CronCatchUpPolicy: unknown policy "$name"; using catchUpLatestOnly',
+    );
+    return catchUpLatestOnly;
+  }
 }
 
 /// A declarative trigger that auto-starts a pipeline when a domain event fires,
@@ -157,6 +175,38 @@ class PipelineTrigger {
     return CronSchedule.tryParse(expr);
   }
 
+  /// Why this trigger's schedule can never fire correctly, or null when it is
+  /// valid (or this is not a scheduled trigger).
+  ///
+  /// An unparsable cron used to idle silently forever and `every:0` fired on
+  /// every tick, so a schedule is checked when the trigger is written. The
+  /// [timezone] is checked by the server, which holds the zone database.
+  String? get scheduleError {
+    if (eventType != scheduleEventType) {
+      return null;
+    }
+    final expr = cronExpression?.trim() ?? '';
+    if (expr.isEmpty) {
+      return 'A scheduled trigger needs a schedule';
+    }
+    if (expr.startsWith('every:')) {
+      final seconds = intervalSeconds;
+      if (seconds == null || seconds <= 0) {
+        return '"$expr" needs a positive number of seconds after "every:"';
+      }
+      return null;
+    }
+    final schedule = CronSchedule.tryParse(expr);
+    if (schedule == null) {
+      return '"$expr" is not a 5-field cron expression '
+          '(minute hour day-of-month month day-of-week)';
+    }
+    if (schedule.nextAfter(DateTime.utc(2000)) == null) {
+      return '"$expr" never matches a real date';
+    }
+    return null;
+  }
+
   /// Whether this is a webhook trigger.
   bool get isWebhook =>
       eventType == webhookEventType ||
@@ -195,6 +245,8 @@ class PipelineTrigger {
     );
   }
 
+  /// Field-by-field, so a stream consumer comparing snapshots sees a schedule,
+  /// filter or catch-up edit — not only an enable toggle.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -204,9 +256,32 @@ class PipelineTrigger {
           eventType == other.eventType &&
           templateId == other.templateId &&
           workspaceId == other.workspaceId &&
-          enabled == other.enabled;
+          enabled == other.enabled &&
+          cronExpression == other.cronExpression &&
+          timezone == other.timezone &&
+          nextRunAt == other.nextRunAt &&
+          webhookToken == other.webhookToken &&
+          _deepEquality.equals(eventFilters, other.eventFilters) &&
+          _deepEquality.equals(match, other.match) &&
+          lastFiredAt == other.lastFiredAt &&
+          catchUpPolicy == other.catchUpPolicy &&
+          createdAt == other.createdAt;
 
   @override
-  int get hashCode =>
-      Object.hash(id, eventType, templateId, workspaceId, enabled);
+  int get hashCode => Object.hash(
+    id,
+    eventType,
+    templateId,
+    workspaceId,
+    enabled,
+    cronExpression,
+    timezone,
+    nextRunAt,
+    webhookToken,
+    _deepEquality.hash(eventFilters),
+    _deepEquality.hash(match),
+    lastFiredAt,
+    catchUpPolicy,
+    createdAt,
+  );
 }

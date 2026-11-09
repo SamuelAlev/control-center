@@ -74,6 +74,7 @@ void main() {
       totalCostCents: totalCostCents,
       totalTokens: totalTokens,
       dryRun: dryRun,
+      isProjection: false,
     );
 
     test(
@@ -215,6 +216,7 @@ void main() {
           totalCostCents: companion.totalCostCents.value,
           totalTokens: companion.totalTokens.value,
           dryRun: companion.dryRun.value,
+          isProjection: companion.isProjection.value,
         );
 
         final restored = pipelineRunFromRow(row);
@@ -247,7 +249,6 @@ void main() {
           inputJson: '{"a":1}',
           outputJson: '{"b":2}',
           errorMessage: null,
-          branchIndex: 3,
           attemptCount: 2,
           startedAt: now,
           finishedAt: now.add(const Duration(seconds: 5)),
@@ -259,7 +260,6 @@ void main() {
         expect(companion.stepId.value, 'review');
         expect(companion.status.value, 'completed');
         expect(companion.inputJson.value, '{"a":1}');
-        expect(companion.branchIndex.value, 3);
         expect(companion.startedAt.value, now);
       },
     );
@@ -274,7 +274,6 @@ void main() {
         outputJson: null,
         errorMessage: 'boom',
         errorStackTrace: null,
-        branchIndex: null,
         attemptCount: 3,
         attemptHistory: jsonEncode([
           {
@@ -296,7 +295,6 @@ void main() {
       expect(stepRun.inputJson, '{"a":1}');
       expect(stepRun.outputJson, isNull);
       expect(stepRun.errorMessage, 'boom');
-      expect(stepRun.branchIndex, isNull);
       expect(stepRun.attemptCount, 3);
       expect(stepRun.priorAttempts, hasLength(1));
       expect(stepRun.priorAttempts.single.status, PipelineStepStatus.failed);
@@ -316,7 +314,6 @@ void main() {
           outputJson: null,
           errorMessage: 'boom',
           errorStackTrace: null,
-          branchIndex: null,
           attemptCount: 0,
           attemptHistory: '{not a list',
           startedAt: now,

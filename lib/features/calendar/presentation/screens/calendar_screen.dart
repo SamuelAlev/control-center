@@ -489,8 +489,8 @@ class _ViewMenuButton extends StatelessWidget {
 }
 
 /// Shown while the connected-accounts stream resolves its first value. It is a
-/// bare canvas, not a spinner: the backing read is a local Drift `.watch()` that
-/// settles in a frame or two, so a spinner would appear and vanish — a quieter
+/// bare canvas, not a spinner: the backing server subscription usually settles
+/// almost at once, so a spinner would appear and vanish — a quieter
 /// version of the very flash this fix removes. A static surface is flash-free
 /// and reduced-motion-safe by construction.
 class _LoadingState extends StatelessWidget {

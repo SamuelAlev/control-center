@@ -2,75 +2,37 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:cc_data/cc_data.dart';
-import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_rpc/cc_rpc.dart'
-    show RemoteRpcClient, RemoteRpcClientClosedException;
-import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClientClosedException;
 import 'package:control_center/app/app_windows.dart'
-    show AppWindows, runBootFailureWindow, runDesktopBootWindow;
-import 'package:control_center/app/control_center_app.dart';
+    show runBootFailureWindow, runDesktopBootWindow;
 import 'package:control_center/app/tray/launch_context.dart';
 import 'package:control_center/app/tray/main_window_visibility.dart';
 import 'package:control_center/app/tray/native_desktop_shell.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_visibility_guard.dart';
+import 'package:control_center/bootstrap/desktop_app_host.dart';
 import 'package:control_center/bootstrap/desktop_boot_app.dart';
+import 'package:control_center/bootstrap/desktop_server_switcher.dart';
+import 'package:control_center/bootstrap/desktop_session.dart';
 import 'package:control_center/bootstrap/server_backend.dart';
-import 'package:control_center/core/deep_link/deep_link_handler.dart';
-import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
-import 'package:control_center/core/infrastructure/provider_retry.dart';
 import 'package:control_center/core/keybindings/stuck_keys.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/core/media/media_disk_cache.dart';
-import 'package:control_center/core/notifications/rpc_notification_mapper.dart';
 import 'package:control_center/core/observability/sentry_bootstrap.dart';
-import 'package:control_center/core/providers/app_log_provider.dart';
-import 'package:control_center/core/providers/desktop_shell_provider.dart';
-import 'package:control_center/core/providers/locale_provider.dart';
-import 'package:control_center/core/providers/media_proxy_provider.dart';
-import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/core/providers/server_connection_status_provider.dart';
-import 'package:control_center/core/providers/server_switch_provider.dart';
-import 'package:control_center/core/providers/shutdown_progress_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
-import 'package:control_center/core/server/server_pairing.dart';
-import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
 import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/native_key_value_backend.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
-import 'package:control_center/core/theme/font_settings.dart';
-import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/core/utils/cc_domain_logging.dart';
 import 'package:control_center/core/utils/cc_infra_logging.dart';
-import 'package:control_center/di/agent_wait_reminder_provider.dart';
-import 'package:control_center/di/notification_providers.dart';
-import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
-import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/features/desktop_app/providers/desktop_app_preferences.dart';
-import 'package:control_center/features/identity/providers/identity_providers.dart';
-import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
-import 'package:control_center/features/repos/presentation/repo_link_workspace_dialog.dart';
-import 'package:control_center/features/repos/presentation/unlinked_repo_dialog.dart';
-import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
-import 'package:control_center/features/repos/providers/repo_link_workspace_choices.dart';
-import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/app_router.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/syntax/shiki_bootstrap.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:media_kit/media_kit.dart';
@@ -97,10 +59,6 @@ final ObservableKeyValueBackend desktopPrefsBackend = ObservableKeyValueBackend(
 /// [_prepareDesktop]'s scope.
 WindowGeometryWatcher? _windowGeometryWatcher;
 
-/// Whether media_kit found libmpv in [_prepareDesktop]; every session's
-/// container reports it as [mediaPlaybackAvailableProvider].
-bool _mediaPlaybackAvailable = true;
-
 /// Desktop bootstrap: full-featured native multi-window app.
 ///
 /// This is the verbatim desktop startup sequence — logging installs,
@@ -108,7 +66,7 @@ bool _mediaPlaybackAvailable = true;
 /// `ProviderContainer` with its real (keychain + native preferences) storage
 /// overrides, font preload, deep-link wiring and spawning/connecting to the
 /// `cc_server` that owns all data and execution — culminating in
-/// `runAppWithSentry` with `_DesktopAppHost`. The desktop is a thin client like
+/// `runAppWithSentry` with [DesktopAppHost]. The desktop is a thin client like
 /// web: it hosts no server, no MCP, no database. The web counterpart is
 /// `bootstrap_web.dart`.
 ///
@@ -129,7 +87,7 @@ Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
     runBootFailureWindow(error, stack);
     return;
   }
-  await runAppWithSentry(() => const _DesktopAppHost());
+  await runAppWithSentry(() => const DesktopAppHost());
 }
 
 /// Prepares the authenticated app, showing a boot surface only on first run.
@@ -341,13 +299,14 @@ Future<void> _prepareDesktop(List<String> arguments) async {
   // a stock desktop has none, so there the app starts without playback rather
   // than not at all. macOS and Windows bundle it: a failure there is a broken
   // build and still stops the boot.
+  var mediaPlaybackAvailable = true;
   try {
     MediaKit.ensureInitialized();
   } on Object catch (error) {
     if (!Platform.isLinux) {
       rethrow;
     }
-    _mediaPlaybackAvailable = false;
+    mediaPlaybackAvailable = false;
     AppLog.w('main', 'media playback disabled, no libmpv: $error');
   }
 
@@ -384,34 +343,36 @@ Future<void> _prepareDesktop(List<String> arguments) async {
     await localNotifier.setup(appName: 'Control Center');
   }
   await removeLegacyCalendarSnapshots(prefs);
-  // Thin-client flip: the desktop opens NO database. It connects to a
+  // The desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:
   //   * LOCAL  → spawn a `cc_server` here (owns global.db + per-workspace
-  //     the app-support root) and connect to it over loopback.
+  //     databases under the app-support root) and connect over loopback.
   //   * REMOTE → resolve the active paired server's descriptor (best reachable
   //     path wins) with the stored pairing key + TOFU pin.
   // On first run (or a failed remote connect) this shows the pre-app setup
   // screen so the user chooses. `rpcClientProvider` is overridden with the
   // resulting resilient client, so the whole UI + feature providers read/write
-  // through the server instead of an in-process Drift host.
+  // through the server.
   final backend = await resolveServerBackend(
     prefs: prefs,
     secureStore: secureStore,
   );
 
+  final env = DesktopSessionEnv(
+    prefsBackend: desktopPrefsBackend,
+    secureStore: secureStore,
+    mediaPlaybackAvailable: mediaPlaybackAvailable,
+  );
+  final switcher = DesktopServerSwitcher.instance;
   final DesktopBackendSession session;
   try {
-    session = await DesktopBackendSession.build(
-      backend: backend,
-      prefs: prefs,
-      secureStore: secureStore,
-    );
+    session = await switcher.buildSession(backend, env);
   } on Object {
     await backend.dispose();
     rethrow;
   }
-  DesktopServerSwitcher.instance._adopt(session, prefs, secureStore);
+  switcher.start(session, env);
 
   // Tear the spawned server down on a clean app exit so it does not orphan and
   // keep the SQLite file open (which would fail the next boot). The listener
@@ -427,944 +388,11 @@ Future<void> _prepareDesktop(List<String> arguments) async {
       _windowGeometryWatcher
         ?..flushNow()
         ..dispose();
-      // Only a locally-spawned server is ours to stop; a remote connection is
-      // not our child. For a local server we drive a GRACEFUL shutdown so the
-      // server streams its per-service teardown progress — the overlay rendered
-      // by `shutdownProgressProvider` shows it live — BEFORE we tear the client
-      // down. Dispose the CURRENT session (it may have been switched).
-      final session = DesktopServerSwitcher.instance._current;
-      final local = session?.backend.local;
-      if (session != null && local != null) {
-        session.container.read(shutdownProgressProvider.notifier).begin();
-        // Give the overlay at least one painted frame before we proceed: the
-        // state change schedules a rebuild via markNeedsBuild, but without
-        // yielding to the frame pipeline the overlay may never paint (the
-        // container can be disposed on the same microtask turn if stopServer
-        // returns instantly — e.g. an already-dead process).
-        await WidgetsBinding.instance.endOfFrame;
-      }
-      await session?.dispose();
+      // The CURRENT session (it may have been switched). A bundled server is
+      // stopped gracefully while the shutdown overlay still shows its
+      // progress; see [DesktopBackendSession.quit].
+      await switcher.current?.quit();
       return AppExitResponse.exit;
     },
   );
-}
-
-/// One connected desktop session: the backend plus the `ProviderContainer`
-/// and the per-session side services (workspace binding, notification mapper,
-/// deep-link handlers). Rebuilt wholesale on an in-app server switch.
-class DesktopBackendSession {
-  DesktopBackendSession._(this.backend, this.container);
-
-  /// The connected backend.
-  final ServerBackend backend;
-
-  /// The app's provider container, bound to [backend]'s client.
-  final ProviderContainer container;
-
-  /// Builds a container for [backend] and runs the post-connect side wiring.
-  static Future<DesktopBackendSession> build({
-    required ServerBackend backend,
-    required AppPreferences prefs,
-    required SecureStore secureStore,
-  }) async {
-    final container = ProviderContainer(
-      // Bounded, unrecoverable-error-aware retry: keeps a subscription stream
-      // error (e.g. a GitHub rate limit) from looping into a resubscribe storm.
-      retry: appProviderRetry,
-      overrides: [
-        appPreferencesProvider.overrideWithValue(prefs),
-        keyValueBackendProvider.overrideWithValue(desktopPrefsBackend),
-        secureStoreProvider.overrideWithValue(secureStore),
-        rpcClientProvider.overrideWithValue(backend.client),
-        // The bulk-content lane, beside the RPC client it belongs with. The
-        // composer uploads an attached picture over HTTP because the RPC
-        // socket refuses a frame that size; the notifier doing it has no
-        // BuildContext, so MediaProxyScope alone is not enough.
-        mediaProxyConfigProvider.overrideWithValue(backend.mediaProxy),
-        serverConnectionSupervisorProvider.overrideWithValue(
-          backend.supervisor,
-        ),
-        serverSwitchHandlerProvider.overrideWithValue(
-          DesktopServerSwitcher.instance.switchTo,
-        ),
-        returnToServerSignInProvider.overrideWithValue(
-          DesktopServerSwitcher.instance.returnToSetup,
-        ),
-        mediaPlaybackAvailableProvider.overrideWithValue(
-          _mediaPlaybackAvailable,
-        ),
-        // Process-wide, like the tray icon and the window it drives: a server
-        // switch hands the next container the same shell.
-        desktopShellProvider.overrideWithValue(NativeDesktopShell.instance),
-      ],
-    );
-
-    try {
-      // Initialise the app-wide logger from persisted preferences.
-      container.read(appLogLevelProvider);
-
-      // Bind the RPC session to the active workspace BEFORE the UI subscribes to
-      // any workspace-scoped op and re-bind on every workspace switch. The
-      // thin-client desktop opens no database, so (like `bootstrap_web`) the
-      // workspace set comes from the connected `cc_server`: without this the
-      // server session stays unbound and every workspace-scoped query fails with
-      // "No workspace bound to this session" / "Missing workspace_id".
-      await _bindActiveWorkspace(container, backend.client);
-
-      // Pre-load any system fonts selected by the user so they are available
-      // to Flutter's text engine before the first frame renders.
-      final fontNotifier = container.read(fontSettingsProvider.notifier);
-      final fontSettings = container.read(fontSettingsProvider);
-      if (fontSettings.appFontSelection.source == FontSource.system) {
-        await fontNotifier.loadSystemFont(fontSettings.appFontSelection);
-      }
-      if (fontSettings.codeFontSelection.source == FontSource.system) {
-        await fontNotifier.loadSystemFont(fontSettings.codeFontSelection);
-      }
-
-      final session = DesktopBackendSession._(backend, container);
-
-      // OS notifications: maps the connected server's pushed `notifications/*`
-      // frames (RemoteEventForwarder) to AppNotifications. Retained for the
-      // session's lifetime via the RPC subscription created in its constructor.
-      session._notificationMapper = RpcNotificationMapper(
-        client: backend.client,
-        notificationPort: container.read(notificationServiceProvider),
-        localizations: () => lookupAppLocalizations(
-          container.read(localeProvider) ?? PlatformDispatcher.instance.locale,
-        ),
-        activeWorkspaceId: () => container.read(activeWorkspaceIdProvider),
-        // Read lazily (like `activeWorkspaceId`) so the mapper always sees the
-        // freshest identity even though it may still be loading at construction
-        // time (`currentUserIdProvider` is null until `identity.me` resolves).
-        currentUserId: () => container.read(currentUserIdProvider),
-        // Read lazily for the same reason: a mute toggled in Settings must take
-        // effect on the next frame, not on the next launch.
-        mutedRepos: () =>
-            container.read(mutedReposProvider).asData?.value ?? const {},
-        // Read lazily for the same reason again: the forge connections resolve
-        // over RPC after construction, and connecting one mid-session must start
-        // suppressing that account's own actions on the next frame.
-        viewerLogins: () => container.read(viewerLoginSetProvider),
-      );
-      // Re-raises unanswered agent waits and withdraws ended ones. Lives as
-      // long as the container; reading it starts its feed subscription.
-      container.read(agentWaitReminderProvider);
-      return session;
-    } on Object {
-      container.dispose();
-      rethrow;
-    }
-  }
-
-  // Held for the session's lifetime (subscription created in its ctor).
-  // ignore: unused_field
-  RpcNotificationMapper? _notificationMapper;
-
-  /// Disposes the container and the backend (local child included).
-  ///
-  /// The backend is disposed even when the container's teardown throws (a
-  /// provider's `onDispose`): on a switch to a remote server this is what
-  /// stops the bundled `cc_server`, and skipping it left that child running
-  /// behind the remote session.
-  Future<void> dispose() async {
-    try {
-      container.dispose();
-    } finally {
-      await backend.dispose();
-    }
-  }
-}
-
-/// App-global handle the settings UI uses to switch the desktop between
-/// paired servers without a restart (PRD 15 §10 fast switch). The host widget
-/// below rebuilds the whole provider tree around the new session.
-class DesktopServerSwitcher {
-  DesktopServerSwitcher._();
-
-  /// The process-wide instance.
-  static final DesktopServerSwitcher instance = DesktopServerSwitcher._();
-
-  DesktopBackendSession? _current;
-  AppPreferences? _prefs;
-  SecureStore? _secure;
-  final ValueNotifier<int> _generation = ValueNotifier(0);
-
-  /// True while [returnToSetup] has the setup window up instead of the app.
-  bool _inSetup = false;
-
-  /// The live session (the host widget renders it).
-  DesktopBackendSession? get current => _current;
-
-  /// Bumped on every adopted session; the host remounts the session UI.
-  ValueListenable<int> get generation => _generation;
-
-  /// Adopts only an expected, client-held decrypted SSO handoff. The browser
-  /// deep link contains ciphertext, never the minted device credential.
-  Future<void> adoptPairLink(String rawUrl) async {
-    final prefs = _prefs;
-    final secure = _secure;
-    if (prefs == null || secure == null || _inSetup) {
-      // Pre-app (the server-setup window started the browser round-trip):
-      // park the credential for the setup screen, which is listening.
-      AppLog.w(
-        'deep-link',
-        'pair link arrived before backend init — parked for the setup screen',
-      );
-      pendingSsoPairLink.value = rawUrl;
-      return;
-    }
-    if (isIdpInitiatedSsoPairLink(rawUrl)) {
-      // A valid IdP-initiated credential is still unbidden to this running
-      // session. The setup window asks for explicit server approval.
-      pendingSsoPairLink.value = rawUrl;
-      unawaited(returnToSetup());
-      return;
-    }
-    final payload = await decodeSsoPairLink(rawUrl);
-    if (payload == null) {
-      AppLog.w('deep-link', 'ignoring invalid or unbidden SSO handoff');
-      return;
-    }
-    final store = ServerConnectionStore(prefs, secure);
-    final connection = await pairWithServer(
-      store: store,
-      rawUrl: payload.server,
-      platform: 'desktop',
-      deviceId: payload.deviceId,
-      psk: payload.psk,
-    );
-    await connection.dispose();
-    await switchTo(connection.entry.serverId);
-  }
-
-  void _adopt(
-    DesktopBackendSession session,
-    AppPreferences prefs,
-    SecureStore secure,
-  ) {
-    _current = session;
-    _prefs = prefs;
-    _secure = secure;
-    _generation.value++;
-  }
-
-  /// Switches to [serverId] (a paired server id, or `local`): disposes the
-  /// current session, resolves the new backend and remounts the app.
-  /// Throws on connect failure — the caller surfaces the error and the
-  /// current session stays live (the old session is only torn down after the
-  /// new one connected).
-  Future<void> switchTo(String serverId) async {
-    final prefs = _prefs;
-    final secure = _secure;
-    if (prefs == null || secure == null) {
-      throw StateError('Desktop backend not initialised yet');
-    }
-    final backend = await resolveServerBackend(
-      prefs: prefs,
-      secureStore: secure,
-      forceServerId: serverId,
-    );
-    final DesktopBackendSession next;
-    try {
-      next = await DesktopBackendSession.build(
-        backend: backend,
-        prefs: prefs,
-        secureStore: secure,
-      );
-    } on Object {
-      // `resolveServerBackend` may have SPAWNED a local cc_server child. If the
-      // session build then fails we keep the old session (correct) — but that
-      // child would be orphaned, holding the SQLite file open against every
-      // later switch. Dispose it before surfacing the failure.
-      await backend.dispose();
-      rethrow;
-    }
-    final old = _current;
-    _adopt(next, prefs, secure);
-    if (old != null) {
-      // Tear the OLD session down only AFTER the frame that remounts its UI in
-      // the existing window. `_adopt` merely schedules that rebuild (setState),
-      // so disposing here and now would leave the still-mounted widget tree
-      // sitting on a disposed `ProviderContainer`: every `ref.watch` in it
-      // throws, the remount frame dies half-built and the window is left
-      // painted but dead — visible content, no navigation, hard quit only.
-      // Post-frame callbacks run after `finalizeTree`, i.e. once the old tree
-      // is unmounted for real.
-      final binding = WidgetsBinding.instance
-        ..addPostFrameCallback((_) => unawaited(old.dispose()));
-      // A post-frame callback needs a frame to be scheduled; `setState` above
-      // normally does that, but not if the host widget is not mounted yet.
-      // Nor while frames are disabled (the window is hidden or minimised —
-      // e.g. a switch adopted from an SSO bounce while the browser is in
-      // front): the old session, and with it a bundled `cc_server` the user
-      // just switched away from, would then outlive the switch until the
-      // window next painted. A forced frame is the one scheduling path that
-      // ignores `framesEnabled`.
-      if (binding.framesEnabled) {
-        binding.ensureVisualUpdate();
-      } else {
-        binding.scheduleForcedFrame();
-      }
-    }
-  }
-
-  /// Leaves the running app for the server setup window: the "sign in"
-  /// action of the lost-connection dialog. Pairings are kept, so the user can
-  /// reconnect to the same server, pick another or run locally.
-  ///
-  /// The setup window replaces the app tree on the next frame and the current
-  /// session (with a bundled `cc_server`, if it spawned one) is torn down only
-  /// after that frame, once nothing mounted still reads its container. The
-  /// app remounts around the backend the user resolves there.
-  Future<void> returnToSetup() async {
-    final prefs = _prefs;
-    final secure = _secure;
-    if (prefs == null || secure == null || _inSetup) {
-      return;
-    }
-    _inSetup = true;
-    final old = _current;
-    _current = null;
-    final oldClosed = Completer<void>();
-    final binding = WidgetsBinding.instance
-      ..addPostFrameCallback((_) {
-        unawaited(() async {
-          try {
-            await old?.dispose();
-          } on Object catch (e) {
-            AppLog.w('cc_server', 'tearing down the left session failed: $e');
-          } finally {
-            oldClosed.complete();
-          }
-        }());
-      });
-    final setup = showServerSetup(
-      ServerConnectionStore(prefs, secure),
-      previousSessionClosed: oldClosed.future,
-    );
-    // See [switchTo]: a hidden window disables frames, and the old session
-    // must not wait for the next paint to be torn down.
-    if (binding.framesEnabled) {
-      binding.ensureVisualUpdate();
-    } else {
-      binding.scheduleForcedFrame();
-    }
-    final backend = await setup;
-    await oldClosed.future;
-    final DesktopBackendSession next;
-    try {
-      next = await DesktopBackendSession.build(
-        backend: backend,
-        prefs: prefs,
-        secureStore: secure,
-      );
-    } on Object catch (error, stack) {
-      // No window is left to report into: the setup window is resolved and
-      // the app tree is gone. Same last resort as a failed boot.
-      await backend.dispose();
-      _inSetup = false;
-      AppLog.e('cc_server', 'session build after setup failed', error, stack);
-      runBootFailureWindow(error, stack);
-      return;
-    }
-    _inSetup = false;
-    _adopt(next, prefs, secure);
-    runWidget(const _DesktopAppHost());
-  }
-}
-
-/// Root desktop widget: keeps the primary native window while remounting the
-/// current [DesktopBackendSession]'s UI. Also owns the container-scoped platform
-/// handlers (menu-bar Preferences, deep links), re-registered per session.
-class _DesktopAppHost extends StatefulWidget {
-  const _DesktopAppHost();
-
-  @override
-  State<_DesktopAppHost> createState() => _DesktopAppHostState();
-}
-
-class _DesktopAppHostState extends State<_DesktopAppHost> {
-  static const _appChannel = MethodChannel('com.controlcenter/app');
-
-  @override
-  void initState() {
-    super.initState();
-    DesktopServerSwitcher.instance.generation.addListener(_onSession);
-    _wirePlatformHandlers();
-  }
-
-  @override
-  void dispose() {
-    DesktopServerSwitcher.instance.generation.removeListener(_onSession);
-    super.dispose();
-  }
-
-  void _onSession() {
-    if (mounted) {
-      setState(() {});
-    }
-    _wirePlatformHandlers();
-  }
-
-  ProviderContainer? get _container =>
-      DesktopServerSwitcher.instance.current?.container;
-
-  void _wirePlatformHandlers() {
-    // Wire macOS menu-bar Preferences to in-app Settings, the app-menu
-    // "Check for Updates…" item to the desktop updater and deep link URLs
-    // (control-center://) forwarded from AppDelegate. Uses the CURRENT
-    // session's container on every call.
-    _appChannel.setMethodCallHandler((call) async {
-      // SSO pair links are adopted even with NO session yet: the browser
-      // round-trip may have been started by the pre-app server-setup window,
-      // and dropping the credential here would strand the user mid-login
-      // (the setup screen listens on the pending notifier).
-      if (call.method == 'openUrl') {
-        final earlyUrl = call.arguments as String?;
-        if (earlyUrl != null && isSsoPairLink(earlyUrl)) {
-          await DesktopServerSwitcher.instance.adoptPairLink(earlyUrl);
-          return;
-        }
-      }
-      // A Dock click, or a second launch handed to this instance: bring the
-      // main window back, even from the tray. Needs no session — the window
-      // outlives every one of them.
-      if (call.method == 'reopen') {
-        MainWindowVisibility.instance.reveal();
-        return;
-      }
-      final container = _container;
-      if (container == null) {
-        return;
-      }
-      switch (call.method) {
-        case 'openSettings':
-          MainWindowVisibility.instance.reveal();
-          final router = container.read(routerProvider);
-          if (isAuthenticationRoute(
-            router.routerDelegate.currentConfiguration.uri.path,
-          )) {
-            return;
-          }
-          final wsId = container.read(activeWorkspaceIdProvider);
-          router.go(
-            wsId == null ? workspaceListRoute : settingsAppearanceRoute(wsId),
-          );
-        case 'openUrl':
-          final rawUrl = call.arguments as String?;
-          if (rawUrl != null && rawUrl.isNotEmpty) {
-            // A link opens where it can be seen, even from the tray.
-            MainWindowVisibility.instance.reveal();
-            await _handleIncomingUrl(container, rawUrl);
-          }
-        case 'checkForUpdates':
-          // The single user-initiated path into the updater (same as the
-          // Settings → About button): interactive Sparkle prompt, drain-gated
-          // while a meeting is recording.
-          unawaited(container.read(desktopUpdateProvider.notifier).checkNow());
-      }
-    });
-
-    if (!Platform.isMacOS) {
-      final container = _container;
-      if (container != null) {
-        for (final arg in Platform.executableArguments) {
-          if (arg.startsWith('control-center://')) {
-            unawaited(_handleIncomingUrl(container, arg));
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final session = DesktopServerSwitcher.instance.current;
-    if (session == null) {
-      return const SizedBox.shrink();
-    }
-    // Route every remote-media fetch (avatars, feed images, PR-body media)
-    // through the connected server's `/proxy/media` endpoint — the desktop is
-    // a thin client, so it must not hit upstream hosts directly. Omitted only
-    // if the connection couldn't be expressed as a proxy base.
-    return UncontrolledProviderScope(
-      container: session.container,
-      child: AppWindows(
-        sessionKey: ObjectKey(session),
-        mediaProxy: session.backend.mediaProxy,
-        app: const ControlCenterApp(),
-      ),
-    );
-  }
-}
-
-/// Binds the RPC session to the active workspace and keeps it bound.
-///
-/// Lists the connected server's workspaces, binds the session to the active one
-/// (the persisted choice if it still exists on this server, otherwise the
-/// first), seeds [activeWorkspaceIdProvider] and re-binds on every later
-/// workspace switch (a switch is a URL navigation that updates the provider).
-/// Best-effort: a failure is logged, not fatal — onboarding can still create
-/// the first workspace, which binds the session through the same listener.
-Future<void> _bindActiveWorkspace(
-  ProviderContainer container,
-  RemoteRpcClient client,
-) async {
-  final workspaces = RemoteWorkspaceRepository(client);
-  try {
-    final list = await workspaces.list();
-    if (list.isNotEmpty) {
-      final current = container.read(activeWorkspaceIdProvider);
-      final activeId = current != null && list.any((w) => w.id == current)
-          ? current
-          : list.first.id;
-      await workspaces.setActive(activeId);
-      await container
-          .read(activeWorkspaceIdProvider.notifier)
-          .setActive(activeId);
-    }
-  } on Object catch (e) {
-    AppLog.w('main', 'initial workspace session binding failed: $e');
-  }
-  // Re-bind whenever the active workspace changes. The subscription lives for
-  // the container's (app's) lifetime.
-  container.listen<String?>(activeWorkspaceIdProvider, (_, next) {
-    if (next != null) {
-      unawaited(workspaces.setActive(next));
-    }
-  });
-}
-
-/// Dispatches an inbound custom-scheme URL through the app's deep-link router.
-///
-/// No provider OAuth redirect ever lands here: the server (or Connect) runs
-/// every authorization-code exchange. The only sign-in link is Connect's
-/// `control-center://oauth-done` confirmation, which carries a code for an
-/// attempt this client started (see `_completeSignIn`).
-Future<void> _handleIncomingUrl(
-  ProviderContainer container,
-  String rawUrl,
-) async {
-  if (rawUrl.startsWith('control-center://pair')) {
-    // The SSO login bounce page: carries a minted device credential in the
-    // fragment; adoption + live server switch live on the switcher.
-    await DesktopServerSwitcher.instance.adoptPairLink(rawUrl);
-    return;
-  }
-  await _handleDeepLink(container, rawUrl);
-}
-
-/// Navigates to what an inbound `control-center://` link names.
-///
-/// Every destination is workspace-prefixed and the prefix is what re-scopes the
-/// app — so a link opened while another workspace is active switches to the right
-/// one instead of rendering the right screen with the wrong context.
-Future<void> _handleDeepLink(ProviderContainer container, String rawUrl) async {
-  switch (DeepLinkHandler.resolve(rawUrl)) {
-    case final PrDeepLink pr:
-      await _openPrDeepLink(container, pr);
-    case final PullRequestsDeepLink pulls:
-      await _openPullRequestsDeepLink(container, pulls);
-    case InboxDeepLink():
-      _openInboxDeepLink(container);
-    case final RepoInboxDeepLink inbox:
-      await _openRepoInboxDeepLink(container, inbox);
-    case SpaceDeepLink(:final workspaceId, :final spaceId):
-      await _goToWorkspace(
-        container,
-        workspaceId,
-        spaceRoute(workspaceId, spaceId),
-      );
-    case TicketDeepLink(:final workspaceId, :final ticketId):
-      await _goToWorkspace(
-        container,
-        workspaceId,
-        ticketDetailRoute(workspaceId, ticketId),
-      );
-    case OauthDoneDeepLink(:final loginId, :final code):
-      await _completeSignIn(container, loginId: loginId, code: code);
-    case null:
-      return;
-  }
-}
-
-/// Hands an `oauth-done` code to the sign-in this app started, or warns.
-///
-/// A login id this client never started came from somebody else's server:
-/// completing it would sign the reader's account in THERE. The controller
-/// sends nothing for it, and the reader is told why.
-Future<void> _completeSignIn(
-  ProviderContainer container, {
-  required String loginId,
-  required String code,
-}) async {
-  final known = await container
-      .read(providerSignInControllerProvider.notifier)
-      .completeFromDeepLink(loginId, code);
-  if (known) {
-    return;
-  }
-  final context = rootNavigatorKey.currentContext;
-  if (context != null && context.mounted) {
-    await showSignInPhishingWarning(context);
-  }
-}
-
-/// Switches the active workspace to [workspaceId] and navigates to [route].
-///
-/// The provider is set before the navigation because the workspace id is what
-/// every scoped provider reads; a link into a workspace the client does not know
-/// falls back to the picker rather than opening an empty screen.
-Future<void> _goToWorkspace(
-  ProviderContainer container,
-  String workspaceId,
-  String route,
-) async {
-  final known = await container
-      .read(workspaceRepositoryProvider)
-      .getAll()
-      .then((all) => all.any((w) => w.id == workspaceId))
-      // A repository that cannot answer must not swallow the link: trust the id
-      // and let the target screen report whatever it finds.
-      .onError((_, _) => true);
-  if (!known) {
-    container.read(routerProvider).go(workspaceListRoute);
-    return;
-  }
-  await container
-      .read(activeWorkspaceIdProvider.notifier)
-      .setActive(workspaceId);
-  container.read(routerProvider).go(route);
-}
-
-/// Where a repo-addressed deep link lands: the workspace (null to fall back to
-/// the active one) and the repo when that workspace links it. `dismissed`
-/// means the user backed out of a dialog, and the link does nothing.
-typedef _RepoLinkTarget = ({
-  String? workspaceId,
-  String? repoFullName,
-  bool dismissed,
-});
-
-/// Whether [r] is the `<owner>/<repo>` checkout a deep link names.
-bool _isLinkedRepo(Repo r, {required String owner, required String repo}) =>
-    r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
-    r.remoteName.toLowerCase() == repo.toLowerCase();
-
-/// Activates the workspace and repo holding the `<owner>/<repo>` checkout a
-/// repo-addressed deep link names.
-///
-/// Both are switched before navigating: otherwise the target screen would
-/// render with the previously active repo's context and fetch the wrong data.
-/// When no workspace links the repo, [offerToLink] asks the user where to add
-/// it first.
-Future<_RepoLinkTarget> _activateLinkedRepo(
-  ProviderContainer container, {
-  required String owner,
-  required String repo,
-  bool offerToLink = true,
-}) async {
-  final repoRepo = container.read(repoRepositoryProvider);
-  final wsRepo = container.read(workspaceRepositoryProvider);
-
-  // Repos live inside a workspace, and one checkout can be linked into
-  // several, so collect every workspace holding it in the operator's order.
-  final holders = <(Workspace, Repo)>[];
-  for (final ws in await wsRepo.getAll()) {
-    final target = (await repoRepo.getAll(
-      ws.id,
-    )).where((r) => _isLinkedRepo(r, owner: owner, repo: repo)).firstOrNull;
-    if (target != null) {
-      holders.add((ws, target));
-    }
-  }
-  if (holders.isEmpty) {
-    final context = rootNavigatorKey.currentContext;
-    if (!offerToLink || context == null || !context.mounted) {
-      // Nothing to offer, or no window to ask in (the link arrived before the
-      // app finished mounting): fall back to the active workspace.
-      return (workspaceId: null, repoFullName: null, dismissed: false);
-    }
-    final workspaceId = await _linkUnlinkedRepo(
-      container,
-      context,
-      owner: owner,
-      repo: repo,
-    );
-    if (workspaceId == null) {
-      return (workspaceId: null, repoFullName: null, dismissed: true);
-    }
-    final linked = await _activateLinkedRepo(
-      container,
-      owner: owner,
-      repo: repo,
-      offerToLink: false,
-    );
-    if (linked.repoFullName != null) {
-      return linked;
-    }
-    // The user put no checkout of this repo in the workspace they chose: land
-    // there without it rather than back where the link found them.
-    await container
-        .read(activeWorkspaceIdProvider.notifier)
-        .setActive(workspaceId);
-    return (workspaceId: workspaceId, repoFullName: null, dismissed: false);
-  }
-
-  final workspaceId = await _chooseLinkWorkspace(
-    container,
-    repoFullName: holders.first.$2.fullName,
-    workspaces: [for (final (ws, _) in holders) ws],
-  );
-  if (workspaceId == null) {
-    return (workspaceId: null, repoFullName: null, dismissed: true);
-  }
-  final (_, target) = holders.firstWhere((h) => h.$1.id == workspaceId);
-  await container
-      .read(activeWorkspaceIdProvider.notifier)
-      .setActive(workspaceId);
-  await container.read(activeRepoIdProvider.notifier).setActive(target.id);
-  return (
-    workspaceId: workspaceId,
-    repoFullName: target.fullName,
-    dismissed: false,
-  );
-}
-
-/// Asks what a link to `<owner>/<repo>`, which no workspace links, should do:
-/// add its checkout to the active workspace, create a workspace and add it
-/// there, or nothing.
-///
-/// Resolves to the workspace the user chose, even when the checkout they
-/// picked turned out to be another repo or they backed out of picking one
-/// after creating the workspace. Null when they backed out otherwise.
-Future<String?> _linkUnlinkedRepo(
-  ProviderContainer container,
-  BuildContext context, {
-  required String owner,
-  required String repo,
-}) async {
-  final repoFullName = '$owner/$repo';
-  final activeId = container.read(activeWorkspaceIdProvider);
-  final active = activeId == null
-      ? null
-      : await container
-            .read(workspaceRepositoryProvider)
-            .getAll()
-            .then((all) => all.where((w) => w.id == activeId).firstOrNull)
-            // A repository that cannot answer still leaves creating one.
-            .onError((_, _) => null);
-  if (!context.mounted) {
-    return null;
-  }
-  final action = await showUnlinkedRepoDialog(
-    context: context,
-    repoFullName: repoFullName,
-    currentWorkspace: active,
-  );
-  if (action == null || !context.mounted) {
-    return null;
-  }
-  final workspaceId = switch (action) {
-    UnlinkedRepoAction.addToCurrentWorkspace => active?.id,
-    UnlinkedRepoAction.createWorkspace => await showAddWorkspaceDialog(
-      context,
-      initialName: repo,
-    ),
-  };
-  if (workspaceId == null || !context.mounted) {
-    return null;
-  }
-  final created = action == UnlinkedRepoAction.createWorkspace;
-  final l10n = AppLocalizations.of(context);
-  final outcome = await showAddRepoDialog(
-    context,
-    browser: container.read(directoryBrowserProvider),
-    register: container.read(addRepoFromServerPathProvider),
-    workspaceId: workspaceId,
-    intro: l10n.repoLinkChooseCheckout(repoFullName),
-  );
-  if (outcome == null) {
-    // Backing out of the checkout still leaves a workspace just created to
-    // land in; backing out of adding to the current one leaves nothing.
-    return created ? workspaceId : null;
-  }
-  if (!context.mounted) {
-    return workspaceId;
-  }
-  final toasts = CcToastScope.maybeOf(context);
-  if (outcome.failed.isNotEmpty) {
-    final first = outcome.failed.entries.first;
-    toasts?.show(
-      l10n.repositoriesAddFailed(
-        outcome.failed.length,
-        '${first.key}: ${first.value}',
-      ),
-      variant: CcToastVariant.danger,
-    );
-  }
-  if (outcome.added.isNotEmpty) {
-    final repos = await container
-        .read(repoRepositoryProvider)
-        .getAll(workspaceId)
-        .onError((_, _) => const <Repo>[]);
-    final addedIt = repos.any(
-      (r) =>
-          outcome.added.contains(r.id) &&
-          _isLinkedRepo(r, owner: owner, repo: repo),
-    );
-    toasts?.show(
-      addedIt
-          ? l10n.repositoriesAdded(outcome.added.length)
-          : l10n.repoLinkCheckoutMismatch(repoFullName),
-      variant: addedIt ? CcToastVariant.success : CcToastVariant.warning,
-    );
-  }
-  return workspaceId;
-}
-
-/// Picks which of [workspaces] (every one linking [repoFullName], in the
-/// operator's order) a link opens in: the only one, the remembered one, or the
-/// user's answer to the chooser. Null when the user dismissed the chooser.
-Future<String?> _chooseLinkWorkspace(
-  ProviderContainer container, {
-  required String repoFullName,
-  required List<Workspace> workspaces,
-}) async {
-  final candidates = [for (final ws in workspaces) ws.id];
-  final settled = repoLinkWorkspaceWithoutAsking(
-    candidates: candidates,
-    remembered: container
-        .read(repoLinkWorkspaceChoicesProvider)
-        .workspaceFor(repoFullName),
-  );
-  if (settled != null) {
-    return settled;
-  }
-  final context = rootNavigatorKey.currentContext;
-  if (context == null) {
-    // No window to ask in (the link arrived before the app finished
-    // mounting): fall back to the operator's workspace order.
-    return candidates.first;
-  }
-  final active = container.read(activeWorkspaceIdProvider);
-  final decision = await showRepoLinkWorkspaceDialog(
-    context: context,
-    repoFullName: repoFullName,
-    workspaces: workspaces,
-    initialWorkspaceId: candidates.contains(active)
-        ? active!
-        : candidates.first,
-  );
-  if (decision == null) {
-    return null;
-  }
-  if (decision.remember) {
-    await container
-        .read(repoLinkWorkspaceChoicesProvider.notifier)
-        .remember(repoFullName, decision.workspaceId);
-  }
-  return decision.workspaceId;
-}
-
-/// Resolves a `control-center://pr/<owner>/<repo>/<number>` deep link into the
-/// PR detail of the workspace holding that repo.
-Future<void> _openPrDeepLink(ProviderContainer container, PrDeepLink pr) async {
-  final linked = await _activateLinkedRepo(
-    container,
-    owner: pr.owner,
-    repo: pr.repo,
-  );
-  if (linked.dismissed) {
-    return;
-  }
-
-  // Navigate into the resolved workspace's PR detail; the workspace prefix in
-  // the URL is what re-scopes the app. Fall back to the active workspace, then
-  // the picker, if the PR's repo isn't linked anywhere.
-  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
-  container
-      .read(routerProvider)
-      .go(
-        wsId == null
-            ? workspaceListRoute
-            : pullRequestDetailRoute(
-                wsId,
-                '${pr.owner}/${pr.repo}',
-                pr.number,
-                // A comment permalink lands on the diff with the comment
-                // revealed; the tab falls back to the timeline itself when the
-                // comment turns out to be outdated or out of scope.
-                tab: pr.commentId == null ? null : 'pr.diff',
-                commentId: pr.commentId,
-              ),
-      );
-}
-
-/// Resolves a `control-center://pulls/<owner>/<repo>` deep link into the pull
-/// request list of the workspace holding that repo, with it selected in the
-/// rail. An unlinked repo falls back to the active workspace's plain list, then
-/// the picker.
-Future<void> _openPullRequestsDeepLink(
-  ProviderContainer container,
-  PullRequestsDeepLink pulls,
-) async {
-  final linked = await _activateLinkedRepo(
-    container,
-    owner: pulls.owner,
-    repo: pulls.repo,
-  );
-  if (linked.dismissed) {
-    return;
-  }
-  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
-  container
-      .read(routerProvider)
-      .go(
-        wsId == null
-            ? workspaceListRoute
-            : pullRequestsRoute(wsId, repo: linked.repoFullName),
-      );
-}
-
-/// Resolves a `control-center://inbox` deep link into the active workspace's
-/// inbox, or the picker when none is active. Clears the inbox's filters: the
-/// link asks for the whole inbox, and a repo filter left by an earlier
-/// [RepoInboxDeepLink] would otherwise still narrow it.
-void _openInboxDeepLink(ProviderContainer container) {
-  container.read(inboxListFiltersProvider.notifier).clear();
-  final wsId = container.read(activeWorkspaceIdProvider);
-  container
-      .read(routerProvider)
-      .go(wsId == null ? workspaceListRoute : inboxRoute(wsId));
-}
-
-/// Resolves a `control-center://inbox/<owner>/<repo>` deep link into the inbox
-/// of the workspace holding that repo, filtered to it. A repo left unlinked
-/// lands on an unfiltered inbox instead, then the picker.
-Future<void> _openRepoInboxDeepLink(
-  ProviderContainer container,
-  RepoInboxDeepLink inbox,
-) async {
-  final linked = await _activateLinkedRepo(
-    container,
-    owner: inbox.owner,
-    repo: inbox.repo,
-  );
-  if (linked.dismissed) {
-    return;
-  }
-  // Set before navigating so the inbox's first frame is already filtered.
-  final filters = container.read(inboxListFiltersProvider.notifier);
-  if (linked.repoFullName == null) {
-    filters.clear();
-  } else {
-    filters.showOnlyRepo(inbox.owner, inbox.repo);
-  }
-  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
-  container
-      .read(routerProvider)
-      .go(wsId == null ? workspaceListRoute : inboxRoute(wsId));
 }

@@ -1,25 +1,10 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInFailure, SignInLaneMode;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Who runs a lane's browser sign-in on this server.
-enum SignInLaneMode {
-  /// The server's own OAuth app; the provider redirects to the server.
-  own,
-
-  /// Control Center Connect; the browser shows an 8-character code that the
-  /// client hands back.
-  connect,
-
-  /// Neither is set up, or the own app is half-configured.
-  unavailable;
-
-  /// Parses a wire value; [unavailable] for anything unknown.
-  static SignInLaneMode fromWire(Object? wire) => switch (wire) {
-    'own' => own,
-    'connect' => connect,
-    _ => unavailable,
-  };
-}
+export 'package:cc_connect_core/cc_connect_core.dart'
+    show SignInFailure, SignInLaneMode;
 
 /// One lane as `oauth.lanes` reports it.
 class SignInLaneInfo {
@@ -81,73 +66,6 @@ enum SignInAttemptStatus {
   bool get isTerminal => this != pending;
 }
 
-/// Why a sign-in attempt failed. The closed set `oauth.*` reports; anything
-/// else reads as [unknown].
-enum SignInFailure {
-  /// The attempt ran out of time.
-  expired('expired'),
-
-  /// The person declined at the provider.
-  accessDenied('access_denied'),
-
-  /// The provider granted different permissions than the lane asks for.
-  scopeMismatch('scope_mismatch'),
-
-  /// Too many wrong confirmation codes.
-  invalidCode('invalid_code'),
-
-  /// The provider or Connect is not answering.
-  providerUnavailable('provider_unavailable'),
-
-  /// The provider refused to exchange the authorization code.
-  exchangeFailed('exchange_failed'),
-
-  /// The server's own app for this provider is set up wrongly.
-  misconfigured('misconfigured'),
-
-  /// A previous grant is gone; sign in again.
-  needsSignIn('needs_sign_in'),
-
-  /// The app is not installed where it is needed.
-  notInstalled('not_installed'),
-
-  /// A GitHub organization installation is bound to another server.
-  installationBoundElsewhere('installation_bound_elsewhere'),
-
-  /// A Slack workspace is bound to another server.
-  teamBoundElsewhere('team_bound_elsewhere'),
-
-  /// Connecting a Slack workspace the first time takes one of its admins.
-  notAdmin('not_admin'),
-
-  /// The installation or account is suspended.
-  suspended('suspended'),
-
-  /// This server is not allowed on its Connect.
-  installBlocked('install_blocked'),
-
-  /// A code this client does not know.
-  unknown('');
-
-  const SignInFailure(this.wire);
-
-  /// The wire spelling.
-  final String wire;
-
-  /// Parses a wire value; null for an empty or absent one.
-  static SignInFailure? fromWire(Object? wire) {
-    if (wire is! String || wire.isEmpty) {
-      return null;
-    }
-    for (final failure in values) {
-      if (failure.wire == wire) {
-        return failure;
-      }
-    }
-    return unknown;
-  }
-}
-
 /// One browser sign-in attempt, as `oauth.begin` / `oauth.status` /
 /// `oauth.complete` report it.
 class SignInAttempt {
@@ -161,6 +79,7 @@ class SignInAttempt {
     required this.status,
     this.account = '',
     this.error,
+    this.codeError,
   });
 
   /// Decodes an attempt payload.
@@ -186,6 +105,7 @@ class SignInAttempt {
       status: SignInAttemptStatus.fromWire(json['status']),
       account: json['account'] as String? ?? '',
       error: SignInFailure.fromWire(json['error']),
+      codeError: SignInFailure.fromWire(json['code_error']),
     );
   }
 
@@ -212,6 +132,10 @@ class SignInAttempt {
 
   /// Why it failed, once [status] is failed.
   final SignInFailure? error;
+
+  /// Why the last confirmation code was refused while the attempt stays
+  /// open ([SignInFailure.codeMismatch]); null otherwise.
+  final SignInFailure? codeError;
 }
 
 /// Which slot a stored grant lives in.
@@ -327,8 +251,8 @@ class RemoteProviderSignIn {
 
   /// Hands a Connect confirmation [code] for [loginId] to the server.
   ///
-  /// A wrong code throws the server's refusal; the fifth wrong code fails
-  /// the attempt with [SignInFailure.invalidCode].
+  /// A wrong code comes back pending with [SignInAttempt.codeError] set; the
+  /// fifth fails the attempt with [SignInFailure.invalidCode].
   Future<SignInAttempt> complete({
     required String loginId,
     required String code,
@@ -360,4 +284,22 @@ class RemoteProviderSignIn {
         'lane': lane.wire,
         'workspace_id': workspaceId,
       });
+}
+
+/// The sign-in failure an `oauth.*` call that threw amounts to: a sign-in the
+/// server no longer knows reads as [SignInFailure.staleRequest], a server
+/// that could not be reached (or answered something else) as
+/// [SignInFailure.providerUnavailable].
+SignInFailure signInFailureOfRpcError(Object error) {
+  if (error is! RemoteRpcException) {
+    return SignInFailure.providerUnavailable;
+  }
+  return switch (error.code) {
+    RpcErrorCodes.unauthorized ||
+    RpcErrorCodes.notFound => SignInFailure.staleRequest,
+    RpcErrorCodes.invalidParams ||
+    RpcErrorCodes.validation => SignInFailure.invalidRequest,
+    RpcErrorCodes.rateLimited => SignInFailure.rateLimited,
+    _ => SignInFailure.providerUnavailable,
+  };
 }

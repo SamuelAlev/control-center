@@ -1,4 +1,6 @@
-import 'package:cc_harness/cancellation.dart';
+import 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
+
+export 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
 
 /// Provisions a per-space working root with isolated CoW worktrees and tears
 /// them down on unit completion.
@@ -9,39 +11,20 @@ import 'package:cc_harness/cancellation.dart';
 /// shares `repos/`; a conversation id is never a worktree key, but it does key
 /// the overlay, so two conversations can run the same agent at once.
 /// `.mcp.json` is not provisioned here — cc_server derives it at dispatch.
-/// No-op-safe: provisioning failures degrade to the fallback dir rather than
-/// throwing.
+/// Never substitutes a directory: a provision that did not produce an overlay
+/// says why ([SpaceWorkspaceUnavailable]) and the caller decides.
 abstract interface class RepoWorkspaceProvisionerPort {
-  /// Ensures space root + isolated worktrees + per-agent overlay at
-  /// `agents/<agentOverlayDirName(agentSlug, conversationId)>/`; returns that
-  /// cwd or [fallbackDir] on failure.
+  /// Ensures the space root, its isolated worktrees and the per-agent overlay
+  /// at `agents/<agentOverlayDirName(agentSlug, conversationId)>/`.
   ///
-  /// [agentSlug] keys the overlay; [agentConfigDir] targets AGENTS.md+`.agents`.
-  /// Branch from [ticketKey]/[ticketTitle] else [spaceScratchBranch]; fetches
-  /// latest base when remote+token available. [prHeadRef] checks out that ref
-  /// on [prBranch] for [prHeadRepoFullName], pristine. [repoAllowlist] null →
-  /// all linked repos. [onRepoProvision]/[onRepoProvisionTasks] fire on fresh
-  /// materialize only; must not throw. [cancel] kills git and stops; still
-  /// returns [fallbackDir] — use [isSpaceProvisioningCancelled].
-  Future<String> ensureSpaceWorkspace({
-    required String workspaceId,
-    required String spaceId,
-    required String agentSlug,
-    required String fallbackDir,
-    String? conversationId,
-    String? agentConfigDir,
-    String? ticketId,
-    String? ticketKey,
-    String? ticketTitle,
-    String branchType,
-    String? prHeadRef,
-    String? prHeadRepoFullName,
-    String? prBranch,
-    Set<String>? repoAllowlist,
-    void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoProvisionTasks,
-    CancellationToken? cancel,
-  });
+  /// Branch from the ticket key/title else [spaceScratchBranch]; fetches the
+  /// latest base when a remote and token are available. A PR head ref is
+  /// checked out pristine. A null allowlist asks the space, then takes every
+  /// linked repo. A repo that fails is logged and skipped; the overlay still
+  /// comes back. [SpaceWorkspaceUnavailable] reports a space with no repo, a
+  /// stop ([isSpaceProvisioningCancelled] stays true) or a failure that left
+  /// no overlay. Never throws for those.
+  Future<SpaceWorkspace> ensureSpaceWorkspace(SpaceWorkspaceRequest request);
 
   /// Aborts every in-flight [ensureSpaceWorkspace] for [spaceId]: the running
   /// git command is killed and no further repo is materialized.

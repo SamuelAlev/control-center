@@ -18,7 +18,12 @@ import 'package:material_ui/material_ui.dart';
 /// Creates a controller with a ProviderContainer that's auto-disposed via
 /// [addTearDown]. Must be called inside a test body.
 /// The PR identity the inline-comments controller is keyed by.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 1);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 1,
+  forge: null,
+);
 
 PrInlineCommentsController _makeController(WidgetTester tester) {
   final container = ProviderContainer(
@@ -176,11 +181,13 @@ void main() {
           workspaceId: 'ws',
           repoFullName: 'owner/repo',
           number: 2,
+          forge: null,
         );
         const otherWorkspace = (
           workspaceId: 'ws-2',
           repoFullName: 'owner/repo',
           number: 1,
+          forge: null,
         );
         final target = ValueNotifier(0);
         addTearDown(target.dispose);

@@ -131,6 +131,7 @@ class _Fixture {
     String workspace = 'ws-1',
     String conversation = 'conv-1',
     String agent = 'agent-1',
+    String? run,
     AgentInputKind kind = AgentInputKind.question,
   }) => AgentAwaitingInput(
     workspaceId: workspace,
@@ -139,6 +140,7 @@ class _Fixture {
     summary: 'Need an answer',
     conversationId: conversation,
     agentId: agent,
+    runId: run,
     occurredAt: now,
   );
 
@@ -313,6 +315,8 @@ void main() {
       f.bus.publish(f.question('wrong-conversation', conversation: 'conv-2'));
       f.bus.publish(f.question('wrong-agent', agent: 'agent-2'));
       f.bus.publish(f.question('approval', kind: AgentInputKind.approval));
+      // Same agent and conversation, but a concurrent run's question.
+      f.bus.publish(f.question('other-run', run: 'run-2'));
       f.bus.publish(f.resolved('unknown'));
       await _deliver();
       final timedOut = f.bus.on<TaskMessage>().firstWhere(
@@ -336,6 +340,39 @@ void main() {
   );
 
   test(
+    "this run's own question, named by run id, still shields it",
+    () => _exercise((f) async {
+      final session = f.session();
+      final run = session.run();
+      await f.sandbox.started.future;
+      f.bus.publish(f.question('mine', run: 'run-1'));
+      await _deliver();
+      f.advance(const Duration(minutes: 31));
+      f.tick();
+      expect(f.sandbox.destroyed, isFalse);
+      await f.sandbox.finish();
+      await run;
+    }),
+  );
+
+  test(
+    'a run that never produced output is still timed out',
+    () => _exercise((f) async {
+      final session = f.session();
+      final run = session.run();
+      await f.sandbox.started.future;
+      // Nothing has been emitted: no output mark at all.
+      session.lastOutputAt = null;
+      final failed = f.bus.on<TaskFailed>().first;
+      f.advance(const Duration(minutes: 16));
+      f.tick();
+      await run;
+      expect((await failed).errorMessage, startsWith('Silent run'));
+      expect(f.sandbox.destroyed, isTrue);
+    }),
+  );
+
+  test(
     'stop cancels subscriptions and watchdog while a question is pending',
     () => _exercise((f) async {
       final session = f.session();
@@ -345,12 +382,15 @@ void main() {
       await _deliver();
       await session.stop();
       expect(session.silenceTimer, isNull);
+      // Shutdown stops the child itself; nothing may stop it a second time.
+      expect(f.sandbox.destroyed, isTrue);
+      f.sandbox.destroyed = false;
       f.bus.publish(f.resolved('question-1'));
       f.bus.publish(f.question('after-stop'));
       await _deliver();
       f.advance(const Duration(hours: 2));
       expect(f.sandbox.destroyed, isFalse);
-      await f.sandbox.finish();
+      // The killed child already ended the exec.
       await run;
     }),
   );
@@ -399,13 +439,13 @@ void main() {
       }
 
       expect(events.whereType<ErrorEvent>().map((e) => e.content), [
-        contains('user request'),
+        kRunStoppedByUserSummary,
       ]);
       expect(events.whereType<TextEvent>(), isEmpty);
       expect(events.whereType<DoneEvent>(), hasLength(1));
       expect(
         lifecycle.whereType<TaskFailed>().single.errorMessage,
-        contains('user request'),
+        kRunStoppedByUserSummary,
       );
       expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
     }),

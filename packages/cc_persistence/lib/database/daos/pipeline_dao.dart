@@ -84,10 +84,9 @@ class PipelineDao extends DatabaseAccessor<WorkspaceDatabase>
   ///
   /// The startup pipeline-resume reconciler needs every in-flight run on the
   /// install, which it gets by visiting each workspace's database in turn.
-  Future<List<PipelineRunsTableData>> nonTerminalRuns() =>
-      (select(pipelineRunsTable)
-            ..where((t) => t.status.isIn(nonTerminalStatuses)))
-          .get();
+  Future<List<PipelineRunsTableData>> nonTerminalRuns() => (select(
+    pipelineRunsTable,
+  )..where((t) => t.status.isIn(nonTerminalStatuses))).get();
 
   /// Returns the active (non-terminal) run matching `(templateId, workspaceId,
   /// dedupKey)`, or null. Used for trigger idempotency.
@@ -108,28 +107,15 @@ class PipelineDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Counts the runs of [templateId] that hold one of the template's
   /// `maxParallelRuns` slots. See [slotHoldingStatuses].
   ///
-  /// Rows whose `triggerEventType` is in [excludeTriggerEventTypes] are skipped
-  /// — the caller uses that for projection rows the engine does not own.
-  Future<int> countActiveForTemplate(
-    String workspaceId,
-    String templateId, {
-    Set<String> excludeTriggerEventTypes = const {},
-  }) {
+  /// Projection rows (`is_projection`) are never counted: they mirror work
+  /// the engine does not own, so a slot they held would never be released.
+  Future<int> countActiveForTemplate(String workspaceId, String templateId) {
     final count = pipelineRunsTable.id.count();
-    var predicate =
+    final predicate =
         pipelineRunsTable.workspaceId.equals(workspaceId) &
         pipelineRunsTable.templateId.equals(templateId) &
-        pipelineRunsTable.status.isIn(slotHoldingStatuses);
-    if (excludeTriggerEventTypes.isNotEmpty) {
-      // A null triggerEventType must still count, so the exclusion is written
-      // as "not one of these" OR "has none" rather than a bare NOT IN, which
-      // SQL evaluates to NULL (and therefore false) for a null column.
-      predicate =
-          predicate &
-          (pipelineRunsTable.triggerEventType
-                  .isNotIn(excludeTriggerEventTypes.toList()) |
-              pipelineRunsTable.triggerEventType.isNull());
-    }
+        pipelineRunsTable.status.isIn(slotHoldingStatuses) &
+        pipelineRunsTable.isProjection.equals(false);
     final query = selectOnly(pipelineRunsTable)
       ..addColumns([count])
       ..where(predicate);
@@ -211,7 +197,6 @@ class PipelineDao extends DatabaseAccessor<WorkspaceDatabase>
         updates: {pipelineRunsTable},
         updateKind: UpdateKind.update,
       );
-
 
   /// Deletes a pipeline run, scoped to [workspaceId]. Its step runs are removed
   /// via the `ON DELETE CASCADE` on [PipelineStepRunsTable.pipelineRunId].

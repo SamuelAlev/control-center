@@ -238,6 +238,12 @@ class _TaskInvokingLoop implements AgentLoop {
   final String toolCallId;
   int runs = 0;
 
+  /// The config the nested (child) run was started with.
+  AgentLoopConfig? childConfig;
+
+  /// What the `task` tool handed back to the parent.
+  HarnessToolResult? taskResult;
+
   @override
   Stream<AgentLoopEvent> run({
     required List<HarnessMessage> history,
@@ -253,6 +259,7 @@ class _TaskInvokingLoop implements AgentLoop {
     runs++;
     final isParent = runs == 1;
     if (!isParent) {
+      childConfig = config;
       return _child();
     }
     return _parent(tools, context);
@@ -277,6 +284,7 @@ class _TaskInvokingLoop implements AgentLoop {
       (context ?? const HarnessToolContext(workingDirectory: '.'))
           .withToolCallId(toolCallId),
     );
+    taskResult = result;
     yield LoopToolCallResult(
       toolName: 'task',
       toolUseId: toolCallId,
@@ -292,6 +300,7 @@ typedef _Harness = ({
   _MemTranscriptRepo transcripts,
   ActiveStreamRegistry registry,
   List<String> writeOrder,
+  _TaskInvokingLoop loop,
 });
 
 _Harness _buildSession({
@@ -308,6 +317,10 @@ _Harness _buildSession({
   final runLogs = _MemRunLogRepo(writeOrder);
   final transcripts = _MemTranscriptRepo(writeOrder);
   final registry = ActiveStreamRegistry();
+  final loop = _TaskInvokingLoop(
+    childEvents: childEvents,
+    childThrows: childThrows,
+  );
 
   final deps = SandboxDispatchDeps(
     sandbox: _NoopSandbox(),
@@ -323,10 +336,7 @@ _Harness _buildSession({
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),
-    agentLoop: _TaskInvokingLoop(
-      childEvents: childEvents,
-      childThrows: childThrows,
-    ),
+    agentLoop: loop,
     runTranscriptRecorder: RunTranscriptRecorder(
       registry: registry,
       repo: transcripts,
@@ -365,6 +375,7 @@ _Harness _buildSession({
     transcripts: transcripts,
     registry: registry,
     writeOrder: writeOrder,
+    loop: loop,
   );
 }
 
@@ -416,6 +427,65 @@ void main() {
       expect(tool.outputs, 'file body');
       expect(tool.status, ToolSegmentStatus.ok);
       expect((recorded[2] as TextSegment).text, 'found it');
+    },
+  );
+
+  test(
+    'a discarded attempt is withdrawn from the recording and the answer',
+    () async {
+      final h = _buildSession(
+        childEvents: [
+          const LoopThinkingDelta('hmm'),
+          const LoopTextDelta('half an ans'),
+          const LoopTurnDiscarded(
+            text: 'half an ans',
+            thinking: 'hmm',
+            reason: 'overloaded_error',
+          ),
+          const LoopTextDelta('the whole answer'),
+          const LoopDone(LoopDoneReason.completed),
+        ],
+      );
+
+      await _drain(h.session);
+
+      final childId = _childRunId(h.runLogs)!;
+      final recorded = decodeTranscript(h.transcripts.segments[childId]);
+      final texts = [
+        for (final s in recorded)
+          if (s is TextSegment && s.text.isNotEmpty) s.text,
+      ];
+      expect(texts, ['the whole answer']);
+      expect(
+        recorded.whereType<ReasoningSegment>().every((s) => s.text.isEmpty),
+        isTrue,
+      );
+      expect(h.loop.taskResult?.content, contains('the whole answer'));
+      expect(h.loop.taskResult?.content, isNot(contains('half an ans')));
+    },
+  );
+
+  test(
+    'the child inherits steering and the parent contract does not',
+    () async {
+      final h = _buildSession(
+        childEvents: [const LoopDone(LoopDoneReason.completed)],
+      );
+
+      await _drain(h.session);
+
+      final child = h.loop.childConfig!;
+      expect(child.steering.queue, isNotNull);
+      expect(identical(child.steering.queue, h.session.steeringQueue), isFalse);
+      expect(child.guards.contract, isNull);
+      // A parent-side steer is visible to the running child without being
+      // consumed from the parent's queue.
+      h.session.steeringQueue.pushSteering('look in lib/ first');
+      expect(
+        child.steering.queue!.drainSteering().single.content,
+        'look in lib/ first',
+      );
+      expect(h.session.steeringQueue.hasSteering, isTrue);
     },
   );
 

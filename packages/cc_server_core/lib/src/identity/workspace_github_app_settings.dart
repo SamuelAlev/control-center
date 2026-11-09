@@ -36,6 +36,28 @@ class WorkspaceGitHubAppSettings {
   /// (or a save that did not change the key) reuse the client.
   final Map<String, GitHubAppClient> _clients = {};
 
+  /// Which [_clients] entry each workspace resolved to last.
+  final Map<String, String> _clientKeyOf = {};
+
+  final List<void Function(String workspaceId)> _listeners = [];
+
+  /// Calls [listener] after a workspace's App credentials are saved or
+  /// deleted: whatever was minted under the previous identity must not be
+  /// served again (`GitHubClients.forgetWorkspace`).
+  void addListener(void Function(String workspaceId) listener) =>
+      _listeners.add(listener);
+
+  /// Reports that [workspaceId]'s GitHub identity changed outside this
+  /// class (its mode or App id was edited on the workspace row).
+  void identityChanged(String workspaceId) => _changed(workspaceId);
+
+  void _changed(String workspaceId) {
+    _evictWorkspace(workspaceId);
+    for (final listener in List.of(_listeners)) {
+      listener(workspaceId);
+    }
+  }
+
   /// Secrets-file key for [workspaceId]'s GitHub App private key.
   static String privateKeySecret(String workspaceId) =>
       'workspace_provider_app_github_${workspaceId}_private_key';
@@ -75,8 +97,13 @@ class WorkspaceGitHubAppSettings {
   );
 
   /// Deletes every secret belonging to [workspaceId].
-  Future<int> deleteForWorkspace(String workspaceId) =>
-      _secrets.deleteMatching((key) => isWorkspaceSecret(key, workspaceId));
+  Future<int> deleteForWorkspace(String workspaceId) async {
+    final deleted = await _secrets.deleteMatching(
+      (key) => isWorkspaceSecret(key, workspaceId),
+    );
+    _changed(workspaceId);
+    return deleted;
+  }
 
   /// The GitHub App this workspace uses to act as the server, or null.
   ///
@@ -138,7 +165,7 @@ class WorkspaceGitHubAppSettings {
     await _applySecret(privateKeySecret(workspace.id), privateKeyPem);
     await _applySecret(clientIdSecret(workspace.id), clientId);
     await _applySecret(clientSecretSecret(workspace.id), clientSecret);
-    _evictWorkspace(workspace.id);
+    _changed(workspace.id);
     return status(workspace);
   }
 
@@ -203,6 +230,7 @@ class WorkspaceGitHubAppSettings {
       return null;
     }
     final cacheKey = '$appId:${pem.hashCode}';
+    _clientKeyOf[workspace.id] = cacheKey;
     final cached = _clients[cacheKey];
     if (cached != null) {
       return cached;
@@ -217,13 +245,14 @@ class WorkspaceGitHubAppSettings {
     return client;
   }
 
+  /// Drops the cached client [workspaceId] last used, unless another
+  /// workspace still resolves to the same App and key.
   void _evictWorkspace(String workspaceId) {
-    // Drop every cached client; App id/key changes are rare and a stale
-    // installation token would mint as the wrong identity.
-    for (final client in _clients.values) {
-      client.invalidate();
+    final key = _clientKeyOf.remove(workspaceId);
+    if (key == null || _clientKeyOf.containsValue(key)) {
+      return;
     }
-    _clients.clear();
+    _clients.remove(key)?.invalidate();
   }
 
   Future<void> _applySecret(String key, String? value) async {

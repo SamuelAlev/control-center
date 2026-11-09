@@ -317,13 +317,11 @@ InboundGitHubPrComment _issueComment(
   String body, {
   int authorId = _octocatId,
   String login = 'octocat',
-  bool bot = false,
 }) => InboundGitHubPrComment(
   id: id,
   body: body,
   authorId: authorId,
   authorLogin: login,
-  authorIsBot: bot,
   isReviewComment: false,
 );
 
@@ -332,13 +330,11 @@ InboundGitHubPrComment _reviewComment(
   String body, {
   int authorId = _octocatId,
   String login = 'octocat',
-  bool bot = false,
 }) => InboundGitHubPrComment(
   id: id,
   body: body,
   authorId: authorId,
   authorLogin: login,
-  authorIsBot: bot,
   isReviewComment: true,
 );
 
@@ -654,8 +650,10 @@ void main() {
 
   group('loop guard', () {
     test('a bot-authored comment is dropped before anything happens', () async {
-      await inbound(_issueComment(1, '@$_botLogin review', bot: true));
-      await inbound(_issueComment(2, '@usectrl review', bot: true));
+      await inbound(_issueComment(1, '@$_botLogin review', login: _botLogin));
+      await inbound(
+        _issueComment(2, '@usectrl review', login: 'dependabot[bot]'),
+      );
 
       expect(gateway.touchedGitHub, isFalse);
       expect(messaging.dispatches, isEmpty);

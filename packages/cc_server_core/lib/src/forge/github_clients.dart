@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io' as io;
 
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
@@ -8,16 +6,43 @@ import 'package:cc_domain/core/domain/repositories/workspace_membership_reposito
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart'
-    show ForgeHttpClientFactory, GitHubApiClient, GitHubAppClient;
+    show ForgeCredentialUnavailable, ForgeHttpClientFactory, GitHubApiClient;
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/forge/github_client_types.dart';
+import 'package:cc_server_core/src/forge/github_installations.dart';
+import 'package:cc_server_core/src/forge/github_lane_resolver.dart';
+import 'package:cc_server_core/src/forge/github_minter.dart';
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
+import 'package:cc_server_core/src/forge/github_request_policy.dart';
+import 'package:cc_server_core/src/forge/github_rest.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
+import 'package:meta/meta.dart';
 import 'package:rhttp/rhttp.dart';
 
 export 'package:cc_server_core/src/forge/github_client_types.dart';
+export 'package:cc_server_core/src/forge/github_lane_resolver.dart'
+    show GitHubLaneIdentity, githubLaneFor, workspaceOwnsGitHubApp;
+
+/// The key of one cached scoped grant. The lane **and** the App id are part
+/// of it: a workspace switching lanes, or rotating to another App, never
+/// keeps serving a token the previous identity minted.
+typedef _GrantKey = ({
+  GitHubLane lane,
+  String appId,
+  String workspaceId,
+  String human,
+  String repo,
+  GitHubTokenScope scope,
+  bool viaPerson,
+});
+
+/// The key of one per-owner automation client.
+typedef _OwnerKey = ({String workspaceId, String owner, String actingUserId});
+
+/// The key of one per-person client.
+typedef _PersonKey = ({String userId, String workspaceId});
 
 /// The only way the server obtains an authenticated GitHub client.
 ///
@@ -28,42 +53,68 @@ export 'package:cc_server_core/src/forge/github_client_types.dart';
 ///   accountable human's role, from the workspace's App, the server's own
 ///   App, or Connect. Refusals are final.
 ///
-/// Scoped tokens are cached per `(workspace, human, repo, scope)` until
-/// fifteen minutes before they expire: GitHub caps user tokens at ten per
-/// `(user, app, scope)` and creation at ten an hour, so minting per turn
-/// would evict live tokens.
+/// Scoped tokens are cached per `(lane, App, workspace, human, repo, scope)`
+/// until fifteen minutes before they expire: GitHub caps user tokens at ten
+/// per `(user, app, scope)` and creation at ten an hour, so minting per turn
+/// would evict live tokens. A definite refusal (not installed, suspended, not
+/// configured) is remembered for a minute, so an uninstalled owner does not
+/// cost an App JWT and an installation listing on every request.
+///
+/// The parts: [GitHubLaneResolver] (which lane and App), [GitHubMinter] (one
+/// mint per lane, repository facts, revocation), [GitHubInstallations] (bot
+/// presence and install links) and `github_request_policy.dart` (what an
+/// automation request may carry).
 class GitHubClients {
   /// Creates the service.
   GitHubClients({
     required this.credentials,
-    required this.apps,
-    required this.workspaceApps,
+    required ProviderAppSettings apps,
+    required WorkspaceGitHubAppSettings workspaceApps,
     required this.workspaceLookup,
     required this.members,
     required this.connect,
     required this.isLinkedRepo,
     GitHubRateBudget? rateBudget,
-    io.HttpClient? httpClient,
+    GitHubRest? rest,
     DateTime Function()? now,
   }) : rateBudget = rateBudget ?? GitHubRateBudget(),
-       _http = httpClient ?? (io.HttpClient()..connectionTimeout = _timeout),
-       _now = now ?? (() => DateTime.now().toUtc());
+       _rest = rest ?? GitHubRest(),
+       _now = now ?? (() => DateTime.now().toUtc()) {
+    lanes = GitHubLaneResolver(
+      apps: apps,
+      workspaceApps: workspaceApps,
+      workspaceLookup: workspaceLookup,
+      connect: connect,
+    );
+    _minter = GitHubMinter(
+      credentials: credentials,
+      lanes: lanes,
+      connect: connect,
+      rest: _rest,
+      now: _now,
+    );
+    final seals = GitHubSeals(credentials);
+    _installations = GitHubInstallations(
+      lanes: lanes,
+      connect: connect,
+      seals: seals,
+      rest: _rest,
+      humanToken: (workspaceId) async {
+        final human = await accountableHuman(workspaceId);
+        return human == null
+            ? null
+            : personToken(human, workspaceId: workspaceId);
+      },
+      now: _now,
+    );
+  }
 
-  static const Duration _timeout = Duration(seconds: 12);
   static const Duration _reuseMargin = Duration(minutes: 15);
-  static const Duration _repoCacheTtl = Duration(minutes: 5);
-  static const Duration _presenceTtl = Duration(minutes: 1);
+  static const Duration _refusalTtl = Duration(minutes: 1);
   static const int _maxCachedGrants = 2048;
-  static const int _maxCachedRepos = 4096;
 
   /// Person grants.
   final ForgeCredentials credentials;
-
-  /// The server's own apps.
-  final ProviderAppSettings apps;
-
-  /// Per-workspace GitHub Apps.
-  final WorkspaceGitHubAppSettings workspaceApps;
 
   /// Loads a workspace.
   final Future<Workspace?> Function(String workspaceId) workspaceLookup;
@@ -81,306 +132,53 @@ class GitHubClients {
   /// built here, per `(workspace, person)`. Pollers back off on it.
   final GitHubRateBudget rateBudget;
 
-  final io.HttpClient _http;
+  /// Which lane, and which App, each workspace runs on.
+  late final GitHubLaneResolver lanes;
+
+  late final GitHubMinter _minter;
+  late final GitHubInstallations _installations;
+  final GitHubRest _rest;
   final DateTime Function() _now;
 
-  final Map<String, GitHubScopedGrant> _grants = {};
-  final Map<String, Future<GitHubScopedGrant>> _minting = {};
-  final Map<String, ({_RepoFacts facts, DateTime at})> _repos = {};
-  final Set<String> _pausedLinks = {};
-  final Map<String, GitHubApiClient> _personClients = {};
-  final Map<String, GitHubApiClient> _ownerClients = {};
-  final Map<String, RhttpClient> _ownerHttp = {};
-  final Map<String, RhttpClient> _personHttp = {};
-  final Map<String, ({GitHubBotPresence? presence, DateTime at})> _presence =
+  final Map<_GrantKey, GitHubScopedGrant> _grants = {};
+  final Map<_GrantKey, Future<GitHubScopedGrant>> _minting = {};
+  final Map<_GrantKey, ({GitHubScopeRefused refusal, DateTime at})> _refusals =
       {};
+  final Set<String> _pausedLinks = {};
+  final Map<_PersonKey, GitHubApiClient> _personClients = {};
+  final Map<_PersonKey, RhttpClient> _personHttp = {};
+  final Map<_OwnerKey, GitHubApiClient> _ownerClients = {};
+  final Map<_OwnerKey, RhttpClient> _ownerHttp = {};
 
   // --- Lanes ---------------------------------------------------------------
 
   /// The lane [workspaceId]'s automation runs on right now.
-  Future<GitHubLane> laneFor(String workspaceId) async {
-    final workspace = workspaceId.isEmpty
-        ? null
-        : await workspaceLookup(workspaceId);
-    if (workspace != null && workspace.githubAuthMode == GithubAuthMode.app) {
-      return GitHubLane.workspaceApp;
-    }
-    final status = await apps.status(ProviderApp.github);
-    if (status.effectiveState == OwnAppState.complete) {
-      return GitHubLane.ownApp;
-    }
-    if (status.effectiveState == OwnAppState.partial) {
-      return GitHubLane.none;
-    }
-    final config = await connect.usableConfig();
-    return config?.github == null ? GitHubLane.none : GitHubLane.connect;
-  }
+  Future<GitHubLane> laneFor(String workspaceId) async =>
+      (await lanes.resolve(workspaceId)).lane;
 
-  Future<GitHubAppClient?> _appFor(String workspaceId, GitHubLane lane) async {
-    switch (lane) {
-      case GitHubLane.workspaceApp:
-        final workspace = await workspaceLookup(workspaceId);
-        return workspace == null ? null : workspaceApps.githubApp(workspace);
-      case GitHubLane.ownApp:
-        return apps.githubApp();
-      case GitHubLane.connect || GitHubLane.none:
-        return null;
-    }
-  }
-
-  /// The App's public slug for [workspaceId] (`@<slug>` mentions), or empty.
-  Future<String> appSlugFor(String workspaceId) async {
-    final lane = await laneFor(workspaceId);
-    if (lane == GitHubLane.connect) {
-      return (await connect.usableConfig())?.github?.appSlug ?? '';
-    }
-    final app = await _appFor(workspaceId, lane);
-    return (await app?.botInfo())?.slug ?? '';
-  }
+  // --- Installations -------------------------------------------------------
 
   /// The bot [workspaceId]'s automation converses as, and where its App is
   /// installed, or null when the workspace has no GitHub lane.
-  ///
-  /// An App lane reads its own installations. Connect cannot enumerate the
-  /// shared App's installations for this server, so it lists the ones the
-  /// workspace's accountable human can see (`GET /user/installations`).
-  Future<GitHubBotPresence?> botPresence(String workspaceId) async {
-    final cached = _presence[workspaceId];
-    if (cached != null && _now().difference(cached.at) < _presenceTtl) {
-      return cached.presence;
-    }
-    final presence = await _readPresence(workspaceId);
-    _presence[workspaceId] = (presence: presence, at: _now());
-    return presence;
-  }
-
-  Future<GitHubBotPresence?> _readPresence(String workspaceId) async {
-    final lane = await laneFor(workspaceId);
-    switch (lane) {
-      case GitHubLane.none:
-        return null;
-      case GitHubLane.workspaceApp || GitHubLane.ownApp:
-        final app = await _appFor(workspaceId, lane);
-        final info = await app?.botInfo();
-        if (app == null || info == null || info.botLogin.isEmpty) {
-          return null;
-        }
-        final installs = await app.installations();
-        return GitHubBotPresence(
-          botLogin: info.botLogin,
-          slug: info.slug,
-          owners: [
-            for (final i in installs)
-              if (i.account.isNotEmpty) i.account,
-          ],
-          suspendedOwners: {
-            for (final i in installs)
-              if (i.isSuspended) i.account.toLowerCase(),
-          },
-        );
-      case GitHubLane.connect:
-        final config = (await connect.usableConfig())?.github;
-        if (config == null) {
-          return null;
-        }
-        final human = await accountableHuman(workspaceId);
-        final token = human == null
-            ? null
-            : await personToken(human, workspaceId: workspaceId);
-        if (token == null) {
-          return null;
-        }
-        final installs = await _userInstallations(token, config.appId);
-        return GitHubBotPresence(
-          botLogin: '${config.appSlug}[bot]',
-          slug: config.appSlug,
-          owners: [for (final i in installs) i.account],
-          suspendedOwners: {
-            for (final i in installs)
-              if (i.suspended) i.account.toLowerCase(),
-          },
-        );
-    }
-  }
-
-  Future<List<({String account, bool suspended})>> _userInstallations(
-    String token,
-    int appId,
-  ) async {
-    try {
-      final request = await _http.getUrl(
-        Uri.https('api.github.com', '/user/installations', {'per_page': '100'}),
-      );
-      request.followRedirects = false;
-      request.headers
-        ..set(io.HttpHeaders.authorizationHeader, 'Bearer $token')
-        ..set(io.HttpHeaders.acceptHeader, 'application/vnd.github+json')
-        ..set(io.HttpHeaders.userAgentHeader, 'control-center')
-        ..set('X-GitHub-Api-Version', '2022-11-28');
-      final response = await request.close().timeout(_timeout);
-      final body = await utf8.decodeStream(response.timeout(_timeout));
-      if (response.statusCode != 200) {
-        return const [];
-      }
-      final json = jsonDecode(body);
-      final list = json is Map ? json['installations'] : null;
-      if (list is! List) {
-        return const [];
-      }
-      return [
-        for (final item in list)
-          if (item is Map && item['app_id'] == appId)
-            if (item['account'] case {
-              'login': final String login,
-            } when login.isNotEmpty)
-              (account: login, suspended: item['suspended_at'] != null),
-      ];
-    } on Object catch (e) {
-      CcHostLog.warning('github: listing installations failed ($e)');
-      return const [];
-    }
-  }
-
-  // --- Installation setup --------------------------------------------------
+  Future<GitHubBotPresence?> botPresence(String workspaceId) =>
+      _installations.botPresence(workspaceId);
 
   /// The link that installs [workspaceId]'s GitHub App, opened by [userId].
-  ///
-  /// On Connect the link carries a ticket that binds the new installation to
-  /// this server (Connect verifies the installer before it records the
-  /// binding). An own App needs no binding: it belongs to this server.
-  Future<Uri> installLink(String workspaceId, String userId) async {
-    final lane = await laneFor(workspaceId);
-    switch (lane) {
-      case GitHubLane.none:
-        throw const GitHubScopeRefused(
-          'not_configured',
-          'This workspace has no GitHub App to install.',
-        );
-      case GitHubLane.connect:
-        final seal = await _sealFor(userId, workspaceId);
-        final started = await connect.githubInstallStart(
-          SealRequest(seal: seal.seal, workspaceId: seal.scope),
-        );
-        await _adoptSeal(userId, seal.scope, started.updatedSeal);
-        return started.installUrl;
-      case GitHubLane.workspaceApp || GitHubLane.ownApp:
-        final slug = (await (await _appFor(
-          workspaceId,
-          lane,
-        ))?.botInfo())?.slug;
-        if (slug == null || slug.isEmpty) {
-          throw const GitHubScopeRefused(
-            'provider_unavailable',
-            'GitHub did not answer for this App. Test its settings first.',
-          );
-        }
-        return Uri.https('github.com', '/apps/$slug/installations/new');
-    }
-  }
+  Future<Uri> installLink(String workspaceId, String userId) =>
+      _installations.installLink(workspaceId, userId);
 
   /// The installations [workspaceId]'s App has that [userId] may see.
-  ///
-  /// On Connect that is the installations the person can see on GitHub,
-  /// each saying whether it is bound to this server and whether the person
-  /// can bind it. An own App lists every installation; all are this
-  /// server's. The `github.installations` op narrows either list to the
-  /// accounts owning this workspace's linked repositories.
   Future<List<GitHubInstallationView>> installationsFor(
     String workspaceId,
     String userId,
-  ) async {
-    final lane = await laneFor(workspaceId);
-    switch (lane) {
-      case GitHubLane.none:
-        return const [];
-      case GitHubLane.connect:
-        final seal = await _sealFor(userId, workspaceId);
-        final listed = await connect.githubInstallations(
-          SealRequest(seal: seal.seal, workspaceId: seal.scope),
-        );
-        await _adoptSeal(userId, seal.scope, listed.updatedSeal);
-        return listed.installations;
-      case GitHubLane.workspaceApp || GitHubLane.ownApp:
-        final app = await _appFor(workspaceId, lane);
-        if (app == null) {
-          return const [];
-        }
-        return [
-          for (final i in await app.installations(refresh: true))
-            GitHubInstallationView(
-              installationId: i.id,
-              accountId: i.accountId,
-              accountLogin: i.account,
-              targetType: i.targetType,
-              boundHere: true,
-              suspended: i.isSuspended,
-              callerIsAdmin: false,
-            ),
-        ];
-    }
-  }
+  ) => _installations.installationsFor(workspaceId, userId);
 
-  /// Binds an installation of Connect's shared App that already exists (an
-  /// organization installed it on GitHub directly) to this server. Connect
-  /// checks that [userId] administers the account.
+  /// Binds an existing installation of Connect's shared App to this server.
   Future<void> authorizeServer(
     String workspaceId,
     String userId,
     int installationId,
-  ) async {
-    if (await laneFor(workspaceId) != GitHubLane.connect) {
-      throw const GitHubScopeRefused(
-        'invalid_request',
-        'Only the shared Connect App needs authorizing; this workspace uses '
-            'its own.',
-      );
-    }
-    final seal = await _sealFor(userId, workspaceId);
-    final ack = await connect.githubAuthorizeServer(
-      GitHubAuthorizeServerRequest(
-        seal: seal.seal,
-        workspaceId: seal.scope,
-        installationId: installationId,
-      ),
-    );
-    await _adoptSeal(userId, seal.scope, ack.updatedSeal);
-    _presence.remove(workspaceId);
-  }
-
-  /// Persists a seal Connect rotated on the way. [scope] is the stored
-  /// credential's own scope ([globalWorkspaceScope] for the global row).
-  Future<void> _adoptSeal(String userId, String scope, String updated) async {
-    if (updated.isEmpty) {
-      return;
-    }
-    await credentials.adoptRotatedSeal(
-      ForgeHost.github,
-      userId,
-      updated,
-      workspaceId: scope == globalWorkspaceScope ? null : scope,
-    );
-  }
-
-  Future<({String seal, String scope})> _sealFor(
-    String userId,
-    String workspaceId,
-  ) async {
-    final stored = await credentials.storedCredential(
-      ForgeHost.github,
-      userId,
-      workspaceId: workspaceId,
-    );
-    if (stored == null || !stored.token.isSealed) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'Sign in to GitHub first.',
-      );
-    }
-    return (
-      seal: stored.token.seal,
-      scope: stored.workspaceId ?? globalWorkspaceScope,
-    );
-  }
+  ) => _installations.authorizeServer(workspaceId, userId, installationId);
 
   // --- People --------------------------------------------------------------
 
@@ -402,7 +200,7 @@ class GitHubClients {
   /// who is not signed in sends no credential at all.
   RhttpClient personHttp(String userId, {String? workspaceId}) =>
       _personHttp.putIfAbsent(
-        '$userId\u0000${workspaceId ?? ''}',
+        (userId: userId, workspaceId: workspaceId ?? ''),
         () => ForgeHttpClientFactory(
           tokenLookup: (_) => personToken(userId, workspaceId: workspaceId),
           onResponse: workspaceId == null || workspaceId.isEmpty
@@ -414,10 +212,10 @@ class GitHubClients {
 
   /// A GitHub client acting as [userId].
   GitHubApiClient asPerson(String userId, {String? workspaceId}) =>
-      _personClients.putIfAbsent(
-        '$userId\u0000${workspaceId ?? ''}',
-        () => GitHubApiClient(personHttp(userId, workspaceId: workspaceId)),
-      );
+      _personClients.putIfAbsent((
+        userId: userId,
+        workspaceId: workspaceId ?? '',
+      ), () => GitHubApiClient(personHttp(userId, workspaceId: workspaceId)));
 
   // --- Accountable humans --------------------------------------------------
 
@@ -455,33 +253,36 @@ class GitHubClients {
     String owner,
     String repo,
   ) async {
-    if (await laneFor(workspaceId) == GitHubLane.none) {
-      return;
-    }
+    // Checked before anything else, lane or not: a stored `..` or `%2e`
+    // segment would otherwise be linked now and resolve to another path
+    // the moment a lane is configured.
     if (!isGitHubSegment(owner) || !isGitHubSegment(repo)) {
       throw const GitHubScopeRefused(
-        'invalid_request',
+        GitHubRefusal.invalidRequest,
         'That is not a GitHub repository name.',
       );
     }
+    if (await laneFor(workspaceId) == GitHubLane.none) {
+      return;
+    }
     if (!await isSignedIn(userId, workspaceId: workspaceId)) {
       throw GitHubScopeRefused(
-        'needs_sign_in',
+        GitHubRefusal.needsSignIn,
         'Sign in to GitHub to link $owner/$repo: automation in this workspace '
-            'can reach only repositories the person linking them can see.',
+        'can reach only repositories the person linking them can see.',
       );
     }
-    _repos.remove(_repoKey(workspaceId, userId, owner, repo));
+    _minter.forgetRepo(gitHubRepoKey(workspaceId, userId, owner, repo));
     try {
-      await _repoFacts(workspaceId, userId, owner, repo);
+      await _minter.repoFacts(workspaceId, userId, owner, repo);
     } on GitHubScopeRefused catch (e) {
-      if (e.code != 'access_denied') {
+      if (e.code != GitHubRefusal.accessDenied) {
         rethrow;
       }
       throw GitHubScopeRefused(
-        'access_denied',
+        GitHubRefusal.accessDenied,
         'Your GitHub account cannot see $owner/$repo, so it cannot be linked '
-            'to this workspace.',
+        'to this workspace.',
       );
     }
     _pausedLinks.remove(_linkKey(workspaceId, owner, repo));
@@ -503,18 +304,18 @@ class GitHubClients {
     var paused = 0;
     for (final link in linked) {
       final key = _linkKey(workspaceId, link.owner, link.repo);
-      _repos.remove(_repoKey(workspaceId, human, link.owner, link.repo));
+      _minter.forgetRepo(
+        gitHubRepoKey(workspaceId, human, link.owner, link.repo),
+      );
       try {
-        await _repoFacts(workspaceId, human, link.owner, link.repo);
+        await _minter.repoFacts(workspaceId, human, link.owner, link.repo);
         _pausedLinks.remove(key);
       } on GitHubScopeRefused catch (e) {
-        if (e.code == 'access_denied') {
-          if (_pausedLinks.add(key)) {
-            CcHostLog.warning(
-              'github: automation paused for ${link.owner}/${link.repo} in '
-              'workspace $workspaceId: its accountable person lost access',
-            );
-          }
+        if (e.code == GitHubRefusal.accessDenied && _pausedLinks.add(key)) {
+          CcHostLog.warning(
+            'github: automation paused for ${link.owner}/${link.repo} in '
+            'workspace $workspaceId: its accountable person lost access',
+          );
         }
       }
       if (_pausedLinks.contains(key)) {
@@ -526,15 +327,6 @@ class GitHubClients {
 
   static String _linkKey(String workspaceId, String owner, String repo) =>
       '$workspaceId\u0000${owner.toLowerCase()}/${repo.toLowerCase()}';
-
-  static String _repoKey(
-    String workspaceId,
-    String human,
-    String owner,
-    String repo,
-  ) =>
-      '$workspaceId\u0000$human\u0000${owner.toLowerCase()}/'
-      '${repo.toLowerCase()}';
 
   // --- Scoped tokens -------------------------------------------------------
 
@@ -554,51 +346,53 @@ class GitHubClients {
   }) async {
     if (!isGitHubSegment(owner) || !isGitHubSegment(repo)) {
       throw const GitHubScopeRefused(
-        'invalid_request',
+        GitHubRefusal.invalidRequest,
         'That is not a GitHub repository name.',
       );
     }
     if (!await isLinkedRepo(workspaceId, owner, repo)) {
       throw GitHubScopeRefused(
-        'access_denied',
+        GitHubRefusal.accessDenied,
         '$owner/$repo is not linked to this workspace.',
       );
     }
     if ((actingUserId == null || actingUserId.isEmpty) &&
         _pausedLinks.contains(_linkKey(workspaceId, owner, repo))) {
       throw GitHubScopeRefused(
-        'access_denied',
+        GitHubRefusal.accessDenied,
         'Automation for $owner/$repo is paused: the person accountable for '
-            'this workspace can no longer see it on GitHub.',
+        'this workspace can no longer see it on GitHub.',
       );
     }
     final human = await accountableHuman(
       workspaceId,
       actingUserId: actingUserId,
     );
-    // The lane is part of the key: a workspace switching to its own App (or
-    // the server switching to Connect) must never keep serving a token the
-    // previous identity minted.
-    final lane = await laneFor(workspaceId);
-    final key = [
-      lane.wire,
-      workspaceId,
-      human ?? '',
-      owner.toLowerCase(),
-      repo.toLowerCase(),
-      scope.wire,
-      if (viaPerson) 'person',
-    ].join('\u0000');
+    final identity = await lanes.resolve(workspaceId);
+    final _GrantKey key = (
+      lane: identity.lane,
+      appId: identity.appId,
+      workspaceId: workspaceId,
+      human: human ?? '',
+      repo: '${owner.toLowerCase()}/${repo.toLowerCase()}',
+      scope: scope,
+      viaPerson: viaPerson,
+    );
+    final now = _now();
     final cached = _grants[key];
-    if (cached != null && cached.expiresAt.isAfter(_now().add(_reuseMargin))) {
+    if (cached != null && cached.expiresAt.isAfter(now.add(_reuseMargin))) {
       return cached;
+    }
+    final refused = _refusals[key];
+    if (refused != null && now.difference(refused.at) < _refusalTtl) {
+      throw refused.refusal;
     }
     final inflight = _minting[key];
     if (inflight != null) {
       return inflight;
     }
-    final future = _mint(
-      lane: lane,
+    final future = _minter.mint(
+      lane: identity.lane,
       workspaceId: workspaceId,
       owner: owner,
       repo: repo,
@@ -610,13 +404,31 @@ class GitHubClients {
     try {
       final grant = await future;
       _remember(key, grant);
+      _refusals.remove(key);
       return grant;
+    } on GitHubScopeRefused catch (e) {
+      if (_isDefinite(e.code)) {
+        _refusals
+          ..removeWhere((_, v) => now.difference(v.at) >= _refusalTtl)
+          ..[key] = (refusal: e, at: now);
+      }
+      rethrow;
     } finally {
       unawaited(_minting.remove(key));
     }
   }
 
-  void _remember(String key, GitHubScopedGrant grant) {
+  /// Refusals nothing but a configuration change undoes, so repeating the
+  /// mint within [_refusalTtl] would only repeat the answer.
+  static bool _isDefinite(GitHubRefusal code) => switch (code) {
+    GitHubRefusal.notInstalled ||
+    GitHubRefusal.suspended ||
+    GitHubRefusal.notConfigured ||
+    GitHubRefusal.installationBoundElsewhere => true,
+    _ => false,
+  };
+
+  void _remember(_GrantKey key, GitHubScopedGrant grant) {
     final now = _now();
     _grants
       ..removeWhere((_, g) => !g.expiresAt.isAfter(now))
@@ -627,520 +439,86 @@ class GitHubClients {
     _grants[key] = grant;
   }
 
-  Future<GitHubScopedGrant> _mint({
-    required GitHubLane lane,
-    required String workspaceId,
-    required String owner,
-    required String repo,
-    required GitHubTokenScope scope,
-    required String? human,
-    required bool viaPerson,
-  }) async {
-    switch (lane) {
-      case GitHubLane.none:
-        throw const GitHubScopeRefused(
-          'not_configured',
-          'GitHub is not set up on this server. Turn on Control Center '
-              'Connect or add your own GitHub App in Settings.',
-        );
-      case GitHubLane.connect:
-        return _mintViaConnect(
-          workspaceId: workspaceId,
-          owner: owner,
-          repo: repo,
-          scope: scope,
-          human: human,
-        );
-      case GitHubLane.workspaceApp || GitHubLane.ownApp:
-        if (viaPerson) {
-          return _downscopePerson(
-            workspaceId: workspaceId,
-            lane: lane,
-            owner: owner,
-            repo: repo,
-            scope: scope,
-            human: human,
-          );
-        }
-        return _mintViaApp(
-          workspaceId: workspaceId,
-          lane: lane,
-          owner: owner,
-          repo: repo,
-          scope: scope,
-          human: human,
-        );
-    }
-  }
-
-  Future<GitHubTokenScope> _clampForHuman({
-    required String workspaceId,
-    required String owner,
-    required String repo,
-    required GitHubTokenScope scope,
-    required String? human,
-  }) async {
-    if (human == null) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'Nobody accountable for this workspace is signed in to GitHub.',
-      );
-    }
-    final facts = await _repoFacts(workspaceId, human, owner, repo);
-    final clamped = clampGitHubScope(
-      requested: scope,
-      role: facts.role,
-      repoIsPublic: facts.isPublic,
-    );
-    if (clamped == null) {
-      throw GitHubScopeRefused(
-        'access_denied',
-        facts.isPublic && facts.role == GitHubRepoRole.pull
-            ? 'Reading the public repository $owner/$repo through the GitHub '
-                  'App needs triage access or more; the accountable person '
-                  'only has read access.'
-            : 'The accountable person cannot access $owner/$repo on GitHub.',
-      );
-    }
-    return clamped;
-  }
-
-  Future<GitHubScopedGrant> _mintViaApp({
-    required String workspaceId,
-    required GitHubLane lane,
-    required String owner,
-    required String repo,
-    required GitHubTokenScope scope,
-    required String? human,
-  }) async {
-    final app = await _appFor(workspaceId, lane);
-    if (app == null) {
-      throw const GitHubScopeRefused(
-        'not_configured',
-        'This workspace uses its own GitHub App, but its app id or private '
-            'key is missing.',
-      );
-    }
-    // Reads too: an installation token is never broader than what the
-    // accountable person can see themselves.
-    final granted = await _clampForHuman(
-      workspaceId: workspaceId,
-      owner: owner,
-      repo: repo,
-      scope: scope,
-      human: human,
-    );
-    if (await app.isOwnerSuspended(owner)) {
-      throw GitHubScopeRefused(
-        'suspended',
-        'The GitHub App installation on $owner is suspended.',
-      );
-    }
-    final minted = await app.mintScopedForOwner(
-      owner,
-      repositories: [repo],
-      permissions: granted.permissions,
-    );
-    if (minted == null) {
-      throw GitHubScopeRefused(
-        'not_installed',
-        'The GitHub App is not installed on $owner. Install it from Settings.',
-      );
-    }
-    return GitHubScopedGrant(
-      token: minted.token,
-      scope: granted,
-      expiresAt:
-          minted.expiresAt?.toUtc() ?? _now().add(const Duration(minutes: 55)),
-      lane: lane,
-      workspaceId: workspaceId,
-      owner: owner,
-      repo: repo,
-      accountableUserId: human,
-    );
-  }
-
-  /// `/applications/{client_id}/token/scoped` on an own App: the person's
-  /// user token, narrowed to one repository.
-  Future<GitHubScopedGrant> _downscopePerson({
-    required String workspaceId,
-    required GitHubLane lane,
-    required String owner,
-    required String repo,
-    required GitHubTokenScope scope,
-    required String? human,
-  }) async {
-    if (human == null) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'Sign in to GitHub to use it from this terminal.',
-      );
-    }
-    final parent = await personToken(human, workspaceId: workspaceId);
-    if (parent == null) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'Sign in to GitHub to use it from this terminal.',
-      );
-    }
-    final granted = await _clampForHuman(
-      workspaceId: workspaceId,
-      owner: owner,
-      repo: repo,
-      scope: scope,
-      human: human,
-    );
-    final facts = await _repoFacts(workspaceId, human, owner, repo);
-    final workspace = lane == GitHubLane.workspaceApp
-        ? await workspaceLookup(workspaceId)
-        : null;
-    final creds = workspace != null
-        ? await workspaceApps.oauthCredentials(workspace)
-        : await apps.oauthCredentials(ProviderApp.github);
-    if (creds == null) {
-      throw const GitHubScopeRefused(
-        'not_configured',
-        'The GitHub App has no client secret configured.',
-      );
-    }
-    final request = await _http.postUrl(
-      Uri.https(
-        'api.github.com',
-        '/applications/${Uri.encodeComponent(creds.clientId)}/token/scoped',
-      ),
-    );
-    request.followRedirects = false;
-    request.headers
-      ..set(
-        io.HttpHeaders.authorizationHeader,
-        'Basic ${base64Encode(utf8.encode('${creds.clientId}:${creds.clientSecret}'))}',
-      )
-      ..set(io.HttpHeaders.acceptHeader, 'application/vnd.github+json')
-      ..set(io.HttpHeaders.userAgentHeader, 'control-center')
-      ..set('X-GitHub-Api-Version', '2022-11-28')
-      ..contentType = io.ContentType.json;
-    request.write(
-      jsonEncode({
-        'access_token': parent,
-        'target_id': facts.ownerId,
-        'repository_ids': [facts.id],
-        'permissions': granted.permissions,
-      }),
-    );
-    final response = await request.close().timeout(_timeout);
-    final body = await utf8.decodeStream(response.timeout(_timeout));
-    if (response.statusCode != 200) {
-      throw GitHubScopeRefused(
-        response.statusCode >= 500 ? 'provider_unavailable' : 'access_denied',
-        'GitHub refused to narrow the sign-in to $owner/$repo.',
-      );
-    }
-    final json = jsonDecode(body);
-    final token = json is Map ? json['token'] : null;
-    if (json is! Map || token is! String || !token.startsWith('ghu_')) {
-      throw const GitHubScopeRefused(
-        'provider_unavailable',
-        'GitHub returned no narrowed token.',
-      );
-    }
-    if (!scopedTokenMatches(
-      json,
-      repoId: facts.id,
-      permissions: granted.permissions,
-    )) {
-      throw GitHubScopeRefused(
-        'access_denied',
-        'GitHub did not narrow the sign-in to $owner/$repo alone.',
-      );
-    }
-    final expires = await credentials.personCredential(
-      ForgeHost.github,
-      human,
-      workspaceId: workspaceId,
-    );
-    return GitHubScopedGrant(
-      token: token,
-      scope: granted,
-      expiresAt: expires?.expiresAt ?? _now().add(const Duration(hours: 1)),
-      lane: lane,
-      workspaceId: workspaceId,
-      owner: owner,
-      repo: repo,
-      accountableUserId: human,
-    );
-  }
-
-  Future<GitHubScopedGrant> _mintViaConnect({
-    required String workspaceId,
-    required String owner,
-    required String repo,
-    required GitHubTokenScope scope,
-    required String? human,
-  }) async {
-    if (human == null) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'Nobody accountable for this workspace is signed in to GitHub.',
-      );
-    }
-    final stored = await credentials.storedCredential(
-      ForgeHost.github,
-      human,
-      workspaceId: workspaceId,
-    );
-    if (stored == null || !stored.token.isSealed) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'The accountable person needs to sign in to GitHub again.',
-      );
-    }
-    final facts = await _repoFacts(workspaceId, human, owner, repo);
-    try {
-      final minted = await connect.githubScope(
-        GitHubScopeRequest(
-          seal: stored.token.seal,
-          workspaceId: stored.workspaceId ?? globalWorkspaceScope,
-          repoId: facts.id,
-          repoOwner: owner,
-          repoName: repo,
-          scope: scope.wire,
-        ),
-      );
-      if (minted.updatedSeal.isNotEmpty) {
-        await credentials.adoptRotatedSeal(
-          ForgeHost.github,
-          human,
-          minted.updatedSeal,
-          workspaceId: stored.workspaceId,
-        );
-      }
-      final granted =
-          GitHubTokenScope.fromWire(minted.grantedScope) ??
-          GitHubTokenScope.read;
-      return GitHubScopedGrant(
-        token: minted.accessToken,
-        scope: granted,
-        expiresAt: minted.expiresAt,
-        lane: GitHubLane.connect,
-        workspaceId: workspaceId,
-        owner: owner,
-        repo: repo,
-        accountableUserId: human,
-        connectSeal: minted.updatedSeal.isNotEmpty
-            ? minted.updatedSeal
-            : stored.token.seal,
-        connectSealScope: stored.workspaceId ?? globalWorkspaceScope,
-      );
-    } on ConnectException catch (e) {
-      if (e.code.clearsGrant) {
-        await credentials.clearToken(
-          ForgeHost.github,
-          userId: human,
-          workspaceId: stored.workspaceId,
-        );
-      }
-      throw GitHubScopeRefused(e.code.wire, _connectRefusal(e.code, owner));
-    }
-  }
-
-  static String _connectRefusal(ConnectErrorCode code, String owner) =>
-      switch (code) {
-        ConnectErrorCode.needsSignIn =>
-          'The accountable person needs to sign in to GitHub again.',
-        ConnectErrorCode.accessDenied =>
-          'The accountable person cannot access this repository.',
-        ConnectErrorCode.notInstalled =>
-          'The Control Center GitHub App is not installed on $owner.',
-        ConnectErrorCode.installationBoundElsewhere =>
-          'The GitHub App installation on $owner is bound to another '
-              'server. An admin of $owner can authorize this server in '
-              'Settings.',
-        ConnectErrorCode.suspended =>
-          'The GitHub App installation on $owner is suspended.',
-        ConnectErrorCode.installBlocked =>
-          'Control Center Connect refused this server.',
-        _ => 'GitHub is unreachable through Control Center Connect right now.',
-      };
-
-  /// Repository id, owner id, visibility and the human's role, read with the
-  /// human's own token (cached briefly).
-  Future<_RepoFacts> _repoFacts(
-    String workspaceId,
-    String human,
-    String owner,
-    String repo,
-  ) async {
-    final key = _repoKey(workspaceId, human, owner, repo);
-    final cached = _repos[key];
-    if (cached != null && _now().difference(cached.at) < _repoCacheTtl) {
-      return cached.facts;
-    }
-    final token = await personToken(human, workspaceId: workspaceId);
-    if (token == null) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'The accountable person needs to sign in to GitHub.',
-      );
-    }
-    final request = await _http.getUrl(
-      Uri.https(
-        'api.github.com',
-        '/repos/${Uri.encodeComponent(owner)}/${Uri.encodeComponent(repo)}',
-      ),
-    );
-    request.followRedirects = false;
-    request.headers
-      ..set(io.HttpHeaders.authorizationHeader, 'Bearer $token')
-      ..set(io.HttpHeaders.acceptHeader, 'application/vnd.github+json')
-      ..set(io.HttpHeaders.userAgentHeader, 'control-center')
-      ..set('X-GitHub-Api-Version', '2022-11-28');
-    final io.HttpClientResponse response;
-    final String body;
-    try {
-      response = await request.close().timeout(_timeout);
-      body = await utf8.decodeStream(response.timeout(_timeout));
-    } on Object {
-      throw const GitHubScopeRefused(
-        'provider_unavailable',
-        'GitHub is unreachable right now.',
-      );
-    }
-    if (response.statusCode == 401) {
-      throw const GitHubScopeRefused(
-        'needs_sign_in',
-        'The accountable person needs to sign in to GitHub again.',
-      );
-    }
-    if (response.statusCode == 404 || response.statusCode == 403) {
-      throw GitHubScopeRefused(
-        'access_denied',
-        'The accountable person cannot access $owner/$repo on GitHub.',
-      );
-    }
-    if (response.statusCode != 200) {
-      throw const GitHubScopeRefused(
-        'provider_unavailable',
-        'GitHub is unreachable right now.',
-      );
-    }
-    final json = jsonDecode(body);
-    if (json is! Map) {
-      throw const GitHubScopeRefused(
-        'provider_unavailable',
-        'GitHub returned an unreadable repository.',
-      );
-    }
-    final id = json['id'];
-    final ownerJson = json['owner'];
-    final ownerId = ownerJson is Map ? ownerJson['id'] : null;
-    if (id is! int || ownerId is! int) {
-      throw const GitHubScopeRefused(
-        'provider_unavailable',
-        'GitHub returned an unreadable repository.',
-      );
-    }
-    final facts = _RepoFacts(
-      id: id,
-      ownerId: ownerId,
-      isPublic: json['private'] != true && json['visibility'] != 'internal',
-      role: GitHubRepoRole.fromPermissions(json['permissions']),
-    );
-    final now = _now();
-    _repos.removeWhere((_, v) => now.difference(v.at) >= _repoCacheTtl);
-    while (_repos.length >= _maxCachedRepos) {
-      _repos.remove(_repos.keys.first);
-    }
-    _repos[key] = (facts: facts, at: now);
-    return facts;
-  }
+  // --- Forgetting ----------------------------------------------------------
 
   /// Drops every cached grant for [userId] (sign-out, removal) and revokes
-  /// the Connect ones upstream.
+  /// them upstream.
   Future<void> forgetPerson(String userId) async {
-    final mine = _grants.entries
-        .where((e) => e.value.accountableUserId == userId)
-        .toList();
-    for (final entry in mine) {
-      _grants.remove(entry.key);
-    }
-    _repos.removeWhere((key, _) => key.split('\u0000')[1] == userId);
-    _personClients.removeWhere((key, _) => key.startsWith('$userId\u0000'));
-    _personHttp.removeWhere((key, _) => key.startsWith('$userId\u0000'));
-    for (final entry in mine) {
-      await _revokeUpstream(entry.value);
-    }
+    final mine = _takeGrants((key, _) => key.human == userId);
+    _refusals.removeWhere((key, _) => key.human == userId);
+    _minter.forgetReposWhere((key) => key.human == userId);
+    _personClients.removeWhere((key, _) => key.userId == userId);
+    _personHttp.removeWhere((key, _) => key.userId == userId);
+    // The person may have been the accountable human whose installations a
+    // Connect workspace's bot presence was read through.
+    _installations.forgetPresence();
+    await _revokeAll(mine);
   }
 
-  /// Drops [userId]'s cached grants in [workspaceId] (removed from it) and
-  /// revokes the Connect ones upstream.
+  /// Drops [userId]'s cached grants in [workspaceId] (removed from it, or
+  /// their role changed) and revokes them upstream.
   Future<void> forgetMember(String workspaceId, String userId) async {
-    final mine = _grants.entries
-        .where(
-          (e) =>
-              e.value.workspaceId == workspaceId &&
-              e.value.accountableUserId == userId,
-        )
-        .toList();
-    for (final entry in mine) {
-      _grants.remove(entry.key);
-    }
-    _repos.removeWhere((key, _) {
-      final parts = key.split('\u0000');
-      return parts[0] == workspaceId && parts[1] == userId;
-    });
-    _presence.remove(workspaceId);
-    for (final entry in mine) {
-      await _revokeUpstream(entry.value);
-    }
+    final mine = _takeGrants(
+      (key, _) => key.workspaceId == workspaceId && key.human == userId,
+    );
+    _refusals.removeWhere(
+      (key, _) => key.workspaceId == workspaceId && key.human == userId,
+    );
+    _minter.forgetReposWhere(
+      (key) => key.workspaceId == workspaceId && key.human == userId,
+    );
+    _installations.forgetPresence(workspaceId);
+    await _revokeAll(mine);
   }
 
-  /// Drops every cached grant, repository fact and bot presence: the
-  /// server's own App or its Connect changed, so whatever was minted belongs
-  /// to an identity this server no longer uses.
-  void forgetAll() {
-    _grants.clear();
-    _repos.clear();
-    _presence.clear();
+  /// Drops every cached grant, repository fact and bot presence and revokes
+  /// the grants upstream: the server's own App or its Connect changed, so
+  /// whatever was minted belongs to an identity this server no longer uses.
+  Future<void> forgetAll() async {
+    final all = _takeGrants((_, _) => true);
+    _refusals.clear();
+    _minter.forgetReposWhere((_) => true);
+    _installations.forgetPresence();
+    await _revokeAll(all);
   }
 
-  /// Drops every cached grant for [workspaceId] (mode change, deletion).
-  void forgetWorkspace(String workspaceId) {
-    _grants.removeWhere((_, grant) => grant.workspaceId == workspaceId);
+  /// Drops and revokes every cached grant for [workspaceId], its paused
+  /// links, presence and clients (its own App saved or rotated, its mode
+  /// changed, the workspace deleted).
+  Future<void> forgetWorkspace(String workspaceId) async {
+    final theirs = _takeGrants((key, _) => key.workspaceId == workspaceId);
+    _refusals.removeWhere((key, _) => key.workspaceId == workspaceId);
+    _minter.forgetReposWhere((key) => key.workspaceId == workspaceId);
     _pausedLinks.removeWhere((key) => key.startsWith('$workspaceId\u0000'));
-    _presence.remove(workspaceId);
-    _ownerClients.removeWhere((key, _) => key.startsWith('$workspaceId\u0000'));
-    _ownerHttp.removeWhere((key, _) => key.startsWith('$workspaceId\u0000'));
+    _installations.forgetPresence(workspaceId);
+    _ownerClients.removeWhere((key, _) => key.workspaceId == workspaceId);
+    _ownerHttp.removeWhere((key, _) => key.workspaceId == workspaceId);
+    rateBudget.forgetWorkspace(workspaceId);
+    await _revokeAll(theirs);
   }
 
-  Future<void> _revokeUpstream(GitHubScopedGrant grant) async {
-    try {
-      switch (grant.lane) {
-        case GitHubLane.connect:
-          if (grant.connectSeal.isEmpty) {
-            return;
-          }
-          await connect.githubRevoke(
-            GitHubRevokeRequest(
-              workspaceId: grant.connectSealScope,
-              seal: grant.connectSeal,
-              scopedToken: grant.token,
-            ),
-          );
-        case GitHubLane.workspaceApp || GitHubLane.ownApp:
-          if (grant.token.startsWith('ghs_')) {
-            await (await _appFor(
-              grant.workspaceId,
-              grant.lane,
-            ))?.revokeToken(grant.token);
-          }
-        case GitHubLane.none:
-          break;
+  List<GitHubScopedGrant> _takeGrants(
+    bool Function(_GrantKey key, GitHubScopedGrant grant) match,
+  ) {
+    final taken = <GitHubScopedGrant>[];
+    _grants.removeWhere((key, grant) {
+      if (match(key, grant)) {
+        taken.add(grant);
+        return true;
       }
-    } on Object catch (e) {
-      // Best effort: the token expires on its own.
-      CcHostLog.warning('github: scoped token revoke failed ($e)');
+      return false;
+    });
+    return taken;
+  }
+
+  Future<void> _revokeAll(List<GitHubScopedGrant> grants) async {
+    for (final grant in grants) {
+      await _minter.revoke(grant);
     }
   }
+
+  /// Releases the HTTP transport. The service must not be used afterwards.
+  void close() => _rest.close();
 
   // --- Background clients --------------------------------------------------
 
@@ -1152,8 +530,10 @@ class GitHubClients {
   /// accountable human; a write no one-repository scope covers is refused.
   /// GraphQL and requests that are not about one repository ride the
   /// accountable human's own token, so without an [actingUserId] they may
-  /// only read ([refuseUnscopedWrite]). A refused mint sends no credential,
-  /// so the call fails like any unauthenticated one and the caller degrades.
+  /// only read ([refuseUnscopedWrite]). A request with no credential is never
+  /// sent anonymously: it fails locally with the status GitHub would have
+  /// answered ([tokenForRequest]), so the caller degrades the same way and the
+  /// shared per-IP anonymous budget is never touched.
   ///
   /// Automation never approves a pull request: an `APPROVE` review event is
   /// refused before it is sent ([refuseAutomatedApproval]). Approving is a
@@ -1163,10 +543,14 @@ class GitHubClients {
     String owner, {
     String? actingUserId,
   }) => _ownerHttp.putIfAbsent(
-    '$workspaceId\u0000${owner.toLowerCase()}\u0000${actingUserId ?? ''}',
+    (
+      workspaceId: workspaceId,
+      owner: owner.toLowerCase(),
+      actingUserId: actingUserId ?? '',
+    ),
     () => ForgeHttpClientFactory(
       tokenLookup: (_) async => null,
-      requestTokenLookup: (_, method, url) => _tokenForRequest(
+      requestTokenLookup: (_, method, url) => tokenForRequest(
         workspaceId,
         owner,
         method: method,
@@ -1192,7 +576,11 @@ class GitHubClients {
     String owner, {
     String? actingUserId,
   }) => _ownerClients.putIfAbsent(
-    '$workspaceId\u0000${owner.toLowerCase()}\u0000${actingUserId ?? ''}',
+    (
+      workspaceId: workspaceId,
+      owner: owner.toLowerCase(),
+      actingUserId: actingUserId ?? '',
+    ),
     () => GitHubApiClient(
       httpForOwner(workspaceId, owner, actingUserId: actingUserId),
     ),
@@ -1217,7 +605,7 @@ class GitHubClients {
         return human != null &&
             await isSignedIn(human, workspaceId: workspaceId);
       case GitHubLane.workspaceApp || GitHubLane.ownApp:
-        final app = await _appFor(workspaceId, lane);
+        final app = await lanes.appFor(workspaceId, lane);
         if (app == null) {
           return false;
         }
@@ -1228,7 +616,17 @@ class GitHubClients {
     }
   }
 
-  Future<String?> _tokenForRequest(
+  /// The credential for one automation request under [owner], or a
+  /// [ForgeCredentialUnavailable] carrying the status GitHub would answer.
+  ///
+  /// Never null: an anonymous request draws on the 60-an-hour per-IP budget
+  /// every unauthenticated call on this machine shares, and once that is spent
+  /// GitHub rate-limits everything else here too. A suspended installation
+  /// fails with GitHub's own suspended shape so callers park the repo at once;
+  /// an unreachable provider is transient (503); a missing sign-in is 401; any
+  /// other refusal is the 404 GitHub gives a credential that cannot see a repo.
+  @visibleForTesting
+  Future<String> tokenForRequest(
     String workspaceId,
     String owner, {
     required String method,
@@ -1241,15 +639,25 @@ class GitHubClients {
         workspaceId,
         actingUserId: actingUserId,
       );
-      return human == null
+      final token = human == null
           ? null
-          : personToken(human, workspaceId: workspaceId);
+          : await personToken(human, workspaceId: workspaceId);
+      if (token == null || token.isEmpty) {
+        throw const ForgeCredentialUnavailable(
+          401,
+          'No accountable person is signed in to GitHub for this workspace.',
+        );
+      }
+      return token;
     }
     final scope = target.scope;
     if (scope == null || target.owner.toLowerCase() != owner.toLowerCase()) {
       // A client built for one owner never mints for another, and a write
       // no one-repository scope covers gets no credential.
-      return null;
+      throw const ForgeCredentialUnavailable(
+        404,
+        'No single-repository GitHub token covers this request.',
+      );
     }
     try {
       return (await mintScoped(
@@ -1262,187 +670,43 @@ class GitHubClients {
     } on GitHubScopeRefused catch (e) {
       CcHostLog.warning(
         'github: no token for ${target.owner}/${target.repo} '
-        '(${scope.wire}) in workspace $workspaceId: ${e.code}',
+        '(${scope.wire}) in workspace $workspaceId: ${e.code.wire}',
       );
-      return null;
+      throw switch (e.code) {
+        // `isGitHubInstallationSuspendedResponse` keys on this phrasing.
+        GitHubRefusal.suspended => const ForgeCredentialUnavailable(
+          403,
+          'This installation has been suspended.',
+        ),
+        GitHubRefusal.providerUnavailable ||
+        GitHubRefusal.rateLimited => ForgeCredentialUnavailable(503, e.message),
+        GitHubRefusal.needsSignIn || GitHubRefusal.notConfigured =>
+          ForgeCredentialUnavailable(401, e.message),
+        _ => ForgeCredentialUnavailable(404, e.message),
+      };
     }
   }
 
-  /// Why a request must not be sent on an automation client, or null.
-  ///
-  /// A `/repos/{o}/{r}/…` write that no one-repository scope covers is
-  /// refused. Anything else rides a person's whole sign-in, so unless that
-  /// person is the one acting ([personActing]) only reads pass: `GET`/`HEAD`
-  /// and GraphQL queries. GraphQL mutations and other writes are refused.
+  // --- Request policy ------------------------------------------------------
+
+  /// See [refuseUnscopedGitHubWrite].
   static String? refuseUnscopedWrite(
     String method,
     String url,
     Object? body, {
     required bool personActing,
-  }) {
-    final target = scopeForRequest(method, url);
-    if (target != null) {
-      return target.scope == null
-          ? 'No single-repository GitHub token covers $method $url.'
-          : null;
-    }
-    if (personActing) {
-      return null;
-    }
-    final verb = method.toUpperCase();
-    if (verb == 'GET' || verb == 'HEAD') {
-      return null;
-    }
-    final segments = (Uri.tryParse(url)?.pathSegments ?? const <String>[])
-        .where((s) => s.isNotEmpty)
-        .toList();
-    final isGraphQl =
-        verb == 'POST' && segments.length == 1 && segments.single == 'graphql';
-    if (isGraphQl && !_isGraphQlWrite(body)) {
-      return null;
-    }
-    return 'Automation writes to GitHub only through a one-repository token; '
-        'a person must do this from their own account.';
-  }
+  }) =>
+      refuseUnscopedGitHubWrite(method, url, body, personActing: personActing);
 
-  /// Whether a GraphQL request body may change anything. Unreadable bodies
-  /// count as writes.
-  static bool _isGraphQlWrite(Object? body) {
-    final query = body is Map ? body['query'] : null;
-    if (query is! String) {
-      return true;
-    }
-    final code = query
-        .replaceAll(RegExp(r'"""[\s\S]*?"""'), '""')
-        .replaceAll(RegExp(r'"(?:[^"\\]|\\.)*"'), '""')
-        .replaceAll(RegExp('#[^\n]*'), '');
-    return RegExp(r'\b(mutation|subscription)\b').hasMatch(code);
-  }
-
-  /// Why an automation request must not be sent, or null: a pull request
-  /// review (`POST /repos/{o}/{r}/pulls/{n}/reviews`, or submitting a pending
-  /// one at `.../reviews/{id}/events`) or a GraphQL review mutation whose
-  /// event is `APPROVE`. Comments and change requests pass.
+  /// See [refuseAutomatedGitHubApproval].
   static String? refuseAutomatedApproval(
     String method,
     String url,
     Object? body,
-  ) {
-    if (method.toUpperCase() != 'POST') {
-      return null;
-    }
-    final segments = (Uri.tryParse(url)?.pathSegments ?? const <String>[])
-        .where((s) => s.isNotEmpty)
-        .toList();
-    const refusal =
-        'Automation never approves a pull request; a person approves from '
-        'their own account.';
-    if (segments.length == 1 && segments.single == 'graphql') {
-      final query = body is Map ? body['query'] : null;
-      final variables = body is Map ? body['variables'] : null;
-      final isReviewMutation =
-          query is String && query.toLowerCase().contains('pullrequestreview');
-      final approves =
-          (query is String &&
-              RegExp(r'\bAPPROVE\b', caseSensitive: false).hasMatch(query)) ||
-          _anyApprove(variables);
-      return isReviewMutation && approves ? refusal : null;
-    }
-    final isReview =
-        segments.length >= 6 &&
-        segments[0] == 'repos' &&
-        segments[3] == 'pulls' &&
-        segments[5] == 'reviews' &&
-        (segments.length == 6 ||
-            (segments.length == 8 && segments[7] == 'events'));
-    final event = body is Map ? body['event'] : null;
-    return isReview && event is String && event.toUpperCase() == 'APPROVE'
-        ? refusal
-        : null;
-  }
+  ) => refuseAutomatedGitHubApproval(method, url, body);
 
-  static bool _anyApprove(Object? value) => switch (value) {
-    final String s => s.toUpperCase() == 'APPROVE',
-    final Map<Object?, Object?> m => m.values.any(_anyApprove),
-    final List<Object?> l => l.any(_anyApprove),
-    _ => false,
-  };
-
-  /// The repository and scope a REST request needs, or null when it is not
-  /// about one repository (GraphQL, search, orgs, users).
-  ///
-  /// A write is mapped only where a scope carries the permission it needs:
-  /// issues and PR conversation `bot`, code and pull requests `write`. Any
-  /// other `/repos/{o}/{r}` write (statuses, checks, actions, settings…), or
-  /// a malformed repository path, answers a null scope: no token.
+  /// See [githubScopeForRequest].
   static ({String owner, String repo, GitHubTokenScope? scope})?
-  scopeForRequest(String method, String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return null;
-    }
-    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-    if (segments.isEmpty || segments.first != 'repos') {
-      return null;
-    }
-    if (segments.length < 3 ||
-        !isGitHubSegment(segments[1]) ||
-        !isGitHubSegment(segments[2])) {
-      return (
-        owner: segments.length > 1 ? segments[1] : '',
-        repo: segments.length > 2 ? segments[2] : '',
-        scope: null,
-      );
-    }
-    final owner = segments[1];
-    final repo = segments[2];
-    final verb = method.toUpperCase();
-    if (verb == 'GET' || verb == 'HEAD') {
-      return (owner: owner, repo: repo, scope: GitHubTokenScope.read);
-    }
-    return (owner: owner, repo: repo, scope: _writeScope(segments.sublist(3)));
-  }
-
-  static GitHubTokenScope? _writeScope(List<String> rest) {
-    if (rest.isEmpty) {
-      return null;
-    }
-    switch (rest.first) {
-      case 'issues':
-        return GitHubTokenScope.bot;
-      case 'pulls':
-        const conversation = {
-          'comments',
-          'reviews',
-          'reactions',
-          'labels',
-          'assignees',
-          'requested_reviewers',
-        };
-        if (rest.contains('merge') || rest.contains('update-branch')) {
-          return GitHubTokenScope.write;
-        }
-        return rest.length == 1 || rest.any(conversation.contains)
-            ? GitHubTokenScope.bot
-            : GitHubTokenScope.write;
-      case 'contents' || 'git' || 'merges' || 'stacks':
-        return GitHubTokenScope.write;
-      default:
-        return null;
-    }
-  }
-}
-
-final class _RepoFacts {
-  const _RepoFacts({
-    required this.id,
-    required this.ownerId,
-    required this.isPublic,
-    required this.role,
-  });
-
-  final int id;
-  final int ownerId;
-  final bool isPublic;
-  final GitHubRepoRole role;
+  scopeForRequest(String method, String url) =>
+      githubScopeForRequest(method, url);
 }

@@ -4,6 +4,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
+    show ForgeCapability;
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
@@ -64,7 +66,12 @@ PrReviewSubmission _review({
 }
 
 /// The PR identity [MergeFlyoutButton] is keyed by in this suite.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 42,
+  forge: null,
+);
 
 Widget _wrap(MergeFlyoutButton child) => testWrap(child);
 
@@ -95,7 +102,7 @@ class _FakeStudio implements RemoteReviewStudioRepository {
 /// Answers every merge the way GitHub answers a conflicting branch.
 class _RefusingRepo implements PrReviewRepository {
   @override
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
@@ -750,6 +757,11 @@ void main() {
           reviews: const [],
         ),
         overrides: [
+          // GitHub resolves conflicts; the test repo row is not seeded.
+          prSupportsProvider((
+            _prRef,
+            ForgeCapability.mergeConflictResolution,
+          )).overrideWithValue(true),
           prMergeConflictsProvider(_prRef).overrideWith(
             (ref) async => const PrMergeConflictList(
               files: ['lib/a.dart', 'lib/b.dart'],
@@ -798,6 +810,11 @@ void main() {
           reviews: const [],
         ),
         overrides: [
+          // GitHub resolves conflicts; the test repo row is not seeded.
+          prSupportsProvider((
+            _prRef,
+            ForgeCapability.mergeConflictResolution,
+          )).overrideWithValue(true),
           prMergeConflictsProvider(_prRef).overrideWith(
             (ref) async =>
                 const PrMergeConflictList(files: ['a.dart'], baseRef: 'main'),
@@ -839,6 +856,11 @@ void main() {
           reviews: const [],
         ),
         overrides: [
+          // GitHub resolves conflicts; the test repo row is not seeded.
+          prSupportsProvider((
+            _prRef,
+            ForgeCapability.mergeConflictResolution,
+          )).overrideWithValue(true),
           prRepositoryProvider(_prRef).overrideWith((ref) => _RefusingRepo()),
           prMergeConflictsProvider(_prRef).overrideWith(
             (ref) async =>

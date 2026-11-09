@@ -131,8 +131,8 @@ void main() {
       expect(eval.shouldFire, isTrue);
     });
 
-    test('does not fire before the interval elapses', () {
-      final now = DateTime.utc(2026, 6, 30, 12);
+    test('does not fire again within the same slot', () {
+      final now = DateTime.utc(2026, 6, 30, 12, 30);
       final eval = scheduler.evaluate(
         _trigger(
           cron: 'every:3600',
@@ -213,6 +213,62 @@ void main() {
         now,
       );
       expect(eval.shouldFire, isTrue);
+    });
+
+    test('two ticks in one slot plan the same epoch-aligned slot', () {
+      // The slot start is the `cron_executions` idempotency key, so ticks at
+      // different moments of the same slot must agree on it (audit: stable
+      // ledger slots for every:).
+      final a = scheduler.evaluate(
+        _trigger(cron: 'every:3600'),
+        DateTime.utc(2026, 6, 30, 12, 0, 5),
+      );
+      final b = scheduler.evaluate(
+        _trigger(cron: 'every:3600'),
+        DateTime.utc(2026, 6, 30, 12, 59, 59),
+      );
+      expect(a.shouldFire, isTrue);
+      expect(b.shouldFire, isTrue);
+      expect(a.plannedAt, DateTime.utc(2026, 6, 30, 12));
+      expect(b.plannedAt, a.plannedAt);
+      expect(a.nextRunAt, DateTime.utc(2026, 6, 30, 13));
+    });
+
+    test('a failed setSchedule re-fire claims the same slot', () {
+      // The run started but lastFiredAt was never written: the next tick
+      // re-evaluates as never-fired and must name the same slot so the ledger
+      // dedupes it.
+      final first = scheduler.evaluate(
+        _trigger(cron: 'every:600'),
+        DateTime.utc(2026, 6, 30, 12, 1),
+      );
+      final retry = scheduler.evaluate(
+        _trigger(cron: 'every:600'),
+        DateTime.utc(2026, 6, 30, 12, 2),
+      );
+      expect(retry.plannedAt, first.plannedAt);
+    });
+
+    test('fires once per slot after crossing a boundary', () {
+      final eval = scheduler.evaluate(
+        _trigger(
+          cron: 'every:3600',
+          lastFiredAt: DateTime.utc(2026, 6, 30, 11, 59, 50),
+        ),
+        DateTime.utc(2026, 6, 30, 12, 0, 10),
+      );
+      expect(eval.shouldFire, isTrue);
+      expect(eval.plannedAt, DateTime.utc(2026, 6, 30, 12));
+    });
+
+    test('a non-positive interval never fires', () {
+      for (final cron in ['every:0', 'every:-5']) {
+        final eval = scheduler.evaluate(
+          _trigger(cron: cron),
+          DateTime.utc(2026, 6, 30, 12),
+        );
+        expect(eval.shouldFire, isFalse, reason: cron);
+      }
     });
   });
 

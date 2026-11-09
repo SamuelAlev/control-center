@@ -729,6 +729,23 @@ class DaoMessagingRepository implements MessagingRepository {
     return queued;
   }
 
+  /// See [MessagingDao.patchSteering]: a conditional merge onto the card's
+  /// current metadata, applied only while it is in [fromState].
+  Future<bool> patchSteering(
+    String workspaceId,
+    String messageId, {
+    required String fromState,
+    required Map<String, dynamic> patch,
+    String? content,
+    String? messageType,
+  }) => _dao(workspaceId).patchSteering(
+    messageId,
+    fromState: fromState,
+    patch: patch,
+    content: content,
+    messageType: messageType,
+  );
+
   /// Text of the oldest live human message, for conversation titling.
   ///
   /// Null [conversationId] resolves the space's standing conversation, same

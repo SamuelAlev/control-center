@@ -65,7 +65,12 @@ class _RecordingRepo extends EmptyPrReviewRepository {
 }
 
 void main() {
-  const prRef = (workspaceId: 'ws', repoFullName: 'acme/cc', number: 42);
+  const prRef = (
+    workspaceId: 'ws',
+    repoFullName: 'acme/cc',
+    number: 42,
+    forge: null,
+  );
 
   late _RecordingRepo repo;
   late ProviderContainer container;

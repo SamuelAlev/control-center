@@ -145,7 +145,7 @@ class PlanDriftService {
             'scope:\n${reasons.map((r) => '- $r').join('\n')}'
             '${hold ? '\nExecution paused at this node (stop-and-ask policy) — resume or cancel from Plan Studio.' : ''}',
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         messageType: 'system',
       );
     }

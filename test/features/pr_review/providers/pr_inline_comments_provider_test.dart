@@ -1,7 +1,10 @@
 import 'package:cc_domain/core/domain/entities/github_user.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show viewerLoginsProvider;
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -10,9 +13,24 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// PR identities the suite keys its provider families by: same number in two
 /// different repos, plus a plain second key for isolation checks.
-const _prRefA = (workspaceId: 'ws1', repoFullName: 'acme/one', number: 1);
-const _prRefB = (workspaceId: 'ws1', repoFullName: 'acme/two', number: 2);
-const _prRef42 = (workspaceId: 'ws1', repoFullName: 'acme/one', number: 42);
+const _prRefA = (
+  workspaceId: 'ws1',
+  repoFullName: 'acme/one',
+  number: 1,
+  forge: null,
+);
+const _prRefB = (
+  workspaceId: 'ws1',
+  repoFullName: 'acme/two',
+  number: 2,
+  forge: null,
+);
+const _prRef42 = (
+  workspaceId: 'ws1',
+  repoFullName: 'acme/one',
+  number: 42,
+  forge: null,
+);
 
 void main() {
   group('PrInlineCommentsController', () {
@@ -123,6 +141,11 @@ void main() {
               avatarUrl: 'https://example.com/octocat.png',
             ),
           ),
+          // The author is the login on the PR's forge; the avatar comes from
+          // the GitHub identity only when that login matches it.
+          viewerLoginsProvider.overrideWithValue(const {
+            ForgeHost.github: 'octocat',
+          }),
         ],
       );
       addTearDown(identified.dispose);

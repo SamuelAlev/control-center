@@ -34,8 +34,23 @@ void main() {
         expect(payload['pr_number'], 42);
         expect(payload['pr_title'], 'Fix bug');
         expect(payload['author'], 'octocat');
+        // No workspace: the dispatcher drops it (fails closed).
+        expect(payload.containsKey('workspace_id'), isFalse);
       },
     );
+
+    test('toPayload carries ExternalPrDetected.workspaceId', () {
+      final event = ExternalPrDetected(
+        repoOwner: 'acme',
+        repoName: 'app',
+        prNumber: 42,
+        prTitle: 'Fix bug',
+        author: 'octocat',
+        workspaceId: 'ws-1',
+        occurredAt: now,
+      );
+      expect(EventPayloadMapper.toPayload(event)!['workspace_id'], 'ws-1');
+    });
 
     test(
       'toPayload maps PullRequestPublished',
@@ -130,6 +145,7 @@ void main() {
         expect(payload['sender_name'], 'Alice');
         expect(payload['content_preview'], 'hello');
         expect(payload['is_agent_message'], isFalse);
+        expect(payload['workspace_id'], 'ws-1');
       },
     );
 
@@ -137,14 +153,20 @@ void main() {
       'toPayload maps TicketCompleted',
       timeout: const Timeout.factor(2),
       () {
-        final event = TicketCompleted(ticketId: 't-1', occurredAt: now);
+        final event = TicketCompleted(
+          workspaceId: 'ws-1',
+          ticketId: 't-1',
+          occurredAt: now,
+        );
         final payload = EventPayloadMapper.toPayload(event)!;
         expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
       },
     );
 
     test('toPayload maps TicketFailed', timeout: const Timeout.factor(2), () {
       final event = TicketFailed(
+        workspaceId: 'ws-1',
         ticketId: 't-1',
         errorMessage: 'boom',
         occurredAt: now,
@@ -158,9 +180,14 @@ void main() {
       'toPayload maps TicketCancelled',
       timeout: const Timeout.factor(2),
       () {
-        final event = TicketCancelled(ticketId: 't-1', occurredAt: now);
+        final event = TicketCancelled(
+          workspaceId: 'ws-1',
+          ticketId: 't-1',
+          occurredAt: now,
+        );
         final payload = EventPayloadMapper.toPayload(event)!;
         expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
       },
     );
 
@@ -169,6 +196,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final event = BudgetThresholdCrossed(
+          workspaceId: 'ws-1',
           scopeType: 'workspace',
           scopeId: 'ws-1',
           spentCents: 1000,
@@ -182,6 +210,7 @@ void main() {
         expect(payload['spent_cents'], 1000);
         expect(payload['budget_cents'], 5000);
         expect(payload['is_hard_stop'], isFalse);
+        expect(payload['workspace_id'], 'ws-1');
       },
     );
 
@@ -214,6 +243,7 @@ void main() {
         );
         final payload = EventPayloadMapper.toPayload(event)!;
         expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
         expect(payload.containsKey('ticket_body'), isFalse);
         expect(payload.containsKey('ticket_url'), isFalse);
       },
@@ -273,21 +303,18 @@ void main() {
       },
     );
 
-    test(
-      'toPayload maps TicketCreated',
-      timeout: const Timeout.factor(2),
-      () {
-        final event = TicketCreated(
-          ticketId: 't-1',
-          workspaceId: 'ws-1',
-          occurredAt: now,
-        );
-        final payload = EventPayloadMapper.toPayload(event)!;
-        expect(payload['ticket_id'], 't-1');
-        expect(payload['workspace_id'], 'ws-1');
-        expect(EventPayloadMapper.dedupKeyFor(event), 't-1');
-      },
-    );
+    test('toPayload maps TicketCreated', timeout: const Timeout.factor(2), () {
+      final event = TicketCreated(
+        ticketId: 't-1',
+        workspaceId: 'ws-1',
+        occurredAt: now,
+      );
+      final payload = EventPayloadMapper.toPayload(event)!;
+      expect(payload['ticket_id'], 't-1');
+      expect(payload['workspace_id'], 'ws-1');
+      expect(payload['workspace_id'], 'ws-1');
+      expect(EventPayloadMapper.dedupKeyFor(event), 't-1');
+    });
 
     test(
       'toPayload maps TicketStatusChanged',
@@ -302,6 +329,7 @@ void main() {
         );
         final payload = EventPayloadMapper.toPayload(event)!;
         expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
         expect(payload['workspace_id'], 'ws-1');
         expect(payload['from'], 'open');
         expect(payload['to'], 'in_progress');
@@ -484,12 +512,17 @@ void main() {
     });
 
     test('TicketCompleted dedup key', timeout: const Timeout.factor(2), () {
-      final event = TicketCompleted(ticketId: 't-1', occurredAt: now);
+      final event = TicketCompleted(
+        workspaceId: 'ws-1',
+        ticketId: 't-1',
+        occurredAt: now,
+      );
       expect(EventPayloadMapper.dedupKeyFor(event), 't-1');
     });
 
     test('TicketFailed dedup key', timeout: const Timeout.factor(2), () {
       final event = TicketFailed(
+        workspaceId: 'ws-1',
         ticketId: 't-1',
         errorMessage: 'err',
         occurredAt: now,
@@ -498,7 +531,11 @@ void main() {
     });
 
     test('TicketCancelled dedup key', timeout: const Timeout.factor(2), () {
-      final event = TicketCancelled(ticketId: 't-1', occurredAt: now);
+      final event = TicketCancelled(
+        workspaceId: 'ws-1',
+        ticketId: 't-1',
+        occurredAt: now,
+      );
       expect(EventPayloadMapper.dedupKeyFor(event), 't-1');
     });
 
@@ -507,6 +544,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final event = BudgetThresholdCrossed(
+          workspaceId: 'ws-1',
           scopeType: 'workspace',
           scopeId: 'ws-1',
           spentCents: 100,

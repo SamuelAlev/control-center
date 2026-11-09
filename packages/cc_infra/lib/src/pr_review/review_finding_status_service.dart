@@ -103,7 +103,7 @@ class ReviewFindingStatusService implements ReviewFindingStatusPort {
         conversationId: target.conversationId,
         content: _trace(status, actorLabel, reason),
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         messageType: 'system',
       );
     }

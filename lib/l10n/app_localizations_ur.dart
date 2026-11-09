@@ -9,6 +9,15 @@ class AppLocalizationsUr extends AppLocalizations {
   AppLocalizationsUr([String locale = 'ur']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'ابھی بھیجا نہیں جا سکا: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'آپ کا جواب نہیں پہنچا۔ ہو سکتا ہے اس کا جواب پہلے ہی دیا جا چکا ہو، یا ایجنٹ نے انتظار ختم کر دیا ہو۔';
+
+  @override
   String get succeeded => 'کامیاب';
 
   @override
@@ -2595,10 +2604,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get addGif => 'GIF شامل کریں';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'pull requests دیکھنے کے لیے کم از کم ایک GitHub ریپوزٹری شامل کریں';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5893,9 +5898,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get pipelineStepDurationLabel => 'مدت';
 
   @override
-  String get pipelineStepBranch => 'برانچ';
-
-  @override
   String get pipelineStepViewConversation => 'گفتگو دیکھیں';
 
   @override
@@ -6980,14 +6982,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get reviewRequested => 'ریویو کی درخواست';
 
   @override
-  String get connectGitHubHint =>
-      'ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں GitHub میں سائن اِن کریں';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'pull requests لوڈ کرنے کے لیے GitHub منسلک کریں';
-
-  @override
   String get noRepositoriesConfigured => 'کوئی ریپوزٹری کنفیگر نہیں';
 
   @override
@@ -7644,13 +7638,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get createAsDraft => 'ڈرافٹ کے طور پر بنائیں';
-
-  @override
-  String get composePrNoRepo => 'کوئی GitHub ریپوزٹری منتخب نہیں';
-
-  @override
-  String get composePrNoRepoHint =>
-      'pull request کھولنے کے لیے GitHub سے لنک ریپوزٹری والا ورک اسپیس منتخب کریں۔';
 
   @override
   String get composePrPickBranches =>
@@ -16759,6 +16746,27 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'بہت زیادہ غلط کوڈ۔ سائن اِن دوبارہ شروع کریں۔';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'یہ سائن اِن اب درست نہیں رہا۔ اسے دوبارہ شروع کریں۔';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'سرور اس سائن اِن کی درخواست نہیں پڑھ سکا۔ اسے دوبارہ شروع کریں۔';
+
+  @override
+  String get signInErrorRateLimited =>
+      'ابھی سائن اِن کی بہت زیادہ کوششیں ہو رہی ہیں۔ ایک منٹ انتظار کریں، پھر دوبارہ کوشش کریں۔';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider نے سائن اِن قبول کر لیا، لیکن سرور اسے محفوظ نہیں کر سکا۔ دوبارہ کوشش کریں۔';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider اس وقت جواب نہیں دے رہا۔ چند منٹ بعد دوبارہ کوشش کریں۔';
   }
@@ -16789,7 +16797,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'یہ Linear ورک اسپیس پہلے ہی کسی اور Control Center سرور سے منسلک ہے۔';
+      'یہ Slack ورک اسپیس پہلے ہی کسی اور Control Center سرور سے منسلک ہے۔';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17223,4 +17231,38 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'ایپ تبدیل کریں';
+
+  @override
+  String openOnForge(String forge) {
+    return '$forge پر کھولیں';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'پہلی $count فائلیں دکھائی جا رہی ہیں۔ $forge باقی فائلوں کی فہرست نہیں دیتا۔';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'پل ریکویسٹس لوڈ کرنے کے لیے کوڈ ہوسٹ منسلک کریں';
+
+  @override
+  String get connectForgeHint =>
+      'ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں GitHub، GitLab یا Bitbucket منسلک کریں';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'پل ریکویسٹس دیکھنے کے لیے GitHub، GitLab یا Bitbucket پر کم از کم ایک ریپوزٹری شامل کریں';
+
+  @override
+  String get composePrNoForgeRepo => 'کوئی ہوسٹ شدہ ریپوزٹری منتخب نہیں';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'پل ریکویسٹ کھولنے کے لیے ایسی ورک اسپیس منتخب کریں جس میں GitHub، GitLab یا Bitbucket پر ریپوزٹری ہو۔';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'اس ریپوزٹری میں پل ریکویسٹ کھولنے کے لیے $forge منسلک کریں';
+  }
 }

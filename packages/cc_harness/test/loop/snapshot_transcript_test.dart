@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -23,6 +24,7 @@ class _ProgrammedCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     if (calls >= plan.length) {
       return const HarnessCompactionResult.unchanged(0);
@@ -56,7 +58,7 @@ class _ProgrammedCompactor implements HarnessCompactor {
   int pruneToolResults(List<HarnessMessage> history, {bool force = false}) => 0;
 }
 
-class _ScriptedProvider implements LlmProviderPort {
+class _ScriptedProvider extends LlmProviderPort {
   _ScriptedProvider(this.script);
 
   final List<List<LlmEvent>> script;
@@ -139,13 +141,17 @@ Future<HarnessTranscript> _runAndLoad({
         ),
         config: AgentLoopConfig(
           model: 'm',
-          compactor: _ProgrammedCompactor(plan),
-          contextWindow: 200000,
-          transcriptStore: store,
-          transcriptKey: key,
-          initialCheckpoints: checkpoints,
-          initialSnapshotSource: initialSnapshotSource,
-          transcriptMetadata: metadata,
+          compaction: LoopCompactionConfig(
+            compactor: _ProgrammedCompactor(plan),
+            contextWindow: 200000,
+          ),
+          transcript: LoopTranscriptConfig(
+            store: store,
+            key: key,
+            initialCheckpoints: checkpoints,
+            initialSnapshotSource: initialSnapshotSource,
+            metadata: metadata,
+          ),
         ),
       )
       .toList();

@@ -59,6 +59,15 @@ class ServerBackend {
   /// expressed as a proxy base (e.g. relay-only with no HTTP path).
   final MediaProxyConfig? mediaProxy;
 
+  /// Whether this backend spawned the bundled `cc_server` (ours to stop).
+  bool get isLocal => local != null;
+
+  /// Gracefully stops the bundled `cc_server` child while the client stays
+  /// open, so its `server/shutdown_progress` frames still arrive. Resolves once
+  /// the child has exited; a no-op for a remote server. Call [dispose]
+  /// afterwards.
+  Future<void> stopLocalServer() async => local?.stopServer();
+
   /// Tears the whole backend down (used when switching servers in-app). For
   /// the local mode this also stops the spawned `cc_server` child.
   Future<void> dispose() async {
@@ -127,7 +136,7 @@ Future<ServerBackend> resolveServerBackend({
 
   if (!store.isConfigured) {
     // A return to setup must not replay a failure from an earlier session.
-    serverStartupStatus.value = null;
+    startupReporter.clear();
     return sources.runSetup(store);
   }
 
@@ -138,16 +147,11 @@ Future<ServerBackend> resolveServerBackend({
     // with the error so the user can retry locally or switch to a remote
     // server, instead of crashing the boot.
     try {
-      final backend = await sources.startLocal();
-      serverStartupStatus.value = const ServerStartupStatus(
-        phase: ServerStartupPhase.ready,
+      return await startupReporter.track(
+        ServerStartupPhase.starting,
+        sources.startLocal,
       );
-      return backend;
     } on Object catch (e) {
-      serverStartupStatus.value = ServerStartupStatus(
-        phase: ServerStartupPhase.failed,
-        error: e,
-      );
       AppLog.w('cc_server', 'local server start failed, asking user: $e');
       return sources.runSetup(store, error: e);
     }
@@ -155,37 +159,36 @@ Future<ServerBackend> resolveServerBackend({
 
   // Remote: resolve the active paired server. A missing entry/key or a failed
   // connect falls back to the setup screen (with the error) instead of
-  // crashing the boot — the desktop cannot self-serve.
-  serverStartupStatus.value = const ServerStartupStatus(
-    phase: ServerStartupPhase.connecting,
-  );
+  // crashing the boot — the desktop hosts no data of its own.
   final entry = store.readActive();
   if (entry != null) {
     try {
-      // The keychain read is inside the try on purpose: it throws, it is the
-      // FIRST thing this path does, and it happens before any window exists.
-      // macOS refuses a keychain item to a binary whose signature no longer
-      // matches the one that stored it — which is every rebuild of an
-      // ad-hoc-signed debug build — so an uncaught throw here turned a stale
-      // credential into a silent, windowless boot.
-      final psk = await store.readPsk(entry.serverId);
-      if (psk != null && psk.isNotEmpty) {
-        final backend = await sources.connectRemote(store, entry, psk);
-        serverStartupStatus.value = const ServerStartupStatus(
-          phase: ServerStartupPhase.ready,
-        );
+      final backend = await startupReporter.track(
+        ServerStartupPhase.connecting,
+        () async {
+          // The keychain read is inside the attempt on purpose: it throws, it
+          // is the FIRST thing this path does, and it happens before any
+          // window exists. macOS refuses a keychain item to a binary whose
+          // signature no longer matches the one that stored it — which is
+          // every rebuild of an ad-hoc-signed debug build — so an uncaught
+          // throw here turned a stale credential into a silent, windowless
+          // boot.
+          final psk = await store.readPsk(entry.serverId);
+          if (psk == null || psk.isEmpty) {
+            return null;
+          }
+          return sources.connectRemote(store, entry, psk);
+        },
+      );
+      if (backend != null) {
         return backend;
       }
     } on Object catch (e) {
-      serverStartupStatus.value = ServerStartupStatus(
-        phase: ServerStartupPhase.failed,
-        error: e,
-      );
       AppLog.w('cc_server', 'remote connect failed, asking user: $e');
       return sources.runSetup(store, error: e);
     }
   }
-  serverStartupStatus.value = null;
+  startupReporter.clear();
   return sources.runSetup(store);
 }
 
@@ -210,53 +213,44 @@ Future<ServerBackend> _switchServerBackend(
   String serverId,
   ServerBackendSources sources,
 ) async {
-  serverStartupStatus.value = ServerStartupStatus(
-    phase: serverId == localServerId
+  return startupReporter.track(
+    serverId == localServerId
         ? ServerStartupPhase.starting
         : ServerStartupPhase.connecting,
+    () async {
+      final ServerBackend backend;
+      final Future<void> Function() persist;
+      if (serverId == localServerId) {
+        backend = await sources.startLocal();
+        persist = () => store.setMode(ServerConnectionMode.local);
+      } else {
+        final entry = store.entry(serverId);
+        if (entry == null) {
+          throw StateError('No paired server with id "$serverId".');
+        }
+        final psk = await store.readPsk(serverId);
+        if (psk == null || psk.isEmpty) {
+          throw StateError(
+            'No pairing key is stored for ${entry.name}. Pair with it again.',
+          );
+        }
+        backend = await sources.connectRemote(store, entry, psk);
+        persist = () async {
+          await store.setMode(ServerConnectionMode.remote);
+          await store.setActiveServer(serverId);
+        };
+      }
+      try {
+        await persist();
+      } on Object {
+        // The caller never sees this backend, so nobody else would stop a
+        // local child it spawned.
+        await backend.dispose();
+        rethrow;
+      }
+      return backend;
+    },
   );
-  try {
-    final ServerBackend backend;
-    final Future<void> Function() persist;
-    if (serverId == localServerId) {
-      backend = await sources.startLocal();
-      persist = () => store.setMode(ServerConnectionMode.local);
-    } else {
-      final entry = store.entry(serverId);
-      if (entry == null) {
-        throw StateError('No paired server with id "$serverId".');
-      }
-      final psk = await store.readPsk(serverId);
-      if (psk == null || psk.isEmpty) {
-        throw StateError(
-          'No pairing key is stored for ${entry.name}. Pair with it again.',
-        );
-      }
-      backend = await sources.connectRemote(store, entry, psk);
-      persist = () async {
-        await store.setMode(ServerConnectionMode.remote);
-        await store.setActiveServer(serverId);
-      };
-    }
-    try {
-      await persist();
-    } on Object {
-      // The caller never sees this backend, so nobody else would stop a local
-      // child it spawned.
-      await backend.dispose();
-      rethrow;
-    }
-    serverStartupStatus.value = const ServerStartupStatus(
-      phase: ServerStartupPhase.ready,
-    );
-    return backend;
-  } on Object catch (error) {
-    serverStartupStatus.value = ServerStartupStatus(
-      phase: ServerStartupPhase.failed,
-      error: error,
-    );
-    rethrow;
-  }
 }
 
 Future<ServerBackend> _connectRemoteBackend(
@@ -502,7 +496,7 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
   /// activity panel alike.
   void _clearError() {
     setState(() => _error = null);
-    serverStartupStatus.value = null;
+    startupReporter.clear();
   }
 
   void _onPendingPairLink() {
@@ -569,30 +563,19 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
   /// Pairs and adopts the server. A failure stays with the caller, which shows
   /// it beside the credentials that caused it.
   Future<void> _connect(ServerConnectCredentials credentials) async {
-    serverStartupStatus.value = const ServerStartupStatus(
-      phase: ServerStartupPhase.connecting,
-    );
-    try {
-      final connection = await pairWithServer(
+    final connection = await startupReporter.track(
+      ServerStartupPhase.connecting,
+      () => pairWithServer(
         store: widget.store,
         rawUrl: credentials.rawUrl,
         platform: 'desktop',
         inviteCode: credentials.inviteCode,
         deviceId: credentials.deviceId,
         psk: credentials.psk,
-      );
-      serverStartupStatus.value = const ServerStartupStatus(
-        phase: ServerStartupPhase.ready,
-      );
-      _resolved = true;
-      widget.onResolved(_remoteBackend(connection));
-    } on Object catch (e) {
-      serverStartupStatus.value = ServerStartupStatus(
-        phase: ServerStartupPhase.failed,
-        error: e,
-      );
-      rethrow;
-    }
+      ),
+    );
+    _resolved = true;
+    widget.onResolved(_remoteBackend(connection));
   }
 
   Future<void> _runLocal() async {
@@ -601,31 +584,28 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
       _error = null;
     });
     try {
-      serverStartupStatus.value = const ServerStartupStatus(
-        phase: ServerStartupPhase.starting,
-      );
-      await widget.previousSessionClosed;
-      final backend = await _localBackend();
-      try {
-        await widget.store.setMode(ServerConnectionMode.local);
-      } on Object {
-        // The landing stays up with the error, and the user may now choose a
-        // remote server instead: the child spawned above must not survive.
-        await backend.dispose();
-        rethrow;
-      }
-      serverStartupStatus.value = const ServerStartupStatus(
-        phase: ServerStartupPhase.ready,
+      final backend = await startupReporter.track(
+        ServerStartupPhase.starting,
+        () async {
+          await widget.previousSessionClosed;
+          final backend = await _localBackend();
+          try {
+            await widget.store.setMode(ServerConnectionMode.local);
+          } on Object {
+            // The landing stays up with the error, and the user may now
+            // choose a remote server instead: the child spawned above must
+            // not survive.
+            await backend.dispose();
+            rethrow;
+          }
+          return backend;
+        },
       );
       widget.onResolved(backend);
     } on Object catch (e) {
       if (!mounted) {
         return;
       }
-      serverStartupStatus.value = ServerStartupStatus(
-        phase: ServerStartupPhase.failed,
-        error: e,
-      );
       setState(() {
         _startingLocal = false;
         _error = e;

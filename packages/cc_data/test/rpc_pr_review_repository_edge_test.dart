@@ -1,12 +1,11 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
-import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
-/// Edge-case coverage for [RpcPrReviewRepository] and [RpcForgeProviderFactory]
+/// Edge-case coverage for [RpcPrReviewRepository]
 /// — the fallback / non-Map branches the broad `remote_repositories_test.dart`
 /// host stub doesn't drive: empty-string diff/content fallbacks, null draft,
 /// non-Map mutation results, pr/commit preview null paths and the assignable /
@@ -239,18 +238,18 @@ void main() {
       },
     );
 
-    test('mergePullRequest returns empty map when result absent', () async {
+    test('mergePullRequest reads not-merged when result absent', () async {
       expect(
         await repo().mergePullRequest(prNumber: 42, mergeMethod: 'squash'),
-        isEmpty,
+        const PrMergeOutcome(merged: false, message: ''),
       );
     });
 
     test(
-      'mergePullRequest returns the result map + forwards idempotency',
+      'mergePullRequest decodes the outcome + forwards idempotency',
       () async {
         host.callResults['pr_review.mergePullRequest'] = {
-          'result': {'sha': 'abc'},
+          'result': {'merged': true, 'message': 'ok', 'sha': 'abc'},
         };
         final result = await repo().mergePullRequest(
           prNumber: 42,
@@ -259,7 +258,10 @@ void main() {
           commitMessage: 'M',
           idempotencyKey: 'k-1',
         );
-        expect(result['sha'], 'abc');
+        expect(
+          result,
+          const PrMergeOutcome(merged: true, message: 'ok', sha: 'abc'),
+        );
         expect(host.calls.last.idempotencyKey, 'k-1');
       },
     );
@@ -484,33 +486,6 @@ void main() {
     });
   });
 
-  group('RpcForgeProviderFactory', () {
-    test('reports the GitHub VCS host', () {
-      expect(RpcForgeProviderFactory(client).forge, ForgeHost.github);
-    });
-
-    test(
-      'create returns an RpcPrReviewRepository for the repo coordinates',
-      () {
-        final factory = RpcForgeProviderFactory(client);
-        final repo = factory.create(
-          ForgeProviderContext(
-            workspaceId: 'ws',
-            repo: Repo(
-              id: 'r1',
-              name: 'cc',
-              path: '/r',
-              remoteOwner: 'acme',
-              remoteName: 'cc',
-              createdAt: DateTime.utc(2026),
-              updatedAt: DateTime.utc(2026),
-            ),
-          ),
-        );
-        expect(repo, isA<RpcPrReviewRepository>());
-      },
-    );
-  });
 }
 
 /// Records a `repo/call` invocation (with optional idempotency key).

@@ -2143,6 +2143,7 @@ class PipelineRunDto {
     this.parentPipelineRunId,
     this.parentStepId,
     this.templateVersion = 1,
+    this.templateSnapshot,
     this.totalCostCents = 0,
     this.totalTokens = 0,
     this.dryRun = false,
@@ -2172,6 +2173,8 @@ class PipelineRunDto {
     parentPipelineRunId: json['parent_pipeline_run_id'] as String?,
     parentStepId: json['parent_step_id'] as String?,
     templateVersion: (json['template_version'] as num?)?.toInt() ?? 1,
+    templateSnapshot: (json['template_snapshot'] as Map?)
+        ?.cast<String, dynamic>(),
     totalCostCents: (json['total_cost_cents'] as num?)?.toInt() ?? 0,
     totalTokens: (json['total_tokens'] as num?)?.toInt() ?? 0,
     dryRun: json['dry_run'] as bool? ?? false,
@@ -2196,6 +2199,10 @@ class PipelineRunDto {
   final String? parentPipelineRunId;
   final String? parentStepId;
   final int templateVersion;
+
+  /// The pinned template graph (`PipelineDefinition.toJson`). Sent on the
+  /// single-run reads only (`getRun` / `watchRun`), never in list views.
+  final Map<String, dynamic>? templateSnapshot;
   final int totalCostCents;
   final int totalTokens;
   final bool dryRun;
@@ -2221,6 +2228,7 @@ class PipelineRunDto {
       'parent_pipeline_run_id': parentPipelineRunId,
     if (parentStepId != null) 'parent_step_id': parentStepId,
     'template_version': templateVersion,
+    'template_snapshot': ?templateSnapshot,
     'total_cost_cents': totalCostCents,
     'total_tokens': totalTokens,
     'dry_run': dryRun,
@@ -2240,7 +2248,6 @@ class PipelineStepRunDto {
     this.outputJson,
     this.spaceId,
     this.errorMessage,
-    this.branchIndex,
     this.attemptCount = 0,
     this.priorAttempts = const [],
     required this.startedAt,
@@ -2257,7 +2264,6 @@ class PipelineStepRunDto {
         outputJson: json['output_json'] as String?,
         spaceId: json['space_id'] as String?,
         errorMessage: json['error_message'] as String?,
-        branchIndex: (json['branch_index'] as num?)?.toInt(),
         attemptCount: (json['attempt_count'] as num?)?.toInt() ?? 0,
         priorAttempts: ((json['prior_attempts'] as List?) ?? const [])
             .whereType<Map>()
@@ -2275,7 +2281,6 @@ class PipelineStepRunDto {
   final String? outputJson;
   final String? spaceId;
   final String? errorMessage;
-  final int? branchIndex;
   final int attemptCount;
 
   /// Archived previous firings of the step (oldest first), each a
@@ -2293,7 +2298,6 @@ class PipelineStepRunDto {
     if (outputJson != null) 'output_json': outputJson,
     if (spaceId != null) 'space_id': spaceId,
     if (errorMessage != null) 'error_message': errorMessage,
-    if (branchIndex != null) 'branch_index': branchIndex,
     'attempt_count': attemptCount,
     if (priorAttempts.isNotEmpty) 'prior_attempts': priorAttempts,
     'started_at': startedAt,

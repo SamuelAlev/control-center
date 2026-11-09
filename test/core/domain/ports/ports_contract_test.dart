@@ -724,13 +724,21 @@ void main() {
     test('RepoWorkspaceProvisionerPort contract is valid', () async {
       final port = _TestRepoWorkspaceProvisionerPort();
       final dir = await port.ensureSpaceWorkspace(
-        workspaceId: 'ws-1',
-        spaceId: 'ch-1',
-        agentSlug: 'dev',
-        fallbackDir: '/tmp/fallback',
-        branchType: 'feature',
+        SpaceWorkspaceRequest(
+          workspaceId: 'ws-1',
+          spaceId: 'ch-1',
+          agentSlug: 'dev',
+        ),
       );
-      expect(dir, isNotEmpty);
+      expect(dir, isA<SpaceWorkspaceReady>());
+      expect(
+        () => SpaceWorkspaceRequest(
+          workspaceId: 'ws-1',
+          spaceId: '',
+          agentSlug: 'dev',
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('SandboxPort contract is valid', () async {
@@ -996,26 +1004,9 @@ class _TestRepoIsolationPort implements RepoIsolationPort {
 class _TestRepoWorkspaceProvisionerPort
     implements RepoWorkspaceProvisionerPort {
   @override
-  Future<String> ensureSpaceWorkspace({
-    required String workspaceId,
-    required String spaceId,
-    required String agentSlug,
-    required String fallbackDir,
-    String? conversationId,
-    String? agentConfigDir,
-    String? ticketId,
-    String? ticketKey,
-    String? ticketTitle,
-    String branchType = 'feature',
-    String? prHeadRef,
-    String? prHeadRepoFullName,
-    String? prBranch,
-    Set<String>? repoAllowlist,
-    void Function(String repoName, {required bool prHead})? onRepoProvision,
-    // Accepted to match the port; the contract fake runs no provision tasks.
-    void Function(String repoName)? onRepoProvisionTasks,
-    CancellationToken? cancel,
-  }) async => '/tmp/conversation';
+  Future<SpaceWorkspace> ensureSpaceWorkspace(
+    SpaceWorkspaceRequest request,
+  ) async => const SpaceWorkspaceReady('/tmp/conversation');
 
   @override
   void cancelSpaceProvisioning(String workspaceId, String spaceId) {

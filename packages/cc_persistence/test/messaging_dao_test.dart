@@ -702,5 +702,98 @@ void main() {
         isEmpty);
     });
 
+    test('expiry is conditional and the boot sweep closes only older questions',
+        () async {
+      await db.messagingDao.insertSpace(
+        SpacesTableCompanion.insert(
+          id: 'expiry-space', name: 'Expiry',
+          workspaceId: const Value('test-workspace'),
+        ),
+      );
+      await db.into(db.conversationsTable).insert(
+        ConversationsTableCompanion.insert(id: 'expiry-thread', spaceId: 'expiry-space'),
+      );
+      Future<void> question(String id, DateTime createdAt) =>
+          db.messagingDao.insertMessage(
+            ConversationMessagesTableCompanion.insert(
+              id: id, spaceId: 'expiry-space', conversationId: 'expiry-thread',
+              senderId: 'agent', senderType: 'agent', content: 'Which?',
+              messageType: const Value('user_question'),
+              metadata: Value(jsonEncode({'question': 'Which?', 'answered': false})),
+              createdAt: Value(createdAt),
+            ),
+          );
+      Future<Map<String, dynamic>> meta(String id) async => jsonDecode(
+            (await db.messagingDao.getMessageById(id))!.metadata!,
+          ) as Map<String, dynamic>;
+
+      await question('answered-first', DateTime.utc(2026, 1, 1));
+      expect(await db.messagingDao.answerQuestion(
+        'answered-first', {'selected': ['a']},
+      ), isTrue);
+      // The waiter's expiry lost the race: the answer must survive it.
+      expect(await db.messagingDao.expireQuestion('answered-first'), isFalse);
+      expect((await meta('answered-first'))['expired'], isNull);
+      expect((await meta('answered-first'))['answer'], {'selected': ['a']});
+
+      await question('open', DateTime.utc(2026, 1, 1));
+      expect(await db.messagingDao.expireQuestion('open'), isTrue);
+      expect((await meta('open'))['expired'], isTrue);
+      expect((await meta('open'))['answered'], isTrue);
+
+      await question('orphan', DateTime.utc(2026, 1, 1));
+      await question('after-boot', DateTime.utc(2026, 1, 3));
+      expect(
+        await db.messagingDao.expireQuestionsCreatedBefore(DateTime.utc(2026, 1, 2)),
+        1,
+      );
+      expect((await meta('orphan'))['expired'], isTrue);
+      expect((await meta('after-boot'))['answered'], isFalse);
+      expect((await meta('answered-first'))['expired'], isNull);
+    });
+
+    test('patchSteering merges onto the current row only in the expected state',
+        () async {
+      await db.messagingDao.insertSpace(
+        SpacesTableCompanion.insert(
+          id: 'steer-space', name: 'Steer',
+          workspaceId: const Value('test-workspace'),
+        ),
+      );
+      await db.into(db.conversationsTable).insert(
+        ConversationsTableCompanion.insert(id: 'steer-thread', spaceId: 'steer-space'),
+      );
+      await db.messagingDao.insertMessage(
+        ConversationMessagesTableCompanion.insert(
+          id: 'card', spaceId: 'steer-space', conversationId: 'steer-thread',
+          senderId: 'u1', senderType: 'user', content: 'nudge',
+          messageType: const Value('steering'),
+          metadata: Value(jsonEncode({'steerState': 'queued', 'steerOrder': 0})),
+        ),
+      );
+      Future<Map<String, dynamic>> meta() async => jsonDecode(
+            (await db.messagingDao.getMessageById('card'))!.metadata!,
+          ) as Map<String, dynamic>;
+
+      // A live run drains the card...
+      expect(await db.messagingDao.patchSteering('card',
+          fromState: 'queued', patch: {'steerState': 'injected'}), isTrue);
+      // ...and a reorder that read it as queued must not revert that.
+      expect(await db.messagingDao.patchSteering('card',
+          fromState: 'queued', patch: {'steerOrder': 3, 'steerState': 'queued'}),
+          isFalse);
+      expect(await meta(), {'steerState': 'injected', 'steerOrder': 0});
+
+      expect(await db.messagingDao.patchSteering('card',
+          fromState: 'injected', patch: {'steerRunId': 'r1'},
+          content: 'edited', messageType: 'text'), isTrue);
+      final row = (await db.messagingDao.getMessageById('card'))!;
+      expect(row.content, 'edited');
+      expect(row.messageType, 'text');
+      expect((await meta())['steerRunId'], 'r1');
+      expect(await db.messagingDao.patchSteering('missing',
+          fromState: 'queued', patch: const {}), isFalse);
+    });
+
   });
 }

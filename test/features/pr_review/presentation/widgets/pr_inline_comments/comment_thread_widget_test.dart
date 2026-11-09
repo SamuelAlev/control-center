@@ -7,6 +7,8 @@ import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repos
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show viewerLoginsProvider;
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -23,6 +25,9 @@ Widget _wrap(Widget child, {PrReviewRepository? repository}) {
   return ProviderScope(
     overrides: [
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
+      // No forge sign-in: keeps the connection lookup (and its retry
+      // timer) out of a widget test.
+      viewerLoginsProvider.overrideWithValue(const {}),
       githubUserProvider.overrideWith((ref) async => null),
       workspacesProvider.overrideWith(
         (ref) => const Stream<List<Workspace>>.empty(),
@@ -52,12 +57,20 @@ Widget _wrap(Widget child, {PrReviewRepository? repository}) {
 }
 
 /// The PR identity the inline-comments controller is keyed by.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 1);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 1,
+  forge: null,
+);
 
 PrInlineCommentsController _makeController() {
   final container = ProviderContainer(
     overrides: [
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
+      // No forge sign-in: keeps the connection lookup (and its retry
+      // timer) out of a widget test.
+      viewerLoginsProvider.overrideWithValue(const {}),
       githubUserProvider.overrideWith((ref) async => null),
       workspacesProvider.overrideWith(
         (ref) => const Stream<List<Workspace>>.empty(),
@@ -1138,6 +1151,7 @@ void main() {
           workspaceId: 'ws-2',
           repoFullName: 'owner/repo',
           number: 1,
+          forge: null,
         );
         final first = _ReplyController(_prRef);
         final elsewhere = _ReplyController(otherPr);
@@ -1436,6 +1450,7 @@ void main() {
         workspaceId: 'ws',
         repoFullName: 'owner/repo',
         number: 7,
+        forge: null,
       ));
 
       await tester.pumpWidget(

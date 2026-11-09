@@ -164,7 +164,7 @@ class DispatchReviewersService implements DispatchReviewersPort {
               content:
                   '@${spec.agentName} you are on review duty as ${spec.role}.',
               senderId: 'system',
-              senderType: 'agent',
+              senderType: 'system',
               messageType: 'system',
             );
             final brief =

@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:test/test.dart';
@@ -35,7 +36,7 @@ void main() {
         final h = _buildHistory(10);
         final r = await compactor.maybeCompact(h, contextWindow: 500);
         expect(r.changed, isTrue);
-        expect(r.summarized, isTrue);
+        expect(r.messagesFolded, greaterThan(0));
         // Summary is the first message and marked.
         expect(h.first.role, HarnessRole.user);
         expect(h.first.textContent, startsWith(harnessSummaryMarker));
@@ -159,7 +160,7 @@ void main() {
         final foldedFrom = h.length;
         final r = await compactor.maybeCompact(h, contextWindow: 2000);
         expect(r.changed, isTrue, reason: 'single-turn history must compact');
-        expect(r.summarized, isTrue);
+        expect(r.messagesFolded, greaterThan(0));
         expect(h.length, lessThan(foldedFrom));
         // Summary is first and marked.
         expect(h.first.role, HarnessRole.user);
@@ -592,7 +593,7 @@ void main() {
         reservedOutputTokens: 99000,
       );
       expect(reserved.changed, isTrue, reason: 'reservation counts');
-      expect(reserved.summarized, isTrue);
+      expect(reserved.messagesFolded, greaterThan(0));
     });
 
     test('calibration never shrinks the output reservation', () async {
@@ -669,7 +670,11 @@ void main() {
       final h = history();
       final result = await hybrid.maybeCompact(h, contextWindow: 5000);
       expect(result.changed, isTrue);
-      expect(result.summarized, isTrue, reason: 'hybrid summarizes too');
+      expect(
+        result.messagesFolded,
+        greaterThan(0),
+        reason: 'hybrid summarizes too',
+      );
       expect(result.maskedObservations, 1, reason: 'and it masked first');
       expect(h.first.textContent, startsWith(harnessSummaryMarker));
 
@@ -689,6 +694,53 @@ void main() {
         h2.any((m) => m.textContent.startsWith(harnessSummaryMarker)),
         isFalse,
       );
+    });
+  });
+
+  group('summarized reports a MODEL summary only', () {
+    List<HarnessMessage> longHistory() => [
+      for (var i = 0; i < 12; i++) ...[
+        HarnessMessage.user('turn $i ${'x' * 4000}'),
+        HarnessMessage.assistant('answer $i ${'y' * 4000}'),
+      ],
+    ];
+
+    test('a structural fold is a fold, not a summary', () async {
+      final history = longHistory();
+      final r = await const DefaultHarnessCompactor().maybeCompact(
+        history,
+        contextWindow: 20000,
+        force: true,
+      );
+      expect(r.messagesFolded, greaterThan(0));
+      expect(r.summarized, isFalse);
+      expect(r.decisionReason, contains('structural digest'));
+    });
+
+    test('a model-written summary reports summarized', () async {
+      final history = longHistory();
+      final r = await DefaultHarnessCompactor(
+        summarizer: _ModelSummarizer(),
+      ).maybeCompact(history, contextWindow: 20000, force: true);
+      expect(r.messagesFolded, greaterThan(0));
+      expect(r.summarized, isTrue);
+    });
+
+    test('a cancelled pass commits nothing', () async {
+      final history = longHistory();
+      final before = List<HarnessMessage>.of(history);
+      final source = CancellationTokenSource();
+      final r =
+          await DefaultHarnessCompactor(
+            summarizer: _CancellingSummarizer(source),
+          ).maybeCompact(
+            history,
+            contextWindow: 20000,
+            force: true,
+            cancel: source.token,
+          );
+      expect(r.changed, isFalse);
+      expect(history, before);
     });
   });
 
@@ -787,7 +839,7 @@ void main() {
       grow();
       for (var round = 0; round < 4; round++) {
         final r = await compactor.maybeCompact(h, contextWindow: 1800);
-        expect(r.summarized, isTrue, reason: 'round $round folded');
+        expect(r.messagesFolded, greaterThan(0), reason: 'round $round folded');
         grow();
       }
       final summary = h.first.textContent;
@@ -947,7 +999,7 @@ void main() {
           ]),
         ];
         final r = await compactor.maybeCompact(h, contextWindow: 1600);
-        expect(r.summarized, isTrue);
+        expect(r.messagesFolded, greaterThan(0));
         expect(h.first.textContent, contains('preserve the live edit anchor'));
         expect(
           h.first.textContent,
@@ -1018,7 +1070,7 @@ void main() {
           ],
         ];
         final r = await compactor.maybeCompact(h, contextWindow: 1200);
-        expect(r.summarized, isTrue);
+        expect(r.messagesFolded, greaterThan(0));
         expect(
           h.first.activatedToolNames,
           contains('read_docs'),
@@ -1030,7 +1082,7 @@ void main() {
           h.add(HarnessMessage.assistant('progress $i ${'w' * 300}'));
         }
         final again = await compactor.maybeCompact(h, contextWindow: 1200);
-        expect(again.summarized, isTrue);
+        expect(again.messagesFolded, greaterThan(0));
         expect(h.first.activatedToolNames, contains('read_docs'));
       },
     );
@@ -1164,7 +1216,7 @@ void main() {
       ];
       const window = 10000;
       final r = await compactor.maybeCompact(h, contextWindow: window);
-      expect(r.summarized, isTrue);
+      expect(r.messagesFolded, greaterThan(0));
       expect(
         r.tokensAfter,
         lessThan(window),
@@ -1322,6 +1374,23 @@ void main() {
 /// A summarizer that always fails, to prove the compactor stages its mutation.
 class _ThrowingSummarizer implements HarnessSummarizerPort {
   @override
-  Future<String> summarize(HarnessCompactionInput input) =>
+  Future<HarnessSummary> summarize(HarnessCompactionInput input) =>
       throw StateError('summarizer exploded');
+}
+
+class _ModelSummarizer implements HarnessSummarizerPort {
+  @override
+  Future<HarnessSummary> summarize(HarnessCompactionInput input) async =>
+      const HarnessSummary('model summary', modelWritten: true);
+}
+
+/// Cancels the run while the summary is being written.
+class _CancellingSummarizer implements HarnessSummarizerPort {
+  _CancellingSummarizer(this.source);
+  final CancellationTokenSource source;
+  @override
+  Future<HarnessSummary> summarize(HarnessCompactionInput input) async {
+    source.cancel('stop');
+    return const HarnessSummary('late summary', modelWritten: true);
+  }
 }

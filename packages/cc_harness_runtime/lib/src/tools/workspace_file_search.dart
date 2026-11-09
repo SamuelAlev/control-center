@@ -30,7 +30,7 @@ Future<List<FileSearchMatch>> searchWorkspaceFiles(
     final hits = await fileSearch.search(query, root: searchRoot, limit: limit);
     final prefix = p.equals(searchRoot, root)
         ? null
-        : _linkPrefixFor(searchRoot, root);
+        : await _linkPrefixFor(searchRoot, root);
     for (final hit in hits) {
       final display = p.equals(searchRoot, root)
           ? hit.path
@@ -62,16 +62,21 @@ Future<List<FileSearchMatch>> searchWorkspaceFiles(
 /// [sharedRoot] (the overlay's `repos`), or null when none does. Mirrors
 /// `listWorkspaceTree`'s expansion so `search_files` labels hits the same way
 /// `search`/`find` do.
-String? _linkPrefixFor(String sharedRoot, String workspaceRoot) {
+///
+/// The directory listing and link resolution are async (they can touch many
+/// entries, or a slow mount) because the read-tier search tool runs
+/// concurrently with its siblings inside cc_server; the single type probe
+/// stays sync, per `avoid_slow_async_io`.
+Future<String?> _linkPrefixFor(String sharedRoot, String workspaceRoot) async {
   final String realShared;
   try {
-    realShared = Directory(sharedRoot).resolveSymbolicLinksSync();
+    realShared = await Directory(sharedRoot).resolveSymbolicLinks();
   } on FileSystemException {
     return null;
   }
   final List<FileSystemEntity> children;
   try {
-    children = Directory(workspaceRoot).listSync(followLinks: false);
+    children = await Directory(workspaceRoot).list(followLinks: false).toList();
   } on FileSystemException {
     return null;
   }
@@ -87,7 +92,7 @@ String? _linkPrefixFor(String sharedRoot, String workspaceRoot) {
     }
     try {
       if (p.equals(
-        Directory(child.path).resolveSymbolicLinksSync(),
+        await Directory(child.path).resolveSymbolicLinks(),
         realShared,
       )) {
         return p.basename(child.path);

@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/core/domain/value_objects/space_workspace_request.dart';
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/repos/repo_workspace_provisioner.dart';
@@ -62,11 +63,12 @@ void main() {
 
   Future<void> provision(RepoWorkspaceProvisioner provisioner) =>
       provisioner.ensureSpaceWorkspace(
-        workspaceId: 'ws-1',
-        spaceId: 'sp-1',
-        agentSlug: 'alice',
-        fallbackDir: '',
-        repoAllowlist: const {'repo-1'},
+        SpaceWorkspaceRequest(
+          workspaceId: 'ws-1',
+          spaceId: 'sp-1',
+          agentSlug: 'alice',
+          repoAllowlist: const {'repo-1'},
+        ),
       );
 
   Future<List<String>> logged() async {
@@ -159,12 +161,13 @@ void main() {
     var stepFired = false;
     final provisioner = buildProvisioner();
     await provisioner.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentSlug: 'alice',
-      fallbackDir: '',
-      repoAllowlist: const {'repo-1'},
-      onRepoProvisionTasks: (_) => stepFired = true,
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: 'alice',
+        repoAllowlist: const {'repo-1'},
+        onRepoProvisionTasks: (_) => stepFired = true,
+      ),
     );
 
     expect(tasks.setupCalls, isEmpty);
@@ -176,12 +179,13 @@ void main() {
     final subjects = <String>[];
     final provisioner = buildProvisioner();
     await provisioner.ensureSpaceWorkspace(
-      workspaceId: 'ws-1',
-      spaceId: 'sp-1',
-      agentSlug: 'alice',
-      fallbackDir: '',
-      repoAllowlist: const {'repo-1'},
-      onRepoProvisionTasks: subjects.add,
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: 'alice',
+        repoAllowlist: const {'repo-1'},
+        onRepoProvisionTasks: subjects.add,
+      ),
     );
 
     expect(subjects, ['shop-ui']);
@@ -193,10 +197,9 @@ void main() {
       ..failSetupWith = StateError('pnpm install exited 1');
     final provisioner = buildProvisioner();
 
-    // `ensureSpaceWorkspace` never throws (the port contract: best-effort,
-    // degrade to the fallback dir) — the failure surfaces downstream through
-    // VERIFICATION, because the row is gone. What must hold here is the
-    // teardown itself.
+    // A repo that fails is skipped, not fatal to the overlay: the failure
+    // surfaces downstream through VERIFICATION, because the row is gone.
+    // What must hold here is the teardown itself.
     await provision(provisioner);
 
     // The registry row and the worktree must both be gone, so the space's
@@ -214,6 +217,35 @@ void main() {
     await provisioner.releaseSpace(workspaceId: 'ws-1', spaceId: 'sp-1');
 
     expect(tasks.released, ['sp-1']);
+    expect(isolation.destroyed, hasLength(1));
+    expect(registry.rows, isEmpty);
+  });
+
+  test('a finished ticket takes its worktrees, not the environment', () async {
+    // The space lives on, and its environment reconciles against the repos
+    // it has left. Tearing it down here would stop a stack somebody is still
+    // using in that space.
+    final provisioner = buildProvisioner();
+    await provisioner.ensureSpaceWorkspace(
+      SpaceWorkspaceRequest(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: 'alice',
+        ticketId: 't-1',
+        repoAllowlist: const {'repo-1'},
+      ),
+    );
+    expect(registry.rows.single.ticketId, 't-1');
+
+    expect(
+      await provisioner.releaseTicketInWorkspace(
+        workspaceId: 'ws-1',
+        ticketId: 't-1',
+      ),
+      1,
+    );
+
+    expect(tasks.released, isEmpty);
     expect(isolation.destroyed, hasLength(1));
     expect(registry.rows, isEmpty);
   });
@@ -395,6 +427,15 @@ class _LiveRegistry implements IsolatedRepoRepository {
     }
     rows.removeWhere((r) => r.id == id);
   }
+
+  @override
+  Future<List<IsolatedRepo>> forTicket(
+    String workspaceId,
+    String ticketId,
+  ) async => [
+    for (final row in rows)
+      if (row.workspaceId == workspaceId && row.ticketId == ticketId) row,
+  ];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

@@ -1,10 +1,15 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 
 /// A [HarnessSummarizerPort] that produces true anchored summaries via an
 /// [LlmProviderPort] (a real model call), falling back to the deterministic
-/// [StructuralHarnessSummarizer] on any error or empty output.
+/// [StructuralHarnessSummarizer] on any error or empty output. A fallback is
+/// reported with [HarnessSummary.modelWritten] false so the compaction result
+/// does not claim a model summary it never got. A cancelled run is not a
+/// failure: the request is abandoned and [CancelledException] propagates, so
+/// the compactor commits nothing.
 ///
 /// Uses the run's own provider so no extra credential/model resolution is
 /// needed; the call is one-shot (non-streaming drain) and cache-free.
@@ -35,10 +40,12 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
   /// display name.
   final String? providerId;
 
-  static const HarnessSummarizerPort _fallback = StructuralHarnessSummarizer();
+  static const StructuralHarnessSummarizer _fallback =
+      StructuralHarnessSummarizer();
 
   @override
-  Future<String> summarize(HarnessCompactionInput input) async {
+  Future<HarnessSummary> summarize(HarnessCompactionInput input) async {
+    input.cancel.throwIfCancelled();
     try {
       final userPrompt = _userPrompt(input);
       final buf = StringBuffer();
@@ -48,15 +55,18 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
           TokenEstimator.instance.estimate(harnessCompactionSystemPrompt) +
           TokenEstimator.instance.estimate(userPrompt);
       var usage = const LlmUsage();
-      await for (final event in _provider.complete(
-        messages: [HarnessMessage.user(userPrompt)],
-        config: const LlmCompleteConfig(
-          systemPrompt: harnessCompactionSystemPrompt,
-          maxTokens: 2048,
-          cacheEnabled: false,
-          purpose: LlmCallPurpose.compaction,
-        ),
-      )) {
+      await for (final event
+          in _provider
+              .complete(
+                messages: [HarnessMessage.user(userPrompt)],
+                config: const LlmCompleteConfig(
+                  systemPrompt: harnessCompactionSystemPrompt,
+                  maxTokens: 2048,
+                  cacheEnabled: false,
+                  purpose: LlmCallPurpose.compaction,
+                ),
+              )
+              .untilCancelled(input.cancel)) {
         switch (event) {
           case LlmTextDelta(:final text):
             buf.write(text);
@@ -72,12 +82,17 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
             break;
         }
       }
+      input.cancel.throwIfCancelled();
       _observeUsage(
         estimatedPromptTokens,
         usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens,
       );
       final text = buf.toString().trim();
-      return text.isEmpty ? await _fallback.summarize(input) : text;
+      return text.isEmpty
+          ? await _fallback.summarize(input)
+          : HarnessSummary(text, modelWritten: true);
+    } on CancelledException {
+      rethrow;
     } on Object {
       return _fallback.summarize(input);
     }

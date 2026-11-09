@@ -447,7 +447,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                     detail: rig.detail,
                   )
                 : rig.isFailed
-                ? RigFailed(detail: rig.detail)
+                ? RigFailedNotice(detail: rig.detail)
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       // Physical pixels for the STREAM (a logical-pixel

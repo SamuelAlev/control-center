@@ -12,7 +12,7 @@ import 'package:test/test.dart';
 ///
 /// The demo must never dial a model. Throwing here makes a wiring regression a
 /// test failure instead of silent egress from a public server.
-class _ExplodingProvider implements LlmProviderPort {
+class _ExplodingProvider extends LlmProviderPort {
   @override
   String get displayName => 'Demo (exploding)';
 

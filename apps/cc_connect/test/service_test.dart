@@ -182,15 +182,14 @@ void main() {
       expect(response.json, {'error': 'invalid_request'});
     });
 
-    test('the reserved chat route answers provider_unavailable', () async {
+    test('there is no chat action route', () async {
       final response = await harness.call(
         a,
         'POST',
         '/v1/chat/slack/act',
         body: {'workspace_id': 'ws1'},
       );
-      expect(response.status, 503);
-      expect(response.json, {'error': 'provider_unavailable'});
+      expect(response.status, 404);
     });
 
     test('logs never carry install ids, seals or bodies', () async {

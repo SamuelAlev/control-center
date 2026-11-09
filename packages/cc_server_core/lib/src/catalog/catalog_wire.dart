@@ -78,11 +78,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_input.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_attempt.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
@@ -2019,7 +2016,15 @@ TicketLink ticketLinkFromWire(Map<String, dynamic> w) => TicketLink(
 
 /// Maps a [PipelineRun] to the `PipelineRunDto` wire shape (enum `status` as
 /// `.name`, timestamps as ISO-8601, `state`/`triggerPayload` as raw JSON maps).
-Map<String, dynamic> pipelineRunToWire(PipelineRun r) => {
+///
+/// [withSnapshot] adds the pinned graph (`template_snapshot`) for the
+/// single-run reads the run detail renders; list views leave it out.
+Map<String, dynamic> pipelineRunToWire(
+  PipelineRun r, {
+  bool withSnapshot = false,
+}) => {
+  if (withSnapshot && r.templateSnapshot != null)
+    'template_snapshot': r.templateSnapshot!.toJson(),
   'id': r.id,
   'template_id': r.templateId,
   'workspace_id': r.workspaceId,
@@ -2044,48 +2049,6 @@ Map<String, dynamic> pipelineRunToWire(PipelineRun r) => {
   'dry_run': r.dryRun,
 };
 
-/// Reconstructs a [PipelineRun] from a `PipelineRunDto` wire map (the inverse
-/// of [pipelineRunToWire]), used by the `pipeline_run.insertRun`/`.updateRun`
-/// ops.
-PipelineRun pipelineRunFromWire(Map<String, dynamic> w) => PipelineRun(
-  id: w['id'] as String,
-  templateId: w['template_id'] as String? ?? '',
-  workspaceId: w['workspace_id'] as String? ?? '',
-  status: PipelineRunStatus.fromString(w['status'] as String? ?? 'pending'),
-  state: w['state'] is Map
-      ? (w['state'] as Map).cast<String, dynamic>()
-      : <String, dynamic>{},
-  triggerEventType: w['trigger_event_type'] as String?,
-  triggerPayload: w['trigger_payload'] is Map
-      ? (w['trigger_payload'] as Map).cast<String, dynamic>()
-      : null,
-  dedupKey: w['dedup_key'] as String?,
-  startedAt: w['started_at'] is String
-      ? DateTime.parse(w['started_at'] as String)
-      : DateTime.fromMillisecondsSinceEpoch(0),
-  attemptStartedAt: w['attempt_started_at'] is String
-      ? DateTime.parse(w['attempt_started_at'] as String)
-      : null,
-  // Absent from an older client's frame — a run nobody has re-run is on its
-  // first attempt, which is what the default says.
-  attemptCount: (w['attempt_count'] as num?)?.toInt() ?? 1,
-  finishedAt: w['finished_at'] is String
-      ? DateTime.parse(w['finished_at'] as String)
-      : null,
-  activeMs: (w['active_ms'] as num?)?.toInt() ?? 0,
-  lastResumedAt: w['last_resumed_at'] is String
-      ? DateTime.parse(w['last_resumed_at'] as String)
-      : null,
-  errorMessage: w['error_message'] as String?,
-  errorStackTrace: w['error_stack_trace'] as String?,
-  parentPipelineRunId: w['parent_pipeline_run_id'] as String?,
-  parentStepId: w['parent_step_id'] as String?,
-  templateVersion: (w['template_version'] as num?)?.toInt() ?? 1,
-  totalCostCents: (w['total_cost_cents'] as num?)?.toInt() ?? 0,
-  totalTokens: (w['total_tokens'] as num?)?.toInt() ?? 0,
-  dryRun: w['dry_run'] as bool? ?? false,
-);
-
 /// Maps a [PipelineStepRun] to the `PipelineStepRunDto` wire shape (enum
 /// `status` as `.name`, timestamps as ISO-8601).
 Map<String, dynamic> pipelineStepRunToWire(PipelineStepRun s) => {
@@ -2097,42 +2060,12 @@ Map<String, dynamic> pipelineStepRunToWire(PipelineStepRun s) => {
   'output_json': ?s.outputJson,
   'space_id': ?s.spaceId,
   'error_message': ?s.errorMessage,
-  'branch_index': ?s.branchIndex,
   'attempt_count': s.attemptCount,
   if (s.priorAttempts.isNotEmpty)
     'prior_attempts': [for (final a in s.priorAttempts) a.toJson()],
   'started_at': s.startedAt.toIso8601String(),
   'finished_at': ?s.finishedAt?.toIso8601String(),
 };
-
-/// Reconstructs a [PipelineStepRun] from a `PipelineStepRunDto` wire map (the
-/// inverse of [pipelineStepRunToWire]), used by the
-/// `pipeline_run.insertStepRun` op.
-PipelineStepRun pipelineStepRunFromWire(Map<String, dynamic> w) =>
-    PipelineStepRun(
-      id: w['id'] as String,
-      pipelineRunId: w['pipeline_run_id'] as String? ?? '',
-      stepId: w['step_id'] as String? ?? '',
-      status: PipelineStepStatus.fromString(
-        w['status'] as String? ?? 'pending',
-      ),
-      inputJson: w['input_json'] as String?,
-      outputJson: w['output_json'] as String?,
-      spaceId: w['space_id'] as String?,
-      errorMessage: w['error_message'] as String?,
-      branchIndex: (w['branch_index'] as num?)?.toInt(),
-      attemptCount: (w['attempt_count'] as num?)?.toInt() ?? 0,
-      priorAttempts: [
-        for (final a in (w['prior_attempts'] as List?) ?? const [])
-          if (a is Map) PipelineStepAttempt.fromJson(a.cast<String, dynamic>()),
-      ],
-      startedAt: w['started_at'] is String
-          ? DateTime.parse(w['started_at'] as String)
-          : DateTime.fromMillisecondsSinceEpoch(0),
-      finishedAt: w['finished_at'] is String
-          ? DateTime.parse(w['finished_at'] as String)
-          : null,
-    );
 
 /// Maps a [PipelineDefinition] to the `PipelineTemplateDto` wire shape. The
 /// graph (`steps` with nested `triggers`/`config`) and declared `inputs`
@@ -2200,7 +2133,11 @@ PipelineDefinition pipelineTemplateFromWire(Map<String, dynamic> w) {
 PipelineStepDefinition pipelineStepFromWire(Map<String, dynamic> s) {
   return PipelineStepDefinition(
     id: s['id'] as String,
-    kind: StepKind.values.asNameMap()[s['kind'] as String?] ?? StepKind.listen,
+    // An unknown kind is a malformed template, not a `listen` step: saving it
+    // as one would change what the graph does.
+    kind:
+        StepKind.values.asNameMap()[s['kind'] as String?] ??
+        (throw ValidationException('Unknown step kind "${s['kind']}"')),
     bodyKey: s['bodyKey'] as String,
     triggers: ((s['triggers'] as List?) ?? const [])
         .whereType<Map>()
@@ -2778,7 +2715,7 @@ typedef CommitPreviewFetcher =
 typedef OpenPrListFetcher =
     Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
       List<Repo> repos, {
-      String? workspaceId,
+      required String workspaceId,
     });
 
 /// GitHub account for [actingUserId] (`{login, avatar_url, name}`), or null.

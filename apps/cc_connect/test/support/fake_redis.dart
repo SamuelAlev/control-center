@@ -220,6 +220,28 @@ final class FakeRedis {
           ...utf8.encode('*${items.length}\r\n'),
           for (final item in items) ..._bulk(item),
         ];
+      case 'EVAL':
+        // The two compare-and-* scripts RedisStateStore sends, recognised by
+        // what they call: `EVAL script 1 key expected [value ttl]`.
+        final script = c[1];
+        final key = c[3];
+        final current = _live(key);
+        if (current != c[4]) {
+          return _int(0);
+        }
+        if (script.contains("'SET'")) {
+          _data[key] = c[5];
+          _expiry[key] = DateTime.now().add(
+            Duration(milliseconds: int.parse(c[6])),
+          );
+          return _int(1);
+        }
+        if (script.contains("'DEL'")) {
+          _data.remove(key);
+          _expiry.remove(key);
+          return _int(1);
+        }
+        return _error('ERR unknown script');
       case 'PEXPIRE':
         if (_live(c[1]) == null) {
           return _int(0);

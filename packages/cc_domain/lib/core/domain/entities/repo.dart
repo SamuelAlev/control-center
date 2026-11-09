@@ -100,3 +100,14 @@ class Repo {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// Splits an `owner/name` full name at its LAST `/`, so a GitLab nested
+/// namespace (`group/sub/project`) keeps `group/sub` as its owner. Null when
+/// either half is empty.
+({String owner, String name})? splitRepoFullName(String fullName) {
+  final cut = fullName.lastIndexOf('/');
+  if (cut <= 0 || cut == fullName.length - 1) {
+    return null;
+  }
+  return (owner: fullName.substring(0, cut), name: fullName.substring(cut + 1));
+}

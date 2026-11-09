@@ -50,6 +50,7 @@ class PrFilesLoad {
   const PrFilesLoad({
     required this.files,
     this.isComplete = false,
+    this.truncated = false,
     this.clonePhase,
     this.cloneMessage = '',
     this.error,
@@ -60,6 +61,11 @@ class PrFilesLoad {
 
   /// True once all files (including patches) have been loaded.
   final bool isComplete;
+
+  /// The forge capped its file listing, so [files] is not the whole pull
+  /// request even once [isComplete]. The reader says so and links to the
+  /// forge rather than presenting a partial diff as the change.
+  final bool truncated;
 
   /// Non-null while the local-clone pipeline is running (clone/fetch/compute).
   final ClonePhase? clonePhase;

@@ -691,7 +691,14 @@ List<RepoOp> buildPrReviewOps({
         commitTitle: ctx.args['commit_title'] as String?,
         commitMessage: ctx.args['commit_message'] as String?,
       );
-      return {'result': result};
+      // The wire keys the op has always returned.
+      return {
+        'result': {
+          'merged': result.merged,
+          'message': result.message,
+          if (result.sha != null) 'sha': result.sha,
+        },
+      };
     },
   ),
   RepoOp(

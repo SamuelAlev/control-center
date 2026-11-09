@@ -2,26 +2,31 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_anchor_index.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/build_github_review_use_case.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/compute_review_verdict_use_case.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/github_review_plan.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_verdict.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_walkthrough_summary.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/network/github_pr_client.dart';
 
-/// Resolves the GitHub client a review is published on: [actingUserId]'s own
-/// credential when set, else the workspace's background identity for
-/// [owner]'s repos.
-typedef GitHubPrClientResolver =
-    GitHubPrClient Function(
+/// Resolves the forge client a review on [repoFullName] is published on, from
+/// the workspace's own repo row: ITS forge picks the adapter, and
+/// [actingUserId] picks whose name the review carries (null → the
+/// workspace's automation identity). Null when the workspace links no forge
+/// repo by that name.
+typedef ReviewForgeClientResolver =
+    Future<ForgePrClient?> Function(
       String? actingUserId, {
       required String workspaceId,
-      required String owner,
+      required String repoFullName,
     });
 
 /// How automation attributes what it posts when the post lands under a
@@ -38,35 +43,39 @@ typedef AutomatedReviewAttribution =
       String? actingUserId,
     });
 
-/// Publishes a workspace's structured review findings to GitHub as a single
-/// pull-request review: inline line-anchored comments plus a verdict summary.
+/// Publishes a workspace's structured review findings to the repo's forge as
+/// one pull-request review: inline line-anchored comments plus a verdict
+/// summary, through [ForgePrClient.submitReview].
 ///
 /// This is the user-gated publish step that `finalize_review` deliberately
 /// defers. It reuses the same consensus rule and verdict computation, then
 /// maps the findings into a [GitHubReviewPlan] via [BuildGitHubReviewUseCase]
-/// and submits it. If GitHub rejects an inline anchor that is not part of the
-/// diff (422), the findings are folded into the body so nothing is dropped.
+/// (GitHub's vocabulary, which the port's verdicts mirror) and submits it.
+/// A "changes requested" verdict on a forge without
+/// [ForgeCapability.requestChanges] lands as a comment review. If the forge
+/// rejects an inline anchor that is not part of the diff (422), the findings
+/// are folded into the body so nothing is dropped.
 class ReviewPublisherService implements ReviewPublisherPort {
   /// Creates a [ReviewPublisherService].
   ///
-  /// [githubPrClientFor] resolves the client to submit on, given the acting
-  /// user, the workspace and the repo owner. Resolved per publish rather than
-  /// held: the review a person presses "publish" on has to arrive under THEIR
-  /// account, and the one an agent auto-publishes under the workspace's
-  /// background identity — one captured client cannot be both, and that
-  /// identity depends on the workspace's GitHub mode and the repo's owner.
+  /// [forgeClientFor] resolves the client to submit on, given the acting
+  /// user, the workspace and the review's repo. Resolved per publish rather
+  /// than held: the review a person presses "publish" on has to arrive under
+  /// THEIR account, and the one an agent auto-publishes under the workspace's
+  /// background identity — one captured client cannot be both, and the repo
+  /// decides which forge it is.
   ReviewPublisherService({
-    required GitHubPrClientResolver githubPrClientFor,
+    required ReviewForgeClientResolver forgeClientFor,
     required this._messaging,
     required this._reviewSpaces,
     this._automatedAttribution,
     BuildGitHubReviewUseCase? buildReview,
     ComputeReviewVerdictUseCase? computeVerdict,
-  }) : _githubFor = githubPrClientFor,
+  }) : _clientFor = forgeClientFor,
        _buildReview = buildReview ?? const BuildGitHubReviewUseCase(),
        _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
 
-  final GitHubPrClientResolver _githubFor;
+  final ReviewForgeClientResolver _clientFor;
   final AutomatedReviewAttribution? _automatedAttribution;
   final MessagingRepository _messaging;
   final ReviewSpaceRepository _reviewSpaces;
@@ -97,16 +106,21 @@ class ReviewPublisherService implements ReviewPublisherPort {
         'Review channel $spaceId belongs to a different workspace.',
       );
     }
-    final parts = association.repoFullName.split('/');
-    if (parts.length != 2) {
-      throw ArgumentError('Invalid repoFullName: ${association.repoFullName}');
+    final client = await _clientFor(
+      actingUserId,
+      workspaceId: workspaceId,
+      repoFullName: association.repoFullName,
+    );
+    if (client == null) {
+      throw StateError(
+        'No forge repo ${association.repoFullName} is linked to this '
+        'workspace.',
+      );
     }
-    final owner = parts[0];
-    final repo = parts[1];
 
     // Space-wide: findings are filed in each reviewer's own stream, so
     // publishing must gather from every conversation in the room or it posts a
-    // subset of the review to GitHub.
+    // subset of the review to the forge.
     final messages = await _messaging.getSpaceMessages(workspaceId, spaceId);
     final drafts = _selectFindings(messages, selection);
     // The finalized summary's verdict is the authoritative one (findings
@@ -116,14 +130,14 @@ class ReviewPublisherService implements ReviewPublisherPort {
     final verdict =
         ReviewVerdict.fromMetadata(summary?.metadata) ??
         _computeVerdict.execute(drafts.map((d) => d.payload).toList());
-    final plan = _buildReview.execute(
+    final built = _buildReview.execute(
       findings: drafts,
       verdict: verdict,
       walkthrough: summary == null
           ? null
           : ReviewWalkthroughSummary.fromMetadata(summary.metadata),
       // Automation never approves: only a person pressing publish may ship
-      // an APPROVE, and GitHub itself refuses one on their own PR.
+      // an APPROVE, and the forge itself refuses one on their own PR.
       approveOnShip: approveOnShip && actingUserId != null,
       // What the finalizer demoted at this review's level. Read from the
       // summary rather than recomputed here, so the published review collapses
@@ -135,30 +149,22 @@ class ReviewPublisherService implements ReviewPublisherPort {
       // review ran, and the author may have rewritten the very lines a finding
       // points at — a comment on code that has already moved on is the most
       // trust-destroying thing a reviewer can leave.
-      anchors: await _anchorIndex(
-        github: _githubFor(
-          actingUserId,
-          workspaceId: workspaceId,
-          owner: owner,
-        ),
-        owner: owner,
-        repo: repo,
-        prNumber: association.prNumber,
-      ),
+      anchors: await _anchorIndex(client, association.prNumber),
     );
+    final plan = _withinCapabilities(built, client.capabilities);
 
     // A person pressing publish posts their own review, unattributed;
-    // automation names itself when it posts under somebody's account.
-    final attribute = actingUserId == null
+    // automation names itself when it posts under somebody's account. Only
+    // GitHub's Connect lane posts automation under a person's account (its
+    // one-repository tokens are children of the accountable human's grant).
+    final attribute = actingUserId == null && client.forge == ForgeHost.github
         ? await _automatedAttribution?.call(
             workspaceId: workspaceId,
-            owner: owner,
+            owner: client.owner,
           )
         : null;
     final submitted = await _submit(
-      github: _githubFor(actingUserId, workspaceId: workspaceId, owner: owner),
-      owner: owner,
-      repo: repo,
+      client: client,
       prNumber: association.prNumber,
       plan: plan,
       attribute: attribute ?? _unattributed,
@@ -234,14 +240,9 @@ class ReviewPublisherService implements ReviewPublisherPort {
   /// an empty index would treat every finding as out-of-diff and silently
   /// publish a review with no inline comments, turning one failed API call
   /// into a review that looks like it found nothing.
-  Future<DiffAnchorIndex> _anchorIndex({
-    required GitHubPrClient github,
-    required String owner,
-    required String repo,
-    required int prNumber,
-  }) async {
+  Future<DiffAnchorIndex> _anchorIndex(ForgePrClient client, int prNumber) async {
     try {
-      final files = await github.listPullRequestFiles(owner, repo, prNumber);
+      final files = (await client.listFiles(prNumber)).files;
       if (files.isEmpty) {
         return DiffAnchorIndex.permissive;
       }
@@ -251,11 +252,25 @@ class ReviewPublisherService implements ReviewPublisherPort {
     } on Object catch (e) {
       CcInfraLog.warning(
         'review publish: could not read the PR diff to verify anchors '
-        '($owner/$repo#$prNumber): $e — publishing every finding inline',
+        '(${client.owner}/${client.repo}#$prNumber): $e — publishing every '
+        'finding inline',
       );
       return DiffAnchorIndex.permissive;
     }
   }
+
+  /// [plan] as [capabilities] can express it: a "changes requested" verdict
+  /// on a forge without one becomes a comment review with the same body.
+  static GitHubReviewPlan _withinCapabilities(
+    GitHubReviewPlan plan,
+    ForgeCapabilities capabilities,
+  ) => plan.event == 'REQUEST_CHANGES' && !capabilities.requestChanges
+      ? GitHubReviewPlan(
+          event: 'COMMENT',
+          body: plan.body,
+          inlineComments: plan.inlineComments,
+        )
+      : plan;
 
   /// The finding ids the finalizer demoted into the nitpick group, from the
   /// latest `review_summary` metadata. Empty when the review predates levels
@@ -268,53 +283,59 @@ class ReviewPublisherService implements ReviewPublisherPort {
 
   static String _unattributed(String body) => body;
 
-  Future<({int reviewId, bool usedFallback})> _submit({
-    required GitHubPrClient github,
-    required String owner,
-    required String repo,
+  static ForgeReviewVerdict _verdict(String event) => switch (event) {
+    'APPROVE' => ForgeReviewVerdict.approve,
+    'REQUEST_CHANGES' => ForgeReviewVerdict.requestChanges,
+    _ => ForgeReviewVerdict.comment,
+  };
+
+  Future<({int? reviewId, bool usedFallback})> _submit({
+    required ForgePrClient client,
     required int prNumber,
     required GitHubReviewPlan plan,
     required String Function(String body) attribute,
   }) async {
     if (plan.inlineComments.isEmpty) {
-      final review = await github.submitReview(
-        owner,
-        repo,
+      final id = await client.submitReview(
         prNumber: prNumber,
-        event: plan.event,
+        verdict: _verdict(plan.event),
         body: attribute(plan.body),
       );
-      return (reviewId: review.id, usedFallback: false);
+      return (reviewId: id, usedFallback: false);
     }
     try {
-      final review = await github.submitReview(
-        owner,
-        repo,
+      final id = await client.submitReview(
         prNumber: prNumber,
-        event: plan.event,
+        verdict: _verdict(plan.event),
         body: attribute(plan.body),
         comments: [
           for (final c in plan.inlineComments)
-            {...c.toJson(), 'body': attribute(c.body)},
+            PendingReviewComment(
+              path: c.path,
+              line: c.line,
+              body: attribute(c.body),
+              side: c.side,
+              startLine: c.startLine,
+              startSide: c.startSide,
+            ),
         ],
       );
-      return (reviewId: review.id, usedFallback: false);
+      return (reviewId: id, usedFallback: false);
     } on NetworkException catch (e) {
-      // A 422 means at least one inline anchor isn't part of the diff; GitHub
-      // rejects the whole review. Fold the findings into the body so they are
-      // never silently dropped. Re-throw anything else (auth, network, 5xx).
+      // A 422 means at least one inline anchor isn't part of the diff; the
+      // forge rejects the whole review. Fold the findings into the body so they
+      // are never silently dropped. Re-throw anything else (auth, network,
+      // 5xx).
       if (e.statusCode != 422) {
         rethrow;
       }
       final flat = plan.flattenedToBody();
-      final review = await github.submitReview(
-        owner,
-        repo,
+      final id = await client.submitReview(
         prNumber: prNumber,
-        event: flat.event,
+        verdict: _verdict(flat.event),
         body: attribute(flat.body),
       );
-      return (reviewId: review.id, usedFallback: true);
+      return (reviewId: id, usedFallback: true);
     }
   }
 }

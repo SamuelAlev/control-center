@@ -111,7 +111,9 @@ class ComposeRefreshResult {
 ///
 /// The worktree's compose file is read only by [plan]. A running container can
 /// write to the worktree, so `up` starts the model preflight checked, from the
-/// state directory, and everything else finds the stack by project name.
+/// state directory, and everything else takes a [ComposeProject]: the stack by
+/// project name, run from the state directory, with no plan, no lease and no
+/// file of the repo's.
 class ComposeDriver {
   /// Creates a [ComposeDriver].
   ComposeDriver({
@@ -379,9 +381,13 @@ class ComposeDriver {
     await staged.rename(file.path);
   }
 
-  /// Reads where every planned service stands.
-  Future<List<ComposeServiceState>> status(ComposePlan plan) async {
-    final result = await _compose(plan, const [
+  /// Reads where every service stands: each of [services] when given (one
+  /// with no container yet is `waiting`), otherwise whatever has a container.
+  Future<List<ComposeServiceState>> status(
+    ComposeProject project, {
+    List<String>? services,
+  }) async {
+    final result = await _byName(project, const [
       'ps',
       '--all',
       '--format',
@@ -391,8 +397,14 @@ class ComposeDriver {
       throw _commandFailure('compose-ps-failed', result);
     }
     final containers = _parseJsonLines(result.rawStdout);
+    final names =
+        services ??
+        {
+          for (final row in containers)
+            if (row['Service'] case final String name) name,
+        }.toList();
     return [
-      for (final service in plan.services)
+      for (final service in names)
         _serviceState(
           service,
           containers.where((row) => row['Service'] == service),
@@ -424,13 +436,16 @@ class ComposeDriver {
         '--format',
         '{{json .}}',
       ],
-      workingDirectory: plan.context.workingDirectory,
+      workingDirectory: plan.context.stateDir,
       environment: _variables(plan.context),
     );
     final subscription = events.events.listen((_) => wake.add(null));
     try {
       while (true) {
-        final states = await status(plan);
+        final states = await status(
+          plan.context.project,
+          services: plan.services,
+        );
         final failed = states.where((state) => state.state == 'failed');
         if (failed.isNotEmpty) {
           throw await _serviceFailure(plan, failed.toList(growable: false));
@@ -500,11 +515,11 @@ class ComposeDriver {
 
   /// The last [tail] lines of [service].
   Future<String> logs(
-    ComposePlan plan,
+    ComposeProject project,
     String? service, {
     int tail = 200,
   }) async {
-    final result = await _compose(plan, [
+    final result = await _byName(project, [
       'logs',
       '--no-color',
       '--tail',
@@ -518,11 +533,11 @@ class ComposeDriver {
   /// logs`, which runs from the first listener to the last, and those who join
   /// later see only what comes after.
   Stream<String> followLogs(
-    ComposePlan plan,
+    ComposeProject project,
     String? service, {
     int tail = 200,
   }) {
-    final key = '${plan.context.projectName}/${service ?? '*'}';
+    final key = '${project.projectName}/${service ?? '*'}';
     final existing = _followers[key]?.stream;
     if (existing != null) {
       return existing;
@@ -534,7 +549,7 @@ class ComposeDriver {
     controller = StreamController<String>.broadcast(
       onListen: () {
         final started = _runner.startArgv(
-          _argv(plan, [
+          _argvOf(project.projectName, [
             'logs',
             '--no-color',
             '--tail',
@@ -542,8 +557,8 @@ class ComposeDriver {
             '--follow',
             ?service,
           ]),
-          workingDirectory: plan.context.workingDirectory,
-          environment: _variables(plan.context),
+          workingDirectory: project.stateDir,
+          environment: _projectVariables(project),
         );
         handle = started;
         started.events.listen((event) {
@@ -576,12 +591,12 @@ class ComposeDriver {
 
   /// `exec -T <service> <argv>`.
   Future<EnvironmentExecResult> exec(
-    ComposePlan plan,
+    ComposeProject project,
     String service,
     List<String> command, {
     Duration? timeout,
   }) async {
-    final result = await _compose(plan, [
+    final result = await _byName(project, [
       'exec',
       '-T',
       service,
@@ -594,22 +609,9 @@ class ComposeDriver {
     );
   }
 
-  /// `restart <service>`.
   /// `restart <service>`, or every service.
-  Future<void> restart(ComposePlan plan, String? service) =>
-      _mustRun(plan, ['restart', ?service], 'compose-restart-failed');
-
-  /// `stop` by project name alone, for when the file is gone or unreadable.
-  Future<void> stopProject(String environmentId) async {
-    final result = await _runner.runArgv(
-      ['docker', 'compose', '-p', composeProjectName(environmentId), 'stop'],
-      environment: const {'DOCKER_CLI_HINTS': 'false'},
-      timeout: upTimeout,
-    );
-    if (!result.succeeded) {
-      throw _commandFailure('compose-stop-failed', result);
-    }
-  }
+  Future<void> restart(ComposeProject project, String? service) =>
+      _mustRunByName(project, ['restart', ?service], 'compose-restart-failed');
 
   /// A published port is one fixed host port, and one host port can't front
   /// several containers: compose would fail on the second with a bind error.
@@ -643,39 +645,33 @@ class ComposeDriver {
   }
 
   /// `stop`, keeping containers and data.
-  Future<void> stop(ComposePlan plan) =>
-      _mustRun(plan, const ['stop'], 'compose-stop-failed');
+  Future<void> stop(ComposeProject project) =>
+      _mustRunByName(project, const ['stop'], 'compose-stop-failed');
 
   /// `up -d` after a stop.
   Future<List<String>> start(ComposePlan plan) => up(plan, build: false);
 
   /// `down -v`, then `up`. Running `create` tasks again is the caller's part.
   Future<List<String>> reset(ComposePlan plan) async {
-    await _mustRun(plan, const ['down', '-v'], 'compose-reset-failed');
+    await _mustRunByName(plan.context.project, const [
+      'down',
+      '-v',
+    ], 'compose-reset-failed');
     return up(plan);
   }
 
-  /// `down -v --remove-orphans --rmi local`.
-  Future<void> destroy(ComposePlan plan) => _mustRun(plan, const [
+  /// `down -v --remove-orphans`, and `--rmi local` unless
+  /// [removeLocalImages] is false: an orphan found by label alone may share
+  /// images with a stack that is still there.
+  Future<void> destroy(
+    ComposeProject project, {
+    bool removeLocalImages = true,
+  }) => _mustRunByName(project, [
     'down',
     '-v',
     '--remove-orphans',
-    '--rmi',
-    'local',
+    if (removeLocalImages) ...['--rmi', 'local'],
   ], 'compose-destroy-failed');
-
-  /// Destroys a project whose compose file is gone, by name alone.
-  Future<void> destroyProject(String environmentId) async {
-    final project = composeProjectName(environmentId);
-    final result = await _runner.runArgv(
-      ['docker', 'compose', '-p', project, 'down', '-v', '--remove-orphans'],
-      environment: const {'DOCKER_CLI_HINTS': 'false'},
-      timeout: upTimeout,
-    );
-    if (!result.succeeded) {
-      throw _commandFailure('compose-destroy-failed', result);
-    }
-  }
 
   /// Plans again, keeping every port, and applies the result if it changed.
   ///
@@ -830,7 +826,11 @@ class ComposeDriver {
     for (final state in failed) {
       String log;
       try {
-        log = await logs(plan, state.service, tail: failureLogLines);
+        log = await logs(
+          plan.context.project,
+          state.service,
+          tail: failureLogLines,
+        );
       } on Object catch (e) {
         CcInfraLog.warning('could not read ${state.service} logs: $e');
         log = '';
@@ -895,16 +895,28 @@ class ComposeDriver {
   File _appliedHash(ComposeContext context) =>
       File(p.join(context.stateDir, appliedHashFile));
 
-  Future<void> _mustRun(
-    ComposePlan plan,
+  Future<void> _mustRunByName(
+    ComposeProject project,
     List<String> arguments,
     String code,
   ) async {
-    final result = await _compose(plan, arguments, timeout: upTimeout);
+    final result = await _byName(project, arguments, timeout: upTimeout);
     if (!result.succeeded) {
       throw _commandFailure(code, result);
     }
   }
+
+  /// [arguments] against [project] by name, from its state directory.
+  Future<EnvironmentCommandResult> _byName(
+    ComposeProject project,
+    List<String> arguments, {
+    Duration? timeout,
+  }) => _runner.runArgv(
+    _argvOf(project.projectName, arguments),
+    workingDirectory: project.stateDir,
+    environment: _projectVariables(project),
+    timeout: timeout ?? commandTimeout,
+  );
 
   Future<EnvironmentCommandResult> _compose(
     ComposePlan plan,
@@ -921,11 +933,14 @@ class ComposeDriver {
 
   /// By project name, so Compose reads no file: containers carry their own
   /// config, and `-p` with no `-f` leaves the worktree's compose file alone.
-  List<String> _argv(ComposePlan plan, List<String> arguments) => [
+  List<String> _argv(ComposePlan plan, List<String> arguments) =>
+      _argvOf(plan.context.projectName, arguments);
+
+  List<String> _argvOf(String projectName, List<String> arguments) => [
     'docker',
     'compose',
     '-p',
-    plan.context.projectName,
+    projectName,
     ...arguments,
   ];
 
@@ -933,9 +948,12 @@ class ComposeDriver {
   /// a reference built from `${VAR}` can't be seen until compose expands it.
   ///
   /// `COMPOSE_FILE` is for terminals and tasks. The driver names its files.
-  Map<String, String> _variables(ComposeContext context) => {
-    ...context.environment,
-    'COMPOSE_PROJECT_NAME': context.projectName,
+  Map<String, String> _variables(ComposeContext context) =>
+      _projectVariables(context.project);
+
+  Map<String, String> _projectVariables(ComposeProject project) => {
+    ...project.environment,
+    'COMPOSE_PROJECT_NAME': project.projectName,
     'COMPOSE_EXPERIMENTAL_OCI_REMOTE': '0',
     'COMPOSE_EXPERIMENTAL_GIT_REMOTE': '0',
     'COMPOSE_ANSI': 'never',

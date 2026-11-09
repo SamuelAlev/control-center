@@ -17,8 +17,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
-import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -359,6 +359,22 @@ class RpcPrReviewRepository implements PrReviewRepository {
         defer: includePatches,
       );
 
+  /// The same subscription as [watchFiles] with patches, read as loads so
+  /// the server's `truncated` (the forge capped its listing) survives.
+  @override
+  Stream<PrFilesLoad> watchFilesLoad(int prNumber) => _mapAfterPaint(
+    _client.subscribe(
+      'pr_review.watchFiles',
+      _coords({'pr_number': prNumber}),
+    ),
+    (data) => PrFilesLoad(
+      files: _filesFromData(data),
+      isComplete: true,
+      truncated: data['truncated'] == true,
+    ),
+    defer: true,
+  );
+
   @override
   Stream<String> watchFileContent(String path, String ref) => _client
       .subscribe(
@@ -436,9 +452,11 @@ class RpcPrReviewRepository implements PrReviewRepository {
     ),
     (data) => ((data['comments'] as List?) ?? const [])
         .whereType<Map>()
-        .map((c) => _reviewCommentFromDto(
-          PrCodeReviewCommentDto.fromJson(c.cast<String, dynamic>()),
-        ))
+        .map(
+          (c) => _reviewCommentFromDto(
+            PrCodeReviewCommentDto.fromJson(c.cast<String, dynamic>()),
+          ),
+        )
         .toList(),
     defer: includeHunks,
   );
@@ -820,7 +838,7 @@ class RpcPrReviewRepository implements PrReviewRepository {
   );
 
   @override
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
@@ -838,7 +856,12 @@ class RpcPrReviewRepository implements PrReviewRepository {
       idempotencyKey: idempotencyKey,
     );
     final result = data['result'];
-    return result is Map ? result.cast<String, dynamic>() : <String, dynamic>{};
+    final json = result is Map ? result.cast<String, dynamic>() : const {};
+    return PrMergeOutcome(
+      merged: json['merged'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      sha: json['sha'] as String?,
+    );
   }
 
   @override
@@ -1086,31 +1109,6 @@ class RpcPrReviewRepository implements PrReviewRepository {
             (f) => _fileFromDto(PrFileDto.fromJson(f.cast<String, dynamic>())),
           )
           .toList();
-}
-
-/// A [ForgeProviderFactory] that resolves PR-review repositories over the RPC
-/// client — the thin-client composition of the GitHub VCS host.
-///
-/// `create(ctx)` returns an [RpcPrReviewRepository] for `ctx.repo`'s GitHub
-/// coordinates; the host resolves the cache-backed repository against the bound
-/// workspace's linked repos and owns GitHub auth. Always reports
-/// `ForgeHost.github` — the only host Control Center serves over RPC today.
-class RpcForgeProviderFactory implements ForgeProviderFactory {
-  /// Creates an [RpcForgeProviderFactory] over the RPC client.
-  RpcForgeProviderFactory(this._client);
-
-  final RemoteRpcClient _client;
-
-  @override
-  ForgeHost get forge => ForgeHost.github;
-
-  @override
-  PrReviewRepository create(ForgeProviderContext ctx) => RpcPrReviewRepository(
-    _client,
-    workspaceId: ctx.workspaceId,
-    owner: ctx.repo.remoteOwner,
-    repo: ctx.repo.remoteName,
-  );
 }
 
 // Enum name→value lookups, built ONCE.

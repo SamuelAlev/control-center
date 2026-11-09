@@ -12,12 +12,12 @@ import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
-import 'package:cc_infra/src/context/snapcompact_compactor.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/controlled_file_tools.dart';
 import 'package:cc_infra/src/evaluation/local_evaluation_command_runner.dart';
 import 'package:cc_infra/src/evaluation/provider_call_budget_guard.dart';
 import 'package:cc_infra/src/harness/file_tool_output_store.dart';
+import 'package:cc_infra/src/harness/harness_run_factory.dart';
 import 'package:path/path.dart' as p;
 
 /// Builds the context compactor for a memory policy under test.
@@ -382,7 +382,9 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
           readerHasVision: visionLookup?.call(qualified) ?? false,
           calibration: calibration,
           onResult: (result) {
-            if (result.summarized) {
+            // A fold, whether the model or the structural digest wrote its
+            // summary (`summarized` is the model-written case only).
+            if (result.messagesFolded > 0) {
               foldSummaries++;
             }
             maskedObservations += result.maskedObservations;
@@ -405,25 +407,34 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
           effort: ReasoningEffort.fromId(request.effective.effortLevel),
           cacheKey: 'cc-eval:${request.task.id}',
           cacheEnabled: request.effective.cacheEnabled,
-          autoApprove: true,
-          approvalCallback: approvalCallbackFactory?.call(request),
-          budget: costLimitMicros == null
-              ? const HarnessBudget()
-              : const HarnessBudget(timeBudget: Duration(minutes: 15)),
-          externalBudgetExceeded: budgetExceeded,
-          maxProviderRetries: costLimitMicros == null ? 3 : 0,
-          contextWindow: contextWindowTokens,
-          maxParallelToolCalls: maxParallelToolCalls,
-          overlapReadOnlyTools:
-              hasOverlapSafe &&
-              request.effective.toolOverlap == ToolOverlapMode.overlapReadOnly,
-          compactor: compactor,
-          tokenCalibration: calibration,
-          observationIngest: ingest,
-          callLedger: ledger,
           purpose: LlmCallPurpose.main,
-          transcriptStore: transcript,
-          transcriptKey: transcriptKey,
+          tools: LoopToolConfig(
+            autoApprove: true,
+            approvalCallback: approvalCallbackFactory?.call(request),
+            maxParallelToolCalls: maxParallelToolCalls,
+            overlapReadOnlyTools:
+                hasOverlapSafe &&
+                request.effective.toolOverlap ==
+                    ToolOverlapMode.overlapReadOnly,
+            observationIngest: ingest,
+          ),
+          guards: LoopGuardConfig(
+            budget: costLimitMicros == null
+                ? const HarnessBudget()
+                : const HarnessBudget(timeBudget: Duration(minutes: 15)),
+            externalBudgetExceeded: budgetExceeded,
+            maxProviderRetries: costLimitMicros == null ? 3 : 0,
+            callLedger: ledger,
+          ),
+          compaction: LoopCompactionConfig(
+            contextWindow: contextWindowTokens,
+            compactor: compactor,
+            tokenCalibration: calibration,
+          ),
+          transcript: LoopTranscriptConfig(
+            store: transcript,
+            key: transcriptKey,
+          ),
         );
 
         await for (final event in const AgentLoopRunner().run(
@@ -443,6 +454,12 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
               }
             case LoopThinkingDelta():
               firstModelEventMs ??= started.elapsedMilliseconds;
+            case LoopTurnDiscarded(:final reason):
+              // Nothing recorded per delta here; the retried attempt's
+              // output is what the transcript keeps.
+              onNotice?.call(
+                'discarded a partial attempt (${reason ?? 'retry'})',
+              );
             case LoopToolCallStart(
               :final toolName,
               :final toolUseId,
@@ -500,7 +517,11 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
               // The compactor decorator already recorded the pass; this only
               // surfaces it to the operator.
               onNotice?.call(
-                'context ${summarized ? 'compacted' : 'pruned'}: '
+                'context ${summarized
+                    ? 'compacted'
+                    : messagesFolded > 0
+                    ? 'folded'
+                    : 'pruned'}: '
                 '$messagesFolded message(s) folded',
               );
             case LoopToolsActivated(:final names, :final trigger):
@@ -705,26 +726,32 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
         required calibration,
         required onResult,
       }) {
-        final text = DefaultHarnessCompactor(
-          summarizer: LlmHarnessSummarizer(provider),
-          config: CompactionConfig(policy: _policy(policy)),
-          calibration: calibration,
+        // The same stack production runs (shared with the session and
+        // subagent hosts), so an arm measures what ships — cache economics
+        // included.
+        void onRewrite(HarnessRewriteDecision decision) =>
+            onNotice?.call('rewrite: $decision');
+        if (policy != MemoryPolicyMode.snapshotImages) {
+          return buildHarnessTextCompactor(
+            summaryProvider: provider,
+            providerId: providerId,
+            modelId: modelId,
+            config: CompactionConfig(policy: _policy(policy)),
+            calibration: calibration,
+            onRewriteDecision: onRewrite,
+          );
+        }
+        return buildHarnessCompactor(
+          summaryProvider: provider,
           providerId: providerId,
           modelId: modelId,
-          onRewriteDecision: (decision) => onNotice?.call('rewrite: $decision'),
-        );
-        if (policy != MemoryPolicyMode.snapshotImages) {
-          return text;
-        }
-        return SnapcompactCompactor(
-          fallback: text,
-          modelId: '$providerId/$modelId',
+          config: const CompactionConfig(policy: CompactionPolicy.hybrid),
+          calibration: calibration,
           readerHasVision: readerHasVision,
           // Explicit opt-in: snapshot folding is the STRATEGY for this arm, not
           // a recovery path (report 3G).
           preferSnapshots: true,
-          config: const CompactionConfig(policy: CompactionPolicy.hybrid),
-          providerId: providerId,
+          onRewriteDecision: onRewrite,
         );
       };
 
@@ -861,6 +888,7 @@ class _RecordingCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     final imagesBefore = _imageBlocks(history);
     final result = await _inner.maybeCompact(
@@ -870,6 +898,7 @@ class _RecordingCompactor implements HarnessCompactor {
       reservedOutputTokens: reservedOutputTokens,
       selfAgentName: selfAgentName,
       force: force,
+      cancel: cancel,
     );
     _countNewImages(history, imagesBefore);
     onResult(result);

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:cc_server_core/src/notification_wire.dart'
+    show notificationTargetsUser;
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:cc_server_core/src/push/web_push_transport.dart';
 import 'package:webpush_encryption/webpush_encryption.dart'
@@ -191,7 +193,7 @@ class WebPushService {
       if (record == null ||
           record.quiet ||
           !record.categories.contains(categoryForDevice) ||
-          !pushFrameTargetsUser(item.method, item.params, device.userId!)) {
+          !notificationTargetsUser(item.method, item.params, device.userId!)) {
         continue;
       }
       if (_ownerOnlyPrMethod(item.method) &&
@@ -358,39 +360,6 @@ bool _ownerOnlyPrMethod(String method) => const {
   'notifications/pr_thread_replied',
   'notifications/pr_thread_resolved',
 }.contains(method);
-
-/// Fail closed for directed events; self-authored messages are not alerts.
-bool pushFrameTargetsUser(
-  String method,
-  Map<String, dynamic> p,
-  String userId,
-) {
-  final recipient = p['for_user_id'];
-  if (recipient != null && recipient != userId) {
-    return false;
-  }
-  if (method == 'notifications/message_received') {
-    if (p['sender_user_id'] == userId ||
-        (p['content_preview'] as String? ?? '').trim().isEmpty) {
-      return false;
-    }
-    final mentions = p['mentions'];
-    if (mentions is List && mentions.contains('user:$userId')) {
-      return true;
-    }
-    final requestedBy = p['requested_by_user_id'];
-    return p['is_agent_message'] == true &&
-        (requestedBy == null || requestedBy == userId);
-  }
-  if (method == 'notifications/ticket_assigned' &&
-      p['assignee_type'] == 'user') {
-    return p['assigned_agent_id'] == userId;
-  }
-  if (method == 'notifications/rig_control_changed' && p['held'] == true) {
-    return p['controller'] != 'user:$userId';
-  }
-  return true;
-}
 
 /// Only known PWA route shapes. Never trust a URL embedded in the event frame.
 String safePushRoute(

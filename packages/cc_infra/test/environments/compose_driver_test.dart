@@ -1534,12 +1534,12 @@ services:
     }
 
     test('only up reads a file: the rest go by project name', () async {
-      await driver.logs(subject, 'web');
-      await driver.exec(subject, 'web', ['ls']);
-      await driver.restart(subject, 'web');
-      await driver.stop(subject);
-      await driver.destroy(subject);
-      await driver.status(subject);
+      await driver.logs(subject.context.project, 'web');
+      await driver.exec(subject.context.project, 'web', ['ls']);
+      await driver.restart(subject.context.project, 'web');
+      await driver.stop(subject.context.project);
+      await driver.destroy(subject.context.project);
+      await driver.status(subject.context.project);
       expect(runner.calls, hasLength(6));
       for (final call in runner.calls) {
         expect(call.argv.take(4), [
@@ -1553,7 +1553,7 @@ services:
     });
 
     test('logs', () async {
-      expect(await driver.logs(subject, 'web', tail: 50), 'last words');
+      expect(await driver.logs(subject.context.project, 'web', tail: 50), 'last words');
       expect(tailOf(runner.calls.single), [
         'logs',
         '--no-color',
@@ -1565,7 +1565,7 @@ services:
 
     test('exec', () async {
       runner.handler = (_) => failed(3, stderr: 'nope', stdout: 'partial');
-      final result = await driver.exec(subject, 'web', ['ls', '-la']);
+      final result = await driver.exec(subject.context.project, 'web', ['ls', '-la']);
       expect(tailOf(runner.calls.single), ['exec', '-T', 'web', 'ls', '-la']);
       expect(
         (result.exitCode, result.stdout, result.stderr),
@@ -1574,12 +1574,12 @@ services:
     });
 
     test('restart', () async {
-      await driver.restart(subject, 'web');
+      await driver.restart(subject.context.project, 'web');
       expect(tailOf(runner.calls.single), ['restart', 'web']);
     });
 
     test('stop keeps containers', () async {
-      await driver.stop(subject);
+      await driver.stop(subject.context.project);
       expect(tailOf(runner.calls.single), ['stop']);
     });
 
@@ -1604,7 +1604,7 @@ services:
     });
 
     test('destroy removes volumes, orphans and local images', () async {
-      await driver.destroy(subject);
+      await driver.destroy(subject.context.project);
       expect(tailOf(runner.calls.single), [
         'down',
         '-v',
@@ -1614,8 +1614,12 @@ services:
       ]);
     });
 
-    test('destroyProject needs no compose file', () async {
-      await driver.destroyProject(_envId);
+    test('destroy needs no compose file, nor a state dir', () async {
+      // An orphan the host knows only by its label: no plan, no directory.
+      await driver.destroy(
+        const ComposeProject(environmentId: _envId),
+        removeLocalImages: false,
+      );
       expect(runner.calls.single.argv, [
         'docker',
         'compose',
@@ -1625,12 +1629,24 @@ services:
         '-v',
         '--remove-orphans',
       ]);
+      expect(runner.calls.single.workingDirectory, isNull);
+    });
+
+    test('by-name commands run from the state dir', () async {
+      // `.env` and relative bind sources resolve against the project's own
+      // directory, never against wherever the server was launched.
+      await driver.stop(subject.context.project);
+      expect(
+        runner.calls.single.workingDirectory,
+        subject.context.project.stateDir,
+      );
+      expect(subject.context.project.stateDir, isNotNull);
     });
 
     test('a failed stop throws', () async {
       runner.handler = (_) => failed(1, stderr: 'daemon gone');
       await expectLater(
-        driver.stop(subject),
+        driver.stop(subject.context.project),
         failsWith('compose-stop-failed', contains('daemon gone')),
       );
     });
@@ -1638,8 +1654,8 @@ services:
     test('followers of a service share one process', () async {
       final first = <String>[];
       final second = <String>[];
-      final a = driver.followLogs(subject, 'web').listen(first.add);
-      final b = driver.followLogs(subject, 'web').listen(second.add);
+      final a = driver.followLogs(subject.context.project, 'web').listen(first.add);
+      final b = driver.followLogs(subject.context.project, 'web').listen(second.add);
       expect(runner.streams, hasLength(1));
       final stream = runner.streams.single;
       expect(stream.call.argv, containsAllInOrder(['--follow', 'web']));
@@ -1654,23 +1670,23 @@ services:
       await b.cancel();
       expect(stream.cancelled, isTrue);
 
-      final c = driver.followLogs(subject, 'web').listen((_) {});
+      final c = driver.followLogs(subject.context.project, 'web').listen((_) {});
       expect(runner.streams, hasLength(2), reason: 'a new one after the last');
       await c.cancel();
     });
 
     test('followers hear the end when logs --follow exits', () async {
       final done = Completer<void>();
-      driver.followLogs(subject, 'web').listen((_) {}, onDone: done.complete);
+      driver.followLogs(subject.context.project, 'web').listen((_) {}, onDone: done.complete);
       runner.streams.single.result.complete(ok());
       await done.future;
-      driver.followLogs(subject, 'web').listen((_) {});
+      driver.followLogs(subject.context.project, 'web').listen((_) {});
       expect(runner.streams, hasLength(2), reason: 'a fresh process');
     });
 
     test('a null service means every service', () async {
-      await driver.restart(subject, null);
-      await driver.logs(subject, null, tail: 5);
+      await driver.restart(subject.context.project, null);
+      await driver.logs(subject.context.project, null, tail: 5);
       expect(runner.calls.map(tailOf), [
         ['restart'],
         ['logs', '--no-color', '--tail', '5'],

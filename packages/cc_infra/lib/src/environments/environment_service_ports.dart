@@ -201,6 +201,11 @@ class EnvironmentRigInstance {
 /// Runs `compose` and `task` components inside a microVM.
 abstract interface class EnvironmentRigHost {
   /// Boots the rig, or reuses a stopped one, and brings its compose stack up.
+  ///
+  /// [onRigOpened] hears the rig's id the moment the rig exists, before it is
+  /// ready and before the stack comes up. Whoever owns the rig records it
+  /// there: a start that fails later still leaves a rig (and the quarantine
+  /// on its worktrees) that only a known id can tear down.
   Future<EnvironmentRigInstance> start({
     required String workspaceId,
     required String spaceId,
@@ -208,13 +213,24 @@ abstract interface class EnvironmentRigHost {
     required EnvironmentDefinition definition,
     required Map<String, String> worktrees,
     required Map<String, String> environment,
+    Future<void> Function(String rigId)? onRigOpened,
   });
 
-  /// Stops the rig, keeping its disk.
+  /// Stops the rig, keeping its disk. A rig that never became ready has no
+  /// disk worth keeping, so it is closed instead.
   Future<void> stop({required String workspaceId, required String rigId});
 
-  /// Destroys it.
+  /// Destroys it, and lifts the quarantine of what it mounted. Safe on a rig
+  /// that failed or never finished booting, and on one already gone.
   Future<void> destroy({required String workspaceId, required String rigId});
+
+  /// Where [environmentId]'s compose services stand in [rigId], found by
+  /// project name: nothing is read from the worktree.
+  Future<List<ComposeServiceState>> services({
+    required String workspaceId,
+    required String rigId,
+    required String environmentId,
+  });
 
   /// Whether [rigId] still exists and runs. A rig outlived by its row was
   /// reclaimed by its TTL or lost with the host.

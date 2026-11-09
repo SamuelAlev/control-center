@@ -1064,9 +1064,28 @@ List<EnvironmentDefinitionIssue> validateEnvironmentDefinition(
         add('$path.enabledWhen', 'Worktree tasks run before options exist');
       }
     }
+    // Components start in declared order, so `after` can only wait for one
+    // declared earlier. That also rules out every cycle.
+    final earlier = {
+      for (final other in definition.components.take(index)) other.id: other,
+    };
     for (final dependency in component.after) {
-      if (!ids.contains(dependency)) {
+      if (dependency == component.id) {
+        add('$path.after', 'A component can not wait for itself');
+      } else if (!ids.contains(dependency)) {
         add('$path.after', 'Unknown component $dependency');
+      } else if (!earlier.containsKey(dependency)) {
+        add(
+          '$path.after',
+          '$dependency is declared after this component. Move it above, '
+              'because components start in order',
+        );
+      } else if (!_startsWithStack(earlier[dependency]!)) {
+        add(
+          '$path.after',
+          '$dependency never starts with the stack, so there is nothing to '
+              'wait for',
+        );
       }
     }
     for (final entry in component.env.entries) {
@@ -1124,6 +1143,19 @@ List<EnvironmentDefinitionIssue> validateEnvironmentDefinition(
     }
   }
 
+  final composes = [
+    for (final (index, component) in definition.components.indexed)
+      if (component is ComposeEnvironmentComponent) index,
+  ];
+  for (final index in composes.skip(1)) {
+    add(
+      'components[$index]',
+      'An environment runs one compose component: they would share one '
+          'project. Put these services in the first one\'s file, or list them '
+          'in its services',
+    );
+  }
+
   if (definition.placement == EnvironmentPlacement.rig &&
       !definition.isRigEligible) {
     add('placement', 'Rig placement only runs compose and task components');
@@ -1147,6 +1179,16 @@ List<EnvironmentDefinitionIssue> validateEnvironmentDefinition(
 
   return issues;
 }
+
+/// Whether [component] is started by a stack's Start: apps open afterwards,
+/// and a task that only follows the worktree never runs there.
+bool _startsWithStack(EnvironmentComponent component) => switch (component) {
+  AppEnvironmentComponent() => false,
+  TaskEnvironmentComponent(when: final triggers) => !triggers.every(
+    (trigger) => trigger.isWorktreeTrigger,
+  ),
+  _ => true,
+};
 
 bool _isLoopbackHostPort(String? value) {
   if (value == null) {

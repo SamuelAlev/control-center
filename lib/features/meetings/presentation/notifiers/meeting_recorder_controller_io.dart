@@ -32,7 +32,7 @@ import 'package:uuid/uuid.dart';
 /// (`meeting.startRecording` → `ingestAudio` → `stopRecording`) and the host appends
 /// segments this client watches over `meeting.watchSegments`.
 /// The data edits the meeting screens drive (notes, title, action-item / decision CRUD)
-/// route through the RPC-backed `MeetingRepository` — never the DB-backed `dao*` one.
+/// route through the RPC-backed `MeetingRepository`.
 class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   static const _uuid = Uuid();
 

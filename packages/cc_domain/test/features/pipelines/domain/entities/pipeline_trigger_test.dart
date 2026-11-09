@@ -361,29 +361,59 @@ void main() {
   });
 
   group('PipelineTrigger equality and hashCode', () {
-    test('equal by the identity-and-status subset of fields', () {
+    test('equal when every field matches', () {
       final createdAt = DateTime.utc(2026, 1, 1);
-      final a = PipelineTrigger(
+      PipelineTrigger make() => PipelineTrigger(
         id: 't1',
         eventType: 'e',
         templateId: 'tpl',
         workspaceId: 'ws',
         enabled: true,
-        createdAt: createdAt,
-      );
-      final b = PipelineTrigger(
-        id: 't1',
-        eventType: 'e',
-        templateId: 'tpl',
-        workspaceId: 'ws',
-        enabled: true,
-        // Other fields differ, but equality keys on the first five.
         cronExpression: '0 0 * * *',
+        timezone: 'Europe/Berlin',
         webhookToken: 'w',
+        eventFilters: const {
+          'status': ['merged'],
+        },
+        match: const {
+          'status': ['merged', 'closed'],
+        },
         createdAt: createdAt,
       );
-      expect(a, b);
-      expect(a.hashCode, b.hashCode);
+      expect(make(), make());
+      expect(make().hashCode, make().hashCode);
+    });
+
+    test('covers every field, so an edit is never mistaken for a no-op', () {
+      // The editor and the template toggle compare triggers to decide whether
+      // a save changed anything; equality on a subset dropped schedule and
+      // filter edits.
+      final createdAt = DateTime.utc(2026, 1, 1);
+      final base = PipelineTrigger(
+        id: 't1',
+        eventType: 'e',
+        templateId: 'tpl',
+        workspaceId: 'ws',
+        enabled: true,
+        createdAt: createdAt,
+      );
+      final variants = <String, PipelineTrigger>{
+        'cronExpression': base.copyWith(cronExpression: '0 0 * * *'),
+        'timezone': base.copyWith(timezone: 'Europe/Berlin'),
+        'webhookToken': base.copyWith(webhookToken: 'w'),
+        'nextRunAt': base.copyWith(nextRunAt: DateTime.utc(2026, 2)),
+        'lastFiredAt': base.copyWith(lastFiredAt: DateTime.utc(2026, 2)),
+        'match': base.copyWith(match: const {'status': 'merged'}),
+        'catchUpPolicy': base.copyWith(catchUpPolicy: CronCatchUpPolicy.skip),
+        'eventFilters': base.copyWith(
+          eventFilters: const {
+            'status': ['merged'],
+          },
+        ),
+      };
+      for (final entry in variants.entries) {
+        expect(entry.value == base, isFalse, reason: entry.key);
+      }
     });
 
     test('differ when any equality field changes', () {
@@ -455,6 +485,46 @@ void main() {
         workspaceId: 'ws',
       );
       expect(trigger == Object(), isFalse);
+    });
+  });
+  group('PipelineTrigger.scheduleError', () {
+    PipelineTrigger sched(String? expr) => PipelineTrigger(
+      id: 't',
+      eventType: PipelineTrigger.scheduleEventType,
+      templateId: 'tpl',
+      workspaceId: 'ws',
+      cronExpression: expr,
+    );
+
+    test('accepts a positive interval and a satisfiable cron', () {
+      expect(sched('every:60').scheduleError, isNull);
+      expect(sched('0 9 * * 1-5').scheduleError, isNull);
+    });
+
+    test('rejects empty, non-positive, unparsable and unsatisfiable', () {
+      for (final bad in [
+        null,
+        '  ',
+        'every:0',
+        'every:-1',
+        'every:abc',
+        'not a cron',
+        '0 0 31 2 *',
+      ]) {
+        expect(sched(bad).scheduleError, isNotNull, reason: '$bad');
+      }
+    });
+
+    test('does not apply to non-scheduled triggers', () {
+      expect(
+        PipelineTrigger(
+          id: 't',
+          eventType: 'TicketAssigned',
+          templateId: 'tpl',
+          workspaceId: 'ws',
+        ).scheduleError,
+        isNull,
+      );
     });
   });
 }

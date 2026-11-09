@@ -148,38 +148,6 @@ final activityMutedReposProvider = Provider<Set<String>>((ref) {
   }
 });
 
-/// Only events the desktop's notification frame mapper presents. The feed
-/// also records lifecycle frames which are not operator notifications.
-const activityMethods = <String>{
-  'notifications/pr_ready_to_merge',
-  'notifications/pr_merge_blocked',
-  'notifications/pr_approved',
-  'notifications/pr_changes_requested',
-  'notifications/pr_review_dismissed',
-  'notifications/pr_checks_failed',
-  'notifications/pr_checks_recovered',
-  'notifications/pr_comment_mentioned',
-  'notifications/pr_thread_replied',
-  'notifications/pr_thread_resolved',
-  'notifications/agent_run_completed',
-  'notifications/pr_published',
-  'notifications/pr_merged',
-  'notifications/message_received',
-  'notifications/pr_mentioned',
-  'notifications/pr_review_requested',
-  'notifications/review_stale',
-  'notifications/external_pr_merged',
-  'notifications/ticket_assigned',
-  'notifications/ticket_status_changed',
-  'notifications/meeting_starting_soon',
-  'notifications/calendar_auth_expired',
-  'notifications/rig_control_changed',
-  'notifications/rig_reaped',
-  'notifications/rig_closed',
-  'notifications/agent_awaiting_input',
-  'notifications/agent_action_blocked',
-};
-
 /// Mirrors desktop precedence: dismissal/clear hide, per-item state overrides
 /// resolution and mark-all, resolved waits otherwise read by default.
 final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
@@ -189,45 +157,15 @@ final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
   final states =
       ref.watch(activityItemStatesProvider).value ??
       const <String, NotificationItemState>{};
-  final userId = ref.watch(remoteIdentityProvider).value?.userId;
   final muted = ref.watch(activityMutedReposProvider);
   final ownLogins =
       ref.watch(viewerLoginsProvider).value?.values.toSet() ?? const <String>{};
   final entries = <ActivityEntry>[];
   for (final item in feed) {
-    if (!activityMethods.contains(item.method)) continue;
+    // Who an item is FOR is decided on the server (`notificationTargetsUser`)
+    // before the feed reaches this client; only per-device preferences apply
+    // here.
     final params = item.params;
-    if (userId != null &&
-        params['for_user_id'] is String &&
-        params['for_user_id'] != userId) {
-      continue;
-    }
-    if (userId != null &&
-        params['assignee_type'] == 'user' &&
-        params['assigned_agent_id'] is String &&
-        params['assigned_agent_id'] != userId) {
-      continue;
-    }
-    if (item.method == 'notifications/message_received') {
-      if (userId != null && params['sender_user_id'] == userId) continue;
-      final mentions = (params['mentions'] as List? ?? const [])
-          .whereType<String>();
-      final mentioned = userId != null && mentions.contains('user:$userId');
-      if (!mentioned) {
-        if (params['is_agent_message'] == false) continue;
-        if (userId != null &&
-            params['requested_by_user_id'] is String &&
-            params['requested_by_user_id'] != userId) {
-          continue;
-        }
-      }
-      if ((params['content_preview'] as String? ?? '').trim().isEmpty) continue;
-    }
-    if (userId != null &&
-        params['controller'] == 'user:$userId' &&
-        params['held'] != false) {
-      continue;
-    }
     final owner = params['repo_owner'] as String?;
     final name = params['repo_name'] as String?;
     if (owner != null &&

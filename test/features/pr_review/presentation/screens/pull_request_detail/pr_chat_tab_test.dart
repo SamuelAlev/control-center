@@ -35,7 +35,15 @@ void main() {
               throw const PrSpaceUnavailable();
             }),
           ],
-          child: PrChatTab(pr: pr),
+          child: PrChatTab(
+            pr: pr,
+            prRef: (
+              workspaceId: 'ws',
+              repoFullName: pr.repoFullName,
+              number: pr.number,
+              forge: null,
+            ),
+          ),
         ),
         isDemo: true,
       ),
@@ -58,7 +66,15 @@ void main() {
               throw StateError('boom');
             }),
           ],
-          child: PrChatTab(pr: pr),
+          child: PrChatTab(
+            pr: pr,
+            prRef: (
+              workspaceId: 'ws',
+              repoFullName: pr.repoFullName,
+              number: pr.number,
+              forge: null,
+            ),
+          ),
         ),
       ),
     );

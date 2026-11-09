@@ -9,12 +9,12 @@ import 'package:cc_data/cc_data.dart'
         SignInAttemptStatus,
         SignInFailure,
         SignInLaneInfo,
-        SignInLaneMode;
+        SignInLaneMode,
+        signInFailureOfRpcError;
 import 'package:cc_remote/credential_providers.dart';
 import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -488,6 +488,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get teammate => 'Ekip arkadaşı';
 
   @override
+  String get systemSender => 'Sistem';
+
+  @override
   String get agent => 'Ajan';
 
   @override
@@ -639,12 +642,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return '$names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün veya erişimi olan bir token bağlayın.';
+    return '$names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App kurulumu askıya alındı. $names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün veya erişimi olan bir token bağlayın.';
+    return 'GitHub App kurulumu askıya alındı. $names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün.';
   }
 
   @override
@@ -2573,6 +2576,22 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Bu kod bu oturum açma işlemiyle eşleşmiyor. Kontrol edip yeniden dene.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Çok fazla yanlış kod girildi. Oturum açmayı yeniden başlatın.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Oturum açma hizmeti şu anda yanıt vermiyor. Bir dakika bekleyip yeniden deneyin.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Oturum açma reddedildi. Yeniden başlatın ve istenen tüm izinleri onaylayın.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Oturum açma başarılı oldu ancak sunucu bunu kaydedemedi. Yeniden deneyin.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

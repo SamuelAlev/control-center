@@ -52,7 +52,7 @@ class TakeoverService {
     try {
       final decoded = jsonDecode(raw);
       return decoded is Map<String, dynamic> ? decoded : null;
-    } catch (_) {
+    } on FormatException {
       return null;
     }
   }
@@ -61,50 +61,88 @@ class TakeoverService {
   Future<bool> isActive(String workspaceId, String spaceId) async =>
       await status(workspaceId, spaceId) != null;
 
-  /// Begins a take-over: pauses/stops the space's active runs and writes
-  /// the durable marker. Throws [StateError] when someone already holds it
+  /// The take-over marker for [spaceId] as it changes (null when none
+  /// stands). Backs `takeover.watch`, so clients follow the marker instead of
+  /// polling `takeover.status`.
+  Stream<Map<String, dynamic>?> watch(String workspaceId, String spaceId) =>
+      _cache(workspaceId).watch(workspaceId, cacheKind, spaceId).map((raw) {
+        if (raw == null) {
+          return null;
+        }
+        try {
+          final decoded = jsonDecode(raw);
+          return decoded is Map<String, dynamic> ? decoded : null;
+        } on FormatException {
+          return null;
+        }
+      });
+
+  /// Begins a take-over: claims the durable marker, then pauses/stops the
+  /// space's active runs. Throws [StateError] when someone already holds it
   /// (one live editor per worktree — refuse loudly, never silently share).
+  ///
+  /// The claim is one conditional write ([CacheDao.putIfAbsent]), so two
+  /// people starting a take-over at once cannot both pass. Claiming before
+  /// pausing also means no run can start in the space mid-pause: dispatch is
+  /// already gated on the marker. A failure while pausing releases the claim.
   Future<Map<String, dynamic>> begin({
     required String workspaceId,
     required String spaceId,
     required String userId,
     required String displayName,
   }) async {
-    final existing = await status(workspaceId, spaceId);
-    if (existing != null) {
-      throw StateError(
-        'This conversation is already taken over by '
-        '${existing['display_name'] ?? existing['user_id']}.',
-      );
-    }
-    final active = await _runLogs
-        .watchActiveBySpace(workspaceId, spaceId)
-        .first;
-    final paused = <String>[];
-    final stopped = <String>[];
-    for (final run in active) {
-      if (run.status != RunStatus.running && run.status != RunStatus.pending) {
-        continue;
-      }
-      if (await _pauseRun(run.id)) {
-        paused.add(run.id);
-      } else {
-        // No safe turn boundary (external CLI transport): stop instead —
-        // honest and the run stays retryable after hand-back.
-        await _stopRun(workspaceId, run.id);
-        stopped.add(run.id);
-      }
-    }
     final marker = <String, dynamic>{
       'user_id': userId,
       'display_name': displayName,
       'since': DateTime.now().toIso8601String(),
-      'paused_run_ids': paused,
-      'stopped_run_ids': stopped,
+      'paused_run_ids': <String>[],
+      'stopped_run_ids': <String>[],
     };
-    await _cache(
+    final cache = _cache(workspaceId);
+    if (!await cache.putIfAbsent(
       workspaceId,
-    ).put(workspaceId, cacheKind, spaceId, jsonEncode(marker));
+      cacheKind,
+      spaceId,
+      jsonEncode(marker),
+    )) {
+      final existing = await status(workspaceId, spaceId);
+      throw StateError(
+        'This conversation is already taken over by '
+        '${existing?['display_name'] ?? existing?['user_id'] ?? 'someone else'}.',
+      );
+    }
+    final paused = <String>[];
+    final stopped = <String>[];
+    try {
+      final active = await _runLogs
+          .watchActiveBySpace(workspaceId, spaceId)
+          .first;
+      for (final run in active) {
+        if (run.status != RunStatus.running &&
+            run.status != RunStatus.pending) {
+          continue;
+        }
+        if (await _pauseRun(run.id)) {
+          paused.add(run.id);
+        } else {
+          // No safe turn boundary (external CLI transport): stop instead —
+          // honest and the run stays retryable after hand-back.
+          await _stopRun(workspaceId, run.id);
+          stopped.add(run.id);
+        }
+      }
+      marker['paused_run_ids'] = paused;
+      marker['stopped_run_ids'] = stopped;
+      await cache.put(workspaceId, cacheKind, spaceId, jsonEncode(marker));
+    } catch (_) {
+      // Runs already paused stay listed nowhere, so resume them rather than
+      // strand them behind a released claim.
+      for (final runId in paused) {
+        await _resumeRun(runId).catchError((Object _) => false);
+      }
+      await cache.deleteEntry(workspaceId, cacheKind, spaceId);
+      rethrow;
+    }
     await _messaging.sendMessage(
       workspaceId: workspaceId,
       spaceId: spaceId,
@@ -113,54 +151,87 @@ class TakeoverService {
           '${paused.isEmpty ? '' : ' (${paused.length} run(s) paused at a turn boundary)'}'
           '${stopped.isEmpty ? '' : ' (${stopped.length} run(s) stopped)'}.',
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'system',
     );
     return marker;
   }
 
-  /// Hands control back: posts the diff summary, steers + resumes the paused
-  /// runs, clears the marker. Returns the summary that was posted.
+  /// Hands control back: clears the marker, posts the diff summary, then
+  /// steers + resumes the paused runs. Returns the summary that was posted.
+  ///
+  /// Only the person holding the take-over may hand it back, or a workspace
+  /// admin ([asAdmin]) ending a take-over someone left behind. The marker is
+  /// cleared FIRST: a resumed run's first act is checked against it, and a
+  /// failure posting the summary or resuming a run must not leave the
+  /// conversation stuck in a take-over nobody holds.
   Future<Map<String, dynamic>> handBack({
     required String workspaceId,
     required String spaceId,
     required String userId,
     required String displayName,
+    bool asAdmin = false,
     String note = '',
   }) async {
     final marker = await status(workspaceId, spaceId);
     if (marker == null) {
       throw StateError('No take-over stands on this conversation.');
     }
+    final holder = marker['user_id'];
+    if (holder != userId && !asAdmin) {
+      throw StateError(
+        'Only ${marker['display_name'] ?? holder} or a workspace admin can '
+        'hand this conversation back.',
+      );
+    }
     final summary = await _diffSummary(workspaceId, spaceId);
+    await _cache(workspaceId).deleteEntry(workspaceId, cacheKind, spaceId);
+
     final message = StringBuffer()
       ..write('$displayName handed the worktree back. ')
       ..write(summary);
     if (note.trim().isNotEmpty) {
       message.write('\nNote from $displayName: ${note.trim()}');
     }
-    await _messaging.sendMessage(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      content: message.toString(),
-      senderId: 'system',
-      senderType: 'agent',
-      messageType: 'system',
-    );
-
     final paused = (marker['paused_run_ids'] as List?)?.cast<String>() ?? [];
+    final resumed = <String>[];
+    Object? firstError;
+    try {
+      await _messaging.sendMessage(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        content: message.toString(),
+        senderId: 'system',
+        senderType: 'system',
+        messageType: 'system',
+      );
+    } catch (e) {
+      firstError = e;
+    }
     for (final runId in paused) {
       // The agent re-reads the hand-back before resuming: the steering
-      // message is drained at the top of the resumed turn.
-      await _steerRun(
-        runId,
-        'The human took over the worktree and handed it back. $message '
-        'Re-read the recent changes before continuing.',
-      );
-      await _resumeRun(runId);
+      // message is drained at the top of the resumed turn. One run failing
+      // to resume must not keep the others paused.
+      try {
+        await _steerRun(
+          runId,
+          'The human took over the worktree and handed it back. $message '
+          'Re-read the recent changes before continuing.',
+        );
+        if (await _resumeRun(runId)) {
+          resumed.add(runId);
+        }
+      } catch (e) {
+        firstError ??= e;
+      }
     }
-    await _cache(workspaceId).deleteEntry(workspaceId, cacheKind, spaceId);
-    return {'summary': summary, 'resumed_run_ids': paused};
+    if (firstError != null) {
+      throw StateError(
+        'The worktree was handed back, but notifying the agent failed: '
+        '$firstError',
+      );
+    }
+    return {'summary': summary, 'resumed_run_ids': resumed};
   }
 
   Future<String> _diffSummary(String workspaceId, String spaceId) async {

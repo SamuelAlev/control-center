@@ -29,6 +29,7 @@ class _Kind {
   static const requestableTeams = 'requestableTeams';
   static const repoLabels = 'repoLabels';
 
+  /// Kinds keyed by PR number ([CachedPrReviewRepository._prKey]).
   static const prScoped = <String>[
     prDetail,
     prDiff,
@@ -38,10 +39,12 @@ class _Kind {
     prReviewComments,
     prIssueComments,
     prTimelineEvents,
-    prCheckRuns,
-    prCommitStatuses,
     prReviewerState,
   ];
+
+  /// Kinds keyed by the head commit (`_shaKey`): a PR-number key can never
+  /// reach these rows, so invalidation deletes them by the head SHA.
+  static const headShaScoped = <String>[prCheckRuns, prCommitStatuses];
 }
 
 // GitHub caps the files endpoint at 3 000 entries; above this threshold we

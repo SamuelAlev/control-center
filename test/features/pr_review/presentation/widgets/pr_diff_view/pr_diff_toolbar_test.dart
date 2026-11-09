@@ -205,7 +205,12 @@ void main() {
     testWidgets('renders toolbar with inline comments controller', (
       tester,
     ) async {
-      final controller = PrInlineCommentsController((workspaceId: 'ws', repoFullName: 'owner/repo', number: 1));
+      final controller = PrInlineCommentsController((
+        workspaceId: 'ws',
+        repoFullName: 'owner/repo',
+        number: 1,
+        forge: null,
+      ));
 
       await tester.pumpWidget(
         _wrap(

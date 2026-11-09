@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
@@ -76,6 +77,11 @@ void main() {
         service: TicketWorkflowService(
           repository: tickets,
           eventBus: DomainEventBus(),
+          resolveEffectiveAutonomy:
+              ({required workspaceId, required agentId, spaceId}) async =>
+                  AutonomyLevel.actWithApproval,
+          resolveRemainingBudgetCents:
+              ({required workspaceId, required agentId}) async => null,
         ),
         pendingHops: PendingDelegationHops(),
       );

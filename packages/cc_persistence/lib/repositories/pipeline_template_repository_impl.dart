@@ -13,13 +13,35 @@ import 'package:cc_persistence/mappers/pipeline_template_mappers.dart';
 class PipelineTemplateRepositoryImpl implements PipelineTemplateRepository {
   /// Creates a [PipelineTemplateRepositoryImpl] over the per-workspace
   /// databases.
+  ///
+  /// `knownBodyKeys` answers which step bodies this host registered. It is a
+  /// callback because the body registry is assembled after the repository
+  /// (the engine needs both); until it answers non-empty, unknown bodies are
+  /// not checked.
   PipelineTemplateRepositoryImpl(
     this._dbs, {
     this._validator = const PipelineValidator(),
+    this._knownBodyKeys,
   });
 
   final WorkspaceDatabaseManager _dbs;
   final PipelineValidator _validator;
+  final Iterable<String> Function()? _knownBodyKeys;
+
+  /// [_validator] with the host's registered bodies, so a save naming a body
+  /// this host cannot run is refused instead of failing at run time.
+  PipelineValidator get _saveValidator {
+    final keys = _knownBodyKeys?.call().toSet() ?? const <String>{};
+    if (keys.isEmpty) {
+      return _validator;
+    }
+    return PipelineValidator(
+      renderer: _validator.renderer,
+      reducers: _validator.reducers,
+      knownBodyKeys: {..._validator.knownBodyKeys, ...keys},
+      schemaValidator: _validator.schemaValidator,
+    );
+  }
 
   PipelineTemplateDao _dao(String workspaceId) =>
       _dbs.of(workspaceId).pipelineTemplateDao;
@@ -52,7 +74,7 @@ class PipelineTemplateRepositoryImpl implements PipelineTemplateRepository {
     // structural + data-flow validation so the editor can't persist a broken
     // graph that only fails at runtime.
     if (!definition.isBuiltIn) {
-      final errors = _validator.errors(definition);
+      final errors = _saveValidator.errors(definition);
       if (errors.isNotEmpty) {
         throw PipelineValidationException(errors);
       }

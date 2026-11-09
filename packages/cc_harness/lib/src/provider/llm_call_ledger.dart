@@ -504,7 +504,7 @@ class ProviderCallLedger implements ProviderCallObserver {
 /// equivalent: the chain can consume two targets for one logical call, and one
 /// outer record would collapse the failed target's spend into the serving one.
 /// Wrap each entry's provider instead.
-class ObservedLlmProvider implements LlmProviderPort, LlmDeferredToolSupport {
+class ObservedLlmProvider implements LlmProviderPort {
   /// Creates a recording decorator over [delegate].
   ///
   /// [observer] receives the records; [identity] allocates request ids (share
@@ -556,7 +556,7 @@ class ObservedLlmProvider implements LlmProviderPort, LlmDeferredToolSupport {
 
   @override
   bool supportsDeferredTools({String? model}) =>
-      providerSupportsDeferredTools(delegate, model: model);
+      delegate.supportsDeferredTools(model: model);
 
   /// The run stamped on every record.
   ///

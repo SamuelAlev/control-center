@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
@@ -143,6 +144,32 @@ enum SenderType {
 
   /// AI agent.
   agent,
+
+  /// The server itself: takeover notices, delegation outcomes, compaction
+  /// markers and other messages no human or agent authored. Its
+  /// [Message.senderId] is [systemSenderId].
+  system;
+
+  /// The sender id every [SenderType.system] message carries.
+  static const String systemSenderId = 'system';
+
+  /// The stored/wire value (`user` / `agent` / `system`).
+  String get wireName => name;
+
+  /// Decodes a stored or wire sender type.
+  ///
+  /// Rows and peers older than [system] wrote server-authored messages as
+  /// `agent` with sender id [systemSenderId]; those decode to [system]. An
+  /// unknown value never decodes to [user] (a human-authored message is the
+  /// one that can start a run or count as a turn start): it is [system] for
+  /// the system sender id and [agent] otherwise.
+  static SenderType fromWire(String? value, {required String senderId}) =>
+      switch (value) {
+        'user' => SenderType.user,
+        'system' => SenderType.system,
+        _ when senderId == systemSenderId => SenderType.system,
+        _ => SenderType.agent,
+      };
 }
 
 /// A lightweight per-response quality signal the user can attach to an agent
@@ -233,6 +260,9 @@ class Message {
 
   /// Whether the sender is a human user.
   bool get isUser => senderType == SenderType.user;
+
+  /// Whether the server itself authored this message ([SenderType.system]).
+  bool get isSystemAuthored => senderType == SenderType.system;
 
   /// Whether this is a system message.
   bool get isSystem => messageType == MessageType.system;
@@ -331,21 +361,21 @@ class Message {
   }
 
   /// Whether this question has already been answered by the user.
-  bool get isQuestionAnswered => metadata?['answered'] == true;
+  bool get isQuestionAnswered => metadata?[kQuestionAnsweredKey] == true;
 
   /// Whether this question closed without an answer because the asking agent
   /// stopped waiting. Also reads as [isQuestionAnswered] (it is resolved).
-  bool get isQuestionExpired => metadata?['expired'] == true;
+  bool get isQuestionExpired => metadata?[kQuestionExpiredKey] == true;
 
   /// When the asking agent stops waiting for an answer, if it ever does.
   DateTime? get questionExpiresAt {
-    final raw = metadata?['expiresAt'];
+    final raw = metadata?[kQuestionExpiresAtKey];
     return raw is String ? DateTime.tryParse(raw) : null;
   }
 
   /// The full wait the asking agent allowed, if it is bounded.
   Duration? get questionTimeout {
-    final raw = metadata?['timeoutMs'];
+    final raw = metadata?[kQuestionTimeoutMsKey];
     return raw is num && raw > 0 ? Duration(milliseconds: raw.toInt()) : null;
   }
 

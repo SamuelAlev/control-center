@@ -4,41 +4,46 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_infra/src/git/review_publisher_service.dart';
-import 'package:cc_infra/src/network/github_pr_client.dart';
-import 'package:cc_infra/src/network/models/github_review.dart';
-import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
-/// Never touches the network: the fake below overrides every method under
-/// test, so this client only satisfies the constructor.
-class _NullRhttpClient implements RhttpClient {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 /// Exercises [ReviewPublisherService] with faked repositories and a
-/// [GitHubPrClient] subclass that captures `submitReview` calls. Covers: the
-/// workspace-mismatch guard, the missing-association guard, the malformed
-/// repoFullName guard, the consensus selection rule (author self-confirm does
-/// not count, dismissed/resolved are skipped, allOpen publishes unconfirmed),
-/// the 422 inline-fallback path and the status-set-to-completed side effect.
+/// [ForgePrClient] fake that captures `submitReview` calls. Covers: the
+/// workspace-mismatch guard, the missing-association guard, the unlinked-repo
+/// guard, routing by the association's repo, the consensus selection rule
+/// (author self-confirm does not count, dismissed/resolved are skipped,
+/// allOpen publishes unconfirmed), capability gating, the 422 inline-fallback
+/// path and the status-set-to-completed side effect.
 void main() {
-  late _FakeGithub github;
+  late _FakeForge github;
   late _FakeMessaging messaging;
   late _FakeReviewSpaces reviewSpaces;
   late ReviewPublisherService service;
+  late List<({String? actingUserId, String workspaceId, String repo})> resolved;
 
   setUp(() {
-    github = _FakeGithub();
+    github = _FakeForge();
     messaging = _FakeMessaging();
     reviewSpaces = _FakeReviewSpaces();
+    resolved = [];
     service = ReviewPublisherService(
-      githubPrClientFor: (_, {required workspaceId, required owner}) => github,
+      forgeClientFor:
+          (actingUserId, {required workspaceId, required repoFullName}) async {
+            resolved.add((
+              actingUserId: actingUserId,
+              workspaceId: workspaceId,
+              repo: repoFullName,
+            ));
+            return repoFullName == 'owner/repo' ? github : null;
+          },
       messaging: messaging,
       reviewSpaces: reviewSpaces,
     );
@@ -114,12 +119,13 @@ void main() {
       },
     );
 
-    test('throws ArgumentError on a malformed repoFullName', () async {
-      reviewSpaces.association = association(repoFullName: 'no-slash-here');
+    test('refuses a repo the workspace does not link', () async {
+      reviewSpaces.association = association(repoFullName: 'other/repo');
       await expectLater(
         service.publish(workspaceId: 'ws1', spaceId: 'ch1'),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<StateError>()),
       );
+      expect(github.submits, isEmpty);
     });
   });
 
@@ -160,9 +166,12 @@ void main() {
       expect(result.findingCount, 1);
       expect(result.usedFallback, isFalse);
       expect(github.submits, hasLength(1));
-      expect(github.submits.single.owner, 'owner');
-      expect(github.submits.single.repo, 'repo');
       expect(github.submits.single.prNumber, 42);
+      expect(resolved.single, (
+        actingUserId: null,
+        workspaceId: 'ws1',
+        repo: 'owner/repo',
+      ));
     });
 
     test(
@@ -211,8 +220,8 @@ void main() {
       // Two submit attempts: the rejected inline one, then the body fallback.
       expect(github.submits, hasLength(2));
       // The first attempt carried comments; the second did not.
-      expect(github.submits.first.comments, isNotNull);
-      expect(github.submits.last.comments, isNull);
+      expect(github.submits.first.comments, isNotEmpty);
+      expect(github.submits.last.comments, isEmpty);
     });
 
     test('rethrows non-422 NetworkException from inline submit', () async {
@@ -271,8 +280,9 @@ void main() {
   group('ReviewPublisherService.publish — attribution', () {
     ReviewPublisherService attributing({required bool asPerson}) =>
         ReviewPublisherService(
-          githubPrClientFor: (_, {required workspaceId, required owner}) =>
-              github,
+          forgeClientFor:
+              (_, {required workspaceId, required repoFullName}) async =>
+                  github,
           messaging: messaging,
           reviewSpaces: reviewSpaces,
           automatedAttribution:
@@ -300,8 +310,8 @@ void main() {
       final submit = github.submits.single;
       expect(submit.body, startsWith('[cc for @octo] '));
       expect(submit.comments, isNotEmpty);
-      for (final comment in submit.comments!) {
-        expect(comment['body'] as String, startsWith('[cc for @octo] '));
+      for (final comment in submit.comments) {
+        expect(comment.body, startsWith('[cc for @octo] '));
       }
     });
 
@@ -311,8 +321,8 @@ void main() {
       ).publish(workspaceId: 'ws1', spaceId: 'ch1');
       final submit = github.submits.single;
       expect(submit.body, isNot(startsWith('[cc for @octo]')));
-      for (final comment in submit.comments!) {
-        expect(comment['body'] as String, isNot(startsWith('[cc for @octo]')));
+      for (final comment in submit.comments) {
+        expect(comment.body, isNot(startsWith('[cc for @octo]')));
       }
     });
 
@@ -325,47 +335,109 @@ void main() {
         expect(github.submits.single.body, isNot(startsWith('[cc for @octo]')));
       },
     );
+
+    test('automation on another forge carries no GitHub attribution', () async {
+      github.forge = ForgeHost.gitlab;
+      await attributing(
+        asPerson: true,
+      ).publish(workspaceId: 'ws1', spaceId: 'ch1');
+      expect(github.submits.single.body, isNot(startsWith('[cc for @octo]')));
+    });
+  });
+
+  group('ReviewPublisherService.publish — forge routing', () {
+    setUp(() {
+      messaging.messages = [
+        nodeMessage(
+          'm1',
+          payload: payload(confirmedBy: ['peer']),
+          senderId: 'a1',
+        ),
+      ];
+    });
+
+    test('publishes on the GitLab client the repo resolves to, as the person '
+        'who pressed publish', () async {
+      github.forge = ForgeHost.gitlab;
+      github.reviewId = null;
+      reviewSpaces.association = association();
+      final result = await service.publish(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        actingUserId: 'alice',
+      );
+      expect(resolved.single.actingUserId, 'alice');
+      expect(github.submits.single.verdict, ForgeReviewVerdict.requestChanges);
+      expect(result.reviewId, isNull);
+      expect(github.filesRead, 1);
+    });
+
+    test('a forge without "changes requested" gets a comment review', () async {
+      github
+        ..forge = ForgeHost.local
+        ..caps = const ForgeCapabilities(forge: ForgeHost.local, supported: {});
+      reviewSpaces.association = association();
+      final result = await service.publish(workspaceId: 'ws1', spaceId: 'ch1');
+      expect(github.submits.single.verdict, ForgeReviewVerdict.comment);
+      expect(result.event, 'COMMENT');
+    });
   });
 }
 
 class _SubmitCall {
-  _SubmitCall(this.owner, this.repo, this.prNumber, this.comments, this.body);
-  final String owner;
-  final String repo;
+  _SubmitCall(this.prNumber, this.verdict, this.comments, this.body);
   final int prNumber;
-  final List<Map<String, dynamic>>? comments;
+  final ForgeReviewVerdict verdict;
+  final List<PendingReviewComment> comments;
   final String? body;
 }
 
-/// A [GitHubPrClient] subclass that captures `submitReview` calls. The real
-/// constructor needs an [RhttpClient], but every networked method is
-/// overridden, so the null client is never used.
-class _FakeGithub extends GitHubPrClient {
-  _FakeGithub()
-    : super(
-        _NullRhttpClient(),
-        downloadHttpClient: _NullRhttpClient(),
-        redirectlessHttpClient: _NullRhttpClient(),
-      );
+/// A [ForgePrClient] that captures `submitReview` calls and answers the diff
+/// read empty (so the anchor index is permissive).
+class _FakeForge implements ForgePrClient {
+  @override
+  ForgeHost forge = ForgeHost.github;
+
+  ForgeCapabilities? caps;
+
+  @override
+  ForgeCapabilities get capabilities => caps ?? capabilitiesOf(forge);
+
+  @override
+  String get owner => 'owner';
+
+  @override
+  String get repo => 'repo';
 
   final submits = <_SubmitCall>[];
-  int reviewId = 1;
+  int? reviewId = 1;
+  int filesRead = 0;
   bool firstSubmitThrows422 = false;
   NetworkException? firstSubmitThrows;
 
   @override
-  Future<GitHubReview> submitReview(
-    String owner,
-    String repo, {
-    required int prNumber,
-    required String event,
-    String? body,
-    String? commitId,
-    List<Map<String, dynamic>>? comments,
-    CancelToken? cancelToken,
+  Future<PrFileListing> listFiles(
+    int prNumber, {
+    int? limit,
+    ForgeCancelToken? cancelToken,
   }) async {
-    final call = _SubmitCall(owner, repo, prNumber, comments, body);
-    submits.add(call);
+    filesRead++;
+    return const PrFileListing([]);
+  }
+
+  @override
+  Future<int?> submitReview({
+    required int prNumber,
+    required ForgeReviewVerdict verdict,
+    String? body,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
+  }) async {
+    if (verdict == ForgeReviewVerdict.requestChanges &&
+        !capabilities.requestChanges) {
+      throw ForgeUnsupportedError(forge, 'requestChanges');
+    }
+    submits.add(_SubmitCall(prNumber, verdict, comments, body));
     if (submits.length == 1) {
       if (firstSubmitThrows != null) {
         throw firstSubmitThrows!;
@@ -374,13 +446,11 @@ class _FakeGithub extends GitHubPrClient {
         throw const NetworkException('unprocessable', statusCode: 422);
       }
     }
-    return GitHubReview(
-      id: reviewId,
-      state: GitHubReviewState.commented,
-      body: body ?? '',
-      submittedAt: DateTime.utc(2026, 1, 1),
-    );
+    return reviewId;
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeMessaging implements MessagingRepository {

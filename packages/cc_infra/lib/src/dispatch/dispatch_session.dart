@@ -29,17 +29,18 @@ import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts, DeliveredPromptContext;
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart'
+    show kProposeOnlyReason;
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
-import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
-import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
@@ -50,20 +51,23 @@ import 'package:cc_harness/slash_command.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
-import 'package:cc_infra/src/context/snapcompact_compactor.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
+import 'package:cc_infra/src/dispatch/claude_run_state.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
+import 'package:cc_infra/src/dispatch/harness_run_controller.dart';
 import 'package:cc_infra/src/dispatch/read_media_capture.dart';
 import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
+import 'package:cc_infra/src/dispatch/subagent_pilot_gate.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/harness_run_accounting.dart';
+import 'package:cc_infra/src/harness/harness_run_factory.dart';
 import 'package:cc_infra/src/harness/harness_system_prompt.dart';
 import 'package:cc_infra/src/harness/harness_tool_registry_builder.dart';
 import 'package:cc_infra/src/harness/harness_tool_surface.dart';
@@ -75,8 +79,8 @@ import 'package:cc_infra/src/process/binary_resolver.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
+import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/skills/active_repo_tracker.dart';
 import 'package:cc_infra/src/skills/repo_skill_projector.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
@@ -94,6 +98,7 @@ part 'dispatch_session_claude_cli.dart';
 part 'dispatch_session_claude_control.dart';
 part 'dispatch_session_claude_credentials.dart';
 part 'dispatch_session_gateway.dart';
+part 'dispatch_session_run_context.dart';
 part 'dispatch_session_account_pool.dart';
 
 /// Default per-run priced cost cap, in cents: what one unattended segment of
@@ -103,6 +108,13 @@ part 'dispatch_session_account_pool.dart';
 /// [DispatchSession.costCapCents] so an explicit `/goal --budget` is never
 /// overshot by a whole segment.
 const defaultRunCostCapCents = 500;
+
+/// The run summary for a run a person stopped, whichever stop path ran: the
+/// dispatch session's terminate and the dispatch service's run-row close.
+const kRunStoppedByUserSummary = 'Stopped by user';
+
+/// The run-log reason for runs still in flight when the server shut down.
+const kRunStoppedByShutdownSummary = 'Stopped: the server shut down';
 
 /// A session that dispatches and manages a single sandboxed agent run.
 class DispatchSession implements SteeringSessionView {
@@ -384,10 +396,12 @@ class DispatchSession implements SteeringSessionView {
   /// can be exercised without the adapter binary (e.g. `claude`) installed.
   final Future<String?> Function(String binary) resolveBinary;
 
-  /// Active ACP subprocess + client, when the resolved backend is ACP. Held so
-  /// the session can tear them down on terminate / silence timeout.
-  Process? _acpProcess;
+  /// Active ACP client and the agent's stdin lane, when the resolved backend
+  /// is ACP. Held so stdout routes to the client and a stop can end the turn.
   AcpClient? _acpClient;
+  // Closed by the ACP transport and by [_teardownAcp].
+  // ignore: close_sinks
+  StreamController<String>? _acpStdin;
 
   /// Stream controller for [AgentProcessEvent]s emitted by this session.
   final StreamController<AgentProcessEvent> controller =
@@ -402,13 +416,8 @@ class DispatchSession implements SteeringSessionView {
   /// Claude then installs a blocking Bash hook instead of skipping policy.
   AgentRunLease? _gatewayLease;
 
-  /// Whether the run's sandbox gets a network, resolved from the "network
-  /// egress" rule when the run starts. A sandbox can only be on or off, so
-  /// "ask first" leaves it on; the harness web tools still ask per call.
-  bool _networkEnabled = true;
-
-  /// What this run may use of its space's environment and gateway.
-  _RunEnvironmentAccess _environment = const _RunEnvironmentAccess();
+  /// What this run resolved once at its start; see [_RunContext].
+  _RunContext _run = _RunContext.beforeStart;
 
   /// Subscription to sandbox events from the underlying process.
   StreamSubscription<SandboxEvent>? eventsSub;
@@ -448,123 +457,8 @@ class DispatchSession implements SteeringSessionView {
   /// fired — the handle stayed in the adapter's map for the process lifetime.
   SandboxHandle? _activeHandle;
 
-  /// Active Claude stream-json parser, when [cliName] is `claude`. Held so
-  /// parsed stdout lines route to it from the shared sandbox-event forwarder.
-  ClaudeStreamJsonParser? _claudeParser;
-
-  /// Tool name per in-flight `tool_use` id: a `tool_result` block names only
-  /// the id it answers, and a result with no tool name renders as `tool`.
-  final Map<String, String> _claudeToolNames = {};
-
-  /// Child runs for the subagents the active `claude -p` process spawned.
-  ClaudeSubagentRuns? _claudeSubagents;
-
-  /// The running `claude -p` attempt's stdin, while it takes steering. Null
-  /// outside a Claude run and once the turn's `result` closed it — what is
-  /// queued after that converts to a follow-up message at run end.
-  // ignore: close_sinks
-  StreamController<String>? _claudeStdin;
-
-  /// Steering this run already wrote to `claude`, in order. An account
-  /// failover restarts the turn on a fresh process, which gets these again
-  /// after the prompt: the cards are already marked injected.
-  final List<String> _claudeSteered = [];
-
-  /// Limit crossings this run has already acted on; see [_onClaudeRateLimit].
-  final Set<String> _claudeLimitCrossings = {};
-
-  /// The first lines of a turn, held until the MCP servers are answered for.
-  List<String>? _claudeHeldLines;
-
-  /// The `mcp_set_servers` request those lines wait on.
-  String? _claudeMcpRequestId;
-
-  Timer? _claudeMcpAnswerTimer;
-  int _claudeControlRequests = 0;
-
-  /// Completes when stdin closes, for a stop waiting on the turn to end.
-  Completer<void>? _claudeStdinClosed;
-
-  /// The size of the latest main-thread call, for [ClaudeIdleCompactor].
-  int _claudeContextTokens = 0;
-
-  /// How long the session's newest prompt cache entry lasts, when known.
-  Duration? _claudeCacheTtl;
-
-  /// Whether a microtask is already due to drain the steering queue into
-  /// [_claudeStdin], so a burst of pushes is written in one pass.
-  bool _claudeSteeringPumpScheduled = false;
-
-  /// Cumulative-accounting ledger for the active `claude -p` call.
-  ///
-  /// `claude` reports per-turn main-loop `usage` (additive) alongside a
-  /// CUMULATIVE `total_cost_usd` and `modelUsage`; this delta's the cumulative
-  /// halves so a queued follow-up turn — or a resumed session, whose totals
-  /// include the prior spend — is never counted twice. Seeded from the
-  /// persisted session record only when the CLI will restore those totals.
-  ClaudeAccountingLedger? _claudeLedger;
-
-  /// THIS dispatch's spend, summed from turn deltas.
-  ///
-  /// The run-level `runCumulative` event is built from this, never from the
-  /// native session's cumulative counters: those include earlier dispatches
-  /// (inflating the run) and restart at a reset or an account switch (losing
-  /// the attempts already made).
-  ClaudeDispatchTotals _claudeDispatchTotals = ClaudeDispatchTotals();
-
-  /// The delta prompt this dispatch sends when it resumes, or null when it does
-  /// not resume (the full prompt is sent then).
-  String? _claudeDeltaPrompt;
-
-  /// The capabilities the resolved CLI advertised for this run, kept so the
-  /// persistence decision (does this build restore session totals?) uses the
-  /// same probe result that governed the argv.
-  ClaudeCliCapabilities? _claudeCapabilities;
-
-  /// The native session this scope loaded, when the run resumed one. Held so
-  /// the record is re-saved with the CLI's authoritative id after `init`.
-  ClaudeNativeSessionRecord? _claudeResumeRecord;
-
-  /// The native session id the CLI reports for the current call — `init`'s
-  /// `session_id`, refreshed by any later result (a `/clear` mints a new one).
-  /// This is what a later turn resumes.
-  String? _claudeNativeSessionId;
-
-  /// The native session id this run actually launched with (`--resume`), or
-  /// null when it started fresh. Read by the tests and the diagnostics.
-  String? _claudeResumeId;
-
-  /// Storage key of the current run's scope, and the launch policy it was
-  /// fingerprinted with. Together they are the record coordinates.
-  String? _claudeScopeKey;
-  String? _claudePolicyKey;
-
-  /// Startup metadata parsed from `system/init` (serving model, tool surface,
-  /// MCP status/errors, capabilities), when the CLI reported it.
-  ClaudeInitMetadata? _claudeInit;
-
-  /// When the active attempt's process was launched, for separating startup +
-  /// MCP discovery time from model latency.
-  DateTime? _claudeAttemptStartedAt;
-
-  /// Whether the attempt has seen its first structured stdout line yet, and
-  /// whether it has produced a model delta / its first useful work (assistant
-  /// text or a tool call) — the three observable latency boundaries this
-  /// adapter can honestly report (it never invents a provider TTFB the CLI
-  /// hides).
-  bool _claudeSawFirstStdout = false;
-  bool _claudeSawFirstModelDelta = false;
-  bool _claudeSawFirstUseful = false;
-
-  /// Whether this run was launched with an MCP config, so a session that came
-  /// back without any `mcp__*` tool is a lost capability rather than the
-  /// expected shape of a config-less run.
-  bool _claudeMcpExpected = false;
-
-  /// Set while the run is executing on a fallback account: the scope record
-  /// names the FIRST account's config directory, so a session id learned on
-  /// another account must not be written under it.
-  bool _claudePersistDisabled = false;
+  /// The `claude -p` transport's per-run state.
+  final ClaudeRunState _claude = ClaudeRunState();
 
   /// Timestamp of the most recent output from the agent.
   DateTime? lastOutputAt;
@@ -638,18 +532,14 @@ class DispatchSession implements SteeringSessionView {
   @override
   SteeringQueue get steeringQueue => _steering;
 
-  /// Pauses the built-in harness loop at the next clean turn boundary
-  /// (take-over, PRD 16 §8). Subagent loops share the gate, so a take-over
-  /// holds the whole conversation. Unused by external-CLI transports.
-  final PauseGate _pauseGate = PauseGate();
+  /// The built-in harness loop's turn-boundary control: its pause gate
+  /// (take-over, PRD 16 §8), whether it is live, and what it restored and
+  /// activated. Unused by external-CLI transports.
+  final HarnessRunController _harness = HarnessRunController();
 
   /// Whether a built-in harness loop is currently driving this session (the
   /// only transport that can pause at a turn boundary).
-  bool _harnessActive = false;
-
-  /// Whether a built-in harness loop is currently driving this session (the
-  /// only transport that can pause at a turn boundary).
-  bool get isHarnessActive => _harnessActive;
+  bool get isHarnessActive => _harness.isActive;
 
   /// Whether a message pushed into [steeringQueue] now will reach the run:
   /// a built-in harness loop is driving the session, or a `claude -p` turn
@@ -657,25 +547,11 @@ class DispatchSession implements SteeringSessionView {
   /// turn that already ended) reports "cannot" instead of accepting a message
   /// into a queue nobody reads.
   @override
-  bool get acceptsSteering => _harnessActive || _claudeStdin != null;
+  bool get acceptsSteering => _harness.isActive || _claude.stdin != null;
 
-  /// Deferred tools this run pulled in, in activation order.
-  ///
-  /// Recorded on the run row so the question "did the agent ever find the tool
-  /// it needed?" is answerable from the log rather than by re-running it.
-  final List<String> _activatedToolNames = [];
-
-  /// One in-flight "pilot" per identical child prompt prefix.
-  ///
-  /// A provider's cache entry only becomes readable once the request that
-  /// writes it has begun responding, so N children launched in the same
-  /// instant each pay the full write premium for a prefix they all share. The
-  /// first child of a given shape becomes the pilot; its siblings wait for it
-  /// to start streaming and then read what it wrote. The wait is bounded — a
-  /// slow pilot must cost a cache hit, never the fan-out itself.
-  final Map<String, Completer<void>> _subagentPilots = {};
-
-  static const Duration _subagentPilotWait = Duration(seconds: 8);
+  /// Lets sibling subagents of one prompt shape read the cache entry the
+  /// first of them writes; see [SubagentPilotGate].
+  final SubagentPilotGate _subagentPilots = SubagentPilotGate();
 
   /// The resident set every subagent gets, whatever its profile.
   ///
@@ -698,16 +574,10 @@ class DispatchSession implements SteeringSessionView {
   /// Requests a turn-boundary pause. Returns false when no pausable
   /// (built-in harness) run is live — external CLI transports have no safe
   /// boundary; callers fall back to stopping the run.
-  bool pauseHarness() {
-    if (!_harnessActive) {
-      return false;
-    }
-    _pauseGate.pause();
-    return true;
-  }
+  bool pauseHarness() => _harness.pause();
 
   /// Releases a paused loop (hand-back). Idempotent.
-  void resumeHarness() => _pauseGate.resume();
+  void resumeHarness() => _harness.resume();
 
   /// Queues a mid-run steering message for the active run.
   ///
@@ -757,22 +627,13 @@ class DispatchSession implements SteeringSessionView {
     'ask_user',
   };
 
-  /// The run's Git identity variables, independent of agent credit.
-  Map<String, String> _gitIdentityEnv = const {};
-
-  /// Who the run's commits name; the gateway holds every pushed commit to it.
-  AgentCommitIdentity? _commitIdentity;
-
-  /// Control Center's co-author trailer, only when attribution is enabled.
-  String? _coAuthorTrailer;
-
   /// Env var carrying the co-author trailer to the spawned agent CLI, so any
   /// tooling in the run can stamp it onto commit messages.
   static const String coAuthorTrailerEnvKey = 'CC_GIT_COAUTHOR_TRAILER';
 
   /// Resolves policy-owned identity before any transport starts.
   /// Forge credentials remain the broker's, never the member's PAT.
-  Future<void> _prepareRunIdentity() async {
+  Future<_RunIdentity> _resolveRunIdentity() async {
     final creditAgent =
         await deps.resolveAgentAttribution?.call(
           requestedByUserId,
@@ -786,14 +647,19 @@ class DispatchSession implements SteeringSessionView {
     if (identity == null) {
       throw StateError('The requester has no Git identity.');
     }
-    _commitIdentity = identity;
-    final env = <String, String>{...identity.environment};
-    _coAuthorTrailer = creditAgent
+    final coAuthorTrailer = creditAgent
         ? 'Co-Authored-By: Control Center <hi@usectrl.dev>'
         : null;
-    // This policy-owned key also masks stale caller and inherited trailers.
-    env[coAuthorTrailerEnvKey] = _coAuthorTrailer ?? '';
-    _gitIdentityEnv = env;
+    return _RunIdentity(
+      commitIdentity: identity,
+      gitEnv: Map.unmodifiable({
+        ...identity.environment,
+        // This policy-owned key also masks stale caller and inherited
+        // trailers.
+        coAuthorTrailerEnvKey: coAuthorTrailer ?? '',
+      }),
+      coAuthorTrailer: coAuthorTrailer,
+    );
   }
 
   /// Writable bind-mount host paths this session could grant exec on (RO mounts
@@ -890,55 +756,48 @@ class DispatchSession implements SteeringSessionView {
   /// oneshot: single writable cwd. Sibling agent dirs never mounted.
   List<SandboxBindMount> _bindMounts() {
     final cwd = agentDirHostPath;
-    final configDir = agentConfigDir;
-    if (configDir == null || configDir.isEmpty || p.equals(configDir, cwd)) {
+    final layout = _layout;
+    if (!layout.isOverlay) {
       return [SandboxBindMount(hostPath: cwd, guestPath: cwd)];
     }
-    final mounts = <SandboxBindMount>[
+    final configDir = agentConfigDir!;
+    final reposPath = layout.reposDir;
+    final attachmentsPath = layout.attachmentsDir;
+    return [
       SandboxBindMount(hostPath: cwd, guestPath: cwd),
       SandboxBindMount(
         hostPath: configDir,
         guestPath: configDir,
         readOnly: true,
       ),
-    ];
-    // cwd nests as <convRoot>/agents/<slug>, so the shared repos dir is two
-    // levels up. Mount it writable when present so the overlay `repos` symlink
-    // resolves in the guest namespace (identical host/guest paths).
-    final reposPath = p.join(p.dirname(p.dirname(cwd)), 'repos');
-    if (Directory(reposPath).existsSync()) {
-      mounts.add(SandboxBindMount(hostPath: reposPath, guestPath: reposPath));
-    }
-    final attachmentsPath = _attachmentsDir;
-    if (attachmentsPath != null) {
-      mounts.add(
+      // Writable so the overlay `repos` symlink resolves in the guest
+      // namespace (identical host/guest paths).
+      if (reposPath != null)
+        SandboxBindMount(hostPath: reposPath, guestPath: reposPath),
+      if (attachmentsPath != null)
         SandboxBindMount(
           hostPath: attachmentsPath,
           guestPath: attachmentsPath,
           readOnly: true,
         ),
-      );
-    }
-    return mounts;
+    ];
   }
 
-  /// The conversation's materialized attachments dir, or null when it does not
-  /// exist yet (no one has attached anything to this space).
+  /// Where this dispatch's directories are, derived once.
   ///
-  /// Derived from the directory layout, exactly like the repos dir beside it —
-  /// never from a path the agent could influence.
-  String? get _attachmentsDir {
-    final cwd = agentDirHostPath;
-    final configDir = agentConfigDir;
-    if (configDir == null || configDir.isEmpty || p.equals(configDir, cwd)) {
-      return null;
-    }
-    final path = p.join(
-      p.dirname(p.dirname(cwd)),
-      SpacePromptAttachments.dirName,
-    );
-    return Directory(path).existsSync() ? path : null;
-  }
+  /// Resolved when the run starts ([run]) and reused by every consumer —
+  /// mounts, the harness's shared roots, link roots, repo scoping, the space
+  /// root, ACP's `fs/*` — which each used to re-derive it with their own
+  /// `existsSync` probes, up to six times per run. The sandbox profile is
+  /// fixed at the start, so a layout read later would describe directories
+  /// the sandbox does not have anyway. Read before the run starts (a media
+  /// scope lookup), it is derived then, once.
+  _OverlayLayout get _layout => _layoutCache ??= _OverlayLayout.resolve(
+    cwd: agentDirHostPath,
+    configDir: agentConfigDir,
+  );
+
+  _OverlayLayout? _layoutCache;
 
   /// Memoized original-checkout paths for this session's workspace. Resolved
   /// once per dispatch and folded into every [SandboxSpec] as deny-write
@@ -973,32 +832,14 @@ class DispatchSession implements SteeringSessionView {
   /// prompt names are unreadable to the tools that were given them. Derived
   /// from the directory layout (mirrors [_bindMounts]), never from the
   /// agent-writable symlink itself.
-  List<String> _workspaceSharedRoots() {
-    final cwd = agentDirHostPath;
-    final configDir = agentConfigDir;
-    if (configDir == null || configDir.isEmpty || p.equals(configDir, cwd)) {
-      return const [];
-    }
-    final reposPath = p.join(p.dirname(p.dirname(cwd)), 'repos');
-    return [if (Directory(reposPath).existsSync()) reposPath, ?_attachmentsDir];
-  }
+  List<String> _workspaceSharedRoots() => [
+    ?_layout.reposDir,
+    ?_layout.attachmentsDir,
+  ];
 
   /// The space's shared worktree dir, or null when this session's cwd is not a
   /// per-agent overlay (the fallback path, where there are no worktrees).
-  ///
-  /// Computed rather than read off [_workspaceSharedRoots]: that list now
-  /// carries the attachments dir too, and taking its first entry would hand
-  /// callers the wrong directory on a space that has attachments but no
-  /// worktrees.
-  String? get _reposDir {
-    final cwd = agentDirHostPath;
-    final configDir = agentConfigDir;
-    if (configDir == null || configDir.isEmpty || p.equals(configDir, cwd)) {
-      return null;
-    }
-    final reposPath = p.join(p.dirname(p.dirname(cwd)), 'repos');
-    return Directory(reposPath).existsSync() ? reposPath : null;
-  }
+  String? get _reposDir => _layout.reposDir;
 
   /// The server-managed directories whose symlinks the context loaders may
   /// follow.
@@ -1138,7 +979,14 @@ class DispatchSession implements SteeringSessionView {
   /// 127 — never throws.
   Future<void> run() async {
     try {
-      _networkEnabled = await _resolveNetworkEnabled();
+      // FIRST, before anything that can fail: a failure in the mint, the
+      // identity or the lease used to end the run with no NDJSON log at all.
+      await _openRunLog();
+      _layoutCache = _OverlayLayout.resolve(
+        cwd: agentDirHostPath,
+        configDir: agentConfigDir,
+      );
+      final networkEnabled = await _resolveNetworkEnabled();
 
       // Resolve the worktree's GitHub coordinates so the broker can mint a
       // fine-grained App installation token scoped to exactly this repo.
@@ -1181,19 +1029,22 @@ class DispatchSession implements SteeringSessionView {
       // transport launches, so every merged env carries them. (After the
       // mint: callers may fail a stalled mint to abort the run early.) Before
       // the lease too: the gateway signs only as this identity.
-      await _prepareRunIdentity();
+      final identity = await _resolveRunIdentity();
 
-      await _openGatewayLease(repoOwner: repoOwner, repoName: repoName);
+      final environment = await _openGatewayLease(
+        repoOwner: repoOwner,
+        repoName: repoName,
+        identity: identity.commitIdentity,
+      );
+      // Everything a transport or its sandbox reads from here on is fixed.
+      _run = _RunContext(
+        networkEnabled: networkEnabled,
+        identity: identity,
+        environment: environment,
+      );
 
       final wsId = workspaceId ?? '';
-      final agentKey = (agentId != null && agentId!.isNotEmpty)
-          ? agentId!
-          : 'oneshot';
-      final convKey = conversationId ?? 'no-conv';
-      final sandboxSessionId =
-          '$agentSessionPrefix$agentKey::$convKey::${mode.name}';
-
-      await _openRunLog();
+      final sandboxSessionId = _sandboxSessionId;
 
       final backend = deps.backendRegistry.backendFor(cliName);
       if (backend == null) {
@@ -1205,9 +1056,7 @@ class DispatchSession implements SteeringSessionView {
                 'Settings → Adapters.',
           ),
         );
-        unawaited(_closeRunLog(exitCode: 127));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 127);
         return;
       }
 
@@ -1224,20 +1073,27 @@ class DispatchSession implements SteeringSessionView {
             wsId: wsId,
           );
         case AdapterTransport.acp:
-          await _runAcp(scoped: scoped);
+          await _runAcp(
+            scoped: scoped,
+            sandboxSessionId: sandboxSessionId,
+            wsId: wsId,
+          );
         case AdapterTransport.harness:
           await _runHarness(scoped: scoped, wsId: wsId);
       }
       onScheduleCooldown(sandboxSessionId);
-    } on Object catch (e) {
-      unawaited(_closeRunLog(error: e));
-      // Redacted: this event reaches the transcript recorder and the client
-      // over RPC. A failed authenticated git/HTTP call embeds
-      // `https://x-access-token:ghp_…@github.com` in its message — the NDJSON
-      // run log already redacts, the live stream did not.
-      _failRun(redactSecrets('[sandbox] dispatch failed: $e'));
-      addEvent(DoneEvent());
-      _completeRun();
+    } on Object catch (e, st) {
+      // A stop already recorded why the run ended; whatever the dying
+      // transport threw on its way out is not a second reason.
+      if (!_cancelSource.isCancelled) {
+        CcInfraLog.error('dispatch $dispatchId failed', e, st);
+        // Redacted: this event reaches the transcript recorder and the client
+        // over RPC. A failed authenticated git/HTTP call embeds
+        // `https://x-access-token:ghp_…@github.com` in its message — the
+        // NDJSON run log already redacts, the live stream did not.
+        _failRun(redactSecrets('[sandbox] dispatch failed: $e'));
+      }
+      _finish(error: e);
     }
   }
 
@@ -1264,10 +1120,6 @@ class DispatchSession implements SteeringSessionView {
   /// files after the conversation that started it has moved on is the failure
   /// this feature must not have.
   VibeRoster? _vibeRoster;
-
-  /// Checkpoint labels restored from the persisted transcript, as indices into
-  /// the history this run seeded.
-  Map<String, int> _resumedCheckpoints = const {};
 
   /// Where this run's history is persisted, or null when it is not.
   ///
@@ -1302,9 +1154,9 @@ class DispatchSession implements SteeringSessionView {
     late final HarnessToolRegistry registry;
     registry = buildHarnessToolRegistry(
       mode: mode,
-      networkEnabled: _networkEnabled,
+      networkEnabled: _run.networkEnabled,
       loopbackPorts: _gatewayLoopbackPorts,
-      environmentScope: _environment.scope,
+      environmentScope: _run.environment.scope,
       env: env,
       toolOutputStore: deps.toolOutputStore,
       workspaceId: workspaceId,
@@ -1326,6 +1178,8 @@ class DispatchSession implements SteeringSessionView {
       // Both scopes must reach the tool so the answer returns to this run.
       agentQuestionPort: deps.agentQuestionPort,
       spaceId: spaceId,
+      // The question names this run, so only this run's watchdog pauses.
+      runLogId: runLogId,
       // Diagnostics + navigation. The ledger is PER RUN (a new run should hear
       // the current state of the world once), while the supervisor is shared
       // (its cost is indexing).
@@ -1369,7 +1223,7 @@ class DispatchSession implements SteeringSessionView {
       bridge: (name, arguments) async {
         final tool = registryForBridge.findByName(name);
         if (tool == null) {
-          return (content: 'Unknown tool: \$name', isError: true);
+          return (content: 'Unknown tool: $name', isError: true);
         }
         final result = await tool.execute(
           arguments,
@@ -1428,7 +1282,11 @@ class DispatchSession implements SteeringSessionView {
         // The pool may put a different key in front — that IS round robin.
         // Only take it when the pool actually said something; otherwise the
         // store's active credential keeps leading.
-        if (rotation.isNotEmpty && primaryCredential != null) {
+        // A key the adapter or caller handed this run explicitly is never
+        // demoted: stored keys are its fallbacks, not its replacement.
+        if (rotation.isNotEmpty &&
+            primaryCredential != null &&
+            !_isExplicitRunCredential(primaryCredential)) {
           final leadsPool = _sameCredential(rotation.first, primaryCredential);
           if (!leadsPool) {
             leadCredential = rotation.first;
@@ -1526,6 +1384,17 @@ class DispatchSession implements SteeringSessionView {
     );
   }
 
+  /// Whether [credential] came from this run's adapter or caller env — an
+  /// explicit choice made for this run, which outranks any stored pool.
+  static bool _isExplicitRunCredential(ProviderCredential credential) {
+    final label = credential.accountLabel ?? '';
+    return label.startsWith(_adapterCredentialLabel) ||
+        label.startsWith(_callerCredentialLabel);
+  }
+
+  static const _adapterCredentialLabel = 'adapter:';
+  static const _callerCredentialLabel = 'caller:';
+
   bool _sameCredential(ProviderCredential a, ProviderCredential? b) =>
       b != null && a.method == b.method && a.secret == b.secret;
 
@@ -1617,7 +1486,7 @@ class DispatchSession implements SteeringSessionView {
           providerId: providerId,
           method: HarnessAuthMethod.apiKey,
           apiKey: fromAdapter,
-          accountLabel: 'adapter:$key',
+          accountLabel: '$_adapterCredentialLabel$key',
         );
       }
       final fromCaller = callerEnv[key];
@@ -1626,7 +1495,7 @@ class DispatchSession implements SteeringSessionView {
           providerId: providerId,
           method: HarnessAuthMethod.apiKey,
           apiKey: fromCaller,
-          accountLabel: 'caller:$key',
+          accountLabel: '$_callerCredentialLabel$key',
         );
       }
     }
@@ -1664,7 +1533,7 @@ class DispatchSession implements SteeringSessionView {
       workspaceId: wsId,
       workingDirectory: agentDirHostPath,
       agentConfigDir: agentConfigDir,
-      coAuthorTrailer: _coAuthorTrailer,
+      coAuthorTrailer: _run.identity.coAuthorTrailer,
       permittedLinkRoots: _permittedLinkRoots(),
       onWarning: CcInfraLog.warning,
     );
@@ -1703,7 +1572,7 @@ class DispatchSession implements SteeringSessionView {
     // `adapterEnvOverride`'s own doc promised the opposite ("caller/broker env
     // still wins for security-critical keys"). Now it does.
     merged.addAll(scopedEnv);
-    merged.addAll(_gitIdentityEnv);
+    merged.addAll(_run.identity.gitEnv);
     // Append gateway routing after adapter config. Shell preflight remains
     // necessary: explicit URLs or command-local Git config can avoid rewrites.
     final lease = _gatewayLease;
@@ -1729,43 +1598,96 @@ class DispatchSession implements SteeringSessionView {
       if (a.configDir.isNotEmpty) a.configDir,
   }.toList();
 
-  /// Builds a [SandboxConfig] for the current dispatch using the policy
-  /// resolver + config builder. Used by the ACP transport.
-  Future<SandboxConfig> _buildSandboxConfig() async {
-    final home = Platform.environment['HOME'] ?? '';
-    final wsId = workspaceId ?? '';
+  /// The sandbox session id a dispatch's CLI transports share: one per
+  /// agent, conversation and mode, so a follow-up turn can reuse it warm.
+  String get _sandboxSessionId {
     final agentKey = (agentId != null && agentId!.isNotEmpty)
         ? agentId!
         : 'oneshot';
     final convKey = conversationId ?? 'no-conv';
-    final sessionId = '$agentSessionPrefix$agentKey::$convKey::${mode.name}';
-    final spec = SandboxSpec(
-      sessionId: sessionId,
-      workspaceId: wsId,
-      agentId: agentId,
-      bindMounts: _bindMounts(),
-      guestWorkdir: agentDirHostPath,
-      networkEnabled: _networkEnabled,
-      mode: mode,
-      protectedPaths: await _protectedPaths(),
-      runnerStateDirs: _runnerStateDirs,
-      execGrantRoots: await _execGrants(wsId),
-      loopbackPorts: _gatewayLoopbackPorts,
-      environmentScope: _environment.scope,
-    );
-    final policy = const SandboxPolicyResolver().resolve(
-      spec: spec,
-      homeDir: home.isNotEmpty ? home : null,
-      runDir: '$agentDirHostPath/.cc-runs/$sessionId',
-    );
-    return buildSandboxConfigFromPolicy(policy);
+    return '$agentSessionPrefix$agentKey::$convKey::${mode.name}';
   }
 
-  /// Universal command preflight (Phase 2.3). Evaluates the resolved
-  /// command string against the mode's [CommandPolicy] before spawning.
-  /// Returns `true` when the spawn should proceed, `false` when denied.
-  /// `prompt` decisions log a warning and proceed (synchronous UAC wiring
-  /// is Phase 3).
+  /// The ONE sandbox spec this dispatch's process transports (Claude Code,
+  /// ACP) run under. Every input is a value resolved at run start, so two
+  /// transports of one run can never be sandboxed differently — the ACP path
+  /// used to build its own, without process-group supervision.
+  Future<SandboxSpec> _sandboxSpec(
+    String sandboxSessionId,
+    String wsId,
+  ) async => processSandboxSpec(
+    sessionId: sandboxSessionId,
+    workspaceId: wsId,
+    agentId: agentId,
+    bindMounts: _bindMounts(),
+    workdir: agentDirHostPath,
+    networkEnabled: _run.networkEnabled,
+    mode: mode,
+    protectedPaths: await _protectedPaths(),
+    runnerStateDirs: _runnerStateDirs,
+    execGrantRoots: await _execGrants(wsId),
+    loopbackPorts: _gatewayLoopbackPorts,
+    environmentScope: _run.environment.scope,
+    superviseProcessGroup: true,
+  );
+
+  /// Resolves this run's sandbox handle and starts listening to nothing yet:
+  /// the caller subscribes. An error-state handle is destroyed before the
+  /// throw — it is already in the adapter's map, and the throw skips the
+  /// cooldown that would otherwise clean it up.
+  Future<SandboxHandle> _launchSandbox(
+    String sandboxSessionId,
+    String wsId,
+  ) async {
+    final handle = await onResolveHandle(
+      sessionId: sandboxSessionId,
+      spec: await _sandboxSpec(sandboxSessionId, wsId),
+      emit: addEvent,
+    );
+    if (handle.state == SandboxState.error) {
+      try {
+        await deps.sandbox.destroy(handle);
+      } on Object catch (e, st) {
+        CcInfraLog.error(
+          'dispatch $dispatchId: destroy after launch failure also failed',
+          e,
+          st,
+        );
+      }
+      throw StateError('sandbox launch failed: ${handle.error}');
+    }
+    _activeHandle = handle;
+    return handle;
+  }
+
+  /// The space's autonomy dial for this run, read per decision (an operator
+  /// can turn it mid-run), or null when there is no space or no resolver.
+  /// Never throws: a failed read keeps the default, fail-closed posture.
+  Future<AutonomyLevel?> _resolveAutonomy() async {
+    final resolve = deps.autonomyResolver;
+    final ws = workspaceId;
+    final space = spaceId;
+    final agent = agentId;
+    if (resolve == null ||
+        ws == null ||
+        ws.isEmpty ||
+        space == null ||
+        agent == null) {
+      return null;
+    }
+    try {
+      return AutonomyLevel.tryFromWire(await resolve(ws, space, agent));
+    } on Object catch (e, st) {
+      CcInfraLog.error('dispatch $dispatchId: autonomy lookup failed', e, st);
+      return null;
+    }
+  }
+
+  /// Universal command preflight. Evaluates the resolved command string
+  /// against the mode's [CommandPolicy] before spawning. Returns `true` when
+  /// the spawn should proceed, `false` when it was refused — in which case the
+  /// run has already finished. A `prompt` decision asks the operator through
+  /// the [ConfirmationPort] and fails closed without one.
   Future<bool> _preflightCommand(List<String> argv) async {
     if (argv.isEmpty) {
       return true;
@@ -1780,9 +1702,7 @@ class DispatchSession implements SteeringSessionView {
         addEvent(
           ErrorEvent(content: '[sandbox] command denied by policy: $command'),
         );
-        unawaited(_closeRunLog(exitCode: 126));
-        addEvent(DoneEvent());
-        _completeRun();
+        _finish(exitCode: 126);
         return false;
       case CommandDecision.prompt:
         final port = deps.confirmationPort;
@@ -1794,9 +1714,7 @@ class DispatchSession implements SteeringSessionView {
                   'is connected — denying: $command',
             ),
           );
-          unawaited(_closeRunLog(exitCode: 126));
-          addEvent(DoneEvent());
-          _completeRun();
+          _finish(exitCode: 126);
           return false;
         }
         final copy = ActionApprovalCopy.describe(
@@ -1822,82 +1740,148 @@ class DispatchSession implements SteeringSessionView {
           addEvent(
             ErrorEvent(content: '[sandbox] command denied by user: $command'),
           );
-          unawaited(_closeRunLog(exitCode: 126));
-          addEvent(DoneEvent());
-          _completeRun();
+          _finish(exitCode: 126);
           return false;
         }
         return true;
     }
   }
 
-  /// Gracefully stops the session by revoking credentials and closing the
-  /// event controller.
+  /// Stops the session for a server shutdown: cancels the run, kills its
+  /// child, revokes its credentials, closes its run log and the event stream.
+  ///
+  /// Quiet on purpose — no transcript rows, no terminal event: the server is
+  /// going away and the run row is reconciled by the orphan reaper at the next
+  /// boot. It used to only revoke and close, leaving the child (an ACP agent
+  /// in particular, which no sandbox supervises) running with nobody reading
+  /// its output.
   Future<void> stop() async {
     _cancelSilenceWatchdog();
-    _claudeParser = null;
-    unawaited(_closeClaudeSubagents());
-    await _teardownAcp();
-    await _releaseRunCredentials();
-    _closeController();
+    _abortLogError ??= kRunStoppedByShutdownSummary;
+    _lastTaskError ??= kRunStoppedByShutdownSummary;
+    _cancelSource.cancel('shutdown');
+    try {
+      _claude.parser = null;
+      unawaited(_bestEffort('subagent close', _closeClaudeSubagents));
+      await _bestEffort('ACP teardown', _teardownAcp);
+      await _bestEffort('process kill', () => _killActiveProcess('shutdown'));
+      await _bestEffort('run-log close', _closeRunLog);
+    } finally {
+      await _bestEffort('credential release', _releaseRunCredentials);
+      _closeController();
+    }
   }
 
-  /// Forcefully terminates the session by marking the run as failed,
-  /// revoking credentials, cancelling event subscriptions and closing the
-  /// controller.
+  /// Forcefully terminates the session at a user's request: the run is
+  /// recorded as stopped, its child killed, its credentials revoked and its
+  /// stream finished.
   Future<void> terminate() => _abortRun(
     reason: 'terminate',
-    failure: 'Terminated by user request',
-    logError: 'terminated by user request',
-    debugLine: '[sandbox] dispatch $dispatchId terminated by request',
+    failure: kRunStoppedByUserSummary,
+    logError: kRunStoppedByUserSummary,
+    debugLine: '[sandbox] dispatch $dispatchId stopped by request',
   );
 
   /// The one stop sequence for a run ended from outside its process: a user
   /// [terminate] or the silence watchdog. [failure] is the run's only
   /// transcript error. [debugLine] stays in the run log; emitting it as an
   /// error too rendered two error rows for one stop.
+  ///
+  /// Every step is guarded: a throw from the interrupt, the ACP teardown or
+  /// the kill used to skip the terminal event, and the watchdog's
+  /// `unawaited(_abortRun(...))` then left the run hung with nothing to end it.
   Future<void> _abortRun({
     required String reason,
     required String failure,
     required String logError,
     required String debugLine,
   }) async {
+    if (_abortStarted) {
+      return;
+    }
+    _abortStarted = true;
     _cancelSilenceWatchdog();
+    // The stop's reason wins the run log over whatever the dying transport
+    // closes it with (a harness that sees the cancel exits 0).
+    _abortLogError ??= logError;
     // Cancel the built-in harness loop and any in-flight subagent loops (they
     // share this token) before tearing the session down. The CLI runners also
     // read it to drop the dying process's `exited with code -15` line.
     _cancelSource.cancel(reason);
     // Record the stop before yielding: killing the child can complete `run()`
     // and close the transcript while process teardown is still in progress.
-    _failRun(failure);
-    await _interruptClaudeTurn();
-    _claudeParser = null;
-    unawaited(_closeClaudeSubagents());
-    await _teardownAcp();
-    addEvent(DebugEvent(content: debugLine));
-    // Actually stop the agent. `_failRun` only stamps the DB row; without this
-    // the CLI kept running after the stop, ignored by everything.
-    await _killActiveProcess(reason);
-    // Close the run log too: it finalizes the DEBOUNCED `lastOutputAt` write
-    // (otherwise the last timestamp dies in the debounce window) and writes the
-    // NDJSON `end` record. Idempotent — the normal completion path calls it too.
-    await _closeRunLog(error: logError);
-    await _releaseRunCredentials();
+    if (!emittedDone) {
+      _failRun(failure);
+    }
+    try {
+      await _bestEffort('turn interrupt', _interruptClaudeTurn);
+      _claude.parser = null;
+      unawaited(_bestEffort('subagent close', _closeClaudeSubagents));
+      await _bestEffort('ACP teardown', _teardownAcp);
+      addEvent(DebugEvent(content: debugLine));
+      // Actually stop the agent. `_failRun` only stamps the DB row; without
+      // this the CLI kept running after the stop, ignored by everything.
+      await _bestEffort('process kill', () => _killActiveProcess(reason));
+    } finally {
+      await _bestEffort('credential release', _releaseRunCredentials);
+      // Closes the run log too: it finalizes the DEBOUNCED `lastOutputAt`
+      // write and writes the NDJSON `end` record.
+      _finish(error: logError);
+      await _finishing;
+    }
+  }
+
+  /// Set once [_abortRun] has begun; a second stop is a no-op.
+  bool _abortStarted = false;
+
+  /// Why an outside stop ended the run, once one did. [_closeRunLog] records
+  /// this rather than the exit code the dying transport reports.
+  String? _abortLogError;
+
+  /// The pending run-log close of the terminal sequence, once it began.
+  Future<void>? _finishing;
+
+  /// The ONE terminal sequence: closes the run log, emits the [DoneEvent] and
+  /// completes the run (lifecycle events, credential release, stream close).
+  ///
+  /// Every ending goes through here — a refused preflight, a missing binary,
+  /// a transport that ran to completion, a stop — so none of them can skip a
+  /// step the others take. Idempotent: the first caller's outcome stands, and
+  /// later callers change nothing. Never throws; [_finishing] is the pending
+  /// run-log close for a caller that must wait for it.
+  void _finish({int? exitCode, Object? error}) {
+    if (_finishing != null) {
+      return;
+    }
+    _finishing = _bestEffort(
+      'run-log close',
+      () => _closeRunLog(exitCode: exitCode, error: error),
+    );
     if (!emittedDone) {
       addEvent(DoneEvent());
       _completeRun();
     }
   }
 
-  /// Tears down an active ACP subprocess (cancel the turn, close the client,
-  /// kill the process). A no-op when no ACP run is active.
+  /// Runs one teardown step, logging (with its stack) instead of throwing.
+  Future<void> _bestEffort(String what, Future<void> Function() step) async {
+    try {
+      await step();
+    } on Object catch (e, st) {
+      CcInfraLog.error('dispatch $dispatchId: $what failed', e, st);
+    }
+  }
+
+  /// Ends an active ACP turn (close the client and the agent's stdin); the
+  /// child itself is stopped by [_killActiveProcess]. A no-op when no ACP run
+  /// is active.
   Future<void> _teardownAcp() async {
     final client = _acpClient;
-    final process = _acpProcess;
+    final stdin = _acpStdin;
     _acpClient = null;
-    _acpProcess = null;
+    _acpStdin = null;
     await client?.close();
-    process?.kill();
+    await stdin?.close();
   }
 
   /// Stops whatever the agent is running, best-effort, in the order that
@@ -1949,10 +1933,16 @@ class DispatchSession implements SteeringSessionView {
         conversationId?.isNotEmpty == true &&
         agentId?.isNotEmpty == true) {
       _humanWaitStartSub = bus.on<AgentAwaitingInput>().listen((event) {
+        // A question that names its run pauses only that run: a concurrent
+        // run by the same agent in the same conversation keeps its watchdog.
+        // Questions from the external MCP lane carry no run id, so those
+        // fall back to the agent + conversation match.
+        final eventRun = event.runId;
         if (event.kind != AgentInputKind.question ||
             event.workspaceId != workspaceId ||
             event.conversationId != conversationId ||
-            event.agentId != agentId) {
+            event.agentId != agentId ||
+            (eventRun != null && runLogId != null && eventRun != runLogId)) {
           return;
         }
         _pendingHumanWaitIds.add(event.waitId);
@@ -1968,18 +1958,20 @@ class DispatchSession implements SteeringSessionView {
       });
     }
     final threshold = silenceThreshold;
+    // The baseline: a run that never prints anything is silent from the
+    // moment the watchdog starts, not exempt from it.
+    final startedAt = clock.now();
     silenceTimer = Timer.periodic(silenceCheckInterval, (_) {
       if (_pendingHumanWaitIds.isNotEmpty) {
         return;
       }
-      final last = lastOutputAt;
-      final resumed = _lastHumanWaitResolvedAt;
-      final activeSince =
-          resumed != null && (last == null || resumed.isAfter(last))
-          ? resumed
-          : last;
-      if (activeSince != null &&
-          clock.now().difference(activeSince) >= threshold) {
+      var activeSince = startedAt;
+      for (final mark in [lastOutputAt, _lastHumanWaitResolvedAt]) {
+        if (mark != null && mark.isAfter(activeSince)) {
+          activeSince = mark;
+        }
+      }
+      if (clock.now().difference(activeSince) >= threshold) {
         final minutes = threshold.inMinutes;
         unawaited(
           _abortRun(
@@ -2050,18 +2042,28 @@ class DispatchSession implements SteeringSessionView {
     // The one exception is the `result` of a turn being interrupted, which
     // carries what the turn spent.
     if (_cancelSource.isCancelled) {
-      if (_claudeStdinClosed != null && event.type == SandboxEventType.stdout) {
+      if (_claude.stdinClosed != null &&
+          event.type == SandboxEventType.stdout) {
         _readInterruptedClaudeResult(event.content);
       }
       return;
     }
+    final acp = _acpClient;
     switch (event.type) {
       case SandboxEventType.stdout:
-        _tryParseStructuredOutput(event.content);
+        if (acp != null) {
+          acp.feedLine(event.content);
+        } else {
+          _tryParseStructuredOutput(event.content);
+        }
         break;
       case SandboxEventType.stderr:
         _sawProcessStderr = true;
-        addEvent(ErrorEvent(content: event.content));
+        addEvent(
+          ErrorEvent(
+            content: acp != null ? '[acp] ${event.content}' : event.content,
+          ),
+        );
         break;
       case SandboxEventType.exit:
         // A process exit ends one `exec`, not the dispatch. Claude Code
@@ -2073,14 +2075,11 @@ class DispatchSession implements SteeringSessionView {
         // without anyone listening.
         break;
       case SandboxEventType.killed:
-        addEvent(
-          ErrorEvent(
-            content: event.content.isNotEmpty
-                ? event.content
-                : '[sandbox] killed',
-          ),
-        );
-        _completeRun();
+        final reason = event.content.isNotEmpty
+            ? event.content
+            : '[sandbox] killed';
+        addEvent(ErrorEvent(content: reason));
+        _finish(error: reason);
         break;
       case SandboxEventType.starting:
         addEvent(DebugEvent(content: '[sandbox] booting sandbox session…'));
@@ -2106,6 +2105,14 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
+  /// Yields until every sandbox event already queued for [eventsSub] has been
+  /// handled.
+  ///
+  /// The adapters emit each line before `exec` returns, but a broadcast stream
+  /// hands them to its listener one microtask at a time; the event-queue turn
+  /// this waits for runs only once that microtask chain is empty.
+  Future<void> _drainSandboxEvents() => Future<void>.delayed(Duration.zero);
+
   void _tryParseStructuredOutput(String line) {
     if (line.isEmpty) {
       return;
@@ -2123,7 +2130,7 @@ class DispatchSession implements SteeringSessionView {
     if (json == null) {
       return;
     }
-    final claudeParser = _claudeParser;
+    final claudeParser = _claude.parser;
     if (claudeParser != null) {
       // The first stdout byte of this attempt: the one transport boundary the
       // adapter can honestly time (the CLI hides the provider request).
@@ -2599,10 +2606,17 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
+  /// Closes the NDJSON run log. The first close writes the `end` record; an
+  /// outside stop's reason replaces whatever the transport closes with, so a
+  /// harness that exits 0 on the cancel cannot record a stopped run as clean.
   Future<void> _closeRunLog({int? exitCode, Object? error}) async {
     await _readMedia.drained;
     await _finalizeLastOutput();
-    await _logWriter.close(exitCode: exitCode, error: error);
+    final abort = _abortLogError;
+    await _logWriter.close(
+      exitCode: abort == null ? exitCode : null,
+      error: abort ?? error,
+    );
   }
 
   void _closeController() {
@@ -2622,6 +2636,53 @@ class DispatchSession implements SteeringSessionView {
           unawaited(controller.close());
         }
       }),
+    );
+  }
+}
+
+/// Where a dispatch's directories are: the per-agent overlay's shared
+/// worktrees and attachments, derived from the directory layout the
+/// provisioner creates — never from a path or symlink the agent could change.
+class _OverlayLayout {
+  const _OverlayLayout({
+    required this.isOverlay,
+    this.reposDir,
+    this.attachmentsDir,
+  });
+
+  /// Whether the cwd is a per-agent overlay (a config dir distinct from it):
+  /// `<convRoot>/agents/<slug>`, with the space's shared directories two
+  /// levels up.
+  final bool isOverlay;
+
+  /// `<convRoot>/repos`, when the overlay has one.
+  final String? reposDir;
+
+  /// `<convRoot>/attachments`, when anything was attached to the space.
+  final String? attachmentsDir;
+
+  static bool _overlay(String cwd, String? configDir) =>
+      configDir != null && configDir.isNotEmpty && !p.equals(configDir, cwd);
+
+  static String _repos(String cwd) =>
+      p.join(p.dirname(p.dirname(cwd)), 'repos');
+
+  static String _attachments(String cwd) =>
+      p.join(p.dirname(p.dirname(cwd)), SpacePromptAttachments.dirName);
+
+  static _OverlayLayout resolve({
+    required String cwd,
+    required String? configDir,
+  }) {
+    if (!_overlay(cwd, configDir)) {
+      return const _OverlayLayout(isOverlay: false);
+    }
+    final repos = _repos(cwd);
+    final attachments = _attachments(cwd);
+    return _OverlayLayout(
+      isOverlay: true,
+      reposDir: Directory(repos).existsSync() ? repos : null,
+      attachmentsDir: Directory(attachments).existsSync() ? attachments : null,
     );
   }
 }

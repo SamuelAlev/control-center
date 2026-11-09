@@ -4,16 +4,16 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
-import 'package:control_center/di/provider_bindings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// shared_preferences key for the last-active workspace id. Public so the web
-/// bootstrap can read it to land in the last workspace on a fresh load — the web
-/// active-id notifier is overridden there and can't reuse the desktop `build()`
-/// (which reconciles against the Drift bootstrap stream that web lacks).
+/// Preference key (qualified by the session's [SessionScope]) for the
+/// workspace this server and user last had open: the cold-start landing hint.
+/// The pre-scope `active_workspace_id` key is ignored, so the first launch
+/// after upgrading lands from the live list.
 const String activeWorkspaceIdPrefKey = 'active_workspace_id';
 const String _activeWorkspaceNameKey = 'active_workspace_name';
 const String _activeWorkspaceHasLogoKey = 'active_workspace_has_logo';
@@ -25,118 +25,85 @@ final workspacesProvider = StreamProvider<List<Workspace>>((ref) {
   return repo.watchAll();
 });
 
-/// Server-truth workspace list for BOOTSTRAP reconciliation only.
+/// Mirrors the workspace of the current route for readers without a route
+/// context (the shell, overlays, notification mapping, the RPC client).
 ///
-/// [ActiveWorkspaceIdNotifier] resolves the active workspace id and the
-/// in-process `rpcClientProvider` binds its session to that id. So the active
-/// id sits BELOW the RPC client and must not be resolved over the RPC path —
-/// reconciling against the public (RPC-flipped) [workspacesProvider] would
-/// cycle (rpcClient → activeWorkspaceId → workspaces → workspace RPC →
-/// rpcClient). This Dao-backed stream is the same authoritative source the host
-/// itself reads, so the active-id bootstrap stays acyclic. UI/display surfaces
-/// keep using [workspacesProvider].
-final _bootstrapWorkspacesProvider = StreamProvider<List<Workspace>>(
-  buildBootstrapWorkspacesStream,
-);
-
-/// Tracks the id of the workspace currently scoped in the UI.
-///
-/// Persists to shared_preferences so the choice survives restarts.
-/// Falls back to the first available workspace, or null when there are none.
+/// The route is the source of truth: `workspaceUrlSyncProvider` pushes the
+/// route's `:workspaceId` here, and nothing derives a different id. Until the
+/// router resolves, [build] exposes the workspace this server and user last
+/// had open (scoped by [SessionScope]) so workspace-scoped providers can start
+/// and the splash redirect has a landing hint; [landingWorkspaceIdFor] checks
+/// that hint against the live list.
 class ActiveWorkspaceIdNotifier extends Notifier<String?> {
-  String? _cachedStoredId;
-
   @override
   String? build() {
-    _cachedStoredId ??= ref
-        .watch(appPreferencesProvider)
-        .getString(activeWorkspaceIdPrefKey);
-
-    // The workspace list comes from a Drift stream whose first emission is
-    // gated on opening the database (a couple of seconds on a cold start).
-    // Until it arrives, optimistically expose the persisted id instead of
-    // null so workspace-scoped providers can start their queries immediately
-    // and the title-bar chip resolves without flashing "no workspace". The id
-    // is reconciled against the real list below once it emits.
-    //
-    // Reconcile against the Dao-backed bootstrap list, NOT the RPC-flipped
-    // public provider: the in-process RPC client binds to this active id, so
-    // resolving it must not route back through the RPC path (see
-    // [_bootstrapWorkspacesProvider]).
-    final workspaces = ref.watch(_bootstrapWorkspacesProvider).value;
-    if (workspaces == null) {
-      return _cachedStoredId;
-    }
-
-    if (workspaces.isEmpty) {
-      _forgetStoredId();
+    final scope = ref.watch(sessionScopeProvider);
+    if (scope == null) {
       return null;
     }
-
-    if (_cachedStoredId != null &&
-        workspaces.any((w) => w.id == _cachedStoredId)) {
-      return _cachedStoredId;
-    }
-    return _rememberStoredId(workspaces.first.id);
+    return ref
+        .watch(appPreferencesProvider)
+        .getString(scope.key(activeWorkspaceIdPrefKey));
   }
 
-  /// Drops a persisted id the connected server does not know.
+  /// Adopts [id] and remembers it for the next cold start of this session's
+  /// server and user.
   ///
-  /// Reconciling only the in-memory value left the WRONG id in
-  /// shared_preferences, and the optimistic branch above re-reads it on every
-  /// build — so the id came back on each reconnect and rode the window before
-  /// the workspace list arrives. Against a server that never registered it
-  /// (a data-dir reset, a different machine) that meant the router landed on
-  /// `/workspaces/<dead-id>/…` and every workspace-scoped provider opened a
-  /// subscription the server refused, over and over. Clearing the pref is what
-  /// makes the correction stick.
-  void _forgetStoredId() {
-    if (_cachedStoredId == null) {
-      return;
-    }
-    _cachedStoredId = null;
-    unawaited(
-      ref.read(appPreferencesProvider).remove(activeWorkspaceIdPrefKey),
-    );
-  }
-
-  /// Persists the workspace we fell back to, for the same reason.
-  String _rememberStoredId(String id) {
-    if (_cachedStoredId == id) {
-      return id;
-    }
-    _cachedStoredId = id;
-    unawaited(
-      ref.read(appPreferencesProvider).setString(activeWorkspaceIdPrefKey, id),
-    );
-    return id;
-  }
-
-  /// Sets the active workspace id and persists it.
+  /// Callers: the route sync, and a flow that picks the workspace it is about
+  /// to navigate into (onboarding creating one mid-flow). The in-memory flip
+  /// comes first: persisting first left a window where the route had already
+  /// changed but readers still saw the previous id — long enough for a
+  /// mutation to write to the wrong workspace.
   Future<void> setActive(String id) async {
-    // Flip in-memory state FIRST, before the (slow) shared_preferences write.
-    // Persisting first left a window where the route had already changed but
-    // readers still saw the previous id — long enough for a mutation to write
-    // to the wrong workspace. The write is best-effort after the flip.
-    _cachedStoredId = id;
     state = id;
-    await ref
-        .read(appPreferencesProvider)
-        .setString(activeWorkspaceIdPrefKey, id);
+    final scope = ref.read(sessionScopeProvider);
+    if (scope != null) {
+      await ref
+          .read(appPreferencesProvider)
+          .setString(scope.key(activeWorkspaceIdPrefKey), id);
+    }
+  }
+
+  /// Drops a remembered id the connected server does not know.
+  ///
+  /// Reconciling only the in-memory value left the WRONG id persisted, and the
+  /// cold-start hint re-reads it — so against a server that no longer has it
+  /// the router landed on `/workspaces/<dead-id>/…` on every launch and every
+  /// workspace-scoped provider opened a subscription the server refused.
+  Future<void> forget() async {
+    state = null;
+    final scope = ref.read(sessionScopeProvider);
+    if (scope != null) {
+      await ref
+          .read(appPreferencesProvider)
+          .remove(scope.key(activeWorkspaceIdPrefKey));
+    }
   }
 }
 
-/// Active workspace id (persisted across restarts).
-///
-/// The URL is the source of truth: `workspaceUrlSyncProvider` (in
-/// `workspace_url_sync_provider.dart`) pushes the `:workspaceId` of the current
-/// route into this notifier. The persisted value
-/// is the cold-start optimistic default (and the splash redirect's landing
-/// target) until the router resolves.
+/// Active workspace id: the route's workspace (see [ActiveWorkspaceIdNotifier]).
 final activeWorkspaceIdProvider =
     NotifierProvider<ActiveWorkspaceIdNotifier, String?>(
       ActiveWorkspaceIdNotifier.new,
     );
+
+/// The workspace a landing (the splash redirect, a dead route) enters.
+///
+/// The [remembered] hint while the [workspaces] list has not loaded; once it
+/// has, the hint if this server still has it, else the first workspace in the
+/// operator's order, else null (the picker).
+String? landingWorkspaceIdFor({
+  required String? remembered,
+  required List<Workspace>? workspaces,
+}) {
+  if (workspaces == null) {
+    return remembered;
+  }
+  if (remembered != null && workspaces.any((w) => w.id == remembered)) {
+    return remembered;
+  }
+  return workspaces.firstOrNull?.id;
+}
 
 /// Convenience accessor for the active workspace row.
 final activeWorkspaceProvider = Provider<Workspace?>((ref) {
@@ -161,11 +128,11 @@ typedef WorkspaceDisplay = ({String name, String workspaceId, bool hasLogo});
 /// it (e.g. the title-bar chip).
 ///
 /// Prefers the real workspace row, but while the workspace list is still
-/// loading on a cold start it falls back to the last-active workspace cached in
-/// shared_preferences by [workspaceDisplayCacheProvider]. That fallback is what
-/// stops the chip from showing "no workspace" for the couple of seconds the
-/// database takes to open. Returns null only once the list has loaded with no
-/// active workspace (or on a first-ever run with nothing cached).
+/// loading on a cold start it falls back to the display cached for this
+/// server and user by [workspaceDisplayCacheProvider]. That fallback is what
+/// stops the chip from showing "no workspace" while the list loads. Returns
+/// null once the list has loaded with no active workspace (or with nothing
+/// cached for this session).
 final activeWorkspaceDisplayProvider = Provider<WorkspaceDisplay?>((ref) {
   final active = ref.watch(activeWorkspaceProvider);
   if (active != null) {
@@ -178,46 +145,54 @@ final activeWorkspaceDisplayProvider = Provider<WorkspaceDisplay?>((ref) {
     return null;
   }
 
+  final scope = ref.watch(sessionScopeProvider);
+  final id = ref.watch(activeWorkspaceIdProvider);
+  if (scope == null || id == null) {
+    return null;
+  }
   final prefs = ref.watch(appPreferencesProvider);
-  final name = prefs.getString(_activeWorkspaceNameKey);
-  final id = prefs.getString(activeWorkspaceIdPrefKey);
-  if (name == null || id == null) {
+  final name = prefs.getString(scope.key(_activeWorkspaceNameKey));
+  if (name == null) {
     return null;
   }
   return (
     name: name,
     workspaceId: id,
-    hasLogo: prefs.getBool(_activeWorkspaceHasLogoKey) ?? false,
+    hasLogo: prefs.getBool(scope.key(_activeWorkspaceHasLogoKey)) ?? false,
   );
 });
 
 /// Write-through cache that persists the active workspace's display info
-/// (id + name + logo) to shared_preferences whenever it resolves, so
+/// (name + logo) for this server and user whenever it resolves, so
 /// [activeWorkspaceDisplayProvider] can render it instantly on the next cold
-/// start. Reacts to the resolved row rather than the act of switching, so it
-/// covers every selection path — explicit switch, post-create and the
-/// auto-select-first-workspace fallback. Kept alive from `ControlCenterApp`,
-/// which is also what guarantees [activeWorkspaceProvider] always has one
-/// never-paused listener (see the comment at that `ref.watch`).
+/// start. The id itself is remembered by [ActiveWorkspaceIdNotifier]. Reacts to
+/// the resolved row rather than the act of switching, so it covers every
+/// selection path. Kept alive from `ControlCenterApp`, which is also what
+/// guarantees [activeWorkspaceProvider] always has one never-paused listener
+/// (see the comment at that `ref.watch`).
 class WorkspaceDisplayCacheNotifier extends Notifier<void> {
   @override
   void build() {
     ref.listen<Workspace?>(activeWorkspaceProvider, (_, next) {
+      final scope = ref.read(sessionScopeProvider);
+      if (scope == null) {
+        return;
+      }
       final prefs = ref.read(appPreferencesProvider);
+      final nameKey = scope.key(_activeWorkspaceNameKey);
+      final logoKey = scope.key(_activeWorkspaceHasLogoKey);
       if (next == null) {
         // Only clear once the list has actually loaded and is empty; a null
         // seen mid-load must not wipe the cache the chip depends on.
         final loaded = ref.read(workspacesProvider).value;
         if (loaded != null && loaded.isEmpty) {
-          unawaited(prefs.remove(activeWorkspaceIdPrefKey));
-          unawaited(prefs.remove(_activeWorkspaceNameKey));
-          unawaited(prefs.remove(_activeWorkspaceHasLogoKey));
+          unawaited(prefs.remove(nameKey));
+          unawaited(prefs.remove(logoKey));
         }
         return;
       }
-      unawaited(prefs.setString(activeWorkspaceIdPrefKey, next.id));
-      unawaited(prefs.setString(_activeWorkspaceNameKey, next.name));
-      unawaited(prefs.setBool(_activeWorkspaceHasLogoKey, value: next.hasLogo));
+      unawaited(prefs.setString(nameKey, next.name));
+      unawaited(prefs.setBool(logoKey, value: next.hasLogo));
     }, fireImmediately: true);
   }
 }
@@ -273,6 +248,21 @@ class ActiveRepoIdNotifier extends Notifier<String?> {
     // Mirrors [ActiveWorkspaceIdNotifier.setActive].
     _cachedStoredId = repoId;
     state = repoId;
+    await ref
+        .read(appPreferencesProvider)
+        .setString('$_activeRepoIdKeyPrefix$workspaceId', repoId);
+  }
+
+  /// Picks [repoId] as [workspaceId]'s active repo before navigating there.
+  ///
+  /// For a caller that is about to enter [workspaceId] (a deep link): the
+  /// workspace becomes active only once the route says so, and this
+  /// notifier re-reads the stored choice for it then. The preference write
+  /// is synchronous, so the first frame of the new route already sees it.
+  Future<void> setActiveFor(String workspaceId, String repoId) async {
+    if (workspaceId == ref.read(activeWorkspaceIdProvider)) {
+      return setActive(repoId);
+    }
     await ref
         .read(appPreferencesProvider)
         .setString('$_activeRepoIdKeyPrefix$workspaceId', repoId);

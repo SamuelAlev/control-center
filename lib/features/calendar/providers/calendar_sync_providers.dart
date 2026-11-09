@@ -13,16 +13,8 @@ class CalendarSyncController {
 
   final RemoteRpcClient _rpc;
 
-  /// No-op: the host runs the periodic sweep, not the client.
-  void start() {}
-
-  /// No-op (kept for call-site symmetry with the old in-process service).
-  void stop() {}
-
-  /// No-op (the controller holds no resources).
-  void dispose() {}
-
-  /// Triggers an immediate sync of the bound workspace on the host. Best-effort
+  /// Triggers an immediate sync of the active workspace (stamped on the call
+  /// by the client) on the host. Best-effort
   /// — a failure leaves the last-synced events in place.
   Future<void> refreshNow() async {
     try {
@@ -32,9 +24,8 @@ class CalendarSyncController {
     }
   }
 
-  /// Ensures events in `[from, to]` are loaded on the host (the bound workspace
-  /// is server-supplied, so [workspaceId] is accepted for call-site symmetry
-  /// but not sent). Best-effort.
+  /// Ensures [workspaceId]'s events in `[from, to]` are loaded on the host.
+  /// Best-effort.
   Future<void> ensureRangeLoaded(
     String workspaceId,
     DateTime from,
@@ -42,6 +33,7 @@ class CalendarSyncController {
   ) async {
     try {
       await _rpc.call('calendar.ensureRangeLoaded', {
+        'workspace_id': workspaceId,
         'from': from.toIso8601String(),
         'to': to.toIso8601String(),
       });
@@ -55,4 +47,3 @@ class CalendarSyncController {
 final calendarSyncServiceProvider = Provider<CalendarSyncController>((ref) {
   return CalendarSyncController(ref.watch(rpcClientProvider));
 });
-

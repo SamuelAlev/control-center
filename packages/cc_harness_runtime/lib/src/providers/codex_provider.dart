@@ -20,7 +20,7 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// Codex rejects `temperature`. Tools are flat Responses function objects
 /// (`{type:function,name,…}`), not the Chat Completions `{type,function:{}}`
 /// wrapper.
-class CodexProvider implements LlmProviderPort {
+class CodexProvider extends LlmProviderPort {
   /// Creates a [CodexProvider].
   CodexProvider({
     this._apiKey,
@@ -232,9 +232,15 @@ class CodexProvider implements LlmProviderPort {
       } on Object {
         wireCode = null;
       }
+      final code = wireCode ?? 'http_${e.statusCode}';
       yield LlmError(
         'Codex API error ${e.statusCode}: ${e.body}$reauth',
-        code: wireCode ?? 'http_${e.statusCode}',
+        code: code,
+        kind: LlmErrorKind.classify(
+          code: code,
+          message: e.body,
+          httpStatus: e.statusCode,
+        ),
         retryable: e.statusCode == 429 || e.statusCode >= 500,
         retryAfterMs: e.retryAfter?.inMilliseconds,
       );

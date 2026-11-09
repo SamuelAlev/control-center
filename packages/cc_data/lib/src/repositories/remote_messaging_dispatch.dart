@@ -380,6 +380,22 @@ class RemoteMessagingDispatch {
     return result['delivered'] == true;
   }
 
+  /// See `MessagingPort.forceSendSteering`.
+  Future<String> forceSendSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final result = await _client.call('steering.forceSend', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'conversation_id': conversationId,
+      'message_id': messageId,
+    });
+    return result['outcome'] as String? ?? 'not_queued';
+  }
+
   /// Forces an anchored-compaction pass over the conversation server-side
   /// (the `/compact` command). [conversationId] selects the stream (defaults
   /// to `main`).

@@ -13,7 +13,6 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
-import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
@@ -25,6 +24,8 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/reaction_providers.dart';
@@ -176,7 +177,13 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
         _resolvedOverride.remove(thread.id);
         _open.remove(thread.id);
       });
-      showPrError(context, ref, e, (l) => l.failedToResolveConversation('$e'));
+      showPrError(
+        context,
+        ref,
+        e,
+        (l) => l.failedToResolveConversation('$e'),
+        prRef: widget.prRef,
+      );
     } finally {
       if (mounted) {
         setState(() => _resolveInFlight.remove(thread.id));
@@ -1385,9 +1392,7 @@ class _CommentCard extends ConsumerWidget {
     final comment = entry.comment;
     final edit = ref.watch(prEditProvider(prRef));
     final displayBody = edit.optimisticComments[comment.id] ?? comment.body;
-    final login = ref.watch(
-      githubUserProvider.select((u) => u.value?.login.toLowerCase() ?? ''),
-    );
+    final login = ref.watch(currentUserLoginForPrProvider(prRef)).toLowerCase();
     final isAuthor =
         login.isNotEmpty && comment.user?.login.toLowerCase() == login;
     // Checking a task box is a write the author and anyone with push access

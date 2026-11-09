@@ -50,6 +50,8 @@ import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 
 /// {@template sandboxed_agent_dispatch_adapter}
 /// Adapter that dispatches agent runs inside sandboxed environments.
@@ -306,9 +308,13 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     onHarnessCredentialExhausted,
     int? costCapCents,
   }) {
-    final dispatchId =
-        '${DateTime.now().millisecondsSinceEpoch}-'
-        '${(agentId ?? 'agent').hashCode.abs().toRadixString(36)}';
+    if (_shutDown) {
+      throw StateError('the agent dispatch adapter has shut down');
+    }
+    // Random, not `<millis>-<hash(agentId)>`: two dispatches of one agent in
+    // the same millisecond shared an id, so they shared a `.cc-runs/<id>/bin`
+    // shim directory, and the first to finish removed the OTHER's map entry.
+    final dispatchId = const Uuid().v4();
     final session = DispatchSession(
       deps: _deps,
       onResolveHandle: _resolveHandle,
@@ -355,18 +361,23 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       costCapCents: costCapCents,
     );
     session.onHarnessStarted = () => onSessionHarnessStarted?.call(session);
+    // Registered BEFORE the run starts, and removed only if the entry is still
+    // this session: an id is unique, but the guard keeps a late completion
+    // from ever evicting a sibling.
+    _dispatchSessions[dispatchId] = session;
     unawaited(
       session.run().whenComplete(() {
-        _dispatchSessions.remove(dispatchId);
+        if (identical(_dispatchSessions[dispatchId], session)) {
+          _dispatchSessions.remove(dispatchId);
+        }
       }),
     );
-    _dispatchSessions[dispatchId] = session;
     return DispatchHandle(
       dispatchId: dispatchId,
       events: session.controller.stream,
-      onStop: () async {
-        await session.stop();
-      },
+      // The handle's stop IS [stopDispatch]: one stop sequence, whichever of
+      // the two a caller holds.
+      onStop: () => stopDispatch(dispatchId),
     );
   }
 
@@ -424,14 +435,35 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     );
   }
 
+  /// Stops every live run: each child is killed, its credentials revoked and
+  /// its run log closed. Concurrent, so a server shutdown is bounded by the
+  /// slowest run rather than by their sum.
   @override
   Future<void> stop() async {
     final sessions = List<DispatchSession>.from(_dispatchSessions.values);
     _dispatchSessions.clear();
-    for (final s in sessions) {
-      await s.stop();
-    }
+    await Future.wait([
+      for (final s in sessions)
+        s.stop().catchError((Object e, StackTrace st) {
+          CcInfraLog.error(
+            'SandboxedAgentDispatchAdapter: stopping ${s.dispatchId} failed',
+            e,
+            st,
+          );
+        }),
+    ]);
   }
+
+  /// Server shutdown: refuses new dispatches, stops every live run, then
+  /// destroys every warm sandbox. Without it a stopped server left its agents'
+  /// children running — nothing supervised them any more.
+  Future<void> shutdown() async {
+    _shutDown = true;
+    await stop();
+    await destroyAll();
+  }
+
+  bool _shutDown = false;
 
   /// Destroys all active sandbox handles and cancels idle cooldown timers.
   Future<void> destroyAll() async {
@@ -441,31 +473,70 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     _cooldownTimers.clear();
     final handles = List<SandboxHandle>.from(_handles.values);
     _handles.clear();
+    _handleSpecs.clear();
     for (final h in handles) {
-      try {
-        await _sandbox.destroy(h);
-      } catch (_) {
-        CcInfraLog.warning(
-          'SandboxedAgentDispatchAdapter: Sandbox destroy failed',
-        );
-      }
+      await _destroy(h, 'shutdown');
     }
   }
+
+  Future<void> _destroy(SandboxHandle handle, String why) async {
+    try {
+      await _sandbox.destroy(handle);
+    } on Object catch (e, st) {
+      CcInfraLog.error(
+        'SandboxedAgentDispatchAdapter: sandbox destroy ($why) failed for '
+        '${handle.sessionId}',
+        e,
+        st,
+      );
+    }
+  }
+
+  /// The spec each warm handle was launched with.
+  ///
+  /// A sandbox's posture — network, the account dirs it may write, approved
+  /// exec roots, loopback ports, mounts — is fixed when it launches. Reusing a
+  /// warm handle across dispatches used to reuse that posture too, for up to
+  /// the cooldown: a re-dispatch after the egress rule turned the network off
+  /// kept it on. A handle is now reused only for an IDENTICAL spec.
+  final Map<String, SandboxSpec> _handleSpecs = {};
+
+  /// [_resolveHandle], for tests of warm-handle reuse.
+  @visibleForTesting
+  Future<SandboxHandle> resolveHandleForTesting({
+    required String sessionId,
+    required SandboxSpec spec,
+    required void Function(AgentProcessEvent) emit,
+  }) => _resolveHandle(sessionId: sessionId, spec: spec, emit: emit);
 
   Future<SandboxHandle> _resolveHandle({
     required String sessionId,
     required SandboxSpec spec,
     required void Function(AgentProcessEvent) emit,
   }) async {
+    if (_shutDown) {
+      throw StateError('the agent dispatch adapter has shut down');
+    }
     _cooldownTimers.remove(sessionId)?.cancel();
     final existing = _handles[sessionId];
     if (existing != null) {
       final alive = await _sandbox.isAlive(existing);
-      if (alive) {
+      if (alive && _handleSpecs[sessionId] == spec) {
         emit(DebugEvent(content: '[sandbox] reusing warm sandbox session'));
         return existing;
       }
       _handles.remove(sessionId);
+      _handleSpecs.remove(sessionId);
+      if (alive) {
+        emit(
+          DebugEvent(
+            content:
+                '[sandbox] sandbox posture changed since the last run — '
+                'starting a fresh sandbox session',
+          ),
+        );
+        await _destroy(existing, 'posture change');
+      }
     }
     emit(
       DebugEvent(
@@ -474,23 +545,29 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     );
     final fresh = await _sandbox.launch(spec);
     _handles[sessionId] = fresh;
+    _handleSpecs[sessionId] = spec;
     return fresh;
   }
 
   void _scheduleCooldown(String sessionId) {
     _cooldownTimers.remove(sessionId)?.cancel();
-    _cooldownTimers[sessionId] = Timer(_idleCooldown, () async {
+    Future<void> expire() async {
       _cooldownTimers.remove(sessionId);
+      _handleSpecs.remove(sessionId);
       final handle = _handles.remove(sessionId);
       if (handle != null) {
-        try {
-          await _sandbox.destroy(handle);
-        } catch (_) {
-          CcInfraLog.warning(
-            'SandboxedAgentDispatchAdapter: Cooldown sandbox destroy failed',
-          );
-        }
+        await _destroy(handle, 'cooldown');
       }
-    });
+    }
+
+    if (_shutDown) {
+      // A run that finished during shutdown keeps nothing warm.
+      unawaited(expire());
+      return;
+    }
+    _cooldownTimers[sessionId] = Timer(
+      _idleCooldown,
+      () => unawaited(expire()),
+    );
   }
 }

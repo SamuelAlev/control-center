@@ -15,18 +15,19 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_config.dart
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_log_entry.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_repositories.dart';
 import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/core/providers/event_bus_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
 import 'package:control_center/features/ticketing/presentation/ticket_view_mode.dart';
-import 'package:control_center/features/ticketing/ticketing_bindings.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provides the [TicketRepository] over the unified RPC client seam — a
-/// connected `cc_server` on every target (spawned locally by desktop
-/// self-serve, or a remote instance). Never touches Drift directly.
+/// connected `cc_server` on every target (spawned locally by the desktop, or
+/// a remote instance).
 final ticketRepositoryProvider = Provider<TicketRepository>(
   (ref) => RpcTicketRepository(ref.watch(rpcClientProvider)),
 );
@@ -38,13 +39,12 @@ final remoteTicketRepositoryProvider = Provider<RemoteTicketRepository>(
   (ref) => RemoteTicketRepository(ref.watch(rpcClientProvider)),
 );
 
-/// Provides the [TicketLinkRepository] over the in-process RPC server (flipped
-/// from Drift to the cc_data RpcX adapter as part of the composition flip).
+/// Provides the [TicketLinkRepository] over the connected server.
 final ticketLinkRepositoryProvider = Provider<TicketLinkRepository>((ref) {
   return RpcTicketLinkRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the [ProjectRepository] over the in-process RPC server.
+/// Provides the [ProjectRepository] over the connected server.
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
   return RpcProjectRepository(ref.watch(rpcClientProvider));
 });
@@ -105,20 +105,24 @@ final ticketSyncNowProvider =
       };
     });
 
-/// Provides the [TicketLinkService] (ticket dependency-link write path).
-///
-/// DECLARED here (web-safe; the service is pure cc_domain logic over repository
-/// interfaces) and RESOLVED through the ticketing seam: on the VM it binds to
-/// the server-side Drift `dao*` repos (the in-process MCP write path; routing it
-/// over RPC would cycle through the host), on web it binds to the RPC repos so
-/// the write works over RPC.
-final ticketLinkServiceProvider = Provider<TicketLinkService>(
-  buildTicketLinkService,
-);
+/// Provides the [TicketLinkService] (ticket dependency-link write path): pure
+/// cc_domain logic over the RPC repositories, so the writes happen on the
+/// connected server.
+final ticketLinkServiceProvider = Provider<TicketLinkService>((ref) {
+  final client = ref.watch(rpcClientProvider);
+  return TicketLinkService(
+    linkRepository: RpcTicketLinkRepository(client),
+    ticketRepository: RpcTicketRepository(client),
+  );
+});
 
-/// Provides the [ProjectService] (project write path; seamed like
-/// [ticketLinkServiceProvider]).
-final projectServiceProvider = Provider<ProjectService>(buildProjectService);
+/// Provides the [ProjectService] (project write path), over RPC like
+/// [ticketLinkServiceProvider].
+final projectServiceProvider = Provider<ProjectService>(
+  (ref) => ProjectService(
+    repository: RpcProjectRepository(ref.watch(rpcClientProvider)),
+  ),
+);
 
 /// The ticketing vendor this WORKSPACE works in.
 ///
@@ -149,12 +153,14 @@ Future<void> setActiveTicketProvider(WidgetRef ref, TicketProvider provider) =>
     );
 
 /// Provides the [TicketWorkflowService] — the ticket WRITE path
-/// (create/update/assign/close). Seamed like [ticketLinkServiceProvider]: VM
-/// binds Dao-backed (consumed by the MCP registry, so it can't go over RPC
-/// there), web binds over RPC. Writes hit the same DB the in-process server
-/// reads, so the UI's RPC-backed ticket streams still update live.
+/// (create/update/assign/close) — over the RPC ticket repository, so writes
+/// land on the connected server and its ticket streams update the UI live.
 final ticketWorkflowServiceProvider = Provider<TicketWorkflowService>(
-  buildTicketWorkflowService,
+  (ref) => TicketWorkflowService(
+    repository: RpcTicketRepository(ref.watch(rpcClientProvider)),
+    eventBus: ref.watch(domainEventBusProvider),
+    onWarn: (message) => AppLog.w('TicketWorkflowService', message),
+  ),
 );
 
 // --- UI providers (mirror messaging_providers.dart shapes) ---
@@ -164,9 +170,6 @@ final workspaceTicketsProvider = StreamProvider.family<List<Ticket>, String>((
   ref,
   workspaceId,
 ) {
-  // Trigger a remote pull on first watch (local provider is a no-op; on web
-  // the server owns the mirror so this is a no-op there).
-  triggerTicketSync(ref, workspaceId);
   return ref.watch(ticketRepositoryProvider).watchForWorkspace(workspaceId);
 });
 

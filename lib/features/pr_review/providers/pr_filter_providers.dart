@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/pr_needs_your_review.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
@@ -486,16 +485,9 @@ List<PullRequest> applyFilters(
 /// affects surfaces that are not about a specific PR. PR-scoped surfaces use
 /// [currentUserLoginForPrProvider] instead, which resolves the forge from the
 /// PR's own repo.
-final currentUserLoginProvider = Provider<String>((ref) {
-  final logins = ref.watch(viewerLoginsProvider);
-  if (logins.isEmpty) {
-    return '';
-  }
-  if (logins.length == 1) {
-    return logins.values.first;
-  }
-  return logins[ForgeHost.github] ?? logins.values.first;
-});
+final currentUserLoginProvider = Provider<String>(
+  (ref) => loginWithoutRepo(ref.watch(viewerLoginsProvider)),
+);
 
 /// The operator's login on this [PrRef]'s own forge — the keyed counterpart of
 /// [currentUserLoginProvider], resolving the forge from the PR's repo rather
@@ -503,15 +495,9 @@ final currentUserLoginProvider = Provider<String>((ref) {
 final currentUserLoginForPrProvider = Provider.autoDispose
     .family<String, PrRef>((ref, pr) {
       final logins = ref.watch(viewerLoginsProvider);
-      if (logins.isEmpty) {
-        return '';
-      }
       final repo = ref.watch(prRepoRowProvider(pr));
       if (repo != null) {
         return logins[repo.forge] ?? '';
       }
-      if (logins.length == 1) {
-        return logins.values.first;
-      }
-      return logins[ForgeHost.github] ?? logins.values.first;
+      return logins[pr.forge] ?? loginWithoutRepo(logins);
     });

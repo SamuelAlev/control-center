@@ -1,10 +1,11 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:test/test.dart';
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   _Provider(this.script);
   final List<List<LlmEvent>> script;
   int calls = 0;
@@ -111,8 +112,10 @@ class _ThrowingHooks implements AgentLoopHooks {
 /// An advisor that throws instead of reviewing.
 class _ThrowingAdvisor implements Advisor {
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async =>
-      throw StateError('advisor exploded');
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async => throw StateError('advisor exploded');
 
   @override
   void reset() {}
@@ -121,7 +124,10 @@ class _ThrowingAdvisor implements Advisor {
 class _OnceAdvisor implements Advisor {
   int calls = 0;
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async {
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async {
     calls++;
     return calls == 1 ? const AdvisorNote('consider edge cases') : null;
   }
@@ -149,7 +155,7 @@ void main() {
           userMessage: 'go',
           tools: [tool],
           provider: provider,
-          config: AgentLoopConfig(hooks: hooks),
+          config: AgentLoopConfig(steering: LoopSteeringConfig(hooks: hooks)),
         )
         .toList();
     expect(hooks.started, isTrue);
@@ -187,59 +193,85 @@ void main() {
 
     test('onSessionStart failure ends the run with an error + done', () async {
       final events = await runWith(
-        AgentLoopConfig(hooks: _ThrowingHooks(onStart: true)),
+        AgentLoopConfig(
+          steering: LoopSteeringConfig(hooks: _ThrowingHooks(onStart: true)),
+        ),
       );
       expect(events.whereType<LoopError>(), hasLength(1));
       expect(events.last, isA<LoopDone>());
       expect((events.last as LoopDone).reason, LoopDoneReason.error);
     });
 
-    test('a throwing preToolUse gate DENIES rather than killing the run',
-        () async {
-      final tool = _EchoTool();
-      final events = await runner
-          .run(
-            history: [],
-            userMessage: 'go',
-            tools: [tool],
-            provider: _Provider([
-              [
-                const LlmToolUseDelta(
-                  id: 't1',
-                  name: 'do_thing',
-                  argumentsJson: '{}',
+    test(
+      'a throwing preToolUse gate DENIES rather than killing the run',
+      () async {
+        final tool = _EchoTool();
+        final events = await runner
+            .run(
+              history: [],
+              userMessage: 'go',
+              tools: [tool],
+              provider: _Provider([
+                [
+                  const LlmToolUseDelta(
+                    id: 't1',
+                    name: 'do_thing',
+                    argumentsJson: '{}',
+                  ),
+                  const LlmDone(),
+                ],
+                [const LlmTextDelta('done'), const LlmDone()],
+              ]),
+              config: AgentLoopConfig(
+                steering: LoopSteeringConfig(
+                  hooks: _ThrowingHooks(onPre: true),
                 ),
-                const LlmDone(),
-              ],
-              [const LlmTextDelta('done'), const LlmDone()],
-            ]),
-            config: AgentLoopConfig(hooks: _ThrowingHooks(onPre: true)),
-          )
-          .toList();
-      expect(tool.runs, 0, reason: 'a gate that cannot answer is not consent');
-      expect(events.whereType<LoopToolCallResult>().single.result.isError, isTrue);
-      expect(events.last, isA<LoopDone>());
-    });
+              ),
+            )
+            .toList();
+        expect(
+          tool.runs,
+          0,
+          reason: 'a gate that cannot answer is not consent',
+        );
+        expect(
+          events.whereType<LoopToolCallResult>().single.result.isError,
+          isTrue,
+        );
+        expect(events.last, isA<LoopDone>());
+      },
+    );
 
-    test('a throwing postToolUse observer does not undo a finished call',
-        () async {
-      final events = await runWith(
-        AgentLoopConfig(hooks: _ThrowingHooks(onPost: true)),
-      );
-      expect(
-        events.whereType<LoopToolCallResult>().single.result.isError,
-        isFalse,
-      );
-      expect(events.last, isA<LoopDone>());
-    });
+    test(
+      'a throwing postToolUse observer does not undo a finished call',
+      () async {
+        final events = await runWith(
+          AgentLoopConfig(
+            steering: LoopSteeringConfig(hooks: _ThrowingHooks(onPost: true)),
+          ),
+        );
+        expect(
+          events.whereType<LoopToolCallResult>().single.result.isError,
+          isFalse,
+        );
+        expect(events.last, isA<LoopDone>());
+      },
+    );
 
     test('a throwing advisor costs the note, not the run', () async {
       final events = await runWith(
-        AgentLoopConfig(advisor: _ThrowingAdvisor(), advisorEveryTurns: 1),
+        AgentLoopConfig(
+          steering: LoopSteeringConfig(
+            advisor: _ThrowingAdvisor(),
+            advisorEveryTurns: 1,
+          ),
+        ),
       );
       expect(events.whereType<LoopAdvisorNote>(), isEmpty);
       expect(
-        events.whereType<LoopNotice>().any((n) => n.message.contains('Advisor')),
+        events.whereType<LoopNotice>().any(
+          (n) => n.message.contains('Advisor'),
+        ),
         isTrue,
       );
       expect(events.last, isA<LoopDone>());
@@ -258,12 +290,14 @@ void main() {
           tools: const [],
           provider: provider,
           config: const AgentLoopConfig(
-            streamRules: [
-              StreamRule(
-                pattern: 'Box::leak',
-                reminder: 'Do not use Box::leak; use Arc.',
-              ),
-            ],
+            steering: LoopSteeringConfig(
+              streamRules: [
+                StreamRule(
+                  pattern: 'Box::leak',
+                  reminder: 'Do not use Box::leak; use Arc.',
+                ),
+              ],
+            ),
           ),
         )
         .toList();
@@ -292,7 +326,9 @@ void main() {
           userMessage: 'go',
           tools: [tool],
           provider: provider,
-          config: AgentLoopConfig(advisor: advisor),
+          config: AgentLoopConfig(
+            steering: LoopSteeringConfig(advisor: advisor),
+          ),
         )
         .toList();
     expect(advisor.calls, greaterThanOrEqualTo(1));
@@ -325,7 +361,9 @@ void main() {
             userMessage: 'go',
             tools: [tool],
             provider: provider,
-            config: AgentLoopConfig(advisor: advisor),
+            config: AgentLoopConfig(
+              steering: LoopSteeringConfig(advisor: advisor),
+            ),
           )
           .toList();
       // The event carries the severity through to the UI layer.
@@ -348,7 +386,10 @@ void main() {
 class _BlockerAdvisor implements Advisor {
   int calls = 0;
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async {
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async {
     calls++;
     return calls == 1
         ? const AdvisorNote(

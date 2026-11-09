@@ -9,6 +9,15 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Şu anda gönderilemedi: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Yanıtınız iletilmedi. Soru zaten yanıtlanmış olabilir ya da ajan beklemeyi bırakmış olabilir.';
+
+  @override
   String get succeeded => 'Başarılı';
 
   @override
@@ -2605,10 +2614,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get addGif => 'GIF ekle';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Pull request\'leri görmek için en az bir GitHub deposu ekleyin';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5915,9 +5920,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Süre';
 
   @override
-  String get pipelineStepBranch => 'Dal';
-
-  @override
   String get pipelineStepViewConversation => 'Konuşmayı görüntüle';
 
   @override
@@ -7004,14 +7006,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reviewRequested => 'İnceleme istendi';
 
   @override
-  String get connectGitHubHint =>
-      'Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümünden GitHub’a giriş yapın';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Pull request’leri yüklemek için GitHub’ı bağlayın';
-
-  @override
   String get noRepositoriesConfigured => 'Yapılandırılmış depo yok';
 
   @override
@@ -7668,13 +7662,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Taslak olarak oluştur';
-
-  @override
-  String get composePrNoRepo => 'GitHub deposu seçilmedi';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Pull request açmak için GitHub bağlantılı deposu olan bir çalışma alanı seçin.';
 
   @override
   String get composePrPickBranches =>
@@ -16809,6 +16796,27 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu kod bu oturum açma işlemiyle eşleşmiyor. Kontrol edip yeniden dene.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Çok fazla yanlış kod girildi. Oturum açmayı yeniden başlatın.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Bu oturum açma artık geçerli değil. Yeniden başlatın.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Sunucu bu oturum açma isteğini okuyamadı. Yeniden başlatın.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Şu anda çok fazla oturum açma denemesi var. Bir dakika bekleyip yeniden deneyin.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider oturum açmayı kabul etti ancak sunucu bunu kaydedemedi. Yeniden deneyin.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider şu anda yanıt vermiyor. Birkaç dakika sonra yeniden dene.';
   }
@@ -16839,7 +16847,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Bu Linear çalışma alanı zaten başka bir Control Center sunucusuna bağlı.';
+      'Bu Slack çalışma alanı zaten başka bir Control Center sunucusuna bağlı.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17275,4 +17283,38 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Uygulamayı değiştir';
+
+  @override
+  String openOnForge(String forge) {
+    return '$forge üzerinde aç';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'İlk $count dosya gösteriliyor. $forge geri kalanını listelemiyor.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Pull request’leri yüklemek için bir kod barındırma hizmeti bağlayın';
+
+  @override
+  String get connectForgeHint =>
+      'Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümünden GitHub, GitLab veya Bitbucket bağlayın';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Pull request’leri görmek için GitHub, GitLab veya Bitbucket üzerinde en az bir depo ekleyin';
+
+  @override
+  String get composePrNoForgeRepo => 'Barındırılan depo seçilmedi';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Pull request açmak için GitHub, GitLab veya Bitbucket üzerinde deposu olan bir çalışma alanı seçin.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Bu depoda pull request açmak için $forge bağlayın';
+  }
 }

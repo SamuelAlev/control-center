@@ -488,6 +488,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get teammate => 'Колега';
 
   @override
+  String get systemSender => 'Система';
+
+  @override
   String get agent => 'Агент';
 
   @override
@@ -641,12 +644,12 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Показано останні відомі дані для $names. Відновіть встановлення на GitHub або підключіть токен із доступом.';
+    return 'Показано останні відомі дані для $names. Відновіть встановлення на GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Встановлення GitHub App призупинено. Показано останні відомі дані для $names. Відновіть встановлення на GitHub або підключіть токен із доступом.';
+    return 'Встановлення GitHub App призупинено. Показано останні відомі дані для $names. Відновіть встановлення на GitHub.';
   }
 
   @override
@@ -2589,6 +2592,22 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Цей код не відповідає цьому входу. Перевірте його й спробуйте знову.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Забагато неправильних кодів. Почніть вхід заново.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Служба входу зараз не відповідає. Зачекайте хвилину й спробуйте ще раз.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Вхід відхилено. Почніть його заново й підтвердьте всі запитані дозволи.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Вхід виконано, але сервер не зміг його зберегти. Спробуйте ще раз.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

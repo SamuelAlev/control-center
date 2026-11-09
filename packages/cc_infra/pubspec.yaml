@@ -32,6 +32,9 @@ dependencies:
   path: ^1.9.1
   pool: ^1.5.3
   rss_dart: ^1.0.14
+  # IANA zone rules for cron triggers evaluated in a named timezone. Already in
+  # the workspace lock (transitively); the server embeds its database.
+  timezone: ^0.11.1
   uuid: 4.6.0
   yaml: 3.1.4
   meta: any

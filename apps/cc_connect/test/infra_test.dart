@@ -49,6 +49,57 @@ void _stateStoreContract(String name, Future<StateStore> Function() open) {
       expect(await store.get('n'), 'a');
     });
 
+    test('replace and deleteIf act only on the expected value', () async {
+      await store.set('cas', 'one', const Duration(minutes: 1));
+      expect(
+        await store.replace('cas', 'other', 'two', const Duration(minutes: 1)),
+        isFalse,
+      );
+      expect(await store.get('cas'), 'one');
+      expect(
+        await store.replace('cas', 'one', 'two', const Duration(minutes: 1)),
+        isTrue,
+      );
+      expect(await store.get('cas'), 'two');
+      expect(await store.deleteIf('cas', 'one'), isFalse);
+      expect(await store.get('cas'), 'two');
+      expect(await store.deleteIf('cas', 'two'), isTrue);
+      expect(await store.get('cas'), isNull);
+      expect(await store.deleteIf('cas', 'two'), isFalse);
+    });
+
+    test('a lease expires, renews while held and frees only itself', () async {
+      final lease = await StateLease.acquire(
+        store,
+        'lock',
+        const Duration(milliseconds: 300),
+      );
+      expect(lease, isNotNull);
+      expect(
+        await StateLease.acquire(store, 'lock', const Duration(seconds: 1)),
+        isNull,
+      );
+      // Renewed every third of its TTL: still held well past it.
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(await store.get('lock'), lease!.token);
+      await lease.release();
+      expect(await store.get('lock'), isNull);
+
+      // A holder whose lease lapsed never releases its successor's.
+      await store.set('lock2', 'ghost', const Duration(minutes: 1));
+      final successor = await StateLease.takeOver(
+        store,
+        'lock2',
+        'ghost',
+        const Duration(minutes: 1),
+      );
+      expect(successor, isNotNull);
+      expect(await store.deleteIf('lock2', 'ghost'), isFalse);
+      expect(await store.get('lock2'), successor!.token);
+      await successor.release();
+      expect(await store.get('lock2'), isNull);
+    });
+
     test('take is single use, even concurrently', () async {
       await store.set('t', 'once', const Duration(minutes: 1));
       final results = await Future.wait([store.take('t'), store.take('t')]);
@@ -529,6 +580,44 @@ void main() {
       await store.close();
     });
 
+    test('keeps the bot user id', () async {
+      final store = await FileBindingStore.open(dir.path);
+      await store.bindSlack(
+        SlackTeamBinding(
+          teamId: 'T0TEAM',
+          installId: 'install-a',
+          botId: 'B0BOT',
+          botUserId: 'U0BOT',
+          appId: 'A0TEST',
+          boundAt: DateTime.utc(2026, 11, 8),
+        ),
+      );
+      await store.close();
+      final reopened = await FileBindingStore.open(dir.path);
+      expect((await reopened.slack('T0TEAM'))!.botUserId, 'U0BOT');
+      await reopened.close();
+    });
+
+    test('a write that fails leaves the bindings as they were', () async {
+      final store = await FileBindingStore.open(dir.path);
+      await store.addGitHub(77, 'install-a');
+      // The directory goes read-only: the next write cannot land.
+      await Process.run('chmod', ['500', dir.path]);
+      addTearDown(() => Process.run('chmod', ['700', dir.path]));
+      await expectLater(
+        store.bindSlack(team('install-a')),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
+      await expectLater(
+        store.addGitHub(77, 'install-b'),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
+      expect(await store.slack('T0TEAM'), isNull);
+      expect((await store.github(77))!.installIds, {'install-a'});
+      await Process.run('chmod', ['700', dir.path]);
+      await store.close();
+    }, skip: Platform.isWindows ? 'POSIX modes only' : false);
+
     test('a corrupt file refuses to open', () async {
       File('${dir.path}/bindings.json').writeAsStringSync('{nope');
       await expectLater(
@@ -536,6 +625,30 @@ void main() {
         throwsA(isA<BindingStoreUnavailable>()),
       );
     });
+  });
+
+  group('writePrivateFile', () {
+    late Directory dir;
+    setUp(() async => dir = await Directory.systemTemp.createTemp('cc_priv'));
+    tearDown(() => dir.delete(recursive: true));
+
+    test(
+      'creates the file owner-only, replaces atomically and leaves no temp',
+      () async {
+        final path = '${dir.path}/secret';
+        await writePrivateFile(path, utf8.encode('one'));
+        await writePrivateFile(path, utf8.encode('two'));
+        expect(File(path).readAsStringSync(), 'two');
+        expect(File(path).statSync().mode & 0x1ff, 0x180, reason: '0600');
+        expect(dir.listSync().map((e) => e.path), [path]);
+        await expectLater(
+          writePrivateFile(path, utf8.encode('three'), overwrite: false),
+          throwsA(isA<FileSystemException>()),
+        );
+        expect(File(path).readAsStringSync(), 'two');
+      },
+      skip: Platform.isWindows ? 'POSIX modes only' : false,
+    );
   });
 
   group('CachedBindingStore', () {
@@ -563,6 +676,22 @@ void main() {
       await inner.releaseSlack('T0TEAM');
       now = now.add(const Duration(seconds: 31));
       expect(await cached.slack('T0TEAM'), isNull, reason: 'expired');
+      await cached.close();
+    });
+
+    test('a fresh GitHub read bypasses the cache', () async {
+      final dir = await Directory.systemTemp.createTemp('cc_bind');
+      addTearDown(() => dir.delete(recursive: true));
+      final inner = await FileBindingStore.open(dir.path);
+      final cached = CachedBindingStore(inner);
+      await inner.addGitHub(77, 'install-a');
+      expect((await cached.github(77))!.installIds, {'install-a'});
+      await inner.addGitHub(77, 'install-b');
+      expect((await cached.github(77))!.installIds, {'install-a'});
+      expect((await cached.github(77, fresh: true))!.installIds, {
+        'install-a',
+        'install-b',
+      });
       await cached.close();
     });
   });

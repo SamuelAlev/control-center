@@ -25,18 +25,7 @@ class AskUserTool extends McpTool {
 
   @override
   String get description =>
-      'Ask the operator a structured question. This is the ONLY way to ask '
-      'them anything: it renders a form in the conversation and the run waits '
-      'for the answer. Never write a question as a chat message — that ends '
-      'the turn and they have to re-prompt. Use it when the answer changes '
-      'what you build and you cannot settle it from the code, the request, or '
-      'a sensible default (a preference between real alternatives, a missing '
-      'requirement, an ambiguity whose readings lead to different work). Do '
-      'NOT use it to report progress, to ask permission (the approval gate '
-      'handles that), or to confirm something you can verify yourself. Offer '
-      'concrete {label, description?} options when you can; set '
-      'allow_free_text when the list may not cover the answer; set '
-      'multi_select when several options may apply. '
+      '$kAskUserToolDescription '
       'workspace_id, space_id, conversation_id and agent_id are filled '
       'from the session; values you pass for them are ignored.';
 
@@ -158,22 +147,27 @@ class AskUserTool extends McpTool {
     }
 
     final rawAgent = arguments['agent_id'];
-    final answer = await port.ask(
-      AgentQuestionRequest(
-        workspaceId: workspaceId!,
-        spaceId: spaceId!,
-        question: parsed.question,
-        conversationId: conversationId!,
-        context: parsed.context,
-        options: parsed.options,
-        allowFreeText: parsed.allowFreeText,
-        multiSelect: parsed.multiSelect,
-        askedByAgentId: rawAgent is String && rawAgent.isNotEmpty
-            ? rawAgent
-            : null,
-      ),
-      abandoned: abandoned,
-    );
+    final AgentQuestionAnswer? answer;
+    try {
+      answer = await port.ask(
+        AgentQuestionRequest(
+          workspaceId: workspaceId!,
+          spaceId: spaceId!,
+          question: parsed.question,
+          conversationId: conversationId!,
+          context: parsed.context,
+          options: parsed.options,
+          allowFreeText: parsed.allowFreeText,
+          multiSelect: parsed.multiSelect,
+          askedByAgentId: rawAgent is String && rawAgent.isNotEmpty
+              ? rawAgent
+              : null,
+        ),
+        abandoned: abandoned,
+      );
+    } on ArgumentError catch (e) {
+      return CallResult.error('${e.message}');
+    }
 
     final outcome = AskUserOutcome.fromAnswer(answer);
     return outcome.isError

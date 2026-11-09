@@ -73,8 +73,12 @@ class _NoopCacheRepository implements CacheRepository {
 }
 
 /// The [PrRef] for this suite's screens: `owner/repo` in workspace `ws`.
-PrRef _prRefOf(int number) =>
-    (workspaceId: 'ws', repoFullName: 'owner/repo', number: number);
+PrRef _prRefOf(int number) => (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: number,
+  forge: null,
+);
 
 void main() {
   late AppPreferences prefs;

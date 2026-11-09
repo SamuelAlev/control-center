@@ -9,6 +9,7 @@ import 'package:cc_host/cc_host.dart'
     show RepoOp, RepoOpContext, ServerAuthority;
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart'
     show providerOAuthHttpOrigin;
+import 'package:cc_server_core/src/connect/connect_error_messages.dart';
 import 'package:cc_server_core/src/connect/github_manifest_service.dart';
 import 'package:cc_server_core/src/forge/github_clients.dart';
 
@@ -39,38 +40,22 @@ List<RepoOp> buildGitHubAppOps({
       return await body();
     } on GitHubScopeRefused catch (e) {
       throw switch (e.code) {
-        'needs_sign_in' || 'access_denied' => AuthException(e.message),
+        GitHubRefusal.needsSignIn ||
+        GitHubRefusal.accessDenied => AuthException(e.message),
         _ => ValidationException(e.message),
       };
     } on ConnectException catch (e) {
+      final message = connectErrorMessage(
+        e.code,
+        ConnectErrorContext.githubSetup,
+      );
       throw switch (e.code) {
-        ConnectErrorCode.needsSignIn => const AuthException(
-          'Sign in to GitHub again first.',
-        ),
-        ConnectErrorCode.accessDenied => const AuthException(
-          'Only an administrator of that GitHub account can do this.',
-        ),
-        ConnectErrorCode.installationBoundElsewhere =>
-          const ValidationException(
-            'That installation belongs to another Control Center server.',
-          ),
-        ConnectErrorCode.notInstalled => const NotFoundException(
-          'The App is not installed there.',
-        ),
-        ConnectErrorCode.suspended => const ValidationException(
-          'That installation is suspended on GitHub.',
-        ),
-        ConnectErrorCode.installBlocked => const AuthException(
-          'Control Center Connect refused this server. Check Settings → '
-          'Connect.',
-        ),
-        ConnectErrorCode.rateLimited => const ValidationException(
-          'Too many requests right now. Try again in a minute.',
-        ),
-        _ => const ValidationException(
-          'Control Center Connect is unreachable right now. Try again '
-          'shortly.',
-        ),
+        ConnectErrorCode.needsSignIn ||
+        ConnectErrorCode.accessDenied ||
+        ConnectErrorCode.notAdmin ||
+        ConnectErrorCode.installBlocked => AuthException(message),
+        ConnectErrorCode.notInstalled => NotFoundException(message),
+        _ => ValidationException(message),
       };
     }
   }

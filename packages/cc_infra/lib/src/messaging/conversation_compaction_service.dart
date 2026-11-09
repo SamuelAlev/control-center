@@ -192,7 +192,7 @@ class ConversationCompactionService {
       spaceId: spaceId,
       content: summary,
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'compaction',
       conversationId: conversationId,
       metadata: {

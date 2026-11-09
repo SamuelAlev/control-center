@@ -1,3 +1,4 @@
+import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
@@ -10,8 +11,9 @@ import 'package:cc_persistence/mappers/pipeline_trigger_mappers.dart';
 /// Drift-backed implementation of [PipelineTriggerRepository].
 ///
 /// Triggers are workspace-scoped rows in the workspace's own database file. Two
-/// surfaces cross that boundary by nature and are the only ones that do: the
-/// event dispatcher, which must consider every workspace's triggers for an
+/// surfaces cross that boundary by nature and are the only ones that do — both
+/// server-side, never reachable over RPC: the event dispatcher (and the cron
+/// scheduler), which must consider every workspace's triggers for an
 /// incoming event and the inbound webhook URL, which carries a token and no
 /// workspace — the latter resolves through the global routing table, kept in
 /// step by [_syncWebhookRoute] on write and dropped in [deleteById].
@@ -33,11 +35,17 @@ class PipelineTriggerRepositoryImpl implements PipelineTriggerRepository {
   ///
   /// Written after the row so the route never resolves to a trigger that does
   /// not exist yet. A trigger with no token has nothing to route.
+  ///
+  /// A token already routed to ANOTHER workspace is refused, never re-pointed:
+  /// the token is also that workspace's HMAC secret, so overwriting the route
+  /// would hijack its inbound webhooks. Tokens are minted server-side, so this
+  /// only fires on a collision or a forged write — defence in depth.
   Future<void> _syncWebhookRoute(PipelineTrigger trigger) async {
     final token = trigger.webhookToken;
     if (token == null || token.isEmpty) {
       return;
     }
+    await _assertTokenFree(trigger);
     await _routes.put(
       WorkspaceRouteKind.webhookToken,
       token,
@@ -45,14 +53,33 @@ class PipelineTriggerRepositoryImpl implements PipelineTriggerRepository {
     );
   }
 
+  Future<void> _assertTokenFree(PipelineTrigger trigger) async {
+    final token = trigger.webhookToken;
+    if (token == null || token.isEmpty) {
+      return;
+    }
+    final owner = await _routes.resolve(
+      WorkspaceRouteKind.webhookToken,
+      token,
+    );
+    if (owner != null && owner != trigger.workspaceId) {
+      throw const WorkspaceMismatchException(
+        'Webhook token is already routed to a different workspace',
+      );
+    }
+  }
+
   @override
   Future<void> insert(PipelineTrigger trigger) async {
+    // Checked before the row lands so a refused token leaves nothing behind.
+    await _assertTokenFree(trigger);
     await _dao(trigger.workspaceId).insert(triggerToCompanion(trigger));
     await _syncWebhookRoute(trigger);
   }
 
   @override
   Future<void> update(PipelineTrigger trigger) async {
+    await _assertTokenFree(trigger);
     await _dao(trigger.workspaceId).updateTrigger(triggerToCompanion(trigger));
     // A token can be minted (or rotated) on an existing trigger, so the route
     // is refreshed on every update.

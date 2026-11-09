@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/ticketing_events.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -55,9 +56,12 @@ class FakePipelineTriggerRepository implements PipelineTriggerRepository {
 }
 
 class _FakePipelineEngine implements PipelineEngine {
-  _FakePipelineEngine({this.returnRun});
+  _FakePipelineEngine({this.returnRun, this.throwFor = const {}});
   final List<_StartCall> calls = [];
   final PipelineRun? returnRun;
+
+  /// Template ids whose start throws (after being recorded).
+  final Set<String> throwFor;
 
   @override
   Future<PipelineRun?> start(
@@ -83,6 +87,9 @@ class _FakePipelineEngine implements PipelineEngine {
         dryRun: dryRun,
       ),
     );
+    if (throwFor.contains(templateId)) {
+      throw StateError('start failed for $templateId');
+    }
     return returnRun;
   }
 
@@ -112,8 +119,6 @@ class _FakePipelineEngine implements PipelineEngine {
   int get maxConcurrentSteps => _stub();
   @override
   Duration get suspendedStepTimeout => _stub();
-  @override
-  Set<String> get projectionTriggerEventTypes => _stub();
 
   // ── stub methods (never called by the dispatcher) ──────────────────────────
 
@@ -138,6 +143,11 @@ class _FakePipelineEngine implements PipelineEngine {
   Future<void> retry(String workspaceId, String pipelineRunId) => _stub();
   @override
   Future<void> dispose() => _stub();
+  @override
+  void startLivenessSweep({Duration interval = const Duration(minutes: 15)}) =>
+      _stub();
+  @override
+  Future<void> sweepStalledSteps() => _stub();
 
   Never _stub() => throw UnimplementedError('not called by dispatcher');
 }
@@ -241,11 +251,7 @@ void main() {
         dispatcher.start();
 
         eventBus.publish(
-          TicketCreated(
-            ticketId: 't-1',
-            workspaceId: 'ws-1',
-            occurredAt: now,
-          ),
+          TicketCreated(ticketId: 't-1', workspaceId: 'ws-1', occurredAt: now),
         );
         await Future<void>.delayed(Duration.zero);
 
@@ -751,5 +757,98 @@ void main() {
         dispatcher.dispose();
       },
     );
+    // ── Fail-closed scoping + per-trigger isolation (audit H8) ───────────
+
+    test('an event with no workspace_id starts nothing anywhere', () async {
+      var queried = false;
+      triggerRepo = FakePipelineTriggerRepository(
+        onEnabledForEvent: (_) {
+          queried = true;
+          return [
+            _trigger(eventType: 'ExternalPrDetected', workspaceId: 'ws-1'),
+            _trigger(eventType: 'ExternalPrDetected', workspaceId: 'ws-2'),
+          ];
+        },
+      );
+      engine = _FakePipelineEngine(returnRun: _run('r-1'));
+      dispatcher = PipelineTriggerDispatcher(
+        eventBus: eventBus,
+        engine: engine,
+        triggerRepository: triggerRepo,
+      );
+      dispatcher.start();
+
+      eventBus.publish(
+        ExternalPrDetected(
+          repoOwner: 'acme',
+          repoName: 'app',
+          prNumber: 1,
+          prTitle: 'x',
+          author: 'octocat',
+          workspaceId: null,
+          occurredAt: now,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(engine.calls, isEmpty);
+      expect(queried, isFalse);
+    });
+
+    test('ticket terminal events are scoped to their own workspace', () async {
+      triggerRepo = FakePipelineTriggerRepository(
+        onEnabledForEvent: (type) => [
+          _trigger(id: 'a', eventType: type, workspaceId: 'ws-1'),
+          _trigger(id: 'b', eventType: type, workspaceId: 'ws-2'),
+        ],
+      );
+      engine = _FakePipelineEngine(returnRun: _run('r-1'));
+      dispatcher = PipelineTriggerDispatcher(
+        eventBus: eventBus,
+        engine: engine,
+        triggerRepository: triggerRepo,
+      );
+      dispatcher.start();
+
+      eventBus.publish(
+        TicketCompleted(workspaceId: 'ws-2', ticketId: 't-1', occurredAt: now),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(engine.calls.map((c) => c.workspaceId), ['ws-2']);
+      expect(engine.calls.single.triggerPayload!['workspace_id'], 'ws-2');
+    });
+
+    test('one trigger that throws does not stop the others', () async {
+      triggerRepo = FakePipelineTriggerRepository(
+        onEnabledForEvent: (_) => [
+          _trigger(id: 'first', templateId: 'tpl-boom'),
+          _trigger(id: 'second', templateId: 'tpl-ok'),
+        ],
+      );
+      engine = _FakePipelineEngine(
+        returnRun: _run('r-1'),
+        throwFor: const {'tpl-boom'},
+      );
+      dispatcher = PipelineTriggerDispatcher(
+        eventBus: eventBus,
+        engine: engine,
+        triggerRepository: triggerRepo,
+      );
+      dispatcher.start();
+
+      eventBus.publish(
+        TicketAssigned(
+          ticketId: 't-1',
+          ticketTitle: 'Test',
+          workspaceId: 'ws-1',
+          occurredAt: now,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(engine.calls.map((c) => c.templateId), ['tpl-boom', 'tpl-ok']);
+    });
   });
 }

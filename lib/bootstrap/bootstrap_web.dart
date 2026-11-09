@@ -2,26 +2,24 @@
 //
 // The web build is the SAME app on another device: it cannot be its own server,
 // so it dials a cc-server over WSS and reads/writes through the cc_data remote
-// repositories (no local Drift DB). This bootstrap is the web-specific startup —
-// a connection gate that, once connected, renders the FULL desktop UI
-// (`ControlCenterApp`: sidebar, PR review, every screen) inside a Riverpod
-// scope whose overrides install the web-flavoured dependencies (the connected
-// RPC client, ephemeral preferences, the keychain secure store and the
-// connected workspace as the active one). The onboarding gate computes live,
-// exactly like the desktop, so a freshly-minted server still onboards.
+// repositories. This bootstrap is the web-specific startup — a connection gate
+// that, once connected, renders the FULL app (`ControlCenterApp`: sidebar, PR
+// review, every screen) inside a Riverpod scope with the same
+// `sessionOverrides` the desktop installs (the connected RPC client, the
+// localStorage preferences, the keychain secure store and the session scope).
+// The onboarding gate and the landing workspace compute live, exactly like the
+// desktop, so a freshly-minted server still onboards.
 //
 // Build: `scripts/build_web.sh` (SkWasm with a CanvasKit fallback).
 import 'dart:async';
 
-import 'package:cc_data/cc_data.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/app/control_center_app.dart';
+import 'package:control_center/bootstrap/server_connect_controller.dart';
+import 'package:control_center/bootstrap/session_overrides.dart';
 import 'package:control_center/core/infrastructure/provider_retry.dart';
-import 'package:control_center/core/providers/media_proxy_provider.dart';
-import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/core/providers/server_connection_status_provider.dart';
-import 'package:control_center/core/providers/server_switch_provider.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/pairing_link.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
@@ -32,7 +30,6 @@ import 'package:control_center/core/server/sso_login_web.dart'
 import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/storage/web_local_storage_backend.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -246,12 +243,25 @@ class _WebRoot extends StatefulWidget {
 
 enum _Phase { disconnected, connecting, connected }
 
+/// One connected web session: the connection and whose caches it reads.
+class _WebSession {
+  _WebSession(this.connection, this.scope);
+
+  final RemoteServerConnection connection;
+  final SessionScope scope;
+
+  Future<void> dispose() => connection.dispose();
+}
+
 class _WebRootState extends State<_WebRoot> {
   _Phase _phase = _Phase.disconnected;
   Object? _error;
-  RemoteServerConnection? _connection;
-  String? _activeWorkspaceId;
   StreamSubscription<ServerConnectionStatus>? _statusSub;
+
+  /// The live session, server switches and retiring the outgoing session
+  /// after the remount frame — the same machinery the desktop switcher uses.
+  final ServerConnectController<_WebSession> _sessions =
+      ServerConnectController(retire: (session) => session.dispose());
 
   // Pre-filled connection fields (saved entry, overridden by a fresh URL hint).
   _Creds _hints = const _Creds(server: 'ws://localhost:9030/rpc');
@@ -268,6 +278,7 @@ class _WebRootState extends State<_WebRoot> {
   @override
   void initState() {
     super.initState();
+    _sessions.generation.addListener(_onAdopted);
     _boot();
   }
 
@@ -403,39 +414,44 @@ class _WebRootState extends State<_WebRoot> {
     if (!mounted) {
       return;
     }
+    _sessions.detach();
     setState(() {
-      _connection = null;
       _error = e;
       _phase = _Phase.disconnected;
     });
   }
 
-  /// Binds a live connection into the app: resolves the landing workspace and
-  /// watches for a terminal identity mismatch (transient drops are the
-  /// resilient client's business, not the gate's).
+  /// Admits a live connection: resolves who is signed in (the session scope;
+  /// a failure here sends the gate back with the error) and hands it to the
+  /// session controller. The connection is disposed when admission fails.
+  Future<_WebSession> _admit(RemoteServerConnection connection) async {
+    final scope = await admitSessionScope(
+      connection.client,
+      connection.supervisor,
+      dispose: connection.dispose,
+    );
+    return _WebSession(connection, scope);
+  }
+
   Future<void> _adopt(RemoteServerConnection connection) async {
-    final workspaces = RemoteWorkspaceRepository(connection.client);
-    final list = await workspaces.list();
-    // Land in the persisted last-active workspace (written to localStorage by
-    // the in-app workspace switch) when it still exists, else the first.
-    final persistedWorkspaceId = AppPreferences(
-      _webBackend,
-    ).getString(activeWorkspaceIdPrefKey);
-    String? landingWorkspaceId;
-    if (list.isNotEmpty) {
-      landingWorkspaceId =
-          (persistedWorkspaceId != null &&
-              list.any((w) => w.id == persistedWorkspaceId))
-          ? persistedWorkspaceId
-          : list.first.id;
-      await workspaces.setActive(landingWorkspaceId);
-    }
+    final session = await _admit(connection);
     if (!mounted) {
-      await connection.dispose();
+      await session.dispose();
       return;
     }
+    _sessions.adopt(session);
+  }
 
-    await _statusSub?.cancel();
+  /// Renders a newly adopted session and watches it for a terminal identity
+  /// mismatch (transient drops are the resilient client's business, not the
+  /// gate's).
+  void _onAdopted() {
+    final session = _sessions.current;
+    if (session == null || !mounted) {
+      return;
+    }
+    final connection = session.connection;
+    unawaited(_statusSub?.cancel());
     _statusSub = connection.supervisor.status.listen((status) {
       if (status.phase == ServerConnectionPhase.identityMismatch) {
         // TOFU hard stop: the server's identity changed. No retry loop, no
@@ -465,69 +481,45 @@ class _WebRootState extends State<_WebRoot> {
         }());
       }
     });
-
-    final old = _connection;
-    setState(() {
-      _connection = connection;
-      _activeWorkspaceId = landingWorkspaceId;
-      _phase = _Phase.connected;
-    });
-    if (old != null && !identical(old, connection)) {
-      // After the frame that remounts `_ConnectedApp` around the new
-      // connection (its `ValueKey` changes), so the outgoing provider scope
-      // never sees its RPC client closed underneath it while still mounted.
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => unawaited(old.dispose()),
-      );
-      WidgetsBinding.instance.ensureVisualUpdate();
-    }
+    setState(() => _phase = _Phase.connected);
   }
 
   /// Switches the connected app to another paired server (Settings action).
-  Future<void> _switchTo(String serverId) async {
-    final entry = _store.entry(serverId);
-    if (entry == null) {
-      throw StateError('Unknown server');
-    }
-    final psk = await _store.readPsk(serverId);
-    if (psk == null || psk.isEmpty) {
-      throw StateError('No pairing key stored for that server');
-    }
-    final connection = await connectToEntry(
-      store: _store,
-      entry: entry,
-      psk: psk,
-    );
-    await _store.setActiveServer(serverId);
-    await _adopt(connection);
-  }
-
-  Future<void> _disconnect() async {
-    await _statusSub?.cancel();
-    _statusSub = null;
-    await _connection?.dispose();
-    await _store.clear();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _connection = null;
-      _activeWorkspaceId = null;
-      _phase = _Phase.disconnected;
-      _error = null;
-    });
-  }
+  Future<void> _switchTo(String serverId) =>
+      _sessions.switchTo(serverId, () async {
+        final entry = _store.entry(serverId);
+        if (entry == null) {
+          throw StateError('Unknown server');
+        }
+        final psk = await _store.readPsk(serverId);
+        if (psk == null || psk.isEmpty) {
+          throw StateError('No pairing key stored for that server');
+        }
+        final connection = await connectToEntry(
+          store: _store,
+          entry: entry,
+          psk: psk,
+        );
+        final session = await _admit(connection);
+        try {
+          await _store.setActiveServer(serverId);
+        } on Object {
+          await session.dispose();
+          rethrow;
+        }
+        return session;
+      });
 
   /// Leaves a lost server for the connect gate (the lost-connection dialog's
-  /// sign-in action). Unlike [_disconnect] the pairing stays stored, so the
-  /// gate can reconnect to it or pair with another server.
+  /// sign-in action). The pairing stays stored, so the gate can reconnect to
+  /// it or pair with another server.
   Future<void> _returnToGate() async {
     await _statusSub?.cancel();
     _statusSub = null;
-    final old = _connection;
+    final old = _sessions.detach();
     // Pre-fill the gate with the stored pairing, so Connect retries this
     // server in one click.
-    final entry = old?.entry ?? _store.readActive();
+    final entry = old?.connection.entry ?? _store.readActive();
     final psk = entry == null ? null : await _store.readPsk(entry.serverId);
     if (!mounted) {
       await old?.dispose();
@@ -543,37 +535,36 @@ class _WebRootState extends State<_WebRoot> {
           psk: psk,
         );
       }
-      _connection = null;
-      _activeWorkspaceId = null;
       _phase = _Phase.disconnected;
       _error = null;
     });
-    // After the frame that unmounts `_ConnectedApp`, as in [_adopt].
-    WidgetsBinding.instance
-      ..addPostFrameCallback((_) => unawaited(old?.dispose()))
-      ..ensureVisualUpdate();
+    // After the frame that unmounts `_ConnectedApp`, so its provider scope
+    // never sees the RPC client closed underneath it while still mounted.
+    if (old != null) {
+      retireAfterFrame(old.dispose);
+    }
   }
 
   @override
   void dispose() {
+    _sessions.generation.removeListener(_onAdopted);
     _statusSub?.cancel();
-    _connection?.dispose();
+    _sessions.detach()?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final session = _sessions.current;
     return ColoredBox(
       color: t.bgPrimary,
       child: switch (_phase) {
-        _Phase.connected => _ConnectedApp(
+        _Phase.connected when session != null => _ConnectedApp(
           // A new authenticated connection needs fresh providers even when
           // another account connects to the same server and workspace.
-          key: ValueKey((_connection, _activeWorkspaceId)),
-          connection: _connection!,
-          activeWorkspaceId: _activeWorkspaceId,
-          onDisconnect: _disconnect,
+          key: ObjectKey(session),
+          session: session,
           onReturnToGate: _returnToGate,
           onSwitchServer: _switchTo,
         ),
@@ -589,32 +580,28 @@ class _WebRootState extends State<_WebRoot> {
   }
 }
 
-/// The connected web app: a Riverpod scope whose overrides install the web-flavoured
-/// dependencies, rendering the FULL [ControlCenterApp].
-/// single data entrypoint; on web there is no in-process host default).
-/// `_webBackend`), so web preferences survive a reload.
-/// [secureStoreProvider] → flutter_secure_storage, which works on web.
-/// The onboarding gate is NOT overridden: it computes live exactly like the
-/// desktop (the signed-in user's forge connections, plus the server's workspace list over
-/// RPC).
+/// The connected web app: the FULL [ControlCenterApp] inside a Riverpod scope
+/// with the shared [sessionOverrides] — the connected client, the
+/// localStorage-backed preferences (`_webBackend`, shared with the connect
+/// gate so a change made in Settings is read on the next reload), the
+/// keychain secure store and the session scope. The onboarding gate and the
+/// active workspace are NOT overridden: they resolve live exactly like the
+/// desktop.
 class _ConnectedApp extends StatelessWidget {
   const _ConnectedApp({
     super.key,
-    required this.connection,
-    required this.activeWorkspaceId,
-    required this.onDisconnect,
+    required this.session,
     required this.onReturnToGate,
     required this.onSwitchServer,
   });
 
-  final RemoteServerConnection connection;
-  final String? activeWorkspaceId;
-  final VoidCallback onDisconnect;
+  final _WebSession session;
   final Future<void> Function() onReturnToGate;
   final Future<void> Function(String serverId) onSwitchServer;
 
   @override
   Widget build(BuildContext context) {
+    final connection = session.connection;
     Widget app = const ControlCenterApp();
     final proxy = connection.mediaProxy;
     if (proxy != null) {
@@ -626,51 +613,19 @@ class _ConnectedApp extends StatelessWidget {
       // Bounded, unrecoverable-error-aware retry: keeps a subscription stream
       // error (e.g. a GitHub rate limit) from looping into a resubscribe storm.
       retry: appProviderRetry,
-      overrides: [
-        rpcClientProvider.overrideWithValue(connection.client),
-        // The bulk-content lane, beside the RPC client it belongs with — the
-        // composer's picture upload runs in a notifier with no BuildContext,
-        // so the scope above the app is not enough on its own.
-        mediaProxyConfigProvider.overrideWithValue(proxy),
-        serverConnectionSupervisorProvider.overrideWithValue(
-          connection.supervisor,
-        ),
-        serverSwitchHandlerProvider.overrideWithValue(onSwitchServer),
-        returnToServerSignInProvider.overrideWithValue(onReturnToGate),
-        // localStorage-backed so web preferences (theme, the server list, …)
-        // survive a reload. Shares `_webBackend` with the connect gate's
-        // `_store`, so a change made in Settings is read on next boot.
-        appPreferencesProvider.overrideWithValue(AppPreferences(_webBackend)),
-        keyValueBackendProvider.overrideWithValue(_webBackend),
-        secureStoreProvider.overrideWithValue(SecureStore.keychain()),
-        activeWorkspaceIdProvider.overrideWith(
-          () => _WebActiveWorkspaceIdNotifier(activeWorkspaceId),
-        ),
-      ],
+      overrides: sessionOverrides(
+        client: connection.client,
+        supervisor: connection.supervisor,
+        mediaProxy: proxy,
+        prefsBackend: _webBackend,
+        secureStore: SecureStore.keychain(),
+        scope: session.scope,
+        switchServer: onSwitchServer,
+        returnToSignIn: onReturnToGate,
+      ),
       child: app,
     );
   }
-}
-
-/// Web [ActiveWorkspaceIdNotifier] replacement: the connected workspace is the
-/// source of truth, so the active id is fixed up front (the desktop notifier
-/// reconciles against a Drift bootstrap stream that does not exist on web). A
-/// workspace switch reconnects the whole app, so [setActive] just updates the
-/// local state.
-class _WebActiveWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
-  _WebActiveWorkspaceIdNotifier(this._initial);
-
-  final String? _initial;
-
-  @override
-  String? build() => _initial;
-
-  // setActive is inherited from the base: it flips state synchronously AND
-  // persists to appPreferencesProvider (the localStorage-backed store on web),
-  // so an in-app workspace switch is remembered and the next fresh load lands on
-  // it (the connect flow reads that persisted id back). The desktop `build()` —
-  // which reconciles against the Drift bootstrap stream — is the only piece web
-  // can't reuse, hence the `build()` override above and nothing else.
 }
 
 /// A connection record (server URL + device id + PSK) plus whether to remember
@@ -783,7 +738,7 @@ void _stripCredentialFragment() {
   }
 }
 
-/// The connection bootstrap: web can't self-serve, so it dials a cc-server.
+/// The connection bootstrap: web hosts no server, so it dials a cc-server.
 /// The dialogs are pre-filled by the parent ([initial]): saved creds overlaid
 /// by a fresh pairing deep link (a base64url-JSON or query-string URL
 /// fragment, the PSK riding in the fragment so it never reaches the static

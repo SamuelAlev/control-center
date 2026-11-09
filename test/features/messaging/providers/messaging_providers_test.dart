@@ -629,7 +629,7 @@ void main() {
           activeWorkspaceIdProvider.overrideWith(_StubActiveWorkspaceId.new),
           // The provider only opens the space's run stream for a space the
           // active workspace owns, so the list has to carry it — see
-          // `_workspaceOwningSpace`.
+          // `workspaceOwningSpace`.
           workspaceSpacesProvider('ws-1').overrideWithValue(
             AsyncData([
               Space(
@@ -783,7 +783,7 @@ void main() {
         overrides: [
           activeWorkspaceIdProvider.overrideWith(_StubActiveWorkspaceId.new),
           // The run stream only opens for a space the active workspace owns —
-          // see `_workspaceOwningSpace`.
+          // see `workspaceOwningSpace`.
           workspaceSpacesProvider('ws-1').overrideWithValue(
             AsyncData([
               Space(

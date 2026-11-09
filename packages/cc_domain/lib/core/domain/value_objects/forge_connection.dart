@@ -52,6 +52,7 @@ class ForgeConnection {
     this.username = '',
     this.source = ForgeCredentialSource.none,
     this.error = '',
+    this.needsSignIn = false,
   });
 
   /// A disconnected connection for [forge].
@@ -66,6 +67,7 @@ class ForgeConnection {
         username: json['username'] as String? ?? '',
         source: ForgeCredentialSource.fromWire(json['source'] as String?),
         error: json['error'] as String? ?? '',
+        needsSignIn: json['needs_sign_in'] as bool? ?? false,
       );
 
   /// The forge.
@@ -85,6 +87,12 @@ class ForgeConnection {
   /// Why the connection is unusable, when it is. Empty when fine.
   final String error;
 
+  /// The sign-in behind this connection has lapsed (revoked, expired, a
+  /// rotated Connect key) and the person has to sign in again. Can be true
+  /// while [authenticated] still reports the last known account, which is
+  /// what lets the UI say "sign in again" instead of "signed in as".
+  final bool needsSignIn;
+
   /// Wire form.
   Map<String, dynamic> toJson() => {
     'forge': forge.wire,
@@ -92,6 +100,7 @@ class ForgeConnection {
     'username': username,
     'source': source.wire,
     if (error.isNotEmpty) 'error': error,
+    if (needsSignIn) 'needs_sign_in': true,
   };
 
   /// Copy with.
@@ -100,12 +109,14 @@ class ForgeConnection {
     String? username,
     ForgeCredentialSource? source,
     String? error,
+    bool? needsSignIn,
   }) => ForgeConnection(
     forge: forge,
     authenticated: authenticated ?? this.authenticated,
     username: username ?? this.username,
     source: source ?? this.source,
     error: error ?? this.error,
+    needsSignIn: needsSignIn ?? this.needsSignIn,
   );
 
   @override
@@ -117,9 +128,10 @@ class ForgeConnection {
           authenticated == other.authenticated &&
           username == other.username &&
           source == other.source &&
-          error == other.error;
+          error == other.error &&
+          needsSignIn == other.needsSignIn;
 
   @override
   int get hashCode =>
-      Object.hash(forge, authenticated, username, source, error);
+      Object.hash(forge, authenticated, username, source, error, needsSignIn);
 }

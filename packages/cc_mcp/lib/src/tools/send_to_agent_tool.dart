@@ -9,6 +9,8 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/tools/peer_agent_messaging.dart';
+import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 
 /// Sends a fire-and-forget peer message from one agent to another (PRD 22 §2).
 ///
@@ -26,6 +28,7 @@ class SendToAgentTool extends McpTool {
     required MessagingRepository messaging,
     required this._messagingPort,
     required this._rateLimiter,
+    this._pendingHops,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
          agents: agents,
@@ -38,6 +41,10 @@ class SendToAgentTool extends McpTool {
   final MessagingRepository _messaging;
   final MessagingPort _messagingPort;
   final PairRateLimiter _rateLimiter;
+
+  /// The in-flight `ask_agent` hops, shared with `ask_agent` and
+  /// `delegate_task`, for the cycle guard. Null (bare tests) skips it.
+  final PendingDelegationHops? _pendingHops;
 
   @override
   String get name => 'send_to_agent';
@@ -118,6 +125,25 @@ class SendToAgentTool extends McpTool {
     }
     final recipient = (resolution as ResolvedRecipient).agent;
 
+    // Cycle guard, before any side effect: waking an agent that is (through
+    // a chain of pending asks) already blocked waiting on the sender starts
+    // a loop the ask's own timeout cannot end.
+    final hops = _pendingHops;
+    if (hops != null && fromAgentId != null && fromAgentId.isNotEmpty) {
+      final refusal = PeerDelegationGate.cycleRefusalIn(
+        hops,
+        workspaceId: workspaceId,
+        fromAgentId: fromAgentId,
+        recipientId: recipient.id,
+      );
+      if (refusal != null) {
+        return CallResult.error(
+          '$refusal "${recipient.name}" is waiting on your answer; reply in '
+          'your turn instead of messaging it.',
+        );
+      }
+    }
+
     // Deterministic per-pair rate limit (PRD 22 §3): refuse loudly with a
     // visible notice rather than silently dropping the message.
     final fromKey = fromAgentId ?? 'system';
@@ -140,7 +166,7 @@ class SendToAgentTool extends McpTool {
       spaceId: space.id,
       content: message,
       senderId: fromKey,
-      senderType: 'agent',
+      senderType: fromAgentId == null ? 'system' : 'agent',
     );
 
     final runLogId = await _messagingPort.dispatchAgent(

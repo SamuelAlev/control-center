@@ -264,14 +264,8 @@ void main() {
         AnthropicProvider(apiKey: 'test'),
         observer: ProviderCallLedger(),
       );
-      expect(
-        providerSupportsDeferredTools(observed, model: 'claude-opus-4-8'),
-        isTrue,
-      );
-      expect(
-        providerSupportsDeferredTools(observed, model: 'claude-opus-4-1'),
-        isFalse,
-      );
+      expect(observed.supportsDeferredTools(model: 'claude-opus-4-8'), isTrue);
+      expect(observed.supportsDeferredTools(model: 'claude-opus-4-1'), isFalse);
     });
   });
 

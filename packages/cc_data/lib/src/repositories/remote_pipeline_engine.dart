@@ -4,10 +4,8 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// Drives the host's pipeline EXECUTOR (the `PipelineEngine`) over the RPC client — the
 /// thin-client run-control path (start / cancel / retry a run, kill a step).
 ///
-/// Forwards every method to the matching `pipeline.*` op the host catalog registers (wired
-/// only by a host that constructs the engine — the desktop in-process host; a pure-Dart
-/// headless server omits the ops).
-/// The run executes SERVER-SIDE; live run/step state streams back via the existing
+/// Forwards every method to the matching `pipeline.*` op the server's catalog
+/// registers over its `PipelineEngine`. The run executes SERVER-SIDE; live run/step state streams back via the existing
 /// `pipeline_run.watch*` subscriptions, so this wrapper has no streaming surface of its
 /// own.
 class RemotePipelineEngine {

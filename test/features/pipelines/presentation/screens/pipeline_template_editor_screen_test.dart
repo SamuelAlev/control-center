@@ -69,6 +69,9 @@ class _FakeTemplateRepo implements PipelineTemplateRepository {
 
 class _FakeTriggerRepo implements PipelineTriggerRepository {
   final List<PipelineTrigger> items = [];
+
+  /// What the client sent, before the "server" filled anything in.
+  final List<PipelineTrigger> inserted = [];
   final _controller = StreamController<List<PipelineTrigger>>.broadcast();
 
   void _emit() {
@@ -85,7 +88,14 @@ class _FakeTriggerRepo implements PipelineTriggerRepository {
 
   @override
   Future<void> insert(PipelineTrigger trigger) async {
-    items.add(trigger);
+    inserted.add(trigger);
+    // Like the server: a webhook trigger's token is minted on insert and
+    // delivered back through the trigger stream.
+    items.add(
+      trigger.eventType == PipelineTrigger.webhookEventType
+          ? trigger.copyWith(webhookToken: 'srv${trigger.id.hashCode.abs()}')
+          : trigger,
+    );
     _emit();
   }
 
@@ -361,7 +371,7 @@ void main() {
       expect(repo.lastUpsert?.step('trig-1'), isNotNull);
     });
 
-    testWidgets('a row missing from the saved graph still needs saving', (
+    testWidgets('a row missing from the saved graph is repaired on open', (
       tester,
     ) async {
       final saved = syncPipelineTriggerSteps(
@@ -373,7 +383,10 @@ void main() {
         ..items.addAll([_manualRow('trig-1'), _manualRow('trig-2')]);
       await _pumpEditor(tester, repo, triggers);
 
-      expect(find.text('Unsaved changes'), findsOneWidget);
+      // The rows already decide what runs, so the drifted graph is saved
+      // straight away instead of waiting for Save.
+      expect(repo.lastUpsert?.step('trig-2'), isNotNull);
+      expect(find.text('Unsaved changes'), findsNothing);
     });
 
     testWidgets('selecting a trigger node shows the trigger panel', (
@@ -451,13 +464,32 @@ void main() {
         (t) => t.eventType == PipelineTrigger.webhookEventType,
       );
       expect(webhook.enabled, isFalse);
+      // The server mints the token (it is the route and the HMAC secret); the
+      // client never chooses one.
+      final sent = triggers.inserted.firstWhere(
+        (t) => t.eventType == PipelineTrigger.webhookEventType,
+      );
+      expect(sent.webhookToken, isNull);
       expect(webhook.webhookToken, isNotNull);
-      expect(webhook.webhookToken, isNot(contains('-')));
 
       final event = triggers.items.firstWhere(
         (t) => t.eventType == 'PullRequestStatusChanged',
       );
       expect(event.enabled, isFalse);
+    });
+
+    testWidgets('a new webhook shows the server-minted path', (tester) async {
+      final repo = _FakeTemplateRepo(_draft());
+      final triggers = _FakeTriggerRepo();
+      await _pumpEditor(tester, repo, triggers);
+
+      _canvas(tester).onAddTrigger(PipelineTrigger.webhookEventType);
+      await tester.pumpAndSettle();
+
+      final minted = triggers.items.single.webhookToken!;
+      _canvas(tester).onSelectTrigger(triggers.items.single.id);
+      await tester.pumpAndSettle();
+      expect(find.text('/webhooks/$minted'), findsOneWidget);
     });
 
     testWidgets('onDeleteTrigger removes the row and clears the panel', (

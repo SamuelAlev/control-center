@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 /// does not grow. Lower the freeze when a pack is extracted.
 void main() {
   test('remote_rpc_catalog.dart does not gain RepoOp literals', () {
-    const freeze = 477;
+    const freeze = 458;
     final root = _repoRoot();
     final file = File(
       '$root/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',

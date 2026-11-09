@@ -10,9 +10,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// workspace. Mirrors the `pipeline_trigger.*` ops + the
 /// `pipeline_trigger.watchForWorkspace` subscription in the host catalog.
 ///
-/// Two ops are CROSS-WORKSPACE BY DESIGN — `pipeline_trigger.enabledForEvent`
-/// and `pipeline_trigger.scheduled` — because the trigger dispatcher fans an
-/// event out to every workspace's matching triggers, then filters per-event.
+/// The dispatcher's and scheduler's cross-workspace reads are server-side only
+/// and have no op: an enabled trigger carries its webhook token (route and HMAC
+/// secret both).
 class RemotePipelineTriggerRepository {
   /// Creates a [RemotePipelineTriggerRepository] over [_client].
   RemotePipelineTriggerRepository(this._client);
@@ -20,7 +20,8 @@ class RemotePipelineTriggerRepository {
   final RemoteRpcClient _client;
 
   /// Inserts [trigger] (the host owns persistence; ownership-checked
-  /// server-side against the bound workspace).
+  /// server-side against the bound workspace). The host mints a webhook
+  /// trigger's token; one sent here is ignored.
   Future<void> insert(PipelineTriggerDto trigger) =>
       _client.call('pipeline_trigger.insert', {'trigger': trigger.toJson()});
 
@@ -43,15 +44,6 @@ class RemotePipelineTriggerRepository {
     return _triggers(data);
   }
 
-  /// All enabled triggers for [eventType] across EVERY workspace (the trigger
-  /// dispatcher fans out then filters per-event).
-  Future<List<PipelineTriggerDto>> enabledForEvent(String eventType) async {
-    final data = await _client.call('pipeline_trigger.enabledForEvent', {
-      'event_type': eventType,
-    });
-    return _triggers(data);
-  }
-
   /// A single trigger by id within [workspaceId], or null when it does not
   /// exist there.
   Future<PipelineTriggerDto?> getById(String workspaceId, String id) async {
@@ -64,20 +56,6 @@ class RemotePipelineTriggerRepository {
         ? PipelineTriggerDto.fromJson(trigger.cast<String, dynamic>())
         : null;
   }
-
-  /// All enabled scheduled (time-based) triggers across EVERY workspace.
-  Future<List<PipelineTriggerDto>> scheduled() async {
-    final data = await _client.call('pipeline_trigger.scheduled', const {});
-    return _triggers(data);
-  }
-
-  /// Records that a scheduled trigger in [workspaceId] fired at [when].
-  Future<void> markFired(String workspaceId, String id, DateTime when) =>
-      _client.call('pipeline_trigger.markFired', {
-        'workspace_id': workspaceId,
-        'id': id,
-        'when': when.toIso8601String(),
-      });
 
   /// Live triggers in [workspaceId] — a fresh snapshot on every change.
   Stream<List<PipelineTriggerDto>> watchForWorkspace(String workspaceId) =>

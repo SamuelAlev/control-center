@@ -6,6 +6,7 @@ import 'package:control_center/core/theme/app_theme.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/legacy_material_bridge.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
+import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
@@ -54,6 +55,9 @@ class ControlCenterApp extends ConsumerWidget {
     // Keep the active workspace mirrored onto the RPC client so every stateless
     // request carries the right `workspace_id` (the server holds no workspace).
     ref.watch(rpcClientWorkspaceSyncProvider);
+    // Records a settled onboarding verdict (the server-side finished flag and
+    // the scoped cold-start cache). The gate itself stays a pure derivation.
+    ref.watch(onboardingGateEffectsProvider);
     // Two-way per-user preference sync (theme follows the user across
     // desktop/web/phone).
     ref.watch(userPreferencesSyncProvider);
@@ -89,12 +93,8 @@ class ControlCenterApp extends ConsumerWidget {
       child: AppShortcuts(
         commandBuilder: buildGlobalCommands,
         readActiveWorkspaceId: () => ref.read(activeWorkspaceIdProvider),
-        onToggleWorkspaceSwitcher: () {
-          final ctx = rootNavigatorKey.currentContext;
-          if (ctx != null) {
-            toggleWorkspaceSwitcher(ctx);
-          }
-        },
+        onToggleWorkspaceSwitcher: () =>
+            ref.read(workspaceSwitcherHandleProvider).toggle(),
         onCycleWorkspace: (delta) {
           final workspaces = ref.read(workspacesProvider).value ?? const [];
           if (workspaces.length < 2) {
@@ -232,7 +232,9 @@ class _AppServerActivityOverlay extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final onboarding = ref.watch(
-      routerPathProvider(router).select((path) => path == onboardingRoute),
+      routerPathProvider(
+        router,
+      ).select((path) => isAtRoute(path, onboardingRoute)),
     );
     return onboarding
         ? const SizedBox.shrink()

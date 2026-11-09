@@ -698,140 +698,161 @@ void main() {
       });
     });
 
-    group('matching', () {
-      test('returns error when no agent matches topic', () async {
+    group('recipient resolution', () {
+      test('requires to_agent_id or to_agent_name', () async {
         agents.add(
           _createAgent(
             id: 'a-1',
-            name: 'architect',
-            title: 'System Architect',
+            name: 'expert',
+            title: 'Security Expert',
             workspaceId: 'ws-1',
-            skills: ['architecture'],
+            skills: ['security'],
           ),
         );
 
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
-          'topic': 'quantum computing',
-          'question': 'How to?',
+          'topic': 'security',
+          'question': 'Safe?',
         });
 
         expect(result.isError, isTrue);
-        expect(result.content.first.text, contains('No agent matching topic'));
-        expect(result.content.first.text, contains('quantum computing'));
-        expect(result.content.first.text, contains('hired'));
+        expect(result.content.first.text, contains('Missing recipient'));
+        expect(messaging.sent, isEmpty);
+        expect(messagingPort.dispatched, isEmpty);
       });
 
-      test('finds agent by skill match over title match', () async {
+      test('the topic never picks the agent', () async {
         agents.add(
           _createAgent(
             id: 'a-skill',
-            name: 'generic',
-            title: 'Generic Helper',
+            name: 'sec',
+            title: 'Security',
             workspaceId: 'ws-1',
-            skills: ['performance'],
+            skills: ['security'],
           ),
         );
         agents.add(
           _createAgent(
-            id: 'a-title',
-            name: 'perf',
-            title: 'Performance Expert',
+            id: 'a-other',
+            name: 'writer',
+            title: 'Writer',
             workspaceId: 'ws-1',
-            skills: [],
+            skills: ['docs'],
           ),
         );
 
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
-          'topic': 'performance',
-          'question': 'Optimize?',
+          'to_agent_id': 'a-other',
+          'topic': 'security',
+          'question': 'Safe?',
         });
 
-        expect(result.isError, isFalse);
         final data =
             jsonDecode(result.content.first.text) as Map<String, dynamic>;
-        expect(data['consulted_agent_id'], 'a-skill');
+        expect(data['consulted_agent_id'], 'a-other');
       });
 
-      test('title match works when skills do not match', () async {
+      test('resolves an exact, unique name', () async {
         agents.add(
           _createAgent(
             id: 'a-1',
-            name: 'coder',
-            title: 'Performance Specialist',
+            name: 'expert',
+            title: 'Security Expert',
             workspaceId: 'ws-1',
-            skills: ['python'],
+            skills: ['security'],
           ),
         );
 
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
-          'topic': 'performance',
-          'question': 'Is this fast?',
+          'to_agent_name': 'expert',
+          'topic': 'security',
+          'question': 'Safe?',
         });
 
-        expect(result.isError, isFalse);
         final data =
             jsonDecode(result.content.first.text) as Map<String, dynamic>;
         expect(data['consulted_agent_id'], 'a-1');
       });
 
-      test('name match provides fallback scoring', () async {
+      test('an unknown name is rejected with the candidates', () async {
         agents.add(
           _createAgent(
             id: 'a-1',
-            name: 'security-bot',
-            title: 'Helper',
+            name: 'expert',
+            title: 'Security Expert',
             workspaceId: 'ws-1',
-            skills: [],
+            skills: ['security'],
           ),
         );
 
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Audit?',
-        });
-
-        expect(result.isError, isFalse);
-      });
-
-      test('empty agents list returns no match', () async {
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
+          'to_agent_name': 'exp',
           'topic': 'security',
           'question': 'Safe?',
         });
 
         expect(result.isError, isTrue);
-        expect(result.content.first.text, contains('No agent matching topic'));
+        expect(result.content.first.text, contains('No agent named "exp"'));
+        expect(result.content.first.text, contains('expert'));
+        expect(messagingPort.dispatched, isEmpty);
       });
 
-      test('case-insensitive topic matching', () async {
+      test('an ambiguous name is rejected with candidate ids', () async {
+        for (final id in ['a-1', 'a-2']) {
+          agents.add(
+            _createAgent(
+              id: id,
+              name: 'expert',
+              title: 'Expert',
+              workspaceId: 'ws-1',
+              skills: const [],
+            ),
+          );
+        }
+
+        final result = await tool.call({
+          'space_id': 'ch-1',
+          'workspace_id': 'ws-1',
+          'to_agent_name': 'expert',
+          'topic': 'security',
+          'question': 'Safe?',
+        });
+
+        expect(result.isError, isTrue);
+        expect(result.content.first.text, contains('ambiguous'));
+        expect(result.content.first.text, contains('a-1, a-2'));
+        expect(messagingPort.dispatched, isEmpty);
+      });
+
+      test('an agent from another workspace is not resolved', () async {
         agents.add(
           _createAgent(
-            id: 'a-1',
-            name: 'guard',
-            title: 'Guard',
-            workspaceId: 'ws-1',
-            skills: ['Security'],
+            id: 'a-ws2',
+            name: 'expert',
+            title: 'Security Expert',
+            workspaceId: 'ws-2',
+            skills: ['security'],
           ),
         );
 
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
-          'topic': 'SECURITY',
+          'to_agent_id': 'a-ws2',
+          'topic': 'security',
           'question': 'Safe?',
         });
 
-        expect(result.isError, isFalse);
+        expect(result.isError, isTrue);
+        expect(result.content.first.text, contains('No agent with id'));
       });
     });
 
@@ -853,6 +874,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'security',
           'question': 'Safe?',
         });
@@ -893,6 +915,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'security',
           'question': 'Safe?',
         });
@@ -927,6 +950,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-match',
           'topic': 'architecture',
           'question': 'Layout?',
         });
@@ -952,6 +976,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-plan',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'security',
           'question': 'Is this encryption safe?',
         });
@@ -960,7 +985,7 @@ void main() {
         final msg = messaging.sent.first;
         expect(msg.spaceId, 'ch-plan');
         expect(msg.senderId, 'system');
-        expect(msg.senderType, 'agent');
+        expect(msg.senderType, 'system');
         expect(msg.messageType, 'system');
         expect(msg.content, contains('@security-expert'));
         expect(msg.content, contains('"security"'));
@@ -983,6 +1008,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'database',
           'question': 'Postgres or MySQL?',
         });
@@ -1012,6 +1038,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'legal',
           'question': 'Is this compliant?',
           'rationale': 'We need to verify GDPR compliance before launch.',
@@ -1036,6 +1063,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'legal',
           'question': 'Is this compliant?',
         });
@@ -1060,6 +1088,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-meta',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'security',
           'question': 'Is this safe?',
         });
@@ -1084,6 +1113,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'architecture',
           'question': 'Monolith or microservices?',
         });
@@ -1107,6 +1137,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'review',
           'question': 'Please check the auth module for vulnerabilities.',
         });
@@ -1133,6 +1164,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
         });
@@ -1157,119 +1189,13 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
         });
 
         expect(messagingPort.dispatched.first.workspaceId, 'ws-1');
       });
-    });
-
-    group('matching detail', () {
-      test('multi-word topic matches when a single word is in skill', () async {
-        agents.add(
-          _createAgent(
-            id: 'a-1',
-            name: 'bot',
-            title: 'Helper',
-            workspaceId: 'ws-1',
-            skills: ['database performance tuning'],
-          ),
-        );
-
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'database',
-          'question': 'Optimize?',
-        });
-
-        // 'database' is contained in skill 'database performance tuning'
-        expect(result.isError, isFalse);
-      });
-
-      test('partial word match within skill works', () async {
-        agents.add(
-          _createAgent(
-            id: 'a-1',
-            name: 'bot',
-            title: 'Helper',
-            workspaceId: 'ws-1',
-            skills: ['cybersecurity'],
-          ),
-        );
-
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Audit?',
-        });
-
-        // 'security' is a substring of 'cybersecurity'
-        expect(result.isError, isFalse);
-      });
-
-      test('exact word match preferred over substring match', () async {
-        agents.add(
-          _createAgent(
-            id: 'a-exact',
-            name: 'generic-bot',
-            title: 'Helper',
-            workspaceId: 'ws-1',
-            skills: ['security'],
-          ),
-        );
-        agents.add(
-          _createAgent(
-            id: 'a-substring',
-            name: 'sec-bot',
-            title: 'Helper',
-            workspaceId: 'ws-1',
-            skills: ['cybersecurity'],
-          ),
-        );
-
-        // Both match 'security' — skill score 3. The exact match also gets
-        // title/name points from 'security-bot'. But the first has skill
-        // 'security' which is an exact contains match. Both get 3 for skill.
-        // Tiebreaker: the loop order — first found wins.
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Audit?',
-        });
-
-        final data =
-            jsonDecode(result.content.first.text) as Map<String, dynamic>;
-        expect(data['consulted_agent_id'], 'a-exact');
-      });
-
-      test(
-        'topic matching is whitespace-sensitive (only matches exact topic)',
-        () async {
-          agents.add(
-            _createAgent(
-              id: 'a-1',
-              name: 'bot',
-              title: 'Security Expert',
-              workspaceId: 'ws-1',
-              skills: ['security audit'],
-            ),
-          );
-
-          final result = await tool.call({
-            'space_id': 'ch-1',
-            'workspace_id': 'ws-1',
-            'topic': 'security',
-            'question': 'Audit?',
-          });
-
-          expect(result.isError, isFalse);
-          // 'security audit' contains 'security' — match on skill
-        },
-      );
     });
 
     group('edge cases additional', () {
@@ -1288,6 +1214,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'Q1?',
         });
@@ -1302,6 +1229,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'Q2?',
         });
@@ -1327,6 +1255,7 @@ void main() {
         await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'legal',
           'question': 'Compliant?',
         });
@@ -1350,6 +1279,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'c++',
           'question': 'std::move or std::forward?',
         });
@@ -1379,6 +1309,7 @@ void main() {
           final result = await throwingTool.call({
             'space_id': 'ch-1',
             'workspace_id': 'ws-1',
+            'to_agent_id': 'a-1',
             'topic': 'testing',
             'question': 'How?',
           });
@@ -1408,6 +1339,7 @@ void main() {
         final result = await throwingTool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'security',
           'question': 'Safe?',
         });
@@ -1432,6 +1364,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How to test?',
           'rationale': 'Need to ensure coverage.',
@@ -1461,6 +1394,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
         });
@@ -1484,6 +1418,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
         });
@@ -1516,6 +1451,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
           'rationale': 'Important context here.',
@@ -1540,6 +1476,7 @@ void main() {
         final result = await tool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
           'extra_unknown_field': 'ignored',
@@ -1551,58 +1488,6 @@ void main() {
     });
 
     group('edge cases', () {
-      test('agents from wrong workspace are not matched', () async {
-        agents.add(
-          _createAgent(
-            id: 'a-ws2',
-            name: 'expert',
-            title: 'Security Expert',
-            workspaceId: 'ws-2',
-            skills: ['security'],
-          ),
-        );
-
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Safe?',
-        });
-
-        expect(result.isError, isTrue);
-        expect(result.content.first.text, contains('No agent matching topic'));
-      });
-
-      test('agent with strongest combined match wins', () async {
-        final strong = _createAgent(
-          id: 'a-strong',
-          name: 'generic',
-          title: 'Security Architect',
-          workspaceId: 'ws-1',
-          skills: ['security'],
-        );
-        final weak = _createAgent(
-          id: 'a-weak',
-          name: 'security-bot',
-          title: 'Security Helper',
-          workspaceId: 'ws-1',
-          skills: [],
-        );
-        agents.add(strong);
-        agents.add(weak);
-
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Audit?',
-        });
-
-        final data =
-            jsonDecode(result.content.first.text) as Map<String, dynamic>;
-        expect(data['consulted_agent_id'], 'a-strong');
-      });
-
       test('calling call() wraps exceptions as error result', () async {
         final throwingRepo = _ThrowingMessagingRepository();
         final throwingTool = ConsultAgentTool(
@@ -1623,46 +1508,13 @@ void main() {
         final result = await throwingTool.call({
           'space_id': 'ch-1',
           'workspace_id': 'ws-1',
+          'to_agent_id': 'a-1',
           'topic': 'testing',
           'question': 'How?',
         });
 
         expect(result.isError, isTrue);
         expect(result.content.first.text, contains('boom'));
-      });
-
-      test('empty string topic matches everything', () async {
-        agents.add(
-          _createAgent(
-            id: 'a-1',
-            name: 'expert',
-            title: 'Security Expert',
-            workspaceId: 'ws-1',
-            skills: ['security'],
-          ),
-        );
-
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': '',
-          'question': 'Safe?',
-        });
-
-        // Empty string contains('') is always true, so it finds a match
-        expect(result.isError, isFalse);
-      });
-
-      test('empty workspace yields error', () async {
-        final result = await tool.call({
-          'space_id': 'ch-1',
-          'workspace_id': 'ws-1',
-          'topic': 'security',
-          'question': 'Safe?',
-        });
-
-        expect(result.isError, isTrue);
-        expect(result.content.first.text, contains('No agent matching topic'));
       });
     });
   });

@@ -1,6 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/features/auth/providers/oauth_providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show invalidateForgeState;
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,10 +51,10 @@ class ConnectSettingsActions {
 
   Future<ConnectStatus> _apply(Future<ConnectStatus> Function() op) async {
     final status = await op();
-    _ref
-      ..invalidate(connectStatusProvider)
-      ..invalidate(oauthLanesProvider)
-      ..invalidate(oauthConnectionsProvider);
+    _ref.invalidate(connectStatusProvider);
+    // A mode change or key rotation can void every Connect sign-in, so every
+    // view of who is signed in to which forge re-reads, not just the lanes.
+    invalidateForgeState(_ref.invalidate);
     return status;
   }
 }

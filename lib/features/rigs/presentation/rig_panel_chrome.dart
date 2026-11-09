@@ -353,9 +353,9 @@ class _RigAudioPlayerState extends State<RigAudioPlayer> {
 }
 
 /// The failed state: what went wrong, in the server's own words.
-class RigFailed extends StatelessWidget {
-  /// Creates a [RigFailed].
-  const RigFailed({super.key, this.detail});
+class RigFailedNotice extends StatelessWidget {
+  /// Creates a [RigFailedNotice].
+  const RigFailedNotice({super.key, this.detail});
 
   /// The failure reason, when the server reported one.
   final String? detail;

@@ -1,5 +1,8 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show workspaceForgesProvider;
 import 'package:control_center/features/service_status/presentation/widgets/github_degraded_banner.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
 import 'package:flutter/widgets.dart';
@@ -29,8 +32,17 @@ GitHubStatusIncident _incident(String id, String name) => GitHubStatusIncident(
 );
 
 /// Wraps the banner with the GitHub status slice scripted to [status].
-Widget _wrap(GitHubServiceStatus status) => ProviderScope(
-  overrides: [githubStatusProvider.overrideWithValue(AsyncValue.data(status))],
+///
+/// The workspace has a GitHub repo unless [forges] says otherwise: the
+/// banner only speaks for a workspace GitHub's health can degrade.
+Widget _wrap(
+  GitHubServiceStatus status, {
+  Set<ForgeHost> forges = const {ForgeHost.github},
+}) => ProviderScope(
+  overrides: [
+    githubStatusProvider.overrideWithValue(AsyncValue.data(status)),
+    workspaceForgesProvider.overrideWithValue(forges),
+  ],
   child: testWrap(const GitHubDegradedBanner()),
 );
 
@@ -127,6 +139,19 @@ void main() {
       );
     });
 
+    testWidgets('a workspace with no GitHub repo gets no GitHub banner', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          _status(GitHubStatusIndicator.major),
+          forges: const {ForgeHost.gitlab},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(CcAlert), findsNothing);
+    });
+
     testWidgets('dismissing hides it for that incident', (tester) async {
       final status = _status(
         GitHubStatusIndicator.major,
@@ -135,6 +160,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           githubStatusProvider.overrideWithValue(AsyncValue.data(status)),
+          workspaceForgesProvider.overrideWithValue(const {ForgeHost.github}),
         ],
       );
       addTearDown(container.dispose);

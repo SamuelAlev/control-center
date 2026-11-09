@@ -498,6 +498,22 @@ void main() {
     // CONSUMING its spokes, which is how it became the app's de-facto
     // integration point in the first place. Contributions come through
     // `settings_extensions.dart` + `di/settings_registry.dart` instead.
+    // Features reach the server through repositories and ports declared in
+    // cc_domain and bound in `di/` or a feature's providers; importing the
+    // cc_data adapters directly is how presentation code ended up building
+    // `RpcX(...)` objects inline. Shrinking-only: a file that stops importing
+    // cc_data must leave the list, and no new file may join it.
+    test('features do not import cc_data outside the allowlist', () {
+      _assertImportRegexRatchet(
+        projectRoot: projectRoot,
+        scanDir: 'lib/features',
+        pattern: "import 'package:cc_data/",
+        allowlistPath:
+            'test/core/migration_allowlists/features_cc_data_importers.txt',
+        description: 'a feature imports cc_data directly',
+      );
+    });
+
     test('settings does not import another feature presentation dir', () {
       _assertImportRegexRatchet(
         projectRoot: projectRoot,

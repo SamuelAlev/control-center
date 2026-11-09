@@ -12,6 +12,7 @@
 /// [splashRoute], [onboardingRoute] and [workspaceListRoute] (the picker).
 library;
 
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,7 +31,15 @@ const String onboardingRoute = '/onboarding';
 /// Whether a route is still showing startup or first-run setup. App settings
 /// and the command palette stay unavailable on these surfaces.
 bool isAuthenticationRoute(String path) =>
-    path == splashRoute || path == onboardingRoute;
+    isAtRoute(path, splashRoute) || isAtRoute(path, onboardingRoute);
+
+/// Whether [path] is [route] itself or one of its sub-routes.
+///
+/// The one way the app asks "is the user on this route": a bare `==` misses a
+/// sub-route, and a bare `startsWith` also matches an unrelated sibling
+/// (`/onboarding` vs `/onboardingx`).
+bool isAtRoute(String path, String route) =>
+    path == route || path.startsWith('$route/');
 
 /// Workspaces list / picker. Full-screen (outside the workspace shell) — it is where the user chooses or creates the workspace whose context everything else runs in.
 const String workspaceListRoute = '/workspaces';
@@ -90,6 +99,10 @@ String pullRequestsComposeRoute(String workspaceId, {String? spaceId}) {
 /// reassembles threads from their comments, so a thread id in the URL would be
 /// a second source of truth for the same fact — and the two could disagree
 /// once a thread is split or a comment deleted.
+///
+/// [forge] rides as `?forge=` for anything but GitHub, so a workspace linking
+/// the same `owner/name` on two forges opens the right one; absent reads as
+/// "unstated" ([prForgeFromQuery]).
 String pullRequestDetailRoute(
   String workspaceId,
   String repoFullName,
@@ -97,14 +110,31 @@ String pullRequestDetailRoute(
   String? tab,
   int? commentId,
   Set<String> commits = const {},
+  ForgeHost? forge,
 }) {
   final base = '/workspaces/$workspaceId/pull-requests/$repoFullName/$number';
   final query = <String>[
+    if (forge != null && forge != ForgeHost.github)
+      '$kPrForgeQueryParam=${forge.wire}',
     if (tab != null && tab.isNotEmpty) 'tab=${Uri.encodeComponent(tab)}',
     if (commentId != null) 'comment=$commentId',
     if (commits.isNotEmpty) 'commits=${_encodeCommitShas(commits)}',
   ];
   return query.isEmpty ? base : '$base?${query.join('&')}';
+}
+
+/// Query param naming the forge of a PR-detail route (non-GitHub only).
+const String kPrForgeQueryParam = 'forge';
+
+/// The forge a PR-detail route states, or null when it states none (GitHub
+/// links, and every link built before the param existed).
+ForgeHost? prForgeFromQuery(Map<String, String> query) {
+  final raw = query[kPrForgeQueryParam];
+  if (raw == null || raw.isEmpty) {
+    return null;
+  }
+  final forge = ForgeHost.fromWire(raw);
+  return forge.isSupported ? forge : null;
 }
 
 /// Query param naming the commits the diff is scoped to.

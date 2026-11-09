@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/features/auth/domain/usecases/check_onboarding_complete.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/utils/app_log.dart';
 
@@ -11,19 +12,21 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/router/guards.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Shared-preferences key recording that onboarding was complete last time the
-/// live checks settled.
+/// Preference key (qualified by the session's [SessionScope]) recording that
+/// onboarding was complete last time the live checks settled for this server
+/// and user.
 ///
 /// Present-and-`true` = complete, absent = unknown. An *incomplete* verdict is
-/// deliberately not cached (the key is removed instead) — see the `cachedGate`
-/// note in [onboardingGateProvider]. Non-sensitive, so `shared_preferences` is
-/// appropriate.
+/// deliberately not cached (the key is removed instead) — see the cached-gate
+/// note in [onboardingGateProvider]. Non-sensitive.
 ///
-/// This one is legitimately device-local: it caches a DERIVED verdict for one
-/// machine ("was the setup intact here last time?"), which is a property of
-/// this install, not of the person. The question "have they ever been set up?"
-/// is a fact about the USER and lives on the user row server-side — see
-/// [onboardingFinishedProvider].
+/// It caches a DERIVED verdict for one server and account on this device ("was
+/// the setup intact here last time?"). Scoped, because one device can pair with
+/// several servers and accounts: an unscoped key let server B open on server
+/// A's verdict and land in A's workspace. The question "have they ever been
+/// set up?" is a fact about the USER and lives on the user row server-side —
+/// see [onboardingFinishedProvider]. The pre-scope `onboarding_complete` key is
+/// ignored: the first launch after upgrading resolves live.
 const _onboardingCompleteKey = 'onboarding_complete';
 
 /// Whether this user has ever finished first-run setup.
@@ -46,8 +49,9 @@ final onboardingFinishedProvider = Provider<bool?>((ref) {
 /// [onboardingFinishedProvider] reads it back from.
 ///
 /// Holds the in-flight future so the two callers cannot race into a double
-/// write: the gate fires on every recomputation that observes a complete setup,
-/// which can happen several times before the first round-trip returns.
+/// write: [onboardingGateEffectsProvider] fires on every settled complete
+/// verdict, which can happen several times before the first round-trip
+/// returns.
 class _OnboardingFinishedWriter {
   _OnboardingFinishedWriter({required this.push, required this.refresh});
 
@@ -67,11 +71,11 @@ class _OnboardingFinishedWriter {
       refresh();
     } on Object catch (e) {
       // Swallowed on purpose, and neither caller could do better with it: the
-      // gate fires this from a provider body (fire-and-forget, so a throw would
-      // land as an unhandled async error) and the flow's last step awaits it
-      // before navigating (so a throw would strand the operator on the final
-      // screen of a setup that actually completed). A dropped write self-heals
-      // — the gate re-fires on its next recomputation.
+      // gate effects fire this from a listener (fire-and-forget, so a throw
+      // would land as an unhandled async error) and the flow's last step
+      // awaits it before navigating (so a throw would strand the operator on
+      // the final screen of a setup that actually completed). A dropped write
+      // self-heals — the effects re-fire on the next settled verdict.
       AppLog.w('onboarding', 'could not record onboarding completion: $e');
     } finally {
       // Cleared either way, so a failure (offline, server restarting) does not
@@ -105,8 +109,8 @@ final _onboardingFinishedWriterProvider = Provider<_OnboardingFinishedWriter>(
 /// setup happened, not that it is currently intact.
 ///
 /// Two entry points because `Ref` (providers) and `WidgetRef` (widgets) share
-/// no supertype in Riverpod, and both callers are real: the gate records a
-/// setup it observes as complete, and the flow records reaching its end.
+/// no supertype in Riverpod, and both callers are real: the gate effects record
+/// a setup they observe as complete, and the flow records reaching its end.
 Future<void> markOnboardingFinished(Ref ref) =>
     ref.read(_onboardingFinishedWriterProvider).mark();
 
@@ -114,18 +118,14 @@ Future<void> markOnboardingFinished(Ref ref) =>
 Future<void> markOnboardingFinishedFromWidget(WidgetRef ref) =>
     ref.read(_onboardingFinishedWriterProvider).mark();
 
-/// Derives the current onboarding gate state from auth and workspace readiness.
+/// The onboarding gate computed from live inputs only: null while any of them
+/// (forge connections, the workspaces stream, the finished flag when it
+/// matters) has not resolved.
 ///
-/// On cold start the underlying inputs (forge connections, the workspaces
-/// stream) are still loading. Reporting
-/// [OnboardingGate.loading] in that window parks the router on the splash
-/// spinner. To avoid that for returning users, we fall back to the *cached*
-/// result of the previous run while the live checks resolve — so the router
-/// can pick the inbox/onboarding route synchronously on the first frame.
-/// Once the live checks settle, the real result is recomputed (correcting the
-/// route if it disagrees) and re-cached. First-ever launch has no cache and so
-/// still shows the splash until the checks settle.
-final onboardingGateProvider = Provider<OnboardingGate>((ref) {
+/// [onboardingGateProvider] is what the router reads; it falls back to the
+/// scoped cache while this is null. Side effects that follow a settled verdict
+/// live in [onboardingGateEffectsProvider], never in a provider body.
+final liveOnboardingGateProvider = Provider<OnboardingGate?>((ref) {
   // A PUBLIC DEMO is complete by construction, and this has to be decided
   // before anything else.
   //
@@ -145,35 +145,21 @@ final onboardingGateProvider = Provider<OnboardingGate>((ref) {
     return OnboardingGate.complete;
   }
 
-  final prefs = ref.watch(appPreferencesProvider);
-
-  // Only a CACHED-COMPLETE verdict is trusted before the live checks settle.
-  // A cached "incomplete" is worth nothing (an incomplete operator is headed
-  // to onboarding either way, so it saves at most a splash frame) and costs a
-  // trap: the router sends them to /onboarding on the strength of the cache,
-  // and the guard deliberately never redirects AWAY from onboarding once the
-  // gate flips to complete — that rule exists so the flow is not cut short
-  // mid-step. A stale `false` therefore strands a fully set-up operator in the
-  // flow, which creates a duplicate workspace every single launch. Waiting one
-  // splash frame for the truth is the honest trade.
-  OnboardingGate cachedGate() =>
-      (prefs.getBool(_onboardingCompleteKey) ?? false)
-      ? OnboardingGate.complete
-      : OnboardingGate.loading;
-
   // The gate is "at least one forge connected", not "GitHub connected": an
-  // operator who works only on GitLab has a complete setup. It resolves as
-  // soon as the FIRST forge reports in, so a slow or unreachable second forge
-  // can never stall a working one behind the splash.
+  // operator who works only on GitLab has a complete setup. One
+  // `forge.listConnections` answer carries every forge. A failed read with no
+  // earlier answer is UNRESOLVED, never "no forge": an unreachable host would
+  // otherwise send a set-up person to onboarding. The provider retries on its
+  // own; a later failure keeps the previous list, so the verdict holds.
   final connectionsAsync = ref.watch(forgeConnectionsProvider);
   final hasForge = ref.watch(hasAnyForgeConnectedProvider);
-  if (!hasForge && !connectionsAsync.hasValue && !connectionsAsync.hasError) {
-    return cachedGate();
+  if (!connectionsAsync.hasValue) {
+    return null;
   }
 
   final workspacesAsync = ref.watch(workspacesProvider);
   if (!workspacesAsync.hasValue && !workspacesAsync.hasError) {
-    return cachedGate();
+    return null;
   }
 
   final workspaces = workspacesAsync.value ?? const [];
@@ -188,51 +174,116 @@ final onboardingGateProvider = Provider<OnboardingGate>((ref) {
   // has a workspace they never created and has never onboarded, so the
   // inference would skip the rest of the setup for a brand-new account.
   final finished = ref.watch(onboardingFinishedProvider);
-  final OnboardingGate gate;
   if (result.isComplete) {
-    gate = OnboardingGate.complete;
-  } else if (!hasForge && finished == null) {
+    return OnboardingGate.complete;
+  }
+  if (!hasForge && finished == null) {
     // Whether this is a lapsed credential or a first run is exactly the
     // question the unresolved flag answers. Guessing costs a wrong screen the
     // guard will not let us take back, so hold the splash instead.
-    return cachedGate();
-  } else if (!hasForge && finished!) {
+    return null;
+  }
+  if (!hasForge && finished!) {
     // A lapsed credential gates nothing for someone already set up: the
     // workspace shell warns in place (`ForgeSignInBanner`), and a workspace
     // on its own GitHub App can lack a sign-in its neighbours have. Only a
     // missing workspace still sends them to onboarding.
-    gate =
-        const CheckOnboardingCompleteUseCase()
+    return const CheckOnboardingCompleteUseCase()
             .execute(hasForgeConnection: true, workspaces: workspaces)
             .isComplete
         ? OnboardingGate.complete
         : OnboardingGate.incomplete;
-  } else {
-    gate = OnboardingGate.incomplete;
+  }
+  return OnboardingGate.incomplete;
+});
+
+/// Derives the current onboarding gate state from auth and workspace readiness.
+///
+/// On cold start the underlying inputs (forge connections, the workspaces
+/// stream) are still loading. Reporting [OnboardingGate.loading] in that
+/// window parks the router on the splash spinner. To avoid that for a
+/// returning user, the gate falls back to the *cached* verdict of the previous
+/// run for this same server and user ([SessionScope]) while the live checks
+/// resolve — so the router can pick the inbox route on the first frame. Once
+/// the live checks settle, [liveOnboardingGateProvider] takes over (correcting
+/// the route if it disagrees). A first launch, a different server or account,
+/// or a session whose scope could not be resolved has no cache and holds the
+/// splash until the checks settle.
+///
+/// Pure: it reads, never writes. See [onboardingGateEffectsProvider].
+final onboardingGateProvider = Provider<OnboardingGate>((ref) {
+  final live = ref.watch(liveOnboardingGateProvider);
+  if (live != null) {
+    return live;
+  }
+  // Only a CACHED-COMPLETE verdict is trusted before the live checks settle.
+  // A cached "incomplete" is worth nothing (an incomplete operator is headed
+  // to onboarding either way, so it saves at most a splash frame) and costs a
+  // trap: the router sends them to /onboarding on the strength of the cache,
+  // and the guard deliberately never redirects AWAY from onboarding once the
+  // gate flips to complete — that rule exists so the flow is not cut short
+  // mid-step. A stale `false` therefore strands a fully set-up operator in the
+  // flow, which creates a duplicate workspace every single launch. Waiting one
+  // splash frame for the truth is the honest trade.
+  final scope = ref.watch(sessionScopeProvider);
+  if (scope == null) {
+    return OnboardingGate.loading;
+  }
+  final cached = ref
+      .watch(appPreferencesProvider)
+      .getBool(scope.key(_onboardingCompleteKey));
+  return (cached ?? false) ? OnboardingGate.complete : OnboardingGate.loading;
+});
+
+/// Acts on each settled (live) onboarding verdict. Kept alive by
+/// `ControlCenterApp`.
+///
+/// * A complete setup IS a finished onboarding, whether or not this install
+///   ever walked the flow (it predates the flag, or the workspace arrived by
+///   invite). Recording it is what lets a later credential lapse resolve to the
+///   re-auth screen rather than a first-run flow — and it self-heals an account
+///   whose flag was never set. Guarded on the flag itself: the write refreshes
+///   `identity.me`, which re-settles the gate, so an unguarded call would be a
+///   round-trip loop.
+/// * A COMPLETE verdict is cached for this server and user so the next cold
+///   start can route without the splash; anything else clears it, so a setup
+///   torn down later (a revoked forge, a deleted workspace) cannot keep
+///   claiming completeness. Nothing is cached without a [SessionScope].
+///
+/// A demo server's verdict is complete by construction and records nothing.
+final onboardingGateEffectsProvider = Provider<void>((ref) {
+  OnboardingGate? settled() => ref.read(isDemoServerProvider)
+      ? null
+      : ref.read(liveOnboardingGateProvider);
+
+  void recordFinished() {
+    if (settled() == OnboardingGate.complete &&
+        ref.read(onboardingFinishedProvider) == false) {
+      unawaited(markOnboardingFinished(ref));
+    }
   }
 
-  // A complete setup IS a finished onboarding, whether or not this install ever
-  // walked the flow (it predates the flag, or the workspace arrived by invite).
-  // Recording it here is what lets a later credential lapse resolve to the
-  // re-auth screen rather than a first-run flow — and it is what self-heals an
-  // account whose flag was never set, now that nothing seeds it from a device.
-  //
-  // Guarded on the flag itself rather than fired unconditionally: the write
-  // refreshes `identity.me`, which recomputes this provider, so an unguarded
-  // call would be a round-trip loop.
-  if (gate == OnboardingGate.complete && finished == false) {
-    unawaited(markOnboardingFinished(ref));
+  void cacheVerdict() {
+    final gate = settled();
+    final scope = ref.read(sessionScopeProvider);
+    if (gate == null || scope == null) {
+      return;
+    }
+    final prefs = ref.read(appPreferencesProvider);
+    final key = scope.key(_onboardingCompleteKey);
+    unawaited(
+      gate == OnboardingGate.complete
+          ? prefs.setBool(key, value: true)
+          : prefs.remove(key),
+    );
   }
 
-  // Cache a COMPLETE result so the next cold start can route without the
-  // splash, and clear the key otherwise so a setup that was later torn down
-  // (a data-dir reset, a revoked forge) cannot keep claiming completeness.
-  // Fire-and-forget: the write must not block the gate computation.
-  unawaited(
-    gate == OnboardingGate.complete
-        ? prefs.setBool(_onboardingCompleteKey, value: true)
-        : prefs.remove(_onboardingCompleteKey),
-  );
-
-  return gate;
+  ref
+    ..listen<OnboardingGate?>(liveOnboardingGateProvider, (_, _) {
+      recordFinished();
+      cacheVerdict();
+    }, fireImmediately: true)
+    // The flag can resolve after the verdict settled (identity lands late),
+    // and the verdict does not change when it does.
+    ..listen<bool?>(onboardingFinishedProvider, (_, _) => recordFinished());
 });

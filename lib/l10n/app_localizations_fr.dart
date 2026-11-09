@@ -9,6 +9,15 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Impossible d\'envoyer maintenant : $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Votre réponse n\'a pas été transmise. La question a peut-être déjà reçu une réponse, ou l\'agent a cessé d\'attendre.';
+
+  @override
   String get succeeded => 'Réussi';
 
   @override
@@ -2627,10 +2636,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addGif => 'Ajouter un GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Ajoutez au moins un dépôt GitHub pour voir les demandes de tirage';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5966,9 +5971,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Durée';
 
   @override
-  String get pipelineStepBranch => 'Branche';
-
-  @override
   String get pipelineStepViewConversation => 'Voir la conversation';
 
   @override
@@ -7070,14 +7072,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reviewRequested => 'Révision demandée';
 
   @override
-  String get connectGitHubHint =>
-      'Connectez-vous à GitHub dans Paramètres → Espace de travail → Profil et identité → Hébergement de code';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Connectez GitHub pour charger les pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'Aucun dépôt configuré';
 
   @override
@@ -7737,13 +7731,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Créer en brouillon';
-
-  @override
-  String get composePrNoRepo => 'Aucun dépôt GitHub sélectionné';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Sélectionnez un espace de travail avec un dépôt lié à GitHub pour ouvrir une pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16963,6 +16950,27 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce code ne correspond pas à cette connexion. Vérifiez-le et réessayez.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Trop de codes erronés. Relancez la connexion.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Cette connexion n\'est plus valide. Relancez-la.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Le serveur n\'a pas pu lire cette demande de connexion. Relancez-la.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Trop de tentatives de connexion pour le moment. Patientez une minute, puis réessayez.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider a accepté la connexion, mais le serveur n\'a pas pu l\'enregistrer. Réessayez.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider ne répond pas pour le moment. Réessayez dans quelques minutes.';
   }
@@ -16993,7 +17001,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Cet espace Linear est déjà connecté à un autre serveur Control Center.';
+      'Cet espace Slack est déjà connecté à un autre serveur Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17431,6 +17439,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Changer d\'application';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Ouvrir sur $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Affichage des $count premiers fichiers. $forge ne liste pas les autres.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Connectez un hébergeur de code pour charger les pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Connectez GitHub, GitLab ou Bitbucket dans Paramètres → Espace de travail → Profil et identité → Hébergement de code';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Ajoutez au moins un dépôt sur GitHub, GitLab ou Bitbucket pour voir les pull requests';
+
+  @override
+  String get composePrNoForgeRepo => 'Aucun dépôt hébergé sélectionné';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Sélectionnez un espace de travail avec un dépôt sur GitHub, GitLab ou Bitbucket pour ouvrir une pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Connectez $forge pour ouvrir une pull request dans ce dépôt';
+  }
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

@@ -382,7 +382,12 @@ void main() {
         PipelineRunStatus.fromString('running'),
         PipelineRunStatus.running,
       );
-      expect(PipelineRunStatus.fromString('bogus'), PipelineRunStatus.pending);
+      // Wire enums fail closed: an unknown status is a FormatException, not
+      // a silent default that could mis-schedule a run.
+      expect(
+        () => PipelineRunStatus.fromString('bogus'),
+        throwsFormatException,
+      );
       for (final s in PipelineRunStatus.values) {
         expect(PipelineRunStatus.fromString(s.toStorageString()), s);
       }

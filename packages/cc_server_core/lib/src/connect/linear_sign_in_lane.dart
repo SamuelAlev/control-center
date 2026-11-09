@@ -6,6 +6,7 @@ import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
+import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
@@ -344,17 +345,15 @@ Future<Map<String, Object?>> linearGraphQl(
     ..contentType = ContentType.json;
   request.write(jsonEncode({'query': query}));
   final response = await request.close().timeout(timeout);
-  final chunks = <int>[];
-  await for (final chunk in response.timeout(timeout)) {
-    chunks.addAll(chunk);
-    if (chunks.length > LinearSignInLane._maxResponseBytes) {
-      throw const HttpException('oversized reply');
-    }
-  }
+  final body = await readBoundedText(
+    response,
+    maxBytes: LinearSignInLane._maxResponseBytes,
+    timeout: timeout,
+  );
   if (response.statusCode != HttpStatus.ok) {
     throw HttpException('linear HTTP ${response.statusCode}');
   }
-  final decoded = jsonDecode(utf8.decode(chunks, allowMalformed: true));
+  final decoded = jsonDecode(body);
   if (decoded is! Map) {
     throw const FormatException('linear: not an object');
   }

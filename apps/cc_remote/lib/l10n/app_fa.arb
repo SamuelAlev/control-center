@@ -203,6 +203,7 @@
     }
   },
   "teammate": "هم‌تیمی",
+  "systemSender": "سیستم",
   "agent": "عامل",
   "attachFile": "پیوست کردن فایل",
   "messageHint": "پیام",
@@ -268,8 +269,8 @@
   },
   "reposNotReadable": "خوانده نشد: \u2068{names}\u2069",
   "installationSuspendedTitle": "نصب GitHub App معلق شده است",
-  "installationSuspendedBody": "آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.",
-  "installationSuspendedNotice": "نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.",
+  "installationSuspendedBody": "آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.",
+  "installationSuspendedNotice": "نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -963,6 +964,10 @@
   "credentialsConnectCodePrompt": "کدی را که در مرورگر نمایش داده شده وارد کنید",
   "credentialsConnectCodeMalformed": "این شبیه کد ورود نیست. کدها ۸ حرف و رقم دارند.",
   "credentialsSignInInvalidCode": "این کد با این ورود جور نیست. آن را بررسی کنید و دوباره امتحان کنید.",
+  "credentialsSignInTooManyCodes": "تعداد کدهای اشتباه بیش از حد است. ورود را دوباره شروع کنید.",
+  "credentialsSignInRetryLater": "سرویس ورود اکنون پاسخ نمی‌دهد. یک دقیقه صبر کنید و دوباره امتحان کنید.",
+  "credentialsSignInRefused": "ورود رد شد. آن را دوباره شروع کنید و همهٔ مجوزهای درخواستی را تأیید کنید.",
+  "credentialsSignInNotSaved": "ورود انجام شد، اما سرور نتوانست آن را ذخیره کند. دوباره امتحان کنید.",
   "credentialsSignInUnavailable": "ورود به {provider} هنوز روی این سرور تنظیم نشده است.",
   "credentialsSignInPhoneUnreachable": "نشانی بازگشت ورود این سرور از تلفن به‌صورت امن در دسترس نیست. از برنامهٔ رومیزی وارد شوید یا از مالک سرور بخواهید یک نشانی HTTPS عمومی تنظیم کند.",
   "credentialsLoginTimedOut": "مهلت ورود به پایان رسید. دوباره برای ورود تلاش کنید.",

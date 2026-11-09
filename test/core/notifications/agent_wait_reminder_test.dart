@@ -1,5 +1,7 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/ports/notification_port.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:control_center/core/notifications/agent_wait_reminder.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
@@ -199,6 +201,39 @@ void main() {
       final shown = port.shown.single;
       expect(shown.wait?.id, 'msg-1');
       expect(shown.wait?.approvable, isFalse);
+      reminder.dispose();
+    });
+  });
+
+  test('a question is never reminded past the point it stops waiting', () {
+    fakeAsync((async) {
+      final now = async.getClock(DateTime.utc(2026, 11, 4, 10)).now;
+      final reminder = createReminder(now)
+        ..update([wait('msg-1', createdAt: now(), kind: 'question')]);
+
+      async.elapse(const Duration(hours: 2));
+      final kept = agentWaitReminderSteps(AgentInputKind.question);
+      expect(kept, isNotEmpty);
+      expect(kept.every((s) => s < kAgentQuestionTimeout), isTrue);
+      expect(port.shown, hasLength(kept.length));
+      expect(
+        agentWaitReminderSteps(AgentInputKind.approval),
+        kAgentWaitReminderSchedule,
+      );
+      reminder.dispose();
+    });
+  });
+
+  test('the withdrawn set only remembers waits still in the feed', () {
+    fakeAsync((async) {
+      final now = async.getClock(DateTime.utc(2026, 11, 4, 10)).now;
+      final reminder = createReminder(now)
+        ..update([wait('cf_1', createdAt: now(), resolved: true)])
+        ..update(const [])
+        ..update([wait('cf_1', createdAt: now(), resolved: true)]);
+      // Pruned once it left the snapshot, so seeing it again re-withdraws:
+      // harmless (the OS ignores an unknown id) and keeps the set bounded.
+      expect(port.withdrawn, ['cf_1', 'cf_1']);
       reminder.dispose();
     });
   });

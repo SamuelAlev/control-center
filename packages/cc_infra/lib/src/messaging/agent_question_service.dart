@@ -3,50 +3,59 @@ import 'dart:async';
 import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-/// Message metadata key marking the rendered question as answered.
-const String kQuestionAnsweredKey = 'answered';
+export 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
 
-/// Message metadata key holding the serialized [AgentQuestionAnswer].
-const String kQuestionAnswerKey = 'answer';
+/// Closes a question nobody answered: a CONDITIONAL write that only lands
+/// while the question is still unanswered (`answered != 1`), returning
+/// whether it did. Production binds the DAO's `expireQuestion`.
+typedef QuestionExpirer =
+    Future<bool> Function(String workspaceId, String messageId);
 
-/// Message metadata key marking a question that closed without an answer
-/// (the asking agent stopped waiting: it timed out, gave up or was stopped).
-/// Set together with [kQuestionAnsweredKey] so every "is this still open"
-/// reader treats it as resolved.
-const String kQuestionExpiredKey = 'expired';
+/// How [AgentQuestionService.deliverAnswer] ended.
+enum QuestionAnswerDelivery {
+  /// The answer was persisted and the waiting agent received it.
+  delivered,
 
-/// Message metadata key holding the UTC ISO-8601 instant the asking agent
-/// stops waiting. Absent when the service waits indefinitely.
-const String kQuestionExpiresAtKey = 'expiresAt';
+  /// Nobody is waiting any more (timed out, abandoned, answered elsewhere, or
+  /// the server restarted since). Nothing was written.
+  notPending,
 
-/// Message metadata key holding the full wait, in milliseconds, so a client
-/// can draw how much of it is left.
-const String kQuestionTimeoutMsKey = 'timeoutMs';
+  /// The waiter was claimed but the conditional write refused (the row was
+  /// closed underneath it). The agent was told there is no answer.
+  notPersisted,
+}
 
 /// In-process implementation of [AgentQuestionPort].
 ///
 /// When an agent asks a question, this posts an inline `user_question` message
-/// into the conversation (rendered as an `AskUserCard` form) and blocks
-/// on a [Completer] until the user submits the form via [submitAnswer]. The
-/// asking agent — paused in its MCP tool call (Pi) or PTY relay (Claude) —
-/// then receives the answer and continues.
+/// into the conversation (rendered as an `AskUserCard` form) and blocks on a
+/// [Completer] until a human's answer is delivered through [deliverAnswer]
+/// (the `messaging.updateMessage` handler) or the wait ends.
 ///
-/// Both the MCP server and the UI resolve the same singleton instance from the
-/// provider, so the pending-question map is shared across them.
+/// Every way a wait can end — an answer, the timeout, the asker giving up —
+/// first CLAIMS the waiter by removing it from the pending map. Exactly one
+/// claim succeeds, so an answer can never be acknowledged to the human while
+/// the agent was handed a timeout, and an expiry can never overwrite an answer
+/// the agent received.
 class AgentQuestionService implements AgentQuestionPort {
   /// Creates an [AgentQuestionService]. [_timeout] bounds how long the asking
   /// agent waits for an answer (`Duration.zero` waits indefinitely).
-  /// [_onAsked] runs once each question is posted, with the id of the
-  /// message it was posted as, so the host can tell the operator an agent is
-  /// waiting on them; [_onClosed] runs with that id once the asker stops
-  /// waiting, answered or not.
+  /// [_expireQuestion] closes an unanswered question conditionally; without it
+  /// the expiry goes through [MessagingRepository.updateMessage] (whose DAO
+  /// write is conditional on `answered` too). [_onAsked] runs once each
+  /// question is posted, with the id of the message it was posted as, so the
+  /// host can tell the operator an agent is waiting on them; [_onClosed] runs
+  /// with that id once the asker stops waiting, answered or not.
   AgentQuestionService(
     this._messaging, {
     required this._conversations,
-    this._timeout = const Duration(hours: 1),
+    this._timeout = kAgentQuestionTimeout,
+    this._expireQuestion,
     this._onAsked,
     this._onClosed,
   });
@@ -54,6 +63,7 @@ class AgentQuestionService implements AgentQuestionPort {
   final MessagingRepository _messaging;
   final ConversationRepository _conversations;
   final Duration _timeout;
+  final QuestionExpirer? _expireQuestion;
   final void Function(AgentQuestionRequest request, String messageId)? _onAsked;
   final void Function(String messageId)? _onClosed;
 
@@ -68,22 +78,36 @@ class AgentQuestionService implements AgentQuestionPort {
   Stream<void> get pendingChanges =>
       (_pendingChanges ??= StreamController<void>.broadcast()).stream;
 
-  Completer<AgentQuestionAnswer?>? _takePending(String messageId) {
-    final completer = _pending.remove(messageId);
-    if (completer != null) {
-      _pendingChanges?.add(null);
+  /// Removes [messageId]'s waiter when it is still [expected] (any waiter
+  /// when null). The single claim every ending goes through.
+  Completer<AgentQuestionAnswer?>? _claim(
+    String messageId, [
+    Completer<AgentQuestionAnswer?>? expected,
+  ]) {
+    final current = _pending[messageId];
+    if (current == null ||
+        current.isCompleted ||
+        (expected != null && !identical(current, expected))) {
+      return null;
     }
-    return completer;
+    _pending.remove(messageId);
+    _pendingChanges?.add(null);
+    return current;
   }
 
+  /// Throws [ArgumentError] when [request] names no space or conversation —
+  /// there is nowhere to render the form, which is a caller bug and not a
+  /// "timed out or dismissed" answer.
   @override
   Future<AgentQuestionAnswer?> ask(
     AgentQuestionRequest request, {
     Future<void>? abandoned,
   }) async {
     if (request.spaceId.isEmpty || request.conversationId.isEmpty) {
-      // Without a destination there is nowhere to render the form.
-      return null;
+      throw ArgumentError(
+        'ask_user needs the session space and conversation to render the '
+        'question in.',
+      );
     }
     final conversation = await _conversations.getById(
       workspaceId: request.workspaceId,
@@ -131,36 +155,33 @@ class AgentQuestionService implements AgentQuestionPort {
     final completer = Completer<AgentQuestionAnswer?>();
     _pending[messageId] = completer;
     _pendingChanges?.add(null);
-    _onAsked?.call(request, messageId);
-    var closedUnanswered = false;
-    // The asker can stop waiting long before the timeout: its MCP client gave
-    // up on the call, or the run was stopped. An answer given after that
-    // reaches nobody, so the form closes exactly as it does on timeout.
-    void giveUp() {
-      if (!completer.isCompleted) {
-        closedUnanswered = true;
-        completer.complete(null);
-      }
-    }
-
-    unawaited(
-      abandoned?.then((_) => giveUp(), onError: (Object _) => giveUp()),
-    );
+    Timer? timer;
+    AgentQuestionAnswer? answer;
     try {
-      if (waitsForever) {
-        return await completer.future;
+      // A failing announcer must not strand a posted form with no waiter
+      // ever completing it: the wait runs regardless.
+      try {
+        _onAsked?.call(request, messageId);
+      } on Object catch (e) {
+        CcInfraLog.warning('AgentQuestionService: onAsked failed: $e');
       }
-      return await completer.future.timeout(
-        _timeout,
-        onTimeout: () {
-          closedUnanswered = true;
-          return null;
-        },
+      // The asker can stop waiting long before the timeout: its MCP client
+      // gave up on the call, or the run was stopped. Both go through the same
+      // claim an answer does, so whichever lands first wins.
+      void giveUp() => _claim(messageId, completer)?.complete(null);
+      unawaited(
+        abandoned?.then((_) => giveUp(), onError: (Object _) => giveUp()),
       );
+      if (!waitsForever) {
+        timer = Timer(_timeout, giveUp);
+      }
+      answer = await completer.future;
+      return answer;
     } finally {
-      _takePending(messageId);
+      timer?.cancel();
+      _claim(messageId, completer);
       _onClosed?.call(messageId);
-      if (closedUnanswered) {
+      if (answer == null) {
         await _markExpired(request.workspaceId, messageId, metadata);
       }
     }
@@ -168,13 +189,18 @@ class AgentQuestionService implements AgentQuestionPort {
 
   /// Closes the form of a question nobody answered while the asker waited, so
   /// the client collapses it instead of offering an answer the agent no
-  /// longer reads.
+  /// longer reads. Conditional: an answer that already landed is kept.
   Future<void> _markExpired(
     String workspaceId,
     String messageId,
     Map<String, dynamic> metadata,
   ) async {
     try {
+      final expire = _expireQuestion;
+      if (expire != null) {
+        await expire(workspaceId, messageId);
+        return;
+      }
       await _messaging.updateMessage(
         workspaceId,
         messageId,
@@ -184,73 +210,67 @@ class AgentQuestionService implements AgentQuestionPort {
           kQuestionExpiredKey: true,
         },
       );
-    } catch (_) {
-      // Best-effort: the client also closes the form once expiresAt passes.
+    } on Object catch (e) {
+      // The client also closes the form once expiresAt passes, and the boot
+      // sweep closes anything a crash left open.
+      CcInfraLog.warning('AgentQuestionService: expiring $messageId: $e');
     }
   }
 
   /// Whether the question rendered as [messageId] is still awaiting an answer.
-  bool isPending(String messageId) => _pending.containsKey(messageId);
-
-  /// Unblocks the agent waiting on [messageId] using an answer that has ALREADY
-  /// been persisted by someone else.
-  ///
-  /// This is the client/server seam. [ask] blocks on a `Completer` held in the
-  /// process running the agent — the SERVER — but the human answers in a
-  /// client, which persists the answer by writing the message's metadata over
-  /// RPC. Nothing in that write reaches the server's completer map, so without
-  /// this the asking agent waits out its full timeout while the form in front
-  /// of the user already reads "answered".
-  ///
-  /// Called from the `messaging.updateMessage` handler after the write lands.
-  /// A metadata blob that is not an answered question, or an id nobody is
-  /// waiting on, is ignored — this runs on every message update.
-  bool resolveFromMetadata(String messageId, Map<String, dynamic>? metadata) {
-    if (metadata == null ||
-        metadata[kQuestionAnsweredKey] != true ||
-        metadata[kQuestionExpiredKey] == true) {
-      return false;
-    }
+  bool isPending(String messageId) {
     final completer = _pending[messageId];
-    if (completer == null || completer.isCompleted) {
-      return false;
-    }
-    final raw = metadata[kQuestionAnswerKey];
-    if (raw is! Map) {
-      return false;
-    }
-    final answer = AgentQuestionAnswer.fromJson(raw.cast<String, dynamic>());
-    _takePending(messageId);
-    completer.complete(answer);
-    return true;
+    return completer != null && !completer.isCompleted;
   }
 
-  /// Resolves the question rendered by [question] with [answer]: marks the
-  /// message answered (so the form collapses to a read-only result) and
-  /// unblocks the asking agent. [workspaceId] owns [question]'s space and
-  /// selects the database the answered state is written back to.
-  Future<void> submitAnswer(
+  /// Hands [answer] to the agent waiting on [messageId].
+  ///
+  /// Claims the waiter FIRST, then runs [persist] (the conditional
+  /// first-answer-wins write), then completes the waiter: with [answer] when
+  /// the write landed, with no answer when it did not (or threw — rethrown).
+  /// The returned outcome is what the human is told; only
+  /// [QuestionAnswerDelivery.delivered] means the agent got their answer.
+  Future<QuestionAnswerDelivery> deliverAnswer(
+    String messageId,
+    AgentQuestionAnswer answer, {
+    required Future<bool> Function() persist,
+  }) async {
+    final completer = _claim(messageId);
+    if (completer == null) {
+      return QuestionAnswerDelivery.notPending;
+    }
+    var persisted = false;
+    try {
+      persisted = await persist();
+    } finally {
+      completer.complete(persisted ? answer : null);
+    }
+    return persisted
+        ? QuestionAnswerDelivery.delivered
+        : QuestionAnswerDelivery.notPersisted;
+  }
+
+  /// In-process answer (tests and same-process callers): writes the answered
+  /// state through the messaging repository and delivers it. Persistence
+  /// failures propagate, and the agent is then told there is no answer.
+  Future<QuestionAnswerDelivery> submitAnswer(
     String workspaceId,
     Message question,
     AgentQuestionAnswer answer,
-  ) async {
-    final merged = <String, dynamic>{
-      ...?question.metadata,
-      kQuestionAnsweredKey: true,
-      kQuestionAnswerKey: answer.toJson(),
-    };
-    try {
+  ) => deliverAnswer(
+    question.id,
+    answer,
+    persist: () async {
       await _messaging.updateMessage(
         workspaceId,
         question.id,
-        metadata: merged,
+        metadata: {
+          ...?question.metadata,
+          kQuestionAnsweredKey: true,
+          kQuestionAnswerKey: answer.toJson(),
+        },
       );
-    } catch (_) {
-      // Persisting the answered state is best-effort; still unblock the agent.
-    }
-    final completer = _takePending(question.id);
-    if (completer != null && !completer.isCompleted) {
-      completer.complete(answer);
-    }
-  }
+      return true;
+    },
+  );
 }

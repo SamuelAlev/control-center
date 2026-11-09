@@ -14,12 +14,12 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// `budget_tokens` — and sampling parameters are sent only when explicitly set,
 /// since the current models reject them too.
 ///
-/// Implements [LlmDeferredToolSupport]: on a model that supports tool search,
+/// Overrides [LlmProviderPort.supportsDeferredTools]: on a model that supports tool search,
 /// schemas marked [LlmToolSchema.deferLoading] travel in the `tools` array with
 /// `defer_loading: true` (still sent in full — the API expands references
 /// server-side) and a tool result may carry `tool_reference` blocks, so an
 /// activation no longer rewrites the cached tools+system prefix.
-class AnthropicProvider implements LlmProviderPort, LlmDeferredToolSupport {
+class AnthropicProvider extends LlmProviderPort {
   /// Creates an [AnthropicProvider].
   ///
   /// Authenticates with an [_apiKey] (`x-api-key`) and nothing else. A Claude
@@ -628,9 +628,16 @@ class AnthropicProvider implements LlmProviderPort, LlmDeferredToolSupport {
         ? ' — the API key was rejected. Update it in Settings → Adapters → '
               'Providers & models.'
         : '';
+    final wire = code ?? 'http_${e.statusCode}';
     return LlmError(
       'Anthropic API error ${e.statusCode}: ${e.body}$reauth',
-      code: code ?? 'http_${e.statusCode}',
+      code: wire,
+      // Typed where the HTTP status is known, so the status decides.
+      kind: LlmErrorKind.classify(
+        code: wire,
+        message: e.body,
+        httpStatus: e.statusCode,
+      ),
       retryable: e.statusCode == 429 || e.statusCode >= 500,
       retryAfterMs: e.retryAfter?.inMilliseconds,
     );

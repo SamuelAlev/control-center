@@ -45,6 +45,7 @@ void openPrInRepo(
       context.currentWorkspaceId!,
       repo.fullName,
       prNumber,
+      forge: repo.forge,
     ),
   );
 }

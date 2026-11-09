@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 /// A provider that replays a scripted event list and can report the transport /
 /// serving-model boundaries through the trace, the way a real provider does.
-class _ScriptedProvider implements LlmProviderPort {
+class _ScriptedProvider extends LlmProviderPort {
   _ScriptedProvider(
     this.events, {
     this.displayName = 'Scripted',
@@ -576,12 +576,12 @@ void main() {
   test('delegates deferred-tool capability honestly', () {
     final plain = _observed(_ScriptedProvider(const []), _Collector());
     expect(plain.supportsDeferredTools(), isFalse);
-    expect(providerSupportsDeferredTools(plain, model: 'x'), isFalse);
+    expect(plain.supportsDeferredTools(model: 'x'), isFalse);
 
     final supporting = _observed(_TraceCapableProvider(), _Collector());
     expect(supporting.supportsDeferredTools(model: 'supported'), isTrue);
     expect(
-      providerSupportsDeferredTools(supporting, model: 'other'),
+      supporting.supportsDeferredTools(model: 'other'),
       isFalse,
       reason: 'the capability must come from the delegate, not the wrapper',
     );
@@ -712,8 +712,7 @@ class _ThrowingObserver implements ProviderCallObserver {
   void onProviderCall(ProviderCallRecord record) => throw StateError('boom');
 }
 
-class _TraceCapableProvider extends _ScriptedProvider
-    implements LlmDeferredToolSupport {
+class _TraceCapableProvider extends _ScriptedProvider {
   _TraceCapableProvider() : super(const []);
 
   @override

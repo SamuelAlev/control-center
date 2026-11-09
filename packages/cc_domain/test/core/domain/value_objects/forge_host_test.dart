@@ -50,13 +50,6 @@ void main() {
       expect(ForgeHost.fromGitHost('www.bitbucket.org'), ForgeHost.bitbucket);
       expect(ForgeHost.fromGitHost('git.example.com'), isNull);
     });
-
-    test('names a change request in each forge’s own vocabulary', () {
-      expect(ForgeHost.gitlab.changeRequestNoun, 'merge request');
-      expect(ForgeHost.gitlab.changeRequestAbbreviation, 'MR');
-      expect(ForgeHost.github.changeRequestNoun, 'pull request');
-      expect(ForgeHost.bitbucket.changeRequestAbbreviation, 'PR');
-    });
   });
 
   group('ForgeCapabilities', () {
@@ -146,28 +139,10 @@ void main() {
       );
     });
 
-    test('every supported forge has a status feed and a token page', () {
-      for (final forge in ForgeHost.supported) {
-        final urls = ForgeUrls(forge);
-        expect(urls.statusPage, startsWith('https://'), reason: forge.name);
-        expect(
-          urls.statusSummaryUrl,
-          endsWith('/api/v2/summary.json'),
-          reason: forge.name,
-        );
-        expect(
-          urls.tokenSettingsUrl,
-          startsWith('https://'),
-          reason: forge.name,
-        );
-      }
-    });
-
     test('local builds nothing rather than a wrong link', () {
       const urls = ForgeUrls(ForgeHost.local);
       expect(urls.pullRequest('o', 'r', 1), '');
       expect(urls.commit('o', 'r', 's'), '');
-      expect(urls.statusPage, '');
     });
   });
 }

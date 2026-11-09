@@ -204,6 +204,7 @@
     }
   },
   "teammate": "חבר צוות",
+  "systemSender": "מערכת",
   "agent": "סוכן",
   "attachFile": "צירוף קובץ",
   "messageHint": "הודעה",
@@ -269,8 +270,8 @@
   },
   "reposNotReadable": "לא ניתנים לקריאה: \u2068{names}\u2069",
   "installationSuspendedTitle": "התקנת GitHub App הושעתה",
-  "installationSuspendedBody": "מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.",
-  "installationSuspendedNotice": "התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.",
+  "installationSuspendedBody": "מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub.",
+  "installationSuspendedNotice": "התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -964,6 +965,10 @@
   "credentialsConnectCodePrompt": "הזינו את הקוד שמוצג בדפדפן",
   "credentialsConnectCodeMalformed": "זה לא נראה כמו קוד כניסה. קודים כוללים 8 אותיות וספרות.",
   "credentialsSignInInvalidCode": "הקוד הזה לא תואם לכניסה הזו. בדקו אותו ונסו שוב.",
+  "credentialsSignInTooManyCodes": "יותר מדי קודים שגויים. התחילו את ההתחברות מחדש.",
+  "credentialsSignInRetryLater": "שירות ההתחברות לא מגיב כרגע. המתינו דקה ונסו שוב.",
+  "credentialsSignInRefused": "ההתחברות נדחתה. התחילו אותה מחדש ואשרו את כל ההרשאות המבוקשות.",
+  "credentialsSignInNotSaved": "ההתחברות הצליחה, אבל השרת לא הצליח לשמור אותה. נסו שוב.",
   "credentialsSignInUnavailable": "הכניסה ל-{provider} עדיין לא הוגדרה בשרת הזה.",
   "credentialsSignInPhoneUnreachable": "כתובת החזרה של ההתחברות בשרת הזה אינה נגישה באופן מאובטח מטלפון. התחברו מאפליקציית המחשב, או בקשו מבעל השרת להגדיר כתובת HTTPS ציבורית.",
   "credentialsLoginTimedOut": "תוקף ההתחברות פג. יש להתחיל ניסיון התחברות חדש.",

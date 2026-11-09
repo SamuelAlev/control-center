@@ -15,7 +15,7 @@ void main() {
     for (final rel in files) {
       final src = File('$root/$rel').readAsStringSync();
       expect(
-        src.contains('implements ForgePrClient'),
+        RegExp(r'implements\s+ForgePrClient\b').hasMatch(src),
         isTrue,
         reason: '$rel must implement ForgePrClient',
       );

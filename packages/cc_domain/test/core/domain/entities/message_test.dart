@@ -6,6 +6,30 @@ import 'package:test/test.dart';
 /// Covers construction, derived predicates, copyWith preservation, the
 /// MessageMention codec and the equality contract for [Message].
 void main() {
+  group('SenderType.fromWire', () {
+    test('decodes each stored value', () {
+      expect(SenderType.fromWire('user', senderId: 'u'), SenderType.user);
+      expect(SenderType.fromWire('agent', senderId: 'a'), SenderType.agent);
+      expect(
+        SenderType.fromWire('system', senderId: 'system'),
+        SenderType.system,
+      );
+    });
+
+    test('an old agent-from-system row decodes as system', () {
+      expect(
+        SenderType.fromWire('agent', senderId: SenderType.systemSenderId),
+        SenderType.system,
+      );
+    });
+
+    test('an unknown or missing value never decodes as a human', () {
+      expect(SenderType.fromWire('robot', senderId: 'a'), SenderType.agent);
+      expect(SenderType.fromWire(null, senderId: 'a'), SenderType.agent);
+      expect(SenderType.fromWire(null, senderId: 'system'), SenderType.system);
+    });
+  });
+
   group('Message construction', () {
     test('a populated message round-trips every direct field', () {
       final createdAt = DateTime(2025, 6, 1, 12);
@@ -58,10 +82,7 @@ void main() {
   });
 
   group('Message type predicates', () {
-    Message make(
-      MessageType type, {
-      Map<String, dynamic>? meta,
-    }) => Message(
+    Message make(MessageType type, {Map<String, dynamic>? meta}) => Message(
       id: 'm1',
       spaceId: 'ch1',
       conversationId: 'ch1',
@@ -298,10 +319,7 @@ void main() {
       () {
         expect(base.feedback, isNull, reason: 'no feedback key');
         expect(
-          make(
-            MessageType.text,
-            meta: const {'feedback': 'string'},
-          ).feedback,
+          make(MessageType.text, meta: const {'feedback': 'string'}).feedback,
           isNull,
           reason: 'feedback is not a map',
         );
@@ -723,15 +741,14 @@ void main() {
 }
 
 /// Local `make` helper for terser predicate construction in this file.
-Message make(MessageType type, {Map<String, dynamic>? meta}) =>
-    Message(
-      id: 'm1',
-      spaceId: 'ch1',
-      conversationId: 'ch1',
-      senderId: 'u1',
-      senderType: SenderType.agent,
-      content: '',
-      messageType: type,
-      metadata: meta,
-      createdAt: DateTime(2025, 6, 1),
-    );
+Message make(MessageType type, {Map<String, dynamic>? meta}) => Message(
+  id: 'm1',
+  spaceId: 'ch1',
+  conversationId: 'ch1',
+  senderId: 'u1',
+  senderType: SenderType.agent,
+  content: '',
+  messageType: type,
+  metadata: meta,
+  createdAt: DateTime(2025, 6, 1),
+);

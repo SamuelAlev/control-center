@@ -58,6 +58,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
   Future<List<String>> Function()? protectedPaths,
   AgentQuestionPort? agentQuestionPort,
   String? spaceId,
+  String? runLogId,
   String? agentDisplayName,
   LspSupervisor? lspSupervisor,
   DiagnosticsLedger? diagnosticsLedger,
@@ -135,6 +136,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
         askedByAgentId: agentId,
         conversationId: conversationId,
         askedByName: agentDisplayName,
+        runId: runLogId,
       ),
     );
   }

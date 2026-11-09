@@ -4,6 +4,8 @@ import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
+import 'package:control_center/features/auth/providers/oauth_providers.dart'
+    show needsSignInLane;
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart'
     show prEditProvider;
@@ -40,27 +42,45 @@ class PrSignInNotice extends ConsumerWidget {
   }
 }
 
-/// Offers "Sign in to GitHub" when a pull request action was refused for
-/// want of the reader's own sign-in; false for every other failure, which
-/// the caller reports as before.
-bool offerGitHubSignIn(BuildContext context, WidgetRef ref, Object error) =>
-    offerSignInForRefusal(
-      context,
-      error,
-      lane: ConnectOAuthLane.github,
-      workspaceId: ref.read(githubSignInScopeProvider),
-    );
+/// Offers a sign-in when a pull request action was refused for want of the
+/// reader's own sign-in; false for every other failure, which the caller
+/// reports as before.
+///
+/// The lane is the one the server's refusal names. A refusal that names none
+/// falls back to the sign-in lane of [prRef]'s forge — never to GitHub for a
+/// GitLab or Bitbucket PR, whose credential is a token with no sign-in flow.
+bool offerPrSignIn(
+  BuildContext context,
+  WidgetRef ref,
+  Object error, {
+  PrRef? prRef,
+}) {
+  final repo = prRef == null ? null : ref.read(prRepoRowProvider(prRef));
+  final lane =
+      needsSignInLane(error) ??
+      (repo == null ? null : signInLaneForForge(repo.forge));
+  if (lane == null) {
+    return false;
+  }
+  return offerSignInForRefusal(
+    context,
+    error,
+    lane: lane,
+    workspaceId: ref.read(githubSignInScopeProvider),
+  );
+}
 
-/// Reports a failed pull request action from a mounted [context]: "Sign in
-/// to GitHub" when [error] was a refusal for want of the reader's own
-/// sign-in, else a danger toast saying [message].
+/// Reports a failed pull request action from a mounted [context]: a sign-in
+/// offer when [error] was a refusal for want of the reader's own sign-in
+/// (see [offerPrSignIn]), else a danger toast saying [message].
 void showPrError(
   BuildContext context,
   WidgetRef ref,
   Object error,
-  String Function(AppLocalizations l10n) message,
-) {
-  if (!offerGitHubSignIn(context, ref, error)) {
+  String Function(AppLocalizations l10n) message, {
+  PrRef? prRef,
+}) {
+  if (!offerPrSignIn(context, ref, error, prRef: prRef)) {
     CcToastScope.of(context).show(
       message(AppLocalizations.of(context)),
       variant: CcToastVariant.danger,

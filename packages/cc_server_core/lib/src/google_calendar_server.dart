@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, canonicalConnectBaseUrl;
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/utils/single_flight.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event_draft.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event_reschedule.dart';
@@ -130,13 +130,13 @@ class ServerGoogleTokenManager {
 
   final FileGoogleCredentialsStore _store;
   final GoogleTokenRefresh _refresh;
-  final Future<String> Function(String connectOrigin) _installId;
+  final Future<String?> Function(String connectOrigin) _installId;
   final Future<String?> Function(String workspaceId) _ownClientId;
   final Future<bool> Function(String workspaceId) _allowsConnect;
   final Future<void> Function(String accountId)? _onInvalidGrant;
 
   final Map<String, ProviderToken> _live = {};
-  final Map<String, Future<ProviderToken?>> _inFlight = {};
+  final SingleFlight<String, ProviderToken?> _inFlight = SingleFlight();
 
   /// Keeps a freshly minted [token] for [accountId] in memory (a sealed
   /// sign-in carries its first access token only here).
@@ -179,22 +179,31 @@ class ServerGoogleTokenManager {
   /// Forces a refresh (after a 401) and returns the new access token.
   Future<String?> forceRefresh(String accountId) async {
     _live.remove(accountId);
-    return (await _refreshOnce(accountId))?.accessToken;
+    return (await _refreshOnce(accountId, force: true))?.accessToken;
   }
 
-  Future<ProviderToken?> _refreshOnce(String accountId) {
-    // Block body (not an arrow): `Map.remove` returns the stored future, so an
-    // arrow whenComplete would make the refresh await itself — a deadlock.
-    return _inFlight[accountId] ??= _doRefresh(accountId).whenComplete(() {
-      _inFlight.remove(accountId);
-    });
-  }
+  Future<ProviderToken?> _refreshOnce(String accountId, {bool force = false}) =>
+      _inFlight.run(accountId, () => _doRefresh(accountId, force: force));
 
-  Future<ProviderToken?> _doRefresh(String accountId) async {
+  /// [force] (after a 401) reuses only a renewal another flight just made,
+  /// never the stored access token Google refused.
+  Future<ProviderToken?> _doRefresh(
+    String accountId, {
+    required bool force,
+  }) async {
+    // Re-read inside the flight: a renewal that settled just before this one
+    // started is reused rather than refreshed again.
     final current = await _usable(accountId);
     final workspaceId = _workspaceIdFromAccountId(accountId);
     if (current == null || workspaceId == null) {
       return null;
+    }
+    final live = _live[accountId];
+    if (live != null && !live.isExpired) {
+      return live;
+    }
+    if (!force && !current.isSealed && !current.isExpired) {
+      return current;
     }
     RefreshOutcome outcome;
     try {
@@ -202,6 +211,13 @@ class ServerGoogleTokenManager {
     } on Object catch (e) {
       CcHostLog.warning('calendar: refresh unavailable for $accountId ($e)');
       outcome = const RefreshUnavailable();
+    }
+    // Compare-and-set: a disconnect or a new sign-in that landed while the
+    // refresh was in the air wins over the older grant's outcome.
+    final nowRaw = await _store.raw(accountId);
+    final now = nowRaw == null ? null : ProviderToken.tryParse(nowRaw);
+    if (now == null || !_sameGrant(now, current)) {
+      return null;
     }
     switch (outcome) {
       case Refreshed(:final token):
@@ -247,16 +263,19 @@ class ServerGoogleTokenManager {
       // A seal is bound to the install id it was minted for. A restored
       // backup or a rotated key can never open it; Connect being off or
       // pointed elsewhere only makes it unusable for now.
-      final current = await _installId(token.connectOrigin);
-      if (current.isEmpty) {
-        _live.remove(accountId);
-        return null;
+      switch (sealStandingOf(
+        sealInstallId: token.sealInstallId,
+        currentInstallId: await _installId(token.connectOrigin),
+      )) {
+        case SealStanding.parked:
+          _live.remove(accountId);
+          return null;
+        case SealStanding.dead:
+          await _drop(accountId);
+          return null;
+        case SealStanding.usable:
+          return token;
       }
-      if (token.sealInstallId != current) {
-        await _drop(accountId);
-        return null;
-      }
-      return token;
     }
     final String? ownClientId;
     try {
@@ -273,6 +292,10 @@ class ServerGoogleTokenManager {
     }
     return token;
   }
+
+  static bool _sameGrant(ProviderToken a, ProviderToken b) => a.isSealed
+      ? a.seal == b.seal
+      : a.refreshToken == b.refreshToken && a.accessToken == b.accessToken;
 
   Future<void> _drop(String accountId) async {
     _live.remove(accountId);
@@ -949,14 +972,7 @@ ServerCalendar buildServerCalendar({
       slot: workspaceId,
       workspaceId: workspaceId,
     ),
-    installId: (origin) async {
-      final choice = await connect.settings.choice();
-      if (!choice.enabled ||
-          canonicalConnectBaseUrl(choice.baseUrl) != origin) {
-        return '';
-      }
-      return (await connect.identity())?.installId ?? '';
-    },
+    installId: connect.installIdFor,
     ownClientId: (workspaceId) async =>
         await workspaceApps.ownClientId(
           workspaceId,

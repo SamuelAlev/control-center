@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cc_connect_core/cc_connect_core.dart' show b64url, randomBytes;
+
 /// Short-lived shared state: nonces, staged logins, seal handoffs, Slack
 /// reference queues, install tickets and counters. Every entry expires;
 /// nothing here is durable, and nothing here is a plaintext token.
@@ -13,12 +15,20 @@ abstract interface class StateStore {
   /// Sets [key] only when absent. True when this call set it.
   Future<bool> putIfAbsent(String key, String value, Duration ttl);
 
+  /// Sets [key] to [value] for [ttl] only while it still holds [expected]
+  /// (compare-and-set). True when this call replaced it.
+  Future<bool> replace(String key, String expected, String value, Duration ttl);
+
   /// Atomically reads and deletes [key]: of two concurrent takers exactly one
   /// sees the value.
   Future<String?> take(String key);
 
   /// Deletes [key].
   Future<void> delete(String key);
+
+  /// Deletes [key] only while it still holds [expected] (compare-and-delete).
+  /// True when this call deleted it.
+  Future<bool> deleteIf(String key, String expected);
 
   /// Increments the counter at [key] (created at 0 with [ttl]) and returns
   /// the new value.
@@ -134,6 +144,20 @@ final class MemoryStateStore implements StateStore {
   }
 
   @override
+  Future<bool> replace(
+    String key,
+    String expected,
+    String value,
+    Duration ttl,
+  ) async {
+    if (_live(key)?.value != expected) {
+      return false;
+    }
+    _put(key, value, ttl);
+    return true;
+  }
+
+  @override
   Future<String?> take(String key) async {
     final value = _live(key)?.value;
     _entries.remove(key);
@@ -142,6 +166,15 @@ final class MemoryStateStore implements StateStore {
 
   @override
   Future<void> delete(String key) async => _entries.remove(key);
+
+  @override
+  Future<bool> deleteIf(String key, String expected) async {
+    if (_live(key)?.value != expected) {
+      return false;
+    }
+    _entries.remove(key);
+    return true;
+  }
 
   @override
   Future<int> increment(String key, Duration ttl) async {
@@ -193,5 +226,99 @@ final class MemoryStateStore implements StateStore {
   Future<void> close() async {
     _sweeper.cancel();
     _entries.clear();
+  }
+}
+
+/// An expiring, owned lock on one [StateStore] key.
+///
+/// The lease holds a random token under [key] for [ttl]: a holder that
+/// crashes (or loses its connection) can never wedge the key past [ttl]. A
+/// live holder renews the lease every third of [ttl] while it works, and
+/// releasing deletes the key only while it still holds this lease's token,
+/// so a holder whose lease lapsed never releases its successor's.
+final class StateLease {
+  StateLease._(this._store, this.key, this._token, this.ttl) {
+    _renewer = Timer.periodic(
+      Duration(microseconds: ttl.inMicroseconds ~/ 3),
+      (_) => unawaited(_renew()),
+    );
+  }
+
+  /// Takes [key] for [ttl], or null when another holder has it.
+  static Future<StateLease?> acquire(
+    StateStore store,
+    String key,
+    Duration ttl,
+  ) async {
+    final token = b64url(randomBytes(16));
+    if (!await store.putIfAbsent(key, token, ttl)) {
+      return null;
+    }
+    return StateLease._(store, key, token, ttl);
+  }
+
+  /// Takes over [key] from the holder that stored [holder] there
+  /// (compare-and-set), or null when it changed meanwhile.
+  static Future<StateLease?> takeOver(
+    StateStore store,
+    String key,
+    String holder,
+    Duration ttl,
+  ) async {
+    final token = b64url(randomBytes(16));
+    if (!await store.replace(key, holder, token, ttl)) {
+      return null;
+    }
+    return StateLease._(store, key, token, ttl);
+  }
+
+  final StateStore _store;
+
+  /// The locked key.
+  final String key;
+
+  /// How long the lease outlives its last renewal.
+  final Duration ttl;
+  final String _token;
+  late final Timer _renewer;
+  bool _lost = false;
+  bool _released = false;
+
+  /// The value stored under [key] while this lease holds it.
+  String get token => _token;
+
+  /// True once a renewal found the key no longer ours (it lapsed and another
+  /// holder took it).
+  bool get lost => _lost;
+
+  Future<void> _renew() async {
+    if (_released || _lost) {
+      return;
+    }
+    try {
+      if (!await _store.replace(key, _token, _token, ttl)) {
+        _lost = true;
+        _renewer.cancel();
+      }
+    } on Object {
+      // A transient store failure: the next tick retries, and the lease
+      // still lapses on its own if the store stays away.
+    }
+  }
+
+  /// Ends the lease. Never throws: a store that is unreachable now lets the
+  /// key lapse after [ttl] instead, and a caller's result must not be lost
+  /// to a failed unlock.
+  Future<void> release() async {
+    if (_released) {
+      return;
+    }
+    _released = true;
+    _renewer.cancel();
+    try {
+      await _store.deleteIf(key, _token);
+    } on Object {
+      // Lapses after [ttl].
+    }
   }
 }

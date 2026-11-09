@@ -9,9 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings section that exposes the local speaker-diarization model lifecycle.
 ///
 /// Platform-neutral: it reads the seamed [diarizationModelControlProvider] +
-/// [diarizationModelStatusSnapshotProvider]. On desktop these resolve to the
-/// in-process model notifier; on web/thin clients they resolve to the connected
-/// server's diarization model over the `models.diarization*` RPC ops. When the
+/// [diarizationModelStatusSnapshotProvider]. On every client these resolve to the
+/// connected server's diarization model over the `models.diarization*` RPC ops. When the
 /// connected server hosts no model (status is `null`), it renders an honest
 /// "managed on the server host" placeholder.
 class DiarizationSection extends ConsumerWidget {

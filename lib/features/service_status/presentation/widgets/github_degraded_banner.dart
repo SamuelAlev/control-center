@@ -1,5 +1,8 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show workspaceForgesProvider;
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart'
     show serviceStatusWord;
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
@@ -83,6 +86,11 @@ class GitHubDegradedBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    // GitHub's health says nothing about a workspace with no GitHub repo;
+    // warning a GitLab-only workspace about it is noise.
+    if (!ref.watch(workspaceForgesProvider).contains(ForgeHost.github)) {
+      return const SizedBox.shrink();
+    }
     final status = ref.watch(githubStatusProvider).value;
     final key = githubDegradedKey(status);
     if (key == null ||

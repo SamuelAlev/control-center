@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
@@ -29,7 +30,7 @@ void registerForEachBody(
 
   registry.registerBody(BuiltInBodyKeys.forEach, (ctx) async {
     final workspaceId = ctx.workspaceId;
-    final def = await templateRepository.getById(workspaceId, ctx.templateId);
+    final def = await ctx.pinnedDefinition(templateRepository);
     final config = def?.step(ctx.stepId)?.config;
     if (config == null) {
       return StepResult.failed('forEach: step "${ctx.stepId}" missing config');

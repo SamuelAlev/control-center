@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/entities/repo.dart'
+    show splitRepoFullName;
 import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart'
-    show GitHubReviewComment, GitHubViewerPr;
+    show BotConversationCandidates, GitHubReviewComment, GitHubViewerPr;
 import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
@@ -32,16 +34,10 @@ class AssociatedPullRequest {
   final int prNumber;
 
   /// The `owner` half of [repoFullName], or empty when malformed.
-  String get owner {
-    final parts = repoFullName.split('/');
-    return parts.length == 2 ? parts[0] : '';
-  }
+  String get owner => splitRepoFullName(repoFullName)?.owner ?? '';
 
   /// The `name` half of [repoFullName], or empty when malformed.
-  String get name {
-    final parts = repoFullName.split('/');
-    return parts.length == 2 ? parts[1] : '';
-  }
+  String get name => splitRepoFullName(repoFullName)?.name ?? '';
 }
 
 /// One workspace's GitHub bot, which the conversation poller fans out over.
@@ -75,7 +71,8 @@ class PrConversationAppIdentity {
 /// Polls GitHub for bot-invoked PR conversations and hands them to the bridge.
 ///
 /// Replaces webhooks (no inbound URL required; Connect never sees PR
-/// content): search per installation, diff comments by id, follow
+/// content): one search per workspace narrowed to its installations, diff
+/// comments by id, follow
 /// review-thread replies for PRs with a review space. Each workspace sweeps
 /// on its own budget: own App lanes every [minInterval] over at most
 /// [maxCommentSweeps] PRs; Connect (the accountable human's personal quota)
@@ -83,7 +80,8 @@ class PrConversationAppIdentity {
 /// workspace whose [GitHubRateBudget] is low is skipped until it recovers.
 ///
 /// Eligible comment ids are persisted per workspace before bridging
-/// (at-most-once; a crash loses, never double-fires); a comment several
+/// (at-most-once; a crash loses, never double-fires), except that one whose
+/// author maps to no member yet is offered again on a few later sweeps; a comment several
 /// workspaces see is offered to each, and the author's 👀 claim decides.
 /// The first sweep with empty state records without acting (baseline); later
 /// restarts catch up. Label search is presence, not events — one fire per
@@ -156,6 +154,13 @@ class PrConversationPollingService {
   static const _maxLookback = Duration(hours: 24);
 
   final _seen = _BoundedKeySet(_seenCap);
+
+  /// How often an invocation whose author maps to no member yet has been
+  /// offered, by seen key (see [_settle]).
+  final Map<String, int> _authorRetries = {};
+
+  /// Offers per invocation whose author is not (yet) a known member.
+  static const _maxAuthorRetries = 3;
   Timer? _timer;
   bool _running = false;
   bool _disposed = false;
@@ -331,13 +336,7 @@ class PrConversationPollingService {
 
   Future<void> _handleSweep(
     PrConversationAppIdentity identity,
-    ({
-      List<GitHubViewerPr> mentioned,
-      List<GitHubViewerPr> botMentioned,
-      List<GitHubViewerPr> shortMentioned,
-      List<GitHubViewerPr> labeled,
-    })
-    results,
+    BotConversationCandidates results,
     DateTime sweepStart,
   ) async {
     final workspaceId = identity.workspaceId;
@@ -423,7 +422,8 @@ class PrConversationPollingService {
       if (target == null) {
         continue;
       }
-      if (!_seen.add('lb:$workspaceId:${pr.key}')) {
+      final seenKey = 'lb:$workspaceId:${pr.key}';
+      if (!_seen.add(seenKey)) {
         continue;
       }
       _dedupeDirty = true;
@@ -431,11 +431,14 @@ class PrConversationPollingService {
         continue;
       }
       try {
-        await _bridge.handleLabeledPullRequest(
-          workspaceId: workspaceId,
-          owner: target.owner,
-          repo: target.repo,
-          prNumber: target.prNumber,
+        _settle(
+          seenKey,
+          await _bridge.handleLabeledPullRequest(
+            workspaceId: workspaceId,
+            owner: target.owner,
+            repo: target.repo,
+            prNumber: target.prNumber,
+          ),
         );
       } on Object catch (e) {
         CcHostLog.warning(
@@ -526,7 +529,7 @@ class PrConversationPollingService {
           GitHubPrConversationBridge.isAutomatedReply(comment.body)) {
         continue;
       }
-      final seenKey = 'c:$workspaceId:${comment.id}';
+      final seenKey = 'ic:$workspaceId:${comment.id}';
       if (_seen.contains(seenKey)) {
         continue;
       }
@@ -545,19 +548,21 @@ class PrConversationPollingService {
       if (silent) {
         continue;
       }
-      await _bridge.handleInboundComment(
-        workspaceId: workspaceId,
-        owner: target.owner,
-        repo: target.repo,
-        prNumber: target.prNumber,
-        prTitle: target.prTitle,
-        comment: InboundGitHubPrComment(
-          id: comment.id,
-          body: comment.body,
-          authorId: comment.user?.id ?? 0,
-          authorLogin: comment.user?.login ?? '',
-          authorIsBot: false,
-          isReviewComment: false,
+      _settle(
+        seenKey,
+        await _bridge.handleInboundComment(
+          workspaceId: workspaceId,
+          owner: target.owner,
+          repo: target.repo,
+          prNumber: target.prNumber,
+          prTitle: target.prTitle,
+          comment: InboundGitHubPrComment(
+            id: comment.id,
+            body: comment.body,
+            authorId: comment.user?.id ?? 0,
+            authorLogin: comment.user?.login ?? '',
+            isReviewComment: false,
+          ),
         ),
       );
     }
@@ -567,7 +572,7 @@ class PrConversationPollingService {
           GitHubPrConversationBridge.isAutomatedReply(comment.body)) {
         continue;
       }
-      final seenKey = 'c:$workspaceId:${comment.id}';
+      final seenKey = 'rc:$workspaceId:${comment.id}';
       if (_seen.contains(seenKey)) {
         continue;
       }
@@ -584,23 +589,44 @@ class PrConversationPollingService {
       if (silent) {
         continue;
       }
-      await _bridge.handleInboundComment(
-        workspaceId: workspaceId,
-        owner: target.owner,
-        repo: target.repo,
-        prNumber: target.prNumber,
-        prTitle: target.prTitle,
-        comment: InboundGitHubPrComment(
-          id: comment.id,
-          body: comment.body,
-          authorId: comment.user?.id ?? 0,
-          authorLogin: comment.user?.login ?? '',
-          authorIsBot: false,
-          isReviewComment: true,
+      _settle(
+        seenKey,
+        await _bridge.handleInboundComment(
+          workspaceId: workspaceId,
+          owner: target.owner,
+          repo: target.repo,
+          prNumber: target.prNumber,
+          prTitle: target.prTitle,
+          comment: InboundGitHubPrComment(
+            id: comment.id,
+            body: comment.body,
+            authorId: comment.user?.id ?? 0,
+            authorLogin: comment.user?.login ?? '',
+            isReviewComment: true,
+          ),
+          isBotThread: inBotThread,
         ),
-        isBotThread: inBotThread,
       );
     }
+  }
+
+  /// Records what the bridge did with the invocation under [seenKey]. An
+  /// author no member is signed in as yet is offered again on the next
+  /// sweeps (their sign-in may simply not have been seen), at most
+  /// [_maxAuthorRetries] times; then the key stays seen for good.
+  void _settle(String seenKey, GitHubInboundOutcome outcome) {
+    if (outcome != GitHubInboundOutcome.authorUnknown) {
+      _authorRetries.remove(seenKey);
+      return;
+    }
+    final tries = (_authorRetries[seenKey] ?? 0) + 1;
+    if (tries > _maxAuthorRetries) {
+      _authorRetries.remove(seenKey);
+      return;
+    }
+    _authorRetries[seenKey] = tries;
+    _seen.remove(seenKey);
+    _dedupeDirty = true;
   }
 
   /// The ids of review comments that belong to a thread our bot participates
@@ -681,7 +707,17 @@ class PrConversationPollingService {
     final seen = decoded['seen'];
     if (seen is List) {
       for (final key in seen) {
-        if (key is String) {
+        if (key is! String) {
+          continue;
+        }
+        if (key.startsWith('c:')) {
+          // Before issue and review comment ids had their own namespaces one
+          // `c:` key covered both; it still suppresses either.
+          final rest = key.substring(2);
+          _seen
+            ..add('ic:$rest')
+            ..add('rc:$rest');
+        } else {
           _seen.add(key);
         }
       }
@@ -751,6 +787,13 @@ class _BoundedKeySet {
       _set.remove(_order.removeFirst());
     }
     return true;
+  }
+
+  /// Forgets [key], so it can be recorded again.
+  void remove(String key) {
+    if (_set.remove(key)) {
+      _order.remove(key);
+    }
   }
 
   /// Whether [key] was recorded.

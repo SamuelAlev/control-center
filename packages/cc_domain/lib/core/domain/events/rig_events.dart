@@ -67,7 +67,7 @@ class RigControlChanged implements DomainEvent {
   final DateTime occurredAt;
 }
 
-/// A rig was reaped for being idle or outliving its TTL.
+/// A rig was reaped: idle, past its TTL, or evicted for memory.
 ///
 /// Distinct from [RigClosedEvent] (which it accompanies) because "the system
 /// took your machine away" is worth surfacing differently from "it closed":
@@ -75,9 +75,8 @@ class RigControlChanged implements DomainEvent {
 ///
 /// Consumed by `RigEventListener` (steers the driving agent) and the
 /// notification wire. Memory-pressure eviction reports
-/// [RigCloseReason.idleTimeout] — the eviction sweep picks least-recently-used
-/// machines, so the reason it records is the one that made a rig a candidate,
-/// not "the host ran low".
+/// [RigCloseReason.memoryPressure]: the sweep picks the least recently used
+/// machine, which may have been in use a minute before.
 class RigReaped implements DomainEvent {
   /// Creates a [RigReaped].
   const RigReaped({

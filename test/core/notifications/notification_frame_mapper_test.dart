@@ -38,54 +38,6 @@ void main() {
       expect(n.route, contains('ws-1'));
     });
 
-    test('message_received suppresses someone else\'s requested run '
-        'but always notifies a mention', () {
-      const base = {
-        'space_id': 'ch-1',
-        'message_id': 'm-1',
-        'sender_name': 'Bot',
-        'content_preview': 'done',
-        'workspace_id': 'ws-1',
-        'is_agent_message': true,
-      };
-
-      // Someone else's run finishing is not mine — suppressed.
-      expect(
-        mapNotificationFrame(
-          'notifications/message_received',
-          {...base, 'requested_by_user_id': 'other-user'},
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNull,
-      );
-
-      // But an explicit @mention of me always notifies.
-      expect(
-        mapNotificationFrame(
-          'notifications/message_received',
-          {
-            ...base,
-            'requested_by_user_id': 'other-user',
-            'mentions': ['user:me'],
-          },
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNotNull,
-      );
-
-      // Unknown identity degrades to notify, never silently drops.
-      expect(
-        mapNotificationFrame(
-          'notifications/message_received',
-          base,
-          l10n: l10n,
-        ),
-        isNotNull,
-      );
-    });
-
     test("an agent's reply is the agent-finished notification; a mention is "
         'a new message', () {
       const reply = {
@@ -198,75 +150,6 @@ void main() {
             'workspace_id': 'ws-1',
           }, l10n: l10n);
       expect(n!.presentation, NotificationPresentation.banner);
-    });
-
-    test('human ticket assignment pings only the assignee', () {
-      const base = {
-        'ticket_id': 't-1',
-        'ticket_title': 'Fix the leak',
-        'workspace_id': 'ws-1',
-        'assignee_type': 'user',
-        'assigned_agent_id': 'teammate',
-      };
-      expect(
-        mapNotificationFrame(
-          'notifications/ticket_assigned',
-          base,
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNull,
-      );
-      expect(
-        mapNotificationFrame(
-          'notifications/ticket_assigned',
-          {...base, 'assigned_agent_id': 'me'},
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNotNull,
-      );
-    });
-
-    test('a rig take-over is not reported back to whoever took it', () {
-      const base = {
-        'rig_id': 'rig-1',
-        'workspace_id': 'ws-1',
-        'held': true,
-        'controller': 'user:me',
-      };
-      // I took the wheel — I know.
-      expect(
-        mapNotificationFrame(
-          'notifications/rig_control_changed',
-          base,
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNull,
-      );
-      // Somebody else took it — that is exactly what I need to be told.
-      final other = mapNotificationFrame(
-        'notifications/rig_control_changed',
-        {...base, 'controller': 'user:someone-else'},
-        l10n: l10n,
-        currentUserId: 'me',
-      );
-      expect(other, isNotNull);
-      expect(other!.category, NotificationCategory.rigStatusChanged);
-      // A rig has no destination of its own; the link lands on the
-      // running-machine list.
-      expect(other.route, '/workspaces/ws-1/settings/server/rigs');
-      // Unknown identity degrades to notify, never a silently dropped machine
-      // event.
-      expect(
-        mapNotificationFrame(
-          'notifications/rig_control_changed',
-          base,
-          l10n: l10n,
-        ),
-        isNotNull,
-      );
     });
 
     test('a rig control RELEASE is unfiltered (the event does not record '
@@ -611,48 +494,6 @@ void main() {
     });
   });
 
-  group('principal routing', () {
-    test('a frame addressed to someone else is dropped', () {
-      expect(
-        map('notifications/pr_ready_to_merge', const {
-          'reason': 'none',
-          'for_user_id': 'user-2',
-        }, currentUserId: 'user-1'),
-        isNull,
-      );
-    });
-
-    test('a frame addressed to me is kept', () {
-      expect(
-        map('notifications/pr_ready_to_merge', const {
-          'reason': 'none',
-          'for_user_id': 'user-1',
-        }, currentUserId: 'user-1'),
-        isNotNull,
-      );
-    });
-
-    test('an older server sending no for_user_id still notifies', () {
-      // Degrade to notifying: silently swallowing is the worse failure.
-      expect(
-        map('notifications/pr_ready_to_merge', const {
-          'reason': 'none',
-        }, currentUserId: 'user-1'),
-        isNotNull,
-      );
-    });
-
-    test('an unresolved identity still notifies', () {
-      expect(
-        map('notifications/pr_ready_to_merge', const {
-          'reason': 'none',
-          'for_user_id': 'user-2',
-        }),
-        isNotNull,
-      );
-    });
-  });
-
   group('muted repositories', () {
     test('a muted repo is suppressed', () {
       expect(
@@ -716,27 +557,6 @@ void main() {
   });
 
   group('self-authored actions', () {
-    test('my own message does not ping me, even if I mentioned myself', () {
-      expect(
-        mapNotificationFrame(
-          'notifications/message_received',
-          const {
-            'space_id': 'ch-1',
-            'message_id': 'm-1',
-            'sender_name': 'Ada',
-            'content_preview': 'note to self',
-            'workspace_id': 'ws-1',
-            'is_agent_message': false,
-            'mentions': ['user:me'],
-            'sender_user_id': 'me',
-          },
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNull,
-      );
-    });
-
     test("a teammate's message mentioning me still pings", () {
       expect(
         mapNotificationFrame(
@@ -750,26 +570,6 @@ void main() {
             'is_agent_message': false,
             'mentions': ['user:me'],
             'sender_user_id': 'grace',
-          },
-          l10n: l10n,
-          currentUserId: 'me',
-        ),
-        isNotNull,
-      );
-    });
-
-    test('an older server sending no sender_user_id still notifies', () {
-      expect(
-        mapNotificationFrame(
-          'notifications/message_received',
-          const {
-            'space_id': 'ch-1',
-            'message_id': 'm-1',
-            'sender_name': 'Grace',
-            'content_preview': 'take a look?',
-            'workspace_id': 'ws-1',
-            'is_agent_message': false,
-            'mentions': ['user:me'],
           },
           l10n: l10n,
           currentUserId: 'me',

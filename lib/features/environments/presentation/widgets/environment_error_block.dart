@@ -72,9 +72,7 @@ class EnvironmentErrorBlock extends ConsumerWidget {
     // What to read next: the part that broke, else the first thing that runs.
     final parts = environment.components.where((part) => part.kind != 'task');
     final logs =
-        parts
-            .where((part) => const {'failed', 'crashed'}.contains(part.state))
-            .firstOrNull ??
+        parts.where((part) => part.phase?.isFailed ?? false).firstOrNull ??
         parts.firstOrNull;
     final actions = Wrap(
       spacing: AppSpacing.xs,

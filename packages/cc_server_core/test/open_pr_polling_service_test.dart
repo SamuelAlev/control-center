@@ -78,6 +78,12 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   /// Repo ids probed, in order (across sweeps).
   final List<String> probedRepoIds = [];
 
+  /// The ETag each probe was sent, in order (across sweeps).
+  final List<String?> probedEtags = [];
+
+  /// The repo ids each `fetchGroups` call asked for, in call order.
+  final List<List<String>> fetchedRepoIds = [];
+
   /// Scripted group results (whatever `fetchGroups` should return next).
   List<OpenPrGroup> groups = [];
 
@@ -114,6 +120,7 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   }) async {
     probeCalls++;
     probedRepoIds.add(repo.id);
+    probedEtags.add(etag);
     final error = probeErrors[repo.id];
     if (error != null) {
       throw error;
@@ -127,6 +134,7 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
     String? workspaceId,
   }) async {
     fetchGroupsCalls++;
+    fetchedRepoIds.add([for (final r in repos) r.id]);
     final gate = fetchGroupsGate;
     if (gate != null) {
       await gate.future;
@@ -1341,6 +1349,66 @@ void main() {
       );
     });
 
+    test('a failed lookup backs off instead of re-asking every feed wake-up, '
+        'and a forced refresh retries at once', () async {
+      port.unavailableHistoryBranches.add('f1');
+      Future<bool> complete() async => (await poller.prsForHeadBranch(
+        workspaceId: 'ws1',
+        repo: repo1,
+        branch: 'f1',
+      )).complete;
+
+      expect(await complete(), false);
+      expect(port.branchHistoryCalls, 1);
+      for (var i = 0; i < 20; i++) {
+        expect(await complete(), false);
+      }
+      expect(
+        port.branchHistoryCalls,
+        1,
+        reason: 'every space feed wake-up inside the window reuses the failure',
+      );
+
+      now = now.add(OpenPrPollingService.branchHistoryRetryBase);
+      expect(await complete(), false);
+      expect(port.branchHistoryCalls, 2, reason: 'the first wait elapsed');
+
+      now = now.add(OpenPrPollingService.branchHistoryRetryBase);
+      expect(await complete(), false);
+      expect(port.branchHistoryCalls, 2, reason: 'the second wait doubled');
+      now = now.add(OpenPrPollingService.branchHistoryRetryBase);
+      expect(await complete(), false);
+      expect(port.branchHistoryCalls, 3);
+
+      for (var i = 0; i < 10; i++) {
+        now = now.add(OpenPrPollingService.branchHistoryRefreshInterval);
+        await complete();
+      }
+      final capped = port.branchHistoryCalls;
+      now = now.add(OpenPrPollingService.branchHistoryRefreshInterval);
+      await complete();
+      expect(
+        port.branchHistoryCalls,
+        capped + 1,
+        reason: 'the wait never grows past the refresh interval',
+      );
+
+      await poller.refreshNow('ws1');
+      expect(await complete(), false);
+      expect(port.branchHistoryCalls, capped + 2, reason: 'forced refresh');
+
+      port.unavailableHistoryBranches.clear();
+      await poller.refreshNow('ws1');
+      expect(await complete(), true);
+      final recovered = port.branchHistoryCalls;
+      expect(await complete(), true);
+      expect(
+        port.branchHistoryCalls,
+        recovered,
+        reason: 'a success is cached for the refresh interval as before',
+      );
+    });
+
     test(
       'finds a PR opened and merged between unchanged open-list probes',
       () async {
@@ -1566,7 +1634,7 @@ void main() {
     late List<StreamSubscription<Object>> subs;
 
     /// A poller that knows who the operator is. The default one in `setUp`
-    /// deliberately has no `viewerLoginFor`, which is what keeps every other
+    /// deliberately has no `memberLoginsFor`, which is what keeps every other
     /// test in this file free of these lanes.
     void buildPoller({String viewer = 'u'}) {
       authored = OpenPrPollingService(
@@ -1576,8 +1644,7 @@ void main() {
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
-        viewerLoginFor: (_) async => viewer,
-        forUserId: 'user-1',
+        memberLoginsFor: (_, _) async => {'user-1': viewer},
         now: () => now,
       );
     }
@@ -1968,6 +2035,216 @@ void main() {
         events.whereType<PrMergeReadinessChanged>().where((e) => e.ready),
         isEmpty,
       );
+    });
+
+    test('an event goes to the member who authored the PR', () async {
+      authored.dispose();
+      authored = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        memberLoginsFor: (_, _) async => {'user-1': 'u', 'user-2': 'Bea'},
+        now: () => now,
+      );
+      await sweep([
+        _pr(1, checks: 'passing'),
+        _pr(2, author: 'bea', checks: 'passing'),
+      ]);
+      await sweep([
+        _pr(1, checks: 'failing'),
+        _pr(2, author: 'bea', checks: 'failing'),
+      ]);
+      final byPr = {
+        for (final e in events.whereType<PrChecksStatusChanged>())
+          e.prNumber: e.forUserId,
+      };
+      expect(byPr, {1: 'user-1', 2: 'user-2'});
+    });
+  });
+
+  group('per-repo sweep bookkeeping', () {
+    final repo2 = _repo('r2');
+    late OpenPrPollingService twoRepoPoller;
+
+    setUp(() {
+      workspaces.reposByWs['ws1'] = [repo1, repo2];
+      twoRepoPoller = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        now: () => now,
+      );
+    });
+
+    tearDown(() => twoRepoPoller.dispose());
+
+    test('an ETag is stored only once the fetch has read the list', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+      ];
+      port.probeResults[repo1.id] = (changed: true, etag: 'e1');
+      await twoRepoPoller.refreshNow('ws1');
+
+      // The list moved, but the fetch did not answer for r1.
+      now = now.add(const Duration(minutes: 5));
+      port.probeResults[repo1.id] = (changed: true, etag: 'e2');
+      port.unresolvedRepoIds = {repo1.id};
+      await twoRepoPoller.pollSoon('ws1');
+
+      // The next probe must still send e1, so it answers 200 and retries.
+      now = now.add(const Duration(minutes: 5));
+      port.probedEtags.clear();
+      port.probedRepoIds.clear();
+      port.unresolvedRepoIds = {};
+      await twoRepoPoller.pollSoon('ws1');
+      final sent = {
+        for (var i = 0; i < port.probedRepoIds.length; i++)
+          port.probedRepoIds[i]: port.probedEtags[i],
+      };
+      expect(sent[repo1.id], 'e1');
+    });
+
+    test('only the repos whose list moved are fetched', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo2, prs: [_pr(2)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      expect(port.fetchedRepoIds.last, unorderedEquals([repo1.id, repo2.id]));
+
+      now = now.add(const Duration(minutes: 5));
+      port.probeResults[repo2.id] = (changed: true, etag: 'e2');
+      await twoRepoPoller.pollSoon('ws1');
+      expect(port.fetchedRepoIds.last, [repo2.id]);
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), [
+        1,
+      ], reason: 'the unfetched repo keeps its entry');
+    });
+
+    test(
+      'unconfirmed terminals are retried even when a repo changed',
+      () async {
+        port.groups = [
+          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        ];
+        await twoRepoPoller.refreshNow('ws1');
+        now = now.add(const Duration(minutes: 5));
+        port.unknownNumbers.add(2);
+        port.groups = [
+          (repo: repo1, prs: [_pr(1)], hasMore: false),
+        ];
+        await twoRepoPoller.refreshNow('ws1');
+
+        final events = <PullRequestStatusChanged>[];
+        final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+        // r2 changes every sweep (a forge without conditional requests).
+        port.probeResults[repo2.id] = (changed: true, etag: null);
+        port.unknownNumbers.clear();
+        port.mergedNumbers.add(2);
+        now = now.add(const Duration(minutes: 5));
+        await twoRepoPoller.pollSoon('ws1');
+        await pump();
+        expect(events.map((e) => (e.prNumber, e.status)), [(2, 'merged')]);
+        await sub.cancel();
+      },
+    );
+
+    test('a PR missing from a partial page is not reported closed', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: true),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      final events = <PullRequestStatusChanged>[];
+      final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+
+      // #2 was pushed off page 1; the forge says it is still open (null).
+      now = now.add(const Duration(minutes: 5));
+      port.unknownNumbers.add(2);
+      port.groups = [
+        (repo: repo1, prs: [_pr(3), _pr(1)], hasMore: true),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      await pump();
+
+      expect(events, isEmpty);
+      final snapshot = await _readSnapshot(db);
+      expect(snapshot['terminal_prs'] as List, isEmpty);
+      await sub.cancel();
+    });
+
+    test('a repo linked later is baselined on its own first read', () async {
+      workspaces.reposByWs['ws1'] = [repo1];
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+
+      final events = <ExternalPrDetected>[];
+      final sub = bus.on<ExternalPrDetected>().listen(events.add);
+      workspaces.reposByWs['ws1'] = [repo1, repo2];
+      now = now.add(const Duration(minutes: 5));
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo2, prs: [_pr(5), _pr(6)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      await pump();
+      expect(events, isEmpty, reason: 'pre-existing PRs of a new link');
+
+      now = now.add(const Duration(minutes: 5));
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo2, prs: [_pr(5), _pr(6), _pr(7)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      await pump();
+      expect(events.map((e) => e.prNumber), [7]);
+      await sub.cancel();
+    });
+
+    test('an unlinked repo leaves the snapshot', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo2, prs: [_pr(2)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      workspaces.reposByWs['ws1'] = [repo1];
+      now = now.add(const Duration(minutes: 5));
+      await twoRepoPoller.pollSoon('ws1');
+
+      final snapshot = await _readSnapshot(db);
+      expect(_numbersOf(snapshot, 'o/r2'), isEmpty);
+      expect(_numbersOf(snapshot, 'o/r1'), [1]);
+      expect(snapshot['baselined_repo_ids'], [repo1.id]);
+    });
+
+    test('merged/closed history ages out', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      port.mergedNumbers.add(2);
+      now = now.add(const Duration(minutes: 5));
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      expect((await _readSnapshot(db))['terminal_prs'] as List, hasLength(1));
+
+      now = now.add(
+        OpenPrPollingService.terminalRetention + const Duration(days: 1),
+      );
+      port.groups = [
+        (repo: repo1, prs: [_pr(1), _pr(3)], hasMore: false),
+      ];
+      await twoRepoPoller.refreshNow('ws1');
+      expect((await _readSnapshot(db))['terminal_prs'] as List, isEmpty);
     });
   });
 }

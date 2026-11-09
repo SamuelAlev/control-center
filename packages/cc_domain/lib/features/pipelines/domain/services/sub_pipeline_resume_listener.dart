@@ -6,8 +6,9 @@ import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
 
-/// Listens for child-run completion and resumes the parent `flow.callPipeline`
-/// step. Mirrors `TaskResumeListener` but for sub-pipeline composition.
+/// Listens for child-run terminal events (completed, failed **or cancelled**)
+/// and resumes the parent `flow.callPipeline` step. Mirrors
+/// `TaskResumeListener` but for sub-pipeline composition.
 class SubPipelineResumeListener {
   /// Creates a [SubPipelineResumeListener].
   SubPipelineResumeListener({
@@ -23,7 +24,7 @@ class SubPipelineResumeListener {
   final PipelineEngine engine;
 
   /// Run repository to look up the completed child run + its parent link.
-  final PipelineRunRepository repository;
+  final PipelineRunReader repository;
 
   StreamSubscription<DomainEvent>? _sub;
 
@@ -36,6 +37,11 @@ class SubPipelineResumeListener {
     final runId = switch (event) {
       PipelineRunCompleted() => event.pipelineRunId,
       PipelineRunFailed() => event.pipelineRunId,
+      // A cancelled child must settle its parent too: left out, the parent
+      // step sat `running` until the liveness backstop, which skips approval
+      // gates. `resumeChildFlow` fails the parent step on any non-completed
+      // child, so the step's retry / continueOnFail policy decides what next.
+      PipelineRunCancelled() => event.pipelineRunId,
       _ => null,
     };
     if (runId == null) {

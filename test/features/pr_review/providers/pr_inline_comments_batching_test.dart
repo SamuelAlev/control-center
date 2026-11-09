@@ -116,6 +116,7 @@ const _prRef = (
   workspaceId: 'ws1',
   repoFullName: 'acme/control-center',
   number: 7,
+  forge: null,
 );
 
 ProviderContainer _container(PrReviewRepository repository) {

@@ -65,16 +65,18 @@ class _HangingStarter extends PrReviewStarter {
     ReviewLevel? level,
   }) {
     starts++;
-    state = {
-      ...state,
-      (repoFullName: pr.repoFullName, prNumber: pr.number),
-    };
+    state = {...state, (repoFullName: pr.repoFullName, prNumber: pr.number)};
     return completer.future;
   }
 }
 
 /// The PR identity PrDetailActions is keyed by in this suite.
-const _prRef = (workspaceId: 'ws-1', repoFullName: 'test/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws-1',
+  repoFullName: 'test/repo',
+  number: 42,
+  forge: null,
+);
 
 void main() {
   testWidgets('Ask AI opens the review tab immediately, not when the start '
@@ -98,8 +100,12 @@ void main() {
           // No detected editor, so the Open-in-IDE split button renders
           // nothing and the row is the refresh control + the overflow menu.
           installedEditorsProvider.overrideWith((ref) async => const []),
-          prCheckRunsProvider(_prRef).overrideWith((ref) => Stream.value(const [])),
-          prReviewsProvider(_prRef).overrideWith((ref) => Stream.value(const [])),
+          prCheckRunsProvider(
+            _prRef,
+          ).overrideWith((ref) => Stream.value(const [])),
+          prReviewsProvider(
+            _prRef,
+          ).overrideWith((ref) => Stream.value(const [])),
           activeWorkspaceProvider.overrideWithValue(
             Workspace(
               id: 'ws-1',

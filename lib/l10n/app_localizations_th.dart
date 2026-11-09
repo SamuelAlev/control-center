@@ -9,6 +9,15 @@ class AppLocalizationsTh extends AppLocalizations {
   AppLocalizationsTh([String locale = 'th']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'ส่งตอนนี้ไม่ได้: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'ไม่ได้ส่งคำตอบของคุณ อาจมีการตอบไปแล้ว หรือเอเจนต์หยุดรอแล้ว';
+
+  @override
   String get succeeded => 'สำเร็จ';
 
   @override
@@ -2588,10 +2597,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get addGif => 'เพิ่ม GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'เพิ่มรีโพสิทอรี GitHub อย่างน้อยหนึ่งรายการเพื่อดู pull request';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5869,9 +5874,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get pipelineStepDurationLabel => 'ระยะเวลา';
 
   @override
-  String get pipelineStepBranch => 'สาขา';
-
-  @override
   String get pipelineStepViewConversation => 'ดูการสนทนา';
 
   @override
@@ -6948,14 +6950,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get reviewRequested => 'ขอรีวิวแล้ว';
 
   @override
-  String get connectGitHubHint =>
-      'ลงชื่อเข้าใช้ GitHub ที่ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'เชื่อมต่อ GitHub เพื่อโหลด pull request';
-
-  @override
   String get noRepositoriesConfigured => 'ยังไม่ได้ตั้งค่ารีโพสิทอรี';
 
   @override
@@ -7610,13 +7604,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get createAsDraft => 'สร้างเป็นฉบับร่าง';
-
-  @override
-  String get composePrNoRepo => 'ยังไม่ได้เลือกรีโพสิทอรี GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'เลือกเวิร์กสเปซที่มีรีโพสิทอรีลิงก์ GitHub เพื่อเปิด pull request';
 
   @override
   String get composePrPickBranches =>
@@ -16665,6 +16652,27 @@ class AppLocalizationsTh extends AppLocalizations {
       'รหัสนี้ไม่ตรงกับการลงชื่อเข้าใช้นี้ ตรวจสอบแล้วลองอีกครั้ง';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'ใส่รหัสผิดหลายครั้งเกินไป เริ่มการลงชื่อเข้าใช้ใหม่';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'การลงชื่อเข้าใช้นี้ใช้ไม่ได้แล้ว เริ่มใหม่อีกครั้ง';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'เซิร์ฟเวอร์อ่านคำขอลงชื่อเข้าใช้นี้ไม่ได้ เริ่มใหม่อีกครั้ง';
+
+  @override
+  String get signInErrorRateLimited =>
+      'มีการพยายามลงชื่อเข้าใช้มากเกินไปในขณะนี้ รอหนึ่งนาทีแล้วลองอีกครั้ง';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider ยอมรับการลงชื่อเข้าใช้แล้ว แต่เซิร์ฟเวอร์บันทึกไม่ได้ ลองอีกครั้ง';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider ไม่ตอบสนองในขณะนี้ ลองอีกครั้งในอีกไม่กี่นาที';
   }
@@ -16695,7 +16703,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'เวิร์กสเปซ Linear นี้เชื่อมต่อกับเซิร์ฟเวอร์ Control Center อื่นอยู่แล้ว';
+      'เวิร์กสเปซ Slack นี้เชื่อมต่อกับเซิร์ฟเวอร์ Control Center อื่นอยู่แล้ว';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17129,4 +17137,37 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'สลับแอป';
+
+  @override
+  String openOnForge(String forge) {
+    return 'เปิดใน $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'แสดง $count ไฟล์แรก $forge ไม่แสดงรายการไฟล์ที่เหลือ';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => 'เชื่อมต่อโฮสต์โค้ดเพื่อโหลดพูลรีเควสต์';
+
+  @override
+  String get connectForgeHint =>
+      'เชื่อมต่อ GitHub, GitLab หรือ Bitbucket ที่ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'เพิ่มที่เก็บอย่างน้อยหนึ่งรายการบน GitHub, GitLab หรือ Bitbucket เพื่อดูพูลรีเควสต์';
+
+  @override
+  String get composePrNoForgeRepo => 'ไม่ได้เลือกที่เก็บที่โฮสต์ไว้';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'เลือกเวิร์กสเปซที่มีที่เก็บบน GitHub, GitLab หรือ Bitbucket เพื่อเปิดพูลรีเควสต์';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'เชื่อมต่อ $forge เพื่อเปิดพูลรีเควสต์ในที่เก็บนี้';
+  }
 }

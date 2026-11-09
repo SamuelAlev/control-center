@@ -319,6 +319,96 @@ void main() {
     });
   });
 
+  group('refresh races', () {
+    ProviderToken expired() => _githubSignIn(
+      'ghu_stale',
+      expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+    );
+
+    test(
+      'a refused refresh never clears a sign-in that landed meanwhile',
+      () async {
+        final creds = build();
+        await users.setForgeToken(alice, ForgeHost.github, expired());
+        creds.refreshUserToken = (userId, forge, stale, {workspaceId}) async {
+          await users.setForgeToken(
+            alice,
+            ForgeHost.github,
+            _githubSignIn('ghu_newer', refresh: 'ghr_newer'),
+          );
+          return const RefreshRejected();
+        };
+
+        expect(
+          await creds.tokenFor(ForgeHost.github, userId: alice),
+          'ghu_newer',
+        );
+        expect(
+          (await users.forgeToken(alice, ForgeHost.github))?.accessToken,
+          'ghu_newer',
+        );
+      },
+    );
+
+    test(
+      'a renewal of the older grant never overwrites a newer sign-in',
+      () async {
+        final creds = build();
+        await users.setForgeToken(alice, ForgeHost.github, expired());
+        creds.refreshUserToken = (userId, forge, stale, {workspaceId}) async {
+          await users.setForgeToken(
+            alice,
+            ForgeHost.github,
+            _githubSignIn('ghu_newer', refresh: 'ghr_newer'),
+          );
+          return Refreshed(_githubSignIn('ghu_renewed'));
+        };
+
+        expect(
+          await creds.tokenFor(ForgeHost.github, userId: alice),
+          'ghu_newer',
+        );
+        expect(
+          (await users.forgeToken(alice, ForgeHost.github))?.refreshToken,
+          'ghr_newer',
+        );
+      },
+    );
+
+    test('a sign-out during the refresh stays signed out', () async {
+      final creds = build();
+      await users.setForgeToken(alice, ForgeHost.github, expired());
+      creds.refreshUserToken = (userId, forge, stale, {workspaceId}) async {
+        await users.clearForgeToken(alice, ForgeHost.github);
+        return Refreshed(_githubSignIn('ghu_renewed'));
+      };
+
+      expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
+      expect(await users.forgeToken(alice, ForgeHost.github), isNull);
+    });
+
+    test('a later caller reuses the renewal instead of spending the old '
+        'refresh token again', () async {
+      final creds = build();
+      await users.setForgeToken(alice, ForgeHost.github, expired());
+      final spent = <String>[];
+      creds.refreshUserToken = (userId, forge, stale, {workspaceId}) async {
+        spent.add(stale.refreshToken);
+        return Refreshed(_githubSignIn('ghu_fresh', refresh: 'ghr_next'));
+      };
+
+      expect(
+        await creds.tokenFor(ForgeHost.github, userId: alice),
+        'ghu_fresh',
+      );
+      expect(
+        await creds.tokenFor(ForgeHost.github, userId: alice),
+        'ghu_fresh',
+      );
+      expect(spent, ['ghr_refresh']);
+    });
+  });
+
   group('Connect seals', () {
     ProviderToken sealed({String installId = 'inst-1'}) => ProviderToken(
       seal: 'sealed-blob',
@@ -361,6 +451,40 @@ void main() {
         UserCredentialsStore.forgeKey(ForgeHost.github, alice),
       );
       expect(onDisk, isNot(contains('ghu_live')));
+    });
+
+    test('a rotated seal the disk refuses is still served, not lost', () async {
+      final creds = build()..currentSealInstallId = (origin) async => 'inst-1';
+      await users.setForgeToken(alice, ForgeHost.github, sealed());
+      var refreshes = 0;
+      creds.refreshUserToken = (userId, forge, stale, {workspaceId}) async {
+        refreshes++;
+        return Refreshed(
+          stale.copyWith(
+            seal: 'sealed-blob-2',
+            accessToken: 'ghu_live',
+            expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
+          ),
+        );
+      };
+      Process.runSync('chmod', ['500', dir.path]);
+      try {
+        expect(
+          await creds.tokenFor(ForgeHost.github, userId: alice),
+          'ghu_live',
+        );
+      } finally {
+        Process.runSync('chmod', ['700', dir.path]);
+      }
+      expect(await creds.tokenFor(ForgeHost.github, userId: alice), 'ghu_live');
+      expect(refreshes, 1, reason: 'the spent parent is never sent again');
+
+      // The next write saves it.
+      await users.setForgeToken(bob, ForgeHost.github, sealed());
+      final onDisk = await FileSecretsStore(
+        dataDir: dir.path,
+      ).readFresh(UserCredentialsStore.forgeKey(ForgeHost.github, alice));
+      expect(onDisk, contains('sealed-blob-2'));
     });
   });
 
@@ -424,7 +548,7 @@ void main() {
     });
   });
 
-  group('testConnection', () {
+  group('setToken probes the new token', () {
     test('resolves the viewer and caches it', () async {
       var probes = 0;
       final creds = build(
@@ -433,10 +557,9 @@ void main() {
           return 'resolved-user';
         },
       );
-      await creds.setToken(ForgeHost.gitlab, 'gl', userId: alice);
-
-      final result = await creds.testConnection(
+      final result = await creds.setToken(
         ForgeHost.gitlab,
+        'gl',
         userId: alice,
       );
       expect(result.authenticated, isTrue);
@@ -452,10 +575,9 @@ void main() {
       'a rejected credential reports unauthenticated with a reason',
       () async {
         final creds = build(viewerProbe: (forge, token) async => null);
-        await creds.setToken(ForgeHost.gitlab, 'bad', userId: alice);
-
-        final result = await creds.testConnection(
+        final result = await creds.setToken(
           ForgeHost.gitlab,
+          'bad',
           userId: alice,
         );
         expect(result.authenticated, isFalse);
@@ -504,11 +626,16 @@ void main() {
       },
     );
 
-    test('the revision bumps on every credential change', () async {
+    test('every credential change is announced on changes', () async {
       final creds = build();
-      final before = creds.revision;
+      final seen = <ForgeCredentialChange>[];
+      creds.changes.listen(seen.add);
       await creds.setToken(ForgeHost.gitlab, 'x', userId: alice);
-      expect(creds.revision, greaterThan(before));
+      await creds.clearToken(ForgeHost.gitlab, userId: alice);
+      expect(seen, hasLength(2));
+      expect(seen.first.forge, ForgeHost.gitlab);
+      expect(seen.first.userId, alice);
+      expect(seen.first.workspaceId, isNull);
     });
 
     test('storing without any user is refused', () async {

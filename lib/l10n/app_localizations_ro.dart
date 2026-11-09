@@ -9,6 +9,15 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Nu s-a putut trimite acum: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Răspunsul tău nu a fost livrat. Poate a primit deja un răspuns sau agentul nu mai așteaptă.';
+
+  @override
   String get succeeded => 'Reușit';
 
   @override
@@ -2631,10 +2640,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get addGif => 'Adaugă GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Adaugă cel puțin un depozit GitHub ca să vezi pull request-uri';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5973,9 +5978,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Durată';
 
   @override
-  String get pipelineStepBranch => 'Ramură';
-
-  @override
   String get pipelineStepViewConversation => 'Vezi conversația';
 
   @override
@@ -7080,14 +7082,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get reviewRequested => 'Revizuire solicitată';
 
   @override
-  String get connectGitHubHint =>
-      'Autentifică-te pe GitHub în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Conectează GitHub ca să încarci pull request-uri';
-
-  @override
   String get noRepositoriesConfigured => 'Niciun depozit configurat';
 
   @override
@@ -7754,13 +7748,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Creează ca ciornă';
-
-  @override
-  String get composePrNoRepo => 'Niciun depozit GitHub selectat';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Selectează un spațiu de lucru cu un depozit legat de GitHub ca să deschizi un pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -17003,6 +16990,27 @@ class AppLocalizationsRo extends AppLocalizations {
       'Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Prea multe coduri greșite. Pornește din nou autentificarea.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Această autentificare nu mai este validă. Pornește-o din nou.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Serverul nu a putut citi această cerere de autentificare. Pornește-o din nou.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Prea multe încercări de autentificare acum. Așteaptă un minut, apoi încearcă din nou.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider a acceptat autentificarea, dar serverul nu a putut-o salva. Încearcă din nou.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider nu răspunde acum. Încearcă din nou peste câteva minute.';
   }
@@ -17033,7 +17041,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Acest spațiu Linear este deja conectat la alt server Control Center.';
+      'Acest spațiu Slack este deja conectat la alt server Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17468,4 +17476,38 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Schimbă aplicația';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Deschide pe $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Se afișează primele $count fișiere. $forge nu le listează pe celelalte.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Conectează un serviciu de găzduire de cod pentru a încărca pull request-urile';
+
+  @override
+  String get connectForgeHint =>
+      'Conectează GitHub, GitLab sau Bitbucket în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Adaugă cel puțin un depozit pe GitHub, GitLab sau Bitbucket pentru a vedea pull request-uri';
+
+  @override
+  String get composePrNoForgeRepo => 'Niciun depozit găzduit selectat';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Selectează un spațiu de lucru cu un depozit pe GitHub, GitLab sau Bitbucket pentru a deschide un pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Conectează $forge pentru a deschide un pull request în acest depozit';
+  }
 }

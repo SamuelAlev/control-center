@@ -5,7 +5,8 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
-import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
+import 'package:cc_infra/cc_infra.dart'
+    show ForgeCredentialUnavailable, GitHubAppClient;
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/connect_settings.dart';
@@ -144,7 +145,7 @@ void main() {
     try {
       await call;
     } on GitHubScopeRefused catch (e) {
-      return e.code;
+      return e.code.wire;
     }
     fail('expected GitHubScopeRefused');
   }
@@ -209,8 +210,66 @@ void main() {
     },
   );
 
+  group(
+    'an automation request with no credential is never sent anonymously',
+    () {
+      Future<int> status(
+        GitHubClients github,
+        String url, {
+        String method = 'GET',
+      }) async {
+        try {
+          await github.tokenForRequest(
+            workspaceId,
+            'acme',
+            method: method,
+            url: url,
+          );
+        } on ForgeCredentialUnavailable catch (e) {
+          return e.statusCode;
+        }
+        fail('expected ForgeCredentialUnavailable');
+      }
+
+      test('a refused mint reads as GitHub hiding the repo', () async {
+        final github = await clients(member: 'alice');
+        expect(await status(github, '/repos/acme/secrets/pulls'), 404);
+      });
+
+      test('nobody signed in reads as unauthenticated', () async {
+        final github = await clients(member: null);
+        expect(await status(github, '/repos/acme/api/pulls'), 401);
+        expect(await status(github, '/graphql', method: 'POST'), 401);
+      });
+
+      test('another owner gets nothing from this client', () async {
+        final github = await clients(member: 'alice');
+        expect(await status(github, '/repos/other/api/pulls'), 404);
+        expect(appRequests, isEmpty);
+      });
+    },
+  );
+
   test('with no GitHub lane, a link has nothing to check', () async {
     final github = await clients(ownApp: false, member: 'alice');
     await github.verifyLink(workspaceId, 'alice', 'acme', 'api');
+  });
+
+  test('a dot segment is never linked, lane or not', () async {
+    for (final ownApp in [false, true]) {
+      final github = await clients(ownApp: ownApp, member: 'alice');
+      for (final (owner, repo) in [
+        ('..', 'api'),
+        ('acme', '.'),
+        ('acme', '%2e%2e'),
+        ('acme', 'a/b'),
+      ]) {
+        expect(
+          await refusal(github.verifyLink(workspaceId, 'alice', owner, repo)),
+          'invalid_request',
+          reason: '$owner/$repo with ownApp: $ownApp',
+        );
+      }
+    }
   });
 }

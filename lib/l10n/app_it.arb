@@ -1,4 +1,6 @@
 {
+  "steeringForceSendFailed": "Impossibile inviarlo ora: {error}",
+  "questionAnswerNotDelivered": "La tua risposta non è stata consegnata. Potrebbe essere già stata data una risposta, oppure l'agente ha smesso di attendere.",
   "succeeded": "Completato",
   "agentRunRetryLabel": "Nuovo tentativo n. {number} · {time}",
   "agentRunStarting": "Avvio · {time}",
@@ -945,7 +947,6 @@
   "addressBarHint": "Inserisci un URL",
   "addFromFile": "Aggiungi da file",
   "addGif": "Aggiungi GIF",
-  "addGithubRepoPrompt": "Aggiungi almeno una repository GitHub per vedere le pull request",
   "addLocalCheckoutDescription": "Aggiungi un checkout locale per iniziare a puntarlo da questo spazio di lavoro.",
   "@addLocalCheckoutDescription": {
     "description": "Add a local checkout to start targeting it from this workspace."
@@ -3320,13 +3321,9 @@
   "@pipelineStepDurationLabel": {
     "description": "Step detail label: run duration"
   },
-  "pipelineStepBranch": "Ramo",
   "pipelineStepViewConversation": "Vedi conversazione",
   "@pipelineStepViewConversation": {
     "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
-  },
-  "@pipelineStepBranch": {
-    "description": "Step detail label: parallel branch index"
   },
   "pipelineStepError": "Errore",
   "@pipelineStepError": {
@@ -3715,8 +3712,6 @@
   "agentQuestionTimeLeft": "Tempo rimanente per rispondere",
   "agentQuestionFreeformOptionHint": "Descrivi con parole tue…",
   "reviewRequested": "Revisione richiesta",
-  "connectGitHubHint": "Accedi a GitHub in Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice",
-  "connectGitHubToLoadPrs": "Collega GitHub per caricare le pull request",
   "noRepositoriesConfigured": "Nessun repository configurato",
   "openedAgo": "Aperto {age}",
   "prTimelineOpened": "{author} ha aperto questa pull request",
@@ -3880,8 +3875,6 @@
   "openPullRequest": "Apri una pull request",
   "composePrSubtitle": "Da un branch che hai pushato — senza agenti né ticket",
   "createAsDraft": "Crea come bozza",
-  "composePrNoRepo": "Nessun repository GitHub selezionato",
-  "composePrNoRepoHint": "Seleziona uno spazio di lavoro con un repository collegato a GitHub per aprire una pull request.",
   "composePrPickBranches": "Scegli un branch di base e uno da confrontare per visualizzare l'anteprima delle modifiche.",
   "composePrNothingToCompare": "Non ci sono modifiche tra questi branch.",
   "repository": "Repository",
@@ -8280,13 +8273,18 @@
   "signInErrorAccessDenied": "L'accesso a {provider} è stato annullato o negato.",
   "signInErrorScopeMismatch": "{provider} ha concesso meno autorizzazioni di quelle che servono a Control Center. Accedi di nuovo e approva tutte le autorizzazioni.",
   "signInErrorInvalidCode": "Questo codice non corrisponde a questo accesso. Controllalo e riprova.",
+  "signInErrorTooManyCodes": "Troppi codici errati. Avvia di nuovo l'accesso.",
+  "signInErrorStaleRequest": "Questo accesso non è più valido. Avvialo di nuovo.",
+  "signInErrorInvalidRequest": "Il server non è riuscito a leggere questa richiesta di accesso. Avviala di nuovo.",
+  "signInErrorRateLimited": "Troppi tentativi di accesso in questo momento. Attendi un minuto, poi riprova.",
+  "signInErrorStoreFailed": "{provider} ha accettato l'accesso, ma il server non è riuscito a salvarlo. Riprova.",
   "signInErrorProviderUnavailable": "{provider} non risponde al momento. Riprova tra qualche minuto.",
   "signInErrorExchangeFailed": "{provider} ha accettato l'accesso, ma il server non è riuscito a completarlo. Riprova.",
   "signInErrorMisconfigured": "L'app {provider} di questo server è configurata in modo errato. Chiedi al proprietario del server di controllare Impostazioni → Server → Accesso single sign-on.",
   "signInErrorNeedsSignIn": "Il tuo accesso a {provider} è scaduto. Accedi di nuovo per continuare a lavorare a tuo nome.",
   "signInErrorNotInstalled": "L'app {provider} non è installata dove serve. Installala e riprova.",
   "signInErrorInstallationBoundElsewhere": "Questa installazione dell'app GitHub è già autorizzata per un altro server Control Center.",
-  "signInErrorTeamBoundElsewhere": "Questo workspace Linear è già collegato a un altro server Control Center.",
+  "signInErrorTeamBoundElsewhere": "Questo workspace Slack è già collegato a un altro server Control Center.",
   "signInErrorSuspended": "L'app {provider} è sospesa. Riattivala su {provider} e riprova.",
   "signInErrorInstallBlocked": "Control Center Connect ha bloccato questo server. Contatta chi gestisce il tuo server Connect.",
   "signInErrorUnknown": "L'accesso non è riuscito per un motivo che il server non ha indicato. Riprova.",
@@ -8427,5 +8425,13 @@
   "workspaceProviderAppSwitchTitle": "Cambiare l'app di {provider}?",
   "workspaceProviderAppSwitchToOwnBody": "Tutti quelli connessi a {provider} in questo workspace tramite l'app di questo server dovranno accedere di nuovo con l'app del workspace.",
   "workspaceProviderAppSwitchToServerBody": "Questo elimina le credenziali di {provider} del workspace. Tutti quelli connessi tramite l'app del workspace dovranno accedere di nuovo.",
-  "workspaceProviderAppSwitchAction": "Cambia app"
+  "workspaceProviderAppSwitchAction": "Cambia app",
+  "openOnForge": "Apri su {forge}",
+  "prFilesTruncatedNotice": "Vengono mostrati i primi {count} file. {forge} non elenca gli altri.",
+  "connectForgeToLoadPrs": "Collega un servizio di hosting del codice per caricare le pull request",
+  "connectForgeHint": "Collega GitHub, GitLab o Bitbucket in Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice",
+  "addForgeRepoPrompt": "Aggiungi almeno un repository su GitHub, GitLab o Bitbucket per vedere le pull request",
+  "composePrNoForgeRepo": "Nessun repository ospitato selezionato",
+  "composePrNoForgeRepoHint": "Seleziona uno spazio di lavoro con un repository su GitHub, GitLab o Bitbucket per aprire una pull request.",
+  "composePrForgeNotConnected": "Collega {forge} per aprire una pull request in questo repository"
 }

@@ -18,7 +18,9 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart'
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/ask_agent_tool.dart';
+import 'package:cc_mcp/src/tools/delegate_task_tool.dart';
 import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
+import 'package:cc_mcp/src/tools/ticket_lifecycle_tools.dart';
 import 'package:test/test.dart';
 
 /// `ask_agent` blocks on the recipient's reply in the pair's DM space. The
@@ -94,6 +96,7 @@ void main() {
     // conversation, like every dispatch that names no stream.
     messagingPort.onDispatched = (agentId, prompt) {
       messaging.post(
+        id: 'run-1',
         senderId: 'agent-b',
         senderType: SenderType.agent,
         content: 'Yes — the payload is guarded upstream.',
@@ -101,6 +104,7 @@ void main() {
     };
 
     final answer = await ask();
+    expect(messaging.watchedConversations, ['standing-1']);
 
     expect(answer['status'], 'replied');
     expect(answer['reply'], contains('guarded upstream'));
@@ -147,6 +151,74 @@ void main() {
     expect(budget.content.first.text, contains('budget'));
     expect(messaging._messages, isEmpty);
     expect(messagingPort.dispatchCount, 0);
+    expect(
+      messaging.createSpaceCalled,
+      isFalse,
+      reason: 'a refused ask must not mint a DM space',
+    );
+  });
+
+  test('a refused ask spends no rate-limit slot', () async {
+    final limiter = PairRateLimiter(maxPerWindow: 1);
+    final guarded = AskAgentTool(
+      agents: agents,
+      messaging: messaging,
+      messagingPort: messagingPort,
+      rateLimiter: limiter,
+      service: TicketWorkflowService(
+        repository: tickets,
+        eventBus: DomainEventBus(),
+        resolveEffectiveAutonomy:
+            ({required workspaceId, required agentId, spaceId}) async =>
+                AutonomyLevel.actWithApproval,
+        resolveRemainingBudgetCents:
+            ({required workspaceId, required agentId}) async => 0,
+      ),
+      pendingHops: PendingDelegationHops(),
+    );
+    await guarded.run({
+      'workspace_id': workspaceId,
+      'from_agent_id': 'agent-a',
+      'to_agent_id': 'agent-b',
+      'message': 'Can you check?',
+    });
+    expect(limiter.tryAcquire('agent-a', 'agent-b', DateTime.now()), isTrue);
+  });
+
+  test(
+    'another message from the recipient is not taken for the reply',
+    () async {
+      messagingPort.onDispatched = (agentId, prompt) {
+        // A reply to a DIFFERENT, concurrent ask lands first.
+        messaging.post(
+          id: 'run-other',
+          senderId: 'agent-b',
+          senderType: SenderType.agent,
+          content: 'Unrelated answer',
+        );
+        messaging.post(
+          id: 'run-1',
+          senderId: 'agent-b',
+          senderType: SenderType.agent,
+          content: 'The real answer',
+        );
+      };
+      final answer = await ask();
+      expect(answer['reply'], 'The real answer');
+    },
+  );
+
+  test('a broken reply stream is reported, not waited out', () async {
+    messaging.watchError = StateError('socket closed');
+    final result = await tool.run({
+      'workspace_id': workspaceId,
+      'to_agent_id': 'agent-b',
+      'message': 'Is the cast safe?',
+      'from_agent_id': 'agent-a',
+      'timeout_seconds': 600,
+    });
+    expect(result.isError, isTrue);
+    expect(result.content.first.text, contains('socket closed'));
   });
 
   test(
@@ -214,6 +286,7 @@ void main() {
           result.isError && result.content.first.text.contains('cycle'),
         );
         messaging.post(
+          id: 'run-1',
           senderId: 'agent-b',
           senderType: SenderType.agent,
           content: 'Answer sent',
@@ -224,6 +297,89 @@ void main() {
     expect(answer['status'], 'replied');
     expect(await refused.future, isTrue);
     expect(messagingPort.dispatchCount, 1);
+  });
+
+  group('one gate for every agent hand-off', () {
+    late PendingDelegationHops hops;
+    late TicketWorkflowService service;
+
+    setUp(() {
+      hops = PendingDelegationHops();
+      service = TicketWorkflowService(
+        repository: tickets,
+        eventBus: DomainEventBus(),
+        resolveEffectiveAutonomy:
+            ({required workspaceId, required agentId, spaceId}) async =>
+                AutonomyLevel.actWithApproval,
+        resolveRemainingBudgetCents:
+            ({required workspaceId, required agentId}) async => remainingBudget,
+      );
+    });
+
+    /// agent-a → agent-b through `ask_agent`, `delegate_task` and
+    /// `delegate_ticket`, returning each refusal text.
+    Future<List<String>> refusals() async {
+      final ask = AskAgentTool(
+        agents: agents,
+        messaging: messaging,
+        messagingPort: messagingPort,
+        rateLimiter: PairRateLimiter(),
+        service: service,
+        pendingHops: hops,
+      );
+      final delegateTask = DelegateTaskTool(
+        service: service,
+        pendingHops: hops,
+      );
+      final delegateTicket = DelegateTicketTool(
+        service: service,
+        pendingHops: hops,
+      );
+      final results = [
+        await ask.run({
+          'workspace_id': workspaceId,
+          'from_agent_id': 'agent-a',
+          'to_agent_id': 'agent-b',
+          'message': 'Can you check?',
+        }),
+        await delegateTask.run({
+          'workspace_id': workspaceId,
+          'title': 'Check',
+          'from_agent_id': 'agent-a',
+          'to_agent_id': 'agent-b',
+        }),
+        await delegateTicket.run({
+          'workspace_id': workspaceId,
+          'title': 'Check',
+          'delegated_by_agent_id': 'agent-a',
+          'assigned_agent_id': 'agent-b',
+        }),
+      ];
+      for (final result in results) {
+        expect(result.isError, isTrue);
+      }
+      expect(messagingPort.dispatchCount, 0);
+      return [for (final result in results) result.content.first.text];
+    }
+
+    test('a cycle is refused with the same reason by all three', () async {
+      // agent-b is blocked on an ask to agent-a.
+      final release = hops.enter(workspaceId, 'agent-b', 'agent-a');
+      addTearDown(release);
+      final texts = await refusals();
+      expect(texts.toSet(), hasLength(1), reason: texts.join('\n'));
+      expect(texts.first, contains('cycle detected'));
+    });
+
+    test(
+      'an exhausted budget is refused with the same reason by all three',
+      () async {
+        remainingBudget = 0;
+        final texts = await refusals();
+        expect(texts.toSet(), hasLength(1), reason: texts.join('\n'));
+        expect(texts.first, contains('budget envelope is exhausted'));
+      },
+    );
   });
 }
 
@@ -264,10 +420,11 @@ class _FakeMessagingRepository implements MessagingRepository {
     required String senderId,
     required SenderType senderType,
     required String content,
+    String? id,
   }) {
     _messages.add(
       Message(
-        id: 'm${++_seq}',
+        id: id ?? 'm${++_seq}',
         spaceId: 'dm-1',
         conversationId: 'standing-1',
         senderId: senderId,
@@ -297,6 +454,44 @@ class _FakeMessagingRepository implements MessagingRepository {
     String spaceId, {
     String? conversationId,
   }) async => List.unmodifiable(_messages);
+
+  @override
+  Future<Message?> getMessageById(String workspaceId, String messageId) async {
+    for (final m in _messages) {
+      if (m.id == messageId) {
+        return m;
+      }
+    }
+    return null;
+  }
+
+  /// Set to make the conversation watch fail, as a dropped subscription does.
+  Object? watchError;
+
+  /// The conversations the reply wait subscribed to.
+  final watchedConversations = <String>[];
+
+  @override
+  Stream<List<Message>> watchMessages(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) async* {
+    watchedConversations.add(conversationId);
+    if (watchError case final error?) {
+      throw error;
+    }
+    yield [
+      for (final m in _messages)
+        if (m.conversationId == conversationId) m,
+    ];
+    yield* _controller.stream.map(
+      (all) => [
+        for (final m in all)
+          if (m.conversationId == conversationId) m,
+      ],
+    );
+  }
 
   @override
   Future<String> sendMessage({

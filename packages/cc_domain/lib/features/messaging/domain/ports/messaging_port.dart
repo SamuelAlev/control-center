@@ -343,6 +343,19 @@ abstract interface class MessagingPort {
     required String messageId,
   });
 
+  /// "Send now" on a queued card, as one server step (`steering.forceSend`):
+  /// a live run that can take it does; otherwise the card goes to the front
+  /// and every live run is stopped so the run-end conversion sends it next;
+  /// with no run live the queue is sent at once. Returns the outcome wire
+  /// value: `delivered`, `stopping`, `sent` or `not_queued`. Throws when the
+  /// caller may not stop runs (the `dispatch` write permission).
+  Future<String> forceSendSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+  });
+
   /// Forces an anchored-compaction pass over the conversation (the `/compact`
   /// command): older history is folded into a summary message so the
   /// conversation can continue within the model's context window. Unlike the

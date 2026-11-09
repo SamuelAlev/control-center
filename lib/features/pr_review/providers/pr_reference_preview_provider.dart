@@ -61,12 +61,12 @@ class PrPreview {
   final String htmlUrl;
 }
 
-/// Fetches PR preview metadata (title + state) over the in-process RPC server,
+/// Fetches PR preview metadata (title + state) from the connected server,
 /// which fetches from GitHub and SWR-caches the result workspace-side. Returns
 /// `null` when the PR can't be resolved (404, missing workspace context,
 /// network failure) so callers can fall back to a plain link.
 ///
-/// Flipped to RPC (the composition flip): the host owns GitHub auth + the SWR
+/// The server owns GitHub auth + the SWR
 /// disk cache; this provider holds no token and reaches no database.
 final prReferencePreviewProvider = FutureProvider.autoDispose
     .family<PrPreview?, PrReferenceKey>((ref, key) async {

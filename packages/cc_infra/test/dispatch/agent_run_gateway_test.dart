@@ -12,6 +12,7 @@ import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
@@ -55,6 +56,7 @@ class _Confirm implements ConfirmationPort {
 class _Broker implements CredentialBrokerPort {
   final List<ForgeTokenScope> scopes = [];
   final List<String> revoked = [];
+  Object? mintError;
   var _n = 0;
 
   @override
@@ -68,6 +70,11 @@ class _Broker implements CredentialBrokerPort {
     bool personal = false,
   }) async {
     scopes.add(scope);
+    if (mintError case final e?) {
+      throw e;
+    }
+    // Let a concurrent caller reach the mint before this one returns.
+    await Future<void>.delayed(const Duration(milliseconds: 20));
     _n++;
     return ScopedCredentials(
       handle: 'h$_n',
@@ -1650,4 +1657,132 @@ void main() {
       },
     );
   }, skip: Platform.isWindows ? 'Requires the POSIX hook shell and curl.' : false);
+
+  group(
+    'audit fixes',
+    () {
+      late Directory tree;
+
+      setUp(() => tree = Directory.systemTemp.createTempSync('cc-gw-tree-'));
+      tearDown(() => tree.deleteSync(recursive: true));
+
+      Future<AgentRunLease> openRun({
+        List<String> shared = const [],
+        AutonomyLevel? autonomy,
+      }) async => (await gateway.open(
+        AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c1',
+          agentId: 'a1',
+          spaceId: 's1',
+          worktreeRoot: tree.path,
+          sharedWorktreeRoots: shared,
+          autonomy: () async => autonomy,
+        ),
+      ))!;
+
+      Future<({int exitCode, String err})> runHook(
+        AgentRunLease run,
+        String tool,
+        Map<String, Object?> input,
+      ) async {
+        final settings =
+            jsonDecode(AgentRunLease.claudeHookSettings(run)) as Map;
+        final entry =
+            ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+        final handler = (entry['hooks'] as List).single as Map;
+        final process = await Process.start(
+          'sh',
+          ['-c', handler['command'] as String],
+          environment: {AgentRunLease.tokenEnvKey: run.secret},
+        );
+        final err = process.stderr.transform(utf8.decoder).join();
+        unawaited(process.stdout.drain<void>());
+        process.stdin.write(
+          jsonEncode({'tool_name': tool, 'tool_input': input}),
+        );
+        await process.stdin.close();
+        return (exitCode: await process.exitCode, err: await err);
+      }
+
+      test(
+        'a write through the shared repos link stays inside the run',
+        () async {
+          rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+          final shared = Directory.systemTemp.createTempSync('cc-gw-shared-');
+          addTearDown(() => shared.deleteSync(recursive: true));
+          Link('${tree.path}/repos').createSync(shared.path);
+          final run = await openRun(shared: [shared.path]);
+
+          final result = await runHook(run, 'Write', {
+            'file_path': '${tree.path}/repos/widgets/lib/a.dart',
+            'content': 'x',
+          });
+
+          expect(result.exitCode, 0, reason: result.err);
+        },
+      );
+
+      test('propose-only refuses a write policy allows', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.allow);
+        final run = await openRun(autonomy: AutonomyLevel.proposeOnly);
+
+        final result = await runHook(run, 'Write', {
+          'file_path': '/somewhere/else.txt',
+          'content': 'x',
+        });
+
+        expect(result.exitCode, 2);
+        expect(result.err, contains('propose-only'));
+      });
+
+      test(
+        'closing the lease withdraws the approval it was waiting on',
+        () async {
+          rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.prompt);
+          confirm
+            ..pending = Completer<bool>()
+            ..requested = Completer<void>();
+          final run = await openRun();
+
+          final hooked = runHook(run, 'Write', {
+            'file_path': '/somewhere/else.txt',
+            'content': 'x',
+          });
+          await confirm.requested!.future;
+          final withdrawn = confirm.asked.single.withdrawn;
+          expect(withdrawn, isNotNull);
+
+          await gateway.close(run);
+          await withdrawn!.timeout(const Duration(seconds: 5));
+          confirm.pending!.complete(false);
+          expect((await hooked).exitCode, 2);
+        },
+      );
+
+      test('concurrent pushes share one write-token mint', () async {
+        rule(ActionClass.gitPush, ActionDecision.allow);
+
+        final results = await Future.wait([
+          send('POST', pushPath, body: _push(['refs/heads/feature/a'])),
+          send('POST', pushPath, body: _push(['refs/heads/feature/b'])),
+        ]);
+
+        expect(results.map((r) => r.status), everyElement(200));
+        expect(broker.scopes, [ForgeTokenScope.write]);
+      });
+
+      test('a failure never echoes its detail to the agent', () async {
+        rule(ActionClass.gitPush, ActionDecision.allow);
+        broker.mintError = StateError('token ghs_leakedsecret rejected');
+
+        final r = await send('POST', pushPath, body: _push(['refs/heads/x']));
+
+        expect(r.body, isNot(contains('ghs_leakedsecret')));
+      });
+    },
+    skip: Platform.isWindows
+        ? 'Requires the POSIX hook shell and curl.'
+        : false,
+  );
 }

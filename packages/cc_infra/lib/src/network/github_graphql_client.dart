@@ -1209,28 +1209,17 @@ fragment viewerPr on PullRequest {
   /// @usectrl account, or compatible App bot full-login and bare-slug mentions
   /// (the slug needs `in:comments` because GitHub does not resolve it to the
   /// App), plus [label] (apps cannot hold requested-reviewer). One aliased
-  /// request, not `repo:`-scoped; [since] bounds only the mention lanes.
-  Future<
-    ({
-      List<GitHubViewerPr> mentioned,
-      List<GitHubViewerPr> botMentioned,
-      List<GitHubViewerPr> shortMentioned,
-      List<GitHubViewerPr> labeled,
-    })
-  >
-  searchBotConversationCandidates({
+  /// request, not `repo:`-scoped; [since] bounds only the mention lanes. A
+  /// lane with nothing to search for (no bare slug, no label) is left out of
+  /// the request rather than sent as a filler query.
+  Future<BotConversationCandidates> searchBotConversationCandidates({
     required String botLogin,
     required String label,
     DateTime? since,
     CancelToken? cancelToken,
   }) async {
     if (botLogin.isEmpty) {
-      return (
-        mentioned: const <GitHubViewerPr>[],
-        botMentioned: const <GitHubViewerPr>[],
-        shortMentioned: const <GitHubViewerPr>[],
-        labeled: const <GitHubViewerPr>[],
-      );
+      return BotConversationCandidates.empty;
     }
     final short = botLogin.toLowerCase().endsWith('[bot]')
         ? botLogin.substring(0, botLogin.length - '[bot]'.length)
@@ -1240,43 +1229,46 @@ fragment viewerPr on PullRequest {
     // Second precision: GitHub rejects sub-second values in a date qualifier.
     final stamp = window.toIso8601String().split('.').first;
 
-    const query = r'''
-query($mn: String!, $bm: String!, $sm: String!, $lb: String!, $first: Int!) {
-  mentioned: search(query: $mn, type: ISSUE, first: $first) {
-    nodes { ...viewerPr }
-  }
-  botMentioned: search(query: $bm, type: ISSUE, first: $first) {
-    nodes { ...viewerPr }
-  }
-  shortMentioned: search(query: $sm, type: ISSUE, first: $first) {
-    nodes { ...viewerPr }
-  }
-  labeled: search(query: $lb, type: ISSUE, first: $first) {
-    nodes { ...viewerPr }
-  }
-}
-fragment viewerPr on PullRequest {
-  number
-  title
-  updatedAt
-  repository { nameWithOwner }
-}''';
+    // (alias, variable, search string) per lane that has something to find.
+    final lanes = <(String, String, String)>[
+      (
+        'mentioned',
+        'mn',
+        'is:pr mentions:"$githubPrConversationMentionLogin" updated:>$stamp',
+      ),
+      ('botMentioned', 'bm', 'is:pr mentions:"$botLogin" updated:>$stamp'),
+      if (short.isNotEmpty)
+        ('shortMentioned', 'sm', 'is:pr in:comments "@$short" updated:>$stamp'),
+      if (label.isNotEmpty) ('labeled', 'lb', 'is:pr is:open label:"$label"'),
+    ];
+    final variables = <String, dynamic>{'first': _reviewSearchPageSize};
+    final declarations = StringBuffer();
+    final selections = StringBuffer();
+    for (final (alias, variable, search) in lanes) {
+      variables[variable] = search;
+      declarations.write('\$$variable: String!, ');
+      selections.write(
+        '  $alias: search(query: \$$variable, type: ISSUE, '
+        'first: \$first) {\n'
+        '    nodes { ...viewerPr }\n'
+        '  }\n',
+      );
+    }
+    final query =
+        'query($declarations\$first: Int!) {\n'
+        '$selections'
+        '}\n'
+        'fragment viewerPr on PullRequest {\n'
+        '  number\n'
+        '  title\n'
+        '  updatedAt\n'
+        '  repository { nameWithOwner }\n'
+        '}';
 
-    final response = await _runQuery(query, <String, dynamic>{
-      'mn':
-          'is:pr mentions:"$githubPrConversationMentionLogin" updated:>$stamp',
-      'bm': 'is:pr mentions:"$botLogin" updated:>$stamp',
-      'sm': short.isEmpty
-          ? 'is:pr no:label no:milestone'
-          : 'is:pr in:comments "@$short" updated:>$stamp',
-      'lb': label.isEmpty
-          ? 'is:pr is:open no:label'
-          : 'is:pr is:open label:"$label"',
-      'first': _reviewSearchPageSize,
-    }, cancelToken);
+    final response = await _runQuery(query, variables, cancelToken);
 
     final data = response?['data'] as Map<String, dynamic>?;
-    return (
+    return BotConversationCandidates(
       mentioned: _viewerPrNodes(data, 'mentioned'),
       botMentioned: _viewerPrNodes(data, 'botMentioned'),
       shortMentioned: short.isEmpty

@@ -64,25 +64,25 @@ extension _ClaudeControlMethods on DispatchSession {
     Map<String, Object?>? mcpServers,
   }) {
     final stdin = StreamController<String>();
-    _claudeStdin = stdin;
+    _claude.stdin = stdin;
     final lines = [
       _claudeUserLine(firstMessage),
-      for (final text in _claudeSteered) _claudeUserLine(text),
+      for (final text in _claude.steered) _claudeUserLine(text),
     ];
     if (mcpServers == null) {
       lines.forEach(stdin.add);
       return stdin;
     }
-    _claudeHeldLines = lines;
-    final id = 'cc-mcp-${_claudeControlRequests++}';
-    _claudeMcpRequestId = id;
+    _claude.heldLines = lines;
+    final id = 'cc-mcp-${_claude.controlRequests++}';
+    _claude.mcpRequestId = id;
     stdin.add(
       _claudeControlLine(id, {
         'subtype': 'mcp_set_servers',
         'servers': mcpServers,
       }),
     );
-    _claudeMcpAnswerTimer = Timer(_claudeMcpAnswerTimeout, () {
+    _claude.mcpAnswerTimer = Timer(_claudeMcpAnswerTimeout, () {
       addEvent(
         DebugEvent(
           content:
@@ -97,7 +97,7 @@ extension _ClaudeControlMethods on DispatchSession {
 
   /// The CLI answered a control request this run sent.
   void _onClaudeControlResponse(ClaudeControlResponse response) {
-    if (response.requestId != _claudeMcpRequestId) {
+    if (response.requestId != _claude.mcpRequestId) {
       return;
     }
     final errors = response.body['errors'];
@@ -122,12 +122,14 @@ extension _ClaudeControlMethods on DispatchSession {
   /// Starts the turn held back by [_openClaudeStdin], then anything steered
   /// while it waited.
   void _releaseClaudeHeldLines() {
-    final stdin = _claudeStdin;
-    final lines = _claudeHeldLines;
-    _claudeMcpAnswerTimer?.cancel();
-    _claudeMcpAnswerTimer = null;
-    _claudeMcpRequestId = null;
-    _claudeHeldLines = null;
+    // Closed by the Claude transport when its turn ends.
+    // ignore: close_sinks
+    final stdin = _claude.stdin;
+    final lines = _claude.heldLines;
+    _claude.mcpAnswerTimer?.cancel();
+    _claude.mcpAnswerTimer = null;
+    _claude.mcpRequestId = null;
+    _claude.heldLines = null;
     if (stdin == null || lines == null) {
       return;
     }
@@ -141,14 +143,16 @@ extension _ClaudeControlMethods on DispatchSession {
   /// closes the turn with a `result` that still carries what it spent, and it
   /// stops its own tools before anything is killed.
   Future<void> _interruptClaudeTurn() async {
-    final stdin = _claudeStdin;
-    if (stdin == null || _claudeInit == null || _claudeHeldLines != null) {
+    // Closed by the Claude transport when its turn ends.
+    // ignore: close_sinks
+    final stdin = _claude.stdin;
+    if (stdin == null || _claude.init == null || _claude.heldLines != null) {
       return;
     }
     final closed = Completer<void>();
-    _claudeStdinClosed = closed;
+    _claude.stdinClosed = closed;
     stdin.add(
-      _claudeControlLine('cc-interrupt-${_claudeControlRequests++}', const {
+      _claudeControlLine('cc-interrupt-${_claude.controlRequests++}', const {
         'subtype': 'interrupt',
       }),
     );
@@ -165,24 +169,24 @@ extension _ClaudeControlMethods on DispatchSession {
       return;
     }
     if (frame is Map<String, dynamic> && frame['type'] == 'result') {
-      _claudeParser?.process(frame);
+      _claude.parser?.process(frame);
     }
   }
 
   /// Closes the open stdin lane, which lets `claude` exit once it has answered
   /// what it was already sent. Steering from here on stays queued.
   void _closeClaudeStdin() {
-    final stdin = _claudeStdin;
-    _claudeStdin = null;
-    _claudeMcpAnswerTimer?.cancel();
-    _claudeMcpAnswerTimer = null;
-    _claudeMcpRequestId = null;
-    _claudeHeldLines = null;
+    final stdin = _claude.stdin;
+    _claude.stdin = null;
+    _claude.mcpAnswerTimer?.cancel();
+    _claude.mcpAnswerTimer = null;
+    _claude.mcpRequestId = null;
+    _claude.heldLines = null;
     if (stdin != null) {
       unawaited(stdin.close());
     }
-    final closed = _claudeStdinClosed;
-    _claudeStdinClosed = null;
+    final closed = _claude.stdinClosed;
+    _claude.stdinClosed = null;
     if (closed != null && !closed.isCompleted) {
       closed.complete();
     }
@@ -192,12 +196,12 @@ extension _ClaudeControlMethods on DispatchSession {
   /// queue service pushes several rows in a row (reorder, run-start flush),
   /// and queue surgery mid-push would interleave with it.
   void _scheduleClaudeSteeringPump() {
-    if (_claudeSteeringPumpScheduled) {
+    if (_claude.steeringPumpScheduled) {
       return;
     }
-    _claudeSteeringPumpScheduled = true;
+    _claude.steeringPumpScheduled = true;
     scheduleMicrotask(() {
-      _claudeSteeringPumpScheduled = false;
+      _claude.steeringPumpScheduled = false;
       _pumpClaudeSteering();
     });
   }
@@ -207,8 +211,8 @@ extension _ClaudeControlMethods on DispatchSession {
   /// Follow-ups wait for [_onClaudeTurnEnded]: they are for once the agent
   /// would otherwise stop.
   void _pumpClaudeSteering() {
-    final stdin = _claudeStdin;
-    if (stdin == null || _claudeHeldLines != null) {
+    final stdin = _claude.stdin;
+    if (stdin == null || _claude.heldLines != null) {
       return;
     }
     _writeClaudeSteering(stdin, [
@@ -225,7 +229,7 @@ extension _ClaudeControlMethods on DispatchSession {
       return;
     }
     for (final message in messages) {
-      _claudeSteered.add(message.content);
+      _claude.steered.add(message.content);
       stdin.add(_claudeUserLine(message.content));
     }
     addEvent(
@@ -244,7 +248,7 @@ extension _ClaudeControlMethods on DispatchSession {
     final space = spaceId;
     final conversation = conversationId;
     final agent = agentId;
-    if (_claudePersistDisabled ||
+    if (_claude.persistDisabled ||
         ws == null ||
         space == null ||
         conversation == null ||
@@ -257,8 +261,8 @@ extension _ClaudeControlMethods on DispatchSession {
         spaceId: space,
         conversationId: conversation,
         agentId: agent,
-        contextTokens: _claudeContextTokens,
-        cacheTtl: _claudeCacheTtl,
+        contextTokens: _claude.contextTokens,
+        cacheTtl: _claude.cacheTtl,
         requestedByUserId: requestedByUserId,
       ),
     );
@@ -277,7 +281,7 @@ extension _ClaudeControlMethods on DispatchSession {
     if (!info.blocked && !info.warning) {
       return;
     }
-    if (!_claudeLimitCrossings.add('${info.status}:${info.crossingKey}')) {
+    if (!_claude.limitCrossings.add('${info.status}:${info.crossingKey}')) {
       return;
     }
     final limit = info.rateLimitType ?? 'plan';
@@ -303,14 +307,7 @@ extension _ClaudeControlMethods on DispatchSession {
     // Now, not when this turn fails: another dispatch may be choosing an
     // account this moment, and the failure is still a round trip away.
     if (attempt.accountId.isNotEmpty) {
-      unawaited(
-        Future.sync(
-          () => onClaudeAccountExhausted?.call(
-            accountId: attempt.accountId,
-            resetsAt: reset,
-          ),
-        ).catchError((Object _) {}),
-      );
+      unawaited(_reportClaudeAccountExhausted(attempt.accountId, reset));
     }
   }
 }

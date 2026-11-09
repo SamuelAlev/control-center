@@ -488,6 +488,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get teammate => 'Đồng nghiệp';
 
   @override
+  String get systemSender => 'Hệ thống';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -640,12 +643,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub, hoặc kết nối token có quyền truy cập.';
+    return 'Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Cài đặt GitHub App đã bị tạm ngưng. Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub, hoặc kết nối token có quyền truy cập.';
+    return 'Cài đặt GitHub App đã bị tạm ngưng. Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub.';
   }
 
   @override
@@ -2583,6 +2586,22 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Mã này không khớp với lần đăng nhập này. Hãy kiểm tra rồi thử lại.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Nhập sai mã quá nhiều lần. Hãy bắt đầu đăng nhập lại.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Dịch vụ đăng nhập hiện không phản hồi. Đợi một phút rồi thử lại.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Lượt đăng nhập bị từ chối. Hãy bắt đầu lại và chấp thuận mọi quyền được yêu cầu.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Đăng nhập đã thành công, nhưng máy chủ không lưu được. Hãy thử lại.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

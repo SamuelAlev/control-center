@@ -1,4 +1,6 @@
 {
+  "steeringForceSendFailed": "No se pudo enviar ahora: {error}",
+  "questionAnswerNotDelivered": "Tu respuesta no se entregó. Es posible que ya se haya respondido o que el agente haya dejado de esperar.",
   "succeeded": "Completado",
   "agentRunRetryLabel": "Reintento n.º {number} · {time}",
   "agentRunStarting": "Iniciando · {time}",
@@ -945,7 +947,6 @@
   "addressBarHint": "Introducir una URL",
   "addFromFile": "Añadir desde archivo",
   "addGif": "Añadir GIF",
-  "addGithubRepoPrompt": "Añade al menos un repositorio de GitHub para ver pull requests",
   "addLocalCheckoutDescription": "Añade un checkout local para empezar a dirigirlo desde este espacio de trabajo.",
   "@addLocalCheckoutDescription": {
     "description": "Add a local checkout to start targeting it from this workspace."
@@ -3317,13 +3318,9 @@
   "@pipelineStepDurationLabel": {
     "description": "Step detail label: run duration"
   },
-  "pipelineStepBranch": "Rama",
   "pipelineStepViewConversation": "Ver conversación",
   "@pipelineStepViewConversation": {
     "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
-  },
-  "@pipelineStepBranch": {
-    "description": "Step detail label: parallel branch index"
   },
   "pipelineStepError": "Error",
   "@pipelineStepError": {
@@ -3712,8 +3709,6 @@
   "agentQuestionTimeLeft": "Tiempo restante para responder",
   "agentQuestionFreeformOptionHint": "Descríbelo con tus palabras…",
   "reviewRequested": "Revisión solicitada",
-  "connectGitHubHint": "Inicia sesión en GitHub en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código",
-  "connectGitHubToLoadPrs": "Conecta GitHub para cargar las pull requests",
   "noRepositoriesConfigured": "No hay repositorios configurados",
   "openedAgo": "Abierto {age}",
   "prTimelineOpened": "{author} abrió esta pull request",
@@ -3877,8 +3872,6 @@
   "openPullRequest": "Abrir una pull request",
   "composePrSubtitle": "Desde una rama que has subido — sin agentes ni tickets",
   "createAsDraft": "Crear como borrador",
-  "composePrNoRepo": "Ningún repositorio de GitHub seleccionado",
-  "composePrNoRepoHint": "Selecciona un espacio de trabajo con un repositorio vinculado a GitHub para abrir una pull request.",
   "composePrPickBranches": "Elige una rama base y una rama de comparación para previsualizar los cambios.",
   "composePrNothingToCompare": "No hay cambios entre estas ramas.",
   "repository": "Repositorio",
@@ -8277,13 +8270,18 @@
   "signInErrorAccessDenied": "El inicio de sesión en {provider} se canceló o se denegó.",
   "signInErrorScopeMismatch": "{provider} concedió menos permisos de los que necesita Control Center. Vuelve a iniciar sesión y aprueba todos los permisos.",
   "signInErrorInvalidCode": "Ese código no coincide con este inicio de sesión. Revísalo e inténtalo de nuevo.",
+  "signInErrorTooManyCodes": "Demasiados códigos incorrectos. Vuelve a iniciar el inicio de sesión.",
+  "signInErrorStaleRequest": "Este inicio de sesión ya no es válido. Vuelve a empezarlo.",
+  "signInErrorInvalidRequest": "El servidor no pudo leer esta solicitud de inicio de sesión. Vuelve a empezarla.",
+  "signInErrorRateLimited": "Demasiados intentos de inicio de sesión ahora mismo. Espera un minuto e inténtalo de nuevo.",
+  "signInErrorStoreFailed": "{provider} aceptó el inicio de sesión, pero el servidor no pudo guardarlo. Inténtalo de nuevo.",
   "signInErrorProviderUnavailable": "{provider} no responde ahora mismo. Inténtalo de nuevo en unos minutos.",
   "signInErrorExchangeFailed": "{provider} aceptó el inicio de sesión, pero el servidor no pudo completarlo. Inténtalo de nuevo.",
   "signInErrorMisconfigured": "La app de {provider} de este servidor está mal configurada. Pide al propietario del servidor que revise Ajustes → Servidor → Inicio de sesión único.",
   "signInErrorNeedsSignIn": "Tu sesión de {provider} caducó. Vuelve a iniciar sesión para seguir trabajando en tu nombre.",
   "signInErrorNotInstalled": "La app de {provider} no está instalada donde se necesita. Instálala e inténtalo de nuevo.",
   "signInErrorInstallationBoundElsewhere": "Esta instalación de la app de GitHub ya está autorizada para otro servidor de Control Center.",
-  "signInErrorTeamBoundElsewhere": "Este espacio de Linear ya está conectado a otro servidor de Control Center.",
+  "signInErrorTeamBoundElsewhere": "Este espacio de Slack ya está conectado a otro servidor de Control Center.",
   "signInErrorSuspended": "La app de {provider} está suspendida. Reactívala en {provider} e inténtalo de nuevo.",
   "signInErrorInstallBlocked": "Control Center Connect bloqueó este servidor. Contacta con quien gestiona tu servidor Connect.",
   "signInErrorUnknown": "El inicio de sesión falló por un motivo que el servidor no indicó. Inténtalo de nuevo.",
@@ -8424,5 +8422,13 @@
   "workspaceProviderAppSwitchTitle": "¿Cambiar la aplicación de {provider}?",
   "workspaceProviderAppSwitchToOwnBody": "Todos los que están conectados a {provider} en este espacio de trabajo a través de la aplicación de este servidor tendrán que volver a iniciar sesión con la aplicación del espacio de trabajo.",
   "workspaceProviderAppSwitchToServerBody": "Esto elimina las credenciales de {provider} del espacio de trabajo. Todos los que se conectaron a través de la aplicación del espacio de trabajo tendrán que volver a iniciar sesión.",
-  "workspaceProviderAppSwitchAction": "Cambiar aplicación"
+  "workspaceProviderAppSwitchAction": "Cambiar aplicación",
+  "openOnForge": "Abrir en {forge}",
+  "prFilesTruncatedNotice": "Se muestran los primeros {count} archivos. {forge} no lista el resto.",
+  "connectForgeToLoadPrs": "Conecta un servicio de alojamiento de código para cargar las pull requests",
+  "connectForgeHint": "Conecta GitHub, GitLab o Bitbucket en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código",
+  "addForgeRepoPrompt": "Añade al menos un repositorio de GitHub, GitLab o Bitbucket para ver pull requests",
+  "composePrNoForgeRepo": "No hay ningún repositorio alojado seleccionado",
+  "composePrNoForgeRepoHint": "Selecciona un espacio de trabajo con un repositorio en GitHub, GitLab o Bitbucket para abrir una pull request.",
+  "composePrForgeNotConnected": "Conecta {forge} para abrir una pull request en este repositorio"
 }

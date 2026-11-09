@@ -118,7 +118,7 @@ class ConfirmReviewNodeTool extends McpTool {
       spaceId: spaceId,
       content: '✅ Agent `$agentId` confirmed this finding.',
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'system',
       // Link to the review node via metadata (threading was removed).
       metadata: {'reviewNodeId': nodeMessageId},

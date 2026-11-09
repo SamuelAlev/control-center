@@ -68,6 +68,7 @@ class SandboxViolation {
     required this.action,
     required this.target,
     this.raw,
+    this.pid,
   });
 
   /// Verb that was denied (e.g. `file-read*`, `network-outbound`).
@@ -79,6 +80,11 @@ class SandboxViolation {
   /// Raw log line, useful for debugging / "Show details".
   final String? raw;
 
+  /// The denied process, when the OS reported it (macOS names it in the log
+  /// line). Lets an adapter running several sandboxes route the denial to the
+  /// run that caused it instead of to whichever ran last.
+  final int? pid;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -86,8 +92,9 @@ class SandboxViolation {
           runtimeType == other.runtimeType &&
           action == other.action &&
           target == other.target &&
-          raw == other.raw;
+          raw == other.raw &&
+          pid == other.pid;
 
   @override
-  int get hashCode => Object.hash(action, target, raw);
+  int get hashCode => Object.hash(action, target, raw, pid);
 }

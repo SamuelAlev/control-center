@@ -203,6 +203,7 @@
     }
   },
   "teammate": "ساتھی",
+  "systemSender": "سسٹم",
   "agent": "ایجنٹ",
   "attachFile": "فائل منسلک کریں",
   "messageHint": "پیغام",
@@ -268,8 +269,8 @@
   },
   "reposNotReadable": "پڑھے نہیں جا سکے: \u2068{names}\u2069",
   "installationSuspendedTitle": "GitHub App انسٹالیشن معطل ہے",
-  "installationSuspendedBody": "⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔",
-  "installationSuspendedNotice": "GitHub App انسٹالیشن معطل ہے. ⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔",
+  "installationSuspendedBody": "⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔",
+  "installationSuspendedNotice": "GitHub App انسٹالیشن معطل ہے. ⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -963,6 +964,10 @@
   "credentialsConnectCodePrompt": "براؤزر میں دکھایا گیا کوڈ درج کریں",
   "credentialsConnectCodeMalformed": "یہ سائن اِن کوڈ نہیں لگتا۔ کوڈز میں 8 حروف اور ہندسے ہوتے ہیں۔",
   "credentialsSignInInvalidCode": "یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔",
+  "credentialsSignInTooManyCodes": "بہت زیادہ غلط کوڈ۔ سائن اِن دوبارہ شروع کریں۔",
+  "credentialsSignInRetryLater": "سائن اِن سروس ابھی جواب نہیں دے رہی۔ ایک منٹ انتظار کریں، پھر دوبارہ کوشش کریں۔",
+  "credentialsSignInRefused": "سائن اِن مسترد کر دیا گیا۔ اسے دوبارہ شروع کریں اور تمام مطلوبہ اجازتیں منظور کریں۔",
+  "credentialsSignInNotSaved": "سائن اِن ہو گیا، لیکن سرور اسے محفوظ نہیں کر سکا۔ دوبارہ کوشش کریں۔",
   "credentialsSignInUnavailable": "{provider} سائن اِن ابھی اس سرور پر ترتیب نہیں دیا گیا۔",
   "credentialsSignInPhoneUnreachable": "اس سرور کا سائن اِن کال بیک پتا فون سے محفوظ طریقے سے قابلِ رسائی نہیں ہے۔ ڈیسک ٹاپ ایپ سے سائن اِن کریں، یا سرور کے مالک سے عوامی HTTPS پتا ترتیب دینے کو کہیں۔",
   "credentialsLoginTimedOut": "لاگ اِن کی میعاد ختم ہو گئی۔ دوبارہ سائن اِن شروع کریں۔",

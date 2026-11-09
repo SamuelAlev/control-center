@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:cc_connect/cc_connect.dart';
-import 'package:cc_connect_core/cc_connect_core.dart'
-    show canonicalConnectBaseUrl, isLoopbackOrigin;
 import 'package:cc_server_core/cc_server_core.dart'
     show EmbeddedConnect, embeddedConnectEnvironmentKey;
 
@@ -42,25 +40,15 @@ Future<EmbeddedConnect?> buildEmbeddedConnect({
     }
     base = '$origin/connect';
   }
-  final String canonical;
-  try {
-    canonical = canonicalConnectBaseUrl(base);
-  } on FormatException catch (e) {
-    throw StateError('Invalid embedded Connect URL: ${e.message}');
-  }
-  if (!canonical.startsWith('https://') && !isLoopbackOrigin(canonical)) {
-    throw StateError(
-      'The embedded Connect needs an HTTPS public URL (or loopback); '
-      'set CONNECT_PUBLIC_URL.',
-    );
-  }
-  if (Uri.parse(canonical).path != '/connect') {
+  env['CONNECT_PUBLIC_URL'] = base;
+  // `ConnectServiceConfig` is the one check of the URL (absolute, HTTPS
+  // unless loopback, no query); only the mount point is this host's rule.
+  final config = ConnectServiceConfig.fromEnvironment(env);
+  final canonical = config.publicBaseUrl;
+  if (config.basePath != '/connect') {
     throw StateError('The embedded Connect is served under /connect.');
   }
-  env['CONNECT_PUBLIC_URL'] = canonical;
-  final service = await ConnectService.start(
-    ConnectServiceConfig.fromEnvironment(env),
-  );
+  final service = await ConnectService.start(config);
   stdout.writeln('cc_server: embedded Connect at $canonical');
   return _Mount(service);
 }

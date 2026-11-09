@@ -30,7 +30,12 @@ Widget _wrap(Widget child) {
 }
 
 /// The PR identity SuggestionAwareMarkdown links `#N` references against.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 1);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 1,
+  forge: null,
+);
 
 void main() {
   group('SuggestionAwareMarkdown', () {

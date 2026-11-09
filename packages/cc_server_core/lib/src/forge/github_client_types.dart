@@ -2,7 +2,8 @@
 /// presence and refusals.
 library;
 
-import 'package:cc_connect_core/cc_connect_core.dart' show GitHubTokenScope, globalWorkspaceScope;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectErrorCode, GitHubTokenScope, globalWorkspaceScope;
 
 /// Which GitHub lane a workspace's automation runs on.
 enum GitHubLane {
@@ -27,22 +28,78 @@ enum GitHubLane {
   };
 }
 
+/// Why GitHub work was refused: the closed set [GitHubScopeRefused] carries.
+enum GitHubRefusal {
+  /// The accountable person must sign in (again).
+  needsSignIn('needs_sign_in'),
+
+  /// The person cannot see or do this on GitHub, or it is not linked here.
+  accessDenied('access_denied'),
+
+  /// The App is not installed on the repository's owner.
+  notInstalled('not_installed'),
+
+  /// The shared App's installation there belongs to other servers.
+  installationBoundElsewhere('installation_bound_elsewhere'),
+
+  /// The installation is suspended.
+  suspended('suspended'),
+
+  /// GitHub or Connect is unreachable or failing; transient.
+  providerUnavailable('provider_unavailable'),
+
+  /// Too many requests; transient.
+  rateLimited('rate_limited'),
+
+  /// Connect refused this server outright.
+  installBlocked('install_blocked'),
+
+  /// No GitHub lane, or an incomplete own App.
+  notConfigured('not_configured'),
+
+  /// A malformed request (not a repository name, the wrong lane).
+  invalidRequest('invalid_request');
+
+  const GitHubRefusal(this.wire);
+
+  /// The wire spelling, as logs and callers that cross a wire see it.
+  final String wire;
+
+  /// The refusal a Connect failure amounts to.
+  static GitHubRefusal fromConnect(ConnectErrorCode code) => switch (code) {
+    ConnectErrorCode.needsSignIn => needsSignIn,
+    ConnectErrorCode.accessDenied ||
+    ConnectErrorCode.notAdmin ||
+    ConnectErrorCode.teamBoundElsewhere => accessDenied,
+    ConnectErrorCode.notInstalled => notInstalled,
+    ConnectErrorCode.installationBoundElsewhere => installationBoundElsewhere,
+    ConnectErrorCode.suspended => suspended,
+    ConnectErrorCode.rateLimited => rateLimited,
+    ConnectErrorCode.installBlocked => installBlocked,
+    ConnectErrorCode.invalidRequest ||
+    ConnectErrorCode.codeMismatch => invalidRequest,
+    ConnectErrorCode.providerUnavailable ||
+    ConnectErrorCode.staleRequest => providerUnavailable,
+  };
+
+  /// Whether retrying later may succeed with nothing changed.
+  bool get isTransient => this == providerUnavailable || this == rateLimited;
+}
+
 /// Why a scoped token could not be minted. Final: there is no PAT, owner or
 /// environment fallback behind it.
 final class GitHubScopeRefused implements Exception {
   /// Creates the refusal.
   const GitHubScopeRefused(this.code, this.message);
 
-  /// A stable code: `needs_sign_in`, `access_denied`, `not_installed`,
-  /// `installation_bound_elsewhere`, `suspended`, `provider_unavailable`,
-  /// `not_configured`, `invalid_request`.
-  final String code;
+  /// What kind of refusal.
+  final GitHubRefusal code;
 
   /// What a person can do about it.
   final String message;
 
   @override
-  String toString() => 'GitHubScopeRefused($code): $message';
+  String toString() => 'GitHubScopeRefused(${code.wire}): $message';
 }
 
 /// One minted single-repository token.

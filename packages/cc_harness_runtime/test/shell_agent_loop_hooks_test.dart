@@ -98,6 +98,40 @@ void main() {
       },
     );
 
+    test('a chatty script is drained and answers before the timeout', () async {
+      // ~1 MB on each pipe overflows any OS pipe buffer: undrained, the
+      // script blocks on write until the timeout kills it and the call is
+      // denied for a reason the script never chose.
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        environment: _env,
+        preToolScript: sh(
+          'chatty',
+          'i=0; while [ \$i -lt 16000 ]; do '
+              'echo "0123456789012345678901234567890123456789012345678901234567890"; '
+              'echo "err err err err err err err err err err err err err err err" >&2; '
+              'i=\$((i+1)); done; exit 0',
+        ),
+        timeout: const Duration(seconds: 20),
+      );
+      final watch = Stopwatch()..start();
+      expect(await hooks.preToolUse('write', {}), isTrue);
+      expect(watch.elapsed, lessThan(const Duration(seconds: 20)));
+    });
+
+    test(
+      'a pre-tool script that cannot be spawned denies (fail closed)',
+      () async {
+        final hooks = ShellAgentLoopHooks(
+          // A working directory that does not exist makes the spawn itself fail.
+          cwd: p.join(dir.path, 'missing-dir'),
+          environment: _env,
+          preToolScript: sh('pre_allow2', 'exit 0'),
+        );
+        expect(await hooks.preToolUse('write', {}), isFalse);
+      },
+    );
+
     test('a hanging script is killed by the timeout and denies', () async {
       // A timed-out run returns -1 (not null), which the gate treats as deny.
       final hooks = ShellAgentLoopHooks(

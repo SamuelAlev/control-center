@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Csapattárs",
+  "systemSender": "Rendszer",
   "agent": "Ügynök",
   "attachFile": "Fájl csatolása",
   "messageHint": "Üzenet",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Nem olvasható: {names}",
   "installationSuspendedTitle": "A GitHub App telepítése fel van függesztve",
-  "installationSuspendedBody": "A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.",
-  "installationSuspendedNotice": "A GitHub App telepítése fel van függesztve. A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.",
+  "installationSuspendedBody": "A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.",
+  "installationSuspendedNotice": "A GitHub App telepítése fel van függesztve. A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Írd be a böngészőben látható kódot",
   "credentialsConnectCodeMalformed": "Ez nem bejelentkezési kódnak tűnik. A kódok 8 betűből és számjegyből állnak.",
   "credentialsSignInInvalidCode": "Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.",
+  "credentialsSignInTooManyCodes": "Túl sok hibás kód. Indítsa újra a bejelentkezést.",
+  "credentialsSignInRetryLater": "A bejelentkezési szolgáltatás most nem válaszol. Várjon egy percet, majd próbálja újra.",
+  "credentialsSignInRefused": "A bejelentkezést elutasították. Indítsa újra, és hagyja jóvá az összes kért engedélyt.",
+  "credentialsSignInNotSaved": "A bejelentkezés sikerült, de a szerver nem tudta menteni. Próbálja újra.",
   "credentialsSignInUnavailable": "A(z) {provider} bejelentkezés még nincs beállítva ezen a szerveren.",
   "credentialsSignInPhoneUnreachable": "A szerver bejelentkezési visszahívási címe telefonról nem érhető el biztonságosan. Jelentkezz be az asztali alkalmazásban, vagy kérd meg a szerver tulajdonosát, hogy állítson be nyilvános HTTPS-címet.",
   "credentialsLoginTimedOut": "A bejelentkezés lejárt. Indítson új bejelentkezést.",

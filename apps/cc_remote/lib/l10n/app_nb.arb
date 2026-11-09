@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Kollega",
+  "systemSender": "System",
   "agent": "Agent",
   "attachFile": "Legg ved en fil",
   "messageHint": "Melding",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Ikke lesbare: {names}",
   "installationSuspendedTitle": "GitHub App-installasjonen er suspendert",
-  "installationSuspendedBody": "Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub, eller koble til et token som har tilgang.",
-  "installationSuspendedNotice": "GitHub App-installasjonen er suspendert. Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub, eller koble til et token som har tilgang.",
+  "installationSuspendedBody": "Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub.",
+  "installationSuspendedNotice": "GitHub App-installasjonen er suspendert. Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Skriv inn koden som vises i nettleseren",
   "credentialsConnectCodeMalformed": "Det ser ikke ut som en påloggingskode. Koder har 8 bokstaver og sifre.",
   "credentialsSignInInvalidCode": "Koden hører ikke til denne påloggingen. Sjekk den og prøv igjen.",
+  "credentialsSignInTooManyCodes": "For mange feil koder. Start påloggingen på nytt.",
+  "credentialsSignInRetryLater": "Påloggingstjenesten svarer ikke akkurat nå. Vent et minutt, og prøv igjen.",
+  "credentialsSignInRefused": "Påloggingen ble avvist. Start den på nytt og godkjenn alle forespurte tillatelser.",
+  "credentialsSignInNotSaved": "Påloggingen fungerte, men serveren kunne ikke lagre den. Prøv igjen.",
   "credentialsSignInUnavailable": "Pålogging på {provider} er ikke satt opp på denne serveren ennå.",
   "credentialsSignInPhoneUnreachable": "Påloggingsadressen denne serveren sender deg tilbake til, kan ikke nås sikkert fra en telefon. Logg på fra skrivebordsappen, eller be servereieren sette opp en offentlig HTTPS-adresse.",
   "credentialsLoginTimedOut": "Påloggingen utløp. Start et nytt påloggingsforsøk.",

@@ -3,7 +3,7 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_infra/src/evaluation/provider_call_budget_guard.dart';
 import 'package:test/test.dart';
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   int calls = 0;
 
   @override

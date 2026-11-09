@@ -10,7 +10,7 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// The same implementation drives OpenAI, OpenRouter, LM Studio and
 /// other OpenAI-compatible endpoints — only the base URL and auth differ. The
 /// local Ollama provider subclasses it.
-class OpenAiProvider implements LlmProviderPort {
+class OpenAiProvider extends LlmProviderPort {
   /// Creates an [OpenAiProvider].
   OpenAiProvider({
     this._apiKey,
@@ -375,10 +375,16 @@ class OpenAiProvider implements LlmProviderPort {
                 'key under "z.ai GLM Coding Plan" in Settings → Providers '
                 'instead, or top up the pay-as-you-go balance.'
           : '';
+      final code = wireCode ?? 'http_${e.statusCode}';
       yield LlmError(
         '$_providerName API error ${e.statusCode}: '
         '${e.body}$reauth$codingPlanHint',
-        code: wireCode ?? 'http_${e.statusCode}',
+        code: code,
+        kind: LlmErrorKind.classify(
+          code: code,
+          message: e.body,
+          httpStatus: e.statusCode,
+        ),
         retryable: !hardQuota && (e.statusCode == 429 || e.statusCode >= 500),
         retryAfterMs: e.retryAfter?.inMilliseconds,
       );

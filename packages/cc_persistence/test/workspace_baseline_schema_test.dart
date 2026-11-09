@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
+import 'package:cc_persistence/database/daos/notification_feed_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -1757,6 +1758,170 @@ CREATE TABLE conversation_goals (
         addTearDown(resumed.close);
         final rows = await definitions(resumed);
         expect(rows.single.name, 'Renamed');
+      });
+    });
+
+    group('v22 → v23', () {
+      late Directory dir;
+      late File file;
+      setUp(() async {
+        dir = await Directory.systemTemp.createTemp('ws_migration_v23_');
+        file = File('${dir.path}/ws.db');
+      });
+      tearDown(() => dir.delete(recursive: true));
+
+      WorkspaceDatabase open() =>
+          WorkspaceDatabase.forTesting(NativeDatabase(file), workspaceId: 'ws');
+
+      Future<Set<String>> columnsOf(WorkspaceDatabase db, String table) async =>
+          (await db.customSelect('PRAGMA table_info($table)').get())
+              .map((r) => r.read<String>('name'))
+              .toSet();
+
+      Future<bool> hasIndex(WorkspaceDatabase db, String name) async =>
+          (await db
+                  .customSelect(
+                    "SELECT name FROM sqlite_master WHERE type = 'index' "
+                    'AND name = ?',
+                    variables: [Variable.withString(name)],
+                  )
+                  .get())
+              .isNotEmpty;
+
+      test(
+        'a fresh database indexes the wait id and has no step branch index',
+        () async {
+          final db = open();
+          addTearDown(db.close);
+          expect(await hasIndex(db, 'idx_notification_feed_wait_id'), isTrue);
+          expect(
+            await columnsOf(db, 'pipeline_step_runs'),
+            isNot(contains('branch_index')),
+          );
+        },
+      );
+
+      test('resolving a wait is an index probe, not a JSON scan', () async {
+        final db = open();
+        addTearDown(db.close);
+        final plan = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN ${NotificationFeedDao.resolveAgentWaitSql}',
+              variables: [
+                Variable.withString('2026-11-09T00:00:00.000Z'),
+                Variable.withString('ws'),
+                Variable.withString(
+                  NotificationFeedDao.agentAwaitingInputMethod,
+                ),
+                Variable.withString('wait-1'),
+              ],
+            )
+            .get();
+        final detail = plan.map((r) => r.read<String>('detail')).join('\n');
+        expect(detail, contains('idx_notification_feed_wait_id'));
+      });
+
+      test(
+        'a malformed feed row still inserts under the expression index',
+        () async {
+          final db = open();
+          addTearDown(db.close);
+          await db.customStatement(
+            'INSERT INTO notification_feed (id, workspace_id, method, params_json) '
+            "VALUES ('n1', 'ws', ?, '{not json')",
+            [NotificationFeedDao.agentAwaitingInputMethod],
+          );
+          expect(
+            await db.notificationFeedDao.resolveAgentWait(
+              'ws',
+              'wait-1',
+              DateTime.utc(2026, 11, 9),
+            ),
+            0,
+          );
+        },
+      );
+
+      test('an existing v22 database retypes system messages, gains the index, '
+          'drops the branch index and flags projection runs', () async {
+        final setup = open();
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_notification_feed_wait_id',
+        );
+        await setup.customStatement(
+          'ALTER TABLE pipeline_step_runs ADD COLUMN branch_index INTEGER',
+        );
+        await setup.customStatement(
+          'ALTER TABLE pipeline_runs DROP COLUMN is_projection',
+        );
+        // Raw rows without their space/conversation parents: only the
+        // sender columns matter to this step.
+        await setup.customStatement('PRAGMA foreign_keys = OFF');
+        for (final (id, senderId, senderType) in const [
+          ('m-system', 'system', 'agent'),
+          ('m-agent', 'agent-1', 'agent'),
+          ('m-user', 'user-1', 'user'),
+        ]) {
+          await setup.customStatement(
+            'INSERT INTO conversation_messages '
+            '(id, space_id, conversation_id, sender_id, sender_type, content, '
+            'message_type, created_at) '
+            "VALUES (?, 's', 'c', ?, ?, 'x', 'system', 0)",
+            [id, senderId, senderType],
+          );
+        }
+        for (final (id, marker) in const [
+          ('r-watch', 'CodeGraphWatch'),
+          ('r-scan', 'SkillAnalysisManual'),
+          ('r-update', 'SkillAnalysisUpdate'),
+          ('r-engine', 'manual'),
+        ]) {
+          await setup.customStatement(
+            'INSERT INTO pipeline_runs '
+            '(id, template_id, workspace_id, status, trigger_event_type, '
+            'started_at) '
+            "VALUES (?, 'tpl', 'ws', 'running', ?, 0)",
+            [id, marker],
+          );
+        }
+        await setup.customStatement('PRAGMA user_version = 22');
+        await setup.close();
+
+        final db = open();
+        addTearDown(db.close);
+        final types = {
+          for (final row
+              in await db
+                  .customSelect(
+                    'SELECT id, sender_type FROM conversation_messages',
+                  )
+                  .get())
+            row.read<String>('id'): row.read<String>('sender_type'),
+        };
+        expect(types, {
+          'm-system': 'system',
+          'm-agent': 'agent',
+          'm-user': 'user',
+        });
+        expect(await hasIndex(db, 'idx_notification_feed_wait_id'), isTrue);
+        expect(
+          await columnsOf(db, 'pipeline_step_runs'),
+          isNot(contains('branch_index')),
+        );
+        final projections = {
+          for (final row
+              in await db
+                  .customSelect('SELECT id, is_projection FROM pipeline_runs')
+                  .get())
+            row.read<String>('id'): row.read<bool>('is_projection'),
+        };
+        expect(projections, {
+          'r-watch': true,
+          'r-scan': true,
+          'r-update': true,
+          'r-engine': false,
+        });
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       });
     });
   });

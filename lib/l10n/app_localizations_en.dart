@@ -9,6 +9,15 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Couldn\'t send that now: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Your answer wasn\'t delivered. It may already be answered, or the agent stopped waiting.';
+
+  @override
   String get succeeded => 'Succeeded';
 
   @override
@@ -2598,10 +2607,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addGif => 'Add GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Add at least one GitHub repository to see pull requests';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5897,9 +5902,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Duration';
 
   @override
-  String get pipelineStepBranch => 'Branch';
-
-  @override
   String get pipelineStepViewConversation => 'View conversation';
 
   @override
@@ -6987,13 +6989,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewRequested => 'Review requested';
 
   @override
-  String get connectGitHubHint =>
-      'Sign in to GitHub in Settings → Workspace → Profile & identity → Code hosting';
-
-  @override
-  String get connectGitHubToLoadPrs => 'Connect GitHub to load pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'No repositories configured';
 
   @override
@@ -7650,13 +7645,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Create as draft';
-
-  @override
-  String get composePrNoRepo => 'No GitHub repository selected';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Select a workspace with a GitHub-linked repository to open a pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16770,6 +16758,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'That code doesn\'t match this sign-in. Check it and try again.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Too many wrong codes. Start the sign-in again.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'This sign-in is no longer valid. Start it again.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'The server couldn\'t read this sign-in request. Start it again.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Too many sign-in attempts right now. Wait a minute, then try again.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider accepted the sign-in, but the server couldn\'t save it. Try again.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider isn\'t responding right now. Try again in a few minutes.';
   }
@@ -16800,7 +16809,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'This Linear workspace is already connected to another Control Center server.';
+      'This Slack workspace is already connected to another Control Center server.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17233,6 +17242,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Switch app';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Open on $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Showing the first $count files. $forge doesn\'t list the rest.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Connect a code host to load pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Add at least one repository on GitHub, GitLab or Bitbucket to see pull requests';
+
+  @override
+  String get composePrNoForgeRepo => 'No code-hosted repository selected';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Select a workspace with a repository on GitHub, GitLab or Bitbucket to open a pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Connect $forge to open a pull request in this repository';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

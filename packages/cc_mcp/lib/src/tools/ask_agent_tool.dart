@@ -7,10 +7,12 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
+import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart'
+    show PairRateLimiter;
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/tools/peer_agent_messaging.dart';
+import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
 import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 
 /// Asks another agent a question and waits for its reply (PRD 22 §2, §4).
@@ -30,7 +32,7 @@ class AskAgentTool extends McpTool {
     required MessagingRepository messaging,
     required this._messagingPort,
     required this._rateLimiter,
-    required this._service,
+    required TicketWorkflowService service,
     required this._pendingHops,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
@@ -38,13 +40,14 @@ class AskAgentTool extends McpTool {
          messaging: messaging,
          eventBus: eventBus,
        ),
+       _gate = PeerDelegationGate(service: service, pendingHops: _pendingHops),
        _messaging = messaging;
 
   final PeerAgentMessaging _peers;
   final MessagingRepository _messaging;
   final MessagingPort _messagingPort;
   final PairRateLimiter _rateLimiter;
-  final TicketWorkflowService _service;
+  final PeerDelegationGate _gate;
   final PendingDelegationHops _pendingHops;
 
   /// Default reply timeout in seconds (10 minutes) when unspecified.
@@ -152,93 +155,32 @@ class AskAgentTool extends McpTool {
     }
     final recipient = (resolution as ResolvedRecipient).agent;
 
-    final fromKey = fromAgentId;
-    if (!_rateLimiter.tryAcquire(fromKey, recipient.id, DateTime.now())) {
-      return CallResult.error(
-        'Rate limited: too many messages from "$fromKey" to '
-        '"${recipient.name}" in a short window. Wait before asking again.',
-      );
-    }
-
     final parentTicketId = arguments['parent_ticket_id'];
     if (parentTicketId != null && parentTicketId is! String) {
       return CallResult.error('Invalid argument: parent_ticket_id');
     }
-    final ticketChain = <String>[];
-    var ticketDepth = 0;
-    if (parentTicketId is String) {
-      var ticket = await _service.repository.getById(
-        workspaceId,
-        parentTicketId,
-      );
-      if (ticket == null || ticket.workspaceId != workspaceId) {
-        return CallResult.error('Parent ticket not found in this workspace.');
-      }
-      if (ticket.assignedAgentId != fromAgentId) {
-        return CallResult.error('Parent ticket is not assigned to the asker.');
-      }
-      ticketDepth = ticket.delegationDepth;
-      final seen = <String>{};
-      while (ticket != null && seen.add(ticket.id)) {
-        if (ticket.assignedAgentId != null) {
-          ticketChain.insert(0, ticket.assignedAgentId!);
-        }
-        final parent = ticket.parentTicketId;
-        ticket = parent == null
-            ? null
-            : await _service.repository.getById(workspaceId, parent);
-      }
-    }
-    final autonomyResolver = _service.resolveEffectiveAutonomy;
-    final budgetResolver = _service.resolveRemainingBudgetCents;
-    if (autonomyResolver == null || budgetResolver == null) {
-      return CallResult.error('Ask guard policy is not configured.');
-    }
-    final space = await _peers.resolveOrCreateAgentDm(
+    // Every guard runs BEFORE any side effect: a refused ask mints no DM
+    // space and spends no rate-limit slot. Autonomy resolves in the pair's
+    // existing DM when there is one (a fresh DM can hold no override yet).
+    final existingDm = await _peers.findAgentDm(
       workspaceId: workspaceId,
       toAgentId: recipient.id,
-      toAgentName: recipient.name,
       fromAgentId: fromAgentId,
     );
-    final delegatorAutonomy = await autonomyResolver(
+    final refusal = await _gate.refusal(
       workspaceId: workspaceId,
-      agentId: fromAgentId,
-      spaceId: space.id,
+      fromAgentId: fromAgentId,
+      recipientId: recipient.id,
+      parentTicketId: parentTicketId as String?,
+      spaceId: existingDm?.id,
     );
-    final requestedAutonomy = await autonomyResolver(
-      workspaceId: workspaceId,
-      agentId: recipient.id,
-      spaceId: space.id,
-    );
-    final budget = await budgetResolver(
-      workspaceId: workspaceId,
-      agentId: fromAgentId,
-    );
-    // A null budget is explicitly unlimited in the workflow port. The guard
-    // only distinguishes positive remaining funds from an exhausted budget.
-    final pendingChain = _pendingHops.chain(workspaceId, fromAgentId);
-    final chain = [
-      ...ticketChain,
-      ...pendingChain.where((id) => !ticketChain.contains(id)),
-    ];
-    if (chain.isEmpty || chain.last != fromAgentId) {
-      chain.add(fromAgentId);
+    if (refusal != null) {
+      return CallResult.error(refusal);
     }
-    final guard = const DelegationGuards().evaluate(
-      chainAgentIds: chain,
-      chainDepth: ticketDepth + pendingChain.length - 1,
-      targetAgentId: recipient.id,
-      delegatorAutonomy: delegatorAutonomy,
-      requestedAutonomy: requestedAutonomy,
-      remainingBudgetCents: budget ?? 1,
-    );
-    if (!guard.allowed) {
-      return CallResult.error(guard.refusal!);
-    }
-    if (_pendingHops.wouldCycle(workspaceId, fromAgentId, recipient.id)) {
+    if (!_rateLimiter.tryAcquire(fromAgentId, recipient.id, DateTime.now())) {
       return CallResult.error(
-        'Delegation refused: cycle detected '
-        '(${[...pendingChain, recipient.id].join(' → ')}).',
+        'Rate limited: too many messages from "$fromAgentId" to '
+        '"${recipient.name}" in a short window. Wait before asking again.',
       );
     }
     final releaseHop = _pendingHops.enter(
@@ -247,34 +189,61 @@ class AskAgentTool extends McpTool {
       recipient.id,
     );
     try {
-      // Snapshot the existing message ids so the reply we wait for is strictly a
-      // NEW message from the recipient (a reused space may hold older replies).
-      final before = await _messaging.getMessages(workspaceId, space.id);
-      final knownIds = {for (final m in before) m.id};
-
+      final space =
+          existingDm ??
+          await _peers.resolveOrCreateAgentDm(
+            workspaceId: workspaceId,
+            toAgentId: recipient.id,
+            toAgentName: recipient.name,
+            fromAgentId: fromAgentId,
+          );
       final askMessageId = await _messaging.sendMessage(
         workspaceId: workspaceId,
         spaceId: space.id,
         content: message,
-        senderId: fromKey,
+        senderId: fromAgentId,
         senderType: 'agent',
       );
+      // The reply is read from the conversation the question landed in, not
+      // the whole space history.
+      final conversationId = (await _messaging.getMessageById(
+        workspaceId,
+        askMessageId,
+      ))?.conversationId;
 
-      await _messagingPort.dispatchAgent(
+      final runId = await _messagingPort.dispatchAgent(
         spaceId: space.id,
         agentId: recipient.id,
         prompt: message,
         workspaceId: workspaceId,
         inReplyToAgentId: fromAgentId,
+        conversationId: conversationId,
       );
+      if (runId == null) {
+        return CallResult.error(
+          '"${recipient.name}" could not be started to answer. The question '
+          'is in the space (${space.id}); it will see it on its next turn.',
+        );
+      }
 
-      final reply = await _awaitReply(
-        workspaceId: workspaceId,
-        spaceId: space.id,
-        recipientId: recipient.id,
-        knownIds: knownIds,
-        timeout: Duration(seconds: timeoutSeconds),
-      );
+      final Message? reply;
+      try {
+        reply = await _awaitReply(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: conversationId,
+          replyId: runId,
+          timeout: Duration(seconds: timeoutSeconds),
+        );
+      } on Object catch (e) {
+        // A broken stream is not a timeout: say so instead of burning the
+        // whole wait in silence.
+        return CallResult.error(
+          'Lost the reply stream while waiting for "${recipient.name}": $e. '
+          'The question is still pending in space ${space.id} '
+          '(message $askMessageId).',
+        );
+      }
 
       if (reply == null) {
         // Mandatory-timeout contract: always resume, never error. The question
@@ -328,24 +297,23 @@ class AskAgentTool extends McpTool {
     return seconds;
   }
 
-  /// Waits for the recipient's next completed message in the space, or null
-  /// when [timeout] elapses first. The wait has a single overall deadline (it
-  /// does not reset on each streaming delta).
+  /// Waits for the reply to THIS ask, or null when [timeout] elapses first.
+  ///
+  /// The reply is correlated by id: the recipient's turn is written as the
+  /// message whose id is the dispatched run's id ([replyId]). Matching "the
+  /// first completed message from the recipient" mis-attributed replies when
+  /// two asks to the same agent were in flight. The wait has a single overall
+  /// deadline, and a stream error surfaces as an error rather than a silent
+  /// timeout.
   Future<Message?> _awaitReply({
     required String workspaceId,
     required String spaceId,
-    required String recipientId,
-    required Set<String> knownIds,
+    required String? conversationId,
+    required String replyId,
     required Duration timeout,
   }) async {
     bool isReply(Message m) {
-      if (m.senderId != recipientId) {
-        return false;
-      }
-      if (m.senderType != SenderType.agent) {
-        return false;
-      }
-      if (knownIds.contains(m.id) || m.isSystem) {
+      if (m.id != replyId) {
         return false;
       }
       // An agent turn only counts once it has finished streaming.
@@ -356,24 +324,30 @@ class AskAgentTool extends McpTool {
     }
 
     final completer = Completer<Message?>();
-    // Space-wide, not a named conversation: the ask and the dispatch both
-    // land in the DM's standing conversation (minted lazily with its own
-    // uuid), and a conversation id is never the space id — watching
-    // `watchMessages(spaceId)` streams nothing forever and every question
-    // silently burned the whole timeout.
-    final subscription = _messaging
-        .watchSpaceMessages(workspaceId, spaceId)
-        .listen((messages) {
-          if (completer.isCompleted) {
+    // The ask's own conversation. A conversation id is never the space id;
+    // only when the ask's row could not be read does this fall back to the
+    // space-wide stream.
+    final stream = conversationId == null
+        ? _messaging.watchSpaceMessages(workspaceId, spaceId)
+        : _messaging.watchMessages(workspaceId, spaceId, conversationId);
+    final subscription = stream.listen(
+      (messages) {
+        if (completer.isCompleted) {
+          return;
+        }
+        for (final m in messages) {
+          if (isReply(m)) {
+            completer.complete(m);
             return;
           }
-          for (final m in messages) {
-            if (isReply(m)) {
-              completer.complete(m);
-              return;
-            }
-          }
-        });
+        }
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!completer.isCompleted) {
+          completer.completeError(error, stack);
+        }
+      },
+    );
     final timer = Timer(timeout, () {
       if (!completer.isCompleted) {
         completer.complete(null);

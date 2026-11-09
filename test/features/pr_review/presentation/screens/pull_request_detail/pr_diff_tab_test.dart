@@ -87,7 +87,12 @@ Future<void> _teardown(WidgetTester tester) async {
 }
 
 /// The PR identity PrDiffTab is keyed by in this suite.
-const _prRef = (workspaceId: 'ws', repoFullName: 'test/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'test/repo',
+  number: 42,
+  forge: null,
+);
 
 void main() {
   group('PrDiffTab merged toolbar', () {

@@ -2,8 +2,6 @@ import 'dart:collection';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:collection/collection.dart' show ListEquality;
-import 'package:control_center/di/providers.dart'
-    show agentRunLogRepositoryProvider;
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -146,42 +144,28 @@ Future<bool> deliverSteeringCard(
     );
 
 /// Gets a queued card in now, stopping the conversation's runs if that is the
-/// only way. Returns false when no run is left to hand it to.
+/// only way. Returns false when the card could not be handed to anything (no
+/// longer queued).
 ///
-/// A run that can take the card takes it and keeps working. Otherwise every
-/// run stops and the server's run-end conversion sends what is queued as the
-/// next turn, this card first. Stopping stays its own call rather than a flag
-/// on delivery: `dispatch.stopRun` is authorized separately from `steering.*`,
-/// so a role that may steer but not stop is refused here too.
+/// One server call (`steering.forceSend`): a run that can take the card takes
+/// it and keeps working; otherwise the server puts it first and stops every
+/// run so the run-end conversion sends it as the next turn; with no run live
+/// the queue is sent at once. The server checks the caller may stop runs
+/// (`dispatch.stopRun`'s permission) before stopping anything, and throws when
+/// they may not.
 Future<bool> forceSteeringCard(
   WidgetRef ref, {
   required String workspaceId,
   required ConversationRef key,
   required String messageId,
 }) async {
-  if (await deliverSteeringCard(
-    ref,
-    workspaceId: workspaceId,
-    key: key,
-    messageId: messageId,
-  )) {
-    return true;
-  }
-  final runs = await ref
-      .read(agentRunLogRepositoryProvider)
-      .activeByConversation(workspaceId, key.conversationId);
-  if (runs.isEmpty) {
-    return false;
-  }
-  await reorderSteeringCards(
-    ref,
-    workspaceId: workspaceId,
-    key: key,
-    orderedIds: [messageId],
-  );
-  final port = ref.read(messagingServiceProvider);
-  for (final run in runs) {
-    await port.stopRun(workspaceId, run.id);
-  }
-  return true;
+  final outcome = await ref
+      .read(messagingServiceProvider)
+      .forceSendSteering(
+        workspaceId: workspaceId,
+        spaceId: key.spaceId,
+        conversationId: key.conversationId,
+        messageId: messageId,
+      );
+  return outcome != 'not_queued';
 }

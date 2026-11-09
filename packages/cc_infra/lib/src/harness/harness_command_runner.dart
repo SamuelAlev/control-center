@@ -4,19 +4,17 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
-import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
-import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/process/child_process.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
+import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 
 /// Runs the harness `bash` tool's commands through CC's command policy, the OS
@@ -373,30 +371,22 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     }
   }
 
-  Future<SandboxConfig> _buildSandboxConfig(String cwd) async {
-    final home = Platform.environment['HOME'];
-    final sessionId =
-        'harness-${agentId ?? 'oneshot'}::${conversationId ?? 'no-conv'}';
-    final spec = SandboxSpec(
-      sessionId: sessionId,
-      workspaceId: workspaceId ?? '',
-      agentId: agentId,
-      bindMounts: [SandboxBindMount(hostPath: cwd, guestPath: cwd)],
-      guestWorkdir: cwd,
-      networkEnabled: _networkEnabled,
-      mode: _mode,
-      protectedPaths: await _protectedPaths?.call() ?? const [],
-      execGrantRoots: await _execGrantRoots(),
-      loopbackPorts: _loopbackPorts,
-      environmentScope: _environmentScope,
-    );
-    final policy = const SandboxPolicyResolver().resolve(
-      spec: spec,
-      homeDir: (home != null && home.isNotEmpty) ? home : null,
-      runDir: '$cwd/.cc-runs/$sessionId',
-    );
-    return buildSandboxConfigFromPolicy(policy);
-  }
+  Future<SandboxConfig> _buildSandboxConfig(String cwd) async =>
+      processSandboxConfig(
+        processSandboxSpec(
+          sessionId:
+              'harness-${agentId ?? 'oneshot'}::${conversationId ?? 'no-conv'}',
+          workspaceId: workspaceId ?? '',
+          agentId: agentId,
+          workdir: cwd,
+          networkEnabled: _networkEnabled,
+          mode: _mode,
+          protectedPaths: await _protectedPaths?.call() ?? const [],
+          execGrantRoots: await _execGrantRoots(),
+          loopbackPorts: _loopbackPorts,
+          environmentScope: _environmentScope,
+        ),
+      );
 }
 
 /// Accumulates streamed process output with bounded memory: the first `headCap`

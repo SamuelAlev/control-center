@@ -265,7 +265,9 @@ class SpaceProvisioningService {
       }
       return _timeout + _provisionTaskTimeout * count;
     } on Object catch (e) {
-      CcHostLog.warning('space provisioning: provision task repo count failed: $e');
+      CcHostLog.warning(
+        'space provisioning: provision task repo count failed: $e',
+      );
       return _timeout;
     }
   }
@@ -333,17 +335,23 @@ class SpaceProvisioningService {
         await _finish(workspaceId, spaceId, run, SpaceProvisioningStatus.ready);
         return;
       }
+      // The outcome is not read: [_verify] checks the worktree rows, which is
+      // what this space needs, and a failure has already been logged.
       await _provisioner.ensureSpaceWorkspace(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        agentSlug: prContext != null ? '_pr' : '_environment',
-        fallbackDir: '',
-        prHeadRef: prContext?.headRef,
-        prHeadRepoFullName: prContext?.repoFullName,
-        prBranch: prContext?.branch,
-        repoAllowlist: worktreeRepos,
-        onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
-        onRepoProvisionTasks: _provisionTasksStepEmitter(workspaceId, spaceId),
+        SpaceWorkspaceRequest(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          agentSlug: prContext != null ? '_pr' : '_environment',
+          prHeadRef: prContext?.headRef,
+          prHeadRepoFullName: prContext?.repoFullName,
+          prBranch: prContext?.branch,
+          repoAllowlist: worktreeRepos,
+          onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
+          onRepoProvisionTasks: _provisionTasksStepEmitter(
+            workspaceId,
+            spaceId,
+          ),
+        ),
       );
       if (_isStale(workspaceId, spaceId, run)) {
         return;
@@ -365,6 +373,9 @@ class SpaceProvisioningService {
 
     // Provision each agent's overlay + write its derived `.mcp.json`.
     final overlays = <String>[];
+    // An agent left without an overlay fails the run: it has nowhere of its
+    // own to work, whatever the worktrees say.
+    var agentFailed = false;
     for (final agent in agents) {
       // A stop during the first agent's clone must not be answered by
       // provisioning the next agent's overlay.
@@ -384,21 +395,43 @@ class SpaceProvisioningService {
             subject: agentName,
           ),
         );
-        final overlay = await _provisioner.ensureSpaceWorkspace(
-          workspaceId: workspaceId,
-          spaceId: spaceId,
-          agentSlug: agentSlug,
-          fallbackDir: agentConfigDir,
-          agentConfigDir: agentConfigDir,
-          prHeadRef: prContext?.headRef,
-          prHeadRepoFullName: prContext?.repoFullName,
-          prBranch: prContext?.branch,
-          repoAllowlist: targetRepoIds,
-          // The first agent's call materializes the shared repo worktrees, so
-          // its repo steps overwrite the agent step until checkout completes.
-          onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
-          onRepoProvisionTasks: _provisionTasksStepEmitter(workspaceId, spaceId),
+        final workspace = await _provisioner.ensureSpaceWorkspace(
+          SpaceWorkspaceRequest(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            agentSlug: agentSlug,
+            agentConfigDir: agentConfigDir,
+            prHeadRef: prContext?.headRef,
+            prHeadRepoFullName: prContext?.repoFullName,
+            prBranch: prContext?.branch,
+            repoAllowlist: targetRepoIds,
+            // The first agent's call materializes the shared repo worktrees,
+            // so its repo steps overwrite the agent step until checkout
+            // completes.
+            onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
+            onRepoProvisionTasks: _provisionTasksStepEmitter(
+              workspaceId,
+              spaceId,
+            ),
+          ),
         );
+        final String overlay;
+        switch (workspace) {
+          case SpaceWorkspaceReady(:final path):
+            overlay = path;
+          case SpaceWorkspaceUnavailable(
+            reason: SpaceWorkspaceUnavailableReason.noRepos ||
+                SpaceWorkspaceUnavailableReason.cancelled,
+          ):
+            // No repo: the agent works in its own directory, whose
+            // `.mcp.json` dispatch derives. Stopped: [_isStale] ends the run.
+            continue;
+          case SpaceWorkspaceUnavailable(:final message):
+            // Not the agent's own directory in its place: that one is shared
+            // by every space the agent is in, and a `.mcp.json` written there
+            // would pass verification for an overlay that does not exist.
+            throw StateError(message ?? 'the overlay was not prepared');
+        }
         // Track the overlay before writing `.mcp.json` so verification always
         // checks it — a failed write leaves `.mcp.json` absent, which `_verify`
         // catches and reports as `failed`.
@@ -415,6 +448,7 @@ class SpaceProvisioningService {
           e,
           st,
         );
+        agentFailed = true;
         // A stopped run unwinding through here broke nothing, and the log has
         // already said how it ended.
         if (!_isStale(workspaceId, spaceId, run)) {
@@ -435,14 +469,16 @@ class SpaceProvisioningService {
     }
 
     // Verify: every TARGET repo has a worktree row AND every overlay has
-    // `.mcp.json`. `ensureSpaceWorkspace` never throws, so this is the
-    // authoritative success signal.
-    final ready = await _verify(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoCount: targetRepoIds.length,
-      overlays: overlays,
-    );
+    // `.mcp.json`. A repo that failed inside `ensureSpaceWorkspace` still
+    // returns an overlay, so this is the authoritative success signal.
+    final ready =
+        !agentFailed &&
+        await _verify(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          repoCount: targetRepoIds.length,
+          overlays: overlays,
+        );
 
     await _finish(
       workspaceId,

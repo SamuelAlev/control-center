@@ -56,6 +56,26 @@ final class ConnectChoice {
   bool get enabled => mode.usesConnect && baseUrl.isNotEmpty;
 }
 
+/// A `CC_CONNECT_URL` this server cannot use. The boot refuses to start on
+/// it ([ConnectSettings.checkEnvironment]) rather than failing every lane
+/// call later; a [ConnectSettings] built over it reads as Connect off.
+final class ConnectEnvironmentInvalid implements Exception {
+  /// Creates the refusal; [reason] is the URL check's message.
+  const ConnectEnvironmentInvalid(this.reason);
+
+  /// Why the value is unusable.
+  final String reason;
+
+  /// What the operator reads.
+  String get message =>
+      'cc_server: refusing to start — CC_CONNECT_URL is not usable: $reason '
+      'Set it to hosted, off or a Connect URL (https://, or http:// on this '
+      'machine only), or unset it.';
+
+  @override
+  String toString() => message;
+}
+
 /// Where the Connect choice and its trust state live.
 ///
 /// Non-secrets (`connect_mode`, `connect_url`, the hosted epoch high-water
@@ -77,9 +97,112 @@ class ConnectSettings {
   final Map<String, String> _memory = {};
   final List<void Function()> _listeners = [];
 
-  /// Runs [listener] after every [setChoice]: which lanes the server's own
-  /// apps answer for may have changed, so callers drop what they cached.
+  /// The environment override, parsed once: null when `CC_CONNECT_URL` is
+  /// unset, Connect off (locked) when it is unusable.
+  late final ConnectChoice? _pinned = _parseEnvironment(_environment).$1;
+
+  /// The last `mode|url|seed` observed, so a change made by another process
+  /// (`cc_server connect`) is noticed. Null until first observed.
+  String? _observed;
+
+  /// Serializes the seed's read-then-write.
+  Future<void> _seedLock = Future<void>.value();
+
+  /// Runs [listener] after anything that changes which Connect or install
+  /// identity lanes use: [setChoice], [rotateInstallSeed], or such a change
+  /// made outside this process and noticed by [noticeExternalChanges].
+  /// Callers drop what they cached.
   void addListener(void Function() listener) => _listeners.add(listener);
+
+  void _notify() {
+    for (final listener in List.of(_listeners)) {
+      listener();
+    }
+  }
+
+  /// Refuses an unusable `CC_CONNECT_URL` in [environment] with
+  /// [ConnectEnvironmentInvalid]. The boot and `cc_server connect` call it
+  /// once, so the operator sees the reason instead of every Connect lane
+  /// failing at its call site.
+  static void checkEnvironment(Map<String, String> environment) {
+    final error = _parseEnvironment(environment).$2;
+    if (error != null) {
+      throw ConnectEnvironmentInvalid(error);
+    }
+  }
+
+  /// The override in [environment] and, when it is unusable, why.
+  static (ConnectChoice?, String?) _parseEnvironment(
+    Map<String, String> environment,
+  ) {
+    final override = environment[environmentKey]?.trim() ?? '';
+    if (override.isEmpty) {
+      return (null, null);
+    }
+    switch (override.toLowerCase()) {
+      case 'off':
+        return (_lockedOff, null);
+      case 'hosted':
+        return (
+          const ConnectChoice(
+            mode: ConnectMode.hosted,
+            baseUrl: hostedConnectOrigin,
+            lockedByEnvironment: true,
+          ),
+          null,
+        );
+    }
+    try {
+      return (
+        ConnectChoice(
+          mode: _isHosted(override) ? ConnectMode.hosted : ConnectMode.custom,
+          baseUrl: _checkedUrl(override),
+          lockedByEnvironment: true,
+        ),
+        null,
+      );
+    } on ValidationException catch (e) {
+      return (_lockedOff, e.message);
+    }
+  }
+
+  static const _lockedOff = ConnectChoice(
+    mode: ConnectMode.off,
+    baseUrl: '',
+    lockedByEnvironment: true,
+  );
+
+  /// Fires the listeners when the stored choice or install seed changed
+  /// since this process last looked: `cc_server connect enable | disable |
+  /// rotate-key` writes the same data directory from another process, and
+  /// nothing else would tell a running server's caches. Cheap (two setting
+  /// reads and the secrets file's mtime check); `ConnectClient` runs it
+  /// before answering from its config cache.
+  Future<void> noticeExternalChanges() async {
+    final now = await _fingerprint();
+    final before = _observed;
+    _observed = now;
+    if (before != null && before != now) {
+      _notify();
+    }
+  }
+
+  Future<String> _fingerprint() async {
+    final choice = await this.choice();
+    final seed = await _secrets.readPsk(installKeySecret) ?? '';
+    return '${choice.mode.name}|${choice.baseUrl}|$seed';
+  }
+
+  Future<void> _settled() async {
+    _observed = await _fingerprint();
+    _notify();
+  }
+
+  Future<T> _withSeedLock<T>(Future<T> Function() body) {
+    final run = _seedLock.then((_) => body());
+    _seedLock = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
 
   /// Whether this server's own apps (`ProviderAppSettings`, `KLIPY_APP_KEY`)
   /// are in force: only when the operator chose no Connect (`off`, or
@@ -103,27 +226,12 @@ class ConnectSettings {
   /// The environment override: `hosted`, `off`, or an `https://` URL.
   static const String environmentKey = 'CC_CONNECT_URL';
 
-  /// The effective choice.
+  /// The effective choice. Never throws: an unusable `CC_CONNECT_URL` reads
+  /// as Connect off (see [checkEnvironment]).
   Future<ConnectChoice> choice() async {
-    final override = _environment[environmentKey]?.trim() ?? '';
-    if (override.isNotEmpty) {
-      return switch (override.toLowerCase()) {
-        'off' => const ConnectChoice(
-          mode: ConnectMode.off,
-          baseUrl: '',
-          lockedByEnvironment: true,
-        ),
-        'hosted' => const ConnectChoice(
-          mode: ConnectMode.hosted,
-          baseUrl: hostedConnectOrigin,
-          lockedByEnvironment: true,
-        ),
-        _ => ConnectChoice(
-          mode: _isHosted(override) ? ConnectMode.hosted : ConnectMode.custom,
-          baseUrl: _checkedUrl(override),
-          lockedByEnvironment: true,
-        ),
-      };
+    final pinned = _pinned;
+    if (pinned != null) {
+      return pinned;
     }
     final mode = ConnectMode.fromWire(await _read(_modeKey));
     switch (mode) {
@@ -172,14 +280,16 @@ class ConnectSettings {
         await _write(_modeKey, mode.name);
         await _delete(_urlKey);
     }
-    for (final listener in List.of(_listeners)) {
-      listener();
-    }
+    await _settled();
     return choice();
   }
 
-  /// The 32-byte master seed, minted on first use.
-  Future<List<int>> installSeed() async {
+  /// The 32-byte master seed, minted on first use. The read and the mint
+  /// run under one lock, so two first calls agree on one seed instead of the
+  /// later write silently replacing the identity the earlier one derived.
+  Future<List<int>> installSeed() => _withSeedLock(_readOrMintSeed);
+
+  Future<List<int>> _readOrMintSeed() async {
     final stored = await _secrets.readPsk(installKeySecret);
     if (stored != null && stored.isNotEmpty) {
       try {
@@ -194,16 +304,25 @@ class ConnectSettings {
     }
     final seed = ConnectInstallIdentity.newMasterSeed();
     await _secrets.writePsk(installKeySecret, b64url(seed));
+    // This process minted it: not a change from elsewhere, and nothing
+    // derived from a seed that did not exist needs dropping.
+    if (_observed != null) {
+      _observed = await _fingerprint();
+    }
     return seed;
   }
 
   /// Replaces the master seed. Every Connect grant this server holds stops
-  /// working (its seals are bound to the old install id).
+  /// working (its seals are bound to the old install id). Listeners run, so
+  /// nothing keeps signing with the old identity.
   Future<void> rotateInstallSeed() async {
-    await _secrets.writePsk(
-      installKeySecret,
-      b64url(ConnectInstallIdentity.newMasterSeed()),
+    await _withSeedLock(
+      () => _secrets.writePsk(
+        installKeySecret,
+        b64url(ConnectInstallIdentity.newMasterSeed()),
+      ),
     );
+    await _settled();
   }
 
   /// The highest hosted config epoch this server has accepted.
@@ -217,8 +336,9 @@ class ConnectSettings {
     }
   }
 
-  /// The last verified config for [baseUrl], for outages, with a key-mode
-  /// Klipy app key put back from the secrets store.
+  /// The last verified config for [baseUrl], for outages. It never holds a
+  /// key-mode Klipy app key ([cacheConfig]), so a cached key-mode lane does
+  /// not parse and GIF search waits for Connect.
   Future<Map<String, Object?>?> cachedConfig(String baseUrl) async {
     final raw = await _read('$_configKeyPrefix$baseUrl');
     if (raw == null) {
@@ -233,30 +353,23 @@ class ConnectSettings {
     if (decoded is! Map<String, Object?>) {
       return null;
     }
-    final klipy = decoded['klipy'];
-    final key = await _secrets.readPsk('$_klipyKeySecretPrefix$baseUrl');
-    if (klipy is Map && key != null && key.isNotEmpty) {
-      decoded['klipy'] = {...klipy, 'app_key': key};
-    }
     return decoded;
   }
 
   /// Caches a verified config for [baseUrl]. A key-mode Klipy app key is a
-  /// secret: it goes to the secrets store, never into server settings (which
-  /// are backed up and exported).
+  /// rotatable Connect secret no client needs: it is never written anywhere
+  /// (server settings are backed up and exported; the secrets file outlives
+  /// a rotation). `ConnectClient` keeps it in memory only. A copy an older
+  /// build left in the secrets store is deleted here.
   Future<void> cacheConfig(String baseUrl, Map<String, Object?> json) async {
     final cached = {...json};
     final klipy = cached['klipy'];
-    final secretKey = '$_klipyKeySecretPrefix$baseUrl';
-    final key = klipy is Map ? klipy['app_key'] : null;
-    final stored = await _secrets.readPsk(secretKey);
-    if (key is String && key.isNotEmpty) {
-      cached['klipy'] = {...(klipy as Map)}..remove('app_key');
-      if (stored != key) {
-        await _secrets.writePsk(secretKey, key);
-      }
-    } else if (stored != null) {
-      await _secrets.deletePsk(secretKey);
+    if (klipy is Map) {
+      cached['klipy'] = {...klipy}..remove('app_key');
+    }
+    final legacy = '$_klipyKeySecretPrefix$baseUrl';
+    if (await _secrets.readPsk(legacy) != null) {
+      await _secrets.deletePsk(legacy);
     }
     await _write('$_configKeyPrefix$baseUrl', jsonEncode(cached));
   }

@@ -17,14 +17,46 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.d
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_cancel_token.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 
-/// Optional exhaustive head-ref history for forges that support a bounded
-/// branch-scoped query. A failed/truncated read throws; it must never look
-/// like an empty history to callers checking whether every PR was merged.
+export 'package:cc_domain/features/pr_review/domain/ports/forge_cancel_token.dart';
+
+/// Optional exhaustive head-ref history, for forges whose capabilities carry
+/// [ForgeCapability.branchHistory]. A failed/truncated read throws; it must
+/// never look like an empty history to callers checking whether every PR was
+/// merged.
 abstract interface class ForgeBranchPrHistoryClient {
   /// All PRs ever created from [branch] in this client repository.
   Future<List<PullRequest>> listPullRequestsForBranch(String branch);
+}
+
+/// Optional numbered pages of the open list beyond the first ("load more"),
+/// for forges whose capabilities carry [ForgeCapability.openListPaging].
+abstract interface class ForgeOpenPrPagingClient {
+  /// Page [page] (1-based) of open pull requests, newest first.
+  Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequestsPage(
+    int page,
+  );
+}
+
+/// Optional targeted reads behind the author-facing notifications, for forges
+/// whose capabilities carry [ForgeCapability.mergeSignals]. Each throws on a
+/// failed read; the poller logs it and degrades the notification's copy, never
+/// its correctness.
+abstract interface class ForgeMergeSignalsClient {
+  /// The forge's own mergeable verdict for one pull request.
+  /// [PrMergeableState.unknown] means "not computed yet", never "blocked".
+  Future<PrMergeableState> mergeState(int prNumber);
+
+  /// The login of the most recent approving review, or null when nobody has
+  /// approved.
+  Future<String?> latestApprover(int prNumber);
+
+  /// The first failing check on the pull request's head, or null when none
+  /// is failing.
+  Future<({String name, String? url})?> firstFailingCheck(int prNumber);
 }
 
 /// How a review verdict is expressed, independent of any forge's spelling.
@@ -71,13 +103,6 @@ class PrMergeOutcome {
   /// Creates a [PrMergeOutcome].
   const PrMergeOutcome({required this.merged, required this.message, this.sha});
 
-  /// Reads a [PrMergeOutcome] off the wire.
-  factory PrMergeOutcome.fromJson(Map<String, dynamic> json) => PrMergeOutcome(
-    merged: json['merged'] as bool? ?? false,
-    message: json['message'] as String? ?? '',
-    sha: json['sha'] as String?,
-  );
-
   /// Whether the merge went through.
   final bool merged;
 
@@ -87,12 +112,29 @@ class PrMergeOutcome {
   /// The resulting merge commit SHA, when the forge reports one.
   final String? sha;
 
-  /// Wire form. The keys match what the PR-review RPC op has always returned.
-  Map<String, dynamic> toJson() => {
-    'merged': merged,
-    'message': message,
-    if (sha != null) 'sha': sha,
-  };
+  @override
+  bool operator ==(Object other) =>
+      other is PrMergeOutcome &&
+      other.merged == merged &&
+      other.message == message &&
+      other.sha == sha;
+
+  @override
+  int get hashCode => Object.hash(merged, message, sha);
+}
+
+/// A pull request's changed files as the forge listed them.
+class PrFileListing {
+  /// Creates a [PrFileListing].
+  const PrFileListing(this.files, {this.truncated = false});
+
+  /// The files, in the forge's order.
+  final List<PrFile> files;
+
+  /// The forge stopped listing at its own cap (GitHub's 3 000 files,
+  /// GitLab's and Bitbucket's 1 000 rows), so [files] is not the whole pull
+  /// request. Never set because a caller passed a smaller `limit`.
+  final bool truncated;
 }
 
 /// What a reaction is attached to.
@@ -259,7 +301,7 @@ abstract interface class ForgePrClient {
   // ── Reads ────────────────────────────────────────────────────────────────
 
   /// Fetches one pull request, or null when it does not exist.
-  Future<PullRequest?> getPullRequest(int prNumber, {Object? cancelToken});
+  Future<PullRequest?> getPullRequest(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// One page of this repo's OPEN pull requests, most-recently-updated first.
   ///
@@ -272,53 +314,58 @@ abstract interface class ForgePrClient {
   /// "load more" without a second probe.
   Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequests({
     int limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Pull requests authored by [login] that have been MERGED, most recently
-  /// merged first. Backs the inbox's "merging and recently merged" section.
+  /// merged first ([sortMostRecentlyMergedFirst]). Backs the inbox's "merging
+  /// and recently merged" section.
   Future<List<PullRequest>> listMergedByAuthor(
     String login, {
     int limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Whether [prNumber] left the open list by being merged (true) or closed
-  /// unmerged (false); null when it cannot be resolved.
+  /// unmerged (false); null when it is still open, does not exist, or cannot
+  /// be read ([mergeOutcomeOf]). Every failure except a cancellation answers
+  /// null; a cancellation rethrows.
   ///
   /// The poller asks this about a PR that vanished between two passes, so
   /// "unknown" must stay distinguishable from "closed" — reporting a merge that
-  /// did not happen would fire the wrong lifecycle event.
-  Future<bool?> wasMerged(int prNumber, {Object? cancelToken});
+  /// did not happen would fire the wrong lifecycle event. A PR merely pushed
+  /// off the first page of a long open list is still open, hence null.
+  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// The unified diff for a PR.
-  Future<String> getPullRequestDiff(int prNumber, {Object? cancelToken});
+  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// The files a PR touches. [limit] caps how many are fetched; an adapter that
-  /// hits its forge's own ceiling returns what it has (callers fall back to the
-  /// local git source for very large PRs).
-  Future<List<PrFile>> listFiles(
+  /// hits its forge's own ceiling returns what it has with
+  /// [PrFileListing.truncated] set, so the reader can say the list is partial
+  /// rather than present it as the whole change.
+  Future<PrFileListing> listFiles(
     int prNumber, {
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// The commits on a PR, oldest first.
-  Future<List<PrCommit>> listCommits(int prNumber, {Object? cancelToken});
+  Future<List<PrCommit>> listCommits(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// The files changed by a single commit.
-  Future<List<PrFile>> listCommitFiles(String sha, {Object? cancelToken});
+  Future<List<PrFile>> listCommitFiles(String sha, {ForgeCancelToken? cancelToken});
 
   /// Submitted reviews (approvals, change requests, comment-only reviews).
   Future<List<PrReviewSubmission>> listReviews(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Inline (file-anchored) review comments.
   Future<List<PrCodeReviewComment>> listReviewComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// The conversation state of every inline review thread on the PR.
@@ -330,34 +377,34 @@ abstract interface class ForgePrClient {
   /// treating empty as "nothing is resolved".
   Future<List<PrReviewThreadState>> listReviewThreadStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Top-level conversation comments.
   Future<List<IssueComment>> listIssueComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Timeline events (review requested/removed, …) for the activity feed.
   Future<List<PrTimelineEvent>> listTimelineEvents(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// CI results for [headSha]. Capability: `ciChecks`.
-  Future<List<CheckRun>> listCheckRuns(String headSha, {Object? cancelToken});
+  Future<List<CheckRun>> listCheckRuns(String headSha, {ForgeCancelToken? cancelToken});
 
   /// Commit statuses for [headSha] — the separate, older status API where
   /// deploy-preview integrations publish their URLs. Empty on forges that fold
   /// statuses into checks.
   Future<List<CommitStatus>> listCommitStatuses(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Raw file content at [ref].
-  Future<String> getFileContent(String path, String ref, {Object? cancelToken});
+  Future<String> getFileContent(String path, String ref, {ForgeCancelToken? cancelToken});
 
   /// Raw file bytes at [ref] (a commit SHA, branch or tag — never a blob SHA).
   ///
@@ -366,36 +413,36 @@ abstract interface class ForgePrClient {
   Future<Uint8List> getFileBytes(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Per-file viewed state for the current viewer, keyed by path.
   /// Capability: `viewedStateSync`.
   Future<Map<String, PrFileViewedState>> getFileViewedStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Who is reviewing this PR and who owns the touched code.
-  Future<PrReviewerState> getReviewerState(int prNumber, {Object? cancelToken});
+  Future<PrReviewerState> getReviewerState(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// The authenticated user, or null when the client is unauthenticated.
-  Future<PrUser?> getAuthenticatedUser({Object? cancelToken});
+  Future<PrUser?> getAuthenticatedUser({ForgeCancelToken? cancelToken});
 
   /// Users who can be assigned to, or asked to review, this repo.
-  Future<List<PrUser>> listAssignableUsers({Object? cancelToken});
+  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken});
 
   /// Everything that can be asked for a review — users plus, where the forge
   /// has them, teams/groups. Capability for the team half: `teamReviewers`.
   Future<List<PrReviewerCandidate>> listRequestableReviewers({
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// The forge's own reviewer suggestions for a PR.
   /// Capability: `suggestedReviewers`.
   Future<List<PrUser>> listSuggestedReviewers(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   // ── Compose-PR surface ───────────────────────────────────────────────────
@@ -404,10 +451,10 @@ abstract interface class ForgePrClient {
   ///
   /// Backs the base/head pickers, which is why it carries activity rather than
   /// bare names: a repo's useful branch is almost always its newest.
-  Future<List<ForgeBranch>> listBranches({int? limit, Object? cancelToken});
+  Future<List<ForgeBranch>> listBranches({int? limit, ForgeCancelToken? cancelToken});
 
   /// The repository's default branch name, or an empty string when unknown.
-  Future<String> getDefaultBranch({Object? cancelToken});
+  Future<String> getDefaultBranch({ForgeCancelToken? cancelToken});
 
   /// Compares [base] with [head] — what a pull request between them would
   /// contain. Null when the refs cannot be compared (a missing branch, or a
@@ -415,20 +462,20 @@ abstract interface class ForgePrClient {
   Future<ForgeBranchComparison?> compareBranches({
     required String base,
     required String head,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// The repository's pull-request description templates, keyed by a display
   /// name. Empty on forges without them. Capability: `prTemplates`.
-  Future<Map<String, String>> listPrTemplates({Object? cancelToken});
+  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken});
 
   /// Step-level detail and logs for one CI job. Capability: `ciJobDetail`.
-  Future<JobRunDetail?> getJobRunDetail(int jobId, {Object? cancelToken});
+  Future<JobRunDetail?> getJobRunDetail(int jobId, {ForgeCancelToken? cancelToken});
 
   /// The `needs` graph of one CI run. Capability: `ciJobDetail`.
   Future<WorkflowGraph?> getWorkflowGraph(
     int workflowRunId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   // ── Writes ───────────────────────────────────────────────────────────────
@@ -447,7 +494,7 @@ abstract interface class ForgePrClient {
     required String body,
     int? startLine,
     String? startSide,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Replies to an existing inline comment thread.
@@ -455,7 +502,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     required String parentCommentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Posts a top-level comment on the PR conversation timeline (the issues
@@ -463,7 +510,7 @@ abstract interface class ForgePrClient {
   Future<void> postIssueComment({
     required int prNumber,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Replaces the body of a top-level conversation comment.
@@ -476,7 +523,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     required String commentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Deletes a top-level conversation comment.
@@ -486,7 +533,7 @@ abstract interface class ForgePrClient {
   Future<void> deleteIssueComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Deletes one inline review comment. [commentId] is the forge's review
@@ -494,7 +541,7 @@ abstract interface class ForgePrClient {
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Marks a review thread resolved (or reopens it).
@@ -505,22 +552,27 @@ abstract interface class ForgePrClient {
     required int prNumber,
     required String threadId,
     required bool resolved,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Submits a review verdict, optionally with a body.
   ///
   /// [comments] attaches inline comments to the same submission, which is what
   /// makes a batched review one event on the PR instead of N drive-by comments
-  /// followed by a verdict. Each entry is `{path, line, side, body,
-  /// start_line?, start_side?}`. Forges without `pendingReviewBatching` post
-  /// them individually first; the caller does not need to know which.
-  Future<void> submitReview({
+  /// followed by a verdict. Forges without `pendingReviewBatching` post them
+  /// individually first; the caller does not need to know which.
+  ///
+  /// Answers the forge's id for the submitted review when it has one (GitHub's
+  /// review id), null on forges where a verdict is not one addressable record.
+  /// A verdict a forge cannot express ([ForgeReviewVerdict.requestChanges]
+  /// without [ForgeCapability.requestChanges]) throws [ForgeUnsupportedError];
+  /// callers degrade it to a comment first.
+  Future<int?> submitReview({
     required int prNumber,
     required ForgeReviewVerdict verdict,
     String? body,
-    List<Map<String, dynamic>> comments = const [],
-    Object? cancelToken,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
   });
 
   /// Merges a pull request.
@@ -529,11 +581,11 @@ abstract interface class ForgePrClient {
     required ForgeMergeMethod method,
     String? commitTitle,
     String? commitMessage,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Closes a pull request without merging.
-  Future<void> closePullRequest(int prNumber, {Object? cancelToken});
+  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken});
 
   /// Moves a pull request between draft and ready-for-review.
   ///
@@ -542,7 +594,7 @@ abstract interface class ForgePrClient {
   Future<void> setPullRequestDraft({
     required int prNumber,
     required bool draft,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Opens a pull request and returns it.
@@ -552,7 +604,7 @@ abstract interface class ForgePrClient {
     required String headBranch,
     required String baseBranch,
     bool draft = false,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Edits a PR's title and/or body. Only non-null fields are sent.
@@ -560,7 +612,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     String? title,
     String? body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Marks a file viewed or unviewed. Capability: `viewedStateSync`.
@@ -569,26 +621,26 @@ abstract interface class ForgePrClient {
     required String prExternalId,
     required String path,
     required bool viewed,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Adds assignees.
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Removes assignees.
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Labels defined on the repository, the set a pull request can wear.
   /// Capability: `labels`.
-  Future<List<PrLabel>> listLabels({Object? cancelToken});
+  Future<List<PrLabel>> listLabels({ForgeCancelToken? cancelToken});
 
   /// Adds [names] to the pull request. Capability: `labels`.
   ///
@@ -597,14 +649,14 @@ abstract interface class ForgePrClient {
   Future<void> addLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Removes [names] from the pull request. Capability: `labels`.
   Future<void> removeLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Requests reviews. [teamSlugs] requires the `teamReviewers` capability.
@@ -612,7 +664,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     List<String> userLogins,
     List<String> teamSlugs,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Cancels review requests.
@@ -620,7 +672,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     List<String> userLogins,
     List<String> teamSlugs,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Lists the individual reactions on a target. Capability: `reactions`.
@@ -632,7 +684,7 @@ abstract interface class ForgePrClient {
     required ForgeReactionTarget target,
     required String targetId,
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Lists every review summary's reactions on a PR. Capability:
@@ -644,7 +696,7 @@ abstract interface class ForgePrClient {
   /// (nothing reacted, or the forge has no review summaries to react to).
   Future<List<PrReviewReactions>> listReviewReactions(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Adds or removes a reaction. Capability: `reactions`.
@@ -654,7 +706,7 @@ abstract interface class ForgePrClient {
     required int prNumber,
     required String content,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Commits [base64Content] at [path] and returns its public URL — used to
@@ -663,27 +715,57 @@ abstract interface class ForgePrClient {
     required String path,
     required String base64Content,
     required String message,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   // ── Stacks (capability: `stacks`) ────────────────────────────────────────
 
   /// Lists stacks, optionally only the one containing [prNumber].
-  Future<List<PrStack>> listStacks({int? prNumber, Object? cancelToken});
+  Future<List<PrStack>> listStacks({int? prNumber, ForgeCancelToken? cancelToken});
 
   /// Creates a stack from [prNumbers], bottom to top.
   Future<PrStack> createStack({
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Appends [prNumbers] onto an existing stack.
   Future<PrStack?> addToStack({
     required int stackNumber,
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   });
 
   /// Removes the unmerged PRs from a stack.
-  Future<PrStack?> unstack({required int stackNumber, Object? cancelToken});
+  Future<PrStack?> unstack({required int stackNumber, ForgeCancelToken? cancelToken});
+}
+
+/// The [ForgePrClient.wasMerged] answer for [pr] as just read from the forge:
+/// merged → true, closed unmerged → false, still open or absent → null.
+bool? mergeOutcomeOf(PullRequest? pr) => switch (pr?.state) {
+  PrState.merged => true,
+  PrState.closed => false,
+  PrState.open || null => null,
+};
+
+/// Sorts [prs] in place into [ForgePrClient.listMergedByAuthor] order: most
+/// recently merged first, a PR with no merge time last (by update time).
+void sortMostRecentlyMergedFirst(List<PullRequest> prs) {
+  int compare(DateTime? a, DateTime? b) {
+    if (a == null && b == null) {
+      return 0;
+    }
+    if (a == null) {
+      return 1;
+    }
+    if (b == null) {
+      return -1;
+    }
+    return b.compareTo(a);
+  }
+
+  prs.sort((a, b) {
+    final byMerge = compare(a.mergedAt, b.mergedAt);
+    return byMerge != 0 ? byMerge : compare(a.updatedAt, b.updatedAt);
+  });
 }

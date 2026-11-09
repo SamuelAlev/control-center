@@ -195,7 +195,10 @@ final class ConnectService {
   /// Encrypts and decrypts a throwaway value: a KMS key that is missing, has
   /// no IAM grant or is disabled refuses boot instead of failing every seal
   /// afterwards.
-  static Future<void> _probeCipher(SealCipher cipher, SealBackend backend) async {
+  static Future<void> _probeCipher(
+    SealCipher cipher,
+    SealBackend backend,
+  ) async {
     final aad = utf8.encode('cc-connect/boot-probe');
     final probe = randomBytes(16);
     try {
@@ -376,15 +379,9 @@ final class ConnectService {
       if (segment == 'github' && step == 'setup') {
         return _oauth.githubSetup(request);
       }
+      // The callback routes are exactly the segments the lanes redirect to.
       if (step == 'callback' &&
-          const {
-            'github',
-            'google',
-            'linear',
-            'linear_app',
-            'slack_oidc',
-            'slack',
-          }.contains(segment)) {
+          ConnectOAuthLane.fromCallbackSegment(segment) != null) {
         return _oauth.callback(request, segment);
       }
       final lane = ConnectOAuthLane.fromWire(segment);
@@ -413,11 +410,17 @@ final class ConnectService {
       case 'config':
         return ('GET', _configRoute);
       case 'github/refresh':
-        return ('POST', _grants.refreshGitHub);
+        return (
+          'POST',
+          (c, b) => _grants.refresh(c, b, ConnectProvider.github),
+        );
       case 'google/refresh':
-        return ('POST', _grants.refreshGoogle);
+        return (
+          'POST',
+          (c, b) => _grants.refresh(c, b, ConnectProvider.google),
+        );
       case 'slack/refresh':
-        return ('POST', _grants.refreshSlack);
+        return ('POST', (c, b) => _grants.refresh(c, b, ConnectProvider.slack));
       case 'github/scope':
         return ('POST', _grants.githubScope);
       case 'github/install/start':
@@ -449,12 +452,6 @@ final class ConnectService {
         return ('POST', (c, b) => _oauth.claim(c, lane, b));
       }
       return null;
-    }
-    if (s.length == 4 &&
-        s[1] == 'chat' &&
-        s[3] == 'act' &&
-        RegExp(r'^[a-z]{1,32}$').hasMatch(s[2])) {
-      return ('POST', _relay.chatAct);
     }
     return null;
   }

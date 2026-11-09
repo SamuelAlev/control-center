@@ -4,17 +4,22 @@ part of 'rig_service.dart';
 /// tasks. Opened through `open` with `RigSpec.environment`; this is what
 /// happens to one afterwards.
 extension RigServiceEnvironments on RigService {
-  /// The live environment rig of [environmentId] in [conversationId], or null.
+  /// The live environment rig of [environmentId] in [spaceId], or null.
   Rig? environmentRigFor(
     String workspaceId,
-    String conversationId,
+    String spaceId,
     String environmentId,
   ) {
+    final key = RigSlotKey(
+      workspaceId: workspaceId,
+      ownerId: spaceId,
+      surface: RigSurface.environment,
+      isExec: false,
+      engine: null,
+      slotId: environmentId,
+    );
     for (final live in _live.values) {
-      if (live.rig.workspaceId == workspaceId &&
-          live.rig.conversationId == conversationId &&
-          live.rig.spec.isEnvironment &&
-          live.rig.spec.slotId == environmentId &&
+      if (RigSlotKey.ofRig(live.rig) == key &&
           live.rig.status.phase.holdsMachine) {
         return live.rig;
       }
@@ -22,12 +27,12 @@ extension RigServiceEnvironments on RigService {
     return null;
   }
 
-  /// A live environment rig of [conversationId], or null. Any environment's:
+  /// A live environment rig of [spaceId], or null. Any environment's:
   /// a task with no environment of its own runs in whichever is there.
-  Rig? environmentRigIn(String workspaceId, String conversationId) {
+  Rig? environmentRigIn(String workspaceId, String spaceId) {
     for (final live in _live.values) {
       if (live.rig.workspaceId == workspaceId &&
-          live.rig.conversationId == conversationId &&
+          live.rig.conversationId == spaceId &&
           live.rig.spec.isEnvironment &&
           live.rig.status.phase.holdsMachine) {
         return live.rig;
@@ -88,7 +93,7 @@ extension RigServiceEnvironments on RigService {
     // it. Resuming attaches afresh, which bootstraps a new one.
     await _ports.detach(rigId);
     await _smolvm.stopKeepingDisks(machine);
-    await _updateStatus(live, const RigParked());
+    await _updateStatus(live, const RigParked(RigParkKind.stopped));
   }
 
   /// Starts a stopped environment rig and waits for Docker.

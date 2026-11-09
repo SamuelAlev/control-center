@@ -4,15 +4,20 @@ import 'package:cc_domain/cc_domain.dart' show DelegationRefusedException;
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
 import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:cc_mcp/src/tools/ticket_access.dart';
 
-/// MCP tool that delegates a ticket through the same guard as `delegate_task`.
+/// MCP tool that delegates a ticket through the same [PeerDelegationGate] as
+/// `delegate_task` and `ask_agent`.
 class DelegateTicketTool extends McpTool {
   /// Creates a [DelegateTicketTool].
-  DelegateTicketTool({required this._service, required this._pendingHops});
+  DelegateTicketTool({
+    required this._service,
+    required PendingDelegationHops pendingHops,
+  }) : _gate = PeerDelegationGate(service: _service, pendingHops: pendingHops);
   final TicketWorkflowService _service;
-  final PendingDelegationHops _pendingHops;
+  final PeerDelegationGate _gate;
 
   @override
   String get name => 'delegate_ticket';
@@ -85,25 +90,28 @@ class DelegateTicketTool extends McpTool {
         'Missing or invalid argument: delegated_by_agent_id',
       );
     }
-    if (_pendingHops.wouldCycle(
-      workspaceId,
-      delegatedByAgentId,
-      assignedAgentId,
-    )) {
-      return CallResult.error(
-        'Delegation refused: cycle detected '
-        '(${[..._pendingHops.chain(workspaceId, delegatedByAgentId), assignedAgentId].join(' → ')}).',
-      );
+    final parentTicketId = arguments['parent_ticket_id'] as String?;
+    final spaceId = arguments['space_id'] as String?;
+    final refusal = await _gate.refusal(
+      workspaceId: workspaceId,
+      fromAgentId: delegatedByAgentId,
+      recipientId: assignedAgentId,
+      handOff: PeerHandOff.ticket,
+      parentTicketId: parentTicketId,
+      spaceId: spaceId,
+    );
+    if (refusal != null) {
+      return CallResult.error(refusal);
     }
     try {
-      final ticket = await _service.delegateGuarded(
+      final ticket = await _service.createDelegatedTicket(
         workspaceId: workspaceId,
         title: title,
         description: arguments['description'] as String?,
         assignedAgentId: assignedAgentId,
         delegatedByAgentId: delegatedByAgentId,
-        parentTicketId: arguments['parent_ticket_id'] as String?,
-        spaceId: arguments['space_id'] as String?,
+        parentTicketId: parentTicketId,
+        spaceId: spaceId,
       );
       return CallResult.success(
         jsonEncode({

@@ -274,8 +274,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     if (!isAuthed) {
       return EmptyConfigState(
         icon: AppIcons.gitPullRequest,
-        message: l10n.connectGitHubToLoadPrs,
-        hint: l10n.connectGitHubHint,
+        message: l10n.connectForgeToLoadPrs,
+        hint: l10n.connectForgeHint,
       );
     }
     if (dataAsync.hasError && dataAsync.value == null) {
@@ -295,7 +295,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       return EmptyConfigState(
         icon: AppIcons.inbox,
         message: l10n.noRepositoriesConfigured,
-        hint: l10n.addGithubRepoPrompt,
+        hint: l10n.addForgeRepoPrompt,
         action: CcButton(
           onPressed: () => GoRouter.of(
             context,

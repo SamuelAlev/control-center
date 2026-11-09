@@ -115,7 +115,10 @@ final class FirestoreBindingStore implements BindingStore {
   }
 
   @override
-  Future<GitHubInstallationBinding?> github(int installationId) async {
+  Future<GitHubInstallationBinding?> github(
+    int installationId, {
+    bool fresh = false,
+  }) async {
     final doc = await _get(_githubCollection, '$installationId');
     if (doc == null) {
       return null;
@@ -195,6 +198,7 @@ final class FirestoreBindingStore implements BindingStore {
         botId: _string(fields, 'bot_id') ?? '',
         appId: _string(fields, 'app_id') ?? '',
         boundAt: _time(fields, 'bound_at'),
+        botUserId: _string(fields, 'bot_user_id') ?? '',
       ),
       updateTime: updateTime,
     );
@@ -209,6 +213,7 @@ final class FirestoreBindingStore implements BindingStore {
     'fields': {
       'install_id': {'stringValue': binding.installId},
       'bot_id': {'stringValue': binding.botId},
+      'bot_user_id': {'stringValue': binding.botUserId},
       'app_id': {'stringValue': binding.appId},
       'bound_at': {'timestampValue': _clock().toUtc().toIso8601String()},
     },

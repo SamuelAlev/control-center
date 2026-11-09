@@ -172,29 +172,12 @@ class McpToolBridge extends HarnessTool {
     );
   }
 
+  /// Delegation identities (`from_agent_id`, `delegated_by_agent_id`) are
+  /// forced by [McpCallScope.apply] itself, so both transports share it.
   Map<String, dynamic> _withScope(
     Map<String, dynamic> args,
     McpCallScope scope,
-  ) {
-    final scoped = scope.apply(
-      args,
-      mcpTool.inputSchema,
-      force: mcpTool.forcedScopeKeys,
-    );
-    final props = mcpTool.inputSchema['properties'];
-    final agentId = scope.agentId;
-    // Delegation identities always name the caller, not an arbitrary target.
-    if (props is Map<String, dynamic> &&
-        agentId != null &&
-        agentId.isNotEmpty) {
-      for (final callerId in const ['from_agent_id', 'delegated_by_agent_id']) {
-        if (props.containsKey(callerId)) {
-          scoped[callerId] = agentId;
-        }
-      }
-    }
-    return scoped;
-  }
+  ) => scope.apply(args, mcpTool.inputSchema, force: mcpTool.forcedScopeKeys);
 
   static ToolApprovalTier _mapTier(CapabilityTier tier) {
     switch (tier) {

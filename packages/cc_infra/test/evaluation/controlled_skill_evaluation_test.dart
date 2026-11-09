@@ -287,7 +287,7 @@ class _NoModelCallsFactory extends HarnessProviderFactory {
   }) => _NoModelCallsProvider();
 }
 
-class _NoModelCallsProvider implements LlmProviderPort {
+class _NoModelCallsProvider extends LlmProviderPort {
   @override
   String get displayName => 'never called';
 

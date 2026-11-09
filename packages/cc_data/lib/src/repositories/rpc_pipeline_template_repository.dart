@@ -45,7 +45,11 @@ class RpcPipelineTemplateRepository implements PipelineTemplateRepository {
   static PipelineStepDefinition _stepFromDto(Map<String, dynamic> s) =>
       PipelineStepDefinition(
         id: s['id'] as String,
-        kind: _stepKindByName[s['kind'] as String?] ?? StepKind.listen,
+        // Unknown kinds throw: a terminal or join drawn as a plain listen
+        // step misrepresents what the run does.
+        kind:
+            _stepKindByName[s['kind'] as String?] ??
+            (throw FormatException('Unknown step kind "${s['kind']}"')),
         bodyKey: s['bodyKey'] as String,
         triggers: ((s['triggers'] as List?) ?? const [])
             .whereType<Map>()

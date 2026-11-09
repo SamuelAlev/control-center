@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_domain/core/utils/single_flight.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart' show createHttpClient;
@@ -60,7 +61,7 @@ class LinearClients {
   /// How old a grant may get before the daily sweep renews it.
   static const Duration refreshAge = Duration(days: 20);
 
-  final Map<String, Future<ProviderToken?>> _refreshing = {};
+  final SingleFlight<String, ProviderToken?> _refreshing = SingleFlight();
   final Map<String, RhttpClient> _appHttp = {};
   final Map<String, RhttpClient> _personHttp = {};
 
@@ -236,6 +237,7 @@ class LinearClients {
       final fresh = await _renew(
         'app:$workspaceId',
         token,
+        read: () => _workspaces.read(workspaceId),
         write: (t) => _workspaces.write(workspaceId, t),
         clear: () => _workspaces.delete(workspaceId),
         lane: ConnectOAuthLane.linearApp,
@@ -259,6 +261,11 @@ class LinearClients {
       final fresh = await _renew(
         'person:$userId@$workspaceId',
         token,
+        read: () => _people.ticketToken(
+          userId,
+          TicketProvider.linear,
+          workspaceId: workspaceId,
+        ),
         write: (t) => _people.setTicketToken(
           userId,
           TicketProvider.linear,
@@ -285,6 +292,7 @@ class LinearClients {
       final fresh = await _renew(
         'person:$userId@',
         token,
+        read: () => _people.ticketToken(userId, TicketProvider.linear),
         write: (t) => _people.setTicketToken(userId, TicketProvider.linear, t),
         clear: () => _people.clearTicketToken(userId, TicketProvider.linear),
         lane: ConnectOAuthLane.linear,
@@ -315,6 +323,7 @@ class LinearClients {
     return _renew(
       key,
       token,
+      read: read,
       write: write,
       clear: clear,
       lane: lane,
@@ -324,34 +333,51 @@ class LinearClients {
 
   /// One refresh per grant at a time: Linear rotates refresh tokens, so two
   /// concurrent refreshes would burn the grant.
+  ///
+  /// The flight re-reads the stored grant before spending its refresh token:
+  /// a caller that read [token] just before another renewal settled finds
+  /// the renewed grant instead of replaying the rotated-out refresh token.
+  /// The result is written (or the grant cleared) only while the stored
+  /// grant is still the one refreshed, so a sign-in that landed meanwhile
+  /// wins.
   Future<ProviderToken?> _renew(
     String key,
     ProviderToken token, {
+    required Future<ProviderToken?> Function() read,
     required Future<void> Function(ProviderToken token) write,
     required Future<void> Function() clear,
     required ConnectOAuthLane lane,
     required String? slot,
-  }) {
-    final inflight = _refreshing[key];
-    if (inflight != null) {
-      return inflight;
+  }) => _refreshing.run(key, () async {
+    final stored = await read();
+    if (stored == null) {
+      return null;
     }
-    final future = () async {
-      final outcome = await _refresh(lane, token, slot: slot);
-      switch (outcome) {
-        case Refreshed(:final token):
-          await write(token);
-          return token;
-        case RefreshRejected():
-          CcHostLog.info('linear: ${lane.wire} grant refused; sign in again');
-          await clear();
-          return null;
-        case RefreshUnavailable():
-          // Keep the grant; an unexpired access token still works.
-          return token.isExpired ? null : token;
-      }
-    }();
-    _refreshing[key] = future;
-    return future.whenComplete(() => _refreshing.remove(key));
-  }
+    if (!_sameGrant(stored, token)) {
+      return stored.isExpired ? null : stored;
+    }
+    final outcome = await _refresh(lane, stored, slot: slot);
+    final current = await read();
+    if (current == null) {
+      return null;
+    }
+    if (!_sameGrant(current, stored)) {
+      return current.isExpired ? null : current;
+    }
+    switch (outcome) {
+      case Refreshed(:final token):
+        await write(token);
+        return token;
+      case RefreshRejected():
+        CcHostLog.info('linear: ${lane.wire} grant refused; sign in again');
+        await clear();
+        return null;
+      case RefreshUnavailable():
+        // Keep the grant; an unexpired access token still works.
+        return stored.isExpired ? null : stored;
+    }
+  });
+
+  static bool _sameGrant(ProviderToken a, ProviderToken b) =>
+      a.refreshToken == b.refreshToken && a.accessToken == b.accessToken;
 }

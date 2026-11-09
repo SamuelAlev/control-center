@@ -526,7 +526,9 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
             id: component.id,
             kind: component.kind,
             label: component.label,
-            state: component is AppEnvironmentComponent ? 'closed' : 'pending',
+            state: component is AppEnvironmentComponent
+                ? EnvironmentComponentPhase.closed.wire
+                : EnvironmentComponentPhase.pending.wire,
           ),
       ],
       options: options,
@@ -732,31 +734,50 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     }
   }
 
-  /// [component]'s plan, from cache, or resolved again after a restart.
-  Future<ComposePlan> _planOf(
+  /// [component]'s stack by project name, for everything but `up`.
+  ///
+  /// Never a new plan: planning reads the worktree's compose file and can
+  /// take a port lease, and stopping, destroying, reading or exec'ing into a
+  /// stack needs neither. The cached plan only lends its variables.
+  ComposeProject _composeProject(
     SpaceEnvironment env,
     _Stack stack,
     ComposeEnvironmentComponent component,
-  ) async {
+  ) =>
+      _plans[env.id]?[component.id]?.context.project ??
+      ComposeProject(
+        environmentId: env.id,
+        stateDir: stack.stateDir,
+        environment: stack.contract.forComponent(component),
+      );
+
+  /// [env]'s stack by project name when nothing but the row is left.
+  ComposeProject _projectOfRow(SpaceEnvironment env) {
+    final stateDir = _d.stateDirFor(env.workspaceId, env.id);
+    return ComposeProject(
+      environmentId: env.id,
+      stateDir: Directory(stateDir).existsSync() ? stateDir : null,
+    );
+  }
+
+  /// The services [component] runs, as far as anything knows without
+  /// planning: the cached plan, then the row's last report, then the
+  /// definition's own list.
+  List<String> _composeServices(
+    SpaceEnvironment env,
+    ComposeEnvironmentComponent component,
+  ) {
     final cached = _plans[env.id]?[component.id];
     if (cached != null) {
-      return cached;
+      return cached.services;
     }
-    final lease = await _lease(stack.space, stack.loaded);
-    final plan = await _d.compose.plan(
-      _composeContext(
-        stack.space,
-        stack.roles,
-        component,
-        env.id,
-        stack.stateDir,
-        stack.contract.forComponent(component),
-      ),
-      lease: lease,
-      existingPorts: env.ports,
-    );
-    (_plans[env.id] ??= {})[component.id] = plan;
-    return plan;
+    final reported = [
+      for (final state in env.components)
+        if (state.id == component.id)
+          for (final service in state.services)
+            if (service['name'] case final String name) name,
+    ];
+    return reported.isNotEmpty ? reported : component.services;
   }
 
   /// Seed files, for every role with a worktree. Never for a fork PR.

@@ -60,3 +60,35 @@ class NoopAgentLoopHooks implements AgentLoopHooks {
     required bool isError,
   }) async {}
 }
+
+/// The hooks a NESTED run (a subagent) inherits from its parent's [parent].
+///
+/// Tool gating and observation forward unchanged: a user's pre-tool veto is a
+/// policy over every tool call made on their behalf, and a subagent's call is
+/// one — a hook that vetoed only the parent was trivially bypassed by asking a
+/// subagent to make the same call. The session-start hook does NOT re-fire: it
+/// announces the user's session, which a subagent does not start.
+class NestedRunHooks implements AgentLoopHooks {
+  /// Wraps [parent] for a nested run.
+  const NestedRunHooks(this.parent);
+
+  /// The parent run's hooks.
+  final AgentLoopHooks parent;
+
+  @override
+  bool get interceptsTools => parent.interceptsTools;
+
+  @override
+  Future<void> onSessionStart() async {}
+
+  @override
+  Future<bool> preToolUse(String toolName, Map<String, dynamic> args) =>
+      parent.preToolUse(toolName, args);
+
+  @override
+  Future<void> postToolUse(
+    String toolName,
+    String result, {
+    required bool isError,
+  }) => parent.postToolUse(toolName, result, isError: isError);
+}

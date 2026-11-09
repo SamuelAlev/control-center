@@ -125,7 +125,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   /// Wraps a token-driven stream so that cancelling the subscription — e.g. a
   /// Riverpod `autoDispose` provider tearing down when the user navigates away
-  /// from a PR — immediately cancels the [CancelToken], aborting any in-flight
+  /// from a PR — immediately cancels the [ForgeCancelToken], aborting any in-flight
   /// GitHub request.
   ///
   /// An `async*` `finally` can't achieve this: while the generator is suspended
@@ -133,8 +133,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// request would finish (defeating the point) before being "cancelled". A
   /// [StreamController]'s `onCancel` fires as soon as the consumer unsubscribes,
   /// so the token is cancelled right away and rhttp aborts the request.
-  Stream<T> _cancellable<T>(Stream<T> Function(CancelToken cancelToken) build) {
-    final cancelToken = CancelToken();
+  Stream<T> _cancellable<T>(Stream<T> Function(ForgeCancelToken cancelToken) build) {
+    final cancelToken = ForgeCancelToken();
     final controller = StreamController<T>();
     StreamSubscription<T>? sub;
     controller
@@ -146,12 +146,10 @@ class CachedPrReviewRepository implements PrReviewRepository {
         );
       }
       ..onCancel = () async {
-        if (!cancelToken.isCancelled) {
-          // Never awaited: the token's own `whenCancelRequested` (raced in
-          // [_nextSignal]) is what unblocks a suspended generator, and `cancel`
-          // otherwise only completes once a native request observes the token.
-          unawaited(cancelToken.cancel());
-        }
+        // Returns at once: the token's `whenCancelRequested` (raced in
+        // [_nextSignal]) is what unblocks a suspended generator, and the
+        // adapters abort their in-flight requests off the same signal.
+        cancelToken.cancel();
         await sub?.cancel();
       };
     return controller.stream;
@@ -160,13 +158,13 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Whether [error] is an rhttp request cancellation — the benign signal that
   /// a subscriber unsubscribed (e.g. an `autoDispose` provider tearing down
   /// when the user navigates away from, or presses back on, a PR), which fires
-  /// the [CancelToken] via [_cancellable]'s `onCancel`.
+  /// the [ForgeCancelToken] via [_cancellable]'s `onCancel`.
   ///
   /// A cancellation must NEVER propagate as a stream error. The subscription is
   /// already gone, so it would surface as an unhandled error in the server's
   /// root isolate — which is fatal — and the abrupt VM teardown then races the
   /// drift background isolate's sqlite finalizers into a `sqlite3_finalize`
-  /// segfault. Every `await` on a [CancelToken]-driven call inside these
+  /// segfault. Every `await` on a [ForgeCancelToken]-driven call inside these
   /// generators is guarded with this check and a quiet `return`.
   static bool _isCancellation(Object error) => error is RhttpCancelException;
 
@@ -174,9 +172,9 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required String kind,
     required String key,
     required FutureOr<T> Function(String cached) decode,
-    required Future<T> Function(CancelToken? cancelToken) fetch,
+    required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
-    Future<bool> Function(T cached, CancelToken cancelToken)? skipRevalidate,
+    Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
     int? reactToPr,
     bool reactToChecks = false,
   }) {
@@ -196,13 +194,13 @@ class CachedPrReviewRepository implements PrReviewRepository {
   }
 
   Stream<T> _swrInner<T>(
-    CancelToken cancelToken, {
+    ForgeCancelToken cancelToken, {
     required String kind,
     required String key,
     required FutureOr<T> Function(String cached) decode,
-    required Future<T> Function(CancelToken? cancelToken) fetch,
+    required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
-    Future<bool> Function(T cached, CancelToken cancelToken)? skipRevalidate,
+    Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
     int? reactToPr,
     bool reactToChecks = false,
   }) async* {
@@ -272,12 +270,12 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// generator only honors cancellation at a `yield`, so a bare
   /// `iterator.moveNext()` on a quiet signal stream would suspend the
   /// generator indefinitely and deadlock [_cancellable]'s `onCancel` (which
-  /// awaits the generator's teardown). `CancelToken.whenCancelRequested`
+  /// awaits the generator's teardown). `ForgeCancelToken.whenCancelRequested`
   /// completes the moment `cancel()` is called, before the native-ref wait, so
   /// racing it releases the generator immediately.
   static Future<PrChangeSignal?> _nextSignal(
     StreamIterator<PrChangeSignal> iterator,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async {
     final hasNext = await Future.any<bool>([
       iterator.moveNext(),
@@ -303,14 +301,14 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// failure with no cache rethrows and any later failure is swallowed so a
   /// transient GitHub hiccup can't kill a long-lived subscription.
   Stream<T> _swrPass<T>(
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
     _SwrState state, {
     required String kind,
     required String key,
     required FutureOr<T> Function(String cached) decode,
-    required Future<T> Function(CancelToken? cancelToken) fetch,
+    required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
-    Future<bool> Function(T cached, CancelToken cancelToken)? skipRevalidate,
+    Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
     required bool isFirstPass,
   }) async* {
     final cached = await _cache.read(_workspaceId, kind, key);
@@ -514,8 +512,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<T> _singleFlightFetch<T>(
     String kind,
     String key,
-    Future<T> Function(CancelToken? cancelToken) fetch,
-    CancelToken cancelToken,
+    Future<T> Function(ForgeCancelToken? cancelToken) fetch,
+    ForgeCancelToken cancelToken,
   ) async {
     final id = '$kind|$key|$T';
     final existing = _inflightFetches[id];
@@ -584,7 +582,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// fetch would poison the cached row with empty reactions.
   Future<PullRequest?> _fetchPrDetail(
     int prNumber,
-    CancelToken? cancelToken,
+    ForgeCancelToken? cancelToken,
   ) async {
     final pr = await _client.getPullRequest(prNumber, cancelToken: cancelToken);
     if (pr == null) {
@@ -615,7 +613,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Cancellations are benign; other errors propagate.
   Future<PullRequest?> _probePrDetail(
     int prNumber,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async {
     return _singleFlightFetch<PullRequest?>(
       _Kind.prDetail,
@@ -630,7 +628,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Reaction enrichment needs it on every comment, and it is per-forge: the
   /// same operator is a different login on GitHub than on GitLab, so it is
   /// asked of the client that answered rather than read from a global setting.
-  Future<String?> _currentLogin(Object? token) async {
+  Future<String?> _currentLogin(ForgeCancelToken? token) async {
     if (_cachedLogin != null) {
       return _cachedLogin;
     }
@@ -655,7 +653,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required ForgeReactionTarget target,
     required String targetId,
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (base.isEmpty || !_client.capabilities.reactions) {
       return base;
@@ -820,8 +818,9 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
   }
 
-  /// Like [watchFiles] but also carries clone-progress information.
-  /// Used by `prFilesLoadProvider` so the UI can render the progress card.
+  /// Like [watchFiles] but also carries clone-progress information and
+  /// whether the forge capped the list.
+  @override
   Stream<PrFilesLoad> watchFilesLoad(int prNumber) {
     return _cancellable(
       (cancelToken) => _watchFilesLoad(prNumber, cancelToken),
@@ -830,7 +829,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   Stream<PrFilesLoad> _watchFilesLoad(
     int prNumber,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async* {
     final signals = _signals;
     final signalIterator = signals == null
@@ -872,7 +871,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   Stream<PrFilesLoad> _filesLoadPass(
     int prNumber,
-    CancelToken cancelToken, {
+    ForgeCancelToken cancelToken, {
     required bool serveCachedFirst,
   }) async* {
     // Fetch the live PR first — we need changedFiles to decide the source and
@@ -972,10 +971,14 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
     final source = useLocalGit ? _localDiffSource : _apiDiffSource;
     List<PrFile> lastFiles = const [];
+    // Whether the forge capped the list; every later emission of this pass
+    // carries it, so enrichment never makes a partial list read as whole.
+    var truncated = false;
 
     try {
       await for (final load in source.watchFiles(req)) {
         lastFiles = load.files;
+        truncated = load.truncated;
         yield load;
       }
     } on Object catch (error) {
@@ -1018,7 +1021,11 @@ class CachedPrReviewRepository implements PrReviewRepository {
                   viewedStates[f.filename] ?? PrFileViewedState.unviewed,
             ),
         ]);
-        yield PrFilesLoad(files: lastFiles, isComplete: true);
+        yield PrFilesLoad(
+          files: lastFiles,
+          isComplete: true,
+          truncated: truncated,
+        );
       }
     }
 
@@ -1042,11 +1049,20 @@ class CachedPrReviewRepository implements PrReviewRepository {
         cancelToken: cancelToken,
       )) {
         lastFiles = load.files;
-        yield load;
+        yield PrFilesLoad(
+          files: load.files,
+          isComplete: load.isComplete,
+          truncated: truncated,
+          clonePhase: load.clonePhase,
+          cloneMessage: load.cloneMessage,
+          error: load.error,
+        );
       }
     }
 
-    if (lastFiles.isNotEmpty) {
+    // A capped list is never cached: served from the cache it would lose the
+    // flag and read as the whole change on the next visit.
+    if (lastFiles.isNotEmpty && !truncated) {
       final encoded = await _encodeJson(
         lastFiles.map(PrCacheCodec.fileToCache).toList(growable: false),
         large: true,
@@ -1063,7 +1079,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required int prNumber,
     required PrSourceRequest req,
     required List<PrFile> files,
-    required CancelToken cancelToken,
+    required ForgeCancelToken cancelToken,
   }) async* {
     var current = files;
     List<PrFile>? backfilled;
@@ -1137,7 +1153,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<List<PrFile>?> _backfillWithheldPatches(
     int prNumber,
     List<PrFile> files,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async {
     String fullDiff;
     try {
@@ -1419,7 +1435,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<List<PrReviewSubmission>> _enrichReviewReactions(
     List<PrReviewSubmission> reviews, {
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (reviews.isEmpty || !_client.capabilities.reactions) {
       return reviews;
@@ -1545,7 +1561,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<List<PrCodeReviewComment>> _enrichCommentThreadState(
     List<PrCodeReviewComment> comments, {
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (comments.isEmpty || !_client.capabilities.commentThreadResolution) {
       return comments;
@@ -1572,7 +1588,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<List<PrCodeReviewComment>> _enrichCommentReactions(
     List<PrCodeReviewComment> comments, {
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (!_client.capabilities.reactions) {
       return comments;
@@ -1664,7 +1680,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<List<IssueComment>> _enrichIssueCommentReactions(
     List<IssueComment> comments, {
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (!_client.capabilities.reactions) {
       return comments;
@@ -1703,7 +1719,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   Stream<List<CheckRun>> _watchCheckRuns(
     int prNumber,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async* {
     // The check-runs cache is keyed by head SHA, which itself moves when the
     // PR gets a new push — so the reactive loop lives out here where the SHA
@@ -1762,7 +1778,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// long-lived stream over a transient hiccup).
   Future<String?> _resolveHeadSha(
     int prNumber,
-    CancelToken cancelToken, {
+    ForgeCancelToken cancelToken, {
     required bool rethrowOnFailure,
   }) async {
     final sha = await _cachedHeadSha(prNumber);
@@ -1789,7 +1805,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   }
 
   Stream<List<CheckRun>> _checkRunsPass(
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
     _SwrState state,
     String sha,
     bool isFirstPass,
@@ -1838,7 +1854,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   Stream<List<CommitStatus>> _watchCommitStatuses(
     int prNumber,
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
   ) async* {
     // Same SHA-keyed, signal-driven loop as the check-runs stream: statuses
     // hang off the head SHA, which moves on a new push.
@@ -1888,7 +1904,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   }
 
   Stream<List<CommitStatus>> _commitStatusesPass(
-    CancelToken cancelToken,
+    ForgeCancelToken cancelToken,
     _SwrState state,
     String sha,
     bool isFirstPass,
@@ -1934,7 +1950,11 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
     _clearRevalidateStamps(key);
     if (headSha != null && headSha.isNotEmpty) {
-      _clearRevalidateStamps(_shaKey(headSha));
+      final shaKey = _shaKey(headSha);
+      for (final kind in _Kind.headShaScoped) {
+        await _cache.deleteEntry(_workspaceId, kind, shaKey);
+      }
+      _clearRevalidateStamps(shaKey);
     }
     _notifyPrChanged(prNumber);
   }
@@ -2248,7 +2268,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
         _ => ForgeReviewVerdict.comment,
       },
       body: body,
-      comments: [for (final c in comments) c.toWire()],
+      comments: comments,
     );
     if (comments.isNotEmpty) {
       await _invalidatePrKinds(prNumber, const [_Kind.prReviewComments]);
@@ -2310,7 +2330,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   /// Merges a pull request using the specified merge method.
   @override
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
@@ -2328,7 +2348,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     );
     await invalidatePullRequest(prNumber);
     _emitStatusChanged('merged', prNumber);
-    return result.toJson();
+    return result;
   }
 
   /// Closes a pull request.

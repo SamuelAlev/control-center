@@ -1,5 +1,8 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_input.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
+    show pipelineManualRunDedupKey;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/di/demo_providers.dart';
@@ -150,18 +153,12 @@ class _PipelineRunScreenState extends ConsumerState<PipelineRunScreen> {
     final l10n = AppLocalizations.of(context);
     try {
       final engine = ref.read(pipelineEngineProvider);
-      // For templates whose event triggers dedupe by a resource id (currently
-      // index_code → repoId), derive the same dedup key on a manual run so a
-      // manual launch can't race the event-triggered run for the same resource.
-      final dedupKey = templateId == 'index_code'
-          ? values['repo_id'] as String?
-          : null;
       final run = await engine.start(
         templateId,
         workspaceId: workspaceId,
-        triggerEventType: 'manual',
+        triggerEventType: PipelineTrigger.manualEventType,
         triggerPayload: {...values, 'workspace_id': workspaceId},
-        dedupKey: dedupKey,
+        dedupKey: pipelineManualRunDedupKey(templateId, values),
       );
       if (!mounted) {
         return;

@@ -584,6 +584,10 @@
   "@teammate": {
     "description": "Fallback display name for another member's message."
   },
+  "systemSender": "System",
+  "@systemSender": {
+    "description": "Display name for a message the server itself posted (takeover notices, delegation outcomes)."
+  },
   "agent": "Agent",
   "@agent": {
     "description": "Fallback display name for an agent message."
@@ -775,14 +779,14 @@
   "@installationSuspendedTitle": {
     "description": "Title when the GitHub App installation is suspended and lists are cached."
   },
-  "installationSuspendedBody": "Showing last known data for {names}. Resume the installation on GitHub, or connect a token.",
+  "installationSuspendedBody": "Showing last known data for {names}. Resume the installation on GitHub.",
   "@installationSuspendedBody": {
     "description": "Empty-inbox body when the GitHub App installation is suspended.",
     "placeholders": {
       "names": { "type": "String" }
     }
   },
-  "installationSuspendedNotice": "GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub, or connect a token.",
+  "installationSuspendedNotice": "GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub.",
   "@installationSuspendedNotice": {
     "description": "Inline notice on inbox and PR list when the GitHub App installation is suspended.",
     "placeholders": {
@@ -2044,6 +2048,14 @@
   "@credentialsConnectCodeMalformed": {"description": "Shown when the typed sign-in confirmation code is not 8 letters and digits"},
   "credentialsSignInInvalidCode": "That code doesn't match this sign-in. Check it and try again.",
   "@credentialsSignInInvalidCode": {"description": "Shown when the server refuses a typed sign-in confirmation code"},
+  "credentialsSignInTooManyCodes": "Too many wrong codes. Start the sign-in again.",
+  "@credentialsSignInTooManyCodes": {"description": "Shown when too many wrong sign-in confirmation codes ended the attempt"},
+  "credentialsSignInRetryLater": "The sign-in service isn't responding right now. Wait a minute, then try again.",
+  "@credentialsSignInRetryLater": {"description": "Shown when the sign-in provider, Connect or the server is not answering or is rate limiting"},
+  "credentialsSignInRefused": "The sign-in was refused. Start it again and approve every requested permission.",
+  "@credentialsSignInRefused": {"description": "Shown when the provider refused the sign-in or granted the wrong permissions"},
+  "credentialsSignInNotSaved": "The sign-in worked, but the server couldn't save it. Try again.",
+  "@credentialsSignInNotSaved": {"description": "Shown when the sign-in worked but the server could not store the grant"},
   "credentialsSignInUnavailable": "{provider} sign-in isn't set up on this server yet.",
   "@credentialsSignInUnavailable": {"description": "Shown on a GitHub or Linear card when the server has neither its own app nor Connect for that sign-in", "placeholders": {"provider": {"type": "String", "example": "GitHub"}}},
   "credentialsSignInPhoneUnreachable": "This server's sign-in callback isn't reachable securely from a phone. Sign in from the desktop app, or ask the server owner to set up a public HTTPS address.",

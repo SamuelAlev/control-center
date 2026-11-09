@@ -39,8 +39,7 @@ class OpenPrPollingService {
     required PrChangeSignals changeSignals,
     required this._prToWire,
     this._eventBus,
-    this._viewerLoginFor,
-    this._forUserId,
+    this._memberLoginsFor,
     this.fastInterval = const Duration(seconds: 60),
     this.idleInterval = const Duration(minutes: 2),
     this.checksEvery = 2,
@@ -66,6 +65,12 @@ class OpenPrPollingService {
   /// Maximum age of a successfully resolved branch inventory.
   static const branchHistoryRefreshInterval = Duration(minutes: 5);
 
+  /// Wait after a branch's first failed history lookup. Doubles per further
+  /// failure, capped at [branchHistoryRefreshInterval] (which also covers
+  /// GitHub's hourly rate-limit window resetting within a few minutes of a
+  /// storm).
+  static const branchHistoryRetryBase = Duration(seconds: 30);
+
   /// Minimum spacing between sweeps of one workspace triggered by
   /// subscription churn (`pollSoon` bursts), so re-navigating to the PR list
   /// doesn't hammer GitHub.
@@ -76,17 +81,15 @@ class OpenPrPollingService {
   final WorkspaceDatabaseManager _dbs;
   final PrChangeSignals _signals;
 
-  /// Resolves the operator's own login on a forge.
+  /// The workspace members' own logins on a forge, keyed by Control Center
+  /// user id (an empty login = that member has not connected the forge).
   ///
   /// The author-facing notifications (ready to merge, approved, checks failed)
   /// are gated on it: this poller sweeps EVERY open PR in every linked repo,
-  /// so without the gate a busy monorepo announces strangers' work. Null
-  /// disables those lanes entirely — the poller's pre-existing behaviour.
-  final Future<String> Function(ForgeHost forge)? _viewerLoginFor;
-
-  /// The Control Center user [_viewerLoginFor] resolves for, stamped on every
-  /// author-facing event so the client can route it to the right principal.
-  final String? _forUserId;
+  /// so without the gate a busy monorepo announces strangers' work. A PR is
+  /// announced only to the member whose login authored it, stamped with that
+  /// member's user id. Null disables those lanes entirely.
+  final MemberForgeLogins? _memberLoginsFor;
 
   /// Per-pass budget for the targeted confirmation/attribution fetches. Both
   /// are one REST call each on a transition edge; capping them keeps a sweep
@@ -96,11 +99,15 @@ class OpenPrPollingService {
   static const _maxMergeConfirmsPerPass = 5;
   static const _maxApproverLookupsPerPass = 5;
 
-  int _mergeConfirms = 0;
-  int _approverLookups = 0;
+  /// Merged/closed history kept for space-branch lookups: entries older than
+  /// this are dropped on the next write.
+  static const terminalRetention = Duration(days: 30);
 
-  /// Viewer logins resolved once per pass, keyed by forge.
-  final Map<ForgeHost, String> _viewerLoginCache = {};
+  /// At most this many merged/closed entries per workspace (newest kept).
+  static const maxTerminalEntries = 500;
+
+  /// Repos probed concurrently per sweep.
+  static const _probeConcurrency = 8;
 
   /// Pull requests that look ready but whose forge verdict could not be read
   /// yet, keyed `workspaceId|repoId|number`.
@@ -153,8 +160,12 @@ class OpenPrPollingService {
 
   final Map<String, Future<List<Map<String, dynamic>>?>> _historyInflight = {};
   Timer? _timer;
-  int _tick = 0;
   bool _disposed = false;
+
+  /// True while [_onTick] walks the workspaces. A tick that fires before the
+  /// previous one finished is dropped: the walk awaits each sweep in turn, so
+  /// a slow forge would otherwise stack ticks behind each other.
+  bool _ticking = false;
 
   _WorkspacePollState _stateFor(String workspaceId) =>
       _states.putIfAbsent(workspaceId, _WorkspacePollState.new);
@@ -180,33 +191,40 @@ class OpenPrPollingService {
   }
 
   Future<void> _onTick() async {
-    if (_disposed) {
+    if (_disposed || _ticking) {
       return;
     }
-    _tick++;
-    final List<Workspace> workspaces;
+    _ticking = true;
     try {
-      workspaces = await _workspaces.watchAll().first;
-    } on Object catch (e) {
-      CcHostLog.warning('open_pr_poll: workspace enumeration failed: $e');
-      return;
-    }
-    for (final w in workspaces) {
-      final workspaceId = w.id;
-      final st = _stateFor(workspaceId);
-      final watched = st.interest > 0;
-      if (watched) {
-        await _sweep(
-          workspaceId,
-          includeChecks: _tick % checksEvery == 0,
-          force: false,
-        );
-      } else {
-        final last = st.lastSweepAt;
-        if (last == null || _now().difference(last) >= idleInterval) {
-          await _sweep(workspaceId, includeChecks: false, force: false);
+      final List<Workspace> workspaces;
+      try {
+        workspaces = await _workspaces.watchAll().first;
+      } on Object catch (e) {
+        CcHostLog.warning('open_pr_poll: workspace enumeration failed: $e');
+        return;
+      }
+      for (final w in workspaces) {
+        final workspaceId = w.id;
+        final st = _stateFor(workspaceId);
+        final watched = st.interest > 0;
+        if (watched) {
+          // Counted per workspace: a workspace that only just gained a watcher
+          // gets its checks pass on its own cadence, not the global one.
+          st.watchedTicks++;
+          await _sweep(
+            workspaceId,
+            includeChecks: st.watchedTicks % checksEvery == 0,
+            force: false,
+          );
+        } else {
+          final last = st.lastSweepAt;
+          if (last == null || _now().difference(last) >= idleInterval) {
+            await _sweep(workspaceId, includeChecks: false, force: false);
+          }
         }
       }
+    } finally {
+      _ticking = false;
     }
   }
 
@@ -225,11 +243,12 @@ class OpenPrPollingService {
     String workspaceId,
   ) async* {
     final st = _stateFor(workspaceId);
-    st.interest++;
     final controller = StreamController<Map<String, dynamic>>();
     Map<String, dynamic>? lastFrame;
     var sweeping = st.inflight != null;
     String? lastEmitted;
+    StreamSubscription<String?>? snapshotSub;
+    StreamSubscription<bool>? sweepingSub;
 
     void emit() {
       final frame = lastFrame;
@@ -247,21 +266,25 @@ class OpenPrPollingService {
       controller.add(tagged);
     }
 
-    final snapshotSub = _cache(workspaceId)
-        .watch(workspaceId, cacheKind, cacheKey)
-        .listen((raw) {
-          final frame = _decodeSnapshotFrame(raw);
-          if (frame == null) {
-            return;
-          }
-          lastFrame = frame;
-          emit();
-        });
-    final sweepingSub = st.sweepingChanges.stream.listen((s) {
-      sweeping = s;
-      emit();
-    });
+    // Interest is taken inside the try so whatever throws below (opening the
+    // workspace's cache, say) still gives it back in the finally — a leaked
+    // count would keep the workspace on the fast cadence forever.
     try {
+      st.interest++;
+      snapshotSub = _cache(workspaceId)
+          .watch(workspaceId, cacheKind, cacheKey)
+          .listen((raw) {
+            final frame = _decodeSnapshotFrame(raw);
+            if (frame == null) {
+              return;
+            }
+            lastFrame = frame;
+            emit();
+          });
+      sweepingSub = st.sweepingChanges.stream.listen((s) {
+        sweeping = s;
+        emit();
+      });
       unawaited(pollSoon(workspaceId));
       // yield* (not `await for`): an async* generator only honors
       // cancellation at a yield point, so forwarding the merged stream
@@ -269,8 +292,8 @@ class OpenPrPollingService {
       // immediately instead of blocking until the next snapshot write.
       yield* controller.stream;
     } finally {
-      await snapshotSub.cancel();
-      await sweepingSub.cancel();
+      await snapshotSub?.cancel();
+      await sweepingSub?.cancel();
       unawaited(controller.close());
       st.interest--;
     }
@@ -290,9 +313,11 @@ class OpenPrPollingService {
     try {
       final parsed = jsonDecode(raw);
       if (parsed is Map<String, dynamic>) {
-        // Terminal history feeds only space-branch lookups, never the open
-        // queue's client payload.
-        parsed.remove('terminal_prs');
+        // Terminal history feeds only space-branch lookups and the baseline
+        // set only the poller, never the open queue's client payload.
+        parsed
+          ..remove('terminal_prs')
+          ..remove(_baselinedKey);
         return parsed;
       }
     } on Object {
@@ -381,8 +406,12 @@ class OpenPrPollingService {
   /// the checks pass included. The returned future resolves only once a full
   /// forced sweep has landed (fetched + persisted) — the client's refresh
   /// spinner rides on it.
-  Future<void> refreshNow(String workspaceId) =>
-      _sweep(workspaceId, includeChecks: true, force: true);
+  Future<void> refreshNow(String workspaceId) {
+    // An explicit refresh retries failed branch lookups at once, like parked
+    // repos.
+    _stateFor(workspaceId).historyBackoff.clear();
+    return _sweep(workspaceId, includeChecks: true, force: true);
+  }
 
   /// The open pull request in [repoFullName] whose HEAD branch is [branch], as
   /// the same wire map the list ops emit — or null when no open PR is pushed
@@ -456,7 +485,8 @@ class OpenPrPollingService {
     var complete =
         checkedAt != null &&
         _now().difference(checkedAt) < branchHistoryRefreshInterval;
-    if (!complete) {
+    final backoff = _stateFor(workspaceId).historyBackoff[key];
+    if (!complete && (backoff == null || !_now().isBefore(backoff.retryAt))) {
       final requestKey = jsonEncode([workspaceId, key]);
       final discovered = await (_historyInflight[requestKey] ??=
           _discoverBranchHistory(workspaceId, repo, branch, key).whenComplete(
@@ -522,12 +552,40 @@ class OpenPrPollingService {
     );
   }
 
+  /// Looks [branch] up and records the outcome: a success clears its backoff,
+  /// a failure (null) pushes the next attempt out.
   Future<List<Map<String, dynamic>>?> _discoverBranchHistory(
     String workspaceId,
     Repo repo,
     String branch,
     String key,
   ) async {
+    final found = await _fetchBranchHistory(workspaceId, repo, branch, key);
+    final backoffs = _stateFor(workspaceId).historyBackoff;
+    if (found != null) {
+      backoffs.remove(key);
+      return found;
+    }
+    final failures = (backoffs[key]?.failures ?? 0) + 1;
+    final wait = branchHistoryRetryBase * (1 << (failures - 1).clamp(0, 10));
+    backoffs[key] = _BranchHistoryBackoff(
+      failures: failures,
+      retryAt: _now().add(
+        wait > branchHistoryRefreshInterval
+            ? branchHistoryRefreshInterval
+            : wait,
+      ),
+    );
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>?> _fetchBranchHistory(
+    String workspaceId,
+    Repo repo,
+    String branch,
+    String key,
+  ) async {
+    final List<Map<String, dynamic>> wires;
     try {
       final prs = await _port.fetchBranchHistory(
         repo,
@@ -537,10 +595,20 @@ class OpenPrPollingService {
       if (prs == null) {
         return null;
       }
-      final wires = [
+      wires = [
         for (final pr in prs)
           if (pr.headRef == branch) _prToWire(pr),
       ];
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: branch history lookup failed for ${repo.fullName}: $e',
+      );
+      return null;
+    }
+    // The forge answered: that answer stands even when caching it fails. The
+    // next call re-fetches instead of reading a cached row, which is all a
+    // failed write costs.
+    try {
       await _cache(workspaceId).put(
         workspaceId,
         branchHistoryCacheKind,
@@ -553,13 +621,12 @@ class OpenPrPollingService {
           'prs': wires,
         }),
       );
-      return wires;
     } on Object catch (e) {
       CcHostLog.warning(
         'open_pr_poll: branch history persist failed for ${repo.fullName}: $e',
       );
-      return null;
     }
+    return wires;
   }
 
   /// Runs (or joins) a sweep of [workspaceId]. Only one sweep runs per
@@ -635,9 +702,6 @@ class OpenPrPollingService {
               !(githubPaused && r.forge == ForgeHost.github))
             r,
       ];
-      if (repos.isEmpty) {
-        return;
-      }
 
       if (!st.snapshotLoaded) {
         st.snapshot = await _readPersistedSnapshot(workspaceId);
@@ -645,14 +709,26 @@ class OpenPrPollingService {
         _seedAccessFromSnapshot(st);
       }
 
-      // Probe first even on forced/first sweeps: the ETag captured *before*
-      // the full fetch guarantees at-least-once change detection (anything
-      // that lands after the probe re-triggers a 200 next tick). A probe
-      // without a prior ETag (first tick, post-restart) always answers 200 —
-      // that over-approximates "changed" once and the snapshot diff below
-      // dedupes it into zero published events.
-      var listChanged = force || st.snapshot == null;
+      // A repo unlinked from the workspace leaves the snapshot (its open PRs,
+      // its merged/closed history, its baseline mark) on the next sweep, not
+      // never.
+      final linkedIds = {for (final r in linked) r.id};
+      final pruned = _pruneUnlinked(st, linkedIds);
+      if (repos.isEmpty) {
+        if (pruned) {
+          await _persistSnapshot(workspaceId, st.snapshot!);
+        }
+        return;
+      }
+
+      // Probe first even on forced/first sweeps. The probe's ETag is held,
+      // not stored, until the fetch below has answered for the repo: storing
+      // it up front would turn the next probe into a 304 for a list this
+      // server never actually read, freezing the repo until it next changes.
+      final changedIds = <String>{};
+      final probedEtags = <String, String>{};
       var accessChanged = false;
+      final toProbe = <Repo>[];
       for (final repo in repos) {
         final access = st.accessByRepoId[repo.id];
         // Parked repos are re-probed on the slow cadence only (or on an
@@ -665,39 +741,47 @@ class OpenPrPollingService {
           }
           access.lastRetryAt = _now();
         }
-        try {
-          final probe = await _port.probeRepo(
-            repo,
-            force ? null : st.etagByRepoId[repo.id],
-            workspaceId: workspaceId,
-          );
-          final etag = probe.etag;
-          if (etag != null && etag.isNotEmpty) {
-            st.etagByRepoId[repo.id] = etag;
-          }
-          if (probe.changed) {
-            listChanged = true;
-          }
-          if (_noteRepoAccessible(st, repo)) {
-            accessChanged = true;
-          }
-        } on Object catch (e) {
-          final reason = _accessFailureReason(e);
-          if (reason == null) {
-            // Transient (timeout, rate limit, 5xx): not an access signal.
-            CcHostLog.warning(
-              'open_pr_poll: probe failed for ${repo.fullName}: $e',
-            );
-          } else if (_noteAccessFailure(st, repo, reason)) {
-            accessChanged = true;
-          } else if (!(st.accessByRepoId[repo.id]?.parked ?? false)) {
-            // Below the parking threshold: still worth a log line. Once
-            // parked, the state is surfaced in the UI instead of the log.
-            CcHostLog.warning(
-              'open_pr_poll: probe failed for ${repo.fullName}: $e',
-            );
-          }
-        }
+        toProbe.add(repo);
+      }
+      for (var i = 0; i < toProbe.length; i += _probeConcurrency) {
+        final chunk = toProbe.skip(i).take(_probeConcurrency);
+        await Future.wait(
+          chunk.map((repo) async {
+            try {
+              final probe = await _port.probeRepo(
+                repo,
+                force ? null : st.etagByRepoId[repo.id],
+                workspaceId: workspaceId,
+              );
+              final etag = probe.etag;
+              if (etag != null && etag.isNotEmpty) {
+                probedEtags[repo.id] = etag;
+              }
+              if (probe.changed) {
+                changedIds.add(repo.id);
+              }
+              if (_noteRepoAccessible(st, repo)) {
+                accessChanged = true;
+              }
+            } on Object catch (e) {
+              final reason = _accessFailureReason(e);
+              if (reason == null) {
+                // Transient (timeout, rate limit, 5xx): not an access signal.
+                CcHostLog.warning(
+                  'open_pr_poll: probe failed for ${repo.fullName}: $e',
+                );
+              } else if (_noteAccessFailure(st, repo, reason)) {
+                accessChanged = true;
+              } else if (!(st.accessByRepoId[repo.id]?.parked ?? false)) {
+                // Below the parking threshold: still worth a log line. Once
+                // parked, the state is surfaced in the UI instead of the log.
+                CcHostLog.warning(
+                  'open_pr_poll: probe failed for ${repo.fullName}: $e',
+                );
+              }
+            }
+          }),
+        );
       }
 
       // Parked repos are excluded from fetches: their batch aliases can only
@@ -706,58 +790,104 @@ class OpenPrPollingService {
         for (final r in repos)
           if (!(st.accessByRepoId[r.id]?.parked ?? false)) r,
       ];
+      // Only the repos whose list moved are re-read. A forced or first sweep
+      // reads everything; otherwise one changed repo (or a forge with no
+      // conditional requests, which always reports "changed") no longer drags
+      // every other repo's heavy fetch along with it.
+      final toFetch = [
+        for (final r in fetchable)
+          if (force || st.snapshot == null || changedIds.contains(r.id)) r,
+      ];
+      // A 304 confirms the ETag already held; it can be stored as-is.
+      for (final r in fetchable) {
+        final etag = probedEtags[r.id];
+        if (etag != null && !changedIds.contains(r.id)) {
+          st.etagByRepoId[r.id] = etag;
+        }
+      }
 
-      if (listChanged && fetchable.isNotEmpty) {
+      var persisted = false;
+      final fetchedIds = <String>{};
+      if (toFetch.isNotEmpty) {
         final result = await _port.fetchGroups(
-          fetchable,
+          toFetch,
           workspaceId: workspaceId,
         );
-        // GitHub answered for nothing. The batch query tolerates partial
-        // failure, so a service incident returns "no repos" exactly like a
-        // workspace whose queues are all empty — and persisting that would
-        // overwrite a good snapshot with an empty one, tell every client the
-        // inbox is clear and publish a merged/closed event for every PR that
-        // "vanished". Keep the last snapshot and try again next tick.
-        if (result.resolvedRepoIds.isEmpty) {
-          CcHostLog.warning(
-            'open_pr_poll: GitHub resolved 0 of ${fetchable.length} repos for '
-            '$workspaceId — keeping the previous snapshot',
-          );
-          if (accessChanged) {
-            await _persistAccessOnly(workspaceId, st);
+        final requested = {for (final r in toFetch) r.id};
+        final resolvedIds = result.resolvedRepoIds.intersection(requested);
+        // Now the list has been read, its ETag may advance. An unresolved
+        // repo keeps the old one, so the next probe answers 200 and retries.
+        for (final id in resolvedIds) {
+          final etag = probedEtags[id];
+          if (etag != null) {
+            st.etagByRepoId[id] = etag;
           }
-          return;
         }
-        final resolved = [
-          for (final r in fetchable)
-            if (result.resolvedRepoIds.contains(r.id)) r,
-        ];
-        // A partial answer updates only the repos it covered: the unresolved
-        // ones keep their previous entries rather than disappearing, and the
-        // diff runs over the resolved repos alone so they publish no events.
-        final fresh = _snapshotFromGroups(
-          result.groups,
-          previous: st.snapshot,
-          resolvedRepoIds: result.resolvedRepoIds,
-          inaccessible: _inaccessibleWire(st),
-        );
-        if (resolved.length < fetchable.length) {
+        if (resolvedIds.isEmpty) {
+          // The forges answered for nothing. The batch query tolerates
+          // partial failure, so a service incident returns "no repos" exactly
+          // like a workspace whose queues are all empty — and persisting that
+          // would overwrite a good snapshot with an empty one, tell every
+          // client the inbox is clear and publish a merged/closed event for
+          // every PR that "vanished". Keep the last snapshot and try again
+          // next tick.
           CcHostLog.warning(
-            'open_pr_poll: GitHub resolved ${resolved.length} of '
-            '${fetchable.length} repos for $workspaceId — the rest keep their '
-            'previous entries',
+            'open_pr_poll: the forges resolved 0 of ${toFetch.length} repos '
+            'for $workspaceId — keeping the previous snapshot',
           );
+        } else {
+          fetchedIds.addAll(resolvedIds);
+          final resolved = [
+            for (final r in toFetch)
+              if (resolvedIds.contains(r.id)) r,
+          ];
+          // A partial answer updates only the repos it covered: the
+          // unresolved ones keep their previous entries rather than
+          // disappearing, and the diff runs over the resolved repos alone so
+          // they publish no events.
+          final fresh = _snapshotFromGroups(
+            [
+              for (final g in result.groups)
+                if (resolvedIds.contains(g.repo.id)) g,
+            ],
+            previous: st.snapshot,
+            resolvedRepoIds: resolvedIds,
+            inaccessible: _inaccessibleWire(st),
+          );
+          if (resolved.length < toFetch.length) {
+            CcHostLog.warning(
+              'open_pr_poll: the forges resolved ${resolved.length} of '
+              '${toFetch.length} repos for $workspaceId — the rest keep their '
+              'previous entries',
+            );
+          }
+          await _diffAndPublish(
+            workspaceId,
+            resolved,
+            st.snapshot,
+            fresh,
+            _SweepContext(),
+          );
+          st.snapshot = fresh;
+          await _persistSnapshot(workspaceId, fresh);
+          persisted = true;
         }
-        await _diffAndPublish(workspaceId, resolved, st.snapshot, fresh);
-        st.snapshot = fresh;
-        await _persistSnapshot(workspaceId, fresh);
-      } else if (accessChanged) {
+      }
+      if (!persisted && (accessChanged || pruned)) {
         // Access transitions alone (a repo parked, or one recovering behind a
         // 304) still have to reach every client's notice.
         await _persistAccessOnly(workspaceId, st);
-      } else if (!listChanged && st.snapshot != null) {
-        if (includeChecks) {
-          await _checksPass(workspaceId, fetchable, st);
+      }
+      if (st.snapshot != null) {
+        // Both run whatever the probes said: CI state never bumps a list
+        // ETag, and a merged/closed lookup that failed must be retried even in
+        // a workspace where some repo changes every sweep.
+        final unfetched = [
+          for (final r in fetchable)
+            if (!fetchedIds.contains(r.id)) r,
+        ];
+        if (includeChecks && unfetched.isNotEmpty) {
+          await _checksPass(workspaceId, unfetched, st, _SweepContext());
         }
         await _resolveUnknownTerminals(workspaceId, fetchable, st);
       }
@@ -768,6 +898,37 @@ class OpenPrPollingService {
         st.historyRefresh.add(null);
       }
     }
+  }
+
+  /// Drops every snapshot trace of repos no longer linked to the workspace.
+  /// Returns whether anything was removed.
+  bool _pruneUnlinked(_WorkspacePollState st, Set<String> linkedIds) {
+    final snapshot = st.snapshot;
+    if (snapshot == null) {
+      return false;
+    }
+    bool keep(Object? raw) =>
+        raw is! Map ||
+        raw['repo_id'] is! String ||
+        linkedIds.contains(raw['repo_id']);
+    final repos = (snapshot['repos'] as List?) ?? const [];
+    final terminal = (snapshot['terminal_prs'] as List?) ?? const [];
+    final baselined = snapshot[_baselinedKey] as List?;
+    final keptRepos = repos.where(keep).toList();
+    final keptTerminal = terminal.where(keep).toList();
+    final keptBaselined = baselined?.where(linkedIds.contains).toList();
+    if (keptRepos.length == repos.length &&
+        keptTerminal.length == terminal.length &&
+        (baselined == null || keptBaselined!.length == baselined.length)) {
+      return false;
+    }
+    st.snapshot = {
+      ...snapshot,
+      'repos': keptRepos,
+      'terminal_prs': keptTerminal,
+      _baselinedKey: ?keptBaselined,
+    };
+    return true;
   }
 
   /// The access-denial code carried by [error], or null when the failure is
@@ -885,10 +1046,28 @@ class OpenPrPollingService {
     await _persistSnapshot(workspaceId, updated);
   }
 
+  /// Snapshot field listing the repo ids a fetch has answered for at least
+  /// once. A repo outside it is on its first read: its open PRs are recorded
+  /// without announcing them, exactly like the workspace's first sweep.
+  static const _baselinedKey = 'baselined_repo_ids';
+
+  /// The repo ids [snapshot] marks as baselined, or null for a snapshot
+  /// persisted before the per-repo mark existed (every repo in it counts as
+  /// baselined — the old workspace-level rule).
+  static Set<String>? _baselinedIn(Map<String, dynamic>? snapshot) {
+    final raw = snapshot?[_baselinedKey];
+    return raw is List
+        ? {
+            for (final id in raw)
+              if (id is String) id,
+          }
+        : null;
+  }
+
   /// Builds the wire snapshot from [groups].
   ///
   /// When [previous] is given, any of its repo entries whose id is NOT in
-  /// [resolvedRepoIds] is carried over verbatim: GitHub did not answer for
+  /// [resolvedRepoIds] is carried over verbatim: the forge did not answer for
   /// that repo this sweep, and dropping it would report an empty queue the
   /// fetch never actually observed.
   Map<String, dynamic> _snapshotFromGroups(
@@ -910,12 +1089,33 @@ class OpenPrPollingService {
         repos.add(entry);
       }
     }
+    final baselined = {...?_baselinedIn(previous), ...resolvedRepoIds};
     return {
       'authenticated': true,
       'repos': repos,
       'inaccessible_repos': inaccessible,
       'terminal_prs': [...?(previous?['terminal_prs'] as List?)],
+      _baselinedKey: baselined.toList()..sort(),
     };
+  }
+
+  /// Bounds the merged/closed history: entries past [terminalRetention] go,
+  /// then the oldest beyond [maxTerminalEntries]. An entry from before
+  /// `recorded_at` existed counts as recorded now (it ages out from here).
+  void _capTerminal(List<dynamic> terminal) {
+    final now = _now();
+    DateTime recordedAt(Object? raw) =>
+        (raw is Map
+            ? DateTime.tryParse(raw['recorded_at'] as String? ?? '')
+            : null) ??
+        now;
+    terminal.removeWhere(
+      (raw) => now.difference(recordedAt(raw)) > terminalRetention,
+    );
+    if (terminal.length > maxTerminalEntries) {
+      // Appended in observation order, so the head is the oldest.
+      terminal.removeRange(0, terminal.length - maxTerminalEntries);
+    }
   }
 
   Future<Map<String, dynamic>?> _readPersistedSnapshot(
@@ -972,8 +1172,6 @@ class OpenPrPollingService {
     return {
       'repo_id': group.repo.id,
       'repo_full_name': group.repo.fullName,
-      'github_owner': group.repo.remoteOwner,
-      'github_repo_name': group.repo.remoteName,
       'has_more': group.hasMore,
       'prs': [
         for (final pr in group.prs)
@@ -1028,30 +1226,6 @@ class OpenPrPollingService {
     return jsonEncode(copy);
   }
 
-  /// Resolves the operator's login on [forge], once per pass.
-  ///
-  /// Empty means "no credential yet" and suppresses every author-facing lane.
-  /// Silence beats telling someone a stranger's PR is theirs, and the resolver
-  /// re-runs on the next pass, so this self-heals on sign-in.
-  Future<String> _viewerLogin(ForgeHost forge) async {
-    final resolver = _viewerLoginFor;
-    if (resolver == null) {
-      return '';
-    }
-    final cached = _viewerLoginCache[forge];
-    if (cached != null) {
-      return cached;
-    }
-    String login;
-    try {
-      login = (await resolver(forge)).trim();
-    } on Object catch (e) {
-      CcHostLog.warning('open_pr_poll: viewer login unavailable: $e');
-      login = '';
-    }
-    return _viewerLoginCache[forge] = login;
-  }
-
   /// Detects and publishes the author-facing transitions between two snapshots
   /// of one pull request.
   ///
@@ -1068,17 +1242,24 @@ class OpenPrPollingService {
     int number,
     Map<String, dynamic> oldWire,
     Map<String, dynamic> newWire,
+    _SweepContext ctx,
   ) async {
     final bus = _eventBus;
-    if (bus == null) {
-      return null;
-    }
-    final viewer = await _viewerLogin(repo.forge);
-    if (viewer.isEmpty) {
+    final resolver = _memberLoginsFor;
+    if (bus == null || resolver == null) {
       return null;
     }
     final author = ((newWire['author'] as Map?)?['login'] as String?) ?? '';
-    if (author.toLowerCase() != viewer.toLowerCase()) {
+    // Silence beats telling someone a stranger's PR is theirs: a PR no
+    // member authored (or one whose author has not connected the forge) is
+    // never announced, and the logins are re-read next sweep, so this
+    // self-heals on sign-in.
+    final forUserId = await ctx.memberFor(
+      repo.forge,
+      author,
+      () => resolver(workspaceId, repo.forge),
+    );
+    if (forUserId == null) {
       return null;
     }
 
@@ -1107,8 +1288,8 @@ class OpenPrPollingService {
       final verdictMissing =
           after.mergeableState == PrMergeableState.unrecognized ||
           after.mergeableState == PrMergeableState.unknown;
-      if (verdictMissing && _mergeConfirms < _maxMergeConfirmsPerPass) {
-        _mergeConfirms++;
+      if (verdictMissing && ctx.mergeConfirms < _maxMergeConfirmsPerPass) {
+        ctx.mergeConfirms++;
         final confirmed = await _port.mergeState(
           repo,
           number,
@@ -1134,7 +1315,7 @@ class OpenPrPollingService {
             prTitle: title,
             ready: true,
             reason: PrBlockReason.none.name,
-            forUserId: _forUserId,
+            forUserId: forUserId,
             occurredAt: _now(),
           ),
         );
@@ -1167,7 +1348,7 @@ class OpenPrPollingService {
               prTitle: title,
               ready: false,
               reason: reason.name,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1179,8 +1360,8 @@ class OpenPrPollingService {
           // notification still goes out, unattributed.
           var approver = approverLogin;
           if (approver == null &&
-              _approverLookups < _maxApproverLookupsPerPass) {
-            _approverLookups++;
+              ctx.approverLookups < _maxApproverLookupsPerPass) {
+            ctx.approverLookups++;
             approver = await _port.latestApprover(
               repo,
               number,
@@ -1197,7 +1378,7 @@ class OpenPrPollingService {
               decision: 'approved',
               reviewersRemaining: reviewersRemaining,
               approverLogin: approver,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1211,7 +1392,7 @@ class OpenPrPollingService {
               prTitle: title,
               decision: 'changesRequested',
               reviewersRemaining: after.reviewersRemaining,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1225,7 +1406,7 @@ class OpenPrPollingService {
               prTitle: title,
               decision: 'dismissed',
               reviewersRemaining: after.reviewersRemaining,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1245,7 +1426,7 @@ class OpenPrPollingService {
               failing: true,
               failingCheckName: failing?.name,
               failingCheckUrl: failing?.url,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1258,7 +1439,7 @@ class OpenPrPollingService {
               prNumber: number,
               prTitle: title,
               failing: false,
-              forUserId: _forUserId,
+              forUserId: forUserId,
               occurredAt: _now(),
             ),
           );
@@ -1274,7 +1455,7 @@ class OpenPrPollingService {
   Future<({String name, String? url})?> _firstFailingCheck(
     Repo repo,
     int number, {
-    String? workspaceId,
+    required String workspaceId,
   }) async {
     try {
       return await _port.firstFailingCheck(
@@ -1293,15 +1474,17 @@ class OpenPrPollingService {
     List<Repo> repos,
     Map<String, dynamic>? previous,
     Map<String, dynamic> fresh,
+    _SweepContext ctx,
   ) async {
-    // First-ever sweep for this workspace: baseline only — recording without
-    // notifying, so server start doesn't spam events for pre-existing PRs.
-    final isBaseline = previous == null;
-    _mergeConfirms = 0;
-    _approverLookups = 0;
-    _viewerLoginCache.clear();
+    // A repo's first read (the workspace's first sweep, or a repo linked
+    // since) is a baseline — recorded without notifying, so neither a server
+    // start nor linking a busy repo announces every pre-existing PR.
+    final baselined = _baselinedIn(previous);
     final terminal = (fresh['terminal_prs'] as List).cast<dynamic>();
     for (final repo in repos) {
+      final isBaseline =
+          previous == null ||
+          (baselined != null && !baselined.contains(repo.id));
       final before = _prsByNumber(previous, repo.fullName);
       final after = _prsByNumber(fresh, repo.fullName);
       // A reopened PR is open again; don't leave its previous merged/closed
@@ -1367,8 +1550,8 @@ class OpenPrPollingService {
             _eventBus?.publish(
               PrHeadChanged(
                 workspaceId: workspaceId,
-                repoOwner: repo.fullName.split('/').first,
-                repoName: repo.fullName.split('/').skip(1).join('/'),
+                repoOwner: splitRepoFullName(repo.fullName)?.owner ?? '',
+                repoName: splitRepoFullName(repo.fullName)?.name ?? '',
                 prNumber: entry.key,
                 prTitle: entry.value['title'] is String
                     ? entry.value['title'] as String
@@ -1398,6 +1581,7 @@ class OpenPrPollingService {
           entry.key,
           old,
           entry.value,
+          ctx,
         );
         // A forge-confirmed mergeable state is folded back into the snapshot
         // being persisted, so the next sweep compares against the confirmed
@@ -1407,6 +1591,11 @@ class OpenPrPollingService {
         }
       }
 
+      // Only the first page of a repo's open list is read. With more pages
+      // behind it, a PR missing from this page may simply have been pushed
+      // off it, so absence alone proves nothing: a lookup that cannot say
+      // merged/closed records nothing rather than an unconfirmed terminal.
+      final pageIsPartial = _hasMore(fresh, repo.fullName);
       for (final number in before.keys) {
         if (after.containsKey(number)) {
           continue;
@@ -1424,6 +1613,9 @@ class OpenPrPollingService {
         } on Object catch (e) {
           CcHostLog.warning('open_pr_poll: PR status lookup failed: $e');
         }
+        if (merged == null && pageIsPartial) {
+          continue;
+        }
         final old = before[number]!;
         terminal.removeWhere(
           (raw) =>
@@ -1436,6 +1628,7 @@ class OpenPrPollingService {
           'repo_id': repo.id,
           'repo_full_name': repo.fullName,
           'number': number,
+          'recorded_at': _now().toIso8601String(),
           'pull_request': {
             ...old,
             'state': switch (merged) {
@@ -1464,6 +1657,18 @@ class OpenPrPollingService {
         );
       }
     }
+    _capTerminal(terminal);
+  }
+
+  /// Whether [snapshot]'s entry for [repoFullName] says more open PRs exist
+  /// past the page that was read.
+  static bool _hasMore(Map<String, dynamic> snapshot, String repoFullName) {
+    for (final raw in (snapshot['repos'] as List?) ?? const []) {
+      if (raw is Map && raw['repo_full_name'] == repoFullName) {
+        return raw['has_more'] == true;
+      }
+    }
+    return false;
   }
 
   /// Retry status lookups that failed on the transition sweep, without
@@ -1549,6 +1754,7 @@ class OpenPrPollingService {
     String workspaceId,
     List<Repo> repos,
     _WorkspacePollState st,
+    _SweepContext ctx,
   ) async {
     final Map<String, Map<int, PrStatusOverlay>> byRepoId;
     try {
@@ -1561,9 +1767,6 @@ class OpenPrPollingService {
     if (snapshot == null) {
       return;
     }
-    _mergeConfirms = 0;
-    _approverLookups = 0;
-    _viewerLoginCache.clear();
     final reposById = {for (final r in repos) r.id: r};
     final changed = <({String repoFullName, int prNumber, bool checksOnly})>[];
     final updatedRepos = <Map<String, dynamic>>[];
@@ -1628,6 +1831,7 @@ class OpenPrPollingService {
               number,
               prWire,
               next,
+              ctx,
             );
             if (confirmed != null) {
               next = {...next, 'mergeable_state': confirmed};

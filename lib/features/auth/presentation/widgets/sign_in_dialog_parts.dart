@@ -1,5 +1,6 @@
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_copy_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -170,7 +171,11 @@ class SignInCodeEntry extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final error = switch (session.codeError) {
       SignInCodeMalformed() => l10n.signInCodeMalformed,
-      SignInCodeRejected(:final message) => message,
+      SignInCodeRejected(:final failure) => signInFailureMessage(
+        l10n,
+        failure,
+        session.attempt.lane,
+      ),
       null => null,
     };
     return Column(

@@ -494,6 +494,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teammate => 'زميل';
 
   @override
+  String get systemSender => 'النظام';
+
+  @override
   String get agent => 'وكيل';
 
   @override
@@ -649,12 +652,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.';
+    return 'يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.';
+    return 'تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub.';
   }
 
   @override
@@ -2584,6 +2587,22 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'هذا الرمز لا يطابق تسجيل الدخول هذا. تحقّق منه وحاول مرة أخرى.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'رموز خاطئة كثيرة جدًا. ابدأ تسجيل الدخول من جديد.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'خدمة تسجيل الدخول لا تستجيب الآن. انتظر دقيقة ثم حاول مرة أخرى.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'رُفض تسجيل الدخول. ابدأه من جديد ووافق على كل الأذونات المطلوبة.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'نجح تسجيل الدخول، لكن تعذّر على الخادم حفظه. حاول مرة أخرى.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

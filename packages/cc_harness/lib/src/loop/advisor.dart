@@ -7,6 +7,7 @@
 /// that watches the running transcript as an append-only stream of deltas.
 library;
 
+import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/messages.dart';
 
 /// How strongly an advisor weighs a note — governs how the loop frames it and
@@ -58,7 +59,14 @@ abstract interface class Advisor {
   /// Implementations may keep their own append-only context and only feed the
   /// messages appended since the previous call, so [history] is the full,
   /// live primary transcript each time (the same list the loop mutates).
-  Future<AdvisorNote?> review(List<HarnessMessage> history);
+  ///
+  /// [cancel] is the run's token: a cancelled run stops waiting on the review
+  /// either way, and an implementation that drives a model should abandon its
+  /// request too rather than spend tokens nobody will read.
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  });
 
   /// Re-primes the advisor after the primary history is rewritten (compaction
   /// or a new session): clears any accumulated advisor context and dedupe

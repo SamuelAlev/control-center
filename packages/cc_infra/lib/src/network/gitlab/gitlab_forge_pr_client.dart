@@ -21,6 +21,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+import 'package:cc_infra/src/network/forge_branch_history.dart';
+import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_api_client.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_pr_mapper.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_award_emoji.dart';
@@ -37,7 +40,11 @@ import 'package:rhttp/rhttp.dart';
 /// `Draft: ` title prefix ([updatePullRequest] must re-apply it). False caps
 /// (`viewedStateSync`, `suggestedReviewers`, `stacks`, `notifications`) throw
 /// [ForgeUnsupportedError], not empty.
-class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
+class GitLabForgePrClient
+    implements
+        ForgePrClient,
+        ForgeBranchPrHistoryClient,
+        ForgeOpenPrPagingClient {
   /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [_client]
   /// is pointed at.
   ///
@@ -105,7 +112,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<PullRequest?> getPullRequest(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final mr = await _client.getMergeRequest(
       _projectId,
@@ -131,7 +138,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequests({
     int limit = 100,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final page = await _client.listMergeRequests(
       _projectId,
@@ -149,30 +156,44 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   }
 
   @override
+  Future<({List<PullRequest> prs, bool hasMore})> listOpenPullRequestsPage(
+    int page,
+  ) async {
+    final result = await _client.listMergeRequests(
+      _projectId,
+      state: 'opened',
+      page: page < 1 ? 1 : page,
+    );
+    return (
+      prs: <PullRequest>[
+        for (final mr in result.items)
+          pullRequestFromGitLab(mr, repoFullName: _repoFullName),
+      ],
+      hasMore: result.hasMore,
+    );
+  }
+
+  @override
   Future<List<PullRequest>> listPullRequestsForBranch(String branch) async {
-    final prs = <PullRequest>[];
-    for (var pageNumber = 1; pageNumber <= 100; pageNumber++) {
-      final page = await _client.listMergeRequests(
-        _projectId,
-        state: 'all',
-        sourceBranch: branch,
-        page: pageNumber,
-      );
-      for (final mr in page.items) {
-        if (mr.sourceBranch.isEmpty || mr.iid <= 0) {
-          throw const FormatException(
-            'GitLab returned a merge request without an identity/head ref',
-          );
-        }
-        if (mr.sourceBranch == branch) {
-          prs.add(pullRequestFromGitLab(mr, repoFullName: _repoFullName));
-        }
-      }
-      if (!page.hasMore) {
-        return prs;
-      }
-    }
-    throw StateError('GitLab branch PR history exceeded 100 pages');
+    final mrs = await collectBranchHistory(
+      forgeName: 'GitLab',
+      branch: branch,
+      fetchPage: (page) async {
+        final result = await _client.listMergeRequests(
+          _projectId,
+          state: 'all',
+          sourceBranch: branch,
+          page: page,
+        );
+        return (items: result.items, hasMore: result.hasMore);
+      },
+      headRefOf: (mr) => mr.sourceBranch,
+      numberOf: (mr) => mr.iid,
+    );
+    return [
+      for (final mr in mrs)
+        pullRequestFromGitLab(mr, repoFullName: _repoFullName),
+    ];
   }
 
   /// Merge requests [login] authored that have been merged, most recently
@@ -181,7 +202,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<List<PullRequest>> listMergedByAuthor(
     String login, {
     int limit = 50,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final handle = login.trim().replaceAll(RegExp(r'^@'), '');
     if (handle.isEmpty) {
@@ -194,10 +215,13 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
       perPage: limit,
       cancelToken: _token(cancelToken),
     );
-    return <PullRequest>[
+    // GitLab sorts by `updated_at`; the port promises merge order.
+    final prs = <PullRequest>[
       for (final mr in page.items)
         pullRequestFromGitLab(mr, repoFullName: _repoFullName),
     ];
+    sortMostRecentlyMergedFirst(prs);
+    return List<PullRequest>.unmodifiable(prs);
   }
 
   /// Whether merge request [prNumber] left the open list by merging.
@@ -208,35 +232,21 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// must never do so on a guess. Cancellation still propagates: a cancelled
   /// poll is not an answer.
   @override
-  Future<bool?> wasMerged(int prNumber, {Object? cancelToken}) async {
+  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
     try {
-      final mr = await _client.getMergeRequest(
-        _projectId,
-        prNumber,
-        cancelToken: _token(cancelToken),
+      return mergeOutcomeOf(
+        await getPullRequest(prNumber, cancelToken: cancelToken),
       );
-      if (mr == null) {
-        return null;
-      }
-      if (mr.mergedAt != null || mr.state == 'merged') {
-        return true;
-      }
-      if (mr.state == 'closed') {
-        return false;
-      }
-      return null;
-    } on RhttpException catch (e) {
+    } on Object catch (e) {
       if (e is RhttpCancelException) {
         rethrow;
       }
-      return null;
-    } on Object {
       return null;
     }
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {Object? cancelToken}) async {
+  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) async {
     final diffs = await _client.listMergeRequestDiffs(
       _projectId,
       prNumber,
@@ -246,10 +256,10 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   }
 
   @override
-  Future<List<PrFile>> listFiles(
+  Future<PrFileListing> listFiles(
     int prNumber, {
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final diffs = await _client.listMergeRequestDiffs(
       _projectId,
@@ -257,7 +267,13 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
       limit: limit,
       cancelToken: _token(cancelToken),
     );
-    return diffs.map(prFileFromGitLab).toList(growable: false);
+    return PrFileListing(
+      diffs.map(prFileFromGitLab).toList(growable: false),
+      // The paged walk stops at kGitLabMaxPages full pages; a list that long
+      // ran into the ceiling rather than the end of the change.
+      truncated:
+          limit == null && diffs.length >= kGitLabMaxPages * kGitLabMaxPerPage,
+    );
   }
 
   /// {@macro forge_pr_client.listCommits}
@@ -267,7 +283,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrCommit>> listCommits(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final commits = await _client.listMergeRequestCommits(
       _projectId,
@@ -280,7 +296,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrFile>> listCommitFiles(
     String sha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final diffs = await _client.listCommitDiffs(
       _projectId,
@@ -299,7 +315,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrReviewSubmission>> listReviews(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final approvals = await _client.getMergeRequestApprovals(
@@ -326,7 +342,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrCodeReviewComment>> listReviewComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final discussions = await _client.listMergeRequestDiscussions(
       _projectId,
@@ -343,7 +359,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrReviewThreadState>> listReviewThreadStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => const <PrReviewThreadState>[];
 
   @override
@@ -351,7 +367,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     required String threadId,
     required bool resolved,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(
     ForgeHost.gitlab,
     'commentThreadResolution',
@@ -360,7 +376,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<IssueComment>> listIssueComments(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final notes = await _client.listMergeRequestNotes(
       _projectId,
@@ -385,7 +401,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrTimelineEvent>> listTimelineEvents(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => const <PrTimelineEvent>[];
 
   /// CI results for [headSha], one [CheckRun] per GitLab job.
@@ -397,7 +413,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<CheckRun>> listCheckRuns(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final pipelines = await _client.listPipelinesForSha(
@@ -434,7 +450,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<CommitStatus>> listCommitStatuses(
     String headSha, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final statuses = await _client.listCommitStatuses(
       _projectId,
@@ -452,7 +468,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<String> getFileContent(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.getRawFile(
     _projectId,
     path,
@@ -464,7 +480,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<Uint8List> getFileBytes(
     String path,
     String ref, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _client.getRawFileBytes(
     _projectId,
     path,
@@ -479,7 +495,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<Map<String, PrFileViewedState>> getFileViewedStates(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async =>
       throw const ForgeUnsupportedError(ForgeHost.gitlab, 'viewedStateSync');
 
@@ -494,7 +510,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<PrReviewerState> getReviewerState(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final reviewers = await _client.listMergeRequestReviewers(
@@ -520,7 +536,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   }
 
   @override
-  Future<PrUser?> getAuthenticatedUser({Object? cancelToken}) async {
+  Future<PrUser?> getAuthenticatedUser({ForgeCancelToken? cancelToken}) async {
     final user = await _resolveViewer(_token(cancelToken));
     return user == null ? null : prUserFromGitLab(user);
   }
@@ -531,7 +547,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// usually live on the parent group) and Guests are filtered out, since
   /// GitLab refuses to assign them.
   @override
-  Future<List<PrUser>> listAssignableUsers({Object? cancelToken}) async {
+  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken}) async {
     final members = await _client.listProjectMembers(
       _projectId,
       cancelToken: _token(cancelToken),
@@ -550,7 +566,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// selection into its members — see there.
   @override
   Future<List<PrReviewerCandidate>> listRequestableReviewers({
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final members = await _client.listProjectMembers(
@@ -580,7 +596,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrUser>> listSuggestedReviewers(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async =>
       throw const ForgeUnsupportedError(ForgeHost.gitlab, 'suggestedReviewers');
 
@@ -592,7 +608,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<JobRunDetail?> getJobRunDetail(
     int jobId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final job = await _client.getJob(_projectId, jobId, cancelToken: token);
@@ -620,7 +636,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<WorkflowGraph?> getWorkflowGraph(
     int workflowRunId, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final pipeline = await _client.getPipeline(
@@ -659,7 +675,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<ForgeBranch>> listBranches({
     int? limit,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final branches = await _client.listBranches(
       _projectId,
@@ -677,7 +693,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// to degrade to "no preselection" rather than blocking the screen — hence
   /// the empty string rather than an exception. Cancellation still propagates.
   @override
-  Future<String> getDefaultBranch({Object? cancelToken}) async {
+  Future<String> getDefaultBranch({ForgeCancelToken? cancelToken}) async {
     try {
       final project = await _resolveProject(_token(cancelToken));
       return project?.defaultBranch ?? '';
@@ -706,7 +722,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<ForgeBranchComparison?> compareBranches({
     required String base,
     required String head,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (base.trim().isEmpty || head.trim().isEmpty) {
       return null;
@@ -743,7 +759,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// resolve to "no template" rather than an error: the composer must still
   /// open when a project simply has none.
   @override
-  Future<Map<String, String>> listPrTemplates({Object? cancelToken}) async {
+  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) async {
     final token = _token(cancelToken);
     final entries = await _client.listRepositoryTree(
       _projectId,
@@ -801,7 +817,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required String body,
     int? startLine,
     String? startSide,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final mr = await _client.getMergeRequest(
@@ -854,7 +870,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     required String parentCommentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final discussionId = await _resolveDiscussionId(
@@ -881,7 +897,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> postIssueComment({
     required int prNumber,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.createMergeRequestNote(
       _projectId,
@@ -896,7 +912,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     required String commentId,
     required String body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final noteId = int.tryParse(commentId.trim());
     if (noteId == null || noteId <= 0) {
@@ -919,7 +935,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> deleteIssueComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     await _client.deleteMergeRequestNote(
       _projectId,
@@ -933,7 +949,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     // Inline threads are discussion notes. GitLab deletes both with the note id.
     await deleteIssueComment(
@@ -962,12 +978,12 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// (REST has no request-changes verb; empty body still posts a short note);
   /// comment → note only.
   @override
-  Future<void> submitReview({
+  Future<int?> submitReview({
     required int prNumber,
     required ForgeReviewVerdict verdict,
     String? body,
-    List<Map<String, dynamic>> comments = const [],
-    Object? cancelToken,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     // GitLab has no single call that posts inline notes AND casts a verdict, so
@@ -979,12 +995,12 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
       await postReviewComment(
         prNumber: prNumber,
         commitSha: '',
-        path: c['path'] as String? ?? '',
-        line: (c['line'] as num?)?.toInt() ?? 0,
-        side: c['side'] as String? ?? 'RIGHT',
-        body: c['body'] as String? ?? '',
-        startLine: (c['start_line'] as num?)?.toInt(),
-        startSide: c['start_side'] as String?,
+        path: c.path,
+        line: c.line,
+        side: c.side,
+        body: c.body,
+        startLine: c.isMultiLine ? c.startLine : null,
+        startSide: c.isMultiLine ? (c.startSide ?? c.side) : null,
         cancelToken: cancelToken,
       );
     }
@@ -1028,6 +1044,8 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
           );
         }
     }
+    // GitLab has no review record: the notes and the approval are separate.
+    return null;
   }
 
   /// Merges merge request [prNumber].
@@ -1045,7 +1063,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required ForgeMergeMethod method,
     String? commitTitle,
     String? commitMessage,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     if (method == ForgeMergeMethod.rebase) {
@@ -1092,7 +1110,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   }
 
   @override
-  Future<void> closePullRequest(int prNumber, {Object? cancelToken}) async {
+  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) async {
     await _client.updateMergeRequest(
       _projectId,
       prNumber,
@@ -1112,7 +1130,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> setPullRequestDraft({
     required int prNumber,
     required bool draft,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final mr = await _client.getMergeRequest(
@@ -1144,7 +1162,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required String headBranch,
     required String baseBranch,
     bool draft = false,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final mr = await _client.createMergeRequest(
       _projectId,
@@ -1169,7 +1187,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     String? title,
     String? body,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     String? nextTitle;
@@ -1197,7 +1215,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required String prExternalId,
     required String path,
     required bool viewed,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async =>
       throw const ForgeUnsupportedError(ForgeHost.gitlab, 'viewedStateSync');
 
@@ -1210,7 +1228,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     if (logins.isEmpty) {
@@ -1243,7 +1261,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     if (logins.isEmpty) {
@@ -1271,7 +1289,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   }
 
   @override
-  Future<List<PrLabel>> listLabels({Object? cancelToken}) async {
+  Future<List<PrLabel>> listLabels({ForgeCancelToken? cancelToken}) async {
     final labels = await _client.listLabels(
       _projectId,
       cancelToken: _token(cancelToken),
@@ -1296,7 +1314,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> addLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _writeLabels(
     prNumber: prNumber,
     names: names,
@@ -1309,7 +1327,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<void> removeLabels({
     required int prNumber,
     required List<String> names,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) => _writeLabels(
     prNumber: prNumber,
     names: names,
@@ -1321,7 +1339,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     required List<String> names,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (names.isEmpty) {
       return;
@@ -1367,7 +1385,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     List<String> userLogins = const <String>[],
     List<String> teamSlugs = const <String>[],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final logins = await _expandReviewerLogins(userLogins, teamSlugs, token);
@@ -1400,7 +1418,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     List<String> userLogins = const <String>[],
     List<String> teamSlugs = const <String>[],
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final logins = await _expandReviewerLogins(userLogins, teamSlugs, token);
@@ -1438,7 +1456,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required ForgeReactionTarget target,
     required String targetId,
     required int prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final List<GitLabAwardEmoji> awards;
@@ -1466,7 +1484,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrReviewReactions>> listReviewReactions(
     int prNumber, {
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => const [];
 
   /// Adds or removes an award emoji on [target].
@@ -1483,7 +1501,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required int prNumber,
     required String content,
     required bool add,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     if (target == ForgeReactionTarget.review) {
       throw const ForgeUnsupportedError(ForgeHost.gitlab, 'review reactions');
@@ -1565,7 +1583,7 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
     required String path,
     required String base64Content,
     required String message,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async {
     final token = _token(cancelToken);
     final segments = path.split('/').where((part) => part.isNotEmpty).toList();
@@ -1593,14 +1611,14 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   @override
   Future<List<PrStack>> listStacks({
     int? prNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(ForgeHost.gitlab, 'stacks');
 
   /// Not available on GitLab — throws [ForgeUnsupportedError].
   @override
   Future<PrStack> createStack({
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(ForgeHost.gitlab, 'stacks');
 
   /// Not available on GitLab — throws [ForgeUnsupportedError].
@@ -1608,24 +1626,21 @@ class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   Future<PrStack?> addToStack({
     required int stackNumber,
     required List<int> prNumbers,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(ForgeHost.gitlab, 'stacks');
 
   /// Not available on GitLab — throws [ForgeUnsupportedError].
   @override
   Future<PrStack?> unstack({
     required int stackNumber,
-    Object? cancelToken,
+    ForgeCancelToken? cancelToken,
   }) async => throw const ForgeUnsupportedError(ForgeHost.gitlab, 'stacks');
 
   // ── Internals ────────────────────────────────────────────────────────────
 
-  /// Narrows the port's opaque cancellation handle to rhttp's [CancelToken].
-  ///
-  /// The port keeps it `Object?` so no domain type learns about rhttp;
-  /// anything that is not a token is simply no cancellation.
-  static CancelToken? _token(Object? cancelToken) =>
-      cancelToken is CancelToken ? cancelToken : null;
+  /// Maps the port's domain cancellation onto rhttp's [CancelToken].
+  static CancelToken? _token(ForgeCancelToken? cancelToken) =>
+      rhttpCancelTokenFor(cancelToken);
 
   static Set<String> _lowercased(Iterable<String> values) => <String>{
     for (final value in values)

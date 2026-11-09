@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 
 /// Registers `repos.cleanup` — removes stale CoW worktrees by trigger:
@@ -18,10 +19,7 @@ void registerCleanupReposBody(
   required PrWorktreePort prWorktrees,
 }) {
   registry.registerBody(BuiltInBodyKeys.cleanupRepos, (ctx) async {
-    final config = (await templateRepository.getById(
-      ctx.workspaceId,
-      ctx.templateId,
-    ))?.step(ctx.stepId)?.config;
+    final config = await ctx.pinnedStepConfig(templateRepository);
     final outputKey = config?.outputKey;
 
     final ticketId = ctx.optional<String>('ticket_id');

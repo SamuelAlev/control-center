@@ -25,6 +25,9 @@ class _FakeMessagingRepository implements MessagingRepository {
         ({String spaceId, String content, String senderId, String senderType})
       >[];
 
+  /// Makes every send throw, to exercise failure paths.
+  bool failSends = false;
+
   @override
   Future<String> sendMessage({
     required String workspaceId,
@@ -37,6 +40,9 @@ class _FakeMessagingRepository implements MessagingRepository {
     String? id,
     String? conversationId,
   }) async {
+    if (failSends) {
+      throw StateError('send failed');
+    }
     sent.add((
       spaceId: spaceId,
       content: content,
@@ -103,8 +109,8 @@ class _FakeAgentRunLogRepository implements AgentRunLogRepository {
     String workspaceId,
     String spaceId,
   ) => Stream.value(
-      activeByConversationSeeds['$workspaceId:$spaceId'] ?? const [],
-    );
+    activeByConversationSeeds['$workspaceId:$spaceId'] ?? const [],
+  );
 
   @override
   Future<AgentRunLog?> getById(String workspaceId, String id) async => byId[id];
@@ -239,7 +245,7 @@ void main() {
 
       expect(messaging.sent, hasLength(1));
       expect(messaging.sent.single.content, contains('Ada took over'));
-      expect(messaging.sent.single.senderType, 'agent');
+      expect(messaging.sent.single.senderType, 'system');
     });
 
     test('a second begin throws', () async {
@@ -297,6 +303,107 @@ void main() {
       expect(await service.isActive('ws1', 'ch1'), isFalse);
     });
 
+    test('concurrent begins: exactly one wins the claim', () async {
+      runLogs.activeByConversationSeeds['ws1:ch1'] = [];
+      final outcomes = await Future.wait([
+        for (final (id, name) in [('u1', 'Ada'), ('u2', 'Grace')])
+          service
+              .begin(
+                workspaceId: 'ws1',
+                spaceId: 'ch1',
+                userId: id,
+                displayName: name,
+              )
+              .then(
+                (_) => true,
+                onError: (Object e) => e is StateError ? false : throw e,
+              ),
+      ]);
+      expect(outcomes.where((won) => won), hasLength(1));
+      expect(messaging.sent, hasLength(1));
+    });
+
+    test('only the holder or an admin can hand back', () async {
+      runLogs.activeByConversationSeeds['ws1:ch1'] = [];
+      await service.begin(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+      );
+      await expectLater(
+        service.handBack(
+          workspaceId: 'ws1',
+          spaceId: 'ch1',
+          userId: 'u2',
+          displayName: 'Grace',
+        ),
+        throwsStateError,
+      );
+      expect(await service.isActive('ws1', 'ch1'), isTrue);
+
+      await service.handBack(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u2',
+        displayName: 'Grace',
+        asAdmin: true,
+      );
+      expect(await service.isActive('ws1', 'ch1'), isFalse);
+    });
+
+    test('a failing hand-back step never leaves the marker behind', () async {
+      pausable.add('run-pausable');
+      runLogs.activeByConversationSeeds['ws1:ch1'] = [
+        _run('run-pausable', agentId: 'a1'),
+      ];
+      await service.begin(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+      );
+      messaging.failSends = true;
+      await expectLater(
+        service.handBack(
+          workspaceId: 'ws1',
+          spaceId: 'ch1',
+          userId: 'u1',
+          displayName: 'Ada',
+        ),
+        throwsStateError,
+      );
+      expect(await service.isActive('ws1', 'ch1'), isFalse);
+      expect(resumed, ['run-pausable'], reason: 'the run still resumes');
+    });
+
+    test('watch follows the marker as it is claimed and cleared', () async {
+      runLogs.activeByConversationSeeds['ws1:ch1'] = [];
+      final seen = <String?>[];
+      final sub = service
+          .watch('ws1', 'ch1')
+          .listen((m) => seen.add(m?['user_id'] as String?));
+      await pumpEventQueue();
+      await service.begin(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+      );
+      await pumpEventQueue();
+      await service.handBack(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+      );
+      await pumpEventQueue();
+      await sub.cancel();
+      expect(seen.first, isNull);
+      expect(seen, contains('u1'));
+      expect(seen.last, isNull);
+    });
+
     test('status/isActive read the Caches marker', () async {
       expect(await service.isActive('ws1', 'ch1'), isFalse);
       expect(await service.status('ws1', 'ch1'), isNull);
@@ -321,12 +428,7 @@ void main() {
     late DomainEventBus eventBus;
     final dispatches =
         <
-          ({
-            String spaceId,
-            String agentId,
-            String workspaceId,
-            String prompt,
-          })
+          ({String spaceId, String agentId, String workspaceId, String prompt})
         >[];
     var clock = DateTime(2026, 1, 1);
     late CheckerDispatchListener listener;

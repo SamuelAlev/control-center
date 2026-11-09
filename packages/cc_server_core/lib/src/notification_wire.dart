@@ -50,8 +50,53 @@ NotificationFrame? messageReceivedFrame(MessageReceived event) {
       // frame still ships to everyone: the author is one member, and their
       // message is exactly what the others are being told about.
       if (event.senderUserId != null) 'sender_user_id': event.senderUserId,
+      if (event.inAgentOnlySpace) 'agent_only_space': true,
     },
   );
+}
+
+/// THE "who is notified" rule — whether `userId` should be told about the
+/// `notifications/*` frame `method` with `p`.
+///
+/// One server-side predicate, applied wherever a frame reaches a person: the
+/// live forwarder (per session), the durable feed (per viewer) and Web Push
+/// (per device). Clients render what they receive and re-derive none of it.
+/// Directed frames fail closed; nobody is told about their own action.
+bool notificationTargetsUser(
+  String method,
+  Map<String, dynamic> p,
+  String userId,
+) {
+  final recipient = p['for_user_id'];
+  if (recipient is String && recipient.isNotEmpty && recipient != userId) {
+    return false;
+  }
+  if (method == 'notifications/message_received') {
+    if (p['sender_user_id'] == userId ||
+        (p['content_preview'] as String? ?? '').trim().isEmpty) {
+      return false;
+    }
+    final mentions = p['mentions'];
+    if (mentions is List && mentions.contains('user:$userId')) {
+      return true;
+    }
+    // Agent-only spaces (by kind) reach nobody unless they mention them; this
+    // also covers `ask_agent`/`send_to_agent` turns, which carry no requester.
+    if (p['agent_only_space'] == true) {
+      return false;
+    }
+    final requestedBy = p['requested_by_user_id'];
+    return p['is_agent_message'] == true &&
+        (requestedBy == null || requestedBy == userId);
+  }
+  if (method == 'notifications/ticket_assigned' &&
+      p['assignee_type'] == 'user') {
+    return p['assigned_agent_id'] == userId;
+  }
+  if (method == 'notifications/rig_control_changed' && p['held'] == true) {
+    return p['controller'] != 'user:$userId';
+  }
+  return true;
 }
 
 /// Ticket assigned. PRD 16 §7(b): `assignee_type` lets the client tell a human

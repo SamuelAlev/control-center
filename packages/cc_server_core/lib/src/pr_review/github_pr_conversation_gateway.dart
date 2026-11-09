@@ -1,11 +1,11 @@
 import 'package:cc_connect_core/cc_connect_core.dart' show GitHubTokenScope;
 import 'package:cc_infra/cc_infra.dart'
     show
+        BotConversationCandidates,
         GitHubApiClient,
         GitHubIssueComment,
         GitHubReaction,
-        GitHubReviewComment,
-        GitHubViewerPr;
+        GitHubReviewComment;
 import 'package:cc_server_core/src/forge/github_clients.dart'
     show GitHubBotPresence, GitHubLane, GitHubScopedGrant;
 
@@ -76,15 +76,7 @@ abstract interface class GitHubPrConversationGateway {
   /// Open PRs addressed via @usectrl or the App bot's compatible mentions,
   /// and PRs carrying the configured review label. [since] bounds only
   /// mention lanes; the label lane's membership is itself trigger state.
-  Future<
-    ({
-      List<GitHubViewerPr> mentioned,
-      List<GitHubViewerPr> botMentioned,
-      List<GitHubViewerPr> shortMentioned,
-      List<GitHubViewerPr> labeled,
-    })
-  >
-  searchCandidates({DateTime? since});
+  Future<BotConversationCandidates> searchCandidates({DateTime? since});
 
   /// Conversation-timeline comments on one PR.
   Future<List<GitHubIssueComment>> listIssueComments(
@@ -190,12 +182,11 @@ typedef GitHubScopedMint =
 /// Production gateway for one workspace, over its bot presence and its
 /// per-owner GitHub clients.
 ///
-/// Search coverage is the subtle part: a token only sees the repositories of
-/// one installation, so a single client would silently miss every PR under
-/// the bot's other installations. The candidate search therefore runs once
-/// per installed account, each on that owner's client, and merges the lanes
-/// deduplicated by PR. A failing owner is skipped rather than failing the
-/// sweep — partial coverage beats none, and the next sweep retries.
+/// The candidate search is GraphQL, which rides the workspace's accountable
+/// human's own token whichever owner's client sends it (`GitHubClients`
+/// mints one-repository tokens only for `/repos/{owner}/{repo}` REST). One
+/// search therefore covers every installation that person can see; its hits
+/// are narrowed to the accounts the App is installed on.
 class WorkspaceGitHubPrConversationGateway
     implements GitHubPrConversationGateway {
   /// Creates a [WorkspaceGitHubPrConversationGateway].
@@ -244,66 +235,38 @@ class WorkspaceGitHubPrConversationGateway
       (await _presence())?.suspendedOwners ?? const {};
 
   @override
-  Future<
-    ({
-      List<GitHubViewerPr> mentioned,
-      List<GitHubViewerPr> botMentioned,
-      List<GitHubViewerPr> shortMentioned,
-      List<GitHubViewerPr> labeled,
-    })
-  >
-  searchCandidates({DateTime? since}) async {
+  Future<BotConversationCandidates> searchCandidates({DateTime? since}) async {
     final presence = await _presence();
     final botLogin = presence?.botLogin ?? '';
     if (presence == null || botLogin.isEmpty) {
-      return (
-        mentioned: const <GitHubViewerPr>[],
-        botMentioned: const <GitHubViewerPr>[],
-        shortMentioned: const <GitHubViewerPr>[],
-        labeled: const <GitHubViewerPr>[],
-      );
+      return BotConversationCandidates.empty;
     }
-    final mentioned = <String, GitHubViewerPr>{};
-    final botMentioned = <String, GitHubViewerPr>{};
-    final shortMentioned = <String, GitHubViewerPr>{};
-    final labeled = <String, GitHubViewerPr>{};
-    for (final owner in presence.owners) {
-      if (owner.isEmpty ||
-          presence.suspendedOwners.contains(owner.toLowerCase())) {
-        continue;
-      }
-      try {
-        final result = await _clientForOwner(owner).graphql
-            .searchBotConversationCandidates(
-              botLogin: botLogin,
-              label: _reviewLabel,
-              since: since,
-            );
-        for (final pr in result.mentioned) {
-          mentioned[pr.key] = pr;
-        }
-        for (final pr in result.botMentioned) {
-          botMentioned[pr.key] = pr;
-        }
-        for (final pr in result.shortMentioned) {
-          shortMentioned[pr.key] = pr;
-        }
-        for (final pr in result.labeled) {
-          labeled[pr.key] = pr;
-        }
-      } on Object catch (e) {
-        // One dead installation must not blind the sweep to the others.
-        _onWarning?.call(
-          'github_pr_conversation: search failed for owner $owner: $e',
-        );
-      }
+    final live = {
+      for (final owner in presence.owners)
+        if (owner.isNotEmpty &&
+            !presence.suspendedOwners.contains(owner.toLowerCase()))
+          owner.toLowerCase(): owner,
+    };
+    if (live.isEmpty) {
+      return BotConversationCandidates.empty;
     }
-    return (
-      mentioned: mentioned.values.toList(growable: false),
-      botMentioned: botMentioned.values.toList(growable: false),
-      shortMentioned: shortMentioned.values.toList(growable: false),
-      labeled: labeled.values.toList(growable: false),
-    );
+    final BotConversationCandidates found;
+    try {
+      // GraphQL is not about one repository, so every owner's automation
+      // client sends it with the same accountable human's token: one search
+      // sees exactly what N per-owner searches would. Hits are then kept
+      // only under accounts the App is installed on and not suspended.
+      found = await _clientForOwner(live.values.first).graphql
+          .searchBotConversationCandidates(
+            botLogin: botLogin,
+            label: _reviewLabel,
+            since: since,
+          );
+    } on Object catch (e) {
+      _onWarning?.call('github_pr_conversation: search failed: $e');
+      return BotConversationCandidates.empty;
+    }
+    return found.where((pr) => live.containsKey(pr.owner.toLowerCase()));
   }
 
   @override

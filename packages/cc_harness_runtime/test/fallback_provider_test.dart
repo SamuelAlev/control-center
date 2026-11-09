@@ -3,7 +3,7 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/src/providers/fallback_provider.dart';
 import 'package:test/test.dart';
 
-class _ScriptProvider implements LlmProviderPort {
+class _ScriptProvider extends LlmProviderPort {
   _ScriptProvider(this.name, this.events);
   final String name;
   final List<LlmEvent> events;
@@ -30,8 +30,7 @@ class _ScriptProvider implements LlmProviderPort {
 
 /// A provider whose native-deferral capability depends on the model it is asked
 /// about, mirroring `AnthropicProvider`.
-class _ModelGatedProvider extends _ScriptProvider
-    implements LlmDeferredToolSupport {
+class _ModelGatedProvider extends _ScriptProvider {
   _ModelGatedProvider(super.name, super.events);
 
   @override
@@ -171,6 +170,70 @@ void main() {
         .toList();
     expect(events.whereType<LlmError>(), isEmpty);
     expect(events.whereType<LlmTextDelta>().single.text, 'ok');
+  });
+
+  group('rotation reads the typed error kind', () {
+    test(
+      'a TPM limit phrased only in the message rotates as capacity',
+      () async {
+        // No code at all: only `LlmErrorKind.classify` reading "tokens per
+        // minute" recognises this as a rate limit (and NOT a context overflow).
+        final limited = _ScriptProvider('limited', const [
+          LlmError(
+            'Request too large: tokens per minute exceeded',
+            retryable: true,
+          ),
+          LlmDone(),
+        ]);
+        final good = _ScriptProvider('good', const [
+          LlmTextDelta('ok'),
+          LlmDone(),
+        ]);
+        var capacityFlag = false;
+        final fb = FallbackProvider(
+          [
+            FallbackEntry(providerId: 'a', model: 'm', build: () => limited),
+            FallbackEntry(providerId: 'a', model: 'm', build: () => good),
+          ],
+          onFallback:
+              (from, to, reason, {fromCredentialId, capacity = false}) =>
+                  capacityFlag = capacity,
+        );
+        final events = await fb
+            .complete(messages: [HarnessMessage.user('x')])
+            .toList();
+        expect(capacityFlag, isTrue);
+        expect(events.whereType<LlmTextDelta>().single.text, 'ok');
+      },
+    );
+
+    test('an explicit kind beats the phrasing', () async {
+      // Says "rate limit" but the provider typed it as a request-level
+      // rejection: every target would refuse it the same, so no failover.
+      final bad = _ScriptProvider('bad', const [
+        LlmError(
+          'rate limit field is invalid',
+          kind: LlmErrorKind.invalidRequest,
+        ),
+        LlmDone(),
+      ]);
+      final good = _ScriptProvider('good', const [
+        LlmTextDelta('ok'),
+        LlmDone(),
+      ]);
+      final fb = FallbackProvider([
+        FallbackEntry(providerId: 'a', model: 'm', build: () => bad),
+        FallbackEntry(providerId: 'b', model: 'm', build: () => good),
+      ]);
+      final events = await fb
+          .complete(messages: [HarnessMessage.user('x')])
+          .toList();
+      expect(
+        events.whereType<LlmError>().single.kind,
+        LlmErrorKind.invalidRequest,
+      );
+      expect(good.calls, 0);
+    });
   });
 
   test('does not rotate once output has streamed', () async {
@@ -370,10 +433,7 @@ void main() {
           build: () => oldTarget,
         ),
       ]);
-      expect(
-        providerSupportsDeferredTools(bothNew, model: 'new-model'),
-        isTrue,
-      );
+      expect(bothNew.supportsDeferredTools(model: 'new-model'), isTrue);
 
       final mixedModel = FallbackProvider([
         FallbackEntry(
@@ -388,7 +448,7 @@ void main() {
         ),
       ]);
       expect(
-        providerSupportsDeferredTools(mixedModel, model: 'new-model'),
+        mixedModel.supportsDeferredTools(model: 'new-model'),
         isFalse,
         reason:
             'the second entry is checked with ITS OWN model, not the '
@@ -408,7 +468,7 @@ void main() {
         ),
       ]);
       expect(
-        providerSupportsDeferredTools(mixedProvider, model: 'new-model'),
+        mixedProvider.supportsDeferredTools(model: 'new-model'),
         isFalse,
         reason: 'a target with no native deferral must veto the whole chain',
       );

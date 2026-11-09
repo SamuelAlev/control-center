@@ -10,10 +10,16 @@ import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Which other user this client is following. Null means nobody is followed.
-/// Agent presence is available for status, but agents are not follow targets.
+/// Agents are not follow targets (the roster carries humans only).
+///
+/// A follow belongs to one workspace's roster, so switching workspace ends
+/// it: the build watches the active workspace and resets to nobody.
 class FollowedPrincipalNotifier extends Notifier<UserPrincipal?> {
   @override
-  UserPrincipal? build() => null;
+  UserPrincipal? build() {
+    ref.watch(activeWorkspaceIdProvider);
+    return null;
+  }
 
   /// Starts following [principal], replacing any prior follow target.
   void follow(UserPrincipal principal) => state = principal;
@@ -39,12 +45,13 @@ final followedPrincipalProvider =
     );
 
 /// Pure decision function (independently unit-tested): follow is "until you
-/// act, then detach" (PRD 16 §4). The follow session recorded the last
-/// location it drove the router to on the followed principal's behalf; if the
-/// visible location has since diverged from that, the user navigated under
-/// their own steam and follow should end. A location that still matches (or
-/// no programmatic navigation has happened yet) means the follow is still
-/// live.
+/// act, then detach" (PRD 16 §4). The follow session records the location it
+/// last drove the router to on the followed principal's behalf — seeded with
+/// where the user stood when they started following, so a target with no
+/// locus yet still detaches the moment the user moves, instead of yanking
+/// them back whenever the target later shares one. A diverged location means
+/// the user navigated under their own steam and follow should end. Null (no
+/// session baseline) means the follow is still live.
 bool followShouldDetach({
   required String currentLocation,
   required String? lastFollowNavigatedLocation,
@@ -157,6 +164,13 @@ final followSyncProvider = Provider<void>((ref) {
       lastNavigated = null;
       return;
     }
+    // Baseline: where the user stands now. Following someone who shares no
+    // locus must not arm a later jump after the user has moved on.
+    try {
+      lastNavigated = router.state.uri.toString();
+    } on Object {
+      lastNavigated = null;
+    }
     followTarget();
   });
 
@@ -195,12 +209,14 @@ final dismissedSpotlightsProvider =
       DismissedSpotlightsNotifier.new,
     );
 
-/// Auto-navigates to a teammate's or agent's spotlighted space the first
-/// time it appears on the roster (PRD 16 §5) — once per `(principal,
-/// space)` instance and never for a pair the user has dismissed. The
-/// dismissible `"<name> is presenting"` banner itself is a pure roster read
-/// (see `SpotlightBanner`) and needs no sync provider of its own. Kept alive
-/// from the shell.
+/// Auto-navigates to a teammate's spotlighted space the first time it
+/// appears on the roster (PRD 16 §5) — once per `(principal, space)` instance
+/// and never for a pair the user has dismissed. While the user is following
+/// someone, the instance is consumed without navigating: a spotlight jump
+/// would read as the user moving and silently end the follow. The
+/// dismissible `"<name> is presenting"` banner is a pure roster read (see
+/// `SpotlightBanner`), so it still offers the space. Kept alive from the
+/// shell.
 final spotlightSyncProvider = Provider<void>((ref) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
@@ -228,6 +244,9 @@ final spotlightSyncProvider = Provider<void>((ref) {
         continue;
       }
       navigated.add(key);
+      if (ref.read(followedPrincipalProvider) != null) {
+        continue;
+      }
       ref.read(routerProvider).go(spaceRoute(workspaceId, spaceId));
     }
   }, fireImmediately: true);

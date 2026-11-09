@@ -68,6 +68,30 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
     );
   }
 
+  /// Writes [payload] only when `(workspaceId, kind, key)` holds nothing yet,
+  /// returning whether this call wrote it. The read and the insert share one
+  /// transaction, so two concurrent claims cannot both succeed.
+  Future<bool> putIfAbsent(
+    String workspaceId,
+    String kind,
+    String key,
+    String payload,
+  ) => transaction(() async {
+    if (await read(workspaceId, kind, key) != null) {
+      return false;
+    }
+    await into(cachesTable).insert(
+      CachesTableCompanion(
+        workspaceId: Value(workspaceId),
+        kind: Value(kind),
+        key: Value(key),
+        payload: Value(payload),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    return true;
+  });
+
   /// Deletes a single entry. No-op when absent.
   Future<void> deleteEntry(String workspaceId, String kind, String key) async {
     await (delete(cachesTable)..where(

@@ -1225,6 +1225,29 @@ void main() {
         expect(result.botMentioned, isEmpty);
       },
     );
+
+    test('sends no filler search for a lane with nothing to find', () async {
+      final b = build(
+        (r) => _json(r, {
+          'data': {
+            'mentioned': {'nodes': <Object>[]},
+            'botMentioned': {'nodes': <Object>[]},
+          },
+        }),
+      );
+      final result = await b.client.searchBotConversationCandidates(
+        botLogin: 'octocat',
+        label: '',
+      );
+      final body = _bodyOf(b.fake.requests.single);
+      final query = body['query'] as String;
+      final variables = (body['variables'] as Map).cast<String, Object?>();
+      expect(query, isNot(contains('shortMentioned')));
+      expect(query, isNot(contains('labeled')));
+      expect(variables.keys, unorderedEquals(['mn', 'bm', 'first']));
+      expect(result.shortMentioned, isEmpty);
+      expect(result.labeled, isEmpty);
+    });
   });
 
   group('GitHubGraphQLClient searchViewerPullRequestActivity', () {

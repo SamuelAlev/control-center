@@ -1,3 +1,8 @@
+/// The GitHub REST API version Connect pins (`x-github-api-version`). The
+/// server side keeps the same value as `gitHubRestApiVersion` in
+/// `cc_domain`; bump both together.
+const String githubApiVersion = '2022-11-28';
+
 /// What a single-repository GitHub token minted for Control Center may do.
 ///
 /// Every token is for exactly one repository. Which scope a caller receives

@@ -388,6 +388,29 @@ void main() {
       expect((await resolvedAt())['n1'], first.toIso8601String());
     });
 
+    test('the boot sweep resolves only waits recorded before boot', () async {
+      await dao.insertAndPrune(wait('before', 'q-1'));
+      await dao.insertAndPrune(
+        NotificationFeedTableCompanion.insert(
+          id: 'after',
+          workspaceId: 'ws-1',
+          method: NotificationFeedDao.agentAwaitingInputMethod,
+          paramsJson: jsonEncode({'workspace_id': 'ws-1', 'wait_id': 'q-2'}),
+          createdAt: Value(DateTime(2026, 10, 11)),
+        ),
+      );
+      await dao.insertAndPrune(wait('theirs', 'q-3', workspaceId: 'ws-2'));
+
+      final at = DateTime.utc(2026, 10, 10, 12);
+      expect(
+        await dao.resolveAgentWaitsRecordedBefore('ws-1', DateTime(2026, 10, 10), at),
+        1,
+      );
+      final stamps = await resolvedAt();
+      expect(stamps['before'], at.toIso8601String());
+      expect(stamps['after'], isNull);
+    });
+
     test('touches no other workspace', () async {
       await dao.insertAndPrune(
         wait('theirs', 'approval-1', workspaceId: 'ws-2'),

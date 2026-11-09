@@ -13,8 +13,15 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.d
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show PrMergeOutcome;
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart'
+    show PrFilesLoad;
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+
+export 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show PrMergeOutcome;
 
 /// Pr review repository.
 abstract class PrReviewRepository {
@@ -29,6 +36,10 @@ abstract class PrReviewRepository {
   /// [includePatches] defaults to true. Overview, badges and file trees
   /// pass false so opening a PR does not pull every hunk onto the wire.
   Stream<List<PrFile>> watchFiles(int prNumber, {bool includePatches = true});
+
+  /// [watchFiles] with the list's load state: [PrFilesLoad.truncated] when the
+  /// forge capped its file listing, so the reader can say the diff is partial.
+  Stream<PrFilesLoad> watchFilesLoad(int prNumber);
 
   /// Watch file content.
   Stream<String> watchFileContent(String path, String ref);
@@ -201,10 +212,10 @@ abstract class PrReviewRepository {
   /// Merge a pull request.
   ///
   /// [mergeMethod] must be one of: "squash", "merge", "rebase".
-  /// Returns a map with `merged`, `message` and `sha` from GitHub.
+  /// Answers the forge's [PrMergeOutcome].
   /// [idempotencyKey] (PRD 19 §3) dedupes a retried merge (e.g. one item of a
   /// bulk merge) so it never double-calls GitHub.
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
@@ -351,6 +362,12 @@ class EmptyPrReviewRepository implements PrReviewRepository {
   @override
   Stream<List<PrFile>> watchFiles(int prNumber, {bool includePatches = true}) =>
       Stream.value(const <PrFile>[]);
+
+  /// Follows [watchFiles], so a subclass that serves files serves loads too.
+  @override
+  Stream<PrFilesLoad> watchFilesLoad(int prNumber) => watchFiles(
+    prNumber,
+  ).map((files) => PrFilesLoad(files: files, isComplete: true));
 
   @override
   Stream<String> watchFileContent(String path, String ref) => Stream.value('');
@@ -508,15 +525,13 @@ class EmptyPrReviewRepository implements PrReviewRepository {
   }) async {}
 
   @override
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
     String? commitMessage,
     String? idempotencyKey,
-  }) async {
-    return {};
-  }
+  }) async => const PrMergeOutcome(merged: false, message: '');
 
   @override
   Future<void> closePullRequest({required int prNumber}) async {}

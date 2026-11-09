@@ -22,13 +22,20 @@ class AcpClient {
   ///
   /// [_send] writes one JSON-RPC line to the agent's stdin. [onDone] is
   /// invoked once the turn is over (the `session/prompt` result arrived),
-  /// allowing the host to tear the process down.
-  AcpClient({required this._send, this.onDone});
+  /// allowing the host to tear the process down. [onRequest] answers the
+  /// agent's own requests (`session/request_permission`, `fs/*`); without it
+  /// every agent request is refused as an unknown method.
+  AcpClient({required this._send, this.onDone, this.onRequest});
 
   final void Function(String line) _send;
 
   /// Optional callback fired when the prompt turn completes.
   final void Function()? onDone;
+
+  /// Answers one agent→client request: returns the JSON-RPC `result`, or
+  /// throws [AcpRpcException] (with its code) to answer with an `error`.
+  final Future<Object?> Function(String method, Map<String, dynamic> params)?
+  onRequest;
 
   final _events = StreamController<AgentProcessEvent>.broadcast();
   int _nextId = 1;
@@ -41,14 +48,23 @@ class AcpClient {
   /// Sends `initialize` and awaits the agent's result (its `protocolVersion`,
   /// `agentInfo` and capabilities). Per ACP, this is the required handshake
   /// before any session method.
+  ///
+  /// The client advertises the file-system methods only when it can answer
+  /// them ([onRequest] is set) and never a terminal: an agent that believed
+  /// it had one would route commands around its own sandbox.
   Future<Map<String, dynamic>> initialize({
     String protocolVersion = '2025-07-01',
     String clientName = 'control-center',
     String clientVersion = '0.1.0',
   }) async {
+    final answers = onRequest != null;
     final result = await _request('initialize', {
       'protocolVersion': protocolVersion,
       'clientInfo': {'name': clientName, 'version': clientVersion},
+      'clientCapabilities': {
+        'fs': {'readTextFile': answers, 'writeTextFile': answers},
+        'terminal': false,
+      },
     });
     return result is Map ? result.cast<String, dynamic>() : {};
   }
@@ -92,11 +108,17 @@ class AcpClient {
     onDone?.call();
   }
 
-
   /// Feeds one decoded JSON-RPC line from the agent's stdout. Routes it as a
-  /// response (completing a pending request) or a notification (emitting
-  /// events). Unrecognized lines are ignored so agent banner output does not
-  /// break the protocol.
+  /// request from the agent (answered through [onRequest]), a response
+  /// (completing a pending request) or a notification (emitting events).
+  /// Unrecognized lines are ignored so agent banner output does not break the
+  /// protocol.
+  ///
+  /// A message is a response only when it carries no `method` and answers an
+  /// id this client sent. Any line with a pending id used to be taken as the
+  /// answer, so an agent REQUEST that happened to reuse an id (both sides
+  /// count from 1) completed this client's call with the request's params —
+  /// and the request itself was never answered, leaving the agent waiting.
   void feedLine(String line) {
     if (_closed || line.trim().isEmpty) {
       return;
@@ -112,20 +134,35 @@ class AcpClient {
       return;
     }
     final id = json['id'];
-    if (id is int && _pending.containsKey(id)) {
-      final completer = _pending.remove(id)!;
-      final error = json['error'];
-      if (error is Map) {
-        completer.completeError(
-          AcpRpcException(error['message']?.toString() ?? 'ACP RPC error'),
-        );
-      } else {
-        completer.complete(json['result']);
+    final method = json['method'];
+    if (method is String && method.isNotEmpty) {
+      if (id != null) {
+        unawaited(_answer(id, method, json['params']));
+        return;
+      }
+    } else {
+      if (id is int &&
+          (json.containsKey('result') || json.containsKey('error'))) {
+        final completer = _pending.remove(id);
+        if (completer == null) {
+          // Not an id this client is waiting on: a duplicate or a forgery.
+          return;
+        }
+        final error = json['error'];
+        if (error is Map) {
+          completer.completeError(
+            AcpRpcException(
+              error['message']?.toString() ?? 'ACP RPC error',
+              code: error['code'] is int ? error['code'] as int : null,
+            ),
+          );
+        } else {
+          completer.complete(json['result']);
+        }
       }
       return;
     }
     // Notification.
-    final method = json['method']?.toString() ?? '';
     if (method == 'session/update') {
       final params = json['params'];
       if (params is Map) {
@@ -134,7 +171,48 @@ class AcpClient {
     }
   }
 
+  /// JSON-RPC's "method not found".
+  static const int methodNotFound = -32601;
+
+  /// JSON-RPC's "internal error".
+  static const int internalError = -32603;
+
+  Future<void> _answer(Object id, String method, Object? rawParams) async {
+    final handler = onRequest;
+    final params = rawParams is Map
+        ? rawParams.cast<String, dynamic>()
+        : <String, dynamic>{};
+    Map<String, Object?> reply;
+    if (handler == null) {
+      reply = _error(id, methodNotFound, 'Method not supported: $method');
+    } else {
+      try {
+        reply = {
+          'jsonrpc': '2.0',
+          'id': id,
+          'result': await handler(method, params),
+        };
+      } on AcpRpcException catch (e) {
+        reply = _error(id, e.code ?? internalError, e.message);
+      } on Object catch (e) {
+        reply = _error(id, internalError, 'Request failed: $e');
+      }
+    }
+    if (!_closed) {
+      _send(jsonEncode(reply));
+    }
+  }
+
+  static Map<String, Object?> _error(Object id, int code, String message) => {
+    'jsonrpc': '2.0',
+    'id': id,
+    'error': {'code': code, 'message': message},
+  };
+
   Future<dynamic> _request(String method, Map<String, dynamic> params) {
+    if (_closed) {
+      return Future.error(StateError('ACP client closed'));
+    }
     final id = _nextId++;
     final completer = Completer<dynamic>();
     _pending[id] = completer;
@@ -260,13 +338,17 @@ class AcpClient {
   }
 }
 
-/// Thrown when an ACP JSON-RPC request returns an `error` object.
+/// A JSON-RPC `error`: thrown when an ACP request returns one, and thrown by
+/// an [AcpClient.onRequest] handler to answer with one.
 class AcpRpcException implements Exception {
   /// Creates an [AcpRpcException].
-  AcpRpcException(this.message);
+  AcpRpcException(this.message, {this.code});
 
-  /// The error message from the agent.
+  /// The error message.
   final String message;
+
+  /// The JSON-RPC error code, when there is one.
+  final int? code;
 
   @override
   String toString() => 'AcpRpcException: $message';

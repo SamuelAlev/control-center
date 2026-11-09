@@ -487,6 +487,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teammate => 'Teammate';
 
   @override
+  String get systemSender => 'System';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -638,12 +641,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Showing last known data for $names. Resume the installation on GitHub, or connect a token.';
+    return 'Showing last known data for $names. Resume the installation on GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App installation suspended. Showing last known data for $names. Resume the installation on GitHub, or connect a token.';
+    return 'GitHub App installation suspended. Showing last known data for $names. Resume the installation on GitHub.';
   }
 
   @override
@@ -2572,6 +2575,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'That code doesn\'t match this sign-in. Check it and try again.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Too many wrong codes. Start the sign-in again.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'The sign-in service isn\'t responding right now. Wait a minute, then try again.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'The sign-in was refused. Start it again and approve every requested permission.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'The sign-in worked, but the server couldn\'t save it. Try again.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

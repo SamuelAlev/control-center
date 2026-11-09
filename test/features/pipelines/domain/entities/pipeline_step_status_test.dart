@@ -69,14 +69,14 @@ void main() {
     );
 
     test(
-      'fromString defaults to pending for unknown',
-      timeout: const Timeout.factor(2),
+      'fromString rejects an unknown value instead of reading it as pending',
       () {
+        // Reading a corrupt or newer status as `pending` re-ran finished work.
         expect(
-          PipelineStepStatus.fromString('bogus'),
-          PipelineStepStatus.pending,
+          () => PipelineStepStatus.fromString('bogus'),
+          throwsFormatException,
         );
-        expect(PipelineStepStatus.fromString(''), PipelineStepStatus.pending);
+        expect(() => PipelineStepStatus.fromString(''), throwsFormatException);
       },
     );
 

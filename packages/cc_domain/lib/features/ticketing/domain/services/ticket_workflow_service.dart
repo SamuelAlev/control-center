@@ -29,7 +29,10 @@ typedef EffectiveAutonomyResolver =
 /// ticket domain can enforce the budget-envelope guard without depending on
 /// the budget store.
 typedef RemainingBudgetResolver =
-    Future<int?> Function({required String workspaceId, required String agentId});
+    Future<int?> Function({
+      required String workspaceId,
+      required String agentId,
+    });
 
 /// Creates and drives **dumb** tickets through their lifecycle — pure
 /// issue-tracking metadata. Assignment records ownership but dispatches
@@ -47,7 +50,6 @@ class TicketWorkflowService {
     required this.repository,
     required this.eventBus,
     this.onWarn,
-    this._guards = const DelegationGuards(),
     this.resolveEffectiveAutonomy,
     this.resolveRemainingBudgetCents,
   });
@@ -62,16 +64,14 @@ class TicketWorkflowService {
   /// (the desktop wires it to `AppLog`; the headless server to stdout / no-op).
   final void Function(String message)? onWarn;
 
-  /// The deterministic delegation guards (depth / cycle / autonomy / budget)
-  /// enforced at the delegation chokepoint ([delegateGuarded]).
-  final DelegationGuards _guards;
-
-  /// Port for the autonomy-ceiling guard. Null (bare tests) skips that guard;
-  /// production wiring always supplies it.
+  /// Port for the autonomy-ceiling guard, read by `PeerDelegationGate`. Null
+  /// makes every agent hand-off refuse ("not configured"); production wiring
+  /// always supplies it.
   final EffectiveAutonomyResolver? resolveEffectiveAutonomy;
 
-  /// Port for the budget-envelope guard. Null (bare tests) skips that guard;
-  /// production wiring always supplies it.
+  /// Port for the budget-envelope guard, read by `PeerDelegationGate`. Null
+  /// makes every agent hand-off refuse ("not configured"); production wiring
+  /// always supplies it.
   final RemainingBudgetResolver? resolveRemainingBudgetCents;
 
   static const _uuid = Uuid();
@@ -171,22 +171,19 @@ class TicketWorkflowService {
     );
   }
 
-  /// Delegates a task to [assignedAgentId], enforcing the deterministic
-  /// delegation guards at this single chokepoint (PRD 22 §3) before any child
-  /// ticket is created.
-  /// Computes the child's [Ticket.delegationDepth] and
-  /// [Ticket.delegationRootTicketId] from the parent (a root delegation is
-  /// depth 1), walks the parent chain to build the ordered set of agents
-  /// already in the delegation chain, then runs ALL FOUR guards:
-  /// [DelegationGuards.checkDepth], [DelegationGuards.checkCycle],
-  /// [DelegationGuards.checkAutonomyCeiling] (via the injected
-  /// [resolveEffectiveAutonomy] port) and
-  /// [DelegationGuards.checkBudgetEnvelope] (via
-  /// [resolveRemainingBudgetCents]). On any refusal it throws a
-  /// [DelegationRefusedException] carrying the guard's reason verbatim (loud
-  /// denial, never a silent no-op). On allow it creates the child through the
-  /// ordinary [createTicket] path.
-  Future<Ticket> delegateGuarded({
+  /// Creates the tracked child ticket for a hand-off that has ALREADY passed
+  /// the delegation guards.
+  ///
+  /// The guards (depth, cycle, autonomy ceiling, budget envelope, in-flight
+  /// ask cycle) run in exactly one place, `PeerDelegationGate` in cc_mcp, for
+  /// every agent hand-off (`ask_agent`, `delegate_task`, `delegate_ticket`);
+  /// a caller must get a null refusal from it first. This method only keeps
+  /// the structural invariants a row must satisfy: the parent exists in this
+  /// workspace (it may have vanished since the gate ran), and the child's
+  /// [Ticket.delegationDepth] / [Ticket.delegationRootTicketId] derive from
+  /// it (a root delegation is depth 1). A missing parent throws
+  /// [DelegationRefusedException].
+  Future<Ticket> createDelegatedTicket({
     required String workspaceId,
     required String title,
     required String assignedAgentId,
@@ -199,69 +196,10 @@ class TicketWorkflowService {
     if (parentTicketId != null) {
       parent = await repository.getById(workspaceId, parentTicketId);
       if (parent == null) {
-        throw DelegationRefusedException(
-          'Delegation refused: parent ticket $parentTicketId does not exist.',
-        );
+        throw DelegationRefusedException(missingParentRefusal(parentTicketId));
       }
       _assertWorkspace(parent.id, parent.workspaceId, workspaceId);
     }
-
-    final childDepth = parent == null ? 1 : parent.delegationDepth + 1;
-    final rootTicketId = parent?.delegationRootTicketId ?? parent?.id;
-    final chainAgentIds = await _delegationChainAgentIds(parent);
-
-    // Structural, deterministic guards. Depth uses the delegator's own chain
-    // depth (the new delegate would be at `parentDepth + 1`); cycle checks the
-    // combined ask+delegate chain (delegator last) against the new delegate.
-    final depth = _guards.checkDepth(parent?.delegationDepth ?? 0);
-    if (!depth.allowed) {
-      throw DelegationRefusedException(depth.refusal!);
-    }
-    final cycle = _guards.checkCycle(chainAgentIds, assignedAgentId);
-    if (!cycle.allowed) {
-      throw DelegationRefusedException(cycle.refusal!);
-    }
-    // Autonomy ceiling: the delegate's EFFECTIVE level in the space must not
-    // exceed the delegator's — privilege cannot be laundered through
-    // delegation (an actWithApproval agent must not fan work out to an
-    // actFreely one and collect unprompted effects by proxy). Both levels
-    // resolve through the injected port so this stays pure domain.
-    final autonomyResolver = resolveEffectiveAutonomy;
-    if (autonomyResolver != null && delegatedByAgentId != null) {
-      final delegatorLevel = await autonomyResolver(
-        workspaceId: workspaceId,
-        agentId: delegatedByAgentId,
-        spaceId: spaceId,
-      );
-      final delegateLevel = await autonomyResolver(
-        workspaceId: workspaceId,
-        agentId: assignedAgentId,
-        spaceId: spaceId,
-      );
-      final ceiling = _guards.checkAutonomyCeiling(
-        delegatorLevel,
-        delegateLevel,
-      );
-      if (!ceiling.allowed) {
-        throw DelegationRefusedException(ceiling.refusal!);
-      }
-    }
-    // Budget envelope: delegation bills the DELEGATOR's remaining budget and
-    // cannot mint more. Null = no hard-stop policy (uncapped), which passes.
-    final budgetResolver = resolveRemainingBudgetCents;
-    if (budgetResolver != null && delegatedByAgentId != null) {
-      final remaining = await budgetResolver(
-        workspaceId: workspaceId,
-        agentId: delegatedByAgentId,
-      );
-      if (remaining != null) {
-        final envelope = _guards.checkBudgetEnvelope(remaining);
-        if (!envelope.allowed) {
-          throw DelegationRefusedException(envelope.refusal!);
-        }
-      }
-    }
-
     return createTicket(
       workspaceId: workspaceId,
       title: title,
@@ -270,37 +208,16 @@ class TicketWorkflowService {
       delegatedByAgentId: delegatedByAgentId,
       parentTicketId: parentTicketId,
       spaceId: spaceId,
-      delegationDepth: childDepth,
-      delegationRootTicketId: rootTicketId,
+      delegationDepth: parent == null ? 1 : parent.delegationDepth + 1,
+      delegationRootTicketId: parent?.delegationRootTicketId ?? parent?.id,
     );
   }
 
-  /// Walks the parent chain from [parent] up to the delegation root, collecting
-  /// the assignee agent id of each ticket. Returns the chain root-first with the
-  /// delegator ([parent]'s assignee) last — the order [DelegationGuards.checkCycle]
-  /// expects. Bounded by a `seen` set so a pre-existing cycle can't loop forever.
-  Future<List<String>> _delegationChainAgentIds(Ticket? parent) async {
-    if (parent == null) {
-      return const [];
-    }
-    final chain = <String>[];
-    // The whole chain lives in one workspace: a ticket's parent can never be
-    // owned by another workspace (see setParent / delegateGuarded).
-    final workspaceId = parent.workspaceId;
-    Ticket? cursor = parent;
-    final seen = <String>{};
-    while (cursor != null && seen.add(cursor.id)) {
-      final assignee = cursor.assignedAgentId;
-      if (assignee != null) {
-        chain.add(assignee);
-      }
-      final parentId = cursor.parentTicketId;
-      cursor = parentId == null
-          ? null
-          : await repository.getById(workspaceId, parentId);
-    }
-    return chain.reversed.toList();
-  }
+  /// The refusal for a delegation naming a parent ticket this workspace does
+  /// not hold — one wording for the gate and for [createDelegatedTicket].
+  static String missingParentRefusal(String parentTicketId) =>
+      'Delegation refused: parent ticket $parentTicketId does not exist in '
+      'this workspace.';
 
   /// Marks a ticket in-progress (no-op if terminal/missing/already started).
   Future<void> startTicket(
@@ -482,7 +399,11 @@ class TicketWorkflowService {
       },
       onApplied: (before, after) {
         eventBus.publish(
-          TicketCompleted(ticketId: ticketId, occurredAt: after.updatedAt),
+          TicketCompleted(
+            ticketId: ticketId,
+            workspaceId: workspaceId,
+            occurredAt: after.updatedAt,
+          ),
         );
         eventBus.publish(
           TicketStatusChanged(
@@ -526,6 +447,7 @@ class TicketWorkflowService {
         eventBus.publish(
           TicketFailed(
             ticketId: ticketId,
+            workspaceId: workspaceId,
             errorMessage: errorMessage,
             occurredAt: after.updatedAt,
           ),
@@ -568,7 +490,11 @@ class TicketWorkflowService {
       },
       onApplied: (before, after) {
         eventBus.publish(
-          TicketCancelled(ticketId: ticketId, occurredAt: after.updatedAt),
+          TicketCancelled(
+            ticketId: ticketId,
+            workspaceId: workspaceId,
+            occurredAt: after.updatedAt,
+          ),
         );
         eventBus.publish(
           TicketStatusChanged(

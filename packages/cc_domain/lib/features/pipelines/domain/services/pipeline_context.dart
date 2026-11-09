@@ -1,3 +1,8 @@
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
+import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
+
 /// Context passed to each step body closure during execution.
 ///
 /// Carries the mutable pipeline state, identifiers and trigger payload.
@@ -17,6 +22,8 @@ class PipelineContext {
     required this.state,
     this.triggerPayload,
     this.dryRun = false,
+    this.definition,
+    this.step,
     this._idleRunner,
   });
 
@@ -42,6 +49,18 @@ class PipelineContext {
 
   /// The step definition ID currently executing.
   final String stepId;
+
+  /// The graph this run is pinned to (its template as it was at start). Null
+  /// only outside an engine.
+  final PipelineDefinition? definition;
+
+  /// The executing step's definition, from the graph this run is pinned to.
+  ///
+  /// Bodies read their config from here, never by re-loading the template:
+  /// the live template may have been edited since the run started, and a run
+  /// executes the version it started with. Null only outside an engine (a body
+  /// invoked directly in a test).
+  final PipelineStepDefinition? step;
 
   /// The step-run row id — bodies can stream intermediate output back into
   /// the run-detail card by updating `pipeline_step_runs.outputJson` via
@@ -114,4 +133,22 @@ class PipelineContext {
     }
     return v;
   }
+}
+
+/// Reads a body's configuration from the graph the run is pinned to.
+///
+/// Bodies call these instead of `templates.getById`: the live template may have
+/// been edited since the run started. The repository is only the fallback for
+/// a body invoked outside an engine, where the context carries no graph.
+extension PinnedPipelineGraph on PipelineContext {
+  /// The run's pinned graph.
+  Future<PipelineDefinition?> pinnedDefinition(
+    PipelineTemplateRepository templates,
+  ) async => definition ?? await templates.getById(workspaceId, templateId);
+
+  /// The executing step's pinned config.
+  Future<PipelineNodeConfig?> pinnedStepConfig(
+    PipelineTemplateRepository templates,
+  ) async =>
+      step?.config ?? (await pinnedDefinition(templates))?.step(stepId)?.config;
 }

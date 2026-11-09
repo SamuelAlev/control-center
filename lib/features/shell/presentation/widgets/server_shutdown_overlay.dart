@@ -28,19 +28,22 @@ class ServerShutdownOverlay extends ConsumerWidget {
     if (!state.active) {
       return const SizedBox.shrink();
     }
-    // `shutdownProgressProvider.active` is never cleared once a shutdown starts,
-    // so gate on the live connection too: the instant the server is actually
-    // gone (the local server exited or the transport dropped — the phase leaves
-    // `connected`/`connecting`), stop covering the app so the reconnect/connect
-    // screen underneath is reachable, instead of a shutdown dialog that never
-    // goes away. A null status (no supervisor wired — tests/pre-boot) keeps the
-    // overlay up, matching the prior behaviour.
+    // For a shutdown the server announced, gate on the live connection too:
+    // the instant the server is actually gone (the phase leaves
+    // `connected`/`connecting`), stop covering the app so the
+    // reconnect/connect screen underneath is reachable, instead of a shutdown
+    // dialog that never goes away. A shutdown this app started is the app
+    // quitting: the bundled server exits before the window does, and the
+    // overlay stays up through that drop rather than flashing the app back.
+    // A null status (no supervisor wired — tests/pre-boot) keeps the overlay
+    // up.
     final phase = ref.watch(
       serverConnectionStatusProvider.select((s) => s.value?.phase),
     );
-    if (phase == ServerConnectionPhase.reconnecting ||
-        phase == ServerConnectionPhase.closed ||
-        phase == ServerConnectionPhase.identityMismatch) {
+    if (!state.initiatedHere &&
+        (phase == ServerConnectionPhase.reconnecting ||
+            phase == ServerConnectionPhase.closed ||
+            phase == ServerConnectionPhase.identityMismatch)) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);

@@ -3,6 +3,8 @@ import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
     show GitRepoInspectionException;
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart'
     show DirectoryAccessException;
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
+    show ForgeUnsupportedError;
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart'
     show kGitHubInstallationSuspendedCode, mapHttpException;
@@ -38,6 +40,14 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
   }
   if (error is ValidationException) {
     return RpcErrorMapping(RpcErrorCodes.validation, error.message);
+  }
+  // A surface the repo's forge does not have. Named, so a client can tell it
+  // from a failure and hide the affordance instead of reporting an error.
+  if (error is ForgeUnsupportedError) {
+    return RpcErrorMapping(RpcErrorCodes.validation, error.toString(), {
+      'unsupported_capability': error.capability,
+      'forge': error.forge.wire,
+    });
   }
   // `repos.addFromPath` rejects a non-GitHub checkout with a client-safe reason
   // (no path/secret leakage) — surface it so the web add-repo form can show it.

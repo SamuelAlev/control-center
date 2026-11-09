@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
@@ -23,6 +26,7 @@ PipelineRun _makeRun({
   int totalCostCents = 0,
   int totalTokens = 0,
   bool dryRun = false,
+  bool isProjection = false,
   String? triggerEventType,
 }) {
   return PipelineRun(
@@ -40,6 +44,7 @@ PipelineRun _makeRun({
     totalCostCents: totalCostCents,
     totalTokens: totalTokens,
     dryRun: dryRun,
+    isProjection: isProjection,
   );
 }
 
@@ -51,7 +56,6 @@ PipelineStepRun _makeStepRun({
   String? inputJson,
   String? outputJson,
   String? errorMessage,
-  int? branchIndex,
   int attemptCount = 0,
   DateTime? startedAt,
   DateTime? finishedAt,
@@ -64,7 +68,6 @@ PipelineStepRun _makeStepRun({
     inputJson: inputJson,
     outputJson: outputJson,
     errorMessage: errorMessage,
-    branchIndex: branchIndex,
     attemptCount: attemptCount,
     startedAt: startedAt ?? DateTime(2025, 6, 1),
     finishedAt: finishedAt,
@@ -111,6 +114,46 @@ void main() {
   // ── CRUD: PipelineRun ──────────────────────────────────────────────
 
   group('PipelineRun CRUD', () {
+    test('the pinned graph round-trips and survives updates', () async {
+      final graph = PipelineDefinition(
+        templateId: 'tpl-1',
+        workspaceId: 'ws-1',
+        name: 'Pinned',
+        version: 4,
+        steps: [
+          PipelineStepDefinition(
+            id: 'trigger',
+            kind: StepKind.trigger,
+            bodyKey: 'pipeline.trigger',
+          ),
+        ],
+      );
+      final run = PipelineRun(
+        id: 'run-1',
+        templateId: 'tpl-1',
+        workspaceId: 'ws-1',
+        status: PipelineRunStatus.running,
+        startedAt: DateTime(2025, 6, 1),
+        templateVersion: 4,
+        templateSnapshot: graph,
+      );
+      await repo.insertRun(run);
+      expect((await repo.getRun('run-1'))!.templateSnapshot, graph);
+
+      // An update from a run object that lost its snapshot must not erase it.
+      final bare = PipelineRun(
+        id: 'run-1',
+        templateId: 'tpl-1',
+        workspaceId: 'ws-1',
+        status: PipelineRunStatus.completed,
+        startedAt: DateTime(2025, 6, 1),
+      );
+      await repo.updateRun(bare);
+      final after = await repo.getRun('run-1');
+      expect(after!.status, PipelineRunStatus.completed);
+      expect(after.templateSnapshot, graph);
+    });
+
     test('insertRun and getRun round-trip', () async {
       final run = _makeRun(
         state: {'key': 'value'},
@@ -440,7 +483,6 @@ void main() {
         stepId: 'fetch_context',
         status: PipelineStepStatus.running,
         inputJson: '{"in": 1}',
-        branchIndex: 0,
         attemptCount: 2,
       );
       await repo.insertStepRun(step);
@@ -452,7 +494,6 @@ void main() {
       expect(fetched.stepId, 'fetch_context');
       expect(fetched.status, PipelineStepStatus.running);
       expect(fetched.inputJson, '{"in": 1}');
-      expect(fetched.branchIndex, 0);
       // attemptCount is not persisted by stepRunToCompanion; reads back as 0.
       expect(fetched.attemptCount, 0);
     });
@@ -964,13 +1005,24 @@ void main() {
         );
       });
 
-      test('excludes the named trigger event types, keeping nulls', () async {
+      test('excludes projection rows, whatever their trigger marker', () async {
         await repo.insertRun(
           _makeRun(
             id: 'engine-run',
             templateId: 'tpl',
             workspaceId: 'ws',
             status: PipelineRunStatus.running,
+          ),
+        );
+        // An engine run that happens to carry a projection marker still holds
+        // its slot: the flag decides, not the string.
+        await repo.insertRun(
+          _makeRun(
+            id: 'engine-run-with-marker',
+            templateId: 'tpl',
+            workspaceId: 'ws',
+            status: PipelineRunStatus.running,
+            triggerEventType: 'CodeGraphWatch',
           ),
         );
         await repo.insertRun(
@@ -980,6 +1032,7 @@ void main() {
             workspaceId: 'ws',
             status: PipelineRunStatus.running,
             triggerEventType: 'CodeGraphWatch',
+            isProjection: true,
           ),
         );
 
@@ -987,13 +1040,30 @@ void main() {
           await repo.activeRunCountForTemplate(
             workspaceId: 'ws',
             templateId: 'tpl',
-            excludeTriggerEventTypes: const {'CodeGraphWatch'},
           ),
-          1,
-          reason:
-              'a run with no trigger event type must still count — SQL NOT IN '
-              'over a null column yields null, not true',
+          2,
         );
+      });
+
+      test('an update cannot flip the projection flag', () async {
+        final run = _makeRun(
+          id: 'projection',
+          templateId: 'tpl',
+          workspaceId: 'ws',
+          status: PipelineRunStatus.running,
+          isProjection: true,
+        );
+        await repo.insertRun(run);
+        await repo.updateRun(
+          PipelineRun(
+            id: run.id,
+            templateId: run.templateId,
+            workspaceId: run.workspaceId,
+            status: PipelineRunStatus.cancelled,
+            startedAt: run.startedAt,
+          ),
+        );
+        expect((await repo.getRun('projection'))!.isProjection, isTrue);
       });
 
       test('nextQueuedRunForTemplate returns the oldest waiting run', () async {

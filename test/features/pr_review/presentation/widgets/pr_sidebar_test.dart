@@ -100,7 +100,12 @@ List<Override> _overrides(PrSidebar sidebar, List<PrReviewer> reviewers) {
 }
 
 /// The PR identity PrSidebar's keyed providers use.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 42,
+  forge: null,
+);
 
 Widget _app(PrSidebar sidebar) {
   return MaterialApp(

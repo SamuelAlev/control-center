@@ -1,4 +1,6 @@
 {
+  "steeringForceSendFailed": "Não foi possível enviar agora: {error}",
+  "questionAnswerNotDelivered": "Sua resposta não foi entregue. A pergunta pode já ter sido respondida ou o agente parou de esperar.",
   "succeeded": "Concluído",
   "agentRunRetryLabel": "Nova tentativa n.º {number} · {time}",
   "agentRunStarting": "A iniciar · {time}",
@@ -945,7 +947,6 @@
   "addressBarHint": "Inserir um URL",
   "addFromFile": "Adicionar de arquivo",
   "addGif": "Adicionar GIF",
-  "addGithubRepoPrompt": "Adicione pelo menos um repositório do GitHub para ver as pull requests",
   "addLocalCheckoutDescription": "Adicione um checkout local para começar a direcioná-lo a partir deste espaço de trabalho.",
   "@addLocalCheckoutDescription": {
     "description": "Add a local checkout to start targeting it from this workspace."
@@ -3320,13 +3321,9 @@
   "@pipelineStepDurationLabel": {
     "description": "Step detail label: run duration"
   },
-  "pipelineStepBranch": "Ramo",
   "pipelineStepViewConversation": "Ver conversa",
   "@pipelineStepViewConversation": {
     "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
-  },
-  "@pipelineStepBranch": {
-    "description": "Step detail label: parallel branch index"
   },
   "pipelineStepError": "Erro",
   "@pipelineStepError": {
@@ -3715,8 +3712,6 @@
   "agentQuestionTimeLeft": "Tempo restante para responder",
   "agentQuestionFreeformOptionHint": "Descreva com suas palavras…",
   "reviewRequested": "Revisão solicitada",
-  "connectGitHubHint": "Entre no GitHub em Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código",
-  "connectGitHubToLoadPrs": "Conecte o GitHub para carregar os pull requests",
   "noRepositoriesConfigured": "Nenhum repositório configurado",
   "openedAgo": "Aberto {age}",
   "prTimelineOpened": "{author} abriu este pull request",
@@ -3880,8 +3875,6 @@
   "openPullRequest": "Abrir uma pull request",
   "composePrSubtitle": "A partir de um branch que você enviou — sem agentes ou tickets",
   "createAsDraft": "Criar como rascunho",
-  "composePrNoRepo": "Nenhum repositório do GitHub selecionado",
-  "composePrNoRepoHint": "Selecione um espaço de trabalho com um repositório vinculado ao GitHub para abrir uma pull request.",
   "composePrPickBranches": "Escolha um branch base e um branch de comparação para pré-visualizar as alterações.",
   "composePrNothingToCompare": "Não há alterações entre esses branches.",
   "repository": "Repositório",
@@ -8280,13 +8273,18 @@
   "signInErrorAccessDenied": "O login no {provider} foi cancelado ou negado.",
   "signInErrorScopeMismatch": "O {provider} concedeu menos permissões do que o Control Center precisa. Entre de novo e aprove todas as permissões.",
   "signInErrorInvalidCode": "Esse código não corresponde a este login. Confira e tente de novo.",
+  "signInErrorTooManyCodes": "Códigos errados demais. Comece o login de novo.",
+  "signInErrorStaleRequest": "Este login não é mais válido. Comece de novo.",
+  "signInErrorInvalidRequest": "O servidor não conseguiu ler esta solicitação de login. Comece de novo.",
+  "signInErrorRateLimited": "Tentativas de login demais agora. Espere um minuto e tente de novo.",
+  "signInErrorStoreFailed": "O {provider} aceitou o login, mas o servidor não conseguiu salvá-lo. Tente de novo.",
   "signInErrorProviderUnavailable": "O {provider} não está respondendo agora. Tente de novo em alguns minutos.",
   "signInErrorExchangeFailed": "O {provider} aceitou o login, mas o servidor não conseguiu concluí-lo. Tente de novo.",
   "signInErrorMisconfigured": "O app do {provider} deste servidor está configurado incorretamente. Peça ao proprietário do servidor para verificar Configurações → Servidor → Início de sessão único.",
   "signInErrorNeedsSignIn": "Seu login no {provider} expirou. Entre de novo para continuar trabalhando em seu nome.",
   "signInErrorNotInstalled": "O app do {provider} não está instalado onde é necessário. Instale-o e tente de novo.",
   "signInErrorInstallationBoundElsewhere": "Esta instalação do app do GitHub já está autorizada para outro servidor do Control Center.",
-  "signInErrorTeamBoundElsewhere": "Este espaço do Linear já está conectado a outro servidor do Control Center.",
+  "signInErrorTeamBoundElsewhere": "Este espaço do Slack já está conectado a outro servidor do Control Center.",
   "signInErrorSuspended": "O app do {provider} está suspenso. Reative-o no {provider} e tente de novo.",
   "signInErrorInstallBlocked": "O Control Center Connect bloqueou este servidor. Fale com quem opera o seu servidor Connect.",
   "signInErrorUnknown": "O login falhou por um motivo que o servidor não informou. Tente de novo.",
@@ -8427,5 +8425,13 @@
   "workspaceProviderAppSwitchTitle": "Trocar o aplicativo do {provider}?",
   "workspaceProviderAppSwitchToOwnBody": "Todos conectados ao {provider} neste espaço de trabalho pelo aplicativo deste servidor precisam entrar de novo com o aplicativo do espaço de trabalho.",
   "workspaceProviderAppSwitchToServerBody": "Isso exclui as credenciais do {provider} do espaço de trabalho. Todos conectados pelo aplicativo do espaço de trabalho precisam entrar de novo.",
-  "workspaceProviderAppSwitchAction": "Trocar aplicativo"
+  "workspaceProviderAppSwitchAction": "Trocar aplicativo",
+  "openOnForge": "Abrir no {forge}",
+  "prFilesTruncatedNotice": "Mostrando os primeiros {count} arquivos. O {forge} não lista o restante.",
+  "connectForgeToLoadPrs": "Conecte uma hospedagem de código para carregar os pull requests",
+  "connectForgeHint": "Conecte GitHub, GitLab ou Bitbucket em Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código",
+  "addForgeRepoPrompt": "Adicione pelo menos um repositório no GitHub, GitLab ou Bitbucket para ver pull requests",
+  "composePrNoForgeRepo": "Nenhum repositório hospedado selecionado",
+  "composePrNoForgeRepoHint": "Selecione um espaço de trabalho com um repositório no GitHub, GitLab ou Bitbucket para abrir um pull request.",
+  "composePrForgeNotConnected": "Conecte {forge} para abrir um pull request neste repositório"
 }

@@ -28,9 +28,8 @@ final sandboxPreferencesProvider = Provider<SandboxPreferences>((ref) {
 /// Detects the sandbox environment of the HOST that actually runs agents.
 ///
 /// The sandbox executes on the host, not the client, so detection is sourced
-/// from [sandboxDetectorPortProvider]: on the desktop self-serve build that is
-/// the local machine; on a thin/web client it is the connected `cc_server`,
-/// resolved over the `sandbox.detect` RPC op. It NEVER probes the browser.
+/// from [sandboxDetectorPortProvider]: the connected `cc_server`, resolved over
+/// the `sandbox.detect` RPC op, on every client. It NEVER probes the browser.
 final sandboxDetectionProvider = FutureProvider<SandboxDetectionResult>((ref) {
   return ref.watch(sandboxDetectorPortProvider).detect();
 });

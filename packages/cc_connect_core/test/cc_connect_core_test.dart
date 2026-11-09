@@ -7,6 +7,82 @@ import 'package:test/test.dart';
 Uint8List _seed(int fill) => Uint8List.fromList(List.filled(32, fill));
 
 void main() {
+  group('callback segments', () {
+    test('every lane has a first hop and only Slack a bot hop', () {
+      for (final lane in ConnectOAuthLane.values) {
+        expect(lane.callbackSegment(ConnectCallbackHop.first), isNotNull);
+        expect(
+          lane.callbackSegment(ConnectCallbackHop.bot) != null,
+          lane == ConnectOAuthLane.slack,
+        );
+      }
+      expect(ConnectOAuthLane.slack.firstCallbackSegment, 'slack_oidc');
+    });
+
+    test('a segment maps back to exactly its lane and hop', () {
+      expect(ConnectOAuthLane.fromCallbackSegment('slack'), (
+        lane: ConnectOAuthLane.slack,
+        hop: ConnectCallbackHop.bot,
+      ));
+      expect(ConnectOAuthLane.fromCallbackSegment('linear_app'), (
+        lane: ConnectOAuthLane.linearApp,
+        hop: ConnectCallbackHop.first,
+      ));
+      expect(ConnectOAuthLane.fromCallbackSegment('setup'), isNull);
+    });
+  });
+
+  group('SignInFailure', () {
+    test(
+      'round-trips its wire spelling and reads unknown codes as unknown',
+      () {
+        for (final failure in SignInFailure.values) {
+          if (failure != SignInFailure.unknown) {
+            expect(SignInFailure.fromWire(failure.wire), failure);
+          }
+        }
+        expect(SignInFailure.fromWire('nope'), SignInFailure.unknown);
+        expect(SignInFailure.fromWire(''), isNull);
+      },
+    );
+
+    test('a wrong code and a provider refusal stay distinct', () {
+      expect(
+        SignInFailure.fromConnect(ConnectErrorCode.codeMismatch),
+        SignInFailure.codeMismatch,
+      );
+      expect(
+        SignInFailure.fromConnect(ConnectErrorCode.needsSignIn),
+        SignInFailure.needsSignIn,
+      );
+    });
+  });
+
+  group('OAuthStartRequest', () {
+    test('accepts an older server\'s sign_in purpose, refuses any other', () {
+      final base = const OAuthStartRequest(
+        workspaceId: 'ws1',
+        codeChallenge: 'c',
+      ).toJson();
+      expect(base.containsKey('purpose'), isFalse);
+      expect(
+        OAuthStartRequest.fromJson({...base, 'purpose': 'sign_in'}).workspaceId,
+        'ws1',
+      );
+      expect(
+        () => OAuthStartRequest.fromJson({
+          ...base,
+          'purpose': 'authorize_server',
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => OAuthStartRequest.fromJson({...base, 'installation_id': 1}),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('canonicalConnectOrigin', () {
     test('drops default ports, paths and case', () {
       expect(

@@ -88,7 +88,9 @@ class LocalServerProcessHolder {
 
   final List<StreamSubscription<ProcessSignal>> _signalSubs = [];
   StreamSubscription<ServerConnectionStatus>? _connectionStatusSub;
-  ServerStartupStatus? _reconnectStatus;
+
+  /// The current reconnect's hold on the startup indicator, if it has one.
+  StartupLease? _reconnect;
 
   bool _shutDown = false;
 
@@ -108,23 +110,18 @@ class LocalServerProcessHolder {
     if (process.isRunning) {
       return false;
     }
-    final current = serverStartupStatus.value;
-    if (current == null ||
-        current.phase == ServerStartupPhase.ready ||
-        identical(current, _reconnectStatus)) {
-      // Each reconnect owns a distinct identity, even with the same phase.
-      // ignore: prefer_const_constructors
-      _reconnectStatus = ServerStartupStatus(
-        phase: ServerStartupPhase.starting,
-      );
-      serverStartupStatus.value = _reconnectStatus;
+    // Each reconnect takes its own lease, and only when the indicator is free
+    // or still shows this holder's previous reconnect: a remote switch's
+    // progress or failure is never replaced by a local respawn.
+    if (startupReporter.isFree(lease: _reconnect)) {
+      _reconnect = startupReporter.lease(ServerStartupPhase.starting);
     }
     final CcServerProcess next;
     try {
       next = await spawn();
     } on Object catch (error) {
       if (!_shutDown) {
-        _reportReconnect(ServerStartupPhase.failed, error: error);
+        _reconnect?.report(ServerStartupPhase.failed, error: error);
       }
       rethrow;
     }
@@ -133,19 +130,8 @@ class LocalServerProcessHolder {
       _throwIfShutDown();
     }
     process = next;
-    _reportReconnect(ServerStartupPhase.connecting);
+    _reconnect?.report(ServerStartupPhase.connecting);
     return true;
-  }
-
-  void _reportReconnect(ServerStartupPhase phase, {Object? error}) {
-    final owned = _reconnectStatus;
-    if (owned == null || !identical(serverStartupStatus.value, owned)) {
-      _reconnectStatus = null;
-      return;
-    }
-    final next = ServerStartupStatus(phase: phase, error: error);
-    serverStartupStatus.value = next;
-    _reconnectStatus = phase == ServerStartupPhase.ready ? null : next;
   }
 
   /// Tracks successful reconnection without attaching UI state to RPC clients.
@@ -155,10 +141,10 @@ class LocalServerProcessHolder {
         return;
       }
       if (status.phase == ServerConnectionPhase.connected) {
-        _reportReconnect(ServerStartupPhase.ready);
+        _reconnect?.report(ServerStartupPhase.ready);
       } else if (status.phase == ServerConnectionPhase.identityMismatch ||
           status.authenticationRejected) {
-        _reportReconnect(ServerStartupPhase.failed, error: status.error);
+        _reconnect?.report(ServerStartupPhase.failed, error: status.error);
       }
     });
   }
@@ -175,7 +161,7 @@ class LocalServerProcessHolder {
   /// [first] throws. Idempotent.
   Future<void> shutDown({Future<void> Function()? first}) async {
     _shutDown = true;
-    _reportReconnect(ServerStartupPhase.ready);
+    _reconnect?.report(ServerStartupPhase.ready);
     try {
       await first?.call();
     } finally {
@@ -233,17 +219,15 @@ String _generatePsk() {
 /// endpoint — including automatic respawn: if the child dies, the supervisor
 /// restarts it and the UI reconnects without losing its subscriptions.
 ///
-/// The server's data dir is the app-support root, so it opens the SAME
-/// `global.db` + per-workspace `workspace.db` files the desktop used to
-/// keep in-process before the thin-client flip.
+/// The server's data dir is the app-support root, where it owns `global.db`
+/// and the per-workspace `workspace.db` files.
 ///
-/// Throws on failure: the desktop is a pure client and cannot self-serve, so
+/// Throws on failure: the desktop is a pure client with no fallback, so
 /// a missing/failed server is surfaced to the boot path rather than silently
 /// degraded.
 Future<ThinClientBackend> startThinClientBackend() async {
-  serverStartupStatus.value = const ServerStartupStatus(
-    phase: ServerStartupPhase.starting,
-  );
+  // The caller owns the attempt (it reports `starting`, then `ready` or
+  // `failed`); this only moves it on once the child is up.
   LocalServerProcessHolder? holder;
   try {
     final dataDir = (await controlCenterRootDir()).path;
@@ -254,29 +238,12 @@ Future<ThinClientBackend> startThinClientBackend() async {
     holder = LocalServerProcessHolder(
       await _spawnLocalServer(dataDir: dataDir, psk: psk),
     )..watchQuitSignals();
-    serverStartupStatus.value = const ServerStartupStatus(
-      phase: ServerStartupPhase.connecting,
-    );
-    final backend = await _connectThinClient(
-      holder: holder,
-      dataDir: dataDir,
-      psk: psk,
-    );
-    serverStartupStatus.value = const ServerStartupStatus(
-      phase: ServerStartupPhase.ready,
-    );
-    return backend;
-  } on Object catch (error) {
+    startupReporter.advance(ServerStartupPhase.connecting);
+    return await _connectThinClient(holder: holder, dataDir: dataDir, psk: psk);
+  } on Object {
     // If the client never connected, the caller may choose a remote server;
     // never leave this child holding the local data directory open.
-    try {
-      await holder?.shutDown();
-    } finally {
-      serverStartupStatus.value = ServerStartupStatus(
-        phase: ServerStartupPhase.failed,
-        error: error,
-      );
-    }
+    await holder?.shutDown();
     rethrow;
   }
 }

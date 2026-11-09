@@ -271,7 +271,7 @@ class ProposeOrchestrationTool extends McpTool {
             '${proposal.roles.length} roles (${proposal.hireCount} new hires), '
             '${proposal.subTickets.length} sub-tickets. Review and approve to run it.',
         senderId: agentId ?? 'system',
-        senderType: 'agent',
+        senderType: agentId == null ? 'system' : 'agent',
         messageType: 'orchestration_proposal',
         metadata: {'orchestrationId': orchestration.id},
         id: _uuid.v4(),

@@ -10,9 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings section for the server-hosted voice (ASR) model.
 ///
 /// Platform-neutral: it reads the seamed [voiceModelControlProvider] +
-/// [voiceModelStatusSnapshotProvider]. On desktop these resolve to the
-/// in-process model notifier; on web/thin clients they resolve to the connected
-/// server's voice model over the `models.voice*` RPC ops. When the connected
+/// [voiceModelStatusSnapshotProvider]. On every client these resolve to the
+/// connected server's voice model over the `models.voice*` RPC ops. When the connected
 /// server hosts no model (status is `null`), it renders an honest "managed on
 /// the server host" placeholder.
 ///

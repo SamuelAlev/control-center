@@ -8,7 +8,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pull_requests_use_case.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart'
+    show viewerLoginsProvider;
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -321,7 +322,7 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
 
       // The next REST page is fetched SERVER-SIDE over RPC (the thin client
       // holds no GitHub token); the host validates the repo is linked to the
-      // bound workspace.
+      // call's workspace (the client stamps the active one).
       final data = await ref
           .read(rpcClientProvider)
           .call('pr.openPageForRepo', {
@@ -544,11 +545,11 @@ List<RepoPullRequests> overlayReviewedByMe(
 /// the filter menu's facet counts (via [prListPopulationProvider]) and other
 /// PR surfaces (the context rail) run over.
 final prListDataProvider = Provider.autoDispose<AsyncValue<PrListData>>((ref) {
-  // `.value`: the identity lookup retries by reloading, and a reload must not
-  // reclassify every row as "not mine" for a frame.
-  final currentLogin = ref.watch(
-    githubUserProvider.select((u) => u.value?.login),
-  );
+  // Per forge: a GitLab repo's reviewers are matched against the viewer's
+  // GitLab login. The provider reads `.value`, so the connection lookup
+  // retrying does not reclassify every row as "not mine" for a frame; while
+  // nothing has resolved yet nothing is filtered.
+  final viewerLogins = ref.watch(viewerLoginsProvider);
   final queue = ref.watch(prsByRepoProvider);
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -594,7 +595,7 @@ final prListDataProvider = Provider.autoDispose<AsyncValue<PrListData>>((ref) {
         : repos;
     return const ClassifyPullRequestsUseCase().execute(
       byRepo: byRepo,
-      currentUserLogin: currentLogin,
+      viewerLoginByForge: viewerLogins.isEmpty ? null : viewerLogins,
     );
   });
 });

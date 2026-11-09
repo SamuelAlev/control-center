@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/src/errors/app_exceptions.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
@@ -158,12 +159,31 @@ PrWorktreeService _service({
   required _FakeRegistry registry,
   _FakeFs? fs,
   Future<String?> Function(String workspaceId, Repo repo)? githubToken,
+  WorktreeTaskPort? worktreeTasks,
 }) => PrWorktreeService(
   filesystem: fs ?? _FakeFs(),
   isolation: isolation,
   registry: registry,
   githubToken: githubToken ?? ((_, _) async => 'tok'),
+  worktreeTasks: worktreeTasks,
 );
+
+/// Records what a release asked of the environment side.
+class _RecordingTasks implements WorktreeTaskPort {
+  final List<String> released = [];
+  final List<WorktreeTaskContext> archived = [];
+
+  @override
+  Future<void> beforeRelease(String workspaceId, String spaceId) async =>
+      released.add(spaceId);
+
+  @override
+  Future<void> runArchive(WorktreeTaskContext context) async =>
+      archived.add(context);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   group('PrWorktreeService.ensureWorktree', () {
@@ -436,6 +456,42 @@ void main() {
 
       expect(isolation.destroys, hasLength(2));
       expect(registry.deleted.toSet(), {'a', 'b'});
+    });
+
+    test('goes through the one release path: archive, then destroy', () async {
+      // A PR editor worktree belongs to no space, so no environment is torn
+      // down for it, and its `archive` tasks run as a fork's would.
+      final dir = Directory.systemTemp.createTempSync('cc_pr_release');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final isolation = _FakeIsolation();
+      final tasks = _RecordingTasks();
+      final registry = _FakeRegistry()
+        ..bySpace['pr:acme/widget#7'] = [
+          IsolatedRepo(
+            id: 'a',
+            workspaceId: 'ws1',
+            spaceId: 'pr:acme/widget#7',
+            repoId: 'r',
+            path: dir.path,
+            branch: 'pr/7',
+            backend: RepoIsolationBackend.rift,
+            sourcePath: '/src',
+            createdAt: DateTime.utc(2026, 1, 1),
+          ),
+        ];
+      final svc = _service(
+        isolation: isolation,
+        registry: registry,
+        worktreeTasks: tasks,
+      );
+
+      await svc.release(repoFullName: 'acme/widget', prNumber: 7);
+
+      expect(tasks.released, isEmpty);
+      expect(tasks.archived.single.spaceId, isNull);
+      expect(tasks.archived.single.isForkPr, isTrue);
+      expect(isolation.destroys, hasLength(1));
+      expect(registry.deleted, ['a']);
     });
 
     test('no-op when no rows exist for the PR', () async {

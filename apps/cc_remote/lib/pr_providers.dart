@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/enriched_pull_request.dart';
@@ -54,26 +53,19 @@ final viewerLoginsProvider = FutureProvider<Map<ForgeHost, String>>((
     return const {};
   }
   try {
-    final data = await client.call('forge.listConnections', const {});
-    final raw = data['connections'];
-    if (raw is! List) {
-      retryLater();
-      return const {};
-    }
-    final connections = [
-      for (final c in raw.whereType<Map<String, dynamic>>())
-        ForgeConnection.fromJson(c),
-    ];
+    // The workspace overlay decides the identity: a workspace on its own
+    // GitHub App signs this person in as a different account than the
+    // server's lane does.
+    final workspaceId = await ref.watch(activeWorkspaceIdProvider.future);
+    final connections = await RemoteForgeConnections(
+      client,
+    ).list(workspaceId: workspaceId);
     // Nothing connected yet: the host may still be resolving credentials.
     // Ask again rather than settling into a permanently empty identity.
     if (!connections.any((c) => c.authenticated)) {
       retryLater();
     }
-    return {
-      for (final c in connections)
-        if (c.authenticated && c.username.isNotEmpty)
-          c.forge: c.username.toLowerCase(),
-    };
+    return RemoteForgeConnections.viewerLogins(connections);
   } on Object {
     retryLater();
     return const {};

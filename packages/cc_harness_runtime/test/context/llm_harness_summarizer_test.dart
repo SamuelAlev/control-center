@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
@@ -28,7 +29,9 @@ void main() {
           const LlmTextDelta('summary'),
         ]),
       );
-      expect(await s.summarize(input()), 'anchored summary');
+      final out = await s.summarize(input());
+      expect(out.text, 'anchored summary');
+      expect(out.modelWritten, isTrue);
     });
 
     test(
@@ -36,8 +39,9 @@ void main() {
       () async {
         final s = LlmHarnessSummarizer(_FakeProvider(const []));
         final out = await s.summarize(input());
-        // Structural fallback is non-empty and deterministic.
-        expect(out, isNotEmpty);
+        // Structural fallback is non-empty and deterministic, and says so.
+        expect(out.text, isNotEmpty);
+        expect(out.modelWritten, isFalse);
       },
     );
 
@@ -46,13 +50,15 @@ void main() {
         _FakeProvider([const LlmError('rate limited')]),
       );
       final out = await s.summarize(input());
-      expect(out, isNotEmpty);
+      expect(out.text, isNotEmpty);
+      expect(out.modelWritten, isFalse);
     });
 
     test('falls back when the provider throws outright', () async {
       final s = LlmHarnessSummarizer(_ThrowingProvider());
       final out = await s.summarize(input());
-      expect(out, isNotEmpty);
+      expect(out.text, isNotEmpty);
+      expect(out.modelWritten, isFalse);
     });
 
     test('honors a previous summary (renders the update branch)', () async {
@@ -61,12 +67,28 @@ void main() {
         _FakeProvider([const LlmTextDelta('updated summary')]),
       );
       final out = await s.summarize(input(previousSummary: 'old summary'));
-      expect(out, 'updated summary');
+      expect(out.text, 'updated summary');
+    });
+
+    test('a cancelled run abandons the request instead of falling back', () {
+      final source = CancellationTokenSource()..cancel('stop');
+      final s = LlmHarnessSummarizer(
+        _FakeProvider([const LlmTextDelta('never read')]),
+      );
+      expect(
+        s.summarize(
+          HarnessCompactionInput(
+            messages: [HarnessMessage.user('hello')],
+            cancel: source.token,
+          ),
+        ),
+        throwsA(isA<CancelledException>()),
+      );
     });
   });
 }
 
-class _FakeProvider implements LlmProviderPort {
+class _FakeProvider extends LlmProviderPort {
   _FakeProvider(this.events);
   final List<LlmEvent> events;
 
@@ -89,7 +111,7 @@ class _FakeProvider implements LlmProviderPort {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _ThrowingProvider implements LlmProviderPort {
+class _ThrowingProvider extends LlmProviderPort {
   @override
   String get displayName => 'Throwing';
 

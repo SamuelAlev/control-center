@@ -123,7 +123,7 @@ Future<void> _smokeEnvironment(String dataDir, String worktree) async {
       final rigId =
           'envsmoke${DateTime.now().millisecondsSinceEpoch % 1000000}';
       final spec = RigSpec.environment(
-        conversationId: 'smoke',
+        spaceId: 'smoke',
         environmentId: 'acme',
         worktreePath: worktree,
         egressAllowlist: egress,

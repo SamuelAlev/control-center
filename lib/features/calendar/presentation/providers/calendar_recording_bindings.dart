@@ -1,7 +1,7 @@
 /// Platform seam for starting a meeting recording from a calendar event.
 ///
-/// Recording is desktop-only (native audio capture + on-device transcription),
-/// so this delegates to the real recorder on the VM and reports an honest "not
+/// Recording from an event uses the desktop's native audio capture (the server
+/// transcribes), so this delegates to the real recorder on the VM and reports an honest "not
 /// available on web" error on web — keeping the recorder controller (cc_natives)
 /// off the web compile graph.
 library;

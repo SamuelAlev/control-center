@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
+import 'package:cc_domain/core/utils/single_flight.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
+import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/connect/connect_settings.dart';
 
 /// The trust state of the Connect this server is configured for.
@@ -42,6 +44,37 @@ final class ConnectConfigState {
   bool get usable => choice.enabled && config != null && pendingPins == null;
 }
 
+/// Whether a sealed credential can be opened by the Connect this server
+/// talks to now.
+enum SealStanding {
+  /// Sealed by this Connect for this server's install identity.
+  usable,
+
+  /// Connect is off or points at another Connect: unusable for now, but
+  /// kept, so switching back signs nobody out.
+  parked,
+
+  /// Sealed for another install identity (a restored backup, a rotated key):
+  /// it can never be opened again, so the honest state is "sign in again".
+  dead,
+}
+
+/// The standing of a seal made for [sealInstallId], given this server's
+/// install id towards the seal's Connect ([currentInstallId], null or empty
+/// when Connect is off or points elsewhere). The one rule every sealed lane
+/// applies.
+SealStanding sealStandingOf({
+  required String sealInstallId,
+  required String? currentInstallId,
+}) {
+  if (currentInstallId == null || currentInstallId.isEmpty) {
+    return SealStanding.parked;
+  }
+  return currentInstallId == sealInstallId
+      ? SealStanding.usable
+      : SealStanding.dead;
+}
+
 /// Signs and sends calls to the configured Connect.
 ///
 /// Everything goes to fixed paths under the configured base URL; nothing a
@@ -58,7 +91,11 @@ class ConnectClient {
     this.trustedRootKeys = hostedConfigRootKeys,
     DateTime Function()? now,
   }) : _http = httpClient ?? (HttpClient()..connectionTimeout = timeout),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now {
+    // A choice or key change, made here or noticed from `cc_server connect`
+    // in another process, drops the identity and config this client cached.
+    settings.addListener(invalidate);
+  }
 
   /// Where the choice, seed and trust state live.
   final ConnectSettings settings;
@@ -85,7 +122,13 @@ class ConnectClient {
   List<int>? _seedUsed;
   ConnectConfigState? _state;
   DateTime? _stateAt;
-  Future<ConnectConfigState>? _inflight;
+
+  /// The last verified `/v1/config` body and the base it came from, kept in
+  /// memory only: it is the one copy that still holds a key-mode Klipy app
+  /// key, which [ConnectSettings.cacheConfig] never persists.
+  Map<String, Object?>? _lastGood;
+  String _lastGoodBase = '';
+  final SingleFlight<int, ConnectConfigState> _configLoad = SingleFlight();
 
   /// The identity for the current Connect, or null when Connect is off.
   Future<ConnectInstallIdentity?> identity() async {
@@ -110,6 +153,27 @@ class ConnectClient {
     return derived;
   }
 
+  /// This server's install id towards the Connect at [connectOrigin], or
+  /// null when Connect is off or configured for another origin.
+  Future<String?> installIdFor(String connectOrigin) async {
+    final choice = await settings.choice();
+    if (!choice.enabled ||
+        canonicalConnectBaseUrl(choice.baseUrl) != connectOrigin) {
+      return null;
+    }
+    return (await identity())?.installId;
+  }
+
+  /// The [SealStanding] of a seal Connect at [connectOrigin] made for
+  /// [sealInstallId].
+  Future<SealStanding> sealStanding({
+    required String connectOrigin,
+    required String sealInstallId,
+  }) async => sealStandingOf(
+    sealInstallId: sealInstallId,
+    currentInstallId: await installIdFor(connectOrigin),
+  );
+
   /// Drops cached identity and config (after the owner changes the choice
   /// or rotates the key).
   void invalidate() {
@@ -118,11 +182,20 @@ class ConnectClient {
     _seedUsed = null;
     _state = null;
     _stateAt = null;
+    _lastGood = null;
+    _lastGoodBase = '';
+    // A load started under the old choice or key must not repopulate the
+    // cache once it lands.
+    _configLoad.invalidateAll();
   }
 
   /// The current config state, refetched at most every ten minutes (or now
-  /// with [refresh]). Concurrent callers share one fetch.
-  Future<ConnectConfigState> configState({bool refresh = false}) {
+  /// with [refresh], which never joins a fetch already in the air), and at
+  /// once after the choice or install key changed, here or in another
+  /// process ([ConnectSettings.noticeExternalChanges]). Concurrent callers
+  /// share one fetch.
+  Future<ConnectConfigState> configState({bool refresh = false}) async {
+    await settings.noticeExternalChanges();
     final cached = _state;
     final at = _stateAt;
     if (!refresh &&
@@ -131,7 +204,10 @@ class ConnectClient {
         _now().difference(at) < _configTtl) {
       return Future.value(cached);
     }
-    return _inflight ??= _loadConfig().whenComplete(() => _inflight = null);
+    if (refresh) {
+      _configLoad.invalidate(0);
+    }
+    return _configLoad.run(0, _loadConfig, commit: _remember);
   }
 
   /// The verified config, or null when lanes cannot use Connect.
@@ -143,50 +219,46 @@ class ConnectClient {
   Future<ConnectConfigState> _loadConfig() async {
     final choice = await settings.choice();
     if (!choice.enabled) {
-      return _remember(ConnectConfigState(choice: choice));
+      return ConnectConfigState(choice: choice);
     }
     final id = await identity();
     final installId = id?.installId ?? '';
     final hosted = choice.mode == ConnectMode.hosted;
     if (hosted && trustedRootKeys.isEmpty) {
-      return _remember(
-        ConnectConfigState(
-          choice: choice,
-          installId: installId,
-          error: 'hosted_unprovisioned',
-        ),
+      return ConnectConfigState(
+        choice: choice,
+        installId: installId,
+        error: 'hosted_unprovisioned',
       );
     }
     Map<String, Object?> json;
     try {
       json = await _send('GET', '/v1/config');
     } on ConnectException catch (e) {
-      final cached = await settings.cachedConfig(choice.baseUrl);
+      final cached = _lastGoodBase == choice.baseUrl
+          ? _lastGood ?? await settings.cachedConfig(choice.baseUrl)
+          : await settings.cachedConfig(choice.baseUrl);
       final parsed = cached == null ? null : _tryParse(cached);
       final pending = await settings.pendingPins(choice.baseUrl);
-      return _remember(
-        ConnectConfigState(
-          choice: choice,
-          installId: installId,
-          config: parsed,
-          stale: parsed != null,
-          error: e.code == ConnectErrorCode.installBlocked
-              ? 'install_blocked'
-              : 'unreachable',
-          pendingPins: pending,
-        ),
+      return ConnectConfigState(
+        choice: choice,
+        installId: installId,
+        config: parsed,
+        stale: parsed != null,
+        error: e.code == ConnectErrorCode.installBlocked
+            ? 'install_blocked'
+            : 'unreachable',
+        pendingPins: pending,
       );
     }
     final ConnectConfig config;
     try {
       config = ConnectConfig.fromJson(json);
     } on FormatException {
-      return _remember(
-        ConnectConfigState(
-          choice: choice,
-          installId: installId,
-          error: 'protocol',
-        ),
+      return ConnectConfigState(
+        choice: choice,
+        installId: installId,
+        error: 'protocol',
       );
     }
     if (hosted) {
@@ -194,31 +266,25 @@ class ConnectClient {
         json,
         trustedKeys: trustedRootKeys,
       )) {
-        return _remember(
-          ConnectConfigState(
-            choice: choice,
-            installId: installId,
-            error: 'signature',
-          ),
+        return ConnectConfigState(
+          choice: choice,
+          installId: installId,
+          error: 'signature',
         );
       }
       if (config.epoch < await settings.hostedEpoch()) {
-        return _remember(
-          ConnectConfigState(
-            choice: choice,
-            installId: installId,
-            error: 'rollback',
-          ),
+        return ConnectConfigState(
+          choice: choice,
+          installId: installId,
+          error: 'rollback',
         );
       }
       await settings.recordHostedEpoch(config.epoch);
-      await settings.cacheConfig(choice.baseUrl, json);
-      return _remember(
-        ConnectConfigState(
-          choice: choice,
-          installId: installId,
-          config: config,
-        ),
+      await _keep(choice.baseUrl, json);
+      return ConnectConfigState(
+        choice: choice,
+        installId: installId,
+        config: config,
       );
     }
     // Self-hosted: trust on first use, then hold the identifiers still.
@@ -228,19 +294,19 @@ class ConnectClient {
       await settings.setPins(choice.baseUrl, identifiers);
     } else if (!_sameMap(pinned, identifiers)) {
       await settings.setPendingPins(choice.baseUrl, identifiers);
-      return _remember(
-        ConnectConfigState(
-          choice: choice,
-          installId: installId,
-          config: config,
-          error: 'pins_changed',
-          pendingPins: identifiers,
-        ),
+      return ConnectConfigState(
+        choice: choice,
+        installId: installId,
+        config: config,
+        error: 'pins_changed',
+        pendingPins: identifiers,
       );
     }
-    await settings.cacheConfig(choice.baseUrl, json);
-    return _remember(
-      ConnectConfigState(choice: choice, installId: installId, config: config),
+    await _keep(choice.baseUrl, json);
+    return ConnectConfigState(
+      choice: choice,
+      installId: installId,
+      config: config,
     );
   }
 
@@ -252,6 +318,12 @@ class ConnectClient {
       await settings.setPins(choice.baseUrl, pending);
     }
     return configState(refresh: true);
+  }
+
+  Future<void> _keep(String baseUrl, Map<String, Object?> json) async {
+    _lastGood = json;
+    _lastGoodBase = baseUrl;
+    await settings.cacheConfig(baseUrl, json);
   }
 
   ConnectConfigState _remember(ConnectConfigState state) {
@@ -466,7 +538,11 @@ class ConnectClient {
       request.contentLength = bytes.length;
       request.add(bytes);
       final response = await request.close().timeout(limit);
-      final raw = await _readBounded(response, limit);
+      final raw = await readBoundedText(
+        response,
+        maxBytes: _maxResponseBytes,
+        timeout: limit,
+      );
       Object? decoded;
       try {
         decoded = raw.isEmpty ? const <String, Object?>{} : jsonDecode(raw);
@@ -486,20 +562,6 @@ class ConnectClient {
     } on Object {
       throw const ConnectException(ConnectErrorCode.providerUnavailable);
     }
-  }
-
-  static Future<String> _readBounded(
-    HttpClientResponse response,
-    Duration limit,
-  ) async {
-    final chunks = <int>[];
-    await for (final chunk in response.timeout(limit)) {
-      chunks.addAll(chunk);
-      if (chunks.length > _maxResponseBytes) {
-        throw const ConnectException(ConnectErrorCode.providerUnavailable);
-      }
-    }
-    return utf8.decode(chunks, allowMalformed: true);
   }
 
   static bool _sameBytes(List<int>? a, List<int> b) {

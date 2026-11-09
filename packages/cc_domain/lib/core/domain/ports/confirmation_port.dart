@@ -59,6 +59,7 @@ class ConfirmationRequest {
     this.actionClasses = const [],
     this.agentId,
     this.constraintJson,
+    this.withdrawn,
   });
 
   /// The SPACE the request originated from — the container, not one of its
@@ -122,6 +123,15 @@ class ConfirmationRequest {
   /// This is what makes a standing approval NARROW: remembering "yes" to a
   /// push to `feature/x` grants pushes to `feature/*`, not to `main`.
   final String? constraintJson;
+
+  /// Completes when the asker stops waiting for an answer: a hook that timed
+  /// out, a run that ended while its approval was still on screen.
+  ///
+  /// A port that shows the request withdraws it then and resolves the
+  /// approval as denied, so no stale prompt is left for someone to answer
+  /// about work that is no longer waiting on it. Null means the asker waits
+  /// for as long as the port does.
+  final Future<void>? withdrawn;
 }
 
 /// Wire DTO for a pending agent-action confirmation — the
@@ -219,5 +229,8 @@ class ConfirmationRequestDto {
 abstract interface class ConfirmationPort {
   /// Surfaces [request] in the UI. Resolves once the user accepts or denies.
   /// Returns true on accept, false on deny / timeout.
+  ///
+  /// This is also the cancel path: when [ConfirmationRequest.withdrawn]
+  /// completes first, the port takes the prompt down and resolves false.
   Future<bool> requestApproval(ConfirmationRequest request);
 }

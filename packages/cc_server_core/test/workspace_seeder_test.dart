@@ -87,4 +87,56 @@ void main() {
       expect(templatesAfter.length, templates.length);
     },
   );
+  test('a deleted built-in trigger stays deleted across reseeds', () async {
+    final tmp = Directory.systemTemp.createTempSync('cc_seeder_tomb');
+    await stageServerNatives(tmp.path);
+    addTearDown(() => deleteDirBestEffort(tmp));
+    final seed = openSeedDatabases(tmp.path);
+    addTearDown(seed.close);
+    final global = seed.global;
+    final dbs = seed.workspaces;
+
+    const workspaceId = 'ws-tomb';
+    await global.workspaceRegistryDao.upsertWorkspace(
+      const WorkspacesTableCompanion(
+        id: Value(workspaceId),
+        name: Value('Tomb'),
+      ),
+    );
+    await dbs.create(workspaceId);
+
+    final templateRepo = PipelineTemplateRepositoryImpl(dbs);
+    final triggerRepo = PipelineTriggerRepositoryImpl(
+      dbs,
+      global.workspaceRouteDao,
+    );
+    final seeder = WorkspaceSeeder(
+      agentRepository: DaoAgentRepository(dbs),
+      filesystem: WorkspaceFilesystemService(CcPaths(tmp.path)),
+      templateRepository: templateRepo,
+      triggerRepository: triggerRepo,
+      settingsRepository: DaoWorkspaceSettingsRepository(dbs),
+    );
+
+    await seeder.seed(workspaceId);
+    final seeded = await triggerRepo.forWorkspace(workspaceId);
+    final victim = seeded.firstWhere((t) => t.templateId == 'index_code');
+    await triggerRepo.deleteById(workspaceId, victim.id);
+
+    await seeder.reseedTemplates(workspaceId);
+    await seeder.seed(workspaceId);
+
+    final after = await triggerRepo.forWorkspace(workspaceId);
+    expect(
+      after.where(
+        (t) =>
+            t.templateId == victim.templateId &&
+            t.eventType == victim.eventType,
+      ),
+      isEmpty,
+      reason: 'the seeder must not resurrect a trigger the user deleted',
+    );
+    // Every other built-in trigger is untouched.
+    expect(after.length, seeded.length - 1);
+  });
 }

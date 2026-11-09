@@ -130,7 +130,6 @@ class FakePipelineRunRepository implements PipelineRunRepository {
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
   }) async => 0;
 
   @override
@@ -672,7 +671,9 @@ void main() {
         final segments = [_segment()];
         meetingRepo.addMeeting(meeting);
         meetingRepo.addSegments(meeting.id, segments);
-        runRepo.addRun(_pipelineRun(triggerPayload: {'meeting_id': meeting.id}));
+        runRepo.addRun(
+          _pipelineRun(triggerPayload: {'meeting_id': meeting.id}),
+        );
 
         eventBus.publish(
           PipelineRunCompleted(
@@ -702,7 +703,9 @@ void main() {
         final segments = [_segment()];
         meetingRepo.addMeeting(meeting);
         meetingRepo.addSegments(meeting.id, segments);
-        runRepo.addRun(_pipelineRun(triggerPayload: {'meeting_id': meeting.id}));
+        runRepo.addRun(
+          _pipelineRun(triggerPayload: {'meeting_id': meeting.id}),
+        );
 
         eventBus.publish(
           PipelineRunFailed(
@@ -796,7 +799,9 @@ void main() {
         // fallback is NOT computed. enhancedNotes is null in copyWith,
         // which preserves existing.
         meetingRepo.addSegments(meeting.id, []);
-        runRepo.addRun(_pipelineRun(triggerPayload: {'meeting_id': meeting.id}));
+        runRepo.addRun(
+          _pipelineRun(triggerPayload: {'meeting_id': meeting.id}),
+        );
 
         eventBus.publish(
           PipelineRunCompleted(
@@ -928,7 +933,9 @@ void main() {
         meetingRepo.addMeeting(meeting);
         // No segments added.
         meetingRepo.addSegments(meeting.id, []);
-        runRepo.addRun(_pipelineRun(triggerPayload: {'meeting_id': meeting.id}));
+        runRepo.addRun(
+          _pipelineRun(triggerPayload: {'meeting_id': meeting.id}),
+        );
 
         eventBus.publish(
           PipelineRunCompleted(
@@ -1061,7 +1068,9 @@ void main() {
         final meeting = _meeting();
         meetingRepo.addMeeting(meeting);
         meetingRepo.addSegments(meeting.id, [_segment()]);
-        runRepo.addRun(_pipelineRun(triggerPayload: {'meeting_id': meeting.id}));
+        runRepo.addRun(
+          _pipelineRun(triggerPayload: {'meeting_id': meeting.id}),
+        );
 
         eventBus.publish(
           PipelineRunCancelled(

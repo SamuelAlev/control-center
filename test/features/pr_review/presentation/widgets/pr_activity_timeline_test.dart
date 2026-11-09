@@ -39,7 +39,12 @@ PullRequest _pr() => PullRequest(
 );
 
 /// The PR identity the timeline (and its keyed provider overrides) uses.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 7);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: 7,
+  forge: null,
+);
 
 class _NullWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
   @override

@@ -44,11 +44,6 @@ class PipelineStepRunsTable extends Table {
   /// Stack trace captured at failure time. Nullable.
   TextColumn get errorStackTrace => text().nullable()();
 
-  /// Identifies which parallel branch this step belongs to when multiple
-  /// `.listen()` calls fan out from the same source step. Null for
-  /// non-parallel steps.
-  IntColumn get branchIndex => integer().nullable()();
-
   /// Number of body attempts so far (retry policy). Persisted so a crash
   /// mid-retry doesn't reset the budget on resume.
   IntColumn get attemptCount => integer().withDefault(const Constant(0))();

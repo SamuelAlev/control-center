@@ -16,7 +16,6 @@ import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_registry.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
-import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/agent_registry_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -377,29 +376,12 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
   String? lastConversationId;
 
   @override
-  Future<String> ensureSpaceWorkspace({
-    required String workspaceId,
-    required String spaceId,
-    required String agentSlug,
-    required String fallbackDir,
-    String? conversationId,
-    String? agentConfigDir,
-    String? ticketId,
-    String? ticketKey,
-    String? ticketTitle,
-    String branchType = 'feature',
-    String? prHeadRef,
-    String? prHeadRepoFullName,
-    String? prBranch,
-    Set<String>? repoAllowlist,
-    void Function(String repoName, {required bool prHead})? onRepoProvision,
-    // Accepted to match the port; the fake never triggers a provision task.
-    void Function(String repoName)? onRepoProvisionTasks,
-    CancellationToken? cancel,
-  }) async {
+  Future<SpaceWorkspace> ensureSpaceWorkspace(
+    SpaceWorkspaceRequest request,
+  ) async {
     ensureCalled = true;
-    lastConversationId = conversationId;
-    return cannedDir;
+    lastConversationId = request.conversationId;
+    return SpaceWorkspaceReady(cannedDir);
   }
 
   @override

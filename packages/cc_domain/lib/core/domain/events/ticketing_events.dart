@@ -28,10 +28,18 @@ class TicketCreated implements DomainEvent {
 /// Fired when a ticket completes successfully (terminal).
 class TicketCompleted implements DomainEvent {
   /// Creates a [TicketCompleted].
-  const TicketCompleted({required this.ticketId, required this.occurredAt});
+  const TicketCompleted({
+    required this.ticketId,
+    required this.workspaceId,
+    required this.occurredAt,
+  });
 
   /// Ticket id.
   final String ticketId;
+
+  /// Workspace owning the ticket. Pipeline triggers are offered only the
+  /// events of their own workspace, so an event without it fans out nowhere.
+  final String workspaceId;
   @override
   final DateTime occurredAt;
 }
@@ -41,12 +49,16 @@ class TicketFailed implements DomainEvent {
   /// Creates a [TicketFailed].
   const TicketFailed({
     required this.ticketId,
+    required this.workspaceId,
     required this.errorMessage,
     required this.occurredAt,
   });
 
   /// Ticket id.
   final String ticketId;
+
+  /// Workspace owning the ticket.
+  final String workspaceId;
 
   /// Failure detail.
   final String errorMessage;
@@ -57,10 +69,17 @@ class TicketFailed implements DomainEvent {
 /// Fired when a ticket is cancelled (terminal).
 class TicketCancelled implements DomainEvent {
   /// Creates a [TicketCancelled].
-  const TicketCancelled({required this.ticketId, required this.occurredAt});
+  const TicketCancelled({
+    required this.ticketId,
+    required this.workspaceId,
+    required this.occurredAt,
+  });
 
   /// Ticket id.
   final String ticketId;
+
+  /// Workspace owning the ticket.
+  final String workspaceId;
   @override
   final DateTime occurredAt;
 }

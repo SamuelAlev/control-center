@@ -122,8 +122,8 @@ class SandboxBackendPicker extends ConsumerWidget {
 
 /// How to get the native sandbox on the host that runs agents.
 ///
-/// It branches on the DETECTED platform (the local machine on desktop
-/// self-serve; the connected cc_server over RPC on a thin/web client) — never
+/// It branches on the DETECTED platform (the connected cc_server's
+/// host, over RPC) — never
 /// `dart:io` `Platform`, which throws on web. Hidden until detection resolves so
 /// it never flashes a wrong platform's copy.
 class SandboxInstallHint extends StatelessWidget {

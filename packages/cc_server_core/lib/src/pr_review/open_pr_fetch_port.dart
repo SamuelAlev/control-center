@@ -24,9 +24,9 @@ typedef OpenPrFetchResult = ({
 /// string plus the raw `reviewDecision` string (both null when absent).
 typedef PrStatusOverlay = ({String? checksRollup, String? reviewDecision});
 
-/// The GitHub fetch surface the open-PR poller runs on. Kept as a thin port so
-/// tests drive the poller with an in-memory fake; the production adapter wraps
-/// the server's gh-authenticated `GitHubApiClient`.
+/// The forge fetch surface the open-PR poller runs on: every supported forge,
+/// routed per repo by `MultiForgeOpenPrFetchAdapter`. Kept as a thin port so
+/// tests drive the poller with an in-memory fake.
 abstract interface class OpenPrFetchPort {
   /// Conditional (ETag) probe of [repo]'s open-PR list. `changed: false` means
   /// GitHub answered 304 — free against the rate limit — and the list is
@@ -34,14 +34,14 @@ abstract interface class OpenPrFetchPort {
   Future<({bool changed, String? etag})> probeRepo(
     Repo repo,
     String? etag, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// The full enriched open-PR groups (first page per repo, checks overlaid),
   /// with the ids of the repos GitHub actually answered for.
   Future<OpenPrFetchResult> fetchGroups(
     List<Repo> repos, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// The check-rollup + review-decision overlay per repo id, per PR number,
@@ -49,12 +49,16 @@ abstract interface class OpenPrFetchPort {
   /// fetches.
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// Whether a PR that vanished from the open list was merged (true), closed
   /// unmerged (false), or couldn't be resolved (null).
-  Future<bool?> wasMerged(Repo repo, int prNumber, {String? workspaceId});
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    required String workspaceId,
+  });
 
   /// One-time, exhaustive history discovery for a linked repo/head ref.
   /// Null means unavailable/error (not "no PR"); callers must not treat it as
@@ -62,7 +66,7 @@ abstract interface class OpenPrFetchPort {
   Future<List<PullRequest>?> fetchBranchHistory(
     Repo repo,
     String branch, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// The forge's own mergeable verdict for ONE pull request.
@@ -78,7 +82,7 @@ abstract interface class OpenPrFetchPort {
   Future<PrMergeableState> mergeState(
     Repo repo,
     int prNumber, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// The login of the most recent approving review, or null when it cannot be
@@ -87,7 +91,7 @@ abstract interface class OpenPrFetchPort {
   Future<String?> latestApprover(
     Repo repo,
     int prNumber, {
-    String? workspaceId,
+    required String workspaceId,
   });
 
   /// The first failing check on a pull request, so a "checks failed"
@@ -97,6 +101,6 @@ abstract interface class OpenPrFetchPort {
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
     int prNumber, {
-    String? workspaceId,
+    required String workspaceId,
   });
 }

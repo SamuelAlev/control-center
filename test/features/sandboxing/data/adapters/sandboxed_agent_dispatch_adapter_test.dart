@@ -76,7 +76,17 @@ class _FakeSandboxPort implements SandboxPort {
 /// By default `mint` resolves immediately. Set `mintStaller` before calling
 /// `start` to keep the DispatchSession's `run()` pending.
 class _FakeBroker implements CredentialBrokerPort {
-  Completer<ScopedCredentials>? mintStaller;
+  Completer<ScopedCredentials>? _mintStaller;
+
+  Completer<ScopedCredentials>? get mintStaller => _mintStaller;
+
+  /// The run opens its log before it mints, so a test can fail the staller
+  /// before `mint` has been asked for it; an error nobody listens to yet would
+  /// otherwise surface as an uncaught one. The run still sees it once it asks.
+  set mintStaller(Completer<ScopedCredentials>? staller) {
+    _mintStaller = staller;
+    staller?.future.ignore();
+  }
 
   @override
   Future<ScopedCredentials> mint({

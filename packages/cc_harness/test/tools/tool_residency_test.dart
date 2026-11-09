@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 /// Records the tool schemas and cache hints of every request it serves, so a
 /// test can assert what the model actually saw turn by turn.
-class _RecordingProvider implements LlmProviderPort {
+class _RecordingProvider extends LlmProviderPort {
   _RecordingProvider(this.script);
 
   final List<List<LlmEvent>> script;

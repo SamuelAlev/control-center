@@ -77,7 +77,7 @@ class RpcMessagingRepository
       id: d.id,
       spaceId: d.spaceId ?? fallbackSpaceId ?? '',
       senderId: d.senderId,
-      senderType: _spaceSenderTypeByName[d.senderType] ?? SenderType.user,
+      senderType: SenderType.fromWire(d.senderType, senderId: d.senderId),
       content: d.content,
       messageType: _spaceMessageTypeByName[d.messageType] ?? MessageType.text,
       metadata: metadata is Map ? metadata.cast<String, dynamic>() : null,
@@ -607,6 +607,4 @@ class RpcMessagingRepository
 // table on every frame, so a single ticket change built four fresh maps per
 // ticket in the workspace.
 final Map<String, MessageType> _spaceMessageTypeByName = MessageType.values
-    .asNameMap();
-final Map<String, SenderType> _spaceSenderTypeByName = SenderType.values
     .asNameMap();

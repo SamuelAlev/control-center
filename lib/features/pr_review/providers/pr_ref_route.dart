@@ -1,5 +1,6 @@
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart'
     show PrRef;
+import 'package:control_center/router/routes.dart' show prForgeFromQuery;
 import 'package:go_router/go_router.dart';
 
 /// Builds the [PrRef] for the PR-detail route's resolved params, or null when
@@ -29,5 +30,6 @@ PrRef? prRefFromRouteState(GoRouterState state) {
     workspaceId: workspaceId,
     repoFullName: '$owner/$repo',
     number: number,
+    forge: prForgeFromQuery(state.uri.queryParameters),
   );
 }

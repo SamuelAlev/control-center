@@ -11,6 +11,7 @@
 /// and are re-exported here so the existing import path keeps resolving.
 library;
 
+import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/compaction_config.dart';
 import 'package:cc_harness/src/context/compaction_economics.dart';
 import 'package:cc_harness/src/context/compaction_prompt.dart';
@@ -40,6 +41,7 @@ class HarnessCompactionInput {
     this.previousSummary,
     this.selfAgentName = 'assistant',
     this.activeEditTargets = const {},
+    this.cancel = CancellationToken.none,
   });
 
   /// The messages (ascending) being folded.
@@ -53,12 +55,34 @@ class HarnessCompactionInput {
 
   /// Files still being edited across the fold boundary.
   final Set<String> activeEditTargets;
+
+  /// The run's cancellation token. A model-backed summarizer abandons its
+  /// request when it fires (throwing [CancelledException]) so a cancelled run
+  /// neither waits on nor pays for a summary nobody will use.
+  final CancellationToken cancel;
+}
+
+/// The text a summarizer produced, and whether a model wrote it.
+///
+/// The flag is what keeps [HarnessCompactionResult.summarized] honest: a
+/// model-backed summarizer that degraded to the structural digest (provider
+/// error, empty reply) still produces a usable fold, but reporting it as a
+/// model summary would hide that the run is compacting without one.
+class HarnessSummary {
+  /// Creates a [HarnessSummary].
+  const HarnessSummary(this.text, {required this.modelWritten});
+
+  /// The anchored summary text.
+  final String text;
+
+  /// True only when a model produced [text]; false for the structural digest.
+  final bool modelWritten;
 }
 
 /// Produces an anchored summary standing in for a folded span of harness turns.
 abstract interface class HarnessSummarizerPort {
-  /// Returns the anchored summary text for [input].
-  Future<String> summarize(HarnessCompactionInput input);
+  /// Returns the anchored summary for [input].
+  Future<HarnessSummary> summarize(HarnessCompactionInput input);
 }
 
 /// A deterministic, LLM-free harness summarizer. Carries the prior summary
@@ -83,7 +107,11 @@ class StructuralHarnessSummarizer implements HarnessSummarizerPort {
   final HarnessEvidenceBudget budget;
 
   @override
-  Future<String> summarize(HarnessCompactionInput input) async {
+  Future<HarnessSummary> summarize(HarnessCompactionInput input) async =>
+      HarnessSummary(digest(input), modelWritten: false);
+
+  /// The structural digest for [input], synchronously.
+  String digest(HarnessCompactionInput input) {
     const header = '## Conversation summary (compacted)';
     final prev = _strip(input.previousSummary);
     final split = splitPinnedEvidence(prev);
@@ -245,7 +273,10 @@ class HarnessCompactionResult {
   /// Whether the history was modified.
   final bool changed;
 
-  /// True when a summary was produced; false for a prune-only or mask-only pass.
+  /// True only when a MODEL wrote the fold's summary. A fold that used (or
+  /// degraded to) the structural digest reports false with a non-zero
+  /// [messagesFolded]; a prune- or mask-only pass reports false with
+  /// [messagesFolded] 0.
   final bool summarized;
 
   /// Number of messages folded into the summary.
@@ -315,6 +346,10 @@ abstract interface class HarnessCompactor {
   /// unconditionally with a tighter recent-region budget — used for reactive
   /// recovery after the provider itself rejects the request as too large (the
   /// heuristic estimate can under-count what the provider actually measured).
+  ///
+  /// [cancel] is the run's token. When it fires mid-pass the compactor must
+  /// leave [history] untouched (return [HarnessCompactionResult.unchanged]):
+  /// the loop has stopped waiting and is about to persist the history it has.
   Future<HarnessCompactionResult> maybeCompact(
     List<HarnessMessage> history, {
     required int? contextWindow,
@@ -322,6 +357,7 @@ abstract interface class HarnessCompactor {
     int reservedOutputTokens,
     String selfAgentName,
     bool force,
+    CancellationToken cancel,
   });
 
   /// Reclaims context cheaply by eliding uneventful older tool results, shedding
@@ -431,6 +467,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     if (contextWindow == null) {
       return HarnessCompactionResult.unchanged(
@@ -540,17 +577,21 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     // exists. A throwing summarizer therefore leaves the fold un-applied, and
     // any staged masking is committed and reported rather than lost or
     // mislabelled "unchanged".
-    final String summaryText;
+    final HarnessSummary summary;
     try {
-      summaryText = await summarizer.summarize(
+      summary = await summarizer.summarize(
         HarnessCompactionInput(
           messages: fold,
           previousSummary: previousSummary,
           selfAgentName: selfAgentName,
           activeEditTargets: collectActiveEditTargets(staged),
+          cancel: cancel,
         ),
       );
     } on Object catch (e) {
+      if (cancel.isCancelled) {
+        return HarnessCompactionResult.unchanged(originalBefore);
+      }
       if (masked > 0) {
         _commit(history, staged);
         return _maskOnlyResult(
@@ -563,6 +604,12 @@ class DefaultHarnessCompactor implements HarnessCompactor {
       }
       rethrow;
     }
+    // Cancelled while the summary was being written: commit nothing — the
+    // loop has stopped waiting and persists the history as it stands.
+    if (cancel.isCancelled) {
+      return HarnessCompactionResult.unchanged(originalBefore);
+    }
+    final summaryText = summary.text;
 
     // Invariant the caller's checkpoint remap relies on: the folded span
     // (exactly `cut` == `fold.length` messages) collapses into ONE leading
@@ -598,7 +645,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     onRewriteDecision?.call(decision);
     return HarnessCompactionResult(
       changed: true,
-      summarized: true,
+      summarized: summary.modelWritten,
       messagesFolded: fold.length,
       tokensBefore: originalBefore,
       tokensAfter: after,
@@ -606,9 +653,10 @@ class DefaultHarnessCompactor implements HarnessCompactor {
       reclaimedTokens: originalBefore - after,
       rebuildTokens: before,
       maskedObservations: masked,
-      decisionReason: masked > 0
-          ? 'masked $masked then folded (context pressure)'
-          : 'folded (context pressure)',
+      decisionReason:
+          '${masked > 0 ? 'masked $masked then folded' : 'folded'}'
+          '${summary.modelWritten ? '' : ' with the structural digest'}'
+          ' (context pressure)',
     );
   }
 

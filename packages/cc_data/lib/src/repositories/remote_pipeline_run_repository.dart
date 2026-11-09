@@ -1,17 +1,17 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Reads/mutates pipeline runs and step runs over the RPC client instead of a
-/// local database.
+/// Reads pipeline runs and step runs over the RPC client instead of a local
+/// database, and deletes a finished run.
 ///
-/// Backs the web build and the desktop in REMOTE mode. A workspace id selects
-/// the database file server-side, so every call that can name its workspace does
-/// (`workspace_id` in the args). The exceptions are the run-id-addressed ops
-/// ([getRun], [watchRun], [updateRunState], [incrementCost],
-/// [stepRunsForPipeline], [watchStepRunsForPipeline]) and the cross-workspace
-/// startup views ([nonTerminalRuns], [watchAll]): a run id routes to its own
-/// workspace server-side and the reconciler runs before any workspace is
-/// chosen. A STEP-run id does not route — it is always paired with a workspace.
+/// Read-only otherwise: run rows are written only by the server's engine, and
+/// a client changes a run through the `pipeline.*` engine ops
+/// (`RemotePipelineEngine`). A workspace id selects the database file
+/// server-side, so every call that can name its workspace does (`workspace_id`
+/// in the args). The exceptions are the run-id-addressed reads ([getRun],
+/// [watchRun], [stepRunsForPipeline], [watchStepRunsForPipeline]) and
+/// [watchAll]: a run id routes to its own workspace server-side. A STEP-run id
+/// does not route — it is always paired with a workspace.
 /// Mirrors the `pipeline_run.*` ops + the
 /// `pipeline_run.watchRun` / `pipeline_run.watchAll` /
 /// `pipeline_run.watchForWorkspace` / `pipeline_run.watchStepRunsForPipeline`
@@ -22,23 +22,6 @@ class RemotePipelineRunRepository {
 
   final RemoteRpcClient _client;
 
-  /// Inserts a new pipeline run (the host owns persistence).
-  Future<void> insertRun(PipelineRunDto run) =>
-      _client.call('pipeline_run.insertRun', {
-        // The run's own workspace, sent explicitly rather than left to the
-        // client's ambient session id: the host asserts the two agree, so
-        // relying on the ambient value only means the assertion fires whenever
-        // the caller is on another workspace's route.
-        'workspace_id': run.workspaceId,
-        'run': run.toJson(),
-      });
-
-  /// Updates an existing pipeline run.
-  Future<void> updateRun(PipelineRunDto run) => _client.call(
-    'pipeline_run.updateRun',
-    {'workspace_id': run.workspaceId, 'run': run.toJson()},
-  );
-
   /// A single pipeline run by id (scoped by the `workspace_id` the request carries),
   /// or null when it does not exist.
   Future<PipelineRunDto?> getRun(String id) async {
@@ -47,27 +30,6 @@ class RemotePipelineRunRepository {
     return run is Map
         ? PipelineRunDto.fromJson(run.cast<String, dynamic>())
         : null;
-  }
-
-  /// Replaces the run's state JSON bag.
-  Future<void> updateRunState(String runId, Map<String, dynamic> state) =>
-      _client.call('pipeline_run.updateRunState', {
-        'run_id': runId,
-        'state': state,
-      });
-
-  /// Adds [cents] and [tokens] to the run's aggregated cost totals.
-  Future<void> incrementCost(String runId, int cents, int tokens) =>
-      _client.call('pipeline_run.incrementCost', {
-        'run_id': runId,
-        'cents': cents,
-        'tokens': tokens,
-      });
-
-  /// All non-terminal runs across ALL workspaces (resume-on-startup view).
-  Future<List<PipelineRunDto>> nonTerminalRuns() async {
-    final data = await _client.call('pipeline_run.nonTerminalRuns', const {});
-    return _runs(data);
   }
 
   /// The active non-terminal run for `(templateId, workspaceId, dedupKey)`, or
@@ -88,90 +50,13 @@ class RemotePipelineRunRepository {
         : null;
   }
 
-  /// How many runs of [templateId] currently hold one of its
-  /// `maxParallelRuns` slots (everything non-terminal except `queued`).
-  Future<int> activeRunCountForTemplate({
-    required String workspaceId,
-    required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
-  }) async {
-    final data = await _client.call('pipeline_run.activeRunCountForTemplate', {
-      'workspace_id': workspaceId,
-      'template_id': templateId,
-      if (excludeTriggerEventTypes.isNotEmpty)
-        'exclude_trigger_event_types': excludeTriggerEventTypes.toList(),
-    });
-    return (data['count'] as num?)?.toInt() ?? 0;
-  }
-
-  /// The oldest `queued` run of [templateId], or null when none is waiting.
-  Future<PipelineRunDto?> nextQueuedRunForTemplate({
-    required String workspaceId,
-    required String templateId,
-  }) async {
-    final data = await _client.call('pipeline_run.nextQueuedRunForTemplate', {
-      'workspace_id': workspaceId,
-      'template_id': templateId,
-    });
-    final run = data['run'];
-    return run is Map
-        ? PipelineRunDto.fromJson(run.cast<String, dynamic>())
-        : null;
-  }
-
-  /// Deletes a pipeline run (and its step runs via cascade) from
-  /// [workspaceId]. A run owned by another workspace is not matched.
+  /// Deletes a finished pipeline run (and its step runs via cascade) from
+  /// [workspaceId]. The host refuses a live run (cancel it first) and one
+  /// owned by another workspace.
   Future<void> deleteRun(String workspaceId, String runId) => _client.call(
     'pipeline_run.deleteRun',
     {'workspace_id': workspaceId, 'run_id': runId},
   );
-
-  /// Inserts a new step run.
-  Future<void> insertStepRun(PipelineStepRunDto stepRun) => _client.call(
-    'pipeline_run.insertStepRun',
-    {'step_run': stepRun.toJson()},
-  );
-
-  /// Updates a step run's status and optional fields within [workspaceId].
-  Future<void> updateStepRun(
-    String workspaceId,
-    String stepRunId, {
-    String? status,
-    String? inputJson,
-    String? outputJson,
-    String? spaceId,
-    String? errorMessage,
-    String? errorStackTrace,
-    String? finishedAt,
-  }) => _client.call('pipeline_run.updateStepRun', {
-    'workspace_id': workspaceId,
-    'step_run_id': stepRunId,
-    'status': ?status,
-    'input_json': ?inputJson,
-    'output_json': ?outputJson,
-    'space_id': ?spaceId,
-    'error_message': ?errorMessage,
-    'error_stack_trace': ?errorStackTrace,
-    'finished_at': ?finishedAt,
-  });
-
-  /// Re-opens a step run in [workspaceId] for another attempt.
-  Future<void> restartStepRun(
-    String workspaceId,
-    String stepRunId, {
-    required String startedAt,
-  }) => _client.call('pipeline_run.restartStepRun', {
-    'workspace_id': workspaceId,
-    'step_run_id': stepRunId,
-    'started_at': startedAt,
-  });
-
-  /// Deletes a single step run row from [workspaceId].
-  Future<void> deleteStepRun(String workspaceId, String stepRunId) =>
-      _client.call('pipeline_run.deleteStepRun', {
-        'workspace_id': workspaceId,
-        'step_run_id': stepRunId,
-      });
 
   /// All step runs for [pipelineRunId] (ownership-checked server-side).
   Future<List<PipelineStepRunDto>> stepRunsForPipeline(

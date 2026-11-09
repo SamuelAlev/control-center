@@ -129,13 +129,18 @@ mixin _PersonalConnectionFlow
         workspaceId: widget.workspaceId,
       );
       if (mounted && _attempt?.loginId == attempt.loginId) {
-        _settle(result);
+        final refused = result.status.isTerminal ? null : result.codeError;
+        if (refused != null) {
+          // A wrong code; the attempt stays open for another.
+          setState(() => _error = _failureMessage(l, refused));
+        } else {
+          _settle(result);
+        }
       }
-    } on RemoteRpcException {
-      // The server refused this code; the attempt stays open for another.
-      if (mounted) setState(() => _error = l.credentialsSignInInvalidCode);
-    } on Object {
-      if (mounted) setState(() => _error = l.credentialsOperationFailed);
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _error = _failureMessage(l, signInFailureOfRpcError(e)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -176,16 +181,37 @@ mixin _PersonalConnectionFlow
         _stop();
         _refresh();
       case SignInAttemptStatus.failed:
-        final l = AppLocalizations.of(context);
         _stop(
-          error: switch (attempt.error) {
-            SignInFailure.expired => l.credentialsLoginTimedOut,
-            SignInFailure.invalidCode => l.credentialsSignInInvalidCode,
-            _ => l.credentialsOperationFailed,
-          },
+          error: _failureMessage(AppLocalizations.of(context), attempt.error),
         );
     }
   }
+
+  /// What a sign-in failure means, in words a person can act on.
+  String _failureMessage(AppLocalizations l, SignInFailure? failure) =>
+      switch (failure) {
+        SignInFailure.expired ||
+        SignInFailure.staleRequest ||
+        SignInFailure.invalidRequest => l.credentialsLoginTimedOut,
+        SignInFailure.codeMismatch => l.credentialsSignInInvalidCode,
+        SignInFailure.invalidCode => l.credentialsSignInTooManyCodes,
+        SignInFailure.providerUnavailable ||
+        SignInFailure.rateLimited => l.credentialsSignInRetryLater,
+        SignInFailure.accessDenied ||
+        SignInFailure.scopeMismatch ||
+        SignInFailure.exchangeFailed ||
+        SignInFailure.needsSignIn => l.credentialsSignInRefused,
+        SignInFailure.storeFailed => l.credentialsSignInNotSaved,
+        SignInFailure.misconfigured ||
+        SignInFailure.notInstalled ||
+        SignInFailure.installationBoundElsewhere ||
+        SignInFailure.teamBoundElsewhere ||
+        SignInFailure.notAdmin ||
+        SignInFailure.suspended ||
+        SignInFailure.installBlocked ||
+        SignInFailure.unknown ||
+        null => l.credentialsOperationFailed,
+      };
 
   void _stop({String? error}) {
     _timer?.cancel();

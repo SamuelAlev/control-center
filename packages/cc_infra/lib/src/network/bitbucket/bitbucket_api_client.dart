@@ -12,6 +12,7 @@ import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pipeline.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_workspace_member.dart';
+import 'package:cc_infra/src/network/forge_branch_history.dart';
 import 'package:rhttp/rhttp.dart';
 
 /// Client for the Bitbucket Cloud REST API 2.0.
@@ -143,41 +144,42 @@ class BitbucketApiClient {
         'fields': _rosterFields,
       };
       final cursors = <String>{};
-      for (var page = 0; page < 100; page++) {
-        final response = await _httpClient.get(
-          path,
-          query: params,
-          cancelToken: cancelToken,
-        );
-        final body = asJsonMap(_decoded(response));
-        for (final pr in decodeJsonList(
-          body?['values'],
-          BitbucketPullRequest.fromJson,
-        )) {
-          if (pr.sourceBranch.isEmpty || pr.id <= 0) {
-            throw const FormatException(
-              'Bitbucket returned a PR without an identity/head ref',
+      prs.addAll(
+        await collectBranchHistory(
+          forgeName: 'Bitbucket',
+          branch: branch,
+          fetchPage: (page) async {
+            final response = await _httpClient.get(
+              path,
+              query: params,
+              cancelToken: cancelToken,
             );
-          }
-          if (pr.sourceBranch == branch) {
-            prs.add(pr);
-          }
-        }
-        final next = body?['next'] as String?;
-        if (next == null || next.isEmpty) {
-          break;
-        }
-        final uri = Uri.tryParse(next);
-        if (uri == null ||
-            uri.queryParameters.isEmpty ||
-            !cursors.add(next) ||
-            page == 99) {
-          throw const FormatException(
-            'Bitbucket branch PR history is incomplete',
-          );
-        }
-        params = {...uri.queryParameters};
-      }
+            final body = asJsonMap(_decoded(response));
+            final items = decodeJsonList(
+              body?['values'],
+              BitbucketPullRequest.fromJson,
+            );
+            final next = body?['next'] as String?;
+            if (next == null || next.isEmpty) {
+              return (items: items, hasMore: false);
+            }
+            // A cursor that repeats or carries no query would loop forever or
+            // silently restart the walk.
+            final uri = Uri.tryParse(next);
+            if (uri == null ||
+                uri.queryParameters.isEmpty ||
+                !cursors.add(next)) {
+              throw const FormatException(
+                'Bitbucket branch PR history is incomplete',
+              );
+            }
+            params = {...uri.queryParameters};
+            return (items: items, hasMore: true);
+          },
+          headRefOf: (pr) => pr.sourceBranch,
+          numberOf: (pr) => pr.id,
+        ),
+      );
     }
     return prs;
   }
@@ -226,15 +228,18 @@ class BitbucketApiClient {
     );
   }
 
-  /// The per-file summary of a pull request's changes.
-  Future<List<BitbucketDiffstatEntry>> listPullRequestDiffstat(
+  /// The per-file summary of a pull request's changes. `truncated` when the
+  /// listing stopped at `maxPages` with rows left, so `items` is not every
+  /// changed file.
+  Future<({List<BitbucketDiffstatEntry> items, int? size, bool truncated})>
+  listPullRequestDiffstat(
     String workspace,
     String repo,
     int id, {
     CancelToken? cancelToken,
   }) {
     _requireCoordinate(workspace, repo);
-    return _getPaged(
+    return _getPagedResult(
       '/repositories/$workspace/$repo/pullrequests/$id/diffstat',
       BitbucketDiffstatEntry.fromJson,
       cancelToken: cancelToken,
@@ -268,7 +273,8 @@ class BitbucketApiClient {
   /// `size` is null on this collection more often than not — Bitbucket omits
   /// the total for ranges it cannot count cheaply — in which case the caller
   /// only knows how many commits it actually received.
-  Future<({List<BitbucketCommit> items, int? size})> listCommitsExcluding(
+  Future<({List<BitbucketCommit> items, int? size, bool truncated})>
+  listCommitsExcluding(
     String workspace,
     String repo,
     String revision, {
@@ -713,13 +719,14 @@ class BitbucketApiClient {
   }
 
   /// [_getPaged], additionally reporting the collection total Bitbucket
-  /// declared on the first page.
+  /// declared on the first page, and whether the walk stopped at [maxPages]
+  /// with a `next` page still offered (`truncated`).
   ///
   /// `size` is null whenever Bitbucket withheld it, which it does for
   /// collections it cannot count cheaply. Null therefore means "unknown", NOT
   /// zero — a caller wanting a true total must treat it as such rather than
   /// substituting the number of rows it happened to receive.
-  Future<({List<T> items, int? size})> _getPagedResult<T>(
+  Future<({List<T> items, int? size, bool truncated})> _getPagedResult<T>(
     String path,
     T Function(Map<String, dynamic>) fromJson, {
     Map<String, String>? query,
@@ -727,6 +734,7 @@ class BitbucketApiClient {
   }) async {
     final results = <T>[];
     int? size;
+    var truncated = false;
     var params = <String, String>{...?query, 'pagelen': '$pageLen'};
     for (var page = 0; page < maxPages; page++) {
       final response = await _httpClient.get(
@@ -748,8 +756,10 @@ class BitbucketApiClient {
         break;
       }
       params = <String, String>{...uri.queryParameters};
+      // A next page offered on the last page we may read: the rest is cut.
+      truncated = page == maxPages - 1;
     }
-    return (items: results, size: size);
+    return (items: results, size: size, truncated: truncated);
   }
 
   /// GETs [path] as plain text, bypassing JSON decoding.

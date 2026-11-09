@@ -12,8 +12,8 @@ import 'package:cc_infra/src/messaging/agent_question_service.dart';
 import 'package:test/test.dart';
 
 /// Exercises [AgentQuestionService]. The service coordinates an in-process
-/// [Completer] between an asking agent and the UI's
-/// [AgentQuestionService.submitAnswer]; a fake
+/// [Completer] between an asking agent and
+/// [AgentQuestionService.deliverAnswer]; a fake
 /// [MessagingRepository] drives every branch (empty conversation, ask/answer
 /// round trip, timeout, answered-message metadata persistence and the
 /// best-effort persistence failure path).
@@ -74,13 +74,19 @@ void main() {
   }
 
   group('ask', () {
-    test('returns null when spaceId is empty', () async {
-      expect(await service.ask(request(spaceId: '')), isNull);
+    test('refuses a request without a space (not a timeout)', () async {
+      await expectLater(
+        service.ask(request(spaceId: '')),
+        throwsA(isA<ArgumentError>()),
+      );
       expect(messaging.sentMessages, isEmpty);
     });
 
     test('does not post without a conversation id', () async {
-      expect(await service.ask(request(conversationId: '')), isNull);
+      await expectLater(
+        service.ask(request(conversationId: '')),
+        throwsA(isA<ArgumentError>()),
+      );
       expect(messaging.sentMessages, isEmpty);
     });
 
@@ -208,7 +214,10 @@ void main() {
       expect(closed, ['m-reported']);
 
       // Nothing is posted without a space, so nothing is reported either.
-      await service.ask(request(spaceId: ''));
+      await expectLater(
+        service.ask(request(spaceId: '')),
+        throwsA(isA<ArgumentError>()),
+      );
       expect(asked, hasLength(1));
       expect(closed, hasLength(1));
     });
@@ -225,10 +234,11 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(closed, isEmpty);
 
-      service.resolveFromMetadata('m-answered', {
-        kQuestionAnsweredKey: true,
-        kQuestionAnswerKey: const AgentQuestionAnswer().toJson(),
-      });
+      await service.deliverAnswer(
+        'm-answered',
+        const AgentQuestionAnswer(),
+        persist: () async => true,
+      );
       await future;
       expect(closed, ['m-answered']);
     });
@@ -248,7 +258,14 @@ void main() {
       expect(closed[kQuestionAnsweredKey], isTrue);
       expect(closed[kQuestionExpiredKey], isTrue);
       // An answer arriving after the close does not reopen the wait.
-      expect(service.resolveFromMetadata('m-abandoned', closed), isFalse);
+      expect(
+        await service.deliverAnswer(
+          'm-abandoned',
+          const AgentQuestionAnswer(),
+          persist: () async => true,
+        ),
+        QuestionAnswerDelivery.notPending,
+      );
     });
 
     test(
@@ -312,156 +329,151 @@ void main() {
       expect(update.metadata!['question'], 'Pick one');
     });
 
-    test('still resolves the agent when persistence throws', () async {
+    test('a failed write propagates and the agent gets no answer', () async {
       messaging.nextMessageId = 'm-7';
       messaging.throwOnUpdate = true;
       final future = service.ask(request());
       await Future<void>.delayed(Duration.zero);
-      await service.submitAnswer(
-        ws,
-        questionMessage('m-7'),
-        const AgentQuestionAnswer(selectedLabels: ['b']),
+      await expectLater(
+        service.submitAnswer(
+          ws,
+          questionMessage('m-7'),
+          const AgentQuestionAnswer(selectedLabels: ['b']),
+        ),
+        throwsA(isA<StateError>()),
       );
-      // The agent was unblocked even though persistence failed.
-      expect((await future)?.selectedLabels, ['b']);
+      // Never "answered" on one side and timed out on the other.
+      expect(await future, isNull);
     });
 
-    test('is a no-op when the question is not pending', () async {
-      // No ask() opened a pending question; submitAnswer should not throw and
-      // should still attempt to persist the metadata.
-      await service.submitAnswer(
-        ws,
-        questionMessage('m-8'),
-        const AgentQuestionAnswer(),
+    test('writes nothing when the question is not pending', () async {
+      expect(
+        await service.submitAnswer(
+          ws,
+          questionMessage('m-8'),
+          const AgentQuestionAnswer(),
+        ),
+        QuestionAnswerDelivery.notPending,
       );
-      expect(messaging.updatedMessages, hasLength(1));
+      expect(messaging.updatedMessages, isEmpty);
     });
   });
 
-  // The client/server seam. `ask()` blocks on a Completer in the SERVER
-  // process, but the human answers in a CLIENT, which persists the answer by
-  // writing the message's metadata over RPC. `messaging.updateMessage` hands
-  // that metadata here so the blocked run resumes; without it the agent waits
-  // out its whole timeout on a question the user already answered.
-  group('resolveFromMetadata', () {
+  // The client/server seam: the human answers in a CLIENT over
+  // `messaging.updateMessage`, which hands the answer to `deliverAnswer`.
+  group('deliverAnswer', () {
+    test('delivers a persisted answer to the waiting agent', () async {
+      messaging.nextMessageId = 'm-100';
+      final pending = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+
+      final outcome = await service.deliverAnswer(
+        'm-100',
+        const AgentQuestionAnswer(selectedLabels: ['Postgres']),
+        persist: () async => true,
+      );
+
+      expect(outcome, QuestionAnswerDelivery.delivered);
+      expect((await pending)?.selectedLabels, ['Postgres']);
+      expect(service.isPending('m-100'), isFalse);
+    });
+
+    test('an id nobody is waiting on writes nothing', () async {
+      var wrote = false;
+      final outcome = await service.deliverAnswer(
+        'never-asked',
+        const AgentQuestionAnswer(),
+        persist: () async => wrote = true,
+      );
+      expect(outcome, QuestionAnswerDelivery.notPending);
+      expect(wrote, isFalse);
+    });
+
+    test('a refused write tells the agent there is no answer', () async {
+      messaging.nextMessageId = 'm-101';
+      final pending = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+
+      final outcome = await service.deliverAnswer(
+        'm-101',
+        const AgentQuestionAnswer(selectedLabels: ['x']),
+        persist: () async => false,
+      );
+
+      expect(outcome, QuestionAnswerDelivery.notPersisted);
+      expect(await pending, isNull);
+    });
+
     test(
-      'a malformed answer leaves the question available for a valid answer',
+      'the timeout cannot win once an answer has claimed the waiter',
       () async {
-        messaging.nextMessageId = 'm-malformed';
-        final pending = service.ask(request(allowFreeText: true));
+        service = AgentQuestionService(
+          messaging,
+          conversations: _FakeConversations(),
+          timeout: const Duration(milliseconds: 20),
+        );
+        messaging.nextMessageId = 'm-race';
+        final pending = service.ask(request());
         await Future<void>.delayed(Duration.zero);
-        expect(
-          () => service.resolveFromMetadata('m-malformed', {
-            kQuestionAnsweredKey: true,
-            kQuestionAnswerKey: {'freeText': 123},
-          }),
-          throwsA(isA<TypeError>()),
+
+        // The write is slow: the timeout elapses while it is in flight.
+        final outcome = service.deliverAnswer(
+          'm-race',
+          const AgentQuestionAnswer(selectedLabels: ['late but first']),
+          persist: () async {
+            await Future<void>.delayed(const Duration(milliseconds: 60));
+            return true;
+          },
         );
-        expect(service.isPending('m-malformed'), isTrue);
-        expect(
-          service.resolveFromMetadata('m-malformed', {
-            kQuestionAnsweredKey: true,
-            kQuestionAnswerKey: const AgentQuestionAnswer(
-              freeText: 'Use PostgreSQL',
-            ).toJson(),
-          }),
-          isTrue,
-        );
-        expect((await pending)?.freeText, 'Use PostgreSQL');
+
+        expect(await outcome, QuestionAnswerDelivery.delivered);
+        expect((await pending)?.selectedLabels, ['late but first']);
+        // No expiry write followed the answer.
+        expect(messaging.updatedMessages, isEmpty);
       },
     );
 
-    test('unblocks a pending ask with the persisted answer', () async {
-      messaging.nextMessageId = 'm-100';
-      final pending = service.ask(request(options: const []));
-      await Future<void>.delayed(Duration.zero);
-
-      final resolved = service.resolveFromMetadata('m-100', {
-        kQuestionAnsweredKey: true,
-        kQuestionAnswerKey: const AgentQuestionAnswer(
-          selectedLabels: ['Postgres'],
-          freeText: 'and pin the version',
-        ).toJson(),
-      });
-
-      expect(resolved, isTrue);
-      final answer = await pending;
-      expect(answer, isNotNull);
-      expect(answer!.selectedLabels, ['Postgres']);
-      expect(answer.freeText, 'and pin the version');
-      expect(
-        service.isPending('m-100'),
-        isFalse,
-        reason: 'the completer must be removed, not left to leak',
+    test('an answer after the timeout is reported, not acknowledged', () async {
+      final expired = <String>[];
+      service = AgentQuestionService(
+        messaging,
+        conversations: _FakeConversations(),
+        timeout: const Duration(milliseconds: 10),
+        expireQuestion: (workspaceId, messageId) async {
+          expired.add(messageId);
+          return true;
+        },
       );
+      messaging.nextMessageId = 'm-late';
+      expect(await service.ask(request()), isNull);
+      expect(expired, ['m-late']);
+
+      var wrote = false;
+      expect(
+        await service.deliverAnswer(
+          'm-late',
+          const AgentQuestionAnswer(selectedLabels: ['too late']),
+          persist: () async => wrote = true,
+        ),
+        QuestionAnswerDelivery.notPending,
+      );
+      expect(wrote, isFalse);
     });
 
-    test('ignores metadata that is not an answered question', () async {
-      messaging.nextMessageId = 'm-102';
-      final pending = service.ask(request());
-      await Future<void>.delayed(Duration.zero);
-
-      // This runs on EVERY message update, so the common case is a no-op.
-      expect(service.resolveFromMetadata('m-102', null), isFalse);
-      expect(service.resolveFromMetadata('m-102', {'feedback': 'up'}), isFalse);
-      expect(
-        service.resolveFromMetadata('m-102', {kQuestionAnsweredKey: false}),
-        isFalse,
+    test('a throwing onAsked does not strand the posted form', () async {
+      service = AgentQuestionService(
+        messaging,
+        conversations: _FakeConversations(),
+        timeout: const Duration(milliseconds: 10),
+        onAsked: (request, messageId) => throw StateError('announce failed'),
       );
+      messaging.nextMessageId = 'm-announce';
+      expect(await service.ask(request()), isNull);
+      expect(service.isPending('m-announce'), isFalse);
       expect(
-        service.resolveFromMetadata('m-102', {kQuestionAnsweredKey: true}),
-        isFalse,
-      );
-      expect(service.isPending('m-102'), isTrue);
-
-      // The question is still live and still answerable.
-      expect(
-        service.resolveFromMetadata('m-102', {
-          kQuestionAnsweredKey: true,
-          kQuestionAnswerKey: const AgentQuestionAnswer(
-            selectedLabels: ['Proceed'],
-          ).toJson(),
-        }),
+        messaging.updatedMessages.single.metadata![kQuestionExpiredKey],
         isTrue,
       );
-      await pending;
-    });
-
-    test('ignores an id nobody is waiting on', () {
-      expect(
-        service.resolveFromMetadata('never-asked', {
-          kQuestionAnsweredKey: true,
-        }),
-        isFalse,
-      );
-    });
-
-    test('a second resolve does not complete the completer twice', () async {
-      messaging.nextMessageId = 'm-103';
-      final pending = service.ask(request());
-      await Future<void>.delayed(Duration.zero);
-
-      expect(
-        service.resolveFromMetadata('m-103', {
-          kQuestionAnsweredKey: true,
-          kQuestionAnswerKey: const AgentQuestionAnswer(
-            selectedLabels: ['Proceed'],
-          ).toJson(),
-        }),
-        isTrue,
-      );
-      // A retried RPC, or the client's own submitAnswer arriving after, must
-      // not blow up on an already-completed completer.
-      expect(
-        service.resolveFromMetadata('m-103', {
-          kQuestionAnsweredKey: true,
-          kQuestionAnswerKey: const AgentQuestionAnswer(
-            selectedLabels: ['Proceed'],
-          ).toJson(),
-        }),
-        isFalse,
-      );
-      await pending;
     });
   });
 }

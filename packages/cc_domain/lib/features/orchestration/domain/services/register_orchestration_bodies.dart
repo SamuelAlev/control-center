@@ -154,7 +154,9 @@ void registerOrchestrationBodies(
         spaceId: spaceId,
         content: _renderDeliverable(orchestration.proposal.goal, deliverable),
         senderId: orchestration.orchestratorAgentId ?? 'system',
-        senderType: 'agent',
+        senderType: orchestration.orchestratorAgentId == null
+            ? 'system'
+            : 'agent',
         messageType: 'text',
         id: uuid.v4(),
       );
@@ -163,7 +165,7 @@ void registerOrchestrationBodies(
         spaceId: spaceId,
         content: 'Orchestration completed — deliverable posted to the ticket.',
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         messageType: 'system',
         id: uuid.v4(),
       );

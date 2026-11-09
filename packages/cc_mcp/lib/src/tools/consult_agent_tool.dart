@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/peer_agent_messaging.dart';
 
 /// MCP tool used by a plan-mode agent to consult a specialist agent for
 /// expert confirmation on a specific topic.
@@ -17,12 +17,12 @@ import 'package:cc_harness/tools.dart';
 class ConsultAgentTool extends McpTool {
   /// Creates a new [ConsultAgentTool].
   ConsultAgentTool({
-    required this._agents,
+    required AgentRepository agents,
     required this._messaging,
     required this._messagingPort,
-  });
+  }) : _peers = PeerAgentMessaging(agents: agents, messaging: _messaging);
 
-  final AgentRepository _agents;
+  final PeerAgentMessaging _peers;
   final MessagingRepository _messaging;
   final MessagingPort _messagingPort;
 
@@ -33,11 +33,14 @@ class ConsultAgentTool extends McpTool {
 
   @override
   String get description =>
-      'Consult a specialist agent for expert input on a specific topic. '
-      'The best-matching agent by skills is added as a space participant, '
-      'dispatched with a focused brief and their response appears in the '
-      'conversation. Use when you need confirmation or specialist input for '
-      'a planning decision. If no matching agent exists, suggest hiring one.';
+      'Consult a specialist agent for expert input on a specific topic. Name '
+      'the specialist by to_agent_id or exact to_agent_name (use list_agents '
+      'to find one; ambiguous or unknown names are rejected with the '
+      'candidates — no fuzzy matching). The agent is added as a space '
+      'participant, dispatched with a focused brief and their response '
+      'appears in the conversation. Use when you need confirmation or '
+      'specialist input for a planning decision. If no suitable agent exists, '
+      'suggest hiring one.';
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -48,11 +51,21 @@ class ConsultAgentTool extends McpTool {
         'type': 'string',
         'description': 'The workspace whose agents are eligible.',
       },
+      'to_agent_id': {
+        'type': 'string',
+        'description': 'The specialist agent id (preferred).',
+      },
+      'to_agent_name': {
+        'type': 'string',
+        'description':
+            'The specialist agent name (an exact, unique match in the '
+            'workspace). Provide this OR to_agent_id.',
+      },
       'topic': {
         'type': 'string',
         'description':
-            'Expertise needed (e.g. "security", "performance", "flutter", '
-            '"architecture"). Matched against agent skills and titles.',
+            'The expertise you are consulting them for (e.g. "security", '
+            '"performance"). Framing for the brief, not used to pick the agent.',
       },
       'question': {
         'type': 'string',
@@ -107,7 +120,15 @@ class ConsultAgentTool extends McpTool {
     if (!await _messaging.spaceExists(workspaceId, spaceId)) {
       return CallResult.error('Space belongs to a different workspace.');
     }
-    final candidates = await _agents.watchByWorkspace(workspaceId).first;
+    final resolution = await _peers.resolveRecipient(
+      workspaceId: workspaceId,
+      toAgentId: arguments['to_agent_id'] as String?,
+      toAgentName: arguments['to_agent_name'] as String?,
+    );
+    if (resolution is UnresolvedRecipient) {
+      return CallResult.error(resolution.message);
+    }
+    final match = (resolution as ResolvedRecipient).agent;
     final existingParticipants = await _messaging.getParticipants(
       workspaceId,
       spaceId,
@@ -116,14 +137,6 @@ class ConsultAgentTool extends McpTool {
       for (final p in existingParticipants)
         if (!p.isUser) p.principalId,
     };
-
-    final match = _findBestMatch(candidates, topic);
-    if (match == null) {
-      return CallResult.error(
-        'No agent matching topic "$topic" found in workspace $workspaceId. '
-        'No agent matches, so a specialist may need to be hired.',
-      );
-    }
 
     if (!existingAgentIds.contains(match.id)) {
       await _messaging.addParticipant(workspaceId, spaceId, match.id);
@@ -134,7 +147,7 @@ class ConsultAgentTool extends McpTool {
       spaceId: spaceId,
       content: '@${match.name} you are being consulted as "$topic". $question',
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'system',
     );
 
@@ -177,36 +190,5 @@ class ConsultAgentTool extends McpTool {
         'Please respond with your expert assessment. Be concise and '
         'actionable. The planning agent will incorporate your input into '
         'the written plan.';
-  }
-
-  Agent? _findBestMatch(List<Agent> agents, String topic) {
-    final needle = topic.toLowerCase();
-    Agent? best;
-    var bestScore = 0;
-    for (final agent in agents) {
-      final score = _scoreMatch(agent, needle);
-      if (score > bestScore) {
-        bestScore = score;
-        best = agent;
-      }
-    }
-    return bestScore == 0 ? null : best;
-  }
-
-  int _scoreMatch(Agent agent, String needle) {
-    var score = 0;
-    final title = agent.title.toLowerCase();
-    if (title.contains(needle)) {
-      score += 2;
-    }
-    for (final skill in agent.skills.toList()) {
-      if (skill.toLowerCase().contains(needle)) {
-        score += 3;
-      }
-    }
-    if (agent.name.toLowerCase().contains(needle)) {
-      score += 1;
-    }
-    return score;
   }
 }

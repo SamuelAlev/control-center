@@ -175,7 +175,7 @@ void main() {
         ],
       );
       final claim = await _claim(harness, a, ConnectOAuthLane.google);
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'needs_sign_in'});
       final revoke = harness.upstream.callsTo('POST', _googleRevoke).single;
       expect(revoke.form['token'], '1//refresh');
     });
@@ -183,7 +183,7 @@ void main() {
     test('an id token for another client is revoked and refused', () async {
       _scriptGoogle(harness.upstream, aud: 'other.apps.googleusercontent.com');
       final claim = await _claim(harness, a, ConnectOAuthLane.google);
-      expect(claim.json, {'error': 'access_denied'});
+      expect(claim.json, {'error': 'needs_sign_in'});
       expect(harness.upstream.callsTo('POST', _googleRevoke), hasLength(1));
     });
 
@@ -197,14 +197,14 @@ void main() {
         ]) {
           _scriptGoogle(harness.upstream, extraClaims: bad);
           final claim = await _claim(harness, a, ConnectOAuthLane.google);
-          expect(claim.json, {'error': 'access_denied'});
+          expect(claim.json, {'error': 'needs_sign_in'});
         }
         expect(harness.upstream.callsTo('POST', _googleRevoke), hasLength(3));
       },
     );
 
     test(
-      'a rejected code is access_denied and a revoked refresh needs sign-in',
+      'a rejected code needs sign-in and a revoked refresh needs sign-in',
       () async {
         _scriptGoogle(harness.upstream);
         final bad = await _claim(
@@ -213,7 +213,7 @@ void main() {
           ConnectOAuthLane.google,
           code: 'nope',
         );
-        expect(bad.json, {'error': 'access_denied'});
+        expect(bad.json, {'error': 'needs_sign_in'});
         final good = SealedGrant.fromJson(
           (await _claim(harness, a, ConnectOAuthLane.google)).json,
         );

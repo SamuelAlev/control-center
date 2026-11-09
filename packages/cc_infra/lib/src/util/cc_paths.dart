@@ -40,8 +40,30 @@ class CcPaths {
       _ensure(p.join(appSupportRoot, 'grammars'));
 
   /// Per-pipeline-run working directory: `<root>/pipelines/<pipelineRunId>/`.
-  Future<Directory> pipelineRunDir(String pipelineRunId) =>
-      _ensure(p.join(appSupportRoot, 'pipelines', pipelineRunId));
+  ///
+  /// The id becomes a path segment — and a shell step's sandbox re-allows the
+  /// directory it names inside the otherwise-denied data directory — so it
+  /// must be exactly what the engine mints: a canonical lowercase UUID. Any
+  /// other id (a `..` segment, a separator, an absolute path) is refused with
+  /// [ArgumentError] rather than resolved.
+  Future<Directory> pipelineRunDir(String pipelineRunId) {
+    if (!isCanonicalPipelineRunId(pipelineRunId)) {
+      throw ArgumentError.value(
+        pipelineRunId,
+        'pipelineRunId',
+        'not a pipeline run id (expected a lowercase UUID)',
+      );
+    }
+    return _ensure(p.join(appSupportRoot, 'pipelines', pipelineRunId));
+  }
+
+  static final RegExp _uuidPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  );
+
+  /// Whether [id] has the shape `PipelineEngine` mints run ids in (a
+  /// lowercase UUID), and is therefore safe to use as a path segment.
+  static bool isCanonicalPipelineRunId(String id) => _uuidPattern.hasMatch(id);
 
   /// Per-meeting working directory: `<root>/meetings/<meetingId>/`.
   Future<Directory> meetingAudioDir(String meetingId) =>

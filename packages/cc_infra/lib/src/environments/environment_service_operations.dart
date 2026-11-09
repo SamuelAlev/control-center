@@ -101,7 +101,7 @@ mixin _OperationOps
         // Nobody may be stuck with running containers because a definition
         // went bad or a file moved: the project label is enough to stop them.
         if (env.placement == 'host' && _hasComposeLabels(env)) {
-          await _d.compose.stopProject(env.id);
+          await _d.compose.stop(_projectOfRow(env));
         }
         note = 'Stopped without its definition: $e';
         rethrow;
@@ -111,7 +111,7 @@ mixin _OperationOps
           continue;
         }
         if (component is ComposeEnvironmentComponent) {
-          await _d.compose.stop(await _planOf(env, stack, component));
+          await _d.compose.stop(_composeProject(env, stack, component));
         } else if (component is CliEnvironmentComponent &&
             component.verbs.containsKey('stop')) {
           await _d.cli.stop(
@@ -139,7 +139,9 @@ mixin _OperationOps
             state.kind == 'task'
                 ? state
                 : state.copyWith(
-                    state: state.kind == 'app' ? 'closed' : 'stopped',
+                    state: state.kind == 'app'
+                        ? EnvironmentComponentPhase.closed.wire
+                        : EnvironmentComponentPhase.stopped.wire,
                   ),
         ],
       ),
@@ -294,8 +296,14 @@ mixin _OperationOps
   /// Takes [env] apart, last started first.
   ///
   /// With [force] nothing stops it: the worktree is going away regardless, so
-  /// each step is attempted and a failure is logged. What a definition supplies
-  /// (tool verbs) runs only if it still validates; CC's own resources go anyway.
+  /// each step is attempted. What a definition supplies (tool verbs) runs only
+  /// if it still validates; CC's own resources go anyway.
+  ///
+  /// A forced step that fails leaves something running that only this row
+  /// can name (a rig, a tool's environment, a compose project), so the row is
+  /// not deleted: it stays `failed` with code `teardown-incomplete`, keeping
+  /// its rig id, lease and state directory, and maintenance and recovery try
+  /// again from it.
   Future<void> _teardown(SpaceEnvironment env, {required bool force}) async {
     final ws = env.workspaceId;
     Future<void> quietly(String name, Future<void> Function() action) async {
@@ -306,6 +314,7 @@ mixin _OperationOps
       }
     }
 
+    final incomplete = <String>[];
     Future<void> step(String name, Future<void> Function() action) async {
       try {
         await action();
@@ -313,6 +322,7 @@ mixin _OperationOps
         if (!force) {
           rethrow;
         }
+        incomplete.add('$name: ${_EnvironmentServiceBase._errorOf(e).message}');
         CcInfraLog.warning('teardown of ${env.id}: $name failed: $e');
       }
     }
@@ -355,20 +365,14 @@ mixin _OperationOps
               () => _d.cli.destroy(_cliContext(known, component)),
             );
           } else if (component is ComposeEnvironmentComponent) {
-            await step(component.id, () async {
-              try {
-                await _d.compose.destroy(await _planOf(env, known, component));
-              } on Exception catch (e) {
-                // The file went with the worktree, or never parses. The
-                // project has a name.
-                CcInfraLog.info('destroying ${env.id} by label: $e');
-                await _d.compose.destroyProject(env.id);
-              }
-            });
+            await step(
+              component.id,
+              () => _d.compose.destroy(_composeProject(env, known, component)),
+            );
           }
         }
       } else if (env.placement == 'host' && _hasComposeLabels(env)) {
-        await step('compose', () => _d.compose.destroyProject(env.id));
+        await step('compose', () => _d.compose.destroy(_projectOfRow(env)));
       }
     } on Object catch (e) {
       await _update(
@@ -383,6 +387,24 @@ mixin _OperationOps
     }
 
     await quietly('routes', () async => _d.routing.clearRoutes(env.id));
+    if (incomplete.isNotEmpty) {
+      _teardownFailedAt[env.id] = _d.now();
+      await _update(
+        ws,
+        env.id,
+        (row) => row.copyWith(
+          status: EnvironmentStatus.failed,
+          lastError: EnvironmentError(
+            code: 'teardown-incomplete',
+            message:
+                'Some of this environment could not be removed, and it is '
+                'kept until it can be: ${incomplete.join('; ')}',
+          ),
+        ),
+      );
+      return;
+    }
+    _teardownFailedAt.remove(env.id);
     await quietly(
       'lease',
       () => _d.allocator.release(
@@ -443,10 +465,13 @@ mixin _OperationOps
       for (final compose
           in stack.definition.components
               .whereType<ComposeEnvironmentComponent>()) {
-        final plan = await _planOf(env, stack, compose);
         // The component's own id means the whole stack.
-        if (compose.id == target || plan.services.contains(target)) {
-          await _d.compose.restart(plan, compose.id == target ? null : target);
+        if (compose.id == target ||
+            _composeServices(env, compose).contains(target)) {
+          await _d.compose.restart(
+            _composeProject(env, stack, compose),
+            compose.id == target ? null : target,
+          );
           return;
         }
       }
@@ -496,14 +521,28 @@ mixin _OperationOps
         workspaceId: workspaceId,
         spaceId: spaceId,
         rigId: env.rigId,
-        argv: ['docker', 'compose', 'exec', '-T', service, ...command],
+        // The rig's stack runs under the environment's project name, which
+        // compose would not guess from the working directory.
+        argv: [
+          'docker',
+          'compose',
+          '-p',
+          composeProjectName(env.id),
+          'exec',
+          '-T',
+          service,
+          ...command,
+        ],
       );
     }
     for (final component in stack.definition.components) {
       if (component is ComposeEnvironmentComponent) {
-        final plan = await _planOf(env, stack, component);
-        if (plan.services.contains(service)) {
-          return _d.compose.exec(plan, service, command);
+        if (_composeServices(env, component).contains(service)) {
+          return _d.compose.exec(
+            _composeProject(env, stack, component),
+            service,
+            command,
+          );
         }
       } else if (component is CliEnvironmentComponent &&
           component.verbs.containsKey('exec')) {
@@ -540,10 +579,9 @@ mixin _OperationOps
     }
     for (final item in stack.definition.components) {
       if (item is ComposeEnvironmentComponent) {
-        final plan = await _planOf(env, stack, item);
-        if (item.id == target || plan.services.contains(target)) {
+        if (item.id == target || _composeServices(env, item).contains(target)) {
           return _d.compose.logs(
-            plan,
+            _composeProject(env, stack, item),
             item.id == target ? null : target,
             tail: tail,
           );
@@ -578,10 +616,9 @@ mixin _OperationOps
     }
     for (final item in stack.definition.components) {
       if (item is ComposeEnvironmentComponent) {
-        final plan = await _planOf(env, stack, item);
-        if (item.id == target || plan.services.contains(target)) {
+        if (item.id == target || _composeServices(env, item).contains(target)) {
           yield* _d.compose.followLogs(
-            plan,
+            _composeProject(env, stack, item),
             item.id == target ? null : target,
             tail: tail,
           );

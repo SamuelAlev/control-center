@@ -490,6 +490,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get teammate => 'Συνάδελφος';
 
   @override
+  String get systemSender => 'Σύστημα';
+
+  @override
   String get agent => 'Πράκτορας';
 
   @override
@@ -644,12 +647,12 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.';
+    return 'Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.';
+    return 'Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub.';
   }
 
   @override
@@ -2615,6 +2618,22 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Πάρα πολλοί λανθασμένοι κωδικοί. Ξεκινήστε ξανά τη σύνδεση.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Η υπηρεσία σύνδεσης δεν αποκρίνεται αυτή τη στιγμή. Περιμένετε ένα λεπτό και δοκιμάστε ξανά.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Η σύνδεση απορρίφθηκε. Ξεκινήστε την ξανά και εγκρίνετε όλα τα ζητούμενα δικαιώματα.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Η σύνδεση πέτυχε, αλλά ο διακομιστής δεν μπόρεσε να την αποθηκεύσει. Δοκιμάστε ξανά.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

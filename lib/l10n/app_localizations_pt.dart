@@ -9,6 +9,15 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Não foi possível enviar agora: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Sua resposta não foi entregue. A pergunta pode já ter sido respondida ou o agente parou de esperar.';
+
+  @override
   String get succeeded => 'Concluído';
 
   @override
@@ -2624,10 +2633,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addGif => 'Adicionar GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Adicione pelo menos um repositório do GitHub para ver as pull requests';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5953,9 +5958,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Duração';
 
   @override
-  String get pipelineStepBranch => 'Ramo';
-
-  @override
   String get pipelineStepViewConversation => 'Ver conversa';
 
   @override
@@ -7049,14 +7051,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reviewRequested => 'Revisão solicitada';
 
   @override
-  String get connectGitHubHint =>
-      'Entre no GitHub em Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Conecte o GitHub para carregar os pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'Nenhum repositório configurado';
 
   @override
@@ -7715,13 +7709,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Criar como rascunho';
-
-  @override
-  String get composePrNoRepo => 'Nenhum repositório do GitHub selecionado';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Selecione um espaço de trabalho com um repositório vinculado ao GitHub para abrir uma pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16904,6 +16891,27 @@ class AppLocalizationsPt extends AppLocalizations {
       'Esse código não corresponde a este login. Confira e tente de novo.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Códigos errados demais. Comece o login de novo.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Este login não é mais válido. Comece de novo.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'O servidor não conseguiu ler esta solicitação de login. Comece de novo.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Tentativas de login demais agora. Espere um minuto e tente de novo.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return 'O $provider aceitou o login, mas o servidor não conseguiu salvá-lo. Tente de novo.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return 'O $provider não está respondendo agora. Tente de novo em alguns minutos.';
   }
@@ -16934,7 +16942,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Este espaço do Linear já está conectado a outro servidor do Control Center.';
+      'Este espaço do Slack já está conectado a outro servidor do Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17370,6 +17378,40 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Trocar aplicativo';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Abrir no $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Mostrando os primeiros $count arquivos. O $forge não lista o restante.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Conecte uma hospedagem de código para carregar os pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Conecte GitHub, GitLab ou Bitbucket em Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Adicione pelo menos um repositório no GitHub, GitLab ou Bitbucket para ver pull requests';
+
+  @override
+  String get composePrNoForgeRepo => 'Nenhum repositório hospedado selecionado';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Selecione um espaço de trabalho com um repositório no GitHub, GitLab ou Bitbucket para abrir um pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Conecte $forge para abrir um pull request neste repositório';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -18133,14 +18175,6 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get agentQuestionFreeformHint => 'Introduza sua resposta…';
-
-  @override
-  String get connectGitHubHint =>
-      'Entre no GitHub em Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Ligue o GitHub para carregar os pull requests';
 
   @override
   String prTimelineRemovedReviewRequest(String actor, String reviewers) {
@@ -19340,7 +19374,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Este espaço do Linear já está ligado a outro servidor do Control Center.';
+      'Este espaço do Slack já está ligado a outro servidor do Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -19447,4 +19481,12 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get chatTicketDraftsDescription =>
       'Um rascunho só se torna um ticket do backlog quando o cria aqui. Os rascunhos deixados de lado são eliminados ao fim de um dia.';
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Ligue um serviço de alojamento de código para carregar os pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Ligue o GitHub, GitLab ou Bitbucket em Definições → Espaço de trabalho → Perfil e identidade → Alojamento de código';
 }

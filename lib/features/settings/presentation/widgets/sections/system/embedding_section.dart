@@ -9,8 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings section that exposes the local embedding model lifecycle.
 ///
 /// Platform-neutral: it reads the seamed [embeddingModelControlProvider] +
-/// [embeddingModelStatusSnapshotProvider]. On desktop these resolve to the
-/// in-process model controller; on web/thin clients they resolve to the
+/// [embeddingModelStatusSnapshotProvider]. On every client these resolve to the
 /// connected server's embedding model over the `models.embedding*` RPC ops.
 /// When the connected server hosts no model (status is `null`), it renders an
 /// honest "managed on the server host" placeholder.

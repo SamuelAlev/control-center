@@ -382,7 +382,6 @@ class _FakeRunRepository implements PipelineRunRepository {
   Future<int> activeRunCountForTemplate({
     required String workspaceId,
     required String templateId,
-    Set<String> excludeTriggerEventTypes = const {},
   }) async => 0;
   @override
   Future<PipelineRun?> nextQueuedRunForTemplate({

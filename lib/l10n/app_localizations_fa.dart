@@ -9,6 +9,15 @@ class AppLocalizationsFa extends AppLocalizations {
   AppLocalizationsFa([String locale = 'fa']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'اکنون ارسال نشد: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'پاسخ شما تحویل داده نشد. ممکن است قبلاً پاسخ داده شده باشد یا عامل دیگر منتظر نباشد.';
+
+  @override
   String get succeeded => 'موفق';
 
   @override
@@ -2596,10 +2605,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get addGif => 'افزودن GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'دست‌کم یک مخزن GitHub اضافه کنید تا pull requestها را ببینید';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5897,9 +5902,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get pipelineStepDurationLabel => 'مدت';
 
   @override
-  String get pipelineStepBranch => 'شاخه';
-
-  @override
   String get pipelineStepViewConversation => 'نمایش گفتگو';
 
   @override
@@ -6982,14 +6984,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get reviewRequested => 'بازبینی درخواست شد';
 
   @override
-  String get connectGitHubHint =>
-      'در تنظیمات ← فضای کاری ← نمایه و هویت ← میزبانی کد وارد GitHub شوید';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'برای بارگذاری pull requestها GitHub را وصل کنید';
-
-  @override
   String get noRepositoriesConfigured => 'مخزنی پیکربندی نشده';
 
   @override
@@ -7646,13 +7640,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get createAsDraft => 'ایجاد به‌عنوان پیش‌نویس';
-
-  @override
-  String get composePrNoRepo => 'مخزن GitHub انتخاب نشده';
-
-  @override
-  String get composePrNoRepoHint =>
-      'فضای کاری با مخزن پیوندشده به GitHub انتخاب کنید تا pull request باز کنید.';
 
   @override
   String get composePrPickBranches =>
@@ -16757,6 +16744,27 @@ class AppLocalizationsFa extends AppLocalizations {
       'این کد با این ورود جور نیست. آن را بررسی کنید و دوباره امتحان کنید.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'تعداد کدهای اشتباه بیش از حد است. ورود را دوباره شروع کنید.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'این ورود دیگر معتبر نیست. آن را دوباره شروع کنید.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'سرور نتوانست این درخواست ورود را بخواند. آن را دوباره شروع کنید.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'اکنون تلاش‌های ورود بیش از حد است. یک دقیقه صبر کنید و دوباره امتحان کنید.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider ورود را پذیرفت، اما سرور نتوانست آن را ذخیره کند. دوباره امتحان کنید.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider الان پاسخ نمی‌دهد. چند دقیقهٔ دیگر دوباره امتحان کنید.';
   }
@@ -16787,7 +16795,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'این فضای کاری Linear از قبل به سرور Control Center دیگری متصل است.';
+      'این فضای کاری Slack از قبل به سرور Control Center دیگری متصل است.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17221,4 +17229,38 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'تعویض برنامه';
+
+  @override
+  String openOnForge(String forge) {
+    return 'باز کردن در $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'نمایش $count فایل نخست. $forge بقیه را فهرست نمی‌کند.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'برای بارگیری درخواست‌های ادغام، یک میزبان کد وصل کنید';
+
+  @override
+  String get connectForgeHint =>
+      'GitHub، GitLab یا Bitbucket را در تنظیمات ← فضای کاری ← نمایه و هویت ← میزبانی کد وصل کنید';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'برای دیدن درخواست‌های ادغام، دست‌کم یک مخزن در GitHub، GitLab یا Bitbucket اضافه کنید';
+
+  @override
+  String get composePrNoForgeRepo => 'هیچ مخزن میزبانی‌شده‌ای انتخاب نشده است';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'برای باز کردن درخواست ادغام، فضای کاری‌ای با مخزنی در GitHub، GitLab یا Bitbucket انتخاب کنید.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'برای باز کردن درخواست ادغام در این مخزن، $forge را وصل کنید';
+  }
 }

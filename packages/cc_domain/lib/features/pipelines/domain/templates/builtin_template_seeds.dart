@@ -274,6 +274,24 @@ class IndexCodeTemplate {
   static const String watchTriggerEventType = 'CodeGraphWatch';
 }
 
+/// The dedup key a MANUAL run of [templateId] with [inputs] starts with, or
+/// null when manual runs of it don't dedupe.
+///
+/// Templates whose event trigger dedupes by a resource id use the same key for
+/// a manual launch, so a person clicking "run" can't race the event-triggered
+/// run for the same resource. Today that is `index_code`, deduped by repo
+/// (its `RepoAdded` trigger's dedup key is the repo id).
+String? pipelineManualRunDedupKey(
+  String templateId,
+  Map<String, dynamic> inputs,
+) => switch (templateId) {
+  IndexCodeTemplate.id => switch (inputs['repo_id']) {
+    final String repoId when repoId.isNotEmpty => repoId,
+    _ => null,
+  },
+  _ => null,
+};
+
 /// Identifiers of the `skill_analysis` template (the skills antivirus as a
 /// pipeline). Named once because three surfaces outside the template itself
 /// address it: the seeder, the projection reporter and the boot reconciler.
@@ -290,25 +308,12 @@ class SkillAnalysisTemplate {
   /// `triggerEventType` markers for runs published by the projection reporter
   /// (the settings UI's synchronous scan ops) rather than started by the
   /// engine. Like [IndexCodeTemplate.watchTriggerEventType], these are
-  /// markers, not `DomainEvent` type names — the boot reaper keys off them.
+  /// markers, not `DomainEvent` type names. The reporter's rows also carry
+  /// `PipelineRun.isProjection`, which is what keeps them out of the
+  /// template's `maxParallelRuns` accounting and what its boot reaper checks.
   static const String manualProjectionTriggerEventType = 'SkillAnalysisManual';
   static const String updateProjectionTriggerEventType = 'SkillAnalysisUpdate';
 }
-
-/// Every `triggerEventType` marker used by a PROJECTION reporter — a run row
-/// that mirrors work owned outside `PipelineEngine` (the code-graph watcher,
-/// the settings UI's synchronous skill scans).
-///
-/// The engine neither starts nor finishes these runs, so they must not
-/// participate in a template's `maxParallelRuns` accounting: a slot one of them
-/// held would never be released, and every later run of that template would
-/// queue forever behind a row nothing will ever close. The projections' own
-/// concurrency is their owner's business (the watcher has its own ceiling).
-const Set<String> kProjectionTriggerEventTypes = {
-  IndexCodeTemplate.watchTriggerEventType,
-  SkillAnalysisTemplate.manualProjectionTriggerEventType,
-  SkillAnalysisTemplate.updateProjectionTriggerEventType,
-};
 
 /// The trigger rows seeded for each built-in template, keyed by templateId.
 /// Templates absent from this map ship with no triggers.

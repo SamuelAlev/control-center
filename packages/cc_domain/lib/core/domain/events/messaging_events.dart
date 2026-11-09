@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+library;
+
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
@@ -22,6 +25,7 @@ class MessageReceived implements DomainEvent {
     this.requestedByUserId,
     this.senderUserId,
     this.conversationId,
+    this.inAgentOnlySpace = false,
   });
 
   /// Space the message was posted in.
@@ -84,6 +88,10 @@ class MessageReceived implements DomainEvent {
   /// Null for an agent-authored message (no human wrote it), which leaves the
   /// mention and requester rules to decide as before.
   final String? senderUserId;
+
+  /// Whether [spaceId] is an agent-only space ([SpaceKind.isAgentOnly]).
+  /// Agent chatter there reaches no human unless one is `@mentioned`.
+  final bool inAgentOnlySpace;
 
   @override
   final DateTime occurredAt;

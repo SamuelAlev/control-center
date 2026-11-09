@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 /// A provider that replays one scripted list of [LlmEvent]s per `complete()`
 /// call, repeating the last entry once the script runs out.
-class _ScriptedProvider implements LlmProviderPort {
+class _ScriptedProvider extends LlmProviderPort {
   _ScriptedProvider(this.script);
 
   final List<List<LlmEvent>> script;
@@ -81,7 +81,10 @@ void main() {
       ]);
       final events = await drain(
         provider,
-        config: const AgentLoopConfig(maxTurns: 4, maxProviderRetries: 1),
+        config: const AgentLoopConfig(
+          maxTurns: 4,
+          guards: LoopGuardConfig(maxProviderRetries: 1),
+        ),
       );
 
       final error = events.whereType<LoopError>().single;

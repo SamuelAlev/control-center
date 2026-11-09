@@ -1,5 +1,4 @@
-/// Domain port for publishing a finalized PR review to the version-control
-/// host (GitHub today). Implemented in the data layer by a service that owns
+/// Domain port for publishing a finalized PR review to the repo's forge. Implemented in the data layer by a service that owns
 /// the network client; the MCP tool and any pipeline body depend on this
 /// abstraction, not the concrete adapter.
 library;
@@ -26,8 +25,9 @@ class PublishReviewResult {
     required this.usedFallback,
   });
 
-  /// Host review id.
-  final int reviewId;
+  /// The forge's id for the submitted review, or null on a forge where a
+  /// verdict is not one addressable record (GitLab, Bitbucket).
+  final int? reviewId;
 
   /// The submitted event (`APPROVE` / `REQUEST_CHANGES` / `COMMENT`).
   final String event;

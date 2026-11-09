@@ -28,13 +28,16 @@ class PipelineStepDefinition {
   }
 
   /// Rebuilds a [PipelineStepDefinition] from its [toJson] map (template
-  /// import). Unknown [StepKind] names fall back to [StepKind.listen].
+  /// import). An unknown [StepKind] name throws [FormatException]: reading a
+  /// terminal or join as a plain `listen` step would change what the graph
+  /// does.
   factory PipelineStepDefinition.fromJson(Map<String, dynamic> json) {
     return PipelineStepDefinition(
       id: json['id'] as String,
       kind: StepKind.values.firstWhere(
         (k) => k.name == json['kind'],
-        orElse: () => StepKind.listen,
+        orElse: () =>
+            throw FormatException('Unknown step kind "${json['kind']}"'),
       ),
       bodyKey: json['body_key'] as String,
       triggers: [

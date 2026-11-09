@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_commits_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_chip.dart';
@@ -18,6 +19,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -120,7 +122,12 @@ class _ComposePullRequestScreenState
     if (number != null) {
       router.go(
         repo != null
-            ? pullRequestDetailRoute(ws, repo.fullName, number)
+            ? pullRequestDetailRoute(
+                ws,
+                repo.fullName,
+                number,
+                forge: repo.forge,
+              )
             : pullRequestsRoute(ws),
       );
     } else {
@@ -135,8 +142,21 @@ class _ComposePullRequestScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isAuthed = ref.watch(hasAnyForgeConnectedProvider);
+    // Opening a pull request is a forge write, and the branch, default-branch
+    // and template reads behind this form are absent on a demo. Say so instead
+    // of mounting pickers that can only fail.
+    if (ref.watch(isDemoServerProvider)) {
+      return PageWrapper(
+        title: l10n.openPullRequest,
+        subtitle: l10n.composePrSubtitle,
+        child: const DemoUnavailable(capability: DemoCapability.forge),
+      );
+    }
     final repo = ref.watch(activeRepoProvider);
+    // The active repo's OWN forge must be connected: a GitLab token says
+    // nothing about whether a GitHub repo's PR can be opened.
+    final isAuthed =
+        repo != null && ref.watch(connectedForgesProvider).contains(repo.forge);
 
     // Switching the active repo invalidates any staged branches (they belong to
     // the old repo). Clear them so the diff and pickers don't reference a branch
@@ -220,11 +240,17 @@ class _ComposePullRequestScreenState
           child: Text(l10n.createPullRequest),
         ),
       ],
-      child: (!isAuthed || repo == null || !repo.hasForgeRemote)
+      child: repo == null || !repo.hasForgeRemote
           ? EmptyConfigState(
               icon: AppIcons.gitPullRequest,
-              message: l10n.composePrNoRepo,
-              hint: l10n.composePrNoRepoHint,
+              message: l10n.composePrNoForgeRepo,
+              hint: l10n.composePrNoForgeRepoHint,
+            )
+          : !isAuthed
+          ? EmptyConfigState(
+              icon: AppIcons.gitPullRequest,
+              message: l10n.composePrForgeNotConnected(repo.forge.displayName),
+              hint: l10n.connectForgeHint,
             )
           : _Body(
               repoFullName: repo.fullName,

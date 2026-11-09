@@ -12,7 +12,7 @@ void main() {
     String worktree = '/work/acme',
     Map<String, String> extraMounts = const {},
   }) => RigSpec.environment(
-    conversationId: 'space-1',
+    spaceId: 'space-1',
     environmentId: 'env-1',
     worktreePath: worktree,
     egressAllowlist: const ['docker.io', 'production.cloudflare.docker.com'],

@@ -8,29 +8,39 @@ import 'package:cc_domain/core/domain/ports/pr_worktree_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
-import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_infra/src/repos/worktree_release.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 /// Default [PrWorktreePort]: provisions a CoW worktree of the registered local
 /// repo checked out at a PR's head via [RepoIsolationPort], tracks it in
 /// [IsolatedRepoRepository] (keyed by a synthetic `pr:<owner/repo>#<number>`
-/// space id so no schema change is needed) and tears it down on release.
+/// space id so no schema change is needed) and tears it down on release,
+/// through the same [WorktreeReleaser] as every space worktree.
 class PrWorktreeService implements PrWorktreePort {
-  /// Creates a [PrWorktreeService].
+  /// Creates a [PrWorktreeService]. [worktreeTasks] runs a repo's `archive`
+  /// tasks on release, under the fork rule: see [WorktreeReleaser].
   PrWorktreeService({
     required this._filesystem,
     required this._isolation,
     required this._registry,
     required this._githubToken,
-  });
+    WorktreeTaskPort? worktreeTasks,
+  }) : _releaser = WorktreeReleaser(
+         isolation: _isolation,
+         registry: _registry,
+         worktreeTasks: worktreeTasks,
+       );
 
   final WorkspaceFilesystemPort _filesystem;
   final RepoIsolationPort _isolation;
   final IsolatedRepoRepository _registry;
+
   /// A one-repository read token for [Repo] in a workspace, or null.
   final Future<String?> Function(String workspaceId, Repo repo) _githubToken;
+  final WorktreeReleaser _releaser;
   final _uuid = const Uuid();
 
   /// The registry "unit" key for a PR worktree. Encodes the repo full name and
@@ -58,8 +68,9 @@ class PrWorktreeService implements PrWorktreePort {
         return existing.path; // reuse the already-materialized worktree
       }
       // Row points at a vanished worktree — tear down stale state and re-create.
-      await _safeDestroy(existing);
-      await _registry.deleteById(existing.workspaceId, existing.id);
+      await _releaser.release([
+        existing,
+      ], mode: WorktreeReleaseMode.releaseRowsOnly);
     }
 
     final token = repo.hasForgeRemote
@@ -124,24 +135,11 @@ class PrWorktreeService implements PrWorktreePort {
     required int prNumber,
   }) async {
     final spaceId = _unitKey(repoFullName, prNumber);
-    final rows = await _registry.forSpaceAcrossWorkspaces(spaceId);
-    for (final row in rows) {
-      await _safeDestroy(row);
-      await _registry.deleteById(row.workspaceId, row.id);
-    }
-  }
-
-  Future<void> _safeDestroy(IsolatedRepo row) async {
-    try {
-      await _isolation.destroy(
-        path: row.path,
-        sourcePath: row.sourcePath,
-        backend: row.backend,
-        branch: row.branch,
-      );
-    } catch (e) {
-      CcInfraLog.warning('destroy failed for ${row.path}: $e');
-    }
+    // No space owns it, so there is no environment to tear down first.
+    await _releaser.release(
+      await _registry.forSpaceAcrossWorkspaces(spaceId),
+      mode: WorktreeReleaseMode.releaseRowsOnly,
+    );
   }
 
   Future<String?> _safeToken(String workspaceId, Repo repo) async {

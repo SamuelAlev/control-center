@@ -4,7 +4,7 @@ import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:test/test.dart';
 
-class _Source implements LlmProviderPort {
+class _Source extends LlmProviderPort {
   _Source(this.stream);
   final Stream<LlmEvent>? stream;
   @override

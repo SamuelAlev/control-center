@@ -109,6 +109,15 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
   Future<void> resolveAgentWait(String workspaceId, String waitId) =>
       _dao(workspaceId).resolveAgentWait(workspaceId, waitId, DateTime.now());
 
+  /// Resolves every awaiting-input row recorded at or before [before] — the
+  /// boot sweep for waits a restart ended. Returns how many were stamped.
+  Future<int> resolveAgentWaitsRecordedBefore(
+    String workspaceId,
+    DateTime before,
+  ) => _dao(
+    workspaceId,
+  ).resolveAgentWaitsRecordedBefore(workspaceId, before, DateTime.now());
+
   /// Records one `notifications/*` frame into [workspaceId]'s feed (pruning
   /// beyond the retention cap) and returns the stored item.
   Future<NotificationFeedItem> record(

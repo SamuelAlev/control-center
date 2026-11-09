@@ -230,12 +230,6 @@ class _StepRunBody extends ConsumerWidget {
           value: formatPipelineDuration(duration),
           tokens: tokens,
         ),
-        if (stepRun.branchIndex != null)
-          _MetaRow(
-            label: l10n.pipelineStepBranch,
-            value: '${stepRun.branchIndex}',
-            tokens: tokens,
-          ),
         if (stepRun.priorAttempts.isNotEmpty)
           _MetaRow(
             label: l10n.pipelineStepAttemptLabel,

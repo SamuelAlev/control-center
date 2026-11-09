@@ -1,8 +1,10 @@
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/testing/fake_workspace_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/event_bus_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -41,6 +43,22 @@ Future<void> _emitWhenSubscribed(
   host.emit(query, data);
 }
 
+final _scope = SessionScope(serverId: 'srv-a', userId: 'usr-1');
+String _scoped(String key) => _scope.key(key);
+
+ProviderContainer _container(
+  AppPreferences prefs,
+  RemoteRpcClient client, {
+  SessionScope? scope,
+  bool scoped = true,
+}) => ProviderContainer(
+  overrides: [
+    appPreferencesProvider.overrideWithValue(prefs),
+    rpcClientProvider.overrideWithValue(client),
+    sessionScopeProvider.overrideWithValue(scoped ? (scope ?? _scope) : null),
+  ],
+);
+
 void main() {
   group('ActiveWorkspaceIdNotifier', () {
     late FakeRpcHost host;
@@ -51,179 +69,130 @@ void main() {
       client = host.client();
     });
 
-    test('build returns null when no workspaces exist', () async {
-      final prefs = AppPreferences.inMemory({});
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
+    test('build is null with nothing remembered for this session', () {
+      final container = _container(AppPreferences.inMemory({}), client);
       addTearDown(container.dispose);
-      container.listen(activeWorkspaceIdProvider, (_, _) {});
-      container.listen(workspacesProvider, (_, _) {});
-      await _emitWhenSubscribed(host, 'workspace.watchAll', {
-        'workspaces': <Map<String, dynamic>>[],
-      });
-      await Future.delayed(const Duration(milliseconds: 50));
-      final id = container.read(activeWorkspaceIdProvider);
-      expect(id, null);
-    });
-
-    test('build returns first workspace id when no saved preference', () async {
-      final prefs = AppPreferences.inMemory({});
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
-      addTearDown(container.dispose);
-      container.listen(activeWorkspaceIdProvider, (_, _) {});
-      container.listen(workspacesProvider, (_, _) {});
-      await _emitWhenSubscribed(host, 'workspace.watchAll', {
-        'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
-      });
-      await Future.delayed(const Duration(milliseconds: 50));
-      final id = container.read(activeWorkspaceIdProvider);
-      expect(id, 'ws-1');
-    });
-
-    test('build returns saved workspace id when valid', () async {
-      final prefs = AppPreferences.inMemory({_wsKey: 'ws-2'});
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
-      addTearDown(container.dispose);
-      container.listen(activeWorkspaceIdProvider, (_, _) {});
-      container.listen(workspacesProvider, (_, _) {});
-      await _emitWhenSubscribed(host, 'workspace.watchAll', {
-        'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
-      });
-      await Future.delayed(const Duration(milliseconds: 50));
-      final id = container.read(activeWorkspaceIdProvider);
-      expect(id, 'ws-2');
+      expect(container.read(activeWorkspaceIdProvider), isNull);
     });
 
     test(
-      'build falls back to first when saved workspace no longer exists',
-      () async {
-        final prefs = AppPreferences.inMemory({_wsKey: 'ws-gone'});
-
-        final container = ProviderContainer(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            rpcClientProvider.overrideWithValue(client),
-          ],
-        );
+      'build exposes the id remembered for this server and user immediately',
+      () {
+        // Regression: the chip flashed "no workspace" on a cold start because
+        // the remembered id was discarded while the list was pending.
+        final prefs = AppPreferences.inMemory({_scoped(_wsKey): 'ws-2'});
+        final container = _container(prefs, client);
         addTearDown(container.dispose);
-        container.listen(activeWorkspaceIdProvider, (_, _) {});
-        container.listen(workspacesProvider, (_, _) {});
-        await _emitWhenSubscribed(host, 'workspace.watchAll', {
-          'workspaces': [_wsJson('ws-1', 'First')],
-        });
-        await Future.delayed(const Duration(milliseconds: 50));
-        final id = container.read(activeWorkspaceIdProvider);
-        expect(id, 'ws-1');
-        // The correction must be PERSISTED, not just held in memory: the
-        // optimistic branch re-reads the pref on every build, so leaving
-        // 'ws-gone' on disk brings it back on the next connect.
-        expect(prefs.getString(_wsKey), 'ws-1');
+        expect(container.read(activeWorkspaceIdProvider), 'ws-2');
       },
     );
 
-    test(
-      'a persisted id this server does not know is dropped from prefs',
-      () async {
-        // The reported failure: a client whose `active_workspace_id` predates
-        // a data-dir reset connects to a server that has never registered it.
-        // Left in prefs, the id rode the pre-list window on every reconnect —
-        // the router landed on `/workspaces/<dead-id>/…` and every
-        // workspace-scoped subscription was refused by the server.
-        final prefs = AppPreferences.inMemory({_wsKey: 'ws-stale'});
-
-        final container = ProviderContainer(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            rpcClientProvider.overrideWithValue(client),
-          ],
-        );
+    test('another server or user never inherits the remembered id', () {
+      // H2: an unscoped key let server B land in server A's workspace.
+      final prefs = AppPreferences.inMemory({
+        _scoped(_wsKey): 'ws-a',
+        _wsKey: 'ws-legacy-unscoped',
+      });
+      for (final other in [
+        SessionScope(serverId: 'srv-b', userId: 'usr-1'),
+        SessionScope(serverId: 'srv-a', userId: 'usr-2'),
+      ]) {
+        final container = _container(prefs, client, scope: other);
         addTearDown(container.dispose);
-        container.listen(activeWorkspaceIdProvider, (_, _) {});
-        container.listen(workspacesProvider, (_, _) {});
+        expect(container.read(activeWorkspaceIdProvider), isNull);
+      }
+      // No scope at all (identity unresolved): nothing is read either.
+      final unscoped = _container(prefs, client, scoped: false);
+      addTearDown(unscoped.dispose);
+      expect(unscoped.read(activeWorkspaceIdProvider), isNull);
+    });
 
-        // Before the list arrives the stale id is still exposed — that window
-        // is deliberate (it stops the workspace chip flashing empty).
-        expect(container.read(activeWorkspaceIdProvider), 'ws-stale');
-
-        await _emitWhenSubscribed(host, 'workspace.watchAll', {
-          'workspaces': <Map<String, dynamic>>[],
-        });
-        await Future.delayed(const Duration(milliseconds: 50));
-
-        expect(container.read(activeWorkspaceIdProvider), null);
-        expect(prefs.getString(_wsKey), null);
-      },
-    );
-
-    test('setActive persists and updates state', () async {
+    test('a lagging workspace list never overrides the route', () async {
+      // The route made ws-new active; a list emission that predates it must
+      // not flip the mirror back to the first workspace.
       final prefs = AppPreferences.inMemory({});
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
+      final container = _container(prefs, client);
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
+      await container
+          .read(activeWorkspaceIdProvider.notifier)
+          .setActive('ws-new');
       await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
+      expect(container.read(activeWorkspaceIdProvider), 'ws-new');
+    });
+
+    test('setActive persists under the session scope', () async {
+      final prefs = AppPreferences.inMemory({});
+      final container = _container(prefs, client);
+      addTearDown(container.dispose);
 
       await container
           .read(activeWorkspaceIdProvider.notifier)
           .setActive('ws-1');
 
       expect(container.read(activeWorkspaceIdProvider), 'ws-1');
-      expect(prefs.getString(_wsKey), 'ws-1');
+      expect(prefs.getString(_scoped(_wsKey)), 'ws-1');
+      expect(prefs.getString(_wsKey), isNull);
     });
 
-    test(
-      'build exposes the persisted id immediately, before the list loads',
-      () async {
-        // Regression: the chip flashed "no workspace" for a few seconds on a
-        // cold start because the persisted id was discarded while the stream's
-        // first emit was pending. The id must surface synchronously.
-        final prefs = AppPreferences.inMemory({_wsKey: 'ws-2'});
+    test('forget drops the remembered id', () async {
+      final prefs = AppPreferences.inMemory({_scoped(_wsKey): 'ws-stale'});
+      final container = _container(prefs, client);
+      addTearDown(container.dispose);
 
-        final container = ProviderContainer(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            rpcClientProvider.overrideWithValue(client),
-          ],
-        );
-        addTearDown(container.dispose);
+      await container.read(activeWorkspaceIdProvider.notifier).forget();
 
-        // Read synchronously — the workspaces stream has not emitted yet.
-        expect(container.read(activeWorkspaceIdProvider), 'ws-2');
+      expect(container.read(activeWorkspaceIdProvider), isNull);
+      expect(prefs.getString(_scoped(_wsKey)), isNull);
+    });
+  });
 
-        // And it still resolves to the same id once the list loads.
-        container.listen(workspacesProvider, (_, _) {});
-        await _emitWhenSubscribed(host, 'workspace.watchAll', {
-          'workspaces': [_wsJson('ws-1', 'First'), _wsJson('ws-2', 'Second')],
-        });
-        await Future.delayed(const Duration(milliseconds: 50));
-        expect(container.read(activeWorkspaceIdProvider), 'ws-2');
-      },
+  group('landingWorkspaceIdFor', () {
+    final ws1 = Workspace(
+      id: 'ws-1',
+      name: 'First',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
     );
+    final ws2 = Workspace(
+      id: 'ws-2',
+      name: 'Second',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+
+    test('trusts the hint until the list loads', () {
+      expect(
+        landingWorkspaceIdFor(remembered: 'ws-9', workspaces: null),
+        'ws-9',
+      );
+    });
+
+    test('keeps a hint the server still has', () {
+      expect(
+        landingWorkspaceIdFor(remembered: 'ws-2', workspaces: [ws1, ws2]),
+        'ws-2',
+      );
+    });
+
+    test('falls back to the first workspace for a dead or missing hint', () {
+      expect(
+        landingWorkspaceIdFor(remembered: 'ws-gone', workspaces: [ws1, ws2]),
+        'ws-1',
+      );
+      expect(
+        landingWorkspaceIdFor(remembered: null, workspaces: [ws2]),
+        'ws-2',
+      );
+    });
+
+    test('is null when the server has no workspace', () {
+      expect(landingWorkspaceIdFor(remembered: 'ws-1', workspaces: []), isNull);
+    });
   });
 
   group('activeWorkspaceDisplayProvider', () {
@@ -237,17 +206,11 @@ void main() {
 
     test('falls back to the cached display while the list loads', () async {
       final prefs = AppPreferences.inMemory({
-        _wsKey: 'ws-1',
-        _wsNameKey: 'Cached name',
-        _wsHasLogoKey: true,
+        _scoped(_wsKey): 'ws-1',
+        _scoped(_wsNameKey): 'Cached name',
+        _scoped(_wsHasLogoKey): true,
       });
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
+      final container = _container(prefs, client);
       addTearDown(container.dispose);
 
       // Before the stream emits, the cached display is used (no "no workspace").
@@ -265,15 +228,24 @@ void main() {
       expect(container.read(activeWorkspaceDisplayProvider)?.name, 'Real name');
     });
 
-    test('returns null once the list loads with no workspaces', () async {
-      final prefs = AppPreferences.inMemory({});
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
+    test('ignores another session\'s cached display', () {
+      final prefs = AppPreferences.inMemory({
+        _wsKey: 'ws-1',
+        _wsNameKey: 'Unscoped name',
+        _scoped(_wsKey): 'ws-1',
+        _scoped(_wsNameKey): 'Server A name',
+      });
+      final container = _container(
+        prefs,
+        client,
+        scope: SessionScope(serverId: 'srv-b', userId: 'usr-1'),
       );
+      addTearDown(container.dispose);
+      expect(container.read(activeWorkspaceDisplayProvider), isNull);
+    });
+
+    test('returns null once the list loads with no workspaces', () async {
+      final container = _container(AppPreferences.inMemory({}), client);
       addTearDown(container.dispose);
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
@@ -297,27 +269,24 @@ void main() {
 
     test('persists name + logo when the active workspace resolves', () async {
       final prefs = AppPreferences.inMemory({});
-
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(prefs),
-          rpcClientProvider.overrideWithValue(client),
-        ],
-      );
+      final container = _container(prefs, client);
       addTearDown(container.dispose);
 
       // Keep the write-through cache alive, then let the workspace resolve.
       container.listen(workspaceDisplayCacheProvider, (_, _) {});
       container.listen(activeWorkspaceIdProvider, (_, _) {});
       container.listen(workspacesProvider, (_, _) {});
+      await container
+          .read(activeWorkspaceIdProvider.notifier)
+          .setActive('ws-1');
       await _emitWhenSubscribed(host, 'workspace.watchAll', {
         'workspaces': [_wsJson('ws-1', 'First', logoPath: '/icon.png')],
       });
       await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(prefs.getString(_wsKey), 'ws-1');
-      expect(prefs.getString(_wsNameKey), 'First');
-      expect(prefs.getBool(_wsHasLogoKey), isTrue);
+      expect(prefs.getString(_scoped(_wsNameKey)), 'First');
+      expect(prefs.getBool(_scoped(_wsHasLogoKey)), isTrue);
+      expect(prefs.getString(_wsNameKey), isNull);
     });
   });
 
@@ -367,17 +336,11 @@ void main() {
         // against the PREVIOUS active repo — the PR-review surface then resolved
         // the wrong owner/repo and the host 404'd a cross-repo PR. The flip must
         // be visible synchronously, before the (awaited) persist completes.
-        final prefs = AppPreferences.inMemory({_wsKey: 'ws-1'});
-
-        final container = ProviderContainer(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            rpcClientProvider.overrideWithValue(client),
-          ],
-        );
+        final prefs = AppPreferences.inMemory({_scoped(_wsKey): 'ws-1'});
+        final container = _container(prefs, client);
         addTearDown(container.dispose);
 
-        // Active workspace resolves synchronously from the persisted id.
+        // Active workspace resolves synchronously from the remembered id.
         expect(container.read(activeWorkspaceIdProvider), 'ws-1');
 
         // Fire-and-forget, exactly like openPrInRepo(): do NOT await.
@@ -476,7 +439,7 @@ void main() {
   });
 }
 
-/// Records [setActive] without watching the private bootstrap stream.
+/// Records [setActive] without reading any remembered id.
 class _RecordingActiveWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
   String? setTo;
 

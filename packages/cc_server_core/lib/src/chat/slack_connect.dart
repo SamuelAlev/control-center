@@ -132,16 +132,14 @@ class ConnectSlackGrants implements SlackConnectGrants {
     if (!sealed.isSealed) {
       return 'not_sealed';
     }
-    final choice = await _connect.settings.choice();
-    if (!choice.enabled ||
-        canonicalConnectBaseUrl(choice.baseUrl) != sealed.connectOrigin) {
-      return 'connect_changed';
-    }
-    final identity = await _connect.identity();
-    if (identity == null || identity.installId != sealed.sealInstallId) {
-      return 'install_changed';
-    }
-    return null;
+    return switch (await _connect.sealStanding(
+      connectOrigin: sealed.connectOrigin,
+      sealInstallId: sealed.sealInstallId,
+    )) {
+      SealStanding.usable => null,
+      SealStanding.parked => 'connect_changed',
+      SealStanding.dead => 'install_changed',
+    };
   }
 }
 

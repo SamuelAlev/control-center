@@ -466,6 +466,34 @@ void main() {
       final comments = await b.client.listIssueComments(owner, repo, 1);
       expect(comments.single.body, 'b');
     });
+
+    test('comment-like lists follow every page, not just the first', () async {
+      // GitHub stops at 100 per request; a long conversation used to lose its
+      // tail on GitHub only.
+      var calls = 0;
+      final b = build((r) {
+        calls++;
+        final page = calls;
+        return httpTextResponse(
+          r,
+          [
+            {
+              'id': page,
+              'body': 'c$page',
+              'user': {'login': 'y'},
+            },
+          ],
+          headers: {if (page < 3) 'link': '<x>; rel="next"'},
+        );
+      });
+      final comments = await b.client.listIssueComments(owner, repo, 1);
+      expect(comments.map((c) => c.body), ['c1', 'c2', 'c3']);
+      expect(b.fake.requests, hasLength(3));
+      expect(
+        _header(b.fake.requests.last, 'Accept'),
+        'application/vnd.github.full+json',
+      );
+    });
   });
 
   group('GitHubPrClient check runs / workflow runs', () {

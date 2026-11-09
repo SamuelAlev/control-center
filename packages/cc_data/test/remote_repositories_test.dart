@@ -26,7 +26,6 @@ import 'package:cc_domain/features/orchestration/domain/entities/orchestration_p
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
@@ -39,7 +38,6 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submissio
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
-import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/teams/domain/entities/team.dart';
 import 'package:cc_domain/features/teams/domain/entities/team_member.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/project.dart';
@@ -80,7 +78,6 @@ class _FakeHost {
   final List<Map<String, dynamic>> sentCalendarMeetingOps = [];
   final List<Map<String, dynamic>> sentTicketLinks = [];
   final List<Map<String, dynamic>> sentPipelineRuns = [];
-  final List<Map<String, dynamic>> sentPipelineStepRuns = [];
   final List<Map<String, dynamic>> sentTemplates = [];
   final List<Map<String, dynamic>> sentTriggers = [];
   final List<Map<String, dynamic>> sentTeams = [];
@@ -503,23 +500,13 @@ class _FakeHost {
         _replyData(id, op, {
           'links': [_ticketLinkJson('tl1', args['ticket_id'] as String, 't2')],
         });
-      case 'pipeline_run.insertRun':
-      case 'pipeline_run.updateRun':
-        sentPipelineRuns.add(args);
-        _replyData(id, op, {'ok': true});
       case 'pipeline_run.getRun':
         _replyData(id, op, {
           'run': _pipelineRunJson(args['id'] as String, 'tmpl-1'),
         });
-      case 'pipeline_run.updateRunState':
-      case 'pipeline_run.incrementCost':
       case 'pipeline_run.deleteRun':
         sentPipelineRuns.add(args);
         _replyData(id, op, {'ok': true});
-      case 'pipeline_run.nonTerminalRuns':
-        _replyData(id, op, {
-          'runs': [_pipelineRunJson('pr1', 'tmpl-1')],
-        });
       case 'pipeline_run.activeForDedupKey':
         _replyData(id, op, {
           'run': _pipelineRunJson(
@@ -528,11 +515,6 @@ class _FakeHost {
             dedupKey: args['dedup_key'] as String?,
           ),
         });
-      case 'pipeline_run.insertStepRun':
-      case 'pipeline_run.updateStepRun':
-      case 'pipeline_run.deleteStepRun':
-        sentPipelineStepRuns.add(args);
-        _replyData(id, op, {'ok': true});
       case 'pipeline_run.stepRunsForPipeline':
         _replyData(id, op, {
           'step_runs': [
@@ -569,24 +551,13 @@ class _FakeHost {
         _replyData(id, op, {
           'triggers': [_triggerJson('pt1', 'ExternalPrDetected')],
         });
-      case 'pipeline_trigger.enabledForEvent':
-        _replyData(id, op, {
-          'triggers': [_triggerJson('pt1', args['event_type'] as String)],
-        });
       case 'pipeline_trigger.getById':
         _replyData(id, op, {
           'trigger': _triggerJson(args['id'] as String, 'ExternalPrDetected'),
         });
-      case 'pipeline_trigger.scheduled':
-        _replyData(id, op, {
-          'triggers': [
-            _triggerJson('pt-sched', 'schedule', cronExpression: 'every:60'),
-          ],
-        });
       case 'pipeline_trigger.insert':
       case 'pipeline_trigger.update':
       case 'pipeline_trigger.deleteById':
-      case 'pipeline_trigger.markFired':
         sentTriggers.add(args);
         _replyData(id, op, {'ok': true});
       case 'team.getTeam':
@@ -2485,9 +2456,6 @@ void main() {
     expect(run, isNotNull);
     expect(run!.templateId, 'tmpl-1');
 
-    final pending = await repo.nonTerminalRuns();
-    expect(pending.single.id, 'pr1');
-
     final active = await repo.activeForDedupKey(
       templateId: 'tmpl-1',
       workspaceId: 'ws1',
@@ -2503,45 +2471,9 @@ void main() {
     expect(step, isNotNull);
     expect(step!.pipelineRunId, 'pr1');
 
-    final newRun = PipelineRun(
-      id: 'pr9',
-      templateId: 'tmpl-1',
-      workspaceId: 'ws1',
-      status: PipelineRunStatus.completed,
-      startedAt: DateTime.utc(2026),
-    );
-    await repo.insertRun(newRun);
-    expect((host.sentPipelineRuns.last['run'] as Map)['id'], 'pr9');
-    expect((host.sentPipelineRuns.last['run'] as Map)['status'], 'completed');
-
-    await repo.updateRun(newRun);
-    expect((host.sentPipelineRuns.last['run'] as Map)['id'], 'pr9');
-
-    await repo.updateRunState('pr9', {'phase': 'done'});
-    expect(host.sentPipelineRuns.last['run_id'], 'pr9');
-    expect((host.sentPipelineRuns.last['state'] as Map)['phase'], 'done');
-
-    await repo.incrementCost('pr9', 12, 100);
-    expect(host.sentPipelineRuns.last['cents'], 12);
-    expect(host.sentPipelineRuns.last['tokens'], 100);
-
     await repo.deleteRun('ws1', 'pr9');
     expect(host.sentPipelineRuns.last['run_id'], 'pr9');
 
-    await repo.updateStepRun(
-      'ws1',
-      'sr9',
-      status: PipelineStepStatus.completed,
-      outputJson: '{"ok":true}',
-    );
-    expect(host.sentPipelineStepRuns.last['workspace_id'], 'ws1');
-    expect(host.sentPipelineStepRuns.last['step_run_id'], 'sr9');
-    expect(host.sentPipelineStepRuns.last['status'], 'completed');
-    expect(host.sentPipelineStepRuns.last['output_json'], '{"ok":true}');
-
-    await repo.deleteStepRun('ws1', 'sr9');
-    expect(host.sentPipelineStepRuns.last['workspace_id'], 'ws1');
-    expect(host.sentPipelineStepRuns.last['step_run_id'], 'sr9');
   });
 
   test(
@@ -2558,16 +2490,9 @@ void main() {
       final forWs = await repo.forWorkspace('ws1');
       expect(forWs.single.id, 'pt1');
 
-      final enabled = await repo.enabledForEvent('ExternalPrDetected');
-      expect(enabled.single.eventType, 'ExternalPrDetected');
-
       final one = await repo.getById('ws1', 'pt1');
       expect(one, isNotNull);
       expect(one!.eventType, 'ExternalPrDetected');
-
-      final scheduled = await repo.scheduled();
-      expect(scheduled.single.eventType, 'schedule');
-      expect(scheduled.single.intervalSeconds, 60);
 
       final trigger = PipelineTrigger(
         id: 'pt9',
@@ -2590,11 +2515,6 @@ void main() {
 
       await repo.update(trigger.copyWith(enabled: false));
       expect((host.sentTriggers.last['trigger'] as Map)['enabled'], false);
-
-      await repo.markFired('ws1', 'pt9', DateTime.utc(2026, 2));
-      expect(host.sentTriggers.last['workspace_id'], 'ws1');
-      expect(host.sentTriggers.last['id'], 'pt9');
-      expect(host.sentTriggers.last['when'], '2026-02-01T00:00:00.000Z');
 
       await repo.deleteById('ws1', 'pt9');
       expect(host.sentTriggers.last['workspace_id'], 'ws1');
@@ -3228,7 +3148,7 @@ void main() {
       prNumber: 7,
       mergeMethod: 'squash',
     );
-    expect(merged['merged'], isTrue);
+    expect(merged.merged, isTrue);
     expect(host.sentPrReviewOps.last['op'], 'pr_review.mergePullRequest');
     expect(host.sentPrReviewOps.last['merge_method'], 'squash');
 
@@ -3250,26 +3170,4 @@ void main() {
     expect(host.sentPrReviewOps.last['op'], 'pr_review.uploadContent');
   });
 
-  test('RpcForgeProviderFactory builds an RpcPrReviewRepository', () async {
-    final factory = RpcForgeProviderFactory(client);
-    expect(factory.forge, ForgeHost.github);
-    final repo = factory.create(
-      ForgeProviderContext(
-        repo: Repo(
-          id: 'r1',
-          name: 'cc',
-          path: '/tmp/cc',
-          remoteOwner: 'acme',
-          remoteName: 'cc',
-          createdAt: DateTime.utc(2026),
-          updatedAt: DateTime.utc(2026),
-        ),
-        workspaceId: 'ws1',
-      ),
-    );
-    expect(repo, isA<RpcPrReviewRepository>());
-    // The created repository resolves over the same client (owner/repo carried).
-    final pr = await repo.watchPullRequest(7).first;
-    expect(pr?.number, 7);
-  });
 }

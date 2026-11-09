@@ -769,7 +769,7 @@ void main() {
       final msg = messaging.sentMessages.single;
       expect(msg.spaceId, 'ch-1');
       expect(msg.senderId, 'system');
-      expect(msg.senderType, 'agent');
+      expect(msg.senderType, 'system');
       expect(msg.messageType, 'system');
       expect(msg.content, '@SeniorFlutter you are on review duty as flutter.');
     });
@@ -1777,7 +1777,8 @@ void main() {
         ],
       );
 
-      expect(messaging.sentMessages.single.senderType, 'agent');
+      // The server's own notice, not an agent's turn.
+      expect(messaging.sentMessages.single.senderType, 'system');
     });
 
     test('message content formats agent name correctly', () async {

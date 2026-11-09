@@ -7,13 +7,10 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// A [PipelineEnginePort] backed by the RPC client — the thin-client run-control
 /// path (start / cancel / retry a run, kill a step).
 ///
-/// Every action runs SERVER-SIDE: this port forwards to the host's `pipeline.*`
-/// ops (the live `PipelineEngine` running on a host that constructs it — the
-/// desktop in-process host). Live run/step state streams back via the existing
-/// `pipeline_run.watch*` subscriptions; no streaming surface is needed here.
-/// Against a HEADLESS server (which omits the `pipeline.*` ops) the calls fail
-/// loudly — the web client then surfaces an honest "pipelines run on the server
-/// host" state.
+/// Every action runs SERVER-SIDE: this port forwards to the `pipeline.*` ops
+/// over the `PipelineEngine` the connected `cc_server` runs. Live run/step state
+/// streams back via the existing `pipeline_run.watch*` subscriptions; no
+/// streaming surface is needed here.
 ///
 /// [start] and [killStep] name their workspace on the wire; [cancel] / [retry]
 /// carry only a run id, which routes to its own workspace server-side.

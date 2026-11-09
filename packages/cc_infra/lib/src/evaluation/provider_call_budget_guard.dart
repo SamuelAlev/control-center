@@ -6,7 +6,7 @@ import 'package:cc_harness/provider.dart';
 /// [canBegin] reads completed, priced call records. A concurrent request is
 /// refused until the one in-flight request has finished and been accounted.
 class ProviderCallBudgetGuard
-    implements LlmProviderPort, LlmDeferredToolSupport {
+    implements LlmProviderPort {
   /// Wraps [delegate] and checks [canBegin] before each physical model call.
   ProviderCallBudgetGuard(this.delegate, {required this.canBegin});
 
@@ -28,7 +28,7 @@ class ProviderCallBudgetGuard
 
   @override
   bool supportsDeferredTools({String? model}) =>
-      providerSupportsDeferredTools(delegate, model: model);
+      delegate.supportsDeferredTools(model: model);
 
   @override
   Stream<LlmEvent> complete({

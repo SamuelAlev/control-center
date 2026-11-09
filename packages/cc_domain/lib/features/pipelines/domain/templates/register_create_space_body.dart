@@ -48,7 +48,7 @@ void registerCreateSpaceBody(
 }) {
   registry.registerBody(BuiltInBodyKeys.createSpace, (ctx) async {
     final workspaceId = ctx.workspaceId;
-    final def = await templateRepository.getById(workspaceId, ctx.templateId);
+    final def = await ctx.pinnedDefinition(templateRepository);
     final config = def?.step(ctx.stepId)?.config;
     if (config == null) {
       return StepResult.failed(

@@ -8,7 +8,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Action-guardrail policy repository (PRD 24), over RPC on both desktop and
-/// web — the host (in-process on desktop, remote on web) owns the
+/// web — the connected `cc_server` owns the
 /// `action_policy_rules` table.
 final actionPolicyRepositoryProvider = Provider<ActionPolicyRepository>(
   (ref) => RpcActionPolicyRepository(ref.watch(rpcClientProvider)),

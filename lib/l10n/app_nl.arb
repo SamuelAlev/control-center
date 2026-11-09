@@ -1,4 +1,6 @@
 {
+  "steeringForceSendFailed": "Kon dat nu niet versturen: {error}",
+  "questionAnswerNotDelivered": "Je antwoord is niet afgeleverd. De vraag is misschien al beantwoord, of de agent wacht niet meer.",
   "succeeded": "Geslaagd",
   "agentRunRetryLabel": "Nieuwe poging #{number} · {time}",
   "agentRunStarting": "Wordt gestart · {time}",
@@ -948,7 +950,6 @@
   "addressBarHint": "Voer een URL in",
   "addFromFile": "Uit bestand toevoegen",
   "addGif": "GIF toevoegen",
-  "addGithubRepoPrompt": "Voeg minimaal één GitHub-repository toe om pull requests te zien",
   "addLocalCheckoutDescription": "Voeg een lokale checkout toe om er vanuit deze werkruimte op te richten.",
   "@addLocalCheckoutDescription": {
     "description": "Add a local checkout to start targeting it from this workspace."
@@ -3323,13 +3324,9 @@
   "@pipelineStepDurationLabel": {
     "description": "Step detail label: run duration"
   },
-  "pipelineStepBranch": "Tak",
   "pipelineStepViewConversation": "Gesprek tonen",
   "@pipelineStepViewConversation": {
     "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
-  },
-  "@pipelineStepBranch": {
-    "description": "Step detail label: parallel branch index"
   },
   "pipelineStepError": "Fout",
   "@pipelineStepError": {
@@ -3718,8 +3715,6 @@
   "agentQuestionTimeLeft": "Resterende tijd om te antwoorden",
   "agentQuestionFreeformOptionHint": "Beschrijf het in je eigen woorden…",
   "reviewRequested": "Review aangevraagd",
-  "connectGitHubHint": "Log in bij GitHub in Instellingen → Werkruimte → Profiel en identiteit → Codehosting",
-  "connectGitHubToLoadPrs": "Verbind GitHub om pull requests te laden",
   "noRepositoriesConfigured": "Geen repository's geconfigureerd",
   "openedAgo": "Geopend {age}",
   "prTimelineOpened": "{author} heeft deze pull request geopend",
@@ -3883,8 +3878,6 @@
   "openPullRequest": "Een pull request openen",
   "composePrSubtitle": "Vanaf een branch die je hebt gepusht — zonder agents of tickets",
   "createAsDraft": "Als concept aanmaken",
-  "composePrNoRepo": "Geen GitHub-repository geselecteerd",
-  "composePrNoRepoHint": "Selecteer een werkruimte met een aan GitHub gekoppelde repository om een pull request te openen.",
   "composePrPickBranches": "Kies een basis- en vergelijkingsbranch om de wijzigingen te bekijken.",
   "composePrNothingToCompare": "Er zijn geen wijzigingen tussen deze branches.",
   "repository": "Repository",
@@ -8283,13 +8276,18 @@
   "signInErrorAccessDenied": "Inloggen bij {provider} is geannuleerd of geweigerd.",
   "signInErrorScopeMismatch": "{provider} heeft minder rechten gegeven dan Control Center nodig heeft. Log opnieuw in en keur alle rechten goed.",
   "signInErrorInvalidCode": "Die code hoort niet bij deze inlogpoging. Controleer hem en probeer het opnieuw.",
+  "signInErrorTooManyCodes": "Te veel onjuiste codes. Start het inloggen opnieuw.",
+  "signInErrorStaleRequest": "Deze inlogpoging is niet meer geldig. Start hem opnieuw.",
+  "signInErrorInvalidRequest": "De server kon dit inlogverzoek niet lezen. Start het opnieuw.",
+  "signInErrorRateLimited": "Er zijn nu te veel inlogpogingen. Wacht een minuut en probeer het opnieuw.",
+  "signInErrorStoreFailed": "{provider} heeft het inloggen geaccepteerd, maar de server kon het niet opslaan. Probeer het opnieuw.",
   "signInErrorProviderUnavailable": "{provider} reageert op dit moment niet. Probeer het over een paar minuten opnieuw.",
   "signInErrorExchangeFailed": "{provider} heeft het inloggen geaccepteerd, maar de server kon het niet afronden. Probeer het opnieuw.",
   "signInErrorMisconfigured": "De {provider}-app van deze server is verkeerd ingesteld. Vraag de servereigenaar Instellingen → Server → Single sign-on te controleren.",
   "signInErrorNeedsSignIn": "Je login bij {provider} is verlopen. Log opnieuw in om als jezelf verder te werken.",
   "signInErrorNotInstalled": "De {provider}-app is niet geïnstalleerd waar dit hem nodig heeft. Installeer hem en probeer het opnieuw.",
   "signInErrorInstallationBoundElsewhere": "Deze installatie van de GitHub-app is al geautoriseerd voor een andere Control Center-server.",
-  "signInErrorTeamBoundElsewhere": "Deze Linear-workspace is al verbonden met een andere Control Center-server.",
+  "signInErrorTeamBoundElsewhere": "Deze Slack-workspace is al verbonden met een andere Control Center-server.",
   "signInErrorSuspended": "De {provider}-app is opgeschort. Hef de opschorting op bij {provider} en probeer het opnieuw.",
   "signInErrorInstallBlocked": "Control Center Connect heeft deze server geblokkeerd. Neem contact op met wie je Connect-server beheert.",
   "signInErrorUnknown": "Inloggen is mislukt om een reden die de server niet heeft gemeld. Probeer het opnieuw.",
@@ -8430,5 +8428,13 @@
   "workspaceProviderAppSwitchTitle": "De app van {provider} wisselen?",
   "workspaceProviderAppSwitchToOwnBody": "Iedereen die in deze werkruimte via de app van deze server met {provider} is verbonden, moet zich opnieuw aanmelden met de app van de werkruimte.",
   "workspaceProviderAppSwitchToServerBody": "Hiermee worden de {provider}-inloggegevens van de werkruimte verwijderd. Iedereen die via de app van de werkruimte is verbonden, moet zich opnieuw aanmelden.",
-  "workspaceProviderAppSwitchAction": "App wisselen"
+  "workspaceProviderAppSwitchAction": "App wisselen",
+  "openOnForge": "Openen op {forge}",
+  "prFilesTruncatedNotice": "De eerste {count} bestanden worden getoond. {forge} toont de rest niet.",
+  "connectForgeToLoadPrs": "Koppel een codehost om pull requests te laden",
+  "connectForgeHint": "Koppel GitHub, GitLab of Bitbucket in Instellingen → Werkruimte → Profiel en identiteit → Codehosting",
+  "addForgeRepoPrompt": "Voeg minstens één repository op GitHub, GitLab of Bitbucket toe om pull requests te zien",
+  "composePrNoForgeRepo": "Geen gehoste repository geselecteerd",
+  "composePrNoForgeRepoHint": "Selecteer een werkruimte met een repository op GitHub, GitLab of Bitbucket om een pull request te openen.",
+  "composePrForgeNotConnected": "Koppel {forge} om in deze repository een pull request te openen"
 }

@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/enriched_pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
@@ -143,7 +144,7 @@ void main() {
       expect(result.priorityReviews, isEmpty);
     });
 
-    test('filters priority reviews by currentUserLogin', () {
+    test('filters priority reviews by the viewer login', () {
       final repo = _repo('test-repo');
       final mine = _pr(
         number: 10,
@@ -165,7 +166,7 @@ void main() {
         byRepo: [
           RepoPullRequests(repo: repo, prs: [mine, notMine]),
         ],
-        currentUserLogin: 'me',
+        viewerLoginByForge: const {ForgeHost.github: 'me'},
         now: now,
       );
 
@@ -173,7 +174,7 @@ void main() {
       expect(result.priorityReviews.first.pr.number, 10);
     });
 
-    test('matches currentUserLogin case-insensitively', () {
+    test('matches the viewer login case-insensitively', () {
       final repo = _repo('test-repo');
       final pr = _pr(
         number: 12,
@@ -186,11 +187,43 @@ void main() {
         byRepo: [
           RepoPullRequests(repo: repo, prs: [pr]),
         ],
-        currentUserLogin: 'samuelalev',
+        viewerLoginByForge: const {ForgeHost.github: 'samuelalev'},
         now: now,
       );
 
       expect(result.priorityReviews.length, 1);
+    });
+
+    test('matches against the login on each repo\'s own forge', () {
+      // The same human is `me` on GitHub and `me-gl` on GitLab; the GitHub
+      // login used to be compared against GitLab reviewers too.
+      final gitlab = _repo('gl-repo').copyWith(forge: ForgeHost.gitlab);
+      final pr = _pr(
+        number: 13,
+        title: 'GitLab MR',
+        createdAt: DateTime(2026, 1, 1),
+        requestedReviewers: const [PrUser(login: 'me-gl', avatarUrl: '')],
+      );
+      final result = useCase.execute(
+        byRepo: [
+          RepoPullRequests(repo: gitlab, prs: [pr]),
+        ],
+        viewerLoginByForge: const {
+          ForgeHost.github: 'me-gl-not',
+          ForgeHost.gitlab: 'me-gl',
+        },
+        now: now,
+      );
+      expect(result.priorityReviews.single.pr.number, 13);
+
+      final unconnected = useCase.execute(
+        byRepo: [
+          RepoPullRequests(repo: gitlab, prs: [pr]),
+        ],
+        viewerLoginByForge: const {ForgeHost.github: 'me-gl'},
+        now: now,
+      );
+      expect(unconnected.priorityReviews, isEmpty);
     });
 
     test('returns byRepo as-is in result', () {

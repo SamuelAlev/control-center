@@ -122,6 +122,8 @@ class TranscriptFolder {
         _appendText(event, reasoning: false);
       case ThinkingEvent():
         _appendText(event, reasoning: true);
+      case TextRetractedEvent(:final text, :final thinking):
+        _retract(text: text, thinking: thinking, now: event.timestamp);
       case ToolCallEvent():
         _openTool(event);
       case ToolResultEvent():
@@ -199,6 +201,64 @@ class TranscriptFolder {
       // whole accumulated text every token (quadratic over a long answer).
       _openTextBuf.write(extracted);
       _apply(SegmentDelta(idx, extracted), structural: false);
+    }
+  }
+
+  /// Withdraws [text] / [thinking] from the tail of the transcript — the deltas
+  /// of a model attempt the harness abandoned and re-issued, which never
+  /// entered the model's history and must not stay in the user's view or the
+  /// persisted transcript either.
+  ///
+  /// Walks back from the last segment trimming text segments by [text]'s
+  /// length and reasoning segments by [thinking]'s, and stops at the first
+  /// segment of any other kind: an attempt's deltas are contiguous at the tail
+  /// (tool calls are only emitted once an attempt succeeds). Trimmed segments
+  /// are re-reported through [SegmentClosed] with the shortened snapshot and,
+  /// like the argument-echo guard, kept (possibly blank) so segment indexes
+  /// stay stable for the live registry/relay.
+  void _retract({
+    required String text,
+    required String thinking,
+    required DateTime now,
+  }) {
+    var textLeft = text.length;
+    var thinkingLeft = thinking.length;
+    if (textLeft == 0 && thinkingLeft == 0) {
+      return;
+    }
+    closeOpenText(now);
+    _clearArgEchoCandidate();
+    for (var i = _segments.length - 1; i >= 0; i--) {
+      if (textLeft == 0 && thinkingLeft == 0) {
+        break;
+      }
+      final seg = _segments[i];
+      final TranscriptSegment trimmed;
+      final int removed;
+      switch (seg) {
+        case TextSegment(text: final body):
+          removed = textLeft < body.length ? textLeft : body.length;
+          textLeft -= removed;
+          trimmed = seg.copyWith(
+            text: body.substring(0, body.length - removed),
+          );
+        case ReasoningSegment(text: final body):
+          removed = thinkingLeft < body.length ? thinkingLeft : body.length;
+          thinkingLeft -= removed;
+          trimmed = seg.copyWith(
+            text: body.substring(0, body.length - removed),
+          );
+        default:
+          return;
+      }
+      if (removed == 0) {
+        continue;
+      }
+      _segments[i] = trimmed;
+      _transcriptChars = _transcriptChars - removed < 0
+          ? 0
+          : _transcriptChars - removed;
+      _apply(SegmentClosed(i, trimmed), structural: true);
     }
   }
 

@@ -9,6 +9,15 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'No se pudo enviar ahora: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Tu respuesta no se entregó. Es posible que ya se haya respondido o que el agente haya dejado de esperar.';
+
+  @override
   String get succeeded => 'Completado';
 
   @override
@@ -2627,10 +2636,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get addGif => 'Añadir GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Añade al menos un repositorio de GitHub para ver pull requests';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5961,9 +5966,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Duración';
 
   @override
-  String get pipelineStepBranch => 'Rama';
-
-  @override
   String get pipelineStepViewConversation => 'Ver conversación';
 
   @override
@@ -7060,14 +7062,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reviewRequested => 'Revisión solicitada';
 
   @override
-  String get connectGitHubHint =>
-      'Inicia sesión en GitHub en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Conecta GitHub para cargar las pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'No hay repositorios configurados';
 
   @override
@@ -7727,13 +7721,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Crear como borrador';
-
-  @override
-  String get composePrNoRepo => 'Ningún repositorio de GitHub seleccionado';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Selecciona un espacio de trabajo con un repositorio vinculado a GitHub para abrir una pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16929,6 +16916,27 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ese código no coincide con este inicio de sesión. Revísalo e inténtalo de nuevo.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Demasiados códigos incorrectos. Vuelve a iniciar el inicio de sesión.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Este inicio de sesión ya no es válido. Vuelve a empezarlo.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'El servidor no pudo leer esta solicitud de inicio de sesión. Vuelve a empezarla.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Demasiados intentos de inicio de sesión ahora mismo. Espera un minuto e inténtalo de nuevo.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider aceptó el inicio de sesión, pero el servidor no pudo guardarlo. Inténtalo de nuevo.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider no responde ahora mismo. Inténtalo de nuevo en unos minutos.';
   }
@@ -16959,7 +16967,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Este espacio de Linear ya está conectado a otro servidor de Control Center.';
+      'Este espacio de Slack ya está conectado a otro servidor de Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17395,6 +17403,41 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Cambiar aplicación';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Abrir en $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Se muestran los primeros $count archivos. $forge no lista el resto.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Conecta un servicio de alojamiento de código para cargar las pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Conecta GitHub, GitLab o Bitbucket en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Añade al menos un repositorio de GitHub, GitLab o Bitbucket para ver pull requests';
+
+  @override
+  String get composePrNoForgeRepo =>
+      'No hay ningún repositorio alojado seleccionado';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Selecciona un espacio de trabajo con un repositorio en GitHub, GitLab o Bitbucket para abrir una pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Conecta $forge para abrir una pull request en este repositorio';
+  }
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

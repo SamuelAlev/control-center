@@ -17,6 +17,16 @@ class CcServer {
   /// gigabytes of host RAM and a disk overlay that nothing will ever reclaim.
   RigService? _rigs;
 
+  /// The agent dispatch adapter: every live agent run and its warm sandbox.
+  /// Shut down on [shutdown] before anything those runs write to closes —
+  /// without it a stopped server left agent children running unsupervised.
+  SandboxedAgentDispatchAdapter? _agentDispatch;
+
+  /// The OS sandbox's per-session proxies, bridges and denial monitor, reset
+  /// on [shutdown] once nothing sandboxed is left running.
+  NativeSandboxAdapter? _nativeSandbox;
+  SandboxManager? _sandboxManager;
+
   /// Periodic approval-escalation sweeper. Stopped on [shutdown] — it had a
   /// `stop()` with no caller, so its timer outlived the "stopped" server (the
   /// headless binary hides this behind `exit(0)`; the DESKTOP embeds
@@ -196,7 +206,6 @@ class CcServer {
   /// Raises "an agent is waiting on you" from pending approvals, parked runs
   /// and questions. Disposed with the feed recorder it feeds.
   AgentAwaitingInputPublisher? _agentAwaitingInput;
-  AgentPresenceSynthesizer? _agentPresenceSynthesizer;
 
   /// Keeps every checkout's code-graph partition current (initial index on
   /// worktree provision, incremental reindex on any file save / PR sync).
@@ -300,6 +309,15 @@ class CcServer {
       // A fresh pool slot can take longer than the default 3-second step cap.
       timeout: const Duration(seconds: 10),
     );
+    // Agent runs next, while everything they write to is still open: each run
+    // is cancelled, its child killed (SIGTERM, then SIGKILL after 3s), its
+    // credentials revoked and its run log closed, then every warm sandbox is
+    // destroyed. Runs stop concurrently, so the cap covers one kill grace.
+    await guard(
+      'agentRuns',
+      () async => _agentDispatch?.shutdown(),
+      timeout: const Duration(seconds: 10),
+    );
     await step('approvals', () async {
       _pendingConfirmations?.dispose();
       _approvalEscalation?.stop();
@@ -347,10 +365,7 @@ class CcServer {
       await _diarizationModelControl?.dispose();
     });
     await step('networking', () async => _networkRuntime?.stop());
-    await step('presence', () async {
-      await _agentPresenceSynthesizer?.stop();
-      _presenceHub?.dispose();
-    });
+    await step('presence', () async => _presenceHub?.dispose());
     await step('dataSync', () async {
       await _checkerListener?.stop();
       _worktreeGcListener?.dispose();
@@ -380,6 +395,12 @@ class CcServer {
     // holds gigabytes of RAM and a disk overlay, and nothing left running
     // knows it exists — so unlike a PTY, leaking one is expensive and silent.
     await step('rigs', () async => _rigs?.disposeAll());
+    // Last of the sandboxed work gone: release the sandbox's per-session
+    // proxies and bridges and stop the host-wide denial monitor.
+    await guard('sandbox', () async {
+      await _nativeSandbox?.dispose();
+      await _sandboxManager?.reset();
+    });
 
     // Let the final progress frames flush over the wire before the socket
     // closes — `rpc.stop()` force-closes the listener and can drop in-flight

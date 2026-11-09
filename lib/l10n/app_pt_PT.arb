@@ -462,8 +462,6 @@
   "saveArticle": "Guardar artigo",
   "removeFromSaved": "Remover dos guardados",
   "agentQuestionFreeformHint": "Introduza sua resposta…",
-  "connectGitHubHint": "Entre no GitHub em Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código",
-  "connectGitHubToLoadPrs": "Ligue o GitHub para carregar os pull requests",
   "prTimelineRemovedReviewRequest": "{actor} removeu o pedido de revisão para {reviewers}",
   "@prTimelineRemovedReviewRequest": {
     "description": "Activity feed: review request withdrawn event",
@@ -1076,7 +1074,7 @@
   "signInSucceededNoAccount": "Ligado ao {provider}",
   "signInErrorMisconfigured": "A app do {provider} deste servidor está mal configurada. Peça ao proprietário do servidor para verificar Definições → Servidor → Início de sessão único.",
   "signInErrorNeedsSignIn": "A sua sessão no {provider} expirou. Inicie sessão novamente para continuar a trabalhar em seu nome.",
-  "signInErrorTeamBoundElsewhere": "Este espaço do Linear já está ligado a outro servidor do Control Center.",
+  "signInErrorTeamBoundElsewhere": "Este espaço do Slack já está ligado a outro servidor do Control Center.",
   "signInRequiredBody": "Isto é executado em seu nome no {provider} e não tem sessão iniciada. Inicie sessão e tente novamente.",
   "signInRequiredBanner": "Não tem sessão iniciada no {provider}. Tudo o que faz aqui é executado em seu nome, por isso inicie sessão primeiro.",
   "linearAutomationHint": "Permite que os agentes e pipelines deste espaço de trabalho atuem no Linear como uma app e não como uma pessoa. Os administradores do espaço fazem a ligação.",
@@ -1105,5 +1103,7 @@
   "chatTicketDraftsDescription": "Um rascunho só se torna um ticket do backlog quando o cria aqui. Os rascunhos deixados de lado são eliminados ao fim de um dia.",
   "nodeConfigScriptHelp": "Executado com bash -c na sandbox do sistema operativo. GH_TOKEN e GITHUB_TOKEN contêm um token só de leitura para o repositório associado. Os placeholders são colocados entre aspas e substituídos antes da execução.",
   "signInErrorNotAdmin": "Só um administrador ou proprietário do espaço de trabalho do Slack o pode ligar ao Control Center pela primeira vez. Peça a um deles que adicione a app.",
-  "connectCustomUrlLoopbackHint": "O HTTP simples só chega a um Connect neste computador. Use HTTPS para tudo o que estiver numa rede."
+  "connectCustomUrlLoopbackHint": "O HTTP simples só chega a um Connect neste computador. Use HTTPS para tudo o que estiver numa rede.",
+  "connectForgeToLoadPrs": "Ligue um serviço de alojamento de código para carregar os pull requests",
+  "connectForgeHint": "Ligue o GitHub, GitLab ou Bitbucket em Definições → Espaço de trabalho → Perfil e identidade → Alojamento de código"
 }

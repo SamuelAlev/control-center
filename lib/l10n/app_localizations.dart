@@ -156,6 +156,18 @@ abstract class AppLocalizations {
     Locale('zh', 'TW'),
   ];
 
+  /// Toast when "Stop and send" on a queued steering card was refused or failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send that now: {error}'**
+  String steeringForceSendFailed(String error);
+
+  /// Shown under a question form when the server refused the answer (already answered elsewhere or the agent stopped waiting).
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer wasn\'t delivered. It may already be answered, or the agent stopped waiting.'**
+  String get questionAnswerNotDelivered;
+
   /// Run status: the run finished successfully (green status dot)
   ///
   /// In en, this message translates to:
@@ -4583,12 +4595,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add GIF'**
   String get addGif;
-
-  /// No description provided for @addGithubRepoPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Add at least one GitHub repository to see pull requests'**
-  String get addGithubRepoPrompt;
 
   /// Add a local checkout to start targeting it from this workspace.
   ///
@@ -10272,12 +10278,6 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get pipelineStepDurationLabel;
 
-  /// Step detail label: parallel branch index
-  ///
-  /// In en, this message translates to:
-  /// **'Branch'**
-  String get pipelineStepBranch;
-
   /// Button opening the hidden pipeline-spawned conversation from the step detail
   ///
   /// In en, this message translates to:
@@ -12186,18 +12186,6 @@ abstract class AppLocalizations {
   /// **'Review requested'**
   String get reviewRequested;
 
-  /// No description provided for @connectGitHubHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in to GitHub in Settings → Workspace → Profile & identity → Code hosting'**
-  String get connectGitHubHint;
-
-  /// No description provided for @connectGitHubToLoadPrs.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect GitHub to load pull requests'**
-  String get connectGitHubToLoadPrs;
-
   /// No description provided for @noRepositoriesConfigured.
   ///
   /// In en, this message translates to:
@@ -13203,18 +13191,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create as draft'**
   String get createAsDraft;
-
-  /// No description provided for @composePrNoRepo.
-  ///
-  /// In en, this message translates to:
-  /// **'No GitHub repository selected'**
-  String get composePrNoRepo;
-
-  /// No description provided for @composePrNoRepoHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a workspace with a GitHub-linked repository to open a pull request.'**
-  String get composePrNoRepoHint;
 
   /// No description provided for @composePrPickBranches.
   ///
@@ -28325,6 +28301,36 @@ abstract class AppLocalizations {
   /// **'That code doesn\'t match this sign-in. Check it and try again.'**
   String get signInErrorInvalidCode;
 
+  /// Sign-in failure: too many wrong confirmation codes ended the attempt
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong codes. Start the sign-in again.'**
+  String get signInErrorTooManyCodes;
+
+  /// Sign-in failure: the server no longer knows this attempt
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in is no longer valid. Start it again.'**
+  String get signInErrorStaleRequest;
+
+  /// Sign-in failure: the server could not read the request
+  ///
+  /// In en, this message translates to:
+  /// **'The server couldn\'t read this sign-in request. Start it again.'**
+  String get signInErrorInvalidRequest;
+
+  /// Sign-in failure: too many sign-in attempts right now
+  ///
+  /// In en, this message translates to:
+  /// **'Too many sign-in attempts right now. Wait a minute, then try again.'**
+  String get signInErrorRateLimited;
+
+  /// Sign-in failure: the grant came back but the server could not store it
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} accepted the sign-in, but the server couldn\'t save it. Try again.'**
+  String signInErrorStoreFailed(String provider);
+
   /// Sign-in failure: the provider is down
   ///
   /// In en, this message translates to:
@@ -28364,7 +28370,7 @@ abstract class AppLocalizations {
   /// Sign-in failure: the Linear team belongs to another server
   ///
   /// In en, this message translates to:
-  /// **'This Linear workspace is already connected to another Control Center server.'**
+  /// **'This Slack workspace is already connected to another Control Center server.'**
   String get signInErrorTeamBoundElsewhere;
 
   /// Sign-in failure: the person who approved the first Slack connection is not a workspace admin or owner
@@ -29062,6 +29068,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch app'**
   String get workspaceProviderAppSwitchAction;
+
+  /// Menu item that opens the pull request on its code host's website
+  ///
+  /// In en, this message translates to:
+  /// **'Open on {forge}'**
+  String openOnForge(String forge);
+
+  /// Warning above a pull request's file list when the code host capped its file listing, so only part of the change is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {count} files. {forge} doesn\'t list the rest.'**
+  String prFilesTruncatedNotice(String forge, int count);
+
+  /// Empty state when no code host (GitHub, GitLab, Bitbucket) is connected
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a code host to load pull requests'**
+  String get connectForgeToLoadPrs;
+
+  /// Hint under the empty state pointing at the code hosting settings
+  ///
+  /// In en, this message translates to:
+  /// **'Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting'**
+  String get connectForgeHint;
+
+  /// Hint when the workspace has no repository on a supported code host
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one repository on GitHub, GitLab or Bitbucket to see pull requests'**
+  String get addForgeRepoPrompt;
+
+  /// Compose screen empty state: no repository on a code host is selected
+  ///
+  /// In en, this message translates to:
+  /// **'No code-hosted repository selected'**
+  String get composePrNoForgeRepo;
+
+  /// Compose screen hint explaining which repositories can open a pull request
+  ///
+  /// In en, this message translates to:
+  /// **'Select a workspace with a repository on GitHub, GitLab or Bitbucket to open a pull request.'**
+  String get composePrNoForgeRepoHint;
+
+  /// Compose screen empty state when the repository's code host is not connected
+  ///
+  /// In en, this message translates to:
+  /// **'Connect {forge} to open a pull request in this repository'**
+  String composePrForgeNotConnected(String forge);
 }
 
 class _AppLocalizationsDelegate

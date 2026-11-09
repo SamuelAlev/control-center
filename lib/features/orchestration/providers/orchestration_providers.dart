@@ -8,11 +8,9 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The [OrchestrationRepository] the UI reads through — flipped to the cc_data
-/// RpcX adapter over the desktop's in-process RPC server (the composition
-/// flip). Server-side use-cases/listeners/bodies and the MCP `propose_*` tool
-/// use the Dao-backed `daoOrchestrationRepositoryProvider` (`di/providers.dart`)
-/// directly, to stay on the DB and avoid cycling through `rpcClientProvider`.
+/// The [OrchestrationRepository] the UI reads through: the cc_data RpcX
+/// adapter over the connected `cc_server`, which runs the orchestration
+/// use-cases, listeners and the MCP `propose_*` tool itself.
 final orchestrationRepositoryProvider = Provider<OrchestrationRepository>(
   (ref) => RpcOrchestrationRepository(ref.watch(rpcClientProvider)),
 );

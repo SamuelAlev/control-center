@@ -492,6 +492,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get teammate => 'Coleg';
 
   @override
+  String get systemSender => 'Sistem';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -646,12 +649,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub sau conectează un token cu acces.';
+    return 'Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub sau conectează un token cu acces.';
+    return 'Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub.';
   }
 
   @override
@@ -2612,6 +2615,22 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Prea multe coduri greșite. Pornește din nou autentificarea.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Serviciul de autentificare nu răspunde acum. Așteaptă un minut, apoi încearcă din nou.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Autentificarea a fost refuzată. Pornește-o din nou și aprobă toate permisiunile cerute.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Autentificarea a reușit, dar serverul nu a putut-o salva. Încearcă din nou.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

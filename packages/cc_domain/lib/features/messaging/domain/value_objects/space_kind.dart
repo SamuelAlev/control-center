@@ -42,6 +42,12 @@ enum SpaceKind {
   /// Whether this is an agent↔agent peer space (muted-by-default, sectioned).
   bool get isAgentPeer => this == SpaceKind.agentPeer;
 
+  /// Whether only agents converse here, so the space never raises a human
+  /// unread badge or OS notification (a human `@mention` still notifies).
+  /// The single predicate both the notification wire and the sidebar's
+  /// unread signal read.
+  bool get isAgentOnly => this == SpaceKind.agentPeer;
+
   /// Whether this is a PR space (sidebar-hidden until messaged).
   bool get isPr => this == SpaceKind.pr;
 

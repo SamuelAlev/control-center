@@ -436,7 +436,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 22;
+  static const int currentSchemaVersion = 23;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -790,7 +790,50 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         }
       }
     }),
+    // v22 → v23: a run pins the graph it started with. Nullable, not
+    // backfilled: an older run never recorded which graph it ran, and a null
+    // snapshot is what tells the engine to fall back to the live template.
+    // Also: server-authored messages get their own sender type, the wait-id
+    // lookup gets an index, the never-written step branch index goes and
+    // projection runs get an explicit flag.
+    MigrationStep(22, 23, (m) async {
+      await _addColumnIfMissing(
+        m,
+        pipelineRunsTable,
+        pipelineRunsTable.templateSnapshotJson,
+      );
+      // Rows written before `SenderType.system` carried the server's own
+      // notices as `agent` from sender `system`.
+      await customStatement(
+        "UPDATE conversation_messages SET sender_type = 'system' "
+        "WHERE sender_type = 'agent' AND sender_id = 'system'",
+      );
+      await _createNotificationFeedIndexes();
+      await _dropColumnIfPresent('pipeline_step_runs', 'branch_index');
+      // Projection runs are flagged instead of recognised by their trigger
+      // markers. Backfilled from those markers (the code-graph watcher's and
+      // the skill scans'), the only rows that ever carried them.
+      await _addColumnIfMissing(
+        m,
+        pipelineRunsTable,
+        pipelineRunsTable.isProjection,
+      );
+      await customStatement(
+        'UPDATE pipeline_runs SET is_projection = 1 WHERE trigger_event_type '
+        "IN ('CodeGraphWatch', 'SkillAnalysisManual', 'SkillAnalysisUpdate')",
+      );
+    }),
   ];
+
+  /// `ALTER TABLE … DROP COLUMN` when [column] is still there. Re-run safe:
+  /// dropping a missing column throws and would keep the workspace from
+  /// opening.
+  Future<void> _dropColumnIfPresent(String table, String column) async {
+    final columns = await customSelect('PRAGMA table_info($table)').get();
+    if (columns.any((row) => row.read<String>('name') == column)) {
+      await customStatement('ALTER TABLE $table DROP COLUMN $column');
+    }
+  }
 
   Future<bool> _reposHasColumn(String name) async {
     final columns = await customSelect('PRAGMA table_info(repos)').get();
@@ -1310,6 +1353,7 @@ END
   /// (space/conversation message history, agent run logs, PRs). `IF NOT EXISTS`.
   Future<void> _createHotPathIndexes() async {
     await _createConversationActivityIndexes();
+    await _createNotificationFeedIndexes();
     await _createConversationCharIndex();
     await _createContextReadingIndex();
     await customStatement(
@@ -1368,6 +1412,22 @@ END
       'CREATE INDEX IF NOT EXISTS idx_code_edges_unresolved '
       'ON code_edges (workspace_id, repo_id, checkout_id) '
       'WHERE target_symbol_id IS NULL',
+    );
+  }
+
+  /// Expression index for [NotificationFeedDao.resolveAgentWait].
+  ///
+  /// That UPDATE runs inside the serialized feed write chain whenever a wait
+  /// ends. Without the index it decoded the JSON of every awaiting-input row
+  /// to find the one carrying the wait id. Partial on `json_valid` (the same
+  /// guard the UPDATE carries, so the planner can use it) so a malformed row
+  /// can never fail an insert by making `json_extract` throw.
+  Future<void> _createNotificationFeedIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_notification_feed_wait_id '
+      'ON notification_feed ('
+      "json_extract(params_json, '\$.${NotificationFeedDao.waitIdKey}')"
+      ') WHERE json_valid(params_json)',
     );
   }
 

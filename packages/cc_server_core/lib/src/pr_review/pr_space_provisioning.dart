@@ -1,35 +1,53 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 
 /// Blocks until the (event-driven, idempotent) provisioner has finished a PR
 /// space's checkout at the PR head.
 ///
-/// An already-ready space returns on the first poll. Throws rather than
-/// returning on failure or timeout: a caller that continued would hand an
-/// agent, or an editor, an empty `repos/` and call it a review.
+/// An already-ready space returns at once; otherwise this waits on the
+/// workspace's space stream (no polling) for the row to settle. Throws rather
+/// than returning on failure, timeout or a space that does not exist: a caller
+/// that continued would hand an agent, or an editor, an empty `repos/` and
+/// call it a review. The [timeout] runs on the zone's timers, so a test drives
+/// it with a fake clock.
 Future<void> awaitPrSpaceProvisioning({
   required MessagingRepository messaging,
   required String workspaceId,
   required String spaceId,
   required int prNumber,
+  Duration timeout = const Duration(seconds: 120),
 }) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 120));
-  while (true) {
-    final ch = await messaging.getSpaceById(workspaceId, spaceId);
-    final status = ch?.provisioningStatus ?? SpaceProvisioningStatus.ready;
-    if (status == SpaceProvisioningStatus.ready) {
-      return;
+  // True once [space] says the wait is over; throws when it is over badly.
+  bool settled(Space? space) {
+    if (space == null) {
+      throw StateError('PR space $spaceId for #$prNumber does not exist');
     }
+    final status = space.provisioningStatus;
     if (status == SpaceProvisioningStatus.failed) {
       throw StateError('PR worktree provisioning failed for #$prNumber');
     }
-    if (DateTime.now().isAfter(deadline)) {
-      throw StateError('PR worktree provisioning timed out for #$prNumber');
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    return status == SpaceProvisioningStatus.ready;
   }
+
+  if (settled(await messaging.getSpaceById(workspaceId, spaceId))) {
+    return;
+  }
+  final Space? last;
+  try {
+    last = await messaging
+        .watchSpacesByWorkspace(workspaceId)
+        .map((spaces) => spaces.where((s) => s.id == spaceId).firstOrNull)
+        .firstWhere((space) => space == null || settled(space))
+        .timeout(timeout);
+  } on TimeoutException {
+    throw StateError('PR worktree provisioning timed out for #$prNumber');
+  }
+  settled(last);
 }
 
 /// The association backing pull request `repoFullName#prNumber`, or null when

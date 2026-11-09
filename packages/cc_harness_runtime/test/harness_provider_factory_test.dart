@@ -1,5 +1,7 @@
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/env_provider_credential_store.dart';
 import 'package:cc_harness_runtime/src/harness_provider_factory.dart';
+import 'package:cc_harness_runtime/src/oauth/harness_oauth_broker.dart';
 import 'package:cc_harness_runtime/src/oauth/kimi_oauth.dart';
 import 'package:cc_harness_runtime/src/providers/anthropic_provider.dart';
 import 'package:cc_harness_runtime/src/providers/cursor/cursor_provider.dart';
@@ -225,5 +227,39 @@ void main() {
     expect(provider, isA<CursorProvider>());
     expect(provider.displayName, 'Cursor');
     expect(provider.defaultModel, 'auto');
+  });
+
+  group('one provider registry', () {
+    // The built-in provider set is declared once, in `harnessProviderMetas`;
+    // these pin every other surface that names providers to it.
+    test('env keys exist exactly for the API-key providers', () {
+      for (final meta in harnessProviderMetas.values) {
+        expect(
+          EnvProviderCredentialStore.envKeys.containsKey(meta.id),
+          meta.supportsApiKey,
+          reason: meta.id,
+        );
+      }
+      expect(
+        EnvProviderCredentialStore.envKeys.keys,
+        everyElement(isIn(harnessProviderMetas.keys)),
+      );
+    });
+
+    test('the OAuth broker logs in exactly the OAuth providers', () {
+      final broker = HarnessOAuthBroker(
+        store: EnvProviderCredentialStore(environment: const {}),
+      );
+      for (final meta in harnessProviderMetas.values) {
+        expect(broker.supports(meta.id), meta.supportsOAuth, reason: meta.id);
+      }
+    });
+
+    test('an unknown id without a custom definition is refused', () {
+      expect(
+        () => factory.create(providerId: 'not-a-provider'),
+        throwsUnsupportedError,
+      );
+    });
   });
 }

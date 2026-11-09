@@ -11,6 +11,7 @@ import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:cc_mcp/src/tools/send_to_agent_tool.dart';
 import 'package:test/test.dart';
 
@@ -68,6 +69,30 @@ void main() {
     expect(port.lastAgentId, 'agent-b');
     expect(messaging.createSpaceCalled, isTrue);
     expect(messaging.createdWithRepoIds, isEmpty);
+  });
+
+  test('messaging an agent that is waiting on you is refused first', () async {
+    final hops = PendingDelegationHops();
+    final guarded = SendToAgentTool(
+      agents: agents,
+      messaging: messaging,
+      messagingPort: port,
+      rateLimiter: PairRateLimiter(),
+      pendingHops: hops,
+    );
+    // agent-b is blocked in an ask to agent-a.
+    final release = hops.enter(workspaceId, 'agent-b', 'agent-a');
+    final result = await guarded.run({
+      'workspace_id': workspaceId,
+      'to_agent_id': 'agent-b',
+      'from_agent_id': 'agent-a',
+      'message': 'Ping',
+    });
+    release();
+    expect(result.isError, isTrue);
+    expect(result.content.first.text, contains('cycle'));
+    expect(messaging.createSpaceCalled, isFalse);
+    expect(port.lastAgentId, isNull);
   });
 }
 

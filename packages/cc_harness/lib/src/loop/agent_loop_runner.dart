@@ -19,6 +19,11 @@ import 'package:cc_harness/src/messages.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
 import 'package:cc_harness/src/tools/tool.dart';
 
+part 'agent_loop_guards.dart';
+part 'agent_loop_tool_catalog.dart';
+part 'agent_loop_tool_step.dart';
+part 'agent_loop_turn_streamer.dart';
+
 /// Below this many output tokens in one turn, the delivery-ratio check is not
 /// meaningful — a short turn can legitimately spend tokens on a stop sequence or
 /// a few reasoning tokens and deliver little text.
@@ -42,6 +47,20 @@ const double _minCharsPerOutputToken = 0.5;
 /// small enough that the per-delta scan is free.
 const int _streamRuleWindowChars = 8192;
 
+/// How many context-overflow recoveries (forced compaction + re-issue) ONE
+/// turn may attempt before the provider's rejection ends the run.
+///
+/// Per turn, not per run: a long run legitimately overflows many times over
+/// its life, and a run-wide budget spent early left later turns with no
+/// recovery at all.
+const int _maxOverflowRecoveriesPerTurn = 2;
+
+/// How many CONSECUTIVE `max_tokens`-truncated, tool-free turns are
+/// auto-continued before the loop accepts the cut-off answer. Reset whenever a
+/// turn makes progress (calls a tool) or a new user prompt arrives, so a long
+/// run is not left with zero continuations after its first few.
+const int _maxConsecutiveTruncations = 3;
+
 /// The single implementation of [AgentLoop]: message → LLM → tools → loop.
 ///
 /// Sends the conversation to the provider, streams its events, executes any
@@ -50,6 +69,12 @@ const int _streamRuleWindowChars = 8192;
 /// is hit, the caller cancels, or an unrecoverable error occurs. Retryable
 /// provider errors (rate-limit / overloaded) are retried with exponential
 /// backoff.
+///
+/// The run itself lives in a per-call [_RunState]; this class is the stateless
+/// entry point. Every terminal path goes through [_RunState.finish], which
+/// saves the transcript and emits exactly one [LoopDone] (preceded by one
+/// [LoopError] for a failure outcome) — including an exception escaping a
+/// host-supplied extension point, which is caught here as a last resort.
 class AgentLoopRunner implements AgentLoop {
   /// Creates an [AgentLoopRunner].
   const AgentLoopRunner();
@@ -68,134 +93,170 @@ class AgentLoopRunner implements AgentLoop {
     CancellationToken? cancel,
     List<HarnessImageBlock> userImages = const [],
   }) async* {
-    final cancelToken = cancel ?? CancellationToken.none;
-    final rng = Random();
-    // Deferred tools are CALLABLE from the first turn — only their schemas are
-    // withheld. Keeping them in `toolsByName` is what makes a direct call to a
-    // name the model saw in the prompt index work in one step instead of
-    // costing an "unknown tool" round trip.
-    final toolsByName = {
-      for (final t in tools) t.name: t,
-      for (final t in deferredTools) t.name: t,
-    };
-    final deferredByName = {for (final t in deferredTools) t.name: t};
-    final residentSchemas = tools.map((t) => t.toSchema()).toList();
-    final nativeDeferral =
-        residentSchemas.isNotEmpty &&
-        deferredTools.isNotEmpty &&
-        providerSupportsDeferredTools(provider, model: config.model);
-    final deferredSchemas = nativeDeferral
-        ? {
-            for (final tool in deferredTools)
-              tool.name: tool.toSchema().copyWith(deferLoading: true),
-          }
-        : const <String, LlmToolSchema>{};
-    // Native search keeps one fixed, authorized catalog. Other providers
-    // append activated schemas behind the unchanged resident cache prefix.
-    final activatedNames = <String>{};
-    var toolSchemas = residentSchemas;
-
-    /// Deferred tools this history activated whose carrier ON THE WIRE is gone.
-    ///
-    /// A native activation is carried by a `tool_reference` inside a result
-    /// block. A fold replaces that block with a summary, so the reference — the
-    /// only thing the provider can expand into a schema — disappears while the
-    /// tool stays nominally active. Only the activation metadata survives, and
-    /// a name known ONLY from that metadata must be admitted as a real,
-    /// non-deferred definition or the model loses a tool the history says it
-    /// has. Recomputed from the current history because a rewrite is exactly
-    /// what removes the carrier.
-    Set<String> carriedOnlyActivations() {
-      final restored = <String>{};
-      final referenced = <String>{};
-      for (final message in history) {
-        restored.addAll(message.activatedToolNames);
-        for (final block in message.content) {
-          if (block is HarnessToolResultBlock) {
-            restored.addAll(block.toolReferences);
-            referenced.addAll(block.toolReferences);
-          } else if (block is HarnessToolUseBlock) {
-            restored.add(block.name);
-            referenced.add(block.name);
-          }
-        }
-      }
-      return {
-        for (final name in restored)
-          if (deferredByName.containsKey(name) && !referenced.contains(name))
-            name,
-      };
+    final state = _RunState(
+      history: history,
+      tools: tools,
+      deferredTools: deferredTools,
+      provider: provider,
+      context: context,
+      config: config,
+      cancel: cancel ?? CancellationToken.none,
+      callIdPrefix:
+          '${config.guards.callLedger?.runId ?? config.cacheKey ?? 'loop'}'
+          ':${++_nextLoopId}',
+    );
+    try {
+      yield* state.run(userMessage, userImages);
+    } on Object catch (e) {
+      // A host-supplied callback (approval, observation store, compactor
+      // commit) threw past every narrower guard. The exactly-one-terminal
+      // contract still holds: report it as the run's error.
+      yield* state.finish(
+        LoopDoneReason.error,
+        error: 'The agent loop failed: $e',
+        errorCode: 'loop_exception',
+      );
     }
+  }
+}
 
-    /// Rebuilds the native catalog for the CURRENT history, in the fixed
-    /// declared order: the resident block, then every deferred tool — with a
-    /// carried-only activation admitted as a real definition in its own
-    /// position (no fabricated assistant call or result, and no reordering that
-    /// would churn the tools prefix beyond the rewrite that caused it).
-    void rebuildNativeToolCatalog() {
-      if (!nativeDeferral) {
-        return;
-      }
-      final carried = carriedOnlyActivations();
-      toolSchemas = <LlmToolSchema>[
-        ...residentSchemas,
-        for (final tool in deferredTools)
-          carried.contains(tool.name)
-              ? tool.toSchema()
-              : deferredSchemas[tool.name]!,
-      ];
-    }
+/// The mutable state of ONE [AgentLoopRunner.run] call, and its phases.
+///
+/// The run used to be a single 1,500-line generator over ~30 closure locals.
+/// It is now: this orchestrator ([run]), the tool catalog ([_ToolCatalog]),
+/// the provider-turn streamer ([_TurnStreamer]), tool execution
+/// ([_ToolStep]) and the cross-turn guards ([_RunGuards]). Phases that can end
+/// the run do so through [finish] and the orchestrator checks [finished] after
+/// each one.
+class _RunState {
+  _RunState({
+    required this.history,
+    required List<HarnessTool> tools,
+    required List<HarnessTool> deferredTools,
+    required this.provider,
+    required HarnessToolContext? context,
+    required this.config,
+    required this.cancel,
+    required this.callIdPrefix,
+  }) : catalog = _ToolCatalog(
+         tools: tools,
+         deferredTools: deferredTools,
+         nativeDeferral:
+             tools.isNotEmpty &&
+             deferredTools.isNotEmpty &&
+             provider.supportsDeferredTools(model: config.model),
+       ),
+       // Hand the run's cancellation token to tools so a cancelled run kills
+       // work in flight (bash, web fetch) instead of only being noticed
+       // between tools.
+       ctx = (context ?? const HarnessToolContext(workingDirectory: '.'))
+           .withCancel(cancel),
+       observationIngest =
+           config.tools.observationIngest ?? ToolObservationIngest(),
+       ledger = ContractLedger(config.guards.contract),
+       checkpoints = <String, int>{...config.transcript.initialCheckpoints},
+       snapshotSource = config.transcript.initialSnapshotSource {
+    guards = _RunGuards(this);
+    catalog
+      ..rebuildNative(history)
+      ..activate(collectActivatedToolNames(history));
+    basePromptTokens = _overheadTokens(
+      config.systemPrompt,
+      catalog.residentSchemas,
+    );
+  }
 
-    rebuildNativeToolCatalog();
-    var activatedOverheadTokens = 0;
-    List<String> activateDeferred(Iterable<String> names) {
-      final fresh = <String>[];
-      for (final name in names) {
-        if (deferredByName.containsKey(name) && activatedNames.add(name)) {
-          fresh.add(name);
-        }
-      }
-      if (fresh.isEmpty) {
-        return const [];
-      }
-      final added = [
-        for (final name in fresh)
-          deferredSchemas[name] ?? deferredByName[name]!.toSchema(),
-      ];
-      for (final schema in added) {
-        activatedOverheadTokens += _schemaTokens(schema);
-      }
-      if (!nativeDeferral) {
-        toolSchemas = [...toolSchemas, ...added];
-      }
-      return fresh;
-    }
+  /// The caller-owned conversation, appended and rewritten in place.
+  final List<HarnessMessage> history;
+  final LlmProviderPort provider;
+  final AgentLoopConfig config;
+  final CancellationToken cancel;
+  final String callIdPrefix;
+  final _ToolCatalog catalog;
+  final HarnessToolContext ctx;
+  final ToolObservationIngest observationIngest;
 
-    List<String> referencesFor(_PendingTool call, HarnessToolResult result) {
-      final direct = deferredByName.containsKey(call.name);
-      if (!direct && result.activateTools.isEmpty) {
-        return const [];
-      }
-      final names = <String>{
-        if (direct) call.name,
-        for (final name in result.activateTools)
-          if (deferredByName.containsKey(name)) name,
-      };
-      return names.isEmpty ? const [] : names.toList(growable: false);
-    }
+  /// The run's deliverable, if it declared one. Tracks whether a required
+  /// output verb has completed successfully so the loop can tell "finished
+  /// and delivered" from "stopped talking".
+  final ContractLedger ledger;
 
-    activateDeferred(collectActivatedToolNames(history));
+  /// Seeded from a restored run, so a `rewind` to a label the model set
+  /// before a restart still lands where the label was set.
+  final Map<String, int> checkpoints;
 
-    // Hand the run's cancellation token to tools so a cancelled run kills work
-    // in flight (bash, web fetch) instead of only being noticed between tools.
-    final ctx = (context ?? const HarnessToolContext(workingDirectory: '.'))
-        .withCancel(cancelToken);
-    final stopwatch = Stopwatch()..start();
-    final callIdPrefix =
-        '${config.callLedger?.runId ?? config.cacheKey ?? 'loop'}:${++_nextLoopId}';
-    final observationIngest =
-        config.observationIngest ?? ToolObservationIngest();
+  /// The text behind a live snapshot page, carried across the run and written
+  /// back with the transcript. Seeded from the resumed record: without it a
+  /// restarted run cannot recover the conversation a page represents.
+  String? snapshotSource;
 
+  late final _RunGuards guards;
+  final Stopwatch stopwatch = Stopwatch()..start();
+  final Random rng = Random();
+
+  /// Prompt overhead of the system prompt + RESIDENT tool schemas, constant
+  /// across the run. Activated schemas are added by [overheadTokensNow].
+  late final int basePromptTokens;
+
+  /// Where the last SUCCESSFUL request placed its message-tail cache
+  /// breakpoint, so the next one can anchor its read there. -1 until the first
+  /// request and after any history rewrite (the old anchor then points into a
+  /// conversation that no longer exists).
+  int cacheAnchorIndex = -1;
+
+  /// Billable tokens counted from streamed usage — the fallback for a run with
+  /// no [LoopGuardConfig.callLedger]. With a ledger, the ledger is the single
+  /// source of truth ([billableTokensNow]).
+  int streamedBillableTokens = 0;
+
+  /// The turn being run (0-based).
+  int turn = 0;
+
+  /// How many turns the persisted transcript claims.
+  int persistedTurns = 0;
+
+  /// History length at the start of the current turn — the clean boundary a
+  /// `checkpoint` marks and a `rewind` truncates to.
+  int preTurnLength = 0;
+
+  /// CONSECUTIVE truncated, tool-free turns auto-continued so far.
+  int consecutiveTruncations = 0;
+
+  /// Set once [finish] has emitted the terminal event.
+  bool finished = false;
+
+  AgentLoopHooks? get hooks => config.steering.hooks;
+  HarnessCompactor? get compactor => config.compaction.compactor;
+
+  int billableTokensNow() =>
+      config.guards.callLedger?.billableTokens ?? streamedBillableTokens;
+
+  /// Tools activated mid-run are real request bytes: left out of the budget,
+  /// a run that pulls in a dozen schemas would compact too late and hit the
+  /// provider's context ceiling instead of its own.
+  int overheadTokensNow() => basePromptTokens + catalog.activatedOverheadTokens;
+
+  late final LlmCompleteConfig completeConfig = LlmCompleteConfig(
+    model: config.model,
+    systemPrompt: config.systemPrompt,
+    maxTokens: config.maxTokens,
+    temperature: config.temperature,
+    topP: config.topP,
+    topK: config.topK,
+    effort: config.effort,
+    cacheEnabled: config.cacheEnabled,
+    cacheKey: config.cacheKey,
+    purpose: config.purpose,
+  );
+
+  // ---------------------------------------------------------------------------
+  // Orchestration
+  // ---------------------------------------------------------------------------
+
+  Stream<AgentLoopEvent> run(
+    String userMessage,
+    List<HarnessImageBlock> userImages,
+  ) async* {
     // The user turn carries any pasted screenshots alongside its text. Built
     // as one message rather than two so the provider sees the picture and the
     // question as a single turn — a bare image message reads to most models as
@@ -209,203 +270,7 @@ class AgentLoopRunner implements AgentLoop {
             ),
     );
 
-    final completeConfig = LlmCompleteConfig(
-      model: config.model,
-      systemPrompt: config.systemPrompt,
-      maxTokens: config.maxTokens,
-      temperature: config.temperature,
-      topP: config.topP,
-      topK: config.topK,
-      effort: config.effort,
-      cacheEnabled: config.cacheEnabled,
-      cacheKey: config.cacheKey,
-      purpose: config.purpose,
-    );
-
-    // Where the previous request placed its message-tail cache breakpoint, so
-    // this one can anchor its read there. -1 until the first request; reset by
-    // compaction, which rewrites history and makes any earlier anchor a
-    // pointer into a conversation that no longer exists.
-    var cacheAnchorIndex = -1;
-    var billableTokens = 0;
-    int billableTokensNow() =>
-        config.callLedger?.billableTokens ?? billableTokens;
-    var pressureNotified = false;
-    // One-shot latch for the host-priced soft budget steer (section 5b).
-    var externalPressureSteered = false;
-    // Bounds how many times a mid-run "context too long" rejection triggers a
-    // forced compaction + retry before the run gives up.
-    var overflowRecoveries = 0;
-    const maxOverflowRecoveries = 2;
-    // Bounds how many times a `max_tokens`-truncated answer (no tool calls) is
-    // auto-continued before the loop gives up, so a model that keeps hitting the
-    // output ceiling can't spin forever.
-    var truncationContinuations = 0;
-    const maxTruncationContinuations = 3;
-    // The run's deliverable, if it declared one. Tracks whether a required
-    // output verb has completed successfully so the loop can tell "finished
-    // and delivered" from "stopped talking".
-    final ledger = ContractLedger(config.contract);
-
-    bool hardBudgetExhausted() {
-      if (config.externalBudgetExceeded?.call() ?? false) {
-        return true;
-      }
-      final budget = config.budget;
-      return budget.hardStop &&
-          ((budget.tokenBudget != null &&
-                  billableTokensNow() >= budget.tokenBudget!) ||
-              (budget.timeBudget != null &&
-                  stopwatch.elapsed >= budget.timeBudget!));
-    }
-
-    LoopDone budgetStop() => LoopDone(
-      LoopDoneReason.budgetExhausted,
-      unmetContractId: ledger.isActive && !ledger.satisfied
-          ? ledger.contract!.id
-          : null,
-    );
-
-    // Context management: the system prompt and the RESIDENT tool schemas are
-    // constant across the run, so estimate them once for the compaction budget.
-    final compactor = config.compactor;
-    // Reserve the per-request overhead (system + tool schemas) AND the output
-    // budget (max_tokens) so compaction fires before the input+output exceeds
-    // the window, not just the input.
-    final basePromptTokens = _overheadTokens(
-      config.systemPrompt,
-      residentSchemas,
-    );
-    // Tools activated mid-run are real request bytes: left out of the budget,
-    // a run that pulls in a dozen schemas would compact too late and hit the
-    // provider's context ceiling instead of its own.
-    int overheadTokensNow() => basePromptTokens + activatedOverheadTokens;
-
-    final hooks = config.hooks;
-    final advisor = config.advisor;
-    // Advisor cadence: prompt the reviewer at most once per this many
-    // tool-bearing turns. Each review still sees every intervening turn as an
-    // accumulated delta and dedupe/noise-suppression live inside the advisor,
-    // so the loop just injects whatever survives. Seeded so the first eligible
-    // turn reviews, then it throttles.
-    final advisorEveryTurns = config.advisorEveryTurns < 1
-        ? 1
-        : config.advisorEveryTurns;
-    var turnsSinceAdvice = advisorEveryTurns - 1;
-    // Doom-loop detection: when the model issues the identical set of tool calls
-    // (same names + arguments) several turns in a row, inject a corrective
-    // reminder so it breaks out. With no turn ceiling (the default) this guard
-    // is the primary bound on a spinning run, so it catches both period-1
-    // (A-A-A) and period-2 (A-B-A-B ping-pong) cycles.
-    const repetitionLimit = 3;
-    // Returns-to-two-back before the alternation guard fires: 4 = A-B-A-B-A-B
-    // (the ping-pong has cycled three times).
-    const alternationLimit = 4;
-    // How many turns before the ceiling the wrap-up warning fires (section
-    // 0c). Skipped entirely for ceilings at or below this — a tiny budget
-    // needs every turn for work, not warnings.
-    const turnPressureLead = 5;
-    final maxTurns = config.maxTurns;
-    String? lastTurnSignature;
-    String? prevTurnSignature;
-    var repeatedTurns = 0;
-    var alternatingTurns = 0;
-    // Checklist staleness: an agent that opens a task list, appends to it and
-    // then never transitions anything leaves the user watching a list of
-    // `pending` items that says nothing about where the run is. Deterministic
-    // (a turn count, not a second model) and cheap enough to always run; the
-    // host disables it with `checklistStaleAfterTurns: 0`.
-    final checklist = config.checklistStaleAfterTurns > 0
-        ? ChecklistSupervisor(staleAfterTurns: config.checklistStaleAfterTurns)
-        : null;
-    final firedRules = <StreamRule>{};
-    // Seeded from a restored run, so a `rewind` to a label the model set
-    // before a restart still lands where the label was set.
-    final checkpoints = <String, int>{...config.initialCheckpoints};
-    // The text behind a live snapshot page, carried across the run and written
-    // back with the transcript. Seeded from the resumed record: without it a
-    // restarted run cannot recover the conversation a page represents.
-    var snapshotSource = config.initialSnapshotSource;
-    final transcriptStore = config.transcriptStore;
-    final transcriptKey = config.transcriptKey;
-    var persistedTurns = 0;
-
-    /// Writes the history as it stands. Called ONLY at a turn boundary: a
-    /// history captured between a `tool_use` and its `tool_result` is one no
-    /// provider will accept, so a crash at that instant must restore the turn
-    /// BEFORE rather than a half-turn that cannot be replayed.
-    Future<void> persistTranscript() async {
-      if (transcriptStore == null || transcriptKey == null) {
-        return;
-      }
-      try {
-        await transcriptStore.save(
-          transcriptKey,
-          HarnessTranscript(
-            messages: List<HarnessMessage>.unmodifiable(history),
-            checkpoints: Map<String, int>.unmodifiable(checkpoints),
-            turns: persistedTurns,
-            retainedSnapshotSource: snapshotSource,
-            // A copy, so the persisted record is a snapshot of the host's
-            // bookkeeping rather than a live view of a map the host may keep
-            // mutating.
-            metadata: Map<String, Object?>.of(config.transcriptMetadata),
-          ),
-        );
-      } on Object {
-        // Continuity is worth less than the run in progress.
-      }
-    }
-
-    /// Folds a compaction result's snapshot bookkeeping into [snapshotSource].
-    ///
-    /// Only a pass that CHANGED anything can say something about the carrier:
-    ///
-    /// * a reported source is a page that is (still) on the wire — the only
-    ///   case that sets it, and it covers both a fresh page and one re-reported
-    ///   by a later pass, so an unchanged pass leaves the value alone;
-    /// * otherwise the source describes nothing and is spent — but only if the
-    ///   carrier is actually gone. A changed pass that leaves images in history
-    ///   (a mask or edit elsewhere, or a rehydration that could not reach the
-    ///   page) must KEEP it, or a later refusal folds the page by its caption
-    ///   and loses the conversation behind it. The post-pass history is the
-    ///   authority on that, not the result shape: the snapshot compactor
-    ///   rehydrates a refused region to text before the fallback may mask, so
-    ///   the combined rehydration + mask-only pass reports `messagesFolded: 0`
-    ///   yet has genuinely removed the carrier.
-    void absorbSnapshotSource(HarnessCompactionResult result) {
-      if (!result.changed) {
-        return;
-      }
-      final source = result.retainedSnapshotSource;
-      if (source != null) {
-        snapshotSource = source;
-        // The result's own contract says the folded span collapsed into ONE
-        // replacement message AT `foldedFromIndex`, so that message is the page
-        // the source describes. Stamping it here — sourced from the producer's
-        // reported identity rather than a guess about content — is what gives
-        // the source something that can survive a restart, a rewind and an
-        // unrelated screenshot.
-        final index = result.foldedFromIndex;
-        if (index >= 0 &&
-            index < history.length &&
-            !history[index].isSnapshotCarrier) {
-          history[index] = history[index].copyWith(isSnapshotCarrier: true);
-        }
-        return;
-      }
-      // The carrier's IDENTITY decides, not how many images happen to be left:
-      // a rewind or fold can drop the page while an unrelated screenshot stays,
-      // and an image count would then keep a source whose text describes a
-      // region that no longer exists — which a later refusal would rehydrate,
-      // resurrecting material the run explicitly discarded. A text rehydration
-      // builds a plain message without the marker, so its disappearance is
-      // exactly the signal.
-      if (!history.any((m) => m.isSnapshotCarrier)) {
-        snapshotSource = null;
-      }
-    }
-
+    final hooks = this.hooks;
     if (hooks != null) {
       // Guarded, like every other extension-point call below. These are
       // THIRD-PARTY implementations: an exception escaping the `async*`
@@ -417,1779 +282,649 @@ class AgentLoopRunner implements AgentLoop {
         hooks.onSessionStart,
       );
       if (failure != null) {
-        yield LoopError(failure);
-        yield const LoopDone(LoopDoneReason.error);
+        yield* finish(LoopDoneReason.error, error: failure);
         return;
       }
     }
 
-    for (var turn = 0; maxTurns == null || turn < maxTurns; turn++) {
-      // ---- 0a'. Take-over pause: hold at the clean turn boundary until
-      //      resumed (PRD 16 §8). The prior turn fully completed, so a human
-      //      can safely take the worktree; the hand-back summary arrives as
-      //      steering and is drained right below on resume.
-      final pauseGate = config.pauseGate;
-      if (pauseGate != null && pauseGate.isPaused) {
-        yield const LoopNotice('Paused at turn boundary (take-over).');
-        // Race the resume against cancellation. Awaiting the gate alone meant
-        // a cancel while paused woke NOTHING: the run() stream stayed open,
-        // no terminal event was ever emitted, and the run leaked until someone
-        // happened to call resume().
-        await Future.any<void>([
-          pauseGate.waitWhilePaused(),
-          cancelToken.whenCancelled,
-        ]);
-        if (cancelToken.isCancelled) {
-          yield const LoopDone(LoopDoneReason.cancelled);
-          return;
-        }
-        yield const LoopNotice('Resumed by hand-back.');
-      }
-
-      if (cancelToken.isCancelled) {
-        yield const LoopDone(LoopDoneReason.cancelled);
+    final maxTurns = config.maxTurns;
+    for (turn = 0; maxTurns == null || turn < maxTurns; turn++) {
+      yield* _pauseAtBoundary();
+      if (finished) {
         return;
       }
-      if (hardBudgetExhausted()) {
-        yield budgetStop();
+      if (cancel.isCancelled) {
+        yield* finish(LoopDoneReason.cancelled);
+        return;
+      }
+      if (guards.hardBudgetExhausted()) {
+        yield* finish(LoopDoneReason.budgetExhausted);
         return;
       }
 
-      // ---- 0. Compact the history when it nears the context window. ----
-      // Runs BEFORE the pre-turn boundary is captured so checkpoint/rewind
-      // indices refer to the post-compaction list; existing checkpoints are
-      // remapped across the fold so they never point into folded messages.
-      if (compactor != null && config.contextWindow != null) {
-        // A THROWING compactor must not take the run down: compaction is an
-        // optimization, and the turn is still runnable without it (the
-        // provider's own overflow error is the backstop). Report and continue.
-        HarnessCompactionResult? result;
-        try {
-          result = await compactor.maybeCompact(
-            history,
-            contextWindow: config.contextWindow,
-            overheadTokens: overheadTokensNow(),
-            reservedOutputTokens: config.maxTokens,
-            selfAgentName: config.selfAgentName,
-          );
-        } on Object catch (e) {
-          yield LoopNotice('Compaction failed and was skipped: $e');
-          result = null;
-        }
-        if (result != null && result.changed) {
-          _remapCheckpoints(checkpoints, result);
-          // The history was rewritten under the advisor's cursor — re-prime it
-          // so it re-reads the compacted transcript instead of slicing past
-          // its end and can re-raise issues that were folded away.
-          advisor?.reset();
-          checklist?.resetCadence();
-          // Compaction rewrote the messages, so no earlier position can still
-          // be a cache hit and the old anchor now points into a conversation
-          // that no longer exists. The next request re-anchors from its own
-          // tail. (The tools and system prefixes are untouched — a message
-          // rewrite costs the message tier only.)
-          cacheAnchorIndex = -1;
-          // The fold may have replaced the result block that carried a native
-          // activation with a summary, so a tool whose only remaining evidence
-          // is metadata must be re-admitted as a real definition.
-          rebuildNativeToolCatalog();
-          absorbSnapshotSource(result);
-          yield LoopCompaction(
-            summarized: result.summarized,
-            messagesFolded: result.messagesFolded,
-            tokensBefore: result.tokensBefore,
-            tokensAfter: result.tokensAfter,
-          );
-        }
+      yield* _compactNearWindow();
+      if (cancel.isCancelled) {
+        yield* finish(LoopDoneReason.cancelled);
+        return;
       }
-
-      // ---- 0b. Mid-run steering: drain any messages queued while the agent
-      //      was working and inject them before this turn's provider call, so a
-      //      user can nudge a running run without starting a new dispatch.
-      final steering = config.steering;
-      if (steering != null) {
-        for (final msg in steering.drainSteering()) {
-          if (msg.content.trim().isNotEmpty) {
-            history.add(HarnessMessage.user(msg.content.trim()));
-            yield const LoopNotice('Steering message injected.');
-          }
-        }
-        for (final msg in steering.drainAside()) {
-          if (msg.content.trim().isNotEmpty) {
-            history.add(HarnessMessage.system(msg.content.trim()));
-          }
-        }
-      }
-
-      // ---- 0c. Turn-pressure steering: with only a few turns left, warn the
-      //      model while it can still ACT — mirrors the goal-budget pressure
-      //      note. The ceiling otherwise stops the run mid-task with every
-      //      finding still in volatile history: notes unsaved, memory
-      //      unwritten and no real final answer for the next run's context.
-      if (maxTurns != null &&
-          maxTurns > turnPressureLead &&
-          turn == maxTurns - turnPressureLead) {
-        const steer =
-            'You are nearing this run\'s turn limit — only a few turns left. '
-            'Wrap up NOW: save durable findings to your notes or memory tools, '
-            'and make your final answer a handoff — what you learned, the '
-            'current state and the exact next steps. Anything not written '
-            'down is lost when the run stops.';
-        history.add(HarnessMessage.system(steer));
-        yield const LoopNotice(steer);
-      }
+      yield* _drainSteering();
+      yield* guards.turnPressure();
 
       // The clean boundary at the start of this turn (end of a complete prior
       // turn) — where a `checkpoint` marks and a `rewind` truncates to, and
       // the only point at which the history is safe to persist.
-      final preTurnLength = history.length;
+      preTurnLength = history.length;
       persistedTurns = turn;
       await persistTranscript();
 
-      // ---- 1. Provider call (with retry on retryable errors). ----
-      // A StringBuffer, not `text += delta`: Dart strings do not rope, so
-      // concatenating per delta copies the whole prefix every time — a 32 KB
-      // answer arriving in ~4-char deltas costs ~130 MB of copying per turn on
-      // the hosting isolate (cc_server), which must also answer RPCs.
-      final textBuffer = StringBuffer();
-      final thinkingBuffer = StringBuffer();
-      String? thinkingSignature;
-      final pending = <_PendingTool>[];
-      final pendingIds = <String>{};
-      final earlyResults = <String, HarnessToolResult>{};
-      LlmError? lastError;
-      var stopReason = LlmStopReason.unknown;
-      var attempt = 0;
-      var completed = false;
-      final callId = '$callIdPrefix:turn-$turn';
-      // Output tokens the provider billed for THIS turn. Compared against what
-      // the turn actually delivered to catch a provider that generates tokens
-      // and then hands us none of them (see the delivery-ratio guard below).
-      var turnOutputTokens = 0;
-
-      // Bounded tail of the streamed text that stream rules are matched
-      // against. Matching the WHOLE accumulated buffer per delta is a second
-      // O(n²) per turn; a fixed overlap window keeps it O(window) per delta.
-      var ruleWindow = '';
-      final hasStreamRules = config.streamRules.isNotEmpty;
-
-      while (!completed) {
-        // Compaction and failed attempts are real spend. Do not begin another
-        // main call after an auxiliary request or retry exhausted the budget.
-        if (hardBudgetExhausted()) {
-          yield budgetStop();
-          return;
-        }
-        var requestUsage = const LlmUsage();
-        LlmUsage? finalUsage;
-        textBuffer.clear();
-        ruleWindow = '';
-        thinkingBuffer.clear();
-        thinkingSignature = null;
-        pending.clear();
-        pendingIds.clear();
-        earlyResults.clear();
-        lastError = null;
-        stopReason = LlmStopReason.unknown;
-        turnOutputTokens = 0;
-        var retry = false;
-        var ruleRestart = false;
-
-        // Wall-clock ceiling for THIS turn. The transport's timeout is an IDLE
-        // timeout and resets on every chunk, so a stream dripping one byte
-        // every 100 seconds trips nothing: the turn never ends, the
-        // turn-boundary budget checks never run, and the run holds resources
-        // open forever having spent almost no tokens. Checked per event
-        // because that is the shape being bounded — a stream that stops
-        // producing entirely is already the transport's problem.
-        final turnClock = Stopwatch()..start();
-        final turnLimit = config.turnTimeout;
-
-        // Provider-side image ceiling, applied per REQUEST rather than per
-        // tool call. A browser-driving run adds a frame every turn and each
-        // one survives compaction (summarization shrinks text, never a
-        // screenshot), so the accumulated count climbs until the provider
-        // rejects the request outright. Dropping the oldest frames keeps the
-        // turn alive; the newest one is what the agent is reasoning about.
-        // Note this shapes only what goes ON THE WIRE — `history` keeps every
-        // image, so a later compaction still sees the real conversation.
-        final wireMessages = clampProviderContextImages(
-          history,
-          providerImageLimitFor(provider.displayName),
-        );
-        // The cache breakpoints this request should carry. The tools
-        // breakpoint sits at the end of the RESIDENT block so activation
-        // appends behind it; the message anchor points at where the previous
-        // request wrote, which is what makes the read a certainty rather than
-        // a bet on the provider's bounded backward search.
-        final requestConfig = completeConfig.copyWith(
-          toolCacheBreakpointIndex: residentSchemas.length - 1,
-          cacheAnchorIndex: cacheAnchorIndex,
-          callId: callId,
-        );
-        // Recorded BEFORE the call: this is the tail this request writes at,
-        // and therefore the anchor the next one must read from.
-        cacheAnchorIndex = wireMessages.length - 1;
-        final recordStart = config.callLedger?.records.length ?? 0;
-        final estimatedPromptTokens = config.tokenCalibration == null
-            ? 0
-            : estimateHarnessHistory(wireMessages) +
-                  basePromptTokens +
-                  activatedOverheadTokens;
-        final modelEvents = provider.complete(
-          messages: wireMessages,
-          tools: toolSchemas,
-          config: requestConfig,
-        );
-        final Stream<Object> turnEvents =
-            config.overlapReadOnlyTools &&
-                (hooks == null || !hooks.interceptsTools)
-            ? _overlapReadOnlyTools(
-                modelEvents,
-                toolsByName,
-                ctx,
-                limit: max(1, config.maxParallelToolCalls),
-                timeout: config.toolTimeout,
-              )
-            : _cancelableModelStream(modelEvents, cancelToken);
-        await for (final event in turnEvents) {
-          if (cancelToken.isCancelled) {
-            yield const LoopDone(LoopDoneReason.cancelled);
-            return;
-          }
-          if (turnLimit != null && turnClock.elapsed > turnLimit) {
-            yield LoopNotice(
-              'Turn exceeded its ${turnLimit.inMinutes}-minute wall-clock '
-              'limit and was abandoned. The provider stream was still open.',
-            );
-            yield const LoopDone(LoopDoneReason.error);
-            return;
-          }
-          if (event is LoopToolCallStart) {
-            yield event;
-            continue;
-          }
-          if (event is LoopToolCallResult) {
-            earlyResults[event.toolUseId] = event.result;
-            yield event;
-            continue;
-          }
-          final modelEvent = event as LlmEvent;
-          switch (modelEvent) {
-            case LlmTextDelta(:final text):
-              textBuffer.write(text);
-              yield LoopTextDelta(text);
-              if (hasStreamRules) {
-                final probe = ruleWindow + text;
-                ruleWindow = probe.length > _streamRuleWindowChars
-                    ? probe.substring(probe.length - _streamRuleWindowChars)
-                    : probe;
-                final rule = _firstUnfiredRule(
-                  config.streamRules,
-                  firedRules,
-                  probe,
-                );
-                if (rule != null) {
-                  firedRules.add(rule);
-                  history.add(HarnessMessage.system(rule.reminder));
-                  yield LoopNotice('Course-correction: ${rule.reminder}');
-                  ruleRestart = true;
-                }
-              }
-            case LlmThinkingDelta(:final thinking, :final signature):
-              if (signature != null) {
-                thinkingSignature = signature;
-              }
-              if (thinking.isNotEmpty) {
-                thinkingBuffer.write(thinking);
-                yield LoopThinkingDelta(thinking);
-              }
-            case LlmToolUseDelta(:final id, :final name, :final argumentsJson):
-              if (pendingIds.add(id)) {
-                pending.add(_PendingTool.fromStream(id, name, argumentsJson));
-              } else {
-                lastError = LlmError(
-                  // A protocol error is not safe to replay as a transient one.
-                  'The provider emitted duplicate tool-call id "$id".',
-                  code: 'duplicate_tool_call_id',
-                );
-                retry = false;
-              }
-            case LlmUsage():
-              final previous = requestUsage;
-              requestUsage = previous.reconcile(modelEvent);
-              if (!identical(previous, requestUsage)) {
-                final previousTotal =
-                    previous.inputTokens +
-                    previous.outputTokens +
-                    previous.cacheReadTokens +
-                    previous.cacheWriteTokens +
-                    previous.thoughtTokens;
-                final delta = previousTotal == 0
-                    ? requestUsage
-                    : LlmUsage(
-                        inputTokens:
-                            requestUsage.inputTokens - previous.inputTokens,
-                        outputTokens:
-                            requestUsage.outputTokens - previous.outputTokens,
-                        cacheReadTokens:
-                            requestUsage.cacheReadTokens -
-                            previous.cacheReadTokens,
-                        cacheWriteTokens:
-                            requestUsage.cacheWriteTokens -
-                            previous.cacheWriteTokens,
-                        thoughtTokens:
-                            requestUsage.thoughtTokens - previous.thoughtTokens,
-                      );
-                if (config.callLedger == null) {
-                  billableTokens +=
-                      delta.inputTokens +
-                      delta.outputTokens +
-                      delta.cacheWriteTokens;
-                }
-                yield LoopUsage(delta);
-              }
-            case LlmError():
-              // Protocol-invalid duplicate IDs must never become retryable
-              // merely because another event reported a transient failure.
-              if (lastError?.code != 'duplicate_tool_call_id') {
-                lastError = modelEvent;
-                retry =
-                    modelEvent.retryable && attempt < config.maxProviderRetries;
-              }
-            case LlmDone(stopReason: final reason, :final usage):
-              stopReason = reason;
-              finalUsage = usage;
-              break;
-          }
-          // A stream rule fired: abandon this turn's stream and restart with
-          // the reminder now in history.
-          if (ruleRestart) {
-            break;
-          }
-        }
-
-        if (cancelToken.isCancelled) {
-          yield const LoopDone(LoopDoneReason.cancelled);
-          return;
-        }
-
-        final reconciled = requestUsage.reconcile(finalUsage);
-        turnOutputTokens = reconciled.outputTokens;
-        if (!identical(reconciled, requestUsage)) {
-          final missing = LlmUsage(
-            inputTokens: reconciled.inputTokens - requestUsage.inputTokens,
-            outputTokens: reconciled.outputTokens - requestUsage.outputTokens,
-            cacheReadTokens:
-                reconciled.cacheReadTokens - requestUsage.cacheReadTokens,
-            cacheWriteTokens:
-                reconciled.cacheWriteTokens - requestUsage.cacheWriteTokens,
-            thoughtTokens:
-                reconciled.thoughtTokens - requestUsage.thoughtTokens,
-          );
-          if (config.callLedger == null) {
-            billableTokens +=
-                missing.inputTokens +
-                missing.outputTokens +
-                missing.cacheWriteTokens;
-          }
-          yield LoopUsage(missing);
-        }
-        final calibration = config.tokenCalibration;
-        if (calibration != null && !ruleRestart) {
-          final records = config.callLedger?.records;
-          if (records != null) {
-            for (var i = recordStart; i < records.length; i++) {
-              final record = records[i];
-              if (record.callId == callId && record.succeeded) {
-                final usage = record.usage;
-                calibration.observe(
-                  providerId: record.providerId,
-                  // The REQUESTED identity, not the serving one: a router or a
-                  // dated snapshot can serve a different id than the run
-                  // configured, and the compactor looks the factor up by the
-                  // model it was configured with. Keying observations by the
-                  // served id leaves every sample under a key nobody queries,
-                  // so the factor stays 1.0 no matter how many arrive. The
-                  // serving model keeps pricing/observability correct.
-                  modelId: record.requestedModelOrServed,
-                  purpose: config.purpose,
-                  estimatedTokens: estimatedPromptTokens,
-                  observedPromptTokens:
-                      usage.inputTokens +
-                      usage.cacheReadTokens +
-                      usage.cacheWriteTokens,
-                );
-              }
-            }
-          } else if (lastError == null) {
-            calibration.observe(
-              providerId: provider.displayName,
-              modelId: config.model ?? provider.defaultModel,
-              purpose: config.purpose,
-              estimatedTokens: estimatedPromptTokens,
-              observedPromptTokens:
-                  reconciled.inputTokens +
-                  reconciled.cacheReadTokens +
-                  reconciled.cacheWriteTokens,
-            );
-          }
-        }
-
-        if (ruleRestart) {
-          continue;
-        }
-        // Empty-stream guard: no text/thinking/tools/error/stop reason means
-        // transport or buffering parser failure, not a finished turn. Synthesize
-        // a retryable error so backoff handles it (else the loop banks silence
-        // as the model's answer).
-        if (lastError == null &&
-            pending.isEmpty &&
-            textBuffer.isEmpty &&
-            thinkingBuffer.isEmpty &&
-            stopReason == LlmStopReason.unknown) {
-          lastError = const LlmError(
-            'Provider returned an empty response: no content, no tool call, '
-            'and no stop reason. That is a transport or server-side parser '
-            'failure, not a finished turn.',
-            code: 'empty_response',
-            retryable: true,
-          );
-          if (attempt < config.maxProviderRetries) {
-            retry = true;
-          }
-        }
-        if (retry) {
-          attempt++;
-          // Honor a server Retry-After hint when present; otherwise exponential
-          // backoff. Cap at 30s and apply full jitter (sleep in [50%, 100%] of
-          // the target) to avoid synchronized retry storms.
-          final retryAfterMs = lastError?.retryAfterMs;
-          final baseMs = retryAfterMs ?? (500 * (1 << (attempt - 1)));
-          final cappedMs = baseMs > 30000 ? 30000 : baseMs;
-          final delayMs = (cappedMs * (0.5 + rng.nextDouble() * 0.5)).round();
-          yield LoopNotice(
-            'Provider error (${lastError?.code ?? 'unknown'}); '
-            'retrying in ${delayMs}ms (attempt $attempt).',
-          );
-          // Cancellable sleep: a 30s backoff that ignores the token kept a
-          // cancelled run alive for up to 30s per attempt.
-          await Future.any<void>([
-            Future<void>.delayed(Duration(milliseconds: delayMs)),
-            cancelToken.whenCancelled,
-          ]);
-          if (cancelToken.isCancelled) {
-            yield const LoopDone(LoopDoneReason.cancelled);
-            return;
-          }
-          continue;
-        }
-        if (lastError != null) {
-          // Reactive context-overflow recovery: the provider rejected the
-          // request as too large. Force a compaction pass and re-issue the same
-          // turn instead of failing the run.
-          if (compactor != null &&
-              config.contextWindow != null &&
-              overflowRecoveries < maxOverflowRecoveries &&
-              _isContextOverflow(lastError)) {
-            overflowRecoveries++;
-            final result = await compactor.maybeCompact(
-              history,
-              contextWindow: config.contextWindow,
-              overheadTokens: overheadTokensNow(),
-              reservedOutputTokens: config.maxTokens,
-              selfAgentName: config.selfAgentName,
-              force: true,
-            );
-            if (result.changed) {
-              _remapCheckpoints(checkpoints, result);
-              // Same rewrite hazard as the loop-top compaction: re-prime the
-              // advisor so its cursor doesn't slice into the rewritten history.
-              advisor?.reset();
-              checklist?.resetCadence();
-              cacheAnchorIndex = -1;
-              // Same activation hazard too: the fold may have taken the
-              // reference block with it.
-              rebuildNativeToolCatalog();
-              absorbSnapshotSource(result);
-              yield LoopCompaction(
-                summarized: result.summarized,
-                messagesFolded: result.messagesFolded,
-                tokensBefore: result.tokensBefore,
-                tokensAfter: result.tokensAfter,
-              );
-              yield const LoopNotice(
-                'Context window exceeded; compacted history and retrying.',
-              );
-              continue;
-            }
-          }
-          yield LoopError(lastError.message, code: lastError.code);
-          yield const LoopDone(LoopDoneReason.error);
-          return;
-        }
-        completed = true;
+      final streamer = _TurnStreamer(this);
+      yield* streamer.stream();
+      if (finished) {
+        return;
       }
+      final output = streamer.output;
 
-      // ---- 2. Assemble + append the assistant turn. ----
-      final blocks = <HarnessContentBlock>[];
-      if (thinkingBuffer.isNotEmpty || thinkingSignature != null) {
-        blocks.add(
-          HarnessThinkingBlock(
-            thinkingBuffer.toString(),
-            signature: thinkingSignature,
-          ),
-        );
-      }
-      if (textBuffer.isNotEmpty) {
-        blocks.add(HarnessTextBlock(textBuffer.toString()));
-      }
-      for (final t in pending) {
-        blocks.add(HarnessToolUseBlock(id: t.id, name: t.name, input: t.args));
-      }
-      final assistantMsg = HarnessMessage(
-        role: HarnessRole.assistant,
-        content: blocks.isEmpty ? const [HarnessTextBlock('')] : blocks,
-      );
+      // ---- Assemble + append the assistant turn. ----
+      final assistantMsg = output.toAssistantMessage();
       history.add(assistantMsg);
       yield LoopTurnComplete(assistantMsg);
 
-      // ---- 3. Stop when the model is done (no tool calls). ----
-      if (pending.isEmpty) {
-        // Output-loss guard: billed tokens with almost no delivered content
-        // (buffering tool-call parsers drop the buffer when max_tokens cuts
-        // mid-`<tool_call>`). Do not auto-continue — same ceiling loses again.
-        // Detect by delivery ratio and stop.
-        final deliveredChars = textBuffer.length + thinkingBuffer.length;
-        if (stopReason == LlmStopReason.maxTokens &&
-            turnOutputTokens >= _minTokensForLossCheck &&
-            deliveredChars < turnOutputTokens * _minCharsPerOutputToken) {
-          yield LoopError(
-            'The provider billed $turnOutputTokens output tokens for this turn '
-            'but delivered only $deliveredChars characters and cut the turn '
-            'off at the output ceiling. The response was almost certainly '
-            'discarded by a server-side tool-call parser that never saw its '
-            'closing tag. Raise the output ceiling or use a provider that does '
-            'not drop a partial tool call.',
-            code: 'provider_output_lost',
-          );
-          yield const LoopDone(LoopDoneReason.providerOutputLost);
+      if (output.pending.isEmpty) {
+        yield* _onToolFreeTurn(output);
+        if (finished) {
           return;
         }
-        // A `max_tokens`-truncated answer is NOT a clean completion — the model
-        // was cut off mid-response. Auto-continue (bounded) so the answer
-        // finishes instead of silently ending truncated.
-        if (stopReason == LlmStopReason.maxTokens &&
-            truncationContinuations < maxTruncationContinuations) {
-          truncationContinuations++;
-          history.add(
-            HarnessMessage.system(
-              'Your previous response was cut off at the output-token limit. '
-              'Continue exactly where you left off; do not repeat what you '
-              'already wrote.',
-            ),
-          );
-          yield const LoopNotice(
-            'Response truncated at the output limit; continuing.',
-          );
-          continue;
-        }
-        // Follow-up lane: queued messages meant to run once the agent finishes.
-        // Consume them here so the work continues in the same run instead of
-        // ending and requiring a new dispatch.
-        final followUps = steering?.drainFollowUp() ?? const [];
-        if (followUps.isNotEmpty) {
-          for (final msg in followUps) {
-            if (msg.content.trim().isNotEmpty) {
-              history.add(HarnessMessage.user(msg.content.trim()));
-            }
-          }
-          yield const LoopNotice('Follow-up message injected; continuing.');
-          continue;
-        }
-        // Completion contract: if a deliverable is owed and missing, nudge
-        // (bounded) then end `contractUnmet`. After follow-up drain so user
-        // steering outranks the reminder.
-        if (ledger.isActive && !await ledger.resolveSatisfied()) {
-          if (ledger.canNudge) {
-            history.add(HarnessMessage.system(ledger.takeNudge()));
-            yield LoopNotice(
-              'Completion contract "${ledger.contract!.id}" unmet — '
-              'steering the agent to deliver.',
-            );
-            continue;
-          }
-          await persistTranscript();
-          yield LoopDone(
-            LoopDoneReason.contractUnmet,
-            unmetContractId: ledger.contract!.id,
-          );
-          return;
-        }
-        // The run's final answer is in [history] but no later turn start
-        // will save it, so save it here. A model that answered with no tool
-        // calls leaves no dangling `tool_use`, which makes this a clean
-        // boundary. Without it the next run resumed from the turn BEFORE
-        // the answer and the model never saw its own last reply.
-        await persistTranscript();
-        yield const LoopDone(LoopDoneReason.completed);
-        return;
+        continue;
       }
+      // A tool-bearing turn is progress: the truncation streak is over.
+      consecutiveTruncations = 0;
 
-      // ---- 3b. Rewind: if the model asked to rewind, prune the exploration
-      //      back to a checkpoint (or the original task), keeping a digest and
-      //      start the next turn from there. Drops this turn's assistant
-      //      message (incl. the rewind call) so no tool_use is orphaned.
-      final rewindCall = pending.where((t) => t.name == 'rewind').firstOrNull;
-      if (rewindCall != null) {
-        final label = rewindCall.args['checkpoint'] as String?;
-        final raw =
-            (label != null ? checkpoints[label] : null) ??
-            _firstTaskIndex(history);
-        final target = raw.clamp(0, history.length);
-        final dropped = history.sublist(target);
-        // Deferred tools the dropped span had activated are still callable (the
-        // schema is already in this run's catalog), so the replacement message
-        // must carry their names: otherwise a restart from this transcript — or
-        // a later fold of it — has no record that they were ever activated.
-        final carriedThroughRewind = <String>{
-          for (final message in dropped) ...message.activatedToolNames,
-        };
-        // A rewind can drop the snapshot page itself. Keeping its source would
-        // let a later refusal rehydrate text the rewind just discarded —
-        // resurrecting material the run explicitly threw away — so the source
-        // goes with the PAGE, identified by its marker rather than by whether
-        // some unrelated image survived the truncation.
-        if (snapshotSource != null && dropped.any((m) => m.isSnapshotCarrier)) {
-          snapshotSource = null;
-        }
-        final digest = dropped.isEmpty
-            ? ''
-            : await const StructuralHarnessSummarizer().summarize(
-                HarnessCompactionInput(
-                  messages: dropped,
-                  selfAgentName: config.selfAgentName,
-                ),
-              );
-        history.removeRange(target, history.length);
-        history.add(
-          HarnessMessage(
-            role: HarnessRole.user,
-            content: [
-              HarnessTextBlock(
-                '[Rewound${label != null ? ' to "$label"' : ''}. '
-                'Dropped ${dropped.length} exploratory message(s).'
-                '${digest.isEmpty ? '' : '\n\n$digest'}\n\nContinue.',
-              ),
-            ],
-            activatedToolNames: carriedThroughRewind.toList(growable: false),
-          ),
-        );
-        // A rewind truncates history, so the tail index the previous request
-        // wrote its cache breakpoint at no longer names the same message — and
-        // may not exist at all. Anchoring the next request there would place
-        // its cache READ on a different turn and miss the prefix it was meant
-        // to hit (or silently place nothing, since an out-of-range anchor is
-        // dropped). Same hazard as the compaction sites: invalidate it.
-        cacheAnchorIndex = -1;
-        // The dropped span may have held the only reference block for a tool
-        // that is still carried by metadata (above); the catalog follows the
-        // history it is built from.
-        rebuildNativeToolCatalog();
-        // History was rewritten under the advisor's cursor (same hazard as the
-        // two compaction sites) — re-prime it so it re-reads the rewound
-        // transcript instead of slicing past its end.
-        advisor?.reset();
-        checklist?.resetCadence();
-        yield LoopNotice(
-          'Rewound context${label != null ? ' to "$label"' : ''} '
-          '(${dropped.length} messages dropped).',
-        );
+      // ---- Rewind: prune the exploration back to a checkpoint (or the
+      //      original task), keeping a digest. ----
+      final rewind = await _tryRewind(output.pending);
+      if (rewind is _Rewound) {
+        yield LoopNotice(rewind.notice);
         continue;
       }
 
-      // Execute tools: parallel-safe batch when no hook intercepts tools;
-      // exclusive tools stay sequential. Results append in model call order.
-      // Deferred tools load schema and run in the same step.
-      final activatedByCall = activateDeferred(pending.map((t) => t.name));
-      if (activatedByCall.isNotEmpty) {
-        yield LoopToolsActivated(
-          names: activatedByCall,
-          trigger: 'direct_call',
-        );
-      }
-      final batchingAllowed = hooks == null || !hooks.interceptsTools;
-      final resultBlocks = <HarnessToolResultBlock>[];
-      // Deferred tools a RESULT asked for (a tool search loading its hits), so
-      // the model can call one on its next turn rather than spending a round
-      // trip asking for the schema it just read a description of.
-      final requestedActivations = <String>[];
-      var pi = 0;
-      while (pi < pending.length) {
-        if (cancelToken.isCancelled) {
-          // The assistant turn is already in history. Pair every requested
-          // tool, including calls we never started, before returning so a
-          // resumed run can send a valid transcript back to the provider.
-          for (final t in pending.skip(pi)) {
-            resultBlocks.add(
-              HarnessToolResultBlock(
-                toolUseId: t.id,
-                content: 'Cancelled before the tool could run.',
-                isError: true,
-              ),
-            );
-          }
-          history.add(
-            HarnessMessage.toolResults(
-              resultBlocks,
-              // Carried on the message that activated them, so a later fold or a
-              // restart can still tell these tools are callable once the reference
-              // blocks that carried them are gone.
-              activatedToolNames: activatedByCall,
-            ),
-          );
-          yield const LoopDone(LoopDoneReason.cancelled);
-          return;
-        }
-        if (batchingAllowed &&
-            pending[pi].argsError == null &&
-            _isParallelSafe(toolsByName[pending[pi].name])) {
-          // Gather the entire independent region. A free slot starts its next
-          // call immediately rather than waiting for the slowest sibling.
-          final parallelLimit = config.maxParallelToolCalls < 1
-              ? 1
-              : config.maxParallelToolCalls;
-          final batch = <_PendingTool>[];
-          while (pi < pending.length &&
-              pending[pi].argsError == null &&
-              _isParallelSafe(toolsByName[pending[pi].name])) {
-            batch.add(pending[pi]);
-            pi++;
-          }
-          final results = List<HarnessToolResult?>.filled(batch.length, null);
-          await for (final event in _executeParallelBatch(
-            batch,
-            toolsByName,
-            ctx,
-            limit: parallelLimit,
-            timeout: config.toolTimeout,
-            completedReads: earlyResults,
-          )) {
-            final call = batch[event.index];
-            final result = event.result;
-            if (result == null) {
-              yield LoopToolCallStart(
-                toolName: call.name,
-                toolUseId: call.id,
-                args: call.args,
-              );
-            } else {
-              results[event.index] = result;
-              ledger.recordToolResult(call.name, isError: result.isError);
-              if (event.started) {
-                yield LoopToolCallResult(
-                  toolName: call.name,
-                  toolUseId: call.id,
-                  result: result,
-                );
-              }
-            }
-          }
-          // Completion events are immediate; history and activation remain in
-          // model order so timing cannot reorder the next cached request.
-          for (var k = 0; k < batch.length; k++) {
-            final result = results[k]!;
-            requestedActivations.addAll(result.activateTools);
-            final observation = await observationIngest.ingest(
-              toolName: batch[k].name,
-              args: batch[k].args,
-              result: result,
-              context: ctx,
-              toolUseId: batch[k].id,
-            );
-            if (observation.storageFailure case final failure?) {
-              yield LoopNotice(
-                'Original tool output was not retained: $failure',
-              );
-            }
-            resultBlocks.add(
-              HarnessToolResultBlock(
-                toolUseId: batch[k].id,
-                content: observation.content,
-                isError: result.isError,
-                images: _budgetedImages(batch[k].name, result),
-                outputReference: observation.reference,
-                toolReferences: referencesFor(batch[k], result),
-              ),
-            );
-          }
-          continue;
-        }
-        final t = pending[pi];
-        pi++;
-        yield LoopToolCallStart(
-          toolName: t.name,
-          toolUseId: t.id,
-          args: t.args,
-        );
-        final tool = toolsByName[t.name];
-        HarnessToolResult result;
-        final argsError = t.argsError;
-        if (argsError != null) {
-          // Refused before dispatch: running a tool with arguments we know are
-          // wrong produces a failure that blames the tool.
-          result = HarnessToolResult.error(argsError);
-        } else if (t.name == 'checkpoint') {
-          // Loop-handled: mark the clean boundary at the start of this turn.
-          final label = (t.args['label'] as String?)?.trim();
-          final key = (label == null || label.isEmpty) ? 'default' : label;
-          checkpoints[key] = preTurnLength;
-          result = HarnessToolResult.success('Checkpoint "$key" set.');
-        } else if (tool == null) {
-          // Deliberately does NOT enumerate the catalogue: with a deferred
-          // surface that list is ~130 names, and reprinting it into a tool
-          // result every time the model fat-fingers one is the context cost
-          // deferral was meant to remove. Point at the search instead.
-          result = HarnessToolResult.error(
-            deferredByName.isEmpty
-                ? 'Unknown tool: ${t.name}. '
-                      'Available tools: ${toolsByName.keys.join(', ')}.'
-                : 'Unknown tool: ${t.name}. Call `search_tools` to find the '
-                      'right tool for what you are trying to do, or '
-                      '`list_my_tools` to browse everything available.',
-          );
-        } else if (hooks != null &&
-            !await _preToolUseAllows(hooks, t.name, t.args)) {
-          result = HarnessToolResult.error('Denied by policy hook.');
-        } else if (_requiresApproval(tool)) {
-          if (config.approvalCallback != null) {
-            final decision = await config.approvalCallback!(tool, t.args);
-            result = decision.allowed
-                ? await _safeExecute(
-                    tool,
-                    t.args,
-                    ctx,
-                    toolCallId: t.id,
-                    timeout: config.toolTimeout,
-                  )
-                // Carries the policy's own reason + remediation so the model can
-                // replan instead of guessing who denied it and why.
-                : HarnessToolResult.error(decision.deniedMessage);
-          } else if (config.autoApprove) {
-            result = await _safeExecute(
-              tool,
-              t.args,
-              ctx,
-              toolCallId: t.id,
-              timeout: config.toolTimeout,
-            );
-          } else {
-            // Fail closed: a privileged tool must never run without an approver.
-            result = HarnessToolResult.error(
-              'Denied: "${tool.name}" requires approval but no approver is '
-              'configured for this run.',
-            );
-          }
-        } else {
-          result = await _safeExecute(
-            tool,
-            t.args,
-            ctx,
-            toolCallId: t.id,
-            timeout: config.toolTimeout,
-          );
-        }
-        if (hooks != null) {
-          // Report-only: the tool has ALREADY run, so a throwing observer must
-          // not turn a completed call into a dead run.
-          final failure = await _guardExtension(
-            'postToolUse hook',
-            () => hooks.postToolUse(
-              t.name,
-              result.content,
-              isError: result.isError,
-            ),
-          );
-          if (failure != null) {
-            yield LoopNotice(failure);
-          }
-        }
-        ledger.recordToolResult(t.name, isError: result.isError);
-        requestedActivations.addAll(result.activateTools);
-        yield LoopToolCallResult(
-          toolName: t.name,
-          toolUseId: t.id,
-          result: result,
-        );
-        final observation = await observationIngest.ingest(
-          toolName: t.name,
-          args: t.args,
-          result: result,
-          context: ctx,
-          toolUseId: t.id,
-        );
-        if (observation.storageFailure case final failure?) {
-          yield LoopNotice('Original tool output was not retained: $failure');
-        }
-        resultBlocks.add(
-          HarnessToolResultBlock(
-            toolUseId: t.id,
-            content: observation.content,
-            isError: result.isError,
-            images: _budgetedImages(t.name, result),
-            outputReference: observation.reference,
-            toolReferences: referencesFor(t, result),
-          ),
-        );
-      }
-      final activatedByRequest = activateDeferred(requestedActivations);
-      if (activatedByRequest.isNotEmpty) {
-        yield LoopToolsActivated(
-          names: activatedByRequest,
-          // Attributed to the tool that asked, so a search that activates
-          // nothing is visibly a retrieval miss rather than silent noise.
-          trigger: pending.map((t) => t.name).toSet().join(','),
-        );
-      }
-      history.add(
-        HarnessMessage.toolResults(
-          resultBlocks,
-          activatedToolNames: [...activatedByCall, ...activatedByRequest],
-        ),
+      final step = _ToolStep(
+        this,
+        output,
+        rewindRejection: rewind is _RewindRejected ? rewind.message : null,
       );
-
-      // Doom-loop guard: detect cycles in the per-turn tool-call signature.
-      // Period-1 (A-A-A): this turn's calls are byte-identical to the previous
-      // turn's. Period-2 (A-B-A-B): the model ping-pongs between two call
-      // sets — the classic "edit, revert, edit, revert" loop a period-1 check
-      // never sees. Past the limit, nudge the model to change approach (fires
-      // once per breach, then re-arms).
-      final turnSignature = [
-        for (final t in pending) '${t.name}:${jsonEncode(t.args)}',
-      ].join('|');
-      if (turnSignature == lastTurnSignature) {
-        repeatedTurns++;
-        alternatingTurns = 0;
-      } else if (turnSignature == prevTurnSignature &&
-          turnSignature != lastTurnSignature) {
-        alternatingTurns++;
-        repeatedTurns = 1;
-      } else {
-        repeatedTurns = 1;
-        alternatingTurns = 0;
-      }
-      prevTurnSignature = lastTurnSignature;
-      lastTurnSignature = turnSignature;
-      if (repeatedTurns >= repetitionLimit ||
-          alternatingTurns >= alternationLimit) {
-        final alternating = alternatingTurns >= alternationLimit;
-        repeatedTurns = 0;
-        alternatingTurns = 0;
-        history.add(
-          HarnessMessage.system(
-            alternating
-                ? 'You are alternating between the same two tool call sets '
-                      'and getting nowhere — a ping-pong loop. Stop cycling: '
-                      'pick a different approach, or explain what is blocking '
-                      'you and ask for guidance.'
-                : 'You have repeated the same tool call(s) with identical '
-                      'arguments $repetitionLimit turns in a row and are '
-                      'getting the same result. Stop repeating — change your '
-                      'approach, or explain what is blocking you and ask for '
-                      'guidance.',
-          ),
-        );
-        yield const LoopNotice(
-          'Repetition detected; steering the agent to change approach.',
-        );
+      yield* step.execute();
+      if (finished) {
+        return;
       }
 
-      // ---- 4a2. Checklist supervision: nudge once when the task list has open
-      //      items the agent has stopped maintaining. Free (no model call) and
-      //      silent on any turn that did write the list.
-      if (checklist != null) {
-        final steer = checklist.observeTurn([
-          for (final t in pending) (name: t.name, args: t.args),
-        ]);
-        if (steer != null) {
-          history.add(HarnessMessage.system(steer));
-          yield const LoopNotice(
-            'Task checklist is stale; steering the agent to update it.',
-          );
-        }
-      }
+      yield* guards.afterToolTurn(output.pending);
 
       // Reclaim uneventful older tool results — but only once there is enough
-      // to reclaim to be worth the cached prefix it rewrites. This used to run
-      // unconditionally every tool-bearing turn, which meant editing the
-      // middle of history continuously and paying full price for the whole
-      // conversation to save a few dozen tokens. Batched, it is a rare deep
-      // rewrite instead of a permanent cache leak. Full compaction remains the
-      // heavier fallback at the loop top.
+      // to reclaim to be worth the cached prefix it rewrites. Batched, it is a
+      // rare deep rewrite instead of a permanent cache leak. Full compaction
+      // remains the heavier fallback at the loop top.
       final elided = compactor?.pruneToolResults(history) ?? 0;
       if (elided > 0) {
-        // The rewrite invalidated everything from the earliest edit onward, so
-        // the anchor no longer names a position any request wrote at.
-        cacheAnchorIndex = -1;
-        // Elision masks result text and may drop a reference with it; the
-        // native catalog must follow whatever the history now carries.
-        rebuildNativeToolCatalog();
+        onHistoryRewritten(reindexed: false);
       }
 
-      // ---- 4b. Advisor: a second model reviews the turn and may inject a
-      //      steering note before the next turn. Rate-limited to at most once
-      //      per `advisorImmuneTurns` tool-turns and deduped, so it neither
-      //      doubles the model spend nor nags with the same note repeatedly.
-      turnsSinceAdvice++;
-      if (advisor != null && turnsSinceAdvice >= advisorEveryTurns) {
-        turnsSinceAdvice = 0;
-        AdvisorNote? note;
-        try {
-          note = await advisor.review(history);
-        } on Object catch (e) {
-          // Advice is optional by construction; a failing reviewer costs the
-          // note, not the run.
-          yield LoopNotice('Advisor review failed and was skipped: $e');
-          note = null;
-        }
-        if (note != null) {
-          history.add(HarnessMessage.system(_formatAdvisory(note)));
-          yield LoopAdvisorNote(note.note, severity: note.severity);
-        }
+      yield* guards.advise();
+      if (finished) {
+        return;
       }
-
-      // ---- 5. Budget enforcement (goal mode). Time and tokens are handled
-      //      symmetrically: a hard budget stops the run; a soft budget steers
-      //      once at the pressure threshold and again when exhausted, then lets
-      //      the model finish naturally.
-      final budget = config.budget;
-      if (budget.isActive) {
-        final timeBudget = budget.timeBudget;
-        final tokenBudget = budget.tokenBudget;
-        final timeExhausted =
-            timeBudget != null && stopwatch.elapsed >= timeBudget;
-        final tokenExhausted =
-            tokenBudget != null && billableTokensNow() >= tokenBudget;
-        if (timeExhausted || tokenExhausted) {
-          if (budget.hardStop) {
-            yield LoopNotice(
-              tokenExhausted
-                  ? 'Token budget exhausted.'
-                  : 'Time budget '
-                        'exhausted.',
-            );
-            yield LoopDone(
-              LoopDoneReason.budgetExhausted,
-              unmetContractId: ledger.isActive && !ledger.satisfied
-                  ? ledger.contract!.id
-                  : null,
-            );
-            return;
-          }
-          if (!pressureNotified) {
-            pressureNotified = true;
-            const steer =
-                'Your budget is exhausted. Wrap up and deliver your '
-                'result now.';
-            history.add(HarnessMessage.system(steer));
-            yield const LoopNotice(steer);
-          }
-        } else if (!pressureNotified) {
-          final timePressure =
-              timeBudget != null &&
-              stopwatch.elapsed >= timeBudget * budget.pressureFraction;
-          final tokenPressure =
-              tokenBudget != null &&
-              billableTokensNow() >= tokenBudget * budget.pressureFraction;
-          if (timePressure || tokenPressure) {
-            pressureNotified = true;
-            const steer =
-                'You are approaching your budget. Wrap up your '
-                'work and deliver your result now.';
-            history.add(HarnessMessage.system(steer));
-            yield const LoopNotice(steer);
-          }
-        }
-      }
-      // ---- 5b. External budget (host-priced): the dispatch layer alone can
-      //      price usage, so it hands the loop a poll instead of a number.
-      //      Soft pressure steers once (wrap up + leave a clean handoff)
-      //      before the hard stop ends the run mid-task; the host's own
-      //      messaging carries the why.
-      if (!externalPressureSteered &&
-          (config.externalBudgetPressure?.call() ?? false)) {
-        externalPressureSteered = true;
-        const steer =
-            'You are approaching this run\u2019s cost budget. Wrap up '
-            'your work NOW: persist important notes, leave the worktree in a '
-            'coherent state and deliver your result \u2014 a follow-up run '
-            'continues from what you leave behind.';
-        history.add(HarnessMessage.system(steer));
-        yield const LoopNotice(steer);
-      }
-      if (config.externalBudgetExceeded?.call() ?? false) {
-        yield const LoopNotice('External budget exhausted.');
-        yield LoopDone(
-          LoopDoneReason.budgetExhausted,
-          unmetContractId: ledger.isActive && !ledger.satisfied
-              ? ledger.contract!.id
-              : null,
-        );
+      yield* guards.budgetAfterTurn();
+      if (finished) {
         return;
       }
     }
 
-    // ---- 6. Turn-ceiling handoff (only reached when a ceiling exists). ----
-    // Hitting the ceiling mid-task used to discard everything the run learned:
-    // the history died with the loop and only the last prose fragment reached
-    // the space, so a follow-up "continue" started from nothing. Give the
-    // model one final, tool-free turn to consolidate. The text streams like
-    // any answer, so it lands in the persisted message the next run's
-    // conversation context rebuilds from — and the human sees what happened.
-    // Best-effort: a provider error here must never mask the ceiling stop.
-    if (!cancelToken.isCancelled && !hardBudgetExhausted()) {
-      const handoff =
-          'You reached this run\'s turn limit and it is stopping now. Do NOT '
-          'call any tool. Write a concise handoff for whoever continues this '
-          'work: (1) the task, (2) what you learned — key files, symbols, '
-          'decisions, with specifics — (3) what remains, as ordered next '
-          'steps.';
-      history.add(HarnessMessage.system(handoff));
-      final handoffBuffer = StringBuffer();
-      await for (final event in provider.complete(
-        messages: history,
-        tools: const [],
-        config: completeConfig.copyWith(
-          purpose: LlmCallPurpose.sideRequest,
-          callId: '$callIdPrefix:handoff',
-        ),
-      )) {
-        if (cancelToken.isCancelled) {
-          break;
-        }
-        switch (event) {
-          case LlmTextDelta(:final text):
-            handoffBuffer.write(text);
-            yield LoopTextDelta(text);
-          case LlmUsage():
-            yield LoopUsage(event);
-          default:
-            // Thinking, tool deltas, errors: ignored — this turn is
-            // prose-only and best-effort.
-            break;
-        }
-      }
-      final handoffText = handoffBuffer.toString().trim();
-      if (handoffText.isNotEmpty) {
-        history.add(HarnessMessage.assistant(handoffText));
-      }
-    }
+    yield* _turnCeilingHandoff();
+    // Turn ceiling reached (only reachable when a ceiling is configured — an
+    // uncapped loop never exits the turn loop normally). The primary cause
+    // stays `maxTurns`; an unmet contract rides along.
+    yield* finish(LoopDoneReason.maxTurns);
+  }
 
-    // Turn ceiling reached (only reachable when a ceiling is configured —
-    // an uncapped loop never exits the turn loop normally). The primary cause
-    // stays `maxTurns`, but an unmet contract rides along: "ran out of turns
-    // without delivering" and "ran out of turns after delivering" are
-    // different products.
+  /// The ONE terminal path. Saves the transcript (at its last clean boundary)
+  /// and emits exactly one [LoopDone] — preceded by exactly one [LoopError]
+  /// when [error] is given or [reason] is [LoopDoneReason.error], so a host
+  /// that derives its exit status from the error stream never sees a failed
+  /// run as a clean exit.
+  ///
+  /// Every reason flushes the final turn: a budget stop, a cancel, the turn
+  /// ceiling or an error used to skip the save, leaving the resumed run one
+  /// turn stale with the last turn's work unsaved.
+  Stream<AgentLoopEvent> finish(
+    LoopDoneReason reason, {
+    String? error,
+    String? errorCode,
+  }) async* {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    await persistTranscript();
+    if (error != null) {
+      yield LoopError(error, code: errorCode);
+    } else if (reason == LoopDoneReason.error) {
+      yield LoopError(
+        'The run stopped on an unrecoverable error.',
+        code: errorCode ?? 'loop_error',
+      );
+    }
+    final carriesContract = switch (reason) {
+      LoopDoneReason.budgetExhausted ||
+      LoopDoneReason.maxTurns ||
+      LoopDoneReason.contractUnmet => true,
+      _ => false,
+    };
     yield LoopDone(
-      LoopDoneReason.maxTurns,
-      unmetContractId: ledger.isActive && !ledger.satisfied
+      reason,
+      unmetContractId: carriesContract && ledger.isActive && !ledger.satisfied
           ? ledger.contract!.id
           : null,
     );
   }
 
-  /// Whether [tool] must clear the approval gate before running. A tool is
-  /// gated when it is above read-tier OR declares any PRD 24 effect class (so a
-  /// bridged MCP tool that is mis-tiered `read` but really performs a
-  /// prPublish/fileDelete effect is still gated — its declared classes, not its
-  /// tier, are authoritative). Self-guarding tools (sandboxed `bash`) stay
-  /// exempt: they enforce their own finer-grained command policy in the runner.
-  bool _requiresApproval(HarnessTool tool) =>
-      (tool.approvalTier != ToolApprovalTier.read ||
-          tool.actionClasses.isNotEmpty) &&
-      !tool.selfGuards;
+  // ---------------------------------------------------------------------------
+  // Persistence + history rewrites
+  // ---------------------------------------------------------------------------
 
-  /// Concurrent-safe with siblings: [HarnessTool.parallelSafe], no loop
-  /// approval, not loop-handled (checkpoint/rewind). Batch calls tools
-  /// directly, so anything [_requiresApproval] would gate stays sequential
-  /// (incl. effectful MCP with [HarnessTool.actionClasses]).
-  bool _isParallelSafe(HarnessTool? tool) =>
-      tool != null &&
-      tool.parallelSafe &&
-      !_requiresApproval(tool) &&
-      !harnessControlToolNames.contains(tool.name);
-
-  /// The images from [result] capped to the per-tool budget.
-  ///
-  /// Applied by the loop rather than by each tool: a tool that captures three
-  /// frames should not have to know the transcript's image economics, and a
-  /// bridged MCP tool could not know them at all. Images cost ~1200 tokens
-  /// each and survive compaction (which shrinks text but cannot shrink a
-  /// screenshot), so an unbudgeted tool would quietly eat the window.
-  List<HarnessImageBlock> _budgetedImages(
-    String toolName,
-    HarnessToolResult result,
-  ) {
-    if (result.images.isEmpty) {
-      return const [];
-    }
-    return capToolImages(
-      result.images,
-      ToolOutputLimitTable.defaults.forTool(toolName),
-    );
-  }
-
-  /// Whether the pre-tool gate allows the call. A THROWING gate denies.
-  ///
-  /// Fail-closed matches the rest of the approval machinery: a hook that
-  /// cannot answer is not permission, and the previous behaviour (the
-  /// exception escaping the loop's `async*` generator) both skipped the
-  /// terminal event AND left the caller unable to tell allow from error.
-  static Future<bool> _preToolUseAllows(
-    AgentLoopHooks hooks,
-    String name,
-    Map<String, dynamic> args,
-  ) async {
-    try {
-      return await hooks.preToolUse(name, args);
-    } on Object {
-      return false;
-    }
-  }
-
-  /// Runs a third-party extension point, returning a message when it THREW.
-  ///
-  /// Extension points (hooks, compactor, advisor) are host-supplied: the
-  /// shipped batteries are safe by construction, but the kernel's
-  /// exactly-one-terminal-event contract must not depend on that.
-  static Future<String?> _guardExtension(
-    String label,
-    Future<void> Function() action,
-  ) async {
-    try {
-      await action();
-      return null;
-    } on Object catch (e) {
-      return '$label failed: $e';
-    }
-  }
-
-  /// Forwards [source], ending promptly when [token] is cancelled.
-  ///
-  /// The default (non-overlap) path consumed the provider stream in a plain
-  /// `await for`, which can only notice cancellation when an EVENT arrives — so
-  /// an idle or wedged stream, precisely the shape a wall-clock-limited turn
-  /// exists to bound, kept the run holding it open until the provider happened
-  /// to send something. Racing the token against the subscription fixes that
-  /// without turning on read speculation: nothing is read ahead, events are
-  /// forwarded one at a time, and the only thing added is a way to let go.
-  ///
-  /// Cancelling the subscription is also what lets an observed provider
-  /// finalize: the usage recorder emits when its stream terminates, so a stream
-  /// nobody unsubscribes never records the tokens it had already billed.
-  Stream<LlmEvent> _cancelableModelStream(
-    Stream<LlmEvent> source,
-    CancellationToken token,
-  ) {
-    late StreamController<LlmEvent> controller;
-    StreamSubscription<LlmEvent>? subscription;
-    var finished = false;
-
-    Future<void> release() async {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      await subscription?.cancel();
-      subscription = null;
-      if (!controller.isClosed) {
-        await controller.close();
-      }
-    }
-
-    controller = StreamController<LlmEvent>(
-      onListen: () {
-        subscription = source.listen(
-          (event) {
-            if (!finished) {
-              controller.add(event);
-            }
-          },
-          onError: (Object error, StackTrace stack) {
-            if (finished) {
-              return;
-            }
-            finished = true;
-            controller.addError(error, stack);
-            unawaited(controller.close());
-          },
-          onDone: () {
-            if (finished) {
-              return;
-            }
-            finished = true;
-            unawaited(controller.close());
-          },
-        );
-        // An already-cancelled token completes immediately, so a run cancelled
-        // before this turn reaches the provider stops on the first microtask.
-        unawaited(token.whenCancelled.then((_) => release()));
-      },
-      onCancel: () async {
-        finished = true;
-        await subscription?.cancel();
-        subscription = null;
-      },
-    );
-    return controller.stream;
-  }
-
-  /// Merges provider events with a bounded queue of explicitly safe reads.
-  /// Cancelling the subscription cancels both lanes. Failed attempts discard
-  /// their observations; a successful attempt reuses each result exactly once.
-  Stream<Object> _overlapReadOnlyTools(
-    Stream<LlmEvent> source,
-    Map<String, HarnessTool> tools,
-    HarnessToolContext context, {
-    required int limit,
-    Duration? timeout,
-  }) {
-    final stopped = CancellationTokenSource();
-    final token = CancellationToken.any([
-      context.cancel ?? CancellationToken.none,
-      stopped.token,
-    ]);
-    final childContext = context.withCancel(token);
-    final events = StreamController<Object>();
-    final queued = <_PendingTool>[];
-    final seen = <String>{};
-    StreamSubscription<LlmEvent>? subscription;
-    var next = 0;
-    var active = 0;
-    var sourceDone = false;
-    var barrier = false;
-    var closed = false;
-    late void Function() pump;
-
-    Future<void> execute(_PendingTool call) async {
-      final result = await _safeExecute(
-        tools[call.name]!,
-        call.args,
-        childContext,
-        toolCallId: call.id,
-        timeout: timeout,
-      );
-      active--;
-      if (closed) {
-        return;
-      }
-      events.add(
-        LoopToolCallResult(
-          toolName: call.name,
-          toolUseId: call.id,
-          result: result,
-        ),
-      );
-      pump();
-    }
-
-    pump = () {
-      if (closed) {
-        return;
-      }
-      if (token.isCancelled) {
-        next = queued.length;
-      } else {
-        while (active < limit && next < queued.length) {
-          final call = queued[next++];
-          active++;
-          events.add(
-            LoopToolCallStart(
-              toolName: call.name,
-              toolUseId: call.id,
-              args: call.args,
-            ),
-          );
-          unawaited(execute(call));
-        }
-      }
-      if (sourceDone && active == 0 && next == queued.length) {
-        closed = true;
-        unawaited(events.close());
-      }
-    };
-    events.onListen = () {
-      if (token.isCancelled) {
-        sourceDone = true;
-        pump();
-        return;
-      }
-      subscription = source.listen(
-        (event) {
-          if (closed) {
-            return;
-          }
-          events.add(event);
-          if (event is LlmError) {
-            barrier = true;
-            stopped.cancel('The provider attempt failed.');
-            pump();
-          } else if (event is LlmToolUseDelta) {
-            if (!seen.add(event.id)) {
-              barrier = true;
-              stopped.cancel('The provider repeated a tool-call id.');
-              pump();
-              return;
-            }
-            if (barrier) {
-              return;
-            }
-            final call = _PendingTool.fromStream(
-              event.id,
-              event.name,
-              event.argumentsJson,
-            );
-            final tool = tools[call.name];
-            if (call.argsError != null ||
-                tool == null ||
-                !tool.speculativeReadSafe ||
-                tool.approvalTier != ToolApprovalTier.read ||
-                tool.selfGuards ||
-                tool.actionClasses.isNotEmpty ||
-                !_isParallelSafe(tool)) {
-              barrier = true;
-              return;
-            }
-            queued.add(call);
-            pump();
-          }
-        },
-        onError: (Object error, StackTrace stack) {
-          stopped.cancel('The provider stream failed.');
-          if (!closed) {
-            events.addError(error, stack);
-          }
-        },
-        onDone: () {
-          sourceDone = true;
-          pump();
-        },
-      );
-      unawaited(
-        token.whenCancelled.then((_) async {
-          await subscription?.cancel();
-          sourceDone = true;
-          pump();
-        }),
-      );
-    };
-    events.onPause = () => subscription?.pause();
-    events.onResume = () => subscription?.resume();
-    events.onCancel = () async {
-      closed = true;
-      stopped.cancel('The provider attempt was abandoned.');
-      await subscription?.cancel();
-    };
-    return events.stream;
-  }
-
-  Stream<({int index, bool started, HarnessToolResult? result})>
-  _executeParallelBatch(
-    List<_PendingTool> calls,
-    Map<String, HarnessTool> tools,
-    HarnessToolContext context, {
-    required int limit,
-    Duration? timeout,
-    Map<String, HarnessToolResult> completedReads = const {},
-  }) {
-    final stopped = CancellationTokenSource();
-    final token = CancellationToken.any([
-      context.cancel ?? CancellationToken.none,
-      stopped.token,
-    ]);
-    final childContext = context.withCancel(token);
-    final events =
-        StreamController<
-          ({int index, bool started, HarnessToolResult? result})
-        >();
-    var next = 0;
-    var active = 0;
-    var finished = 0;
-    var closed = false;
-    late void Function() pump;
-
-    Future<void> execute(int index) async {
-      final call = calls[index];
-      final result = await _safeExecute(
-        tools[call.name]!,
-        call.args,
-        childContext,
-        toolCallId: call.id,
-        timeout: timeout,
-      );
-      active--;
-      finished++;
-      if (closed) {
-        return;
-      }
-      events.add((index: index, started: true, result: result));
-      pump();
-    }
-
-    pump = () {
-      if (closed) {
-        return;
-      }
-      if (token.isCancelled) {
-        while (next < calls.length) {
-          events.add((
-            index: next++,
-            started: false,
-            result: HarnessToolResult.error(
-              'Cancelled before the tool could run.',
-            ),
-          ));
-          finished++;
-        }
-      } else {
-        while (active < limit && next < calls.length) {
-          final index = next++;
-          final alreadyCompleted = completedReads[calls[index].id];
-          if (alreadyCompleted != null) {
-            finished++;
-            events.add((
-              index: index,
-              started: false,
-              result: alreadyCompleted,
-            ));
-            continue;
-          }
-          active++;
-          events.add((index: index, started: true, result: null));
-          unawaited(execute(index));
-        }
-      }
-      if (finished == calls.length) {
-        closed = true;
-        unawaited(events.close());
-      }
-    };
-    events.onListen = pump;
-    events.onCancel = () {
-      closed = true;
-      stopped.cancel('Tool result subscription closed.');
-    };
-    return events.stream;
-  }
-
-  Future<HarnessToolResult> _safeExecute(
-    HarnessTool tool,
-    Map<String, dynamic> args,
-    HarnessToolContext context, {
-    String? toolCallId,
-    Duration? timeout,
-  }) async {
-    Timer? timer;
-    try {
-      final execution = tool.execute(args, context.withToolCallId(toolCallId));
-      final cancel = context.cancel;
-      if (timeout == null && cancel == null) {
-        return await execution;
-      }
-      // Race the tool against its deadline AND the cancellation token. The
-      // kernel cannot kill the tool's work (it holds no handle on it), but it
-      // can stop WAITING — which is the difference between a turn that ends
-      // and a turn that is stuck forever behind one tool.
-      final guard = Completer<HarnessToolResult>();
-      unawaited(
-        execution.then(
-          (r) => guard.isCompleted ? null : guard.complete(r),
-          onError: (Object e) => guard.isCompleted
-              ? null
-              : guard.complete(
-                  HarnessToolResult.error('Tool "${tool.name}" failed: $e'),
-                ),
-        ),
-      );
-      if (timeout != null) {
-        timer = Timer(timeout, () {
-          if (!guard.isCompleted) {
-            guard.complete(
-              HarnessToolResult.error(
-                'Tool "${tool.name}" exceeded its ${timeout.inSeconds}s '
-                'time limit and was abandoned. Its work may still be '
-                'running; do not assume it finished.',
-              ),
-            );
-          }
-        });
-      }
-      if (cancel != null) {
-        unawaited(
-          cancel.whenCancelled.then((_) {
-            if (!guard.isCompleted) {
-              guard.complete(
-                HarnessToolResult.error('Tool "${tool.name}" was cancelled.'),
-              );
-            }
-          }),
-        );
-      }
-      return await guard.future;
-    } on Object catch (e) {
-      return HarnessToolResult.error('Tool "${tool.name}" failed: $e');
-    } finally {
-      timer?.cancel();
-    }
-  }
-
-  /// Remaps checkpoint indices across the fold a compaction result performed.
-  ///
-  /// Delegates to [remapCheckpointsAcrossFold] with the result's REAL span: a
-  /// text fold starts at 0, but a snapshot keeps a verbatim head and folds a
-  /// region after it, and a remap that assumed a leading fold shifted every
-  /// head checkpoint by the wrong amount — a rewind to a label then landed on a
-  /// different message while reporting success.
-  static void _remapCheckpoints(
-    Map<String, int> checkpoints,
-    HarnessCompactionResult result,
-  ) {
-    remapCheckpointsAcrossFold(
-      checkpoints,
-      foldedFromIndex: result.foldedFromIndex,
-      messagesFolded: result.messagesFolded,
-    );
-  }
-
-  /// Frames an advisor note as the agent-facing `<advisory>` block, severity as
-  /// an attribute. Injected as a `HarnessRole.system` message (rendered as a
-  /// cache-safe `<system-reminder>` user block by the provider). The `guidance`
-  /// attribute is the model's only cue for how to treat it: advice to weigh,
-  /// not an order to obey.
-  static String _formatAdvisory(AdvisorNote note) =>
-      '<advisory severity="${note.severity.name}" '
-      'guidance="weigh, do not blindly obey">\n'
-      '${note.note}\n'
-      '</advisory>';
-
-  /// Whether a provider error signals the request exceeded the model's context
-  /// window (as opposed to a rate-limit / auth / transient failure). Matches the
-  /// error codes and message phrasings used by Anthropic, OpenAI-compatible and
-  /// local providers.
-  static bool _isContextOverflow(LlmError error) {
-    final code = error.code?.toLowerCase() ?? '';
-    if (code.contains('context_length') ||
-        code.contains('context_window') ||
-        code == 'context_length_exceeded') {
+  /// Whether [history] ends on a boundary a provider will accept back: never
+  /// between an assistant `tool_use` and its `tool_result`.
+  bool get _atCleanBoundary {
+    if (history.isEmpty) {
       return true;
     }
-    final msg = error.message.toLowerCase();
-    return msg.contains('context length') ||
-        msg.contains('context window') ||
-        msg.contains('maximum context') ||
-        msg.contains('context_length_exceeded') ||
-        msg.contains('prompt is too long') ||
-        msg.contains('too many tokens') ||
-        (msg.contains('token') && msg.contains('exceed'));
+    final last = history.last;
+    return !(last.role == HarnessRole.assistant &&
+        last.content.any((b) => b is HarnessToolUseBlock));
   }
 
-  /// The index just after the original task's opening user message — the
-  /// default rewind target (keeps the task, drops the exploration).
-  static int _firstTaskIndex(List<HarnessMessage> history) {
-    for (var i = 0; i < history.length; i++) {
-      if (history[i].role == HarnessRole.user) {
-        return i + 1;
-      }
+  /// Writes the history as it stands — only at a clean boundary: a history
+  /// captured between a `tool_use` and its `tool_result` is one no provider
+  /// will accept, so a crash at that instant must restore the turn BEFORE
+  /// rather than a half-turn that cannot be replayed.
+  Future<void> persistTranscript() async {
+    final store = config.transcript.store;
+    final key = config.transcript.key;
+    if (store == null || key == null || !_atCleanBoundary) {
+      return;
     }
-    return 0;
-  }
-
-  /// The first stream rule that matches [text] and has not yet fired, or null.
-  static StreamRule? _firstUnfiredRule(
-    List<StreamRule> rules,
-    Set<StreamRule> fired,
-    String text,
-  ) {
-    for (final rule in rules) {
-      if (!fired.contains(rule) && rule.matches(text)) {
-        return rule;
-      }
+    try {
+      await store.save(
+        key,
+        HarnessTranscript(
+          messages: List<HarnessMessage>.unmodifiable(history),
+          checkpoints: Map<String, int>.unmodifiable(checkpoints),
+          turns: persistedTurns,
+          retainedSnapshotSource: snapshotSource,
+          // A copy, so the persisted record is a snapshot of the host's
+          // bookkeeping rather than a live view of a map the host may keep
+          // mutating.
+          metadata: Map<String, Object?>.of(config.transcript.metadata),
+        ),
+      );
+    } on Object {
+      // Continuity is worth less than the run in progress.
     }
-    return null;
   }
 
-  /// Estimated tokens for the per-request overhead (system prompt + the tool
-  /// schemas sent up front) so compaction budgets against real request size.
+  /// The single "history was rewritten" sequence, shared by compaction,
+  /// overflow recovery, rewind and pruning. It used to be hand-copied at each
+  /// site with drifting subsets (rewind never remapped its checkpoints).
   ///
-  /// Only the RESIDENT schemas are constant across a run; tools activated
-  /// mid-run add to this, which is why the loop tracks their cost separately
-  /// and adds it in rather than treating the whole overhead as fixed.
-  static int _overheadTokens(String? systemPrompt, List<LlmToolSchema> tools) {
-    const est = TokenEstimator.instance;
-    var total = est.estimate(systemPrompt ?? '');
-    for (final t in tools) {
-      total += _schemaTokens(t);
+  /// * [fold]: the compaction result whose span collapsed — checkpoints are
+  ///   remapped across it, the snapshot source absorbed, and pruning is
+  ///   forced to ride the rewrite that was already paid for (ARCH: compaction
+  ///   forces pruning).
+  /// * [reindexed]: message POSITIONS changed (fold, rewind), so the advisor's
+  ///   cursor and the checklist cadence must re-prime. An in-place prune keeps
+  ///   positions and leaves them alone.
+  ///
+  /// Always: the cache anchor is invalidated (it names a position no request
+  /// wrote at any more) and the native tool catalog is rebuilt for whatever
+  /// activation carriers the history still holds.
+  void onHistoryRewritten({
+    HarnessCompactionResult? fold,
+    required bool reindexed,
+  }) {
+    if (fold != null) {
+      _remapCheckpoints(checkpoints, fold);
+      _absorbSnapshotSource(fold);
+      compactor?.pruneToolResults(history, force: true);
     }
-    return total;
+    if (reindexed) {
+      config.steering.advisor?.reset();
+      guards.checklist?.resetCadence();
+    }
+    cacheAnchorIndex = -1;
+    catalog.rebuildNative(history);
   }
 
-  /// Estimated tokens one tool definition occupies on the wire.
-  static int _schemaTokens(LlmToolSchema t) => TokenEstimator.instance.estimate(
-    '${t.name} ${t.description} ${jsonEncode(t.inputSchema)}',
+  /// Folds a compaction result's snapshot bookkeeping into [snapshotSource].
+  ///
+  /// Only a pass that CHANGED anything can say something about the carrier: a
+  /// reported source is a page that is (still) on the wire; otherwise the
+  /// source is spent — but only if the carrier is actually gone. The carrier's
+  /// IDENTITY decides (the `isSnapshotCarrier` marker), not how many images
+  /// happen to be left: a fold can drop the page while an unrelated screenshot
+  /// stays.
+  void _absorbSnapshotSource(HarnessCompactionResult result) {
+    if (!result.changed) {
+      return;
+    }
+    final source = result.retainedSnapshotSource;
+    if (source != null) {
+      snapshotSource = source;
+      // The folded span collapsed into ONE replacement message AT
+      // `foldedFromIndex`, so that message is the page the source describes.
+      final index = result.foldedFromIndex;
+      if (index >= 0 &&
+          index < history.length &&
+          !history[index].isSnapshotCarrier) {
+        history[index] = history[index].copyWith(isSnapshotCarrier: true);
+      }
+      return;
+    }
+    if (!history.any((m) => m.isSnapshotCarrier)) {
+      snapshotSource = null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Turn-boundary phases
+  // ---------------------------------------------------------------------------
+
+  /// Take-over pause: hold at the clean turn boundary until resumed (PRD 16
+  /// §8). The hand-back summary arrives as steering and is drained right after.
+  Stream<AgentLoopEvent> _pauseAtBoundary() async* {
+    final pauseGate = config.steering.pauseGate;
+    if (pauseGate == null || !pauseGate.isPaused) {
+      return;
+    }
+    yield const LoopNotice('Paused at turn boundary (take-over).');
+    // Race the resume against cancellation: awaiting the gate alone meant a
+    // cancel while paused woke nothing and the run leaked.
+    await Future.any<void>([pauseGate.waitWhilePaused(), cancel.whenCancelled]);
+    if (cancel.isCancelled) {
+      yield* finish(LoopDoneReason.cancelled);
+      return;
+    }
+    yield const LoopNotice('Resumed by hand-back.');
+  }
+
+  /// Compacts the history when it nears the context window. Runs BEFORE the
+  /// pre-turn boundary is captured so checkpoint/rewind indices refer to the
+  /// post-compaction list.
+  Stream<AgentLoopEvent> _compactNearWindow() async* {
+    final compactor = this.compactor;
+    if (compactor == null || config.compaction.contextWindow == null) {
+      return;
+    }
+    // A THROWING compactor must not take the run down: compaction is an
+    // optimization, and the turn is still runnable without it (the provider's
+    // own overflow error is the backstop). Report and continue.
+    HarnessCompactionResult? result;
+    try {
+      result = await raceCancellation(
+        compactor.maybeCompact(
+          history,
+          contextWindow: config.compaction.contextWindow,
+          overheadTokens: overheadTokensNow(),
+          reservedOutputTokens: config.maxTokens,
+          selfAgentName: config.compaction.selfAgentName,
+          cancel: cancel,
+        ),
+        cancel,
+      );
+    } on Object catch (e) {
+      yield LoopNotice('Compaction failed and was skipped: $e');
+      result = null;
+    }
+    if (result != null && result.changed) {
+      onHistoryRewritten(fold: result, reindexed: true);
+      yield _compactionEvent(result);
+    }
+  }
+
+  /// Forced compaction after the provider rejected the request as too large.
+  ///
+  /// Returns the compaction event when the history changed (the turn should
+  /// be re-issued), or a failure message when the compactor THREW — guarded
+  /// so a throw cannot escape the generator without a terminal event; the
+  /// original overflow error then ends the run through [finish].
+  Future<({LoopCompaction? event, String? failure})>
+  recoverFromOverflow() async {
+    final compactor = this.compactor;
+    if (compactor == null || config.compaction.contextWindow == null) {
+      return (event: null, failure: null);
+    }
+    try {
+      final result = await raceCancellation(
+        compactor.maybeCompact(
+          history,
+          contextWindow: config.compaction.contextWindow,
+          overheadTokens: overheadTokensNow(),
+          reservedOutputTokens: config.maxTokens,
+          selfAgentName: config.compaction.selfAgentName,
+          force: true,
+          cancel: cancel,
+        ),
+        cancel,
+      );
+      if (result == null || !result.changed) {
+        return (event: null, failure: null);
+      }
+      onHistoryRewritten(fold: result, reindexed: true);
+      return (event: _compactionEvent(result), failure: null);
+    } on Object catch (e) {
+      return (event: null, failure: 'Overflow compaction failed: $e');
+    }
+  }
+
+  static LoopCompaction _compactionEvent(HarnessCompactionResult result) =>
+      LoopCompaction(
+        summarized: result.summarized,
+        messagesFolded: result.messagesFolded,
+        tokensBefore: result.tokensBefore,
+        tokensAfter: result.tokensAfter,
+      );
+
+  /// Mid-run steering: drain messages queued while the agent was working and
+  /// inject them before this turn's provider call.
+  Stream<AgentLoopEvent> _drainSteering() async* {
+    final steering = config.steering.queue;
+    if (steering == null) {
+      return;
+    }
+    for (final msg in steering.drainSteering()) {
+      if (msg.content.trim().isNotEmpty) {
+        history.add(HarnessMessage.user(msg.content.trim()));
+        yield const LoopNotice('Steering message injected.');
+      }
+    }
+    for (final msg in steering.drainAside()) {
+      if (msg.content.trim().isNotEmpty) {
+        history.add(HarnessMessage.system(msg.content.trim()));
+      }
+    }
+  }
+
+  /// The model answered with no tool calls: finish, or continue the run
+  /// (truncation continuation, queued follow-up, contract nudge).
+  Stream<AgentLoopEvent> _onToolFreeTurn(_TurnOutput output) async* {
+    // Output-loss guard: billed tokens with almost no delivered content
+    // (buffering tool-call parsers drop the buffer when max_tokens cuts
+    // mid-`<tool_call>`). Do not auto-continue — same ceiling loses again.
+    final deliveredChars = output.text.length + output.thinking.length;
+    if (output.stopReason == LlmStopReason.maxTokens &&
+        output.outputTokens >= _minTokensForLossCheck &&
+        deliveredChars < output.outputTokens * _minCharsPerOutputToken) {
+      yield* finish(
+        LoopDoneReason.providerOutputLost,
+        error:
+            'The provider billed ${output.outputTokens} output tokens for '
+            'this turn but delivered only $deliveredChars characters and cut '
+            'the turn off at the output ceiling. The response was almost '
+            'certainly discarded by a server-side tool-call parser that never '
+            'saw its closing tag. Raise the output ceiling or use a provider '
+            'that does not drop a partial tool call.',
+        errorCode: 'provider_output_lost',
+      );
+      return;
+    }
+    // A `max_tokens`-truncated answer is NOT a clean completion — the model
+    // was cut off mid-response. Auto-continue (bounded by a consecutive
+    // streak) so the answer finishes instead of silently ending truncated.
+    if (output.stopReason == LlmStopReason.maxTokens &&
+        consecutiveTruncations < _maxConsecutiveTruncations) {
+      consecutiveTruncations++;
+      history.add(
+        HarnessMessage.system(
+          'Your previous response was cut off at the output-token limit. '
+          'Continue exactly where you left off; do not repeat what you '
+          'already wrote.',
+        ),
+      );
+      yield const LoopNotice(
+        'Response truncated at the output limit; continuing.',
+      );
+      return;
+    }
+    // Follow-up lane: queued messages meant to run once the agent finishes.
+    final followUps = config.steering.queue?.drainFollowUp() ?? const [];
+    if (followUps.isNotEmpty) {
+      for (final msg in followUps) {
+        if (msg.content.trim().isNotEmpty) {
+          history.add(HarnessMessage.user(msg.content.trim()));
+        }
+      }
+      // A new user prompt: its answer gets a fresh truncation allowance.
+      consecutiveTruncations = 0;
+      yield const LoopNotice('Follow-up message injected; continuing.');
+      return;
+    }
+    // Completion contract: if a deliverable is owed and missing, nudge
+    // (bounded) then end `contractUnmet`. After follow-up drain so user
+    // steering outranks the reminder.
+    if (ledger.isActive && !await ledger.resolveSatisfied()) {
+      if (ledger.canNudge) {
+        history.add(HarnessMessage.system(ledger.takeNudge()));
+        yield LoopNotice(
+          'Completion contract "${ledger.contract!.id}" unmet — '
+          'steering the agent to deliver.',
+        );
+        return;
+      }
+      yield* finish(LoopDoneReason.contractUnmet);
+      return;
+    }
+    // The final answer is in [history] and a model that answered with no tool
+    // calls leaves no dangling `tool_use`, so [finish] saves it: without that
+    // the next run resumed from the turn BEFORE the answer.
+    yield* finish(LoopDoneReason.completed);
+  }
+
+  /// Handles a `rewind` call in [pending]: prunes the history back to the
+  /// named checkpoint (or the original task), keeping a digest, and drops
+  /// checkpoints that pointed into the discarded span.
+  ///
+  /// An UNKNOWN label is a failure the model must see, not a silent rewind to
+  /// the start of the task that reports success: the turn's tools then run
+  /// normally and the rewind call gets an error result naming the labels that
+  /// exist.
+  Future<_RewindOutcome?> _tryRewind(List<_PendingTool> pending) async {
+    final call = pending.where((t) => t.name == 'rewind').firstOrNull;
+    if (call == null || call.argsError != null) {
+      return null;
+    }
+    final rawLabel = (call.args['checkpoint'] as String?)?.trim();
+    final label = (rawLabel == null || rawLabel.isEmpty) ? null : rawLabel;
+    final int raw;
+    if (label == null) {
+      raw = _firstTaskIndex(history);
+    } else {
+      final at = checkpoints[label];
+      if (at == null) {
+        final known = checkpoints.keys.toList()..sort();
+        final listed = known.isEmpty
+            ? 'No checkpoints are set in this run.'
+            : 'Set checkpoints: ${known.map((k) => '"$k"').join(', ')}.';
+        return _RewindRejected(
+          'Unknown checkpoint "$label" — nothing was rewound. $listed '
+          'Omit `checkpoint` to rewind to the original task.',
+        );
+      }
+      raw = at;
+    }
+    final target = raw.clamp(0, history.length);
+    final dropped = history.sublist(target);
+    // Deferred tools the dropped span had activated are still callable, so
+    // the replacement message must carry their names.
+    final carriedThroughRewind = <String>{
+      for (final message in dropped) ...message.activatedToolNames,
+    };
+    // A rewind can drop the snapshot page itself. The source goes with the
+    // PAGE, identified by its marker.
+    if (snapshotSource != null && dropped.any((m) => m.isSnapshotCarrier)) {
+      snapshotSource = null;
+    }
+    final digest = dropped.isEmpty
+        ? ''
+        : const StructuralHarnessSummarizer().digest(
+            HarnessCompactionInput(
+              messages: dropped,
+              selfAgentName: config.compaction.selfAgentName,
+            ),
+          );
+    history
+      ..removeRange(target, history.length)
+      ..add(
+        HarnessMessage(
+          role: HarnessRole.user,
+          content: [
+            HarnessTextBlock(
+              '[Rewound${label != null ? ' to "$label"' : ''}. '
+              'Dropped ${dropped.length} exploratory message(s).'
+              '${digest.isEmpty ? '' : '\n\n$digest'}\n\nContinue.',
+            ),
+          ],
+          activatedToolNames: carriedThroughRewind.toList(growable: false),
+        ),
+      );
+    // Labels set inside the discarded span now point past (or at a different
+    // message than) what they marked; a later rewind to one would clamp and
+    // silently drop the wrong span. A label AT the target is still exact.
+    checkpoints.removeWhere((_, index) => index > target);
+    onHistoryRewritten(reindexed: true);
+    return _Rewound(
+      'Rewound context${label != null ? ' to "$label"' : ''} '
+      '(${dropped.length} messages dropped).',
+    );
+  }
+
+  /// Turn-ceiling handoff (only reached when a ceiling exists): one final,
+  /// tool-free turn to consolidate, so a follow-up "continue" starts from a
+  /// handoff instead of nothing. Best-effort: a provider error here must never
+  /// mask the ceiling stop.
+  Stream<AgentLoopEvent> _turnCeilingHandoff() async* {
+    if (cancel.isCancelled || guards.hardBudgetExhausted()) {
+      return;
+    }
+    const handoff =
+        'You reached this run\'s turn limit and it is stopping now. Do NOT '
+        'call any tool. Write a concise handoff for whoever continues this '
+        'work: (1) the task, (2) what you learned — key files, symbols, '
+        'decisions, with specifics — (3) what remains, as ordered next '
+        'steps.';
+    history.add(HarnessMessage.system(handoff));
+    final buffer = StringBuffer();
+    try {
+      await for (final event
+          in provider
+              .complete(
+                messages: history,
+                tools: const [],
+                config: completeConfig.copyWith(
+                  purpose: LlmCallPurpose.sideRequest,
+                  callId: '$callIdPrefix:handoff',
+                ),
+              )
+              .untilCancelled(cancel)) {
+        switch (event) {
+          case LlmTextDelta(:final text):
+            buffer.write(text);
+            yield LoopTextDelta(text);
+          case LlmUsage():
+            yield LoopUsage(event);
+          default:
+            // Thinking, tool deltas, errors: ignored — prose-only and
+            // best-effort.
+            break;
+        }
+      }
+    } on Object catch (e) {
+      yield LoopNotice('Turn-limit handoff failed: $e');
+    }
+    final text = buffer.toString().trim();
+    if (text.isNotEmpty) {
+      history.add(HarnessMessage.assistant(text));
+    }
+  }
+}
+
+/// What [_RunState._tryRewind] decided.
+sealed class _RewindOutcome {
+  const _RewindOutcome();
+}
+
+/// The history was rewound; the turn's other calls are dropped with it.
+class _Rewound extends _RewindOutcome {
+  const _Rewound(this.notice);
+  final String notice;
+}
+
+/// The rewind was refused (unknown label); the turn's tools run normally.
+class _RewindRejected extends _RewindOutcome {
+  const _RewindRejected(this.message);
+  final String message;
+}
+
+/// Runs a third-party extension point, returning a message when it THREW.
+///
+/// Extension points (hooks, compactor, advisor) are host-supplied: the shipped
+/// batteries are safe by construction, but the kernel's exactly-one-terminal
+/// event contract must not depend on that.
+Future<String?> _guardExtension(
+  String label,
+  Future<void> Function() action,
+) async {
+  try {
+    await action();
+    return null;
+  } on Object catch (e) {
+    return '$label failed: $e';
+  }
+}
+
+/// Remaps checkpoint indices across the fold a compaction result performed,
+/// using the result's REAL span (a snapshot keeps a verbatim head and folds a
+/// region after it).
+void _remapCheckpoints(
+  Map<String, int> checkpoints,
+  HarnessCompactionResult result,
+) {
+  remapCheckpointsAcrossFold(
+    checkpoints,
+    foldedFromIndex: result.foldedFromIndex,
+    messagesFolded: result.messagesFolded,
   );
 }
 
-/// A tool call accumulated from the provider stream, awaiting execution.
-class _PendingTool {
-  _PendingTool(this.id, this.name, this.args, {this.argsError});
-
-  /// Parses [argumentsJson] as a tool argument map. Malformed/truncated JSON
-  /// must not become `{}` (that hides the parse failure as missing args);
-  /// [argsError] carries the real reason.
-  factory _PendingTool.fromStream(
-    String id,
-    String name,
-    String argumentsJson,
-  ) {
-    final raw = argumentsJson.trim();
-    if (raw.isEmpty) {
-      // Genuinely no arguments — the common shape for a zero-arg tool.
-      return _PendingTool(id, name, <String, dynamic>{});
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) {
-        return _PendingTool(id, name, decoded);
-      }
-      return _PendingTool(
-        id,
-        name,
-        <String, dynamic>{},
-        argsError:
-            'Tool arguments must be a JSON object, got '
-            '${decoded.runtimeType}: ${_excerpt(raw)}',
-      );
-    } on FormatException catch (e) {
-      return _PendingTool(
-        id,
-        name,
-        <String, dynamic>{},
-        argsError:
-            'Tool arguments were not valid JSON (${e.message}): '
-            '${_excerpt(raw)}',
-      );
+/// The index just after the original task's opening user message — the
+/// default rewind target (keeps the task, drops the exploration).
+int _firstTaskIndex(List<HarnessMessage> history) {
+  for (var i = 0; i < history.length; i++) {
+    if (history[i].role == HarnessRole.user) {
+      return i + 1;
     }
   }
-
-  /// Enough of the payload to see the break, bounded so a runaway argument
-  /// blob cannot itself become the context problem.
-  static String _excerpt(String raw) =>
-      raw.length <= 200 ? raw : '${raw.substring(0, 200)}…';
-
-  final String id;
-  final String name;
-  final Map<String, dynamic> args;
-
-  /// Non-null when [args] could not be parsed; the call must not run.
-  final String? argsError;
+  return 0;
 }
+
+/// Estimated tokens for the per-request overhead (system prompt + the RESIDENT
+/// tool schemas) so compaction budgets against real request size.
+int _overheadTokens(String? systemPrompt, List<LlmToolSchema> tools) {
+  const est = TokenEstimator.instance;
+  var total = est.estimate(systemPrompt ?? '');
+  for (final t in tools) {
+    total += _schemaTokens(t);
+  }
+  return total;
+}
+
+/// Estimated tokens one tool definition occupies on the wire.
+int _schemaTokens(LlmToolSchema t) => TokenEstimator.instance.estimate(
+  '${t.name} ${t.description} ${jsonEncode(t.inputSchema)}',
+);

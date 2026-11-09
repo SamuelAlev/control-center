@@ -19,7 +19,6 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
-import 'package:cc_harness/cancellation.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
 import 'package:test/test.dart';
 
@@ -257,6 +256,26 @@ void main() {
     );
   });
 
+  test('a failed overlay writes no .mcp.json in its place', () async {
+    // The agent's own directory is shared by every space it is in. Writing
+    // `.mcp.json` there for an overlay that does not exist would let
+    // verification pass on a space that was never prepared.
+    workspaceRepo.repos = [_repo('r1')];
+    messagingRepo.participants = [_participant('a1')];
+    agentRepo.agents = {'a1': _agent('a1')};
+    isolatedRepoRepo.worktrees = [_worktree('r1')];
+    provisioner.outcome = const SpaceWorkspaceUnavailable(
+      SpaceWorkspaceUnavailableReason.failed,
+      'disk full',
+    );
+    final service = buildSut();
+
+    await service.provision(workspaceId: 'ws', spaceId: 'ch');
+
+    expect(provisioner.writtenMcpDirs, isEmpty);
+    expect(statusCalls.last, ('ch', SpaceProvisioningStatus.failed));
+  });
+
   test('reports ready when all worktrees + overlays are provisioned', () async {
     workspaceRepo.repos = [_repo('r1')];
     messagingRepo.participants = [_participant('a1')];
@@ -468,26 +487,13 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
   /// base branch) when called.
   List<String> reportRepoNames = const [];
 
+  /// When set, every call reports this instead of preparing an overlay.
+  SpaceWorkspace? outcome;
+
   @override
-  Future<String> ensureSpaceWorkspace({
-    required String workspaceId,
-    required String spaceId,
-    required String agentSlug,
-    required String fallbackDir,
-    String? conversationId,
-    String? agentConfigDir,
-    String? ticketId,
-    String? ticketKey,
-    String? ticketTitle,
-    String branchType = 'feature',
-    String? prHeadRef,
-    String? prHeadRepoFullName,
-    String? prBranch,
-    Set<String>? repoAllowlist,
-    void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoProvisionTasks,
-    CancellationToken? cancel,
-  }) async {
+  Future<SpaceWorkspace> ensureSpaceWorkspace(
+    SpaceWorkspaceRequest request,
+  ) async {
     calls++;
     if (gated) {
       final gate = Completer<void>();
@@ -496,15 +502,21 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
     }
     if (hang) {
       await _hangGate.future;
-      if (isSpaceProvisioningCancelled(workspaceId, spaceId)) {
-        return fallbackDir;
+      if (isSpaceProvisioningCancelled(request.workspaceId, request.spaceId)) {
+        return const SpaceWorkspaceUnavailable(
+          SpaceWorkspaceUnavailableReason.cancelled,
+        );
       }
     }
     for (final name in reportRepoNames) {
-      onRepoProvision?.call(name, prHead: false);
+      request.onRepoProvision?.call(name, prHead: false);
+    }
+    final canned = outcome;
+    if (canned != null) {
+      return canned;
     }
     final dir = await Directory.systemTemp.createTemp('prov-test-');
-    return dir.path;
+    return SpaceWorkspaceReady(dir.path);
   }
 
   @override

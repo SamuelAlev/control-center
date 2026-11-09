@@ -343,6 +343,19 @@ class RpcMessagingPort implements MessagingPort {
   );
 
   @override
+  Future<String> forceSendSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+  }) => _dispatch.forceSendSteering(
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    conversationId: conversationId,
+    messageId: messageId,
+  );
+
+  @override
   Future<ConversationCompactionResult> compactConversation({
     required String workspaceId,
     required String spaceId,

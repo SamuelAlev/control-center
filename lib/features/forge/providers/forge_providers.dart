@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart' show RemoteForgeConnections;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_urls.dart';
@@ -8,16 +9,17 @@ import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/di/providers.dart'
+    show viewerGitHubIdentityProvider;
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
-import 'package:control_center/features/demo/demo_world.dart';
-
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 
-/// How often the forge-connection lookup is retried while nothing has
-/// resolved.
+/// How often the forge-connection lookup is retried while it is failing or
+/// nothing has resolved.
 ///
 /// This is an RPC to the host, not a forge call — the server's own identity
 /// cache bounds requests to each forge — so a short interval is cheap. Retrying
@@ -26,39 +28,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// the operator's inbox empty while claiming they were all caught up.
 const Duration kForgeConnectionRetryInterval = Duration(seconds: 30);
 
+/// How often a resolved, connected list is re-read, so a credential that
+/// lapses while connected (revoked, expired, a rotated Connect key) shows up
+/// without a restart.
+const Duration kForgeConnectionRefreshInterval = Duration(minutes: 2);
+
+/// The forge-connection reads, bound once (the demo binds a fixture in
+/// [demoForgeConnectionsProvider] instead).
+final forgeConnectionsRepositoryProvider = Provider<RemoteForgeConnections>(
+  (ref) => RemoteForgeConnections(ref.watch(rpcClientProvider)),
+);
+
 /// Every supported forge's connection state, as reported by the server.
 ///
-/// Never carries a token — the credential stays server-side. Never completes
-/// with an error either: a failure resolves to an all-disconnected list and
-/// schedules a retry, so downstream consumers keep their "unresolved reads as
-/// absent" contract.
+/// Never carries a token — the credential stays server-side. A failed read is
+/// an [AsyncError] that KEEPS the previous list (Riverpod carries it): an
+/// unreachable host is not "signed out", and consumers reading `.value` keep
+/// their last answer while the retry runs. Consumers that gate on it (the
+/// onboarding gate) treat an error with no previous value as unresolved.
 final forgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
   ref,
 ) async {
-  void retryLater() {
-    final timer = Timer(kForgeConnectionRetryInterval, ref.invalidateSelf);
+  void refreshIn(Duration delay) {
+    final timer = Timer(delay, ref.invalidateSelf);
     ref.onDispose(timer.cancel);
   }
 
-  // A demo server holds no credential and wires no forge port, so
-  // `forge.listConnections` is not in its registry at all. Answering here
-  // rather than calling avoids a retry timer that could never succeed, and —
-  // the part that shows — gives the viewer an identity, so the seeded review
-  // requests actually address somebody. See `kDemoViewerLogin`.
-  if (ref.watch(isDemoServerProvider)) {
-    return const [
-      ForgeConnection(
-        forge: ForgeHost.github,
-        authenticated: true,
-        username: kDemoViewerLogin,
-        source: ForgeCredentialSource.oauth,
-      ),
-    ];
+  final demo = ref.watch(demoForgeConnectionsProvider);
+  if (demo != null) {
+    return demo;
   }
 
   // Switching workspace must re-read: a workspace on its own GitHub App and
-  // one on the server's lane are different identities. Watching the id also keeps the RPC args honest if
-  // the client's injected `activeWorkspaceId` has not caught up yet.
+  // one on the server's lane are different identities. Watching the id also
+  // keeps the RPC args honest if the client's injected `activeWorkspaceId`
+  // has not caught up yet.
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   // A GitHub sign-in that lands — from any dialog, or from a deep link after
   // its dialog closed — is a new identity for every "is this mine?" test.
@@ -68,31 +72,39 @@ final forgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
     ),
   );
 
+  final List<ForgeConnection> connections;
   try {
-    final data = await ref
-        .watch(rpcClientProvider)
-        .call('forge.listConnections', overlayWorkspaceArgs(workspaceId));
-    final raw = data['connections'];
-    if (raw is! List) {
-      retryLater();
-      return const [];
-    }
-    final connections = [
-      for (final c in raw.whereType<Map<String, dynamic>>())
-        ForgeConnection.fromJson(c),
-    ];
-    // Nothing connected yet: the host may still be resolving credentials, or
-    // the operator has not connected a forge. Ask again rather than settling
-    // into a permanently empty identity.
-    if (!connections.any((c) => c.authenticated)) {
-      retryLater();
-    }
-    return connections;
+    connections = await ref
+        .watch(forgeConnectionsRepositoryProvider)
+        .list(workspaceId: workspaceId);
   } on Object {
-    retryLater();
-    return const [];
+    refreshIn(kForgeConnectionRetryInterval);
+    rethrow;
   }
+  // Nothing connected yet: the host may still be resolving credentials, or
+  // the operator has not connected a forge. Ask again soon rather than
+  // settling into a permanently empty identity; a connected list is re-read on
+  // the slower cadence so a lapse is noticed.
+  refreshIn(
+    connections.any((c) => c.authenticated && !c.needsSignIn)
+        ? kForgeConnectionRefreshInterval
+        : kForgeConnectionRetryInterval,
+  );
+  return connections;
 });
+
+/// Re-reads every view of "who is signed in to which forge" after something
+/// changed it: a sign-in or sign-out, a Connect mode change or key rotation,
+/// a workspace switching between the server's GitHub lane and its own App.
+///
+/// Takes the caller's `invalidate` (a [WidgetRef]'s or a [Ref]'s) so widgets
+/// and notifiers share one list instead of each keeping a partial copy.
+void invalidateForgeState(void Function(ProviderOrFamily) invalidate) {
+  invalidate(forgeConnectionsProvider);
+  invalidate(oauthConnectionsProvider);
+  invalidate(oauthLanesProvider);
+  invalidate(viewerGitHubIdentityProvider);
+}
 
 /// The operator's account name on each forge, lower-cased.
 ///
@@ -103,12 +115,24 @@ final forgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
 /// its PRs are mine" rather than matching everything.
 final viewerLoginsProvider = Provider<Map<ForgeHost, String>>((ref) {
   final connections = ref.watch(forgeConnectionsProvider).value ?? const [];
-  return {
-    for (final c in connections)
-      if (c.authenticated && c.username.isNotEmpty)
-        c.forge: c.username.toLowerCase(),
-  };
+  return RemoteForgeConnections.viewerLogins(connections);
 });
+
+/// The one "no forge in hand" rule: a surface that is not about a specific
+/// repo (a profile chip, a reference with no registered repo) takes the only
+/// connected forge, and GitHub when there are several or none.
+ForgeHost forgeWithoutRepo(Iterable<ForgeHost> connected) {
+  final set = connected.toSet();
+  if (set.length == 1) {
+    return set.first;
+  }
+  return ForgeHost.github;
+}
+
+/// [logins]' entry for [forgeWithoutRepo] — the viewer's login on a surface
+/// with no repo in hand. Empty when nothing is connected.
+String loginWithoutRepo(Map<ForgeHost, String> logins) =>
+    logins[forgeWithoutRepo(logins.keys)] ?? logins.values.firstOrNull ?? '';
 
 /// The forges that currently hold a usable credential.
 final connectedForgesProvider = Provider<Set<ForgeHost>>((ref) {
@@ -189,9 +213,25 @@ final forgeForRepoProvider =
           }
         }
       }
-      final connected = ref.watch(connectedForgesProvider);
-      return connected.length == 1 ? connected.first : ForgeHost.github;
+      return forgeWithoutRepo(ref.watch(connectedForgesProvider));
     });
+
+/// The forges the active workspace's repos live on.
+///
+/// For chrome about one forge (GitHub's status banner): a workspace with no
+/// repo on that forge has nothing the forge's health can degrade.
+final workspaceForgesProvider = Provider<Set<ForgeHost>>((ref) {
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  if (workspaceId == null) {
+    return const {};
+  }
+  final repos =
+      ref.watch(reposForWorkspaceProvider(workspaceId)).value ?? const [];
+  return {
+    for (final repo in repos)
+      if (repo.hasForgeRemote) repo.forge,
+  };
+});
 
 /// [ForgeUrls] for the forge hosting `owner/name`.
 final forgeUrlsForRepoProvider =
@@ -232,7 +272,7 @@ Future<ForgeConnection> setForgeToken(
     'credentials.setForgeToken',
     {'forge': forge.wire, 'token': token, ...overlayWorkspaceArgs(workspaceId)},
   );
-  ref.invalidate(forgeConnectionsProvider);
+  invalidateForgeState(ref.invalidate);
   return ForgeConnection.fromJson(data);
 }
 
@@ -244,5 +284,5 @@ Future<void> clearForgeToken(WidgetRef ref, ForgeHost forge) async {
     'forge': forge.wire,
     ...overlayWorkspaceArgs(workspaceId),
   });
-  ref.invalidate(forgeConnectionsProvider);
+  invalidateForgeState(ref.invalidate);
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -275,6 +276,30 @@ void main() {
         a.lastMessageAt!.millisecondsSinceEpoch,
         DateTime.utc(2026).millisecondsSinceEpoch,
       );
+    });
+
+    test('an agent-only space never raises the unread signal', () async {
+      final db = dbs.of('ws-1');
+      await (db.update(db.spacesTable)..where((t) => t.id.equals('b'))).write(
+        SpacesTableCompanion(kind: Value(SpaceKind.agentPeer.wire)),
+      );
+      for (final space in ['a', 'b']) {
+        await msg(
+          'agent-$space',
+          space: space,
+          sender: 'agent-1',
+          senderType: 'agent',
+          atSecond: 2,
+        );
+      }
+      expect(SpaceKind.agentPeer.isAgentOnly, isTrue);
+
+      final activity = await repo.watchSpaceActivity('ws-1').first;
+      final topic = activity.singleWhere((x) => x.spaceId == 'a');
+      final peer = activity.singleWhere((x) => x.spaceId == 'b');
+      expect(topic.lastAgentMessageAt, isNotNull);
+      expect(peer.lastAgentMessageAt, isNull);
+      expect(peer.lastMessageAt, isNotNull);
     });
 
     test('the activity plan reads indexes, not every transcript', () async {

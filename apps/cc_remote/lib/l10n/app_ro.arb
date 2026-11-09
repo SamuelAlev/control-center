@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Coleg",
+  "systemSender": "Sistem",
   "agent": "Agent",
   "attachFile": "Atașează un fișier",
   "messageHint": "Mesaj",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Ilizibile: {names}",
   "installationSuspendedTitle": "Instalarea GitHub App este suspendată",
-  "installationSuspendedBody": "Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub sau conectează un token cu acces.",
-  "installationSuspendedNotice": "Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub sau conectează un token cu acces.",
+  "installationSuspendedBody": "Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub.",
+  "installationSuspendedNotice": "Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Introdu codul afișat în browser",
   "credentialsConnectCodeMalformed": "Nu pare un cod de autentificare. Codurile au 8 litere și cifre.",
   "credentialsSignInInvalidCode": "Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.",
+  "credentialsSignInTooManyCodes": "Prea multe coduri greșite. Pornește din nou autentificarea.",
+  "credentialsSignInRetryLater": "Serviciul de autentificare nu răspunde acum. Așteaptă un minut, apoi încearcă din nou.",
+  "credentialsSignInRefused": "Autentificarea a fost refuzată. Pornește-o din nou și aprobă toate permisiunile cerute.",
+  "credentialsSignInNotSaved": "Autentificarea a reușit, dar serverul nu a putut-o salva. Încearcă din nou.",
   "credentialsSignInUnavailable": "Autentificarea în {provider} nu este încă configurată pe acest server.",
   "credentialsSignInPhoneUnreachable": "Adresa de revenire pentru autentificare a acestui server nu poate fi accesată în siguranță de pe telefon. Conectează-te din aplicația desktop sau cere proprietarului serverului să configureze o adresă HTTPS publică.",
   "credentialsLoginTimedOut": "Autentificarea a expirat. Începe o nouă încercare.",

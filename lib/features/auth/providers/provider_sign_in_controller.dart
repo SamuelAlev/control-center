@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cc_connect_core/cc_connect_core.dart'
     show ConnectOAuthLane, normaliseConfirmCode;
 import 'package:cc_data/cc_data.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,13 +32,14 @@ final class SignInCodeMalformed extends SignInCodeError {
   const SignInCodeMalformed();
 }
 
-/// The server refused the code; [message] is its explanation.
+/// The code was not accepted; [failure] says why (a wrong code, a sign-in
+/// the server no longer knows, a server that could not be reached).
 final class SignInCodeRejected extends SignInCodeError {
   /// Creates a [SignInCodeRejected].
-  const SignInCodeRejected(this.message);
+  const SignInCodeRejected(this.failure);
 
-  /// What the server said.
-  final String message;
+  /// Why, from the closed sign-in failure vocabulary.
+  final SignInFailure failure;
 }
 
 /// One attempt this client started, as the UI renders it.
@@ -135,16 +135,18 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
   /// Login id → the scope it was started in. Never shrinks during a run.
   final Map<String, String?> _started = {};
   final Map<String, Timer> _timers = {};
+  final Map<String, Timer> _expiries = {};
   final Map<String, Completer<SignInAttempt>> _results = {};
   final Set<String> _polling = {};
 
   @override
   ProviderSignInState build() {
     ref.onDispose(() {
-      for (final timer in _timers.values) {
+      for (final timer in [..._timers.values, ..._expiries.values]) {
         timer.cancel();
       }
       _timers.clear();
+      _expiries.clear();
     });
     return const ProviderSignInState();
   }
@@ -198,8 +200,8 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
   /// Hands a confirmation code the person [typed] to the server.
   ///
   /// A malformed code is refused here and never sent; a wrong one comes back
-  /// as [SignInCodeRejected] and the attempt stays open (the server fails it
-  /// after five wrong codes).
+  /// as [SignInCodeRejected] with [SignInFailure.codeMismatch] and the
+  /// attempt stays open (the server fails it after five wrong codes).
   Future<void> submitCode(String loginId, String typed) async {
     final session = state.sessions[loginId];
     if (session == null || session.isTerminal || session.completing) {
@@ -248,22 +250,29 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
         code: code,
         workspaceId: workspaceId,
       );
+      final refused = attempt.status.isTerminal ? null : attempt.codeError;
+      if (refused != null) {
+        final now = state.sessions[loginId];
+        if (now != null) {
+          _put(
+            now.copyWith(
+              attempt: attempt,
+              completing: false,
+              codeError: SignInCodeRejected(refused),
+            ),
+          );
+        }
+        return;
+      }
       _update(attempt);
-    } on RemoteRpcException catch (e) {
+    } on Object catch (e) {
       final now = state.sessions[loginId];
       if (now != null) {
         _put(
           now.copyWith(
             completing: false,
-            codeError: SignInCodeRejected(e.message),
+            codeError: SignInCodeRejected(signInFailureOfRpcError(e)),
           ),
-        );
-      }
-    } on Object catch (e) {
-      final now = state.sessions[loginId];
-      if (now != null) {
-        _put(
-          now.copyWith(completing: false, codeError: SignInCodeRejected('$e')),
         );
       }
     }
@@ -272,17 +281,17 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
   void _watch(SignInAttempt attempt) {
     final loginId = attempt.loginId;
     _timers.remove(loginId)?.cancel();
-    if (attempt.mode == SignInLaneMode.own) {
-      _timers[loginId] = Timer.periodic(
-        kSignInPollInterval,
-        (_) => unawaited(_poll(loginId)),
-      );
-      return;
-    }
-    // Connect mode completes from the browser's code; the only thing to watch
-    // for here is the attempt running out.
+    // Both modes poll: own mode finishes on the server when the provider
+    // redirects; Connect mode can finish or fail from another client (the
+    // deep link on a second device, five wrong codes) or run out, and the
+    // dialog must show it.
+    _timers[loginId] = Timer.periodic(
+      kSignInPollInterval,
+      (_) => unawaited(_poll(loginId)),
+    );
+    _expiries.remove(loginId)?.cancel();
     final left = attempt.expiresAt.difference(DateTime.now().toUtc());
-    _timers[loginId] = Timer(
+    _expiries[loginId] = Timer(
       left.isNegative ? Duration.zero : left,
       () => _expire(loginId),
     );
@@ -294,7 +303,20 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
       return;
     }
     try {
-      _update(await _repo.status(loginId, workspaceId: session.workspaceId));
+      final attempt = await _repo.status(
+        loginId,
+        workspaceId: session.workspaceId,
+      );
+      final now = state.sessions[loginId];
+      if (now == null || now.completing) {
+        // A code is on its way; its answer is the newer word.
+        return;
+      }
+      if (attempt.status.isTerminal) {
+        _update(attempt);
+      } else {
+        _put(now.copyWith(attempt: attempt, codeError: now.codeError));
+      }
     } on Object {
       // A dropped poll is not a failed sign-in; the next tick asks again and
       // the attempt's own expiry ends it if the server never answers.
@@ -338,6 +360,7 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
 
   void _finish(String loginId) {
     _timers.remove(loginId)?.cancel();
+    _expiries.remove(loginId)?.cancel();
     final session = state.sessions[loginId];
     if (session == null) {
       return;

@@ -1,4 +1,5 @@
-import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,7 +37,7 @@ Future<void> toggleReaction(
     return;
   }
   final prNumber = pr.number;
-  final login = ref.read(githubUserProvider).value?.login;
+  final login = ref.read(currentUserLoginForPrProvider(pr));
 
   switch (target) {
     case ReactionTarget.reviewComment:

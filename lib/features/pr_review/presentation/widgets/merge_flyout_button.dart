@@ -4,6 +4,8 @@ import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
+    show ForgeCapability;
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
@@ -90,7 +92,20 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   // mostly empty.
   static const _conflictsWidth = 440.0;
 
-  double get _overlayWidth => _hasConflicts ? _conflictsWidth : _mergeFormWidth;
+  double get _overlayWidth =>
+      _showConflictFix ? _conflictsWidth : _mergeFormWidth;
+
+  /// Whether the flyout opens the conflict list and agent fix. Only a forge
+  /// with `mergeConflictResolution` gets it; elsewhere the merge form shows
+  /// the conflict warning and the forge's own page resolves it.
+  bool get _showConflictFix =>
+      _hasConflicts &&
+      ref.read(
+        prSupportsProvider((
+          widget.prRef,
+          ForgeCapability.mergeConflictResolution,
+        )),
+      );
 
   /// Whether the branch conflicts with its base, by the forge's state or by
   /// a merge it just refused.
@@ -317,7 +332,13 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
         });
       }
       if (mounted) {
-        showPrError(context, ref, e, (l) => l.failedToMergePr(e.message));
+        showPrError(
+          context,
+          ref,
+          e,
+          (l) => l.failedToMergePr(e.message),
+          prRef: widget.prRef,
+        );
       }
     } on Exception catch (e) {
       toaster.show(l10n.failedToMergePr('$e'), variant: CcToastVariant.danger);
@@ -429,7 +450,7 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
                     boxShadow: AppShadows.golden,
                   ),
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: _hasConflicts
+                  child: _showConflictFix
                       ? MergeConflictsPanel(
                           pr: widget.pr,
                           prRef: widget.prRef,

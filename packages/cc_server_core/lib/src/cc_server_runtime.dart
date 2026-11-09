@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, GitHubTokenScope, canonicalConnectBaseUrl;
+    show ConnectOAuthLane, GitHubTokenScope;
 import 'package:cc_domain/cc_domain.dart'
     show AuthException, NotFoundException, UserDto, ValidationException;
 import 'package:cc_domain/core/domain/entities/github_user.dart';
@@ -231,6 +231,7 @@ import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:cc_server_core/src/models/selectable_voice_model_control.dart';
 import 'package:cc_server_core/src/native_preflight.dart';
 import 'package:cc_server_core/src/notification_feed_recorder.dart';
+import 'package:cc_server_core/src/orphaned_wait_sweep.dart';
 import 'package:cc_server_core/src/paired_device_registry_watch.dart';
 import 'package:cc_server_core/src/plan_studio/plan_document_approval_service.dart';
 import 'package:cc_server_core/src/plan_studio/plan_drift_service.dart';
@@ -246,7 +247,6 @@ import 'package:cc_server_core/src/pr_review/review_axis_service.dart';
 import 'package:cc_server_core/src/pr_review/review_cohort_service.dart';
 import 'package:cc_server_core/src/pr_review/review_diagram_service.dart';
 import 'package:cc_server_core/src/pr_review/stale_review_watcher.dart';
-import 'package:cc_server_core/src/presence/agent_presence_synthesizer.dart';
 import 'package:cc_server_core/src/process_environment_guard.dart';
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:cc_server_core/src/push/web_push_service.dart';
@@ -320,6 +320,9 @@ Future<CcServer> runCcServer({
   // a value set in the file behaves exactly like an exported one. A real
   // environment variable always wins over the file.
   final serverEnv = environmentWithDotenv();
+  // An unusable CC_CONNECT_URL ends the boot with its reason instead of
+  // failing every Connect lane at its call site.
+  ConnectSettings.checkEnvironment(serverEnv);
   final config = CcServerConfig.resolve(args, environment: serverEnv);
   _configureBootLogging(config);
 
@@ -367,6 +370,9 @@ Future<CcServer> runCcServer({
   // the complete list of things that legitimately span workspaces (dashboards,
   // startup reconcilers, retention) is enumerable rather than diffuse.
   final crossWorkspace = CrossWorkspaceQueries(workspaceDbs);
+  // Anything an agent was waiting on before this instant died with the
+  // previous process; see `sweepOrphanedWaits` below.
+  final bootedAt = DateTime.now();
   // ONE secrets store shared by every consumer (bootstrap provisioning, the
   // `pairing.*` ops that MINT new device PSKs and the LocalRpcServer that
   // AUTHENTICATES them). FileSecretsStore caches the on-disk map in memory, so
@@ -730,7 +736,9 @@ Future<CcServer> runCcServer({
   final agentQuestions = AgentQuestionService(
     messagingRepository,
     conversations: conversationRepository,
-    timeout: const Duration(minutes: 30),
+    timeout: kAgentQuestionTimeout,
+    expireQuestion: (workspaceId, messageId) =>
+        workspaceDbs.of(workspaceId).messagingDao.expireQuestion(messageId),
     onAsked: (request, messageId) =>
         agentAwaitingInput.questionAsked(request, messageId),
     onClosed: (messageId) => agentAwaitingInput.questionClosed(messageId),
@@ -922,8 +930,12 @@ Future<CcServer> runCcServer({
     environment: serverEnv,
     isDemo: demoBuilder != null,
   );
+  // Filled once the pipeline body registry is assembled below; template saves
+  // then refuse a step body this host never registered.
+  final pipelineBodyKeys = <String>{};
   final pipelineTemplateRepository = PipelineTemplateRepositoryImpl(
     workspaceDbs,
+    knownBodyKeys: () => pipelineBodyKeys,
   );
   final pipelineTriggerRepository = PipelineTriggerRepositoryImpl(
     workspaceDbs,
@@ -1255,8 +1267,8 @@ Future<CcServer> runCcServer({
   // that is only correct for work with no human behind it.
   ForgePrClient forgePrClientForRepo(
     Repo repo, {
+    required String workspaceId,
     String? actingUserId,
-    String? workspaceId,
   }) => forgePrClientBuilder(
     repo.forge,
     repo.forge != ForgeHost.github
@@ -1265,9 +1277,9 @@ Future<CcServer> runCcServer({
             workspaceId: workspaceId,
           ).of(repo.forge)
         : actingUserId == null || actingUserId.isEmpty
-        ? githubHttpClientForOwner(workspaceId ?? '', repo.remoteOwner)
+        ? githubHttpClientForOwner(workspaceId, repo.remoteOwner)
         : githubClients.personHttp(actingUserId, workspaceId: workspaceId),
-  )(owner: repo.remoteOwner, repo: repo.remoteName);
+  )(repo, workspaceId: workspaceId, actingUserId: actingUserId);
 
   // Resolves the forge client for a repo coordinate in a workspace, by looking
   // the repo up and using ITS forge. This is what lets a publish land on
@@ -1281,18 +1293,28 @@ Future<CcServer> runCcServer({
     String? actingUserId,
   }) async {
     final repos = await repoRepository.getAll(workspaceId);
-    for (final r in repos) {
-      if (r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
-          r.remoteName.toLowerCase() == repo.toLowerCase() &&
-          r.hasForgeRemote) {
-        return forgePrClientForRepo(
+    final matches = [
+      for (final r in repos)
+        if (r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
+            r.remoteName.toLowerCase() == repo.toLowerCase() &&
+            r.hasForgeRemote)
           r,
-          actingUserId: actingUserId,
-          workspaceId: workspaceId,
-        );
-      }
+    ];
+    if (matches.isEmpty) {
+      return null;
     }
-    return null;
+    // The same owner/name on two forges is two repos; picking one would
+    // publish on whichever was listed first.
+    if (matches.map((r) => r.forge).toSet().length > 1) {
+      throw StateError(
+        '$owner/$repo names repos on more than one forge in this workspace.',
+      );
+    }
+    return forgePrClientForRepo(
+      matches.first,
+      actingUserId: actingUserId,
+      workspaceId: workspaceId,
+    );
   }
 
   // PR lifecycle (workspace-scoped at the `PullRequests` table). The thin client
@@ -1896,11 +1918,29 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     // The author gate for the merge-readiness / review-decision / checks
     // lanes. This poller sweeps EVERY open PR in every linked repo, so without
-    // a viewer login it would announce strangers' work; with no owner signed
-    // in the resolver answers empty and those lanes stay silent.
-    viewerLoginFor: (forge) =>
-        forgeCredentials.viewerLogin(forge, userId: ownerUserId),
-    forUserId: ownerUserId,
+    // a viewer login it would announce strangers' work. Each event goes to
+    // the member who authored the PR, matched by that member's own login on
+    // the PR's forge; a member who has not connected it answers empty.
+    memberLoginsFor: (workspaceId, forge) async {
+      final logins = <String, String>{};
+      for (final member in await membershipRepository.getForWorkspace(
+        workspaceId,
+      )) {
+        try {
+          logins[member.userId] = await forgeCredentials.viewerLogin(
+            forge,
+            userId: member.userId,
+            workspaceId: workspaceId,
+          );
+        } on Object catch (e) {
+          CcHostLog.warning(
+            'open_pr_poll: ${forge.displayName} login for ${member.userId} '
+            'unavailable: $e',
+          );
+        }
+      }
+      return logins;
+    },
     // Every GitHub client the sweep uses reports its x-ratelimit headers
     // here; a workspace under 15% of its quota pauses until the reset.
     rateBudget: githubClients.rateBudget,
@@ -2830,8 +2870,11 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     compactionService: conversationCompactionService,
     // Per-turn git snapshots so a conversation revert can roll back the
-    // worktree filesystem, not just the transcript.
-    snapshotPort: const ProcessGitSnapshotAdapter(),
+    // worktree filesystem, not just the transcript. A demo runs no git: its
+    // snapshot trees are plain directories, and `rev-parse` walks UP, so a
+    // data dir inside a checkout would hand a visitor's revert
+    // (`checkout-index -a -f`) that checkout.
+    snapshotPort: demo == null ? const ProcessGitSnapshotAdapter() : null,
     // Tool-only flushes store the transcript without rewriting the list
     // projection, so the open chat does not rebuild on every tool call.
     flushMessage: messagingRepository.flushStreamingMessage,
@@ -2847,10 +2890,25 @@ Future<CcServer> runCcServer({
   // (no agent, no worktree, no run log, no sandbox). Titling is its only
   // caller today; anything else wanting a single short completion on the
   // workspace's chosen runner belongs here rather than in DispatchSession.
-  final adapterOneShotRunner = AdapterOneShotRunner(
-    credentials: harnessCreds,
-    refresher: harnessOAuthBroker,
-  );
+  //
+  // A demo knows no adapter, resolves no binary and builds only the inert
+  // provider, so every completion is a quiet "unavailable". The runner follows
+  // the workspace's `content-synthesizer` agent, which a visitor can create
+  // with `agents.create`. Without this, their first chat message
+  // (auto-titling), `/btw` or `/goal` spawned `claude -p` / an ACP CLI on the
+  // public host when one was on PATH, or sent the transcript to a real
+  // provider endpoint under the fictional demo credential.
+  final adapterOneShotRunner = demo == null
+      ? AdapterOneShotRunner(
+          credentials: harnessCreds,
+          refresher: harnessOAuthBroker,
+        )
+      : AdapterOneShotRunner(
+          credentials: harnessCreds,
+          factory: demo.harnessProviderFactory,
+          resolveBinary: (_) async => null,
+          adapters: const [],
+        );
   // The workspace's content synthesizer agent (its runner, model, persona and
   // system prompt, read per call) writes titles, side answers and goal
   // objectives. A workspace without one has those features off — no fallback.
@@ -2983,7 +3041,7 @@ Future<CcServer> runCcServer({
                   '"${kind == AgentGoalKind.loop ? '/loop' : '/goal'} '
                   'keep the changelog current".',
               senderId: 'system',
-              senderType: 'agent',
+              senderType: 'system',
               messageType: 'system',
             );
             return null;
@@ -3024,6 +3082,26 @@ Future<CcServer> runCcServer({
     // Queue edits and run-start replay only need the queued cards.
     queuedSteering: messagingRepository.queuedSteeringMessages,
     resolveAttachmentPaths: messagingService.withAttachmentPaths,
+    // Every queue write is a state-conditional merge onto the current row.
+    patchSteering: messagingRepository.patchSteering,
+    // A run-end send that failed is said in the conversation, not just logged.
+    postNotice:
+        ({
+          required String workspaceId,
+          required String spaceId,
+          required String conversationId,
+          required String text,
+        }) => messagingRepository
+            .sendMessage(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: conversationId,
+              content: text,
+              senderId: 'system',
+              senderType: 'system',
+              messageType: 'system',
+            )
+            .then((_) {}),
   );
   messagingService.steeringQueueService = steeringQueueService;
   agentDispatch.onSessionHarnessStarted =
@@ -3047,7 +3125,7 @@ Future<CcServer> runCcServer({
     // infinite refusal loop.
     dispatcher: messagingService.dispatchAgentRun,
     // Same message shape as the take-over refusal (senderId 'system',
-    // senderType 'agent', messageType 'system').
+    // senderType 'system', messageType 'system').
     systemMessageSender:
         ({
           required workspaceId,
@@ -3130,6 +3208,7 @@ Future<CcServer> runCcServer({
         messaging: messagingRepository,
         messagingPort: messagingService,
         rateLimiter: peerRateLimiter,
+        pendingHops: pendingDelegationHops,
         eventBus: eventBus,
       ),
     )
@@ -3323,6 +3402,15 @@ Future<CcServer> runCcServer({
       }
     }());
   }
+  // Waits a restart ended: close orphaned questions and resolve their bell
+  // rows, so `needsInput` (unanswered rows) and the pending views (live
+  // waiters) agree again. Rows newer than [bootedAt] are never touched.
+  unawaited(
+    sweepOrphanedWaits(crossWorkspace, bootedAt).catchError(
+      (Object e, StackTrace st) =>
+          CcHostLog.error('cc_server: orphaned-wait sweep failed: $e', e, st),
+    ),
+  );
   // Enclosures (rigs): disposable VMs an agent or a human drives, and the
   // machines the interactive terminals move into. Constructed unconditionally
   // and cheap to build — `probe()` is what decides whether anything can
@@ -3903,6 +3991,9 @@ Future<CcServer> runCcServer({
     filesystem: workspaceFilesystem,
     isolation: repoIsolation,
     registry: isolatedRepoRepository,
+    // Released through the same primitive as space worktrees, `archive`
+    // tasks included.
+    worktreeTasks: demo != null ? null : lateWorktreeTasks,
     githubToken: (workspaceId, repo) => githubAutomation.repoToken(
       workspaceId,
       repo.remoteOwner,
@@ -4044,6 +4135,7 @@ Future<CcServer> runCcServer({
     // graph does not fail "unknown body"; it never `Process.start`.
     enableBashScript: demo == null,
   );
+  pipelineBodyKeys.addAll(pipeline.engine.bodies.bodyKeys);
 
   // Approving hires agents, builds teams and starts the generated pipeline on
   // the engine above; cancelling tears it down. Both use-cases are pure-Dart
@@ -4141,7 +4233,7 @@ Future<CcServer> runCcServer({
             '${steps == 1 ? 'step' : 'steps'}, each in its own conversation '
             'in this space.',
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         messageType: 'system',
       );
     },
@@ -4363,14 +4455,24 @@ Future<CcServer> runCcServer({
         },
   );
   final reviewPublisherService = ReviewPublisherService(
-    // Per acting user: the "publish to GitHub" button submits as the person who
-    // pressed it; the opt-in auto-publish at the end of an agent orchestration
-    // passes no user and posts with one-repository tokens bounded by the
-    // workspace's accountable human, and never approves.
-    githubPrClientFor: (actingUserId, {required workspaceId, required owner}) =>
-        actingUserId == null
-        ? githubClientForOwner(workspaceId, owner).pr
-        : githubClientForActor(actingUserId, workspaceId: workspaceId).pr,
+    // On the review's own repo row, so it lands on whichever forge the repo
+    // lives on. Per acting user: the "publish" button submits as the person
+    // who pressed it; the opt-in auto-publish at the end of an agent
+    // orchestration passes no user and posts with the workspace's automation
+    // identity (on GitHub, one-repository tokens bounded by the accountable
+    // human), and never approves.
+    forgeClientFor:
+        (actingUserId, {required workspaceId, required repoFullName}) async {
+          final parts = splitRepoFullName(repoFullName);
+          return parts == null
+              ? null
+              : forgeClientForCoord(
+                  workspaceId,
+                  parts.owner,
+                  parts.name,
+                  actingUserId: actingUserId,
+                );
+        },
     automatedAttribution: githubAutomation.reviewAttribution,
     messaging: messagingRepository,
     reviewSpaces: reviewSpaceRepository,
@@ -5177,6 +5279,11 @@ Future<CcServer> runCcServer({
           workspaceId: workspaceId,
         ))?.token,
     eventBus: eventBus,
+    githubSignInChanges: forgeCredentials.changes
+        .where((change) => change.forge == ForgeHost.github)
+        .map(
+          (change) => (userId: change.userId, workspaceId: change.workspaceId),
+        ),
   );
   final prConversationBridge = GitHubPrConversationBridge(
     gatewayFor: githubAutomation.prConversationGateway,
@@ -5580,6 +5687,10 @@ Future<CcServer> runCcServer({
       isolatedRepoRepository: isolatedRepoRepository,
     ),
     prMergeConflicts: prSpace.mergeConflicts,
+    // The compose-PR reads on each repo's own forge, as the caller. demo: the
+    // `forge.` prefix is refused by the demo profile and no credential exists.
+    forgeClientFor: demo != null ? null : forgePrClientForRepo,
+    forgeConnections: demo != null ? null : forgeCredentials,
     databaseBackup: databaseBackupService,
     conversationTitles: conversationTitleService,
     workspaceSettings: workspaceSettingsRepository,
@@ -5959,13 +6070,9 @@ Future<CcServer> runCcServer({
     providerApps: demo != null ? null : providerApps,
     workspaceGitHubApps: demo != null ? null : workspaceGitHub,
     // demo: no forge credentials exist to read or write.
-    forgeCredentials: demo != null ? null : forgeCredentials,
-    buildForgePrClient: (repo, actingUserId, {workspaceId}) =>
-        forgePrClientForRepo(
-          repo,
-          actingUserId: actingUserId,
-          workspaceId: workspaceId,
-        ),
+    forgeConnections: demo != null ? null : forgeCredentials,
+    forgeTokens: demo != null ? null : forgeCredentials,
+    buildForgePrClient: forgePrClientForRepo,
     // Sandbox detection: report THIS host's OS-native sandbox capabilities so a
     // connected web/thin client's Settings → Sandboxing reflects the server.
     // demo: no sandbox probing; nothing is sandboxed because nothing runs.
@@ -6006,7 +6113,7 @@ Future<CcServer> runCcServer({
     // The op serves whatever GitHub resolved (it persists nothing, so a
     // partial answer cannot overwrite the poller's snapshot — see
     // [OpenPrFetchResult]).
-    fetchOpenPrList: (repos, {workspaceId}) async =>
+    fetchOpenPrList: (repos, {required workspaceId}) async =>
         (await openPrFetchAdapter.fetchGroups(
           repos,
           workspaceId: workspaceId,
@@ -6299,6 +6406,7 @@ Future<CcServer> runCcServer({
     // `dispatch.*` ops are LIVE. Streamed replies land on message rows the
     // client already watches via `messaging.watchMessages`.
     messagingDispatch: messagingService,
+    steeringQueue: steeringQueueService,
     // Conversation revert/unrevert (undo/redo) with worktree filesystem rollback:
     // this host owns the DB + the conversation's checkouts + the per-turn
     // snapshots, so the closures resolve the worktree and roll it back too.
@@ -7507,16 +7615,10 @@ Future<CcServer> runCcServer({
     );
   }
 
-  // Agents appear on the same presence roster as humans, synthesized from
-  // run lifecycle + the pending-approval gate (PRD 16 §2/§3).
-  _bootMark('starting presence + background listeners');
-  final agentPresenceSynthesizer = AgentPresenceSynthesizer(
-    hub: presenceHub,
-    runLogs: agentRunLogRepository,
-    agents: agentRepository,
-    confirmations: pendingConfirmationRegistry,
-  );
-  await agentPresenceSynthesizer.start();
+  // The presence roster carries humans only: agent status is derived by each
+  // client from the run log it already watches (`deriveAgentLiveState`), so a
+  // second, synthesized agent lane had no reader.
+  _bootMark('starting background listeners');
 
   // The pipeline/orchestration lifecycle listeners that the desktop used to run
   // in-process now run here, so a thin client connected to this server keeps
@@ -7533,6 +7635,9 @@ Future<CcServer> runCcServer({
     filesystem: workspaceFilesystem,
     templateRepository: pipelineTemplateRepository,
     triggerRepository: pipelineTriggerRepository,
+    // Remembers which built-in triggers were seeded, so one the user deleted
+    // is not re-created by the next boot's reconcile.
+    settingsRepository: workspaceSettingsRepository,
   );
   // Hand it to the demo's pool (see `demoBaseSeeder` above).
   demoBaseSeeder = workspaceSeeder;
@@ -7658,6 +7763,8 @@ Future<CcServer> runCcServer({
     triggerRepository: pipelineTriggerRepository,
     engine: pipeline.engine,
     ledger: CronExecutionLedgerImpl(workspaceDbs),
+    // A trigger's `timezone` is an IANA zone; evaluate its cron there.
+    scheduler: TimezoneZoneConverter.instance.scheduler(),
   );
   if (demo == null) {
     await templateReconcile;
@@ -7801,6 +7908,9 @@ Future<CcServer> runCcServer({
       );
       if (demo == null) {
         await pipeline.engine.resumeAll();
+        // The boot-time backstop again every 15 minutes, for a server that
+        // stays up longer than a stalled step's timeout.
+        pipeline.engine.startLivenessSweep();
       }
     } on Object catch (e, st) {
       CcHostLog.error('cc_server: pipeline resumeAll failed: $e', e, st);
@@ -7906,7 +8016,6 @@ Future<CcServer> runCcServer({
     .._pairedDeviceWatch = pairedDeviceWatch
     .._networkRuntime = networkRuntime
     .._presenceHub = presenceHub
-    .._agentPresenceSynthesizer = agentPresenceSynthesizer
     .._checkerListener = checkerListener
     .._worktreeGcListener = worktreeGcListener
     .._rigEventListener = rigEventListener
@@ -7918,6 +8027,9 @@ Future<CcServer> runCcServer({
     .._mcpClientService = mcpClientService
     .._codeServer = codeServerSessions
     .._rigs = rigService
+    .._agentDispatch = agentDispatch
+    .._nativeSandbox = nativeSandbox
+    .._sandboxManager = sandboxManager
     .._pendingConfirmations = pendingConfirmationRegistry
     .._approvalEscalation = approvalEscalation
     .._auditStream = auditStream

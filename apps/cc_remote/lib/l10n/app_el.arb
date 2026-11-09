@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Συνάδελφος",
+  "systemSender": "Σύστημα",
   "agent": "Πράκτορας",
   "attachFile": "Επισύναψη αρχείου",
   "messageHint": "Μήνυμα",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Μη αναγνώσιμα: {names}",
   "installationSuspendedTitle": "Η εγκατάσταση του GitHub App έχει ανασταλεί",
-  "installationSuspendedBody": "Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.",
-  "installationSuspendedNotice": "Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.",
+  "installationSuspendedBody": "Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub.",
+  "installationSuspendedNotice": "Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης",
   "credentialsConnectCodeMalformed": "Αυτό δεν μοιάζει με κωδικό σύνδεσης. Οι κωδικοί έχουν 8 γράμματα και ψηφία.",
   "credentialsSignInInvalidCode": "Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.",
+  "credentialsSignInTooManyCodes": "Πάρα πολλοί λανθασμένοι κωδικοί. Ξεκινήστε ξανά τη σύνδεση.",
+  "credentialsSignInRetryLater": "Η υπηρεσία σύνδεσης δεν αποκρίνεται αυτή τη στιγμή. Περιμένετε ένα λεπτό και δοκιμάστε ξανά.",
+  "credentialsSignInRefused": "Η σύνδεση απορρίφθηκε. Ξεκινήστε την ξανά και εγκρίνετε όλα τα ζητούμενα δικαιώματα.",
+  "credentialsSignInNotSaved": "Η σύνδεση πέτυχε, αλλά ο διακομιστής δεν μπόρεσε να την αποθηκεύσει. Δοκιμάστε ξανά.",
   "credentialsSignInUnavailable": "Η σύνδεση στο {provider} δεν έχει ρυθμιστεί ακόμη σε αυτόν τον διακομιστή.",
   "credentialsSignInPhoneUnreachable": "Η διεύθυνση επιστροφής σύνδεσης αυτού του διακομιστή δεν είναι προσβάσιμη με ασφάλεια από τηλέφωνο. Συνδεθείτε από την εφαρμογή υπολογιστή ή ζητήστε από τον κάτοχο του διακομιστή να ρυθμίσει μια δημόσια διεύθυνση HTTPS.",
   "credentialsLoginTimedOut": "Η διαδικασία σύνδεσης έληξε. Ξεκινήστε νέα προσπάθεια σύνδεσης.",

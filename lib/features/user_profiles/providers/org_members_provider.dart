@@ -25,7 +25,7 @@ final repoOrgOwnersProvider = Provider<Set<String>>((ref) {
 /// orgs are silently ignored so one bad owner doesn't block the rest.
 final orgMembersProvider = FutureProvider<List<GitHubUser>>((ref) async {
   // Fetched SERVER-SIDE on the host's gh client (the thin client holds no
-  // token); the host derives the org owners from the bound workspace's repos
+  // token); the host derives the org owners from the active workspace's repos
   // and fails soft per org. Guarded by the client-side owner set so the call is
   // skipped when no GitHub repos are linked.
   final owners = ref.watch(repoOrgOwnersProvider);

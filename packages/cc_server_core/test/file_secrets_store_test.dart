@@ -42,20 +42,24 @@ void main() {
       );
     });
     test(
-      'the temporary inode is restricted before writing a VAPID key',
+      'secrets are written owner-only and a legacy temporary copy is removed',
       () async {
         if (Platform.isWindows) {
           return;
         }
-        // A stale temporary inode may have been left by a failed former write.
-        // Restrict it before reusing it, not after exposing the new bytes.
-        final temporary = File('${secretsFile().path}.tmp')
+        // Flushes used to stage through a fixed `<file>.tmp`; one left behind
+        // by a crashed former write may hold old secrets.
+        final legacy = File('${secretsFile().path}.tmp')
           ..writeAsStringSync('old');
         await FileSecretsStore(
           dataDir: tmp.path,
         ).writePsk('web_push_vapid_v1', 'private-vapid-key');
         expect(secretsFile().statSync().mode & 0x1ff, 0x180); // 0600
-        expect(temporary.existsSync(), isFalse);
+        expect(legacy.existsSync(), isFalse);
+        // No staged temporary is left beside the live file.
+        expect(tmp.listSync().map((e) => e.path.split('/').last), [
+          FileSecretsStore.fileName,
+        ]);
       },
     );
 

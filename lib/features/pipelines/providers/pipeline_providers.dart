@@ -17,7 +17,6 @@ import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/pipelines/pipeline_bindings.dart';
 import 'package:control_center/features/pipelines/providers/tracked_pipeline_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,35 +26,29 @@ export 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.d
 export 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart';
 export 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 
-/// The [PipelineRunRepository] the UI reads/writes through — flipped to the
-/// cc_data RpcX adapter over the desktop's in-process RPC server (the
-/// composition flip). Server-side EXECUTION (the engine, body registry, trigger
-/// dispatcher, scheduler, resume/rollup listeners) does NOT use this — it reads
-/// the Dao-backed `daoPipelineRunRepositoryProvider` directly, because (a) the
-/// engine is server-side execution that must own the DB and (b) routing it over
-/// RPC would cycle through `rpcClientProvider` → the MCP dispatcher → the tool
-/// registry → the engine. Both paths share one Drift DB, so the UI's RPC streams
-/// still update live.
-final pipelineRunRepositoryProvider = Provider<PipelineRunRepository>((ref) {
+/// The [PipelineRunReader] the UI reads through — the cc_data RpcX adapter
+/// over the connected server. Read-only: run rows are written only by the
+/// server's engine, and the UI changes a run through the `pipeline.*` engine
+/// ops ([pipelineEngineProvider]).
+final pipelineRunRepositoryProvider = Provider<PipelineRunReader>((ref) {
   return RpcPipelineRunRepository(ref.watch(rpcClientProvider));
 });
 
 /// The [PipelineTemplateRepository] the UI reads/writes through — RPC-backed
 /// (see [pipelineRunRepositoryProvider]). Save-time schema validation lives on
-/// the server-side write path (`daoPipelineTemplateRepositoryProvider`).
+/// the server-side write path.
 final pipelineTemplateRepositoryProvider = Provider<PipelineTemplateRepository>(
   (ref) {
     return RpcPipelineTemplateRepository(ref.watch(rpcClientProvider));
   },
 );
 
-/// The [PipelineTriggerRepository] the UI reads through — RPC-backed (see
-/// [pipelineRunRepositoryProvider]).
-final pipelineTriggerRepositoryProvider = Provider<PipelineTriggerRepository>((
-  ref,
-) {
-  return RpcPipelineTriggerRepository(ref.watch(rpcClientProvider));
-});
+/// The [PipelineTriggerConfigRepository] the UI edits triggers through —
+/// RPC-backed. The server validates every write and mints webhook tokens.
+final pipelineTriggerRepositoryProvider =
+    Provider<PipelineTriggerConfigRepository>((ref) {
+      return RpcPipelineTriggerRepository(ref.watch(rpcClientProvider));
+    });
 
 /// Provides the [NodeTypeLibrary] used to populate the editor sidebar.
 /// Pure data — web-safe. A demo drops shell nodes; the server refuses the
@@ -68,20 +61,19 @@ final nodeTypeLibraryProvider = Provider<NodeTypeLibrary>((ref) {
   return library;
 });
 
-/// Provides the pipeline EXECUTOR, typed as the web-safe [PipelineEnginePort].
+/// Provides the pipeline engine the UI drives, typed as [PipelineEnginePort].
 ///
-/// DECLARED here and RESOLVED through the pipeline seam: on the VM it builds the
-/// real `PipelineEngine` (owning run-state via dao*, driving the dispatch stack
-/// — it cannot go over RPC, being the server reached by the MCP tool registry);
-/// on web it returns an honest "not available on web" stub for the
-/// start/cancel/retry actions. The pipeline list/run views still read run state
-/// over RPC on both targets.
+/// The engine itself lives in the connected `cc_server` on every client
+/// (desktop, web, phone): this is the `pipeline.*` RPC surface over it, and
+/// run state streams back over the `pipeline_run.watch*` subscriptions.
 ///
 /// Wrapped in [TrackedPipelineEngine], so every request a client makes is
-/// recorded the same way whichever engine the seam resolved.
+/// recorded.
 final pipelineEngineProvider = Provider<PipelineEnginePort>(
   (ref) => TrackedPipelineEngine(
-    buildPipelineEngine(ref),
+    // The engine runs in the connected server on every platform; the client
+    // only forwards start / cancel / retry / kill over RPC.
+    RpcPipelineEnginePort(ref.watch(rpcClientProvider)),
     ref.watch(analyticsProvider),
   ),
 );

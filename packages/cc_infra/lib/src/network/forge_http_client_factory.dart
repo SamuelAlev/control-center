@@ -11,6 +11,10 @@ typedef ForgeTokenLookup = Future<String?> Function(ForgeHost forge);
 /// Resolves the credential for one request, given its method and URL (which
 /// may be relative to the forge's API base). Lets a client pick a
 /// per-repository token per call.
+///
+/// Returning null sends the request without a credential. A lookup that knows
+/// the request must not go out anonymously throws [ForgeCredentialUnavailable]
+/// instead, and the request fails locally.
 typedef ForgeRequestTokenLookup =
     Future<String?> Function(ForgeHost forge, String method, String url);
 
@@ -65,7 +69,13 @@ class ForgeHttpClientFactory {
     this._timeout = const Duration(seconds: 12),
     ForgeHttpClientBuilder? buildClient,
   }) : _bitbucketUsername = bitbucketUsername ?? (() => ''),
-       _buildClient = buildClient ?? _createHttpClient;
+       _buildClient =
+           buildClient ??
+           ((baseUrl, settings, interceptors) => createHttpClient(
+             baseUrl: baseUrl,
+             settings: settings,
+             interceptors: interceptors,
+           ));
 
   final ForgeTokenLookup _tokenLookup;
 
@@ -119,16 +129,6 @@ class ForgeHttpClientFactory {
   }
 }
 
-RhttpClient _createHttpClient(
-  String? baseUrl,
-  ClientSettings settings,
-  List<Interceptor> interceptors,
-) => createHttpClient(
-  baseUrl: baseUrl,
-  settings: settings,
-  interceptors: interceptors,
-);
-
 /// Attaches [forge]'s credential (and its API version header) to every request.
 class ForgeAuthInterceptor extends Interceptor {
   /// Creates the auth interceptor for [forge].
@@ -159,9 +159,16 @@ class ForgeAuthInterceptor extends Interceptor {
   ) async {
     var headers = request.headers;
     final perRequest = requestTokenLookup;
-    final token = perRequest != null
-        ? await perRequest(forge, request.method.value, request.url)
-        : await tokenLookup(forge);
+    final String? token;
+    try {
+      token = perRequest != null
+          ? await perRequest(forge, request.method.value, request.url)
+          : await tokenLookup(forge);
+    } on ForgeCredentialUnavailable catch (e) {
+      // Thrown, like the rate-limit circuit's failure: there is no error route
+      // out of `beforeRequest`, and nothing leaves the machine.
+      throw e.asStatusFailure(request);
+    }
     if (token != null && token.isNotEmpty) {
       headers = (headers ?? HttpHeaders.empty).copyWithRaw(
         name: 'Authorization',
@@ -201,9 +208,40 @@ class ForgeAuthInterceptor extends Interceptor {
   };
 
   Map<String, String> _extraHeaders(ForgeHost forge) => switch (forge) {
-    ForgeHost.github => const {'X-GitHub-Api-Version': '2022-11-28'},
+    ForgeHost.github => const {'X-GitHub-Api-Version': gitHubRestApiVersion},
     _ => const {},
   };
+}
+
+/// Thrown by a [ForgeRequestTokenLookup] when no credential may be used for a
+/// request and it must not be sent anonymously either.
+///
+/// An anonymous request would draw on the forge's shared per-IP budget (60 an
+/// hour on GitHub) and could still read public data the workspace was never
+/// granted. [ForgeAuthInterceptor] fails the call locally as a status failure
+/// with [statusCode] and [message], so callers that switch on 401/403/404
+/// degrade exactly as they would for the forge's own answer.
+class ForgeCredentialUnavailable implements Exception {
+  /// Creates the refusal.
+  const ForgeCredentialUnavailable(this.statusCode, this.message);
+
+  /// The status the local failure carries.
+  final int statusCode;
+
+  /// Why there is no credential; becomes the failure body's `message`.
+  final String message;
+
+  /// The local status failure for [request]. Nothing was sent.
+  RhttpStatusCodeException asStatusFailure(HttpRequest request) =>
+      RhttpStatusCodeException(
+        request: request,
+        statusCode: statusCode,
+        headers: const [('content-type', 'application/json')],
+        body: jsonEncode({'message': message}),
+      );
+
+  @override
+  String toString() => 'ForgeCredentialUnavailable($statusCode): $message';
 }
 
 /// Why a [ForgeRequestGuard] refused a request. Thrown from the interceptor

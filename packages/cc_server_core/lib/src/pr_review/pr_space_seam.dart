@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart'
     show PrSourceRequest;
 import 'package:cc_host/cc_host.dart' show CcHostLog;
@@ -73,14 +74,15 @@ PrSpaceSeam buildPrSpaceSeam({
     required int prNumber,
     required String title,
   }) async {
-    final parts = repoFullName.split('/');
-    if (parts.length != 2) {
+    // Last-slash split: a GitLab `group/sub/project` is a real repo.
+    final parts = splitRepoFullName(repoFullName);
+    if (parts == null) {
       return null;
     }
     final prExternalId = await resolvePrExternalId(
       workspaceId: workspaceId,
-      owner: parts[0],
-      repo: parts[1],
+      owner: parts.owner,
+      repo: parts.name,
       prNumber: prNumber,
     );
     return ensureReviewSpace(
@@ -106,6 +108,18 @@ PrSpaceSeam buildPrSpaceSeam({
       ? null
       : PrMergeConflictService(
           refs: (workspaceId, owner, repo, prNumber) async {
+            // The conflict flow reads the PR and checks out its refs through
+            // GitHub; another forge's coordinate must not be looked up on
+            // github.com, so it is refused by capability, not guessed at.
+            final linked = await resolveLinkedRepo(workspaceId, owner, repo);
+            final caps = kForgeCapabilities[linked.forge];
+            if (caps == null ||
+                !caps.has(ForgeCapability.mergeConflictResolution)) {
+              throw ForgeUnsupportedError(
+                linked.forge,
+                ForgeCapability.mergeConflictResolution.name,
+              );
+            }
             final gh = await githubFor(
               workspaceId,
               owner,
@@ -114,11 +128,7 @@ PrSpaceSeam buildPrSpaceSeam({
               return null;
             }
             final pr = pullRequestFromGitHub(gh, repoFullName: '$owner/$repo');
-            return (
-              title: pr.title,
-              baseRef: pr.baseRef,
-              headRef: pr.headRef,
-            );
+            return (title: pr.title, baseRef: pr.baseRef, headRef: pr.headRef);
           },
           conflictFiles:
               ({

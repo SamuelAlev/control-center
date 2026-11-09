@@ -118,6 +118,28 @@ class Rig {
   /// a prompt.
   bool get agentMayAct => controller == null || controller!.isAgent;
 
+  /// Whether [actor] may send input (keys, clicks, clipboard, files, audio)
+  /// right now: nobody holds control, or [actor] does. Observation is never
+  /// asked this. The take-over rule lives here and nowhere else.
+  bool admitsInput(Principal actor) {
+    final held = controller;
+    return held == null || held.wire == actor.wire;
+  }
+
+  /// Whether [actor] may take control from whoever holds it.
+  ///
+  /// A person takes over from an agent unconditionally: the machine is
+  /// ultimately theirs, and "the agent is holding the lock" must never be a
+  /// reason a human cannot intervene. Everything else (an agent from a
+  /// person, an agent from an agent, a person from another person) is a
+  /// refusal.
+  bool mayTakeControl(Principal actor) {
+    final held = controller;
+    return held == null ||
+        held.wire == actor.wire ||
+        (actor.isUser && !held.isUser);
+  }
+
   /// When the hard TTL expires.
   DateTime get expiresAt => createdAt.add(spec.ttl);
 

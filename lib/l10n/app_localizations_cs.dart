@@ -9,6 +9,15 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Teď to nešlo odeslat: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Vaše odpověď nebyla doručena. Otázka už mohla být zodpovězena, nebo agent přestal čekat.';
+
+  @override
   String get succeeded => 'Úspěšně';
 
   @override
@@ -2626,10 +2635,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get addGif => 'Přidat GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Přidejte alespoň jeden GitHub repozitář, abyste viděli pull requesty';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5976,9 +5981,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Trvání';
 
   @override
-  String get pipelineStepBranch => 'Větev';
-
-  @override
   String get pipelineStepViewConversation => 'Zobrazit konverzaci';
 
   @override
@@ -7078,14 +7080,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get reviewRequested => 'Vyžádána kontrola';
 
   @override
-  String get connectGitHubHint =>
-      'Přihlaste se na GitHub v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Připojte GitHub a načtěte pull requesty';
-
-  @override
   String get noRepositoriesConfigured => 'Žádné nakonfigurované repozitáře';
 
   @override
@@ -7760,13 +7754,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Vytvořit jako koncept';
-
-  @override
-  String get composePrNoRepo => 'Není vybrán GitHub repozitář';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Vyberte pracovní prostor s GitHub-propojeným repozitářem a otevřete pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -17010,6 +16997,27 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Příliš mnoho chybných kódů. Spusťte přihlášení znovu.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Toto přihlášení už není platné. Spusťte ho znovu.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Server nedokázal přečíst tento požadavek na přihlášení. Spusťte ho znovu.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Právě teď je příliš mnoho pokusů o přihlášení. Počkejte minutu a zkuste to znovu.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider přihlášení přijal, ale server ho nedokázal uložit. Zkuste to znovu.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider právě neodpovídá. Zkuste to znovu za pár minut.';
   }
@@ -17040,7 +17048,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Tento pracovní prostor Linear je už připojený k jinému serveru Control Center.';
+      'Tento pracovní prostor Slack je už připojený k jinému serveru Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17474,4 +17482,38 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Přepnout aplikaci';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Otevřít na $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Zobrazeno prvních $count souborů. $forge zbytek nevypisuje.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Připojte hostování kódu a načtěte pull requesty';
+
+  @override
+  String get connectForgeHint =>
+      'Připojte GitHub, GitLab nebo Bitbucket v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Přidejte alespoň jeden repozitář na GitHubu, GitLabu nebo Bitbucketu, abyste viděli pull requesty';
+
+  @override
+  String get composePrNoForgeRepo => 'Není vybrán žádný hostovaný repozitář';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Vyberte pracovní prostor s repozitářem na GitHubu, GitLabu nebo Bitbucketu a otevřete pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Připojte $forge, abyste v tomto repozitáři mohli otevřít pull request';
+  }
 }

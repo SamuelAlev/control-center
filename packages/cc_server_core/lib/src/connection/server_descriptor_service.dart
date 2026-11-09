@@ -48,7 +48,11 @@ class ServerDescriptorService {
   Future<ConnectionDescriptor> describe() async {
     final paths = <ConnectionPath>[LoopbackPath(port: _boundPort)];
 
-    if (config.bindAny) {
+    // A public demo binds 0.0.0.0 inside its container, so these would be the
+    // host's private interface addresses, handed to every anonymous visitor
+    // through redeem and `connection.describe`. A visitor reaches the demo
+    // through its public URL only.
+    if (config.bindAny && !isDemo) {
       for (final host in await _lanAddresses()) {
         paths.add(
           LanPath(host: host, port: _boundPort, tls: config.tlsConfigured),

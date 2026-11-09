@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
@@ -9,6 +6,9 @@ import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
+import 'package:cc_server_core/src/forge/github_lane_resolver.dart'
+    show workspaceOwnsGitHubApp;
+import 'package:cc_server_core/src/forge/github_rest.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 
@@ -27,10 +27,8 @@ final class GitHubSignInLane implements SignInLaneBinding {
     required this.workspaceLookup,
     required this.credentials,
     required this.connect,
-    HttpClient? httpClient,
-  }) : _http = httpClient ?? (HttpClient()..connectionTimeout = _timeout);
-
-  static const Duration _timeout = Duration(seconds: 15);
+    GitHubRest? rest,
+  }) : _rest = rest ?? GitHubRest(timeout: const Duration(seconds: 15));
 
   /// The server's own apps.
   final ProviderAppSettings apps;
@@ -47,7 +45,7 @@ final class GitHubSignInLane implements SignInLaneBinding {
   /// Revokes sealed grants on disconnect.
   final ConnectClient connect;
 
-  final HttpClient _http;
+  final GitHubRest _rest;
 
   static final Uri _authorize = Uri.parse(
     'https://github.com/login/oauth/authorize',
@@ -64,7 +62,7 @@ final class GitHubSignInLane implements SignInLaneBinding {
       return null;
     }
     final workspace = await workspaceLookup(workspaceId);
-    return workspace?.githubAuthMode == GithubAuthMode.app ? workspace : null;
+    return workspaceOwnsGitHubApp(workspace) ? workspace : null;
   }
 
   @override
@@ -108,29 +106,18 @@ final class GitHubSignInLane implements SignInLaneBinding {
 
   @override
   Future<SignInIdentity> identify(String accessToken) async {
-    final request = await _http.getUrl(Uri.parse('https://api.github.com/user'));
-    request.followRedirects = false;
-    request.headers
-      ..set(HttpHeaders.authorizationHeader, 'Bearer $accessToken')
-      ..set(HttpHeaders.acceptHeader, 'application/vnd.github+json')
-      ..set(HttpHeaders.userAgentHeader, 'control-center')
-      ..set('X-GitHub-Api-Version', '2022-11-28');
-    final response = await request.close().timeout(_timeout);
-    final body = await utf8.decodeStream(response.timeout(_timeout));
-    if (response.statusCode != 200) {
-      throw HttpException('GitHub /user answered ${response.statusCode}');
+    final response = await _rest.send('GET', '/user', bearer: accessToken);
+    if (response.status != 200) {
+      throw StateError('GitHub /user answered ${response.status}');
     }
-    final json = jsonDecode(body);
+    final json = response.json;
     if (json is! Map || json['type'] != 'User') {
       // Organizations and bots cannot sign in as a person.
       return (id: '', login: '');
     }
     final id = json['id'];
     final login = json['login'];
-    return (
-      id: id is int ? '$id' : '',
-      login: login is String ? login : '',
-    );
+    return (id: id is int ? '$id' : '', login: login is String ? login : '');
   }
 
   @override
@@ -169,11 +156,12 @@ final class GitHubSignInLane implements SignInLaneBinding {
     );
   }
 
-  /// Revokes a Connect grant upstream (`/v1/github/revoke`, the whole
-  /// authorization) before deleting the stored seal: once the seal is gone
-  /// this server can never revoke it. Best effort — an unreachable Connect
-  /// still signs the person out here. Cached child tokens are
-  /// `GitHubClients.forgetPerson`'s.
+  /// Revokes the whole grant upstream before deleting it: once it is gone
+  /// this server can never revoke it. A Connect seal goes through
+  /// `/v1/github/revoke`; an own-App user token through `DELETE
+  /// /applications/{client_id}/grant` with that App's client credentials.
+  /// Best effort — an unreachable Connect or GitHub still signs the person
+  /// out here. Cached child tokens are `GitHubClients.forgetPerson`'s.
   @override
   Future<void> disconnect(String userId, String? workspaceId) async {
     final stored = await credentials.storedCredential(
@@ -198,11 +186,54 @@ final class GitHubSignInLane implements SignInLaneBinding {
           '(${e.code.wire}); it lapses when its refresh token does',
         );
       }
+    } else {
+      // The grant is revoked with a live access token; an expired one is
+      // renewed first (GitHub answers 404 for a dead token).
+      final live = await credentials.personCredential(
+        ForgeHost.github,
+        userId,
+        workspaceId: workspaceId,
+      );
+      await _revokeOwnGrant(
+        live?.accessToken ?? stored.token.accessToken,
+        stored.workspaceId,
+      );
     }
     await credentials.clearToken(
       ForgeHost.github,
       userId: userId,
       workspaceId: stored.workspaceId,
     );
+  }
+
+  Future<void> _revokeOwnGrant(String accessToken, String? slot) async {
+    if (accessToken.isEmpty) {
+      return;
+    }
+    OwnOAuthApp? own;
+    try {
+      own = await ownApp(slot);
+    } on SignInMisconfigured {
+      own = null;
+    }
+    if (own == null || own.clientSecret.isEmpty) {
+      CcHostLog.warning(
+        'github: the App that issued this sign-in is no longer configured, '
+        'so its grant was not revoked; it lapses when its refresh token does',
+      );
+      return;
+    }
+    final response = await _rest.send(
+      'DELETE',
+      '/applications/${Uri.encodeComponent(own.clientId)}/grant',
+      basic: (clientId: own.clientId, clientSecret: own.clientSecret),
+      body: {'access_token': accessToken},
+    );
+    if (!response.ok && response.status != 404 && response.status != 422) {
+      CcHostLog.warning(
+        'github: revoking the App grant on disconnect failed '
+        '(HTTP ${response.status}); it lapses when its refresh token does',
+      );
+    }
   }
 }

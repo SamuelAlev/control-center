@@ -28,9 +28,14 @@ Connect holds:
 - The Klipy API key.
 - The seal key: a local AES-256-GCM keyring or a Cloud KMS key.
 - Short-lived state, never longer than 15 minutes: staged logins, nonces,
-  seal handoffs, GitHub read caches, and Slack event references.
+  seal handoffs, rotation leases, the GitHub installation listing and
+  account lookups, and Slack event references. Every read that authorizes a
+  mint (the installation, the repository permission, the binding) is fresh,
+  so a demoted role or a released binding applies at once.
 - Install bindings. A GitHub installation maps to the installs authorized on
-  it. A Slack team maps to the one install it is bound to.
+  it. A Slack team maps to the one install it is bound to, and its bot user.
+  Writes are compare-and-set; a file write that fails leaves nothing
+  changed in memory.
 
 Connect never holds:
 
@@ -65,7 +70,7 @@ is capped at 16 KB.
 | `GET /oauth/{lane}/done` | `__Host-` cookie | Static page with the 8-character confirm code and a `control-center://oauth-done` link. Its CSP is `default-src 'none'` with a hashed style, it has no script, and it cannot be framed. |
 | `POST /v1/oauth/{lane}/claim` | signature, confirm code, PKCE verifier | Single use, and five wrong attempts burn the login. Exchanges the code, checks fixed scopes, and returns a `SealedGrant`. For Linear it returns a `LinearCodeGrant`. For Slack, the OIDC pre-check reserves the team so only one sign-in at a time can run the bot exchange (which rotates the team's single bot token), and a team's first binding needs the approving person to be a workspace admin or owner (`not_admin` otherwise). |
 | `GET /oauth/github/setup` | single-use install ticket | GitHub App `setup_url`. Binds the installation to the ticket's install when the installer is an org admin or owns the personal account, and that install is still allowed (a ticket held by a since-blocked install binds nothing). |
-| `POST /v1/github/refresh`, `/v1/google/refresh`, `/v1/slack/refresh` | signature + seal | Fresh access token plus a rotated seal. A retried old seal replays the rotation for 5 minutes (`seal_handoff`), so a lost response never burns a single-use refresh token. |
+| `POST /v1/github/refresh`, `/v1/google/refresh`, `/v1/slack/refresh` | signature + seal | Fresh access token plus a rotated seal, always: the parent refresh token is single use, so a still-fresh access token is not handed back unrotated (a scope mint does reuse a still-fresh parent). One rotation per seal runs at a time, under a 30-second lease its holder renews and releases; a crashed holder's lease lapses. A retried old seal replays the rotation for 5 minutes (`seal_handoff`), so a lost response never burns a single-use refresh token; a handoff that cannot be written is retried once and logged (`seal.handoff_unsaved`). |
 | `POST /v1/github/scope` | signature + seal | Mints one token for one `repo_id`, clamped to the caller's repository role. The parent token is refreshed first when it has under 65 minutes left. Organization installs must be bound to the install. |
 | `POST /v1/github/install/start` | signature + seal | Returns the app's install URL with a 15-minute ticket. |
 | `POST /v1/github/installations` | signature + seal | The person's installations of the app, each with `bound_here` and `caller_is_admin`. |
@@ -73,7 +78,7 @@ is capped at 16 KB.
 | `POST /v1/github/revoke` | signature + seal | Deletes the grant, or one scoped token when `scoped_token` is set. A scoped token is revoked only for the install it was minted for. |
 | `POST /v1/slack/revoke` | signature + seal | `auth.revoke`, then releases the team binding. Only the bound install can call it. |
 | `POST /v1/events/poll` | install signature | Long poll of up to 25 s for Slack event and command references for teams bound to the caller. At most two concurrent polls per install. |
-| `POST /v1/hooks/slack/events` | `X-Slack-Signature` | Events API intake. Bodies are capped at 256 KB. The text is dropped and a reference is queued. `app_uninstalled` and bot `tokens_revoked` release the team once per event id, and only when the event is newer than the current binding, so a retry or replay never frees a team that was connected again. |
+| `POST /v1/hooks/slack/events` | `X-Slack-Signature` | Events API intake. Bodies are capped at 256 KB. The text is dropped and a reference is queued. `app_uninstalled` and bot `tokens_revoked` release the team once per event id, only when every `authorizations` entry names the bound team (an org-wide or another team's event frees nothing), for `tokens_revoked` only when the revoked bots include the bound bot user, and only when the event is newer than the current binding, so a retry or replay never frees a team that was connected again. |
 | `POST /v1/hooks/slack/commands` | `X-Slack-Signature` | Slash commands get a fixed ephemeral answer. A bounded reference is queued. |
 | `POST /v1/klipy/search`, `/v1/klipy/trending` | install signature | GIF proxy in `proxy` mode. URLs off Klipy's CDN are dropped. |
 | `POST /v1/chat/{provider}/act` | install signature | Reserved for chat bots that have no per-workspace token. Always `provider_unavailable` today. |
@@ -128,7 +133,7 @@ previous generation.
 | `CONNECT_REDIS_URL` | | Secret. `redis://` or `rediss://[user:pass@]host[:port][/db]`. |
 | `CONNECT_REDIS_CA_FILE` | | PEM bundle for `rediss://`, for example the Memorystore server CA. |
 | `CONNECT_BINDINGS` | `file` | `file` or `firestore`. |
-| `CONNECT_DATA_DIR` | `data` (`/data` in the image) | Where `bindings.json` lives. The directory is mode 0700 and the file 0600. |
+| `CONNECT_DATA_DIR` | `data` (`/data` in the image) | Where `bindings.json` lives. The directory is mode 0700. The file is written to a temporary file created 0600 (never chmod-ed after the fact) and renamed. |
 | `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` database | Bindings in `cc_connect_github` and `cc_connect_slack`. Uses metadata-server credentials. |
 | `CONNECT_SIGNED_CONFIG_FILE` | | Hosted only. The offline-signed `/v1/config`, served verbatim and re-read every 30 s. An epoch rollback is ignored. Its lanes must match the credentials above, or Connect will not start. |
 | `CONNECT_SIGNED_CONFIG` | | The same signed config inline, for hosts that cannot mount a file. Read once at boot: a new one needs a restart. Setting both is refused. |

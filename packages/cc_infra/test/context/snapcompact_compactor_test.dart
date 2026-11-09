@@ -98,7 +98,12 @@ void main() {
         ).maybeCompact(history, contextWindow: 5000);
         expect(result.changed, isTrue);
         expect(_hasImage(history), isFalse);
-        expect(result.summarized, isTrue, reason: 'fell back to the text path');
+        // The text path folded (structurally — `summarized` is model-only).
+        expect(
+          result.messagesFolded,
+          greaterThan(0),
+          reason: 'fell back to the text path',
+        );
       },
     );
 
@@ -119,7 +124,11 @@ void main() {
         contextWindow: 100,
       );
       expect(_hasImage(history), isFalse);
-      expect(result.summarized, isTrue, reason: 'text path ran instead');
+      expect(
+        result.messagesFolded,
+        greaterThan(0),
+        reason: 'text path ran instead',
+      );
     });
     test('refuses when the output reservation leaves no room', () async {
       // The text fold would fit the window, but reserving the whole output
@@ -132,7 +141,7 @@ void main() {
       );
       expect(_hasImage(history), isFalse);
       expect(result.changed, isTrue, reason: 'the text fallback still ran');
-      expect(result.summarized, isTrue);
+      expect(result.messagesFolded, greaterThan(0));
     });
   });
 

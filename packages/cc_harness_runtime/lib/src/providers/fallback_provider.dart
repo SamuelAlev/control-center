@@ -44,11 +44,9 @@ class FallbackEntry {
 /// later turns start there.
 ///
 /// Implements [LlmServedIdentity] so a usage ledger wrapping the CHAIN can
-/// attribute a call to the target that actually consumed it, and
-/// [LlmDeferredToolSupport] conservatively over the WHOLE chain — see
-/// [supportsDeferredTools].
-class FallbackProvider
-    implements LlmProviderPort, LlmServedIdentity, LlmDeferredToolSupport {
+/// attribute a call to the target that actually consumed it, and answers
+/// [supportsDeferredTools] conservatively over the WHOLE chain.
+class FallbackProvider implements LlmProviderPort, LlmServedIdentity {
   /// Creates a [FallbackProvider] over `entries` (primary first).
   FallbackProvider(this._entries, {this.onFallback}) {
     if (_entries.isEmpty) {
@@ -109,10 +107,9 @@ class FallbackProvider
     }
     for (var i = 0; i < _entries.length; i++) {
       try {
-        if (!providerSupportsDeferredTools(
-          _providerAt(i),
-          model: _entryModel(i) ?? model,
-        )) {
+        if (!_providerAt(
+          i,
+        ).supportsDeferredTools(model: _entryModel(i) ?? model)) {
           return false;
         }
       } on Object {
@@ -283,53 +280,17 @@ class FallbackProvider
 
   /// Whether [error] is a retryable capacity signal (rate limit / overloaded /
   /// quota) — eligible for rotation when a later entry exists even though the
-  /// SAME target would also recover after a backoff.
-  static bool _isCapacityError(LlmError error) {
-    if (!error.retryable) {
-      return false;
-    }
-    final code = (error.code ?? '').toLowerCase();
-    final message = error.message.toLowerCase();
-    return code.contains('429') ||
-        code.contains('rate_limit') ||
-        code.contains('overloaded') ||
-        code.contains('quota') ||
-        message.contains('rate limit') ||
-        message.contains('quota');
-  }
+  /// SAME target would also recover after a backoff. Reads the typed
+  /// [LlmError.kind]; the phrase matching lives once, in
+  /// [LlmErrorKind.classify].
+  static bool _isCapacityError(LlmError error) =>
+      error.retryable && error.kind.isCapacity;
 
   /// Whether [error] is a target-specific failure (bad credential / quota /
-  /// missing model) that a different target might succeed at — as opposed to a
-  /// request-level rejection (400 / invalid request / context-length) that every
-  /// target would reject identically, so failing over just wastes calls.
-  static bool _isTargetError(LlmError error) {
-    final code = (error.code ?? '').toLowerCase();
-    final message = error.message.toLowerCase();
-    // A spent balance is target-specific even when the API frames it as a
-    // request error — Anthropic reports exhausted prepaid credit as a 400
-    // `invalid_request_error` ("credit balance is too low"), OpenAI as a 429
-    // `insufficient_quota`. Check this BEFORE the 400/invalid_request
-    // exclusion or the one error rotation exists for is classified
-    // un-failoverable.
-    if (code.contains('quota') ||
-        code.contains('billing') ||
-        code.contains('credit') ||
-        message.contains('insufficient_quota') ||
-        message.contains('credit balance') ||
-        message.contains('billing')) {
-      return true;
-    }
-    if (code.contains('400') ||
-        code.contains('invalid_request') ||
-        code.contains('context')) {
-      return false;
-    }
-    return code.contains('auth') ||
-        code.contains('401') ||
-        code.contains('403') ||
-        code.contains('404') ||
-        code.contains('model') ||
-        code.contains('permission') ||
-        code.contains('429');
-  }
+  /// missing model / capacity) that a different target might succeed at — as
+  /// opposed to a request-level rejection (invalid request / context length)
+  /// that every target would reject identically, so failing over just wastes
+  /// calls. A spent balance reported as a 400 still classifies as
+  /// [LlmErrorKind.quota].
+  static bool _isTargetError(LlmError error) => error.kind.isTargetSpecific;
 }

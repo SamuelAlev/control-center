@@ -5,6 +5,7 @@ import 'package:cc_domain/cc_domain.dart' show UserDto;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/api_keys_screen.dart';
@@ -82,6 +83,18 @@ IdentityMe _me({DateTime? onboardingFinishedAt}) => IdentityMe(
 /// Hands a provider `Ref` out to a test, so the `Ref`-flavoured helpers can be
 /// exercised the way a provider would call them.
 final _refProvider = Provider<Ref>((ref) => ref);
+
+/// A settable stand-in for the finished flag, to resolve it after the gate.
+class _FinishedFlag extends Notifier<bool?> {
+  @override
+  bool? build() => null;
+
+  void set(bool? value) => state = value;
+}
+
+final _finishedProvider = NotifierProvider<_FinishedFlag, bool?>(
+  _FinishedFlag.new,
+);
 
 const _connectedGitHub = ForgeConnection(
   forge: ForgeHost.github,
@@ -806,7 +819,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(onboardingGateProvider);
+      container.listen(onboardingGateEffectsProvider, (_, _) {});
       await Future<void>.delayed(Duration.zero);
       expect(container.read(onboardingGateProvider), OnboardingGate.complete);
       expect(pushes, 1);
@@ -825,7 +838,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(onboardingGateProvider);
+      container.listen(onboardingGateEffectsProvider, (_, _) {});
       await Future<void>.delayed(Duration.zero);
       expect(container.read(onboardingGateProvider), OnboardingGate.complete);
       expect(pushes, 0);
@@ -844,6 +857,25 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
     });
 
+    ProviderContainer cachedContainer(
+      Map<String, Object> prefs, {
+      SessionScope? scope,
+    }) => ProviderContainer(
+      overrides: [
+        appPreferencesProvider.overrideWithValue(
+          AppPreferences.inMemory(prefs),
+        ),
+        sessionScopeProvider.overrideWithValue(scope),
+        workspacesProvider.overrideWithValue(
+          const AsyncValue<List<Workspace>>.loading(),
+        ),
+        forgeConnectionsProvider.overrideWith(
+          (ref) async => const <ForgeConnection>[],
+        ),
+      ],
+    );
+    final scopeA = SessionScope(serverId: 'srv-a', userId: 'usr-1');
+
     test('a cached INCOMPLETE verdict is not trusted before the live '
         'checks settle', () {
       // The guard never redirects away from /onboarding once the gate flips to
@@ -851,42 +883,106 @@ void main() {
       // `false` therefore strands a fully set-up operator inside onboarding on
       // every launch, and walking the flow again creates another workspace. So
       // only a cached COMPLETE short-circuits the splash.
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(
-            AppPreferences.inMemory(const {'onboarding_complete': false}),
-          ),
-          workspacesProvider.overrideWithValue(
-            const AsyncValue<List<Workspace>>.loading(),
-          ),
-          forgeConnectionsProvider.overrideWith(
-            (ref) async => const <ForgeConnection>[],
-          ),
-        ],
-      );
+      final container = cachedContainer({
+        scopeA.key('onboarding_complete'): false,
+      }, scope: scopeA);
       addTearDown(container.dispose);
 
       expect(container.read(onboardingGateProvider), OnboardingGate.loading);
     });
 
-    test('a cached COMPLETE verdict still routes without the splash', () {
-      final container = ProviderContainer(
-        overrides: [
-          appPreferencesProvider.overrideWithValue(
-            AppPreferences.inMemory(const {'onboarding_complete': true}),
-          ),
-          workspacesProvider.overrideWithValue(
-            const AsyncValue<List<Workspace>>.loading(),
-          ),
-          forgeConnectionsProvider.overrideWith(
-            (ref) async => const <ForgeConnection>[],
-          ),
-        ],
-      );
+    test('a cached COMPLETE verdict for this server and user routes without '
+        'the splash', () {
+      final container = cachedContainer({
+        scopeA.key('onboarding_complete'): true,
+      }, scope: scopeA);
       addTearDown(container.dispose);
 
       expect(container.read(onboardingGateProvider), OnboardingGate.complete);
     });
+
+    test('another server, another user or an unscoped legacy verdict holds '
+        'the splash', () {
+      // H2: the verdict was device-global, so server B opened on server A's
+      // "complete" and landed in A's workspace.
+      final prefs = {
+        scopeA.key('onboarding_complete'): true,
+        'onboarding_complete': true,
+      };
+      for (final scope in [
+        SessionScope(serverId: 'srv-b', userId: 'usr-1'),
+        SessionScope(serverId: 'srv-a', userId: 'usr-2'),
+        null,
+      ]) {
+        final container = cachedContainer(prefs, scope: scope);
+        addTearDown(container.dispose);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingGate.loading,
+          reason: '$scope',
+        );
+      }
+    });
+
+    test('the gate itself writes nothing; its effects cache the settled '
+        'verdict under the session scope', () async {
+      final prefs = AppPreferences.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(prefs),
+          sessionScopeProvider.overrideWithValue(scopeA),
+          workspacesProvider.overrideWithValue(
+            AsyncValue.data([_workspaceRow()]),
+          ),
+          forgeConnectionsProvider.overrideWith(
+            (ref) async => const [_connectedGitHub],
+          ),
+          onboardingFinishedProvider.overrideWithValue(true),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(onboardingGateProvider, (_, _) {});
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
+      expect(prefs.getBool(scopeA.key('onboarding_complete')), isNull);
+
+      container.listen(onboardingGateEffectsProvider, (_, _) {});
+      await Future<void>.delayed(Duration.zero);
+      expect(prefs.getBool(scopeA.key('onboarding_complete')), isTrue);
+      expect(prefs.getBool('onboarding_complete'), isNull);
+    });
+
+    test(
+      'the finished flag is recorded when it resolves after the verdict',
+      () async {
+        var pushes = 0;
+        final container = ProviderContainer(
+          overrides: [
+            appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
+            workspacesProvider.overrideWithValue(
+              AsyncValue.data([_workspaceRow()]),
+            ),
+            forgeConnectionsProvider.overrideWith(
+              (ref) async => const [_connectedGitHub],
+            ),
+            onboardingFinishedProvider.overrideWith(
+              (ref) => ref.watch(_finishedProvider),
+            ),
+            onboardingFinishedPushProvider.overrideWithValue(
+              () async => pushes++,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container.listen(onboardingGateEffectsProvider, (_, _) {});
+        await Future<void>.delayed(Duration.zero);
+        expect(pushes, 0);
+        container.read(_finishedProvider.notifier).set(false);
+        await Future<void>.delayed(Duration.zero);
+        expect(pushes, 1);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

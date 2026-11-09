@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_server_core/src/notification_wire.dart';
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:cc_server_core/src/push/web_push_service.dart';
 import 'package:cc_server_core/src/push/web_push_transport.dart';
@@ -171,7 +172,7 @@ void main() {
         'link': 'https://evil.test/credential',
       };
       expect(
-        pushFrameTargetsUser(
+        notificationTargetsUser(
           'notifications/message_received',
           message,
           'alice',
@@ -179,7 +180,7 @@ void main() {
         isTrue,
       );
       expect(
-        pushFrameTargetsUser(
+        notificationTargetsUser(
           'notifications/message_received',
           message,
           'carol',
@@ -187,8 +188,25 @@ void main() {
         isFalse,
       );
       expect(
-        pushFrameTargetsUser('notifications/message_received', message, 'bob'),
+        notificationTargetsUser('notifications/message_received', message, 'bob'),
         isFalse,
+      );
+      // Agent-only spaces (by kind) notify nobody unless they are mentioned.
+      final peer = {
+        ...message,
+        'agent_only_space': true,
+        'requested_by_user_id': null,
+      };
+      expect(
+        notificationTargetsUser('notifications/message_received', peer, 'alice'),
+        isFalse,
+      );
+      expect(
+        notificationTargetsUser('notifications/message_received', {
+          ...peer,
+          'mentions': ['user:alice'],
+        }, 'alice'),
+        isTrue,
       );
       final route = safePushRoute(
         'ws-1',
@@ -201,13 +219,13 @@ void main() {
       expect(route, isNot(contains('private text')));
       expect(route, isNot(contains('evil.test')));
       expect(
-        pushFrameTargetsUser('notifications/pr_approved', {
+        notificationTargetsUser('notifications/pr_approved', {
           'for_user_id': 'alice',
         }, 'carol'),
         isFalse,
       );
       expect(
-        pushFrameTargetsUser('notifications/ticket_assigned', {
+        notificationTargetsUser('notifications/ticket_assigned', {
           'assignee_type': 'user',
           'assigned_agent_id': 'alice',
         }, 'carol'),

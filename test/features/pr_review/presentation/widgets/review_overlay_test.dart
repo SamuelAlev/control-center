@@ -48,6 +48,7 @@ const _prRef = (
   workspaceId: 'ws',
   repoFullName: 'acme/control-center',
   number: _prNumber,
+  forge: null,
 );
 
 class _ReviewRepository extends EmptyPrReviewRepository {

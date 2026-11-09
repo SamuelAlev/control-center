@@ -489,6 +489,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get teammate => 'Teamlid';
 
   @override
+  String get systemSender => 'Systeem';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -641,12 +644,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Laatst bekende gegevens voor $names worden getoond. Hervat de installatie op GitHub, of koppel een token met toegang.';
+    return 'Laatst bekende gegevens voor $names worden getoond. Hervat de installatie op GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'GitHub App-installatie is opgeschort. Laatst bekende gegevens voor $names worden getoond. Hervat de installatie op GitHub, of koppel een token met toegang.';
+    return 'GitHub App-installatie is opgeschort. Laatst bekende gegevens voor $names worden getoond. Hervat de installatie op GitHub.';
   }
 
   @override
@@ -2590,6 +2593,22 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Die code hoort niet bij deze inlogpoging. Controleer hem en probeer het opnieuw.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Te veel onjuiste codes. Start het inloggen opnieuw.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'De inlogdienst reageert nu niet. Wacht een minuut en probeer het opnieuw.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Het inloggen is geweigerd. Start het opnieuw en keur alle gevraagde rechten goed.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'Het inloggen is gelukt, maar de server kon het niet opslaan. Probeer het opnieuw.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

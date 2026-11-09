@@ -9,6 +9,15 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Không thể gửi ngay bây giờ: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Câu trả lời của bạn chưa được gửi. Có thể câu hỏi đã được trả lời, hoặc tác tử đã ngừng chờ.';
+
+  @override
   String get succeeded => 'Thành công';
 
   @override
@@ -2604,10 +2613,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addGif => 'Thêm GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Thêm ít nhất một kho lưu trữ GitHub để xem pull request';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5911,9 +5916,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Thời lượng';
 
   @override
-  String get pipelineStepBranch => 'Nhánh';
-
-  @override
   String get pipelineStepViewConversation => 'Xem hội thoại';
 
   @override
@@ -7004,13 +7006,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewRequested => 'Đã yêu cầu review';
 
   @override
-  String get connectGitHubHint =>
-      'Đăng nhập GitHub trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Code hosting';
-
-  @override
-  String get connectGitHubToLoadPrs => 'Kết nối GitHub để tải pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'Chưa cấu hình kho lưu trữ';
 
   @override
@@ -7668,13 +7663,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Tạo bản nháp';
-
-  @override
-  String get composePrNoRepo => 'Chưa chọn kho GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Chọn không gian làm việc có kho liên kết GitHub để mở pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16795,6 +16783,27 @@ class AppLocalizationsVi extends AppLocalizations {
       'Mã này không khớp với lần đăng nhập này. Hãy kiểm tra rồi thử lại.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Nhập sai mã quá nhiều lần. Hãy bắt đầu đăng nhập lại.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Lượt đăng nhập này không còn hợp lệ. Hãy bắt đầu lại.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Máy chủ không đọc được yêu cầu đăng nhập này. Hãy bắt đầu lại.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Hiện có quá nhiều lượt thử đăng nhập. Đợi một phút rồi thử lại.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider đã chấp nhận đăng nhập, nhưng máy chủ không lưu được. Hãy thử lại.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider hiện không phản hồi. Hãy thử lại sau vài phút.';
   }
@@ -16825,7 +16834,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Không gian làm việc Linear này đã được kết nối với một máy chủ Control Center khác.';
+      'Không gian làm việc Slack này đã được kết nối với một máy chủ Control Center khác.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17259,4 +17268,38 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Chuyển ứng dụng';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Mở trên $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Đang hiển thị $count tệp đầu tiên. $forge không liệt kê phần còn lại.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Kết nối dịch vụ lưu trữ mã để tải pull request';
+
+  @override
+  String get connectForgeHint =>
+      'Kết nối GitHub, GitLab hoặc Bitbucket trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Thêm ít nhất một kho mã trên GitHub, GitLab hoặc Bitbucket để xem pull request';
+
+  @override
+  String get composePrNoForgeRepo => 'Chưa chọn kho mã được lưu trữ';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Chọn một không gian làm việc có kho mã trên GitHub, GitLab hoặc Bitbucket để mở pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Kết nối $forge để mở pull request trong kho mã này';
+  }
 }

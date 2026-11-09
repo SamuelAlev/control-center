@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_harness_runtime/src/context/markdown_frontmatter.dart';
 import 'package:cc_harness_runtime/src/tools/workspace_paths.dart';
 import 'package:path/path.dart' as p;
 
@@ -158,35 +159,16 @@ class HarnessSkillScanner {
 
   /// Parses captured bytes with the same metadata rules as live discovery.
   /// [path] is the advertised document path, not a file opened by this method.
-  static HarnessSkillInfo parseContents(String content, {
+  static HarnessSkillInfo parseContents(
+    String content, {
     required String slug,
     required String path,
   }) {
-    var name = slug;
-    var description = '';
-    final trimmed = content.trimLeft();
-    if (trimmed.startsWith('---')) {
-      final end = trimmed.indexOf('\n---', 3);
-      if (end != -1) {
-        final front = trimmed.substring(3, end);
-        for (final line in front.split('\n')) {
-          final idx = line.indexOf(':');
-          if (idx <= 0) {
-            continue;
-          }
-          final key = line.substring(0, idx).trim();
-          final value = _unquote(line.substring(idx + 1).trim());
-          if (key == 'name' && value.isNotEmpty) {
-            name = value;
-          } else if (key == 'description') {
-            description = value;
-          }
-        }
-      }
-    }
+    final front = MarkdownFrontmatter.parse(content);
+    final name = front['name'];
     return HarnessSkillInfo(
-      name: name,
-      description: description,
+      name: name == null || name.isEmpty ? slug : name,
+      description: front['description'] ?? '',
       path: path,
     );
   }
@@ -202,14 +184,5 @@ class HarnessSkillScanner {
     } finally {
       raf.closeSync();
     }
-  }
-
-  static String _unquote(String value) {
-    if (value.length >= 2 &&
-        ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'")))) {
-      return value.substring(1, value.length - 1);
-    }
-    return value;
   }
 }

@@ -636,7 +636,7 @@ void main() {
       final debugEvents = events.whereType<DebugEvent>().toList();
       expect(debugEvents, isNotEmpty);
       final terminationMsg = debugEvents.any(
-        (e) => e.content.contains('terminated by request'),
+        (e) => e.content.contains('stopped by request'),
       );
       expect(terminationMsg, isTrue);
     });
@@ -653,7 +653,7 @@ void main() {
       final errorEvents = events.whereType<ErrorEvent>().toList();
       expect(errorEvents, isNotEmpty);
       final failMsg = errorEvents.any(
-        (e) => e.content == 'Terminated by user request',
+        (e) => e.content == 'Stopped by user',
       );
       expect(failMsg, isTrue);
     });
@@ -1819,7 +1819,7 @@ void main() {
       // _failRun emits an ErrorEvent with the failure message.
       final errorEvents = events.whereType<ErrorEvent>().toList();
       expect(
-        errorEvents.any((e) => e.content == 'Terminated by user request'),
+        errorEvents.any((e) => e.content == 'Stopped by user'),
         isTrue,
       );
     });

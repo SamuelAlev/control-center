@@ -492,6 +492,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get teammate => 'Compañero';
 
   @override
+  String get systemSender => 'Sistema';
+
+  @override
   String get agent => 'Agente';
 
   @override
@@ -645,12 +648,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Se muestran los últimos datos conocidos de $names. Reanuda la instalación en GitHub o conecta un token con acceso.';
+    return 'Se muestran los últimos datos conocidos de $names. Reanuda la instalación en GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Instalación de GitHub App suspendida. Se muestran los últimos datos conocidos de $names. Reanuda la instalación en GitHub o conecta un token con acceso.';
+    return 'Instalación de GitHub App suspendida. Se muestran los últimos datos conocidos de $names. Reanuda la instalación en GitHub.';
   }
 
   @override
@@ -2613,6 +2616,22 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Ese código no coincide con este inicio de sesión. Revísalo e inténtalo de nuevo.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Demasiados códigos incorrectos. Vuelve a iniciar el inicio de sesión.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'El servicio de inicio de sesión no responde ahora mismo. Espera un minuto e inténtalo de nuevo.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'Se rechazó el inicio de sesión. Vuelve a empezarlo y aprueba todos los permisos solicitados.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'El inicio de sesión funcionó, pero el servidor no pudo guardarlo. Inténtalo de nuevo.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

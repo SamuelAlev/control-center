@@ -83,9 +83,14 @@ class PipelineRunsTable extends Table {
   /// [parentPipelineRunId]). Null for top-level runs.
   TextColumn get parentStepId => text().nullable()();
 
-  /// Template version this run was started against — pins the run to the graph
-  /// as it was at start time so an edit mid-run can't silently change it.
+  /// Template version this run was started against.
   IntColumn get templateVersion => integer().withDefault(const Constant(1))();
+
+  /// The template graph as it was when the run started
+  /// (`PipelineDefinition.toJson`), written once at insert. Resume, retry and
+  /// the run detail read it so a template edit mid-run can't change what the
+  /// run does or shows. Null for runs that predate it (v23).
+  TextColumn get templateSnapshotJson => text().nullable()();
 
   /// Which attempt of this run is current, 1-based.
   ///
@@ -105,6 +110,11 @@ class PipelineRunsTable extends Table {
   /// When true the run is a dry run: dispatch / bash / network side effects
   /// are skipped and steps echo what they would have done.
   BoolColumn get dryRun => boolean().withDefault(const Constant(false))();
+
+  /// When true the row mirrors work owned outside the engine (a projection
+  /// reporter wrote it) and holds no `maxParallelRuns` slot. Written once at
+  /// insert; see `PipelineRun.isProjection`.
+  BoolColumn get isProjection => boolean().withDefault(const Constant(false))();
 
   @override
   String get tableName => 'pipeline_runs';

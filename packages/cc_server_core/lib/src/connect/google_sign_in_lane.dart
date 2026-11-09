@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
@@ -124,7 +125,11 @@ final class GoogleSignInLane implements SignInLaneBinding {
       ..set(HttpHeaders.authorizationHeader, 'Bearer $accessToken')
       ..set(HttpHeaders.acceptHeader, 'application/json');
     final response = await request.close().timeout(_timeout);
-    final body = await _readBounded(response);
+    final body = await readBoundedText(
+      response,
+      maxBytes: _maxResponseBytes,
+      timeout: _timeout,
+    );
     if (response.statusCode != HttpStatus.ok) {
       throw HttpException('userinfo HTTP ${response.statusCode}');
     }
@@ -178,15 +183,4 @@ final class GoogleSignInLane implements SignInLaneBinding {
   /// Accounts are removed one by one with `calendar.disconnect`.
   @override
   Future<void> disconnect(String userId, String? workspaceId) async {}
-
-  static Future<String> _readBounded(HttpClientResponse response) async {
-    final chunks = <int>[];
-    await for (final chunk in response.timeout(_timeout)) {
-      chunks.addAll(chunk);
-      if (chunks.length > _maxResponseBytes) {
-        throw const HttpException('oversized reply');
-      }
-    }
-    return utf8.decode(chunks, allowMalformed: true);
-  }
 }

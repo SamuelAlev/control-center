@@ -174,7 +174,7 @@ class DemoHarnessProviderFactory extends HarnessProviderFactory {
 /// outbound model call; if a wiring regression ever routed a real run here, a
 /// thrown error surfaces as a failed run in the transcript instead of a silent
 /// egress from a box on the internet.
-class DemoInertProvider implements LlmProviderPort {
+class DemoInertProvider extends LlmProviderPort {
   /// Creates the inert provider.
   const DemoInertProvider({
     this.providerId = kDemoProviderId,

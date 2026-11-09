@@ -2,9 +2,9 @@
 // live toast path (`RpcNotificationMapper`, rendering frames as the server
 // pushes them) and the durable notification center (rendering the same frames
 // back out of the server-side per-workspace feed). Keeping ONE mapping is what
-// guarantees the bell's history and the toasts agree on titles, deep links,
-// and — critically — the PRD 16 §7 principal routing rules: a frame that would
-// not have pinged this user live must not surface in their bell either.
+// guarantees the bell's history and the toasts agree on titles and deep links.
+// The PRD 16 §7 principal routing is not here: the server applies one rule
+// (`notificationTargetsUser`) to both the live frames and the feed.
 library;
 
 import 'package:cc_domain/core/domain/events/agent_events.dart';
@@ -15,14 +15,14 @@ import 'package:control_center/router/routes.dart';
 /// Maps one pushed/stored `notifications/*` frame to the [AppNotification] it
 /// renders as, or null when the frame is not renderable — an unknown method
 /// (task-lifecycle frames are pushed but never rendered as notifications), a
-/// frame missing its identifying params, or one the PRD 16 §7 routing rules
-/// suppress for [currentUserId].
+/// frame missing its identifying params, a muted repository, or the
+/// operator's own forge action.
 ///
 /// Pure: no workspace filtering (callers scope to their surface — the live
 /// path filters to the active workspace, the feed is per-workspace by
-/// construction) and no side effects. [currentUserId] null (identity not
-/// wired or still loading) degrades every routing rule to its
-/// pre-multiplayer fallback — never a silently dropped notification.
+/// construction) and no side effects. Who a frame is FOR is the server's
+/// decision; [currentUserId] only picks a message's category (mentioned vs
+/// an agent's finished turn).
 AppNotification? mapNotificationFrame(
   String method,
   Map<String, dynamic> params, {
@@ -43,17 +43,10 @@ AppNotification? mapNotificationFrame(
   if (mutedRepos.isNotEmpty && _isMutedRepo(p, mutedRepos)) {
     return null;
   }
-  // Principal routing for the author-facing PR lanes. Same shape as
-  // `_ticketAssigned`: a frame addressed to someone else is dropped, and an
-  // unknown on EITHER side degrades to notifying — an older server that sends
-  // no `for_user_id`, or an identity still loading, must never silently
-  // swallow a notification.
-  final forUserId = p['for_user_id'] as String?;
-  if (forUserId != null &&
-      currentUserId != null &&
-      forUserId != currentUserId) {
-    return null;
-  }
+  // Principal routing ("who is notified": directed frames, message routing,
+  // agent-only spaces, ticket assignees, rig controllers) is decided on the
+  // server by `notificationTargetsUser`, which filters the live frames per
+  // session and the feed per viewer. Nothing here re-derives it.
   // Nobody needs to be told what they just did. A frame whose ACTOR is the
   // operator themselves is news to everyone except them, so it is dropped
   // here — the same shape as the rig rule below ("the person who took the
@@ -108,7 +101,7 @@ AppNotification? mapNotificationFrame(
     case 'notifications/external_pr_merged':
       return _externalPrMerged(p, l10n);
     case 'notifications/ticket_assigned':
-      return _ticketAssigned(p, l10n, currentUserId);
+      return _ticketAssigned(p, l10n);
     case 'notifications/ticket_status_changed':
       return _ticketStatusChanged(p, l10n);
     case 'notifications/meeting_starting_soon':
@@ -116,7 +109,7 @@ AppNotification? mapNotificationFrame(
     case 'notifications/calendar_auth_expired':
       return _calendarAuthExpired(p, l10n);
     case 'notifications/rig_control_changed':
-      return _rigControlChanged(p, l10n, currentUserId);
+      return _rigControlChanged(p, l10n);
     case 'notifications/rig_reaped':
       return _rigReaped(p, l10n);
     case 'notifications/rig_closed':
@@ -492,48 +485,18 @@ AppNotification _prMerged(Map<String, dynamic> p, AppLocalizations l10n) {
   );
 }
 
-/// PRD 16 §7 routing — a shared space must ping the RESPONSIBLE principal(s), not everyone
-/// in it:
-/// Otherwise, the pre-multiplayer behaviour: only an agent's completed
-/// turn notifies (a human's own un-mentioned message never pings anyone — the forwarder
-/// does not even push those frames) — UNLESS the frame names the human who requested that
-/// run (`requested_by_user_id`) and it names someone OTHER than me, in which case it is
-/// THEIR run finishing, not mine, so it is suppressed.
-///
-/// An agent's own turn is the "agent finished" notification (the server sends
-/// no separate run-completed frame), so it files under
-/// [NotificationCategory.agentRunCompleted] and obeys that toggle. A message
-/// that mentions me stays [NotificationCategory.newMessage], whoever wrote it.
+/// A message frame the server already routed to this user (PRD 16 §7). A
+/// message that mentions [me] files under [NotificationCategory.newMessage];
+/// an agent's turn — the "agent finished" signal, since the server sends no
+/// separate run-completed frame — under
+/// [NotificationCategory.agentRunCompleted] and obeys that toggle.
 AppNotification? _messageReceived(Map<String, dynamic> p, String? me) {
   final workspaceId = p['workspace_id'] as String?;
   final spaceId = p['space_id'] as String?;
-  final isAgentMessage = p['is_agent_message'] as bool? ?? true;
-  // My own message, before anything else — including the mention rule, which
-  // would otherwise ping someone for `@`-mentioning themselves. An older
-  // server sends no `sender_user_id` and an unresolved identity is null; both
-  // fall through to the rules below rather than dropping anything.
-  final senderUserId = p['sender_user_id'] as String?;
-  if (senderUserId != null && me != null && senderUserId == me) {
-    return null;
-  }
   final mentionWires =
       (p['mentions'] as List?)?.whereType<String>().toList() ??
       const <String>[];
-
   final iAmMentioned = me != null && mentionWires.contains('user:$me');
-  if (!iAmMentioned) {
-    if (!isAgentMessage) {
-      return null;
-    }
-    final requestedBy = p['requested_by_user_id'] as String?;
-    if (requestedBy != null && me != null && requestedBy != me) {
-      return null;
-    }
-  }
-  // A body-less message notification is noise: the bell renders the body as
-  // its subtitle, so an empty preview reads as a bare sender name with a blank
-  // line under it. The server already suppresses these at the source; this is
-  // the matching client-side floor for older servers.
   final body = (p['content_preview'] as String? ?? '').trim();
   if (body.isEmpty) {
     return null;
@@ -627,19 +590,7 @@ AppNotification _reviewStale(Map<String, dynamic> p, AppLocalizations l10n) {
 /// assignee is pinged — assigning a ticket to a teammate must not ping the
 /// whole workspace. An agent assignment (or an older frame with no
 /// `assignee_type`) keeps today's unfiltered behaviour.
-AppNotification? _ticketAssigned(
-  Map<String, dynamic> p,
-  AppLocalizations l10n,
-  String? me,
-) {
-  final assigneeType = p['assignee_type'] as String?;
-  final assignedId = p['assigned_agent_id'] as String?;
-  if (assigneeType == 'user' &&
-      assignedId != null &&
-      me != null &&
-      assignedId != me) {
-    return null;
-  }
+AppNotification _ticketAssigned(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   final ticketId = p['ticket_id'] as String;
   return AppNotification(
@@ -718,17 +669,13 @@ AppNotification _calendarAuthExpired(
 /// space or PR it serves) and the event does not name a conversation, so the
 /// deep link goes to Settings → Server → Enclosures: the running-machine list,
 /// which is the one place that can answer "which machines are up right now".
-AppNotification? _rigControlChanged(
+AppNotification _rigControlChanged(
   Map<String, dynamic> p,
   AppLocalizations l10n,
-  String? me,
 ) {
   final workspaceId = p['workspace_id'] as String?;
   final controller = p['controller'] as String?;
   final held = p['held'] as bool? ?? (controller != null);
-  if (held && me != null && controller == 'user:$me') {
-    return null;
-  }
   return AppNotification(
     category: NotificationCategory.rigStatusChanged,
     title: held ? l10n.notificationRigTakenOver : l10n.notificationRigReleased,

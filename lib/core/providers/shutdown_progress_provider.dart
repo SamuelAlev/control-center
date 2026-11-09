@@ -97,16 +97,18 @@ class ShutdownProgressNotifier extends Notifier<ShutdownProgressState> {
       _sub = null;
     }
     ref.onDispose(() => _sub?.cancel());
-    // Once the connection to the shutting-down server actually drops, the
-    // shutdown is over — clear the overlay state. Without this, `active` latches
-    // true forever and the overlay pops back the instant the phase returns to
-    // `connected` (e.g. the server is restarted and the client reconnects).
+    // Once the connection to a server that announced its own shutdown
+    // actually drops, the shutdown is over — clear the overlay state. Without
+    // this, `active` latches true forever and the overlay pops back the
+    // instant the phase returns to `connected` (e.g. the server is restarted
+    // and the client reconnects). A shutdown THIS app started is the app
+    // quitting: the overlay stays up through the drop until the process exits.
     ref.listen(serverConnectionStatusProvider, (_, next) {
       final phase = next.value?.phase;
       final gone =
           phase == ServerConnectionPhase.reconnecting ||
           phase == ServerConnectionPhase.closed;
-      if (gone && state.active) {
+      if (gone && state.active && !state.initiatedHere) {
         state = const ShutdownProgressState();
       }
     });

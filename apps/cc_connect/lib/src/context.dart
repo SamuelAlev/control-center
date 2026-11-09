@@ -51,23 +51,69 @@ final class ConnectCaller {
       SealBinding(installId: installId, workspaceId: workspaceId);
 }
 
+/// Where a staged login stands. A login moves forward only through
+/// [StagedLogin.advance]; nothing is encoded as an empty string.
+sealed class LoginPhase {
+  const LoginPhase();
+}
+
+/// Started; the provider has not redirected back yet.
+final class AwaitingProvider extends LoginPhase {
+  /// Creates the phase.
+  const AwaitingProvider();
+}
+
+/// Slack: the Sign in with Slack pre-check passed; the bot install is next.
+final class SlackPrechecked extends LoginPhase {
+  /// Creates the phase.
+  const SlackPrechecked({required this.teamId, required this.userId});
+
+  /// The team the pre-check saw.
+  final String teamId;
+
+  /// The person the pre-check saw.
+  final String userId;
+}
+
+/// The provider redirected back with its authorization code; the login can
+/// be claimed.
+final class Authorized extends LoginPhase {
+  /// Creates the phase.
+  const Authorized({required this.providerCode, this.slack});
+
+  /// The provider's one-time authorization code.
+  final String providerCode;
+
+  /// Slack: what the pre-check saw; null for every other lane.
+  final SlackPrechecked? slack;
+}
+
 /// A browser OAuth flow between `/start` and `/claim`.
 final class StagedLogin {
-  /// Creates the login.
+  /// Creates a login at [AwaitingProvider].
   StagedLogin({
     required this.id,
     required this.lane,
     required this.installId,
     required this.workspaceId,
     required this.codeChallenge,
-    required this.purpose,
     required this.confirmCode,
     required this.expiresAt,
-    this.installationId,
-    this.providerCode = '',
     this.oidcNonce = '',
-    this.slackTeamId = '',
-    this.slackUserId = '',
+  }) : phase = const AwaitingProvider(),
+       storedAs = null;
+
+  StagedLogin._({
+    required this.id,
+    required this.lane,
+    required this.installId,
+    required this.workspaceId,
+    required this.codeChallenge,
+    required this.confirmCode,
+    required this.expiresAt,
+    required this.oidcNonce,
+    required this.phase,
+    required this.storedAs,
   });
 
   /// Parses the stored form; null when malformed.
@@ -89,14 +135,12 @@ final class StagedLogin {
     final lane = ConnectOAuthLane.fromWire(
       laneWire is String ? laneWire : null,
     );
-    final purpose = ConnectOAuthPurpose.fromWire(json['purpose']);
     final install = json['install_id'];
     final workspace = json['workspace_id'];
     final challenge = json['code_challenge'];
     final code = json['confirm_code'];
     final expires = json['expires_at'];
     if (lane == null ||
-        purpose == null ||
         install is! String ||
         workspace is! String ||
         challenge is! String ||
@@ -109,21 +153,31 @@ final class StagedLogin {
       return value is String ? value : '';
     }
 
-    final installation = map['installation_id'];
-    return StagedLogin(
+    final providerCode = text('provider_code');
+    final team = text('slack_team_id');
+    final slack = team.isEmpty
+        ? null
+        : SlackPrechecked(teamId: team, userId: text('slack_user_id'));
+    if (lane == ConnectOAuthLane.slack &&
+        providerCode.isNotEmpty &&
+        slack == null) {
+      // A Slack login authorized without its pre-check is not one this
+      // Connect made.
+      return null;
+    }
+    return StagedLogin._(
       id: id,
       lane: lane,
       installId: install,
       workspaceId: workspace,
       codeChallenge: challenge,
-      purpose: purpose,
       confirmCode: code,
       expiresAt: DateTime.tryParse(expires)?.toUtc() ?? DateTime.utc(1970),
-      installationId: installation is int ? installation : null,
-      providerCode: text('provider_code'),
       oidcNonce: text('oidc_nonce'),
-      slackTeamId: text('slack_team_id'),
-      slackUserId: text('slack_user_id'),
+      phase: providerCode.isNotEmpty
+          ? Authorized(providerCode: providerCode, slack: slack)
+          : slack ?? const AwaitingProvider(),
+      storedAs: raw,
     );
   }
 
@@ -142,44 +196,86 @@ final class StagedLogin {
   /// The server's PKCE challenge.
   final String codeChallenge;
 
-  /// Why.
-  final ConnectOAuthPurpose purpose;
-
   /// The code `/done` shows.
   final String confirmCode;
 
   /// When it stops being claimable.
   final DateTime expiresAt;
 
-  /// The installation named at start (GitHub `authorize_server`).
-  final int? installationId;
+  /// Slack: the OIDC nonce (empty for every other lane).
+  final String oidcNonce;
 
-  /// The provider's authorization code, once the callback ran.
-  String providerCode;
+  /// Where the login stands.
+  final LoginPhase phase;
 
-  /// Slack: the OIDC nonce.
-  String oidcNonce;
+  /// The stored form this copy was read as, for compare-and-set; null for a
+  /// login not stored yet.
+  final String? storedAs;
 
-  /// Slack: the team the OIDC pre-check saw.
-  String slackTeamId;
+  /// The provider's authorization code, once the login is [Authorized].
+  String? get providerCode => switch (phase) {
+    Authorized(:final providerCode) => providerCode,
+    _ => null,
+  };
 
-  /// Slack: the person the OIDC pre-check saw.
-  String slackUserId;
+  /// Slack: what the pre-check saw, once it passed.
+  SlackPrechecked? get slackPrecheck => switch (phase) {
+    SlackPrechecked() && final checked => checked,
+    Authorized(:final slack) => slack,
+    AwaitingProvider() => null,
+  };
+
+  /// The redirect hop this login waits for next, or null once [Authorized].
+  ConnectCallbackHop? get nextHop => switch (phase) {
+    AwaitingProvider() => ConnectCallbackHop.first,
+    SlackPrechecked() => ConnectCallbackHop.bot,
+    Authorized() => null,
+  };
+
+  /// The one transition function: this login moved to [next] by the
+  /// provider's redirect. Throws [StateError] for any move the flow does not
+  /// make (a second callback, a bot install before the pre-check, a
+  /// pre-check on a lane without one).
+  StagedLogin advance(LoginPhase next) {
+    final ok = switch ((phase, next)) {
+      (AwaitingProvider(), SlackPrechecked()) => lane == ConnectOAuthLane.slack,
+      (AwaitingProvider(), Authorized(:final slack)) =>
+        lane != ConnectOAuthLane.slack && slack == null,
+      (SlackPrechecked() && final checked, Authorized(:final slack)) =>
+        identical(slack, checked),
+      _ => false,
+    };
+    if (!ok) {
+      throw StateError('login $id cannot move to ${next.runtimeType}');
+    }
+    return StagedLogin._(
+      id: id,
+      lane: lane,
+      installId: installId,
+      workspaceId: workspaceId,
+      codeChallenge: codeChallenge,
+      confirmCode: confirmCode,
+      expiresAt: expiresAt,
+      oidcNonce: oidcNonce,
+      phase: next,
+      storedAs: storedAs,
+    );
+  }
 
   /// The stored form.
   String encode() => jsonEncode({
     'lane': lane.wire,
-    'purpose': purpose.wire,
+    // Older instances in a rolling deploy still require it.
+    'purpose': 'sign_in',
     'install_id': installId,
     'workspace_id': workspaceId,
     'code_challenge': codeChallenge,
     'confirm_code': confirmCode,
     'expires_at': expiresAt.toUtc().toIso8601String(),
-    'installation_id': ?installationId,
-    if (providerCode.isNotEmpty) 'provider_code': providerCode,
+    'provider_code': ?providerCode,
     if (oidcNonce.isNotEmpty) 'oidc_nonce': oidcNonce,
-    if (slackTeamId.isNotEmpty) 'slack_team_id': slackTeamId,
-    if (slackUserId.isNotEmpty) 'slack_user_id': slackUserId,
+    'slack_team_id': ?slackPrecheck?.teamId,
+    'slack_user_id': ?slackPrecheck?.userId,
   });
 }
 
@@ -539,13 +635,21 @@ final class ConnectContext {
     return login;
   }
 
-  /// Writes a staged login back for the rest of its lifetime.
-  Future<void> saveLogin(StagedLogin login) async {
+  /// Stores [login] for the rest of its lifetime: a new login only when its
+  /// id is free, an advanced one only while the stored copy is still the
+  /// one it was read as (compare-and-set). False when another request got
+  /// there first (a replayed callback, a concurrent claim or burn): the
+  /// caller treats the login as gone.
+  Future<bool> saveLogin(StagedLogin login) async {
     final remaining = login.expiresAt.difference(now());
     if (remaining <= Duration.zero) {
-      return;
+      return false;
     }
-    await state.set('login:${login.id}', login.encode(), remaining);
+    final key = 'login:${login.id}';
+    final previous = login.storedAs;
+    return previous == null
+        ? state.putIfAbsent(key, login.encode(), remaining)
+        : state.replace(key, previous, login.encode(), remaining);
   }
 
   /// Burns a login (and its attempt counter).

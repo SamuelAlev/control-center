@@ -630,6 +630,185 @@ void main() {
     });
   });
 
+  group('races and failures', () {
+    test('a reorder never writes a drained card back to queued', () async {
+      final session = _FakeSession(runLogId: 'run-x');
+      sessions.add(session);
+      final first = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'first',
+        senderUserId: 'user-1',
+      );
+      final second = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'second',
+        senderUserId: 'user-1',
+      );
+      // The reorder's read happened before the run drained the cards: its
+      // queue lookup returns that stale snapshot.
+      final stale = messaging.messages.toList();
+      final racing = SteeringQueueService(
+        messagingRepository: messaging,
+        runLogRepository: runLogs,
+        dispatchResponder:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              String? conversationId,
+              required String content,
+              String? senderUserId,
+              List<MessageAttachment> attachments = const [],
+              List<String> promptImageRefs = const [],
+            }) async {},
+        sessionsForConversation: (_) => [session],
+        queuedSteering:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              required String conversationId,
+            }) async => stale,
+      );
+      racing.handleHarnessStarted(session);
+      await pumpEventQueue();
+      session.steeringQueue.drainSteering();
+      await pumpEventQueue();
+      expect(messaging.messages.every((m) => m.isSteeringInjected), isTrue);
+
+      await racing.reorder(
+        workspaceId: 'ws',
+        conversationId: 'conv',
+        orderedIds: [second!.messageId, first!.messageId],
+      );
+      expect(messaging.messages.every((m) => m.isSteeringInjected), isTrue);
+      expect(session.steeringQueue.isEmpty, isTrue);
+    });
+
+    test('a failed run-end send puts the cards back and says so', () async {
+      final notices = <String>[];
+      final failing = SteeringQueueService(
+        messagingRepository: messaging,
+        runLogRepository: runLogs,
+        dispatchResponder:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              String? conversationId,
+              required String content,
+              String? senderUserId,
+              List<MessageAttachment> attachments = const [],
+              List<String> promptImageRefs = const [],
+            }) async => throw StateError('no agent'),
+        sessionsForConversation: (_) => const [],
+        postNotice:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              required String conversationId,
+              required String text,
+            }) async => notices.add(text),
+      );
+      await failing.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'one',
+        senderUserId: 'user-1',
+      );
+      runLogs.active = [];
+      await failing.handleRunEnded('ws', 'conv', 'space');
+
+      final row = messaging.messages.single;
+      expect(row.messageType, MessageType.steering);
+      expect(row.isSteeringQueued, isTrue);
+      expect(notices.single, contains('still in the queue'));
+    });
+
+    test('forceSend: a live run takes the card', () async {
+      sessions.add(_FakeSession());
+      final card = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'now',
+        senderUserId: 'user-1',
+      );
+      final stopped = <String>[];
+      final outcome = await service.forceSend(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        messageId: card!.messageId,
+        mayStop: true,
+        stopRun: (id) async => stopped.add(id),
+      );
+      expect(outcome, SteeringForceOutcome.delivered);
+      expect(stopped, isEmpty);
+    });
+
+    test('forceSend: no mid-run lane promotes the card and stops the runs, '
+        'unless the caller may not stop runs', () async {
+      sessions.add(_FakeSession()..harnessActive = false);
+      await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'older',
+        senderUserId: 'user-1',
+      );
+      final card = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'urgent',
+        senderUserId: 'user-1',
+      );
+      final stopped = <String>[];
+      Future<SteeringForceOutcome> force({required bool mayStop}) =>
+          service.forceSend(
+            workspaceId: 'ws',
+            spaceId: 'space',
+            conversationId: 'conv',
+            messageId: card!.messageId,
+            mayStop: mayStop,
+            stopRun: (id) async => stopped.add(id),
+          );
+
+      expect(await force(mayStop: false), SteeringForceOutcome.stopRefused);
+      expect(stopped, isEmpty);
+
+      expect(await force(mayStop: true), SteeringForceOutcome.stopping);
+      expect(stopped, [runLogs.active.single.id]);
+      final queued = messaging.messages.toList()
+        ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
+      expect(queued.first.content, 'urgent');
+    });
+
+    test('forceSend: with no live run the queue is sent at once', () async {
+      final card = await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'go',
+        senderUserId: 'user-1',
+      );
+      runLogs.active = [];
+      final outcome = await service.forceSend(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        messageId: card!.messageId,
+        mayStop: false,
+        stopRun: (_) async {},
+      );
+      expect(outcome, SteeringForceOutcome.sent);
+      expect(dispatched, ['go']);
+    });
+  });
+
   group('attachments', () {
     const shot = {
       'id': 'a1',

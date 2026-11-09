@@ -51,8 +51,14 @@ class _PipelineRunDetailScreenState
       return InlineLoadError(runAsync.error!);
     }
     final run = runAsync.value;
+    // A run draws the graph it was pinned to when it started; only a run that
+    // predates snapshots falls back to the live template (which an edit since
+    // may have changed, and a deletion removed).
+    final pinned = run?.templateSnapshot;
     final templatesAsync = run == null
         ? const AsyncValue<List<PipelineDefinition>>.loading()
+        : pinned != null
+        ? AsyncValue<List<PipelineDefinition>>.data([pinned])
         : ref.watch(pipelineTemplatesProvider(run.workspaceId));
     if (templatesAsync.hasError) {
       return InlineLoadError(templatesAsync.error!);

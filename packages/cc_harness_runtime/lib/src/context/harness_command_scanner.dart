@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_harness_runtime/src/context/markdown_frontmatter.dart';
 import 'package:path/path.dart' as p;
 
 /// A user-authored slash command discovered on disk.
@@ -79,7 +80,9 @@ String expandCommandArgs(String body, String args) {
   });
 
   if (out.contains(r'$ARGUMENTS') || out.contains(r'$@')) {
-    out = mark(out.replaceAll(r'$ARGUMENTS', trimmed).replaceAll(r'$@', trimmed));
+    out = mark(
+      out.replaceAll(r'$ARGUMENTS', trimmed).replaceAll(r'$@', trimmed),
+    );
   }
 
   if (!usedPlaceholder && trimmed.isNotEmpty) {
@@ -232,7 +235,10 @@ class HarnessCommandScanner {
     }
   }
 
-  Future<HarnessCommandInfo?> _parse(File file, {required String prefix}) async {
+  Future<HarnessCommandInfo?> _parse(
+    File file, {
+    required String prefix,
+  }) async {
     String raw;
     try {
       if (await file.length() > maxBodyBytes) {
@@ -242,7 +248,8 @@ class HarnessCommandScanner {
     } on Object {
       return null;
     }
-    final name = '$prefix${p.basenameWithoutExtension(file.path)}'.toLowerCase();
+    final name = '$prefix${p.basenameWithoutExtension(file.path)}'
+        .toLowerCase();
     if (name.isEmpty) {
       return null;
     }
@@ -250,33 +257,20 @@ class HarnessCommandScanner {
     var description = '';
     String? model;
     var allowedTools = const <String>[];
-    var body = raw;
-
-    final frontmatter = _splitFrontmatter(raw);
-    if (frontmatter != null) {
-      body = frontmatter.body;
-      for (final line in frontmatter.header.split('\n')) {
-        final idx = line.indexOf(':');
-        if (idx <= 0) {
-          continue;
-        }
-        final key = line.substring(0, idx).trim().toLowerCase();
-        final value = line.substring(idx + 1).trim().replaceAll(
-          RegExp(r'''^['"]|['"]$'''),
-          '',
-        );
-        switch (key) {
-          case 'description':
-            description = value;
-          case 'model':
-            model = value.isEmpty ? null : value;
-          case 'allowed-tools':
-          case 'allowedtools':
-            allowedTools = [
-              for (final t in value.split(RegExp(r'[,\s]+')))
-                if (t.trim().isNotEmpty) t.trim(),
-            ];
-        }
+    final frontmatter = MarkdownFrontmatter.parse(raw);
+    var body = frontmatter.body;
+    for (final MapEntry(:key, :value) in frontmatter.fields.entries) {
+      switch (key) {
+        case 'description':
+          description = value;
+        case 'model':
+          model = value.isEmpty ? null : value;
+        case 'allowed-tools':
+        case 'allowedtools':
+          allowedTools = [
+            for (final t in value.split(RegExp(r'[,\s]+')))
+              if (t.trim().isNotEmpty) t.trim(),
+          ];
       }
     }
 
@@ -305,25 +299,6 @@ class HarnessCommandScanner {
       body: body,
       model: model,
       allowedTools: allowedTools,
-    );
-  }
-
-  ({String header, String body})? _splitFrontmatter(String raw) {
-    if (!raw.startsWith('---')) {
-      return null;
-    }
-    final end = raw.indexOf('\n---', 3);
-    if (end < 0) {
-      return null;
-    }
-    final headerEnd = raw.indexOf('\n', 3);
-    if (headerEnd < 0 || headerEnd > end) {
-      return null;
-    }
-    final afterClose = raw.indexOf('\n', end + 1);
-    return (
-      header: raw.substring(headerEnd + 1, end),
-      body: afterClose < 0 ? '' : raw.substring(afterClose + 1),
     );
   }
 }

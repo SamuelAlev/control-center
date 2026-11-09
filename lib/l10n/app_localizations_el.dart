@@ -9,6 +9,15 @@ class AppLocalizationsEl extends AppLocalizations {
   AppLocalizationsEl([String locale = 'el']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Δεν ήταν δυνατή η αποστολή τώρα: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Η απάντησή σας δεν παραδόθηκε. Μπορεί να έχει ήδη απαντηθεί ή ο πράκτορας σταμάτησε να περιμένει.';
+
+  @override
   String get succeeded => 'Επιτυχής';
 
   @override
@@ -2633,10 +2642,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get addGif => 'Προσθήκη GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Προσθέστε τουλάχιστον ένα αποθετήριο GitHub για να δείτε pull requests';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5977,9 +5982,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Διάρκεια';
 
   @override
-  String get pipelineStepBranch => 'Κλάδος';
-
-  @override
   String get pipelineStepViewConversation => 'Προβολή συνομιλίας';
 
   @override
@@ -7082,14 +7084,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get reviewRequested => 'Ζητήθηκε ανασκόπηση';
 
   @override
-  String get connectGitHubHint =>
-      'Συνδεθείτε στο GitHub στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Συνδέστε το GitHub για φόρτωση pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'Δεν έχουν ρυθμιστεί αποθετήρια';
 
   @override
@@ -7750,13 +7744,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Δημιουργία ως πρόχειρο';
-
-  @override
-  String get composePrNoRepo => 'Δεν έχει επιλεγεί αποθετήριο GitHub';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Επιλέξτε χώρο εργασίας με αποθετήριο συνδεδεμένο στο GitHub για να ανοίξετε pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16988,6 +16975,27 @@ class AppLocalizationsEl extends AppLocalizations {
       'Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'Πάρα πολλοί λανθασμένοι κωδικοί. Ξεκινήστε ξανά τη σύνδεση.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Αυτή η σύνδεση δεν είναι πλέον έγκυρη. Ξεκινήστε την ξανά.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Ο διακομιστής δεν μπόρεσε να διαβάσει αυτό το αίτημα σύνδεσης. Ξεκινήστε το ξανά.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'Πάρα πολλές προσπάθειες σύνδεσης αυτή τη στιγμή. Περιμένετε ένα λεπτό και δοκιμάστε ξανά.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return 'Το $provider αποδέχτηκε τη σύνδεση, αλλά ο διακομιστής δεν μπόρεσε να την αποθηκεύσει. Δοκιμάστε ξανά.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return 'Το $provider δεν αποκρίνεται αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγα λεπτά.';
   }
@@ -17018,7 +17026,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Αυτός ο χώρος εργασίας του Linear είναι ήδη συνδεδεμένος με άλλον διακομιστή Control Center.';
+      'Αυτός ο χώρος εργασίας του Slack είναι ήδη συνδεδεμένος με άλλον διακομιστή Control Center.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17454,4 +17462,38 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Αλλαγή εφαρμογής';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Άνοιγμα στο $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Εμφανίζονται τα πρώτα $count αρχεία. Το $forge δεν παραθέτει τα υπόλοιπα.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Συνδέστε μια υπηρεσία φιλοξενίας κώδικα για να φορτωθούν τα pull request';
+
+  @override
+  String get connectForgeHint =>
+      'Συνδέστε GitHub, GitLab ή Bitbucket στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Προσθέστε τουλάχιστον ένα αποθετήριο στο GitHub, το GitLab ή το Bitbucket για να δείτε pull request';
+
+  @override
+  String get composePrNoForgeRepo => 'Δεν επιλέχθηκε φιλοξενούμενο αποθετήριο';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Επιλέξτε έναν χώρο εργασίας με αποθετήριο στο GitHub, το GitLab ή το Bitbucket για να ανοίξετε ένα pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Συνδέστε το $forge για να ανοίξετε pull request σε αυτό το αποθετήριο';
+  }
 }

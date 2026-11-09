@@ -4,7 +4,6 @@
 // ignore_for_file: close_sinks, unnecessary_lambdas
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -14,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_process_io.dart';
 import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
 
 /// `SandboxPort` implementation that intentionally provides no isolation —
@@ -132,32 +132,18 @@ class NoSandboxAdapter implements SandboxPort {
 
     settleStdin(process, input: stdinInput, stream: stdinStream);
 
-    Future<void> forward(Stream<List<int>> stream, SandboxEventType type) {
-      final done = Completer<void>();
-      stream
-          // Tolerate malformed bytes: the throwing decoder ends the forwarding
-          // (and the `done` completer with it) on a single bad byte.
-          .transform(const Utf8Decoder(allowMalformed: true))
-          .transform(const LineSplitter())
-          .listen(
-            (line) {
-              emit(SandboxEvent(type: type, content: line));
-            },
-            onDone: done.complete,
-            onError: (_, _) {
-              if (!done.isCompleted) {
-                done.complete();
-              }
-            },
-            cancelOnError: true,
-          );
-      return done.future;
-    }
+    final forwardings = [
+      for (final (stream, type) in [
+        (process.stdout, SandboxEventType.stdout),
+        (process.stderr, SandboxEventType.stderr),
+      ])
+        ProcessLineForwarding.start(
+          stream,
+          (line) => emit(SandboxEvent(type: type, content: line)),
+        ),
+    ];
 
-    final stdoutDone = forward(process.stdout, SandboxEventType.stdout);
-    final stderrDone = forward(process.stderr, SandboxEventType.stderr);
-
-    final exitCode = await _awaitExitWithTimeout(
+    final exitCode = await awaitExitWithTimeout(
       process,
       timeout,
       (message) =>
@@ -165,8 +151,9 @@ class NoSandboxAdapter implements SandboxPort {
     );
     // Drain stdio before the exit event: a short-lived `echo` can exit before
     // the event loop delivers the stdout listen callback and consumers that
-    // stop on `exit` would miss the output.
-    await Future.wait<void>([stdoutDone, stderrDone]);
+    // stop on `exit` would miss the output. Bounded, so a grandchild holding
+    // the pipe cannot park the exec.
+    await drainForwardings(forwardings);
     _processes.remove(handle.sessionId);
     emit(SandboxEvent(type: SandboxEventType.exit, exitCode: exitCode));
     _updateState(handle.sessionId, SandboxState.warm);
@@ -191,17 +178,7 @@ class NoSandboxAdapter implements SandboxPort {
     _supervised.remove(handle.sessionId);
     final process = _processes.remove(handle.sessionId);
     if (process != null) {
-      process.kill();
-      try {
-        await process.exitCode.timeout(const Duration(seconds: 3));
-      } on TimeoutException {
-        process.kill(ProcessSignal.sigkill);
-        try {
-          await process.exitCode.timeout(const Duration(seconds: 2));
-        } on TimeoutException {
-          // Unreapable; nothing further this layer can do.
-        }
-      }
+      await terminateProcess(process);
     }
     await _streams.remove(handle.sessionId)?.close();
     _updateState(handle.sessionId, SandboxState.destroyed);
@@ -213,33 +190,5 @@ class NoSandboxAdapter implements SandboxPort {
     if (current != null) {
       _handles[sessionId] = current.copyWith(state: state);
     }
-  }
-}
-
-/// Awaits [process] with an optional [timeout], killing it (SIGTERM → 2s →
-/// SIGKILL) and reporting exit code 124 — the `timeout(1)` convention — when
-/// the deadline passes. See the native adapter's copy for why this exists.
-Future<int> _awaitExitWithTimeout(
-  Process process,
-  Duration? timeout,
-  void Function(String message)? onTimeoutMessage,
-) async {
-  if (timeout == null) {
-    return process.exitCode;
-  }
-  try {
-    return await process.exitCode.timeout(timeout);
-  } on TimeoutException {
-    onTimeoutMessage?.call(
-      '[sandbox] command exceeded ${timeout.inSeconds}s — terminating',
-    );
-    process.kill();
-    try {
-      await process.exitCode.timeout(const Duration(seconds: 2));
-    } on TimeoutException {
-      process.kill(ProcessSignal.sigkill);
-      await process.exitCode;
-    }
-    return 124;
   }
 }

@@ -841,13 +841,15 @@ void main() {
         'pipeline.killStep',
         'messaging.retrySpaceProvisioning',
         'messaging.cancelSpaceProvisioning',
-        'pipeline_trigger.markFired',
         'playbook.run',
         'orchestration.approve',
         'orchestration.approveNodes',
         'orchestration.continueNode',
         'plan.approve',
         'review_hub.start',
+        // Cross-workspace lookups: rows of every visitor's workspace.
+        'orchestration.approvedNeedingMaterialization',
+        'orchestration.forPipelineRunAnyWorkspace',
       ]) {
         await expectLater(
           client.call(op, const {}),

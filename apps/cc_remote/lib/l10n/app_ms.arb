@@ -204,6 +204,7 @@
     }
   },
   "teammate": "Rakan sepasukan",
+  "systemSender": "Sistem",
   "agent": "Ejen",
   "attachFile": "Lampirkan fail",
   "messageHint": "Mesej",
@@ -269,8 +270,8 @@
   },
   "reposNotReadable": "Tidak dapat dibaca: {names}",
   "installationSuspendedTitle": "Pemasangan GitHub App digantung",
-  "installationSuspendedBody": "Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub, atau sambungkan token yang mempunyai akses.",
-  "installationSuspendedNotice": "Pemasangan GitHub App digantung. Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub, atau sambungkan token yang mempunyai akses.",
+  "installationSuspendedBody": "Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub.",
+  "installationSuspendedNotice": "Pemasangan GitHub App digantung. Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -964,6 +965,10 @@
   "credentialsConnectCodePrompt": "Masukkan kod yang dipaparkan dalam pelayar",
   "credentialsConnectCodeMalformed": "Itu tidak kelihatan seperti kod log masuk. Kod terdiri daripada 8 huruf dan digit.",
   "credentialsSignInInvalidCode": "Kod itu tidak sepadan dengan log masuk ini. Semak dan cuba lagi.",
+  "credentialsSignInTooManyCodes": "Terlalu banyak kod yang salah. Mulakan semula log masuk.",
+  "credentialsSignInRetryLater": "Perkhidmatan log masuk tidak bertindak balas sekarang. Tunggu seminit, kemudian cuba lagi.",
+  "credentialsSignInRefused": "Log masuk ditolak. Mulakannya semula dan luluskan setiap kebenaran yang diminta.",
+  "credentialsSignInNotSaved": "Log masuk berjaya, tetapi pelayan tidak dapat menyimpannya. Cuba lagi.",
   "credentialsSignInUnavailable": "Log masuk ke {provider} belum disediakan pada pelayan ini.",
   "credentialsSignInPhoneUnreachable": "Alamat panggilan balik log masuk pelayan ini tidak boleh dicapai dengan selamat dari telefon. Log masuk daripada aplikasi desktop, atau minta pemilik pelayan menyediakan alamat HTTPS awam.",
   "credentialsLoginTimedOut": "Sesi log masuk telah luput. Mulakan percubaan log masuk baharu.",

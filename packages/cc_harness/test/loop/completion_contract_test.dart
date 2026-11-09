@@ -33,7 +33,9 @@ void main() {
           userMessage: 'plan the thing',
           tools: [_ReadTool('read'), _SubmitPlanTool()],
           provider: provider,
-          config: const AgentLoopConfig(contract: planContract),
+          config: const AgentLoopConfig(
+            guards: LoopGuardConfig(contract: planContract),
+          ),
         )
         .toList();
 
@@ -67,7 +69,9 @@ void main() {
             userMessage: 'plan the thing',
             tools: [_ReadTool('read'), _SubmitPlanTool()],
             provider: provider,
-            config: const AgentLoopConfig(contract: planContract),
+            config: const AgentLoopConfig(
+              guards: LoopGuardConfig(contract: planContract),
+            ),
           )
           .toList();
 
@@ -102,7 +106,9 @@ void main() {
           userMessage: 'plan the thing',
           tools: [_SubmitPlanTool(fails: true)],
           provider: provider,
-          config: const AgentLoopConfig(contract: planContract),
+          config: const AgentLoopConfig(
+            guards: LoopGuardConfig(contract: planContract),
+          ),
         )
         .toList();
 
@@ -134,9 +140,9 @@ void main() {
           tools: [_SubmitPlanTool()],
           provider: provider,
           config: AgentLoopConfig(
-            contract: planContract,
-            steering: steering,
             maxTurns: 4,
+            guards: const LoopGuardConfig(contract: planContract),
+            steering: LoopSteeringConfig(queue: steering),
           ),
         )
         .toList();
@@ -164,12 +170,14 @@ void main() {
           tools: [_SubmitPlanTool()],
           provider: provider,
           config: AgentLoopConfig(
-            contract: CompletionContract(
-              id: 'plan.submitted',
-              requiredToolNames: const {'submit_plan'},
-              nudge: 'nudge',
-              unmetSummary: 'unmet',
-              probe: () async => true,
+            guards: LoopGuardConfig(
+              contract: CompletionContract(
+                id: 'plan.submitted',
+                requiredToolNames: const {'submit_plan'},
+                nudge: 'nudge',
+                unmetSummary: 'unmet',
+                probe: () async => true,
+              ),
             ),
           ),
         )
@@ -196,14 +204,16 @@ void main() {
             tools: [_SubmitPlanTool()],
             provider: provider,
             config: AgentLoopConfig(
-              contract: CompletionContract(
-                id: 'plan.submitted',
-                requiredToolNames: const {},
-                nudge: 'nudge',
-                unmetSummary: 'unmet',
-                probe: () async => throw StateError('boom'),
-              ),
               maxTurns: 3,
+              guards: LoopGuardConfig(
+                contract: CompletionContract(
+                  id: 'plan.submitted',
+                  requiredToolNames: const {},
+                  nudge: 'nudge',
+                  unmetSummary: 'unmet',
+                  probe: () async => throw StateError('boom'),
+                ),
+              ),
             ),
           )
           .toList();
@@ -225,7 +235,10 @@ void main() {
           userMessage: 'plan the thing',
           tools: [_ReadTool('read'), _SubmitPlanTool()],
           provider: provider,
-          config: const AgentLoopConfig(contract: planContract, maxTurns: 2),
+          config: const AgentLoopConfig(
+            maxTurns: 2,
+            guards: LoopGuardConfig(contract: planContract),
+          ),
         )
         .toList();
     final done = events.whereType<LoopDone>().single;
@@ -317,7 +330,7 @@ LlmToolUseDelta _toolCall(String name) =>
     LlmToolUseDelta(id: 'call-$name', name: name, argumentsJson: '{}');
 
 /// Replays one scripted list of events per `complete()` call; repeats the last.
-class _Scripted implements LlmProviderPort {
+class _Scripted extends LlmProviderPort {
   _Scripted(this.script);
   final List<List<LlmEvent>> script;
   int calls = 0;

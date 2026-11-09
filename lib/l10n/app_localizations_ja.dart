@@ -9,6 +9,15 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return '今は送信できませんでした: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      '回答は届きませんでした。すでに回答済みか、エージェントが待機を終了した可能性があります。';
+
+  @override
   String get succeeded => '成功';
 
   @override
@@ -2557,9 +2566,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get addGif => 'GIFを追加';
-
-  @override
-  String get addGithubRepoPrompt => 'プルリクエストを表示するには、GitHubリポジトリを1つ以上追加してください';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5797,9 +5803,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pipelineStepDurationLabel => '所要時間';
 
   @override
-  String get pipelineStepBranch => 'ブランチ';
-
-  @override
   String get pipelineStepViewConversation => '会話を表示';
 
   @override
@@ -6859,13 +6862,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reviewRequested => 'レビュー依頼済み';
 
   @override
-  String get connectGitHubHint =>
-      '設定 → ワークスペース → プロフィールと ID → コードホスティング で GitHub にサインインしてください';
-
-  @override
-  String get connectGitHubToLoadPrs => 'プルリクエストを読み込むには GitHub を接続してください';
-
-  @override
   String get noRepositoriesConfigured => 'リポジトリが設定されていません';
 
   @override
@@ -7518,13 +7514,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get createAsDraft => 'ドラフトとして作成';
-
-  @override
-  String get composePrNoRepo => 'GitHub リポジトリが選択されていません';
-
-  @override
-  String get composePrNoRepoHint =>
-      'プルリクエストを作成するには、GitHub と連携したリポジトリがあるワークスペースを選択してください。';
 
   @override
   String get composePrPickBranches => 'ベースブランチと比較ブランチを選ぶと、変更内容をプレビューできます。';
@@ -16436,6 +16425,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get signInErrorInvalidCode => 'このコードはこのサインインと一致しません。確認してもう一度お試しください。';
 
   @override
+  String get signInErrorTooManyCodes => '誤ったコードが多すぎます。サインインをやり直してください。';
+
+  @override
+  String get signInErrorStaleRequest => 'このサインインは無効になりました。もう一度開始してください。';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'サーバーがこのサインイン要求を読み取れませんでした。もう一度開始してください。';
+
+  @override
+  String get signInErrorRateLimited => '現在サインインの試行が多すぎます。1分待ってからもう一度お試しください。';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$providerはサインインを受け付けましたが、サーバーが保存できませんでした。もう一度お試しください。';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$providerが現在応答していません。数分後にもう一度お試しください。';
   }
@@ -16466,7 +16473,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'このLinearワークスペースは、すでに別のControl Centerサーバーに接続されています。';
+      'このSlackワークスペースは、すでに別のControl Centerサーバーに接続されています。';
 
   @override
   String get signInErrorNotAdmin =>
@@ -16893,4 +16900,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'アプリを切り替える';
+
+  @override
+  String openOnForge(String forge) {
+    return '$forge で開く';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return '最初の $count 件のファイルを表示しています。残りは $forge に一覧表示されません。';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => 'プルリクエストを読み込むにはコードホスティングを接続してください';
+
+  @override
+  String get connectForgeHint =>
+      '設定 → ワークスペース → プロフィールと ID → コードホスティング で GitHub、GitLab、Bitbucket のいずれかを接続してください';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'プルリクエストを表示するには、GitHub、GitLab、Bitbucket 上のリポジトリを 1 つ以上追加してください';
+
+  @override
+  String get composePrNoForgeRepo => 'ホスティングされたリポジトリが選択されていません';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'プルリクエストを作成するには、GitHub、GitLab、Bitbucket 上のリポジトリがあるワークスペースを選択してください。';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'このリポジトリでプルリクエストを作成するには $forge を接続してください';
+  }
 }

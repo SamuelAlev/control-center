@@ -19,6 +19,7 @@ SignInAttempt _attempt(
   SignInLaneMode mode = SignInLaneMode.own,
   SignInAttemptStatus status = SignInAttemptStatus.pending,
   SignInFailure? error,
+  SignInFailure? codeError,
   String account = '',
   Duration expiresIn = const Duration(minutes: 10),
 }) => SignInAttempt(
@@ -30,6 +31,7 @@ SignInAttempt _attempt(
   status: status,
   account: account,
   error: error,
+  codeError: codeError,
 );
 
 /// Records every `oauth.*` call; each answer is whatever the test set last.
@@ -250,23 +252,69 @@ void main() {
       await controller.submitCode('cx-1', 'K7Q2-9WX');
       expect(session()?.codeError, isA<SignInCodeMalformed>());
       expect(repo.argsOf('complete'), isEmpty);
-      // Connect mode is never polled; the code is what completes it.
-      expect(repo.argsOf('status'), isEmpty);
     });
 
     test('a code the server rejects keeps the attempt open', () async {
       await start();
-      repo.onComplete = (id, code) =>
-          throw RemoteRpcException(-32602, 'That code does not match.');
+      repo.onComplete = (id, code) => _attempt(
+        id,
+        mode: SignInLaneMode.connect,
+        codeError: SignInFailure.codeMismatch,
+      );
       await controller.submitCode('cx-1', 'k7q2-9wxm');
       final rejected = session()?.codeError;
       expect(rejected, isA<SignInCodeRejected>());
       expect(
-        (rejected! as SignInCodeRejected).message,
-        'That code does not match.',
+        (rejected! as SignInCodeRejected).failure,
+        SignInFailure.codeMismatch,
       );
       expect(session()?.isTerminal, isFalse);
       expect(session()?.completing, isFalse);
+    });
+
+    test('a failed call is not read as a wrong code', () async {
+      await start();
+      repo.onComplete = (id, code) =>
+          throw RemoteRpcException(-33002, 'This sign-in is no longer valid.');
+      await controller.submitCode('cx-1', 'k7q2-9wxm');
+      expect(
+        (session()!.codeError! as SignInCodeRejected).failure,
+        SignInFailure.staleRequest,
+      );
+
+      repo.onComplete = (id, code) => throw StateError('socket closed');
+      await controller.submitCode('cx-1', 'k7q2-9wxm');
+      expect(
+        (session()!.codeError! as SignInCodeRejected).failure,
+        SignInFailure.providerUnavailable,
+      );
+    });
+
+    test('a Connect attempt is polled, so a failure elsewhere shows', () {
+      fakeAsync((async) {
+        repo.onBegin = (lane) => _attempt('cx-3', mode: SignInLaneMode.connect);
+        repo.onStatus = (id) => _attempt(
+          id,
+          mode: SignInLaneMode.connect,
+          status: SignInAttemptStatus.failed,
+          error: SignInFailure.invalidCode,
+        );
+        final c = container();
+        unawaited(
+          c
+              .read(providerSignInControllerProvider.notifier)
+              .begin(ConnectOAuthLane.github),
+        );
+        async.elapse(kSignInPollInterval);
+        expect(
+          c
+              .read(providerSignInControllerProvider)
+              .sessions['cx-3']
+              ?.attempt
+              .error,
+          SignInFailure.invalidCode,
+        );
+      });
     });
 
     test('a typed code is normalised and completes the attempt', () async {

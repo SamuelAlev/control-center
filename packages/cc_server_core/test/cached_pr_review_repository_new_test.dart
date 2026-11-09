@@ -423,6 +423,11 @@ class FakePrReviewRepository implements PrReviewRepository {
     }
   }
 
+  @override
+  Stream<PrFilesLoad> watchFilesLoad(int prNumber) => watchFiles(
+    prNumber,
+  ).map((files) => PrFilesLoad(files: files, isComplete: true));
+
   void setFiles(int prNumber, List<PrFile> files) => _files[prNumber] = files;
 
   // -- File content ------------------------------------------------------
@@ -660,13 +665,13 @@ class FakePrReviewRepository implements PrReviewRepository {
   }) async {}
 
   @override
-  Future<Map<String, dynamic>> mergePullRequest({
+  Future<PrMergeOutcome> mergePullRequest({
     String? idempotencyKey,
     required int prNumber,
     required String mergeMethod,
     String? commitTitle,
     String? commitMessage,
-  }) async => <String, dynamic>{};
+  }) async => const PrMergeOutcome(merged: false, message: '');
 
   @override
   Future<void> closePullRequest({required int prNumber}) async {}
@@ -1048,6 +1053,40 @@ void main() {
   });
 
   // -- check runs: workflow-run join ----------------------------------------
+
+  test(
+    'invalidatePullRequest deletes the head-SHA keyed checks rows',
+    () async {
+      // Check runs and commit statuses are keyed by the head SHA, so a
+      // PR-number delete never reached them and a refresh served the stale
+      // checks row until the next pass overwrote it.
+      mockPr.pullRequests['o/r/7'] = _testPR(7);
+      mockPr.checkRuns['o/r/abc123'] = [
+        const GitHubCheckRun(
+          id: 555,
+          name: 'build',
+          status: GitHubCheckStatus.completed,
+          conclusion: GitHubCheckConclusion.success,
+          appName: 'GitHub Actions',
+          htmlUrl: 'https://github.com/o/r/runs/555',
+        ),
+      ];
+      final repo = _makeRepo(db: db, apiClient: apiClient);
+      await repo.watchPullRequest(7).toList();
+      await repo.watchCheckRuns(7).toList();
+      expect(
+        await db.cacheDao.read('ws1', 'prCheckRuns', 'o/r|abc123'),
+        isNotNull,
+      );
+
+      await repo.invalidatePullRequest(7);
+
+      expect(
+        await db.cacheDao.read('ws1', 'prCheckRuns', 'o/r|abc123'),
+        isNull,
+      );
+    },
+  );
 
   group('watchCheckRuns workflow-run join', () {
     test(
@@ -2046,7 +2085,6 @@ void main() {
       await db.cacheDao.put('ws1', 'prReviews', 'o/r#42', '[]');
       await db.cacheDao.put('ws1', 'prReviewComments', 'o/r#42', '[]');
       await db.cacheDao.put('ws1', 'prIssueComments', 'o/r#42', '[]');
-      await db.cacheDao.put('ws1', 'prCheckRuns', 'o/r#42', '[]');
       await db.cacheDao.put('ws1', 'prReviewerState', 'o/r#42', '[]');
       await db.cacheDao.put('ws1', 'assignableUsers', 'o/r', '[]');
 
@@ -2066,7 +2104,8 @@ void main() {
         await db.cacheDao.read('ws1', 'prIssueComments', 'o/r#42'),
         isNull,
       );
-      expect(await db.cacheDao.read('ws1', 'prCheckRuns', 'o/r#42'), isNull);
+      // Check runs live under the head SHA, not the PR number (see the
+      // head-SHA invalidation test).
       expect(
         await db.cacheDao.read('ws1', 'prReviewerState', 'o/r#42'),
         isNull,

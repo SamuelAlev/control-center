@@ -1,10 +1,11 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:test/test.dart';
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   _Provider(this.script);
   final List<List<LlmEvent>> script;
   int calls = 0;
@@ -114,7 +115,9 @@ void main() {
           userMessage: 'do the task',
           tools: [_NoopTool()],
           provider: provider,
-          config: AgentLoopConfig(advisor: advisor),
+          config: AgentLoopConfig(
+            steering: LoopSteeringConfig(advisor: advisor),
+          ),
         )
         .toList();
     expect(advisor.resets, greaterThanOrEqualTo(1));
@@ -124,7 +127,10 @@ void main() {
 class _ResetRecordingAdvisor implements Advisor {
   int resets = 0;
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async => null;
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async => null;
   @override
   void reset() => resets++;
 }

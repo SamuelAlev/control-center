@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
 
 /// Sentinel distinguishing "argument omitted" from "explicitly null" in
@@ -30,9 +31,11 @@ class PipelineRun {
     this.parentPipelineRunId,
     this.parentStepId,
     this.templateVersion = 1,
+    this.templateSnapshot,
     this.totalCostCents = 0,
     this.totalTokens = 0,
     this.dryRun = false,
+    this.isProjection = false,
   }) : _state = state ?? {};
 
   /// Unique run identifier (UUID v4).
@@ -117,6 +120,16 @@ class PipelineRun {
   /// Template version this run was pinned to at start.
   final int templateVersion;
 
+  /// The graph this run executes: the template as it was when the run started
+  /// (version [templateVersion]).
+  ///
+  /// The engine resumes, retries and admits a run against this snapshot, and
+  /// the run detail renders it, so editing the template mid-run neither
+  /// changes what an in-flight run does nor what its history shows. Null for
+  /// runs that predate snapshots (they fall back to the live template) and in
+  /// list views, which don't carry the graph.
+  final PipelineDefinition? templateSnapshot;
+
   /// Aggregated agent cost for this run, in cents.
   final int totalCostCents;
 
@@ -125,6 +138,17 @@ class PipelineRun {
 
   /// Whether this run is a dry run (side effects skipped).
   final bool dryRun;
+
+  /// Whether this row is a PROJECTION: it mirrors work owned outside
+  /// `PipelineEngine` (the code-graph watcher, the settings UI's synchronous
+  /// skill scans), so the engine neither starts nor finishes it.
+  ///
+  /// A projection holds no `maxParallelRuns` slot (one it held would never be
+  /// released), and only its own reporter's boot reaper closes it. Set by
+  /// those server-side reporters at insert and never changed afterwards:
+  /// engine runs are never projections, the wire never carries the flag, and
+  /// an update cannot flip it.
+  final bool isProjection;
 
   /// Whether this run is in a terminal state.
   bool get isTerminal => status.isTerminal;
@@ -198,9 +222,11 @@ class PipelineRun {
       parentPipelineRunId: parentPipelineRunId,
       parentStepId: parentStepId,
       templateVersion: templateVersion,
+      templateSnapshot: templateSnapshot,
       totalCostCents: totalCostCents ?? this.totalCostCents,
       totalTokens: totalTokens ?? this.totalTokens,
       dryRun: dryRun,
+      isProjection: isProjection,
     );
   }
 

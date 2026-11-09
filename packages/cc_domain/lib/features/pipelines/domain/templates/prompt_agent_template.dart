@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
@@ -28,12 +29,7 @@ void registerPromptAgentBody(
   required PipelineRunRepository runRepository,
 }) {
   registry.registerBody(BuiltInBodyKeys.promptAgent, (ctx) async {
-    final stepConfig = await _resolveStepConfig(
-      templateRepository,
-      ctx.templateId,
-      ctx.stepId,
-      ctx.workspaceId,
-    );
+    final stepConfig = await ctx.pinnedStepConfig(templateRepository);
     if (stepConfig == null) {
       return StepResult.failed(
         'promptAgent: step "${ctx.stepId}" missing config',
@@ -96,14 +92,4 @@ void registerPromptAgentBody(
 
 /// Walks the template to find a step's config so the body can read its
 /// prompt/role/I/O even though `PipelineContext` only carries IDs.
-Future<PipelineNodeConfig?> _resolveStepConfig(
-  PipelineTemplateRepository repo,
-  String templateId,
-  String stepId,
-  String workspaceId,
-) async {
-  final def = await repo.getById(workspaceId, templateId);
-  return def?.step(stepId)?.config;
-}
-
 const TemplateRenderer _renderer = TemplateRenderer();

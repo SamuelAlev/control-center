@@ -112,16 +112,9 @@ enum ForgeHost {
 
   /// Whether this forge supports real operations (everything but [local]).
   bool get isSupported => this != ForgeHost.local;
-
-  /// What a change proposal is called on this forge. GitLab calls it a merge
-  /// request; the rest call it a pull request.
-  ///
-  /// Used for user-facing copy that names the concept in a forge's own
-  /// vocabulary. The domain model itself stays "pull request" throughout.
-  String get changeRequestNoun =>
-      this == ForgeHost.gitlab ? 'merge request' : 'pull request';
-
-  /// The abbreviated form of [changeRequestNoun] (`MR` / `PR`).
-  String get changeRequestAbbreviation =>
-      this == ForgeHost.gitlab ? 'MR' : 'PR';
 }
+
+/// The GitHub REST API version every request from this codebase pins
+/// (`X-GitHub-Api-Version`). Connect, which depends on nothing here, keeps
+/// its own copy in `cc_connect_core` (`githubApiVersion`); bump both.
+const String gitHubRestApiVersion = '2022-11-28';

@@ -13,8 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Each section reads a seamed [ModelControl] + a status provider
 /// (`FutureProvider<ModelStatusSnapshot?>`) and renders the SAME UI on desktop
-/// and web. The desktop control adapts the in-process model controller; the web
-/// control drives the SERVER's model over the `models.*` RPC ops. When the
+/// and web. The control drives the connected SERVER's model over the `models.*`
+/// RPC ops. When the
 /// connected server hosts no such model, the status snapshot is `null` and the
 /// card renders an honest "managed on the server host" placeholder — these
 /// widgets centralise that null/loading/error handling + the install / cancel /

@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 void main() {
   RigSpec spec({int ttlHours = 24}) => RigSpec.environment(
-    conversationId: 'space-1',
+    spaceId: 'space-1',
     environmentId: 'env-1',
     worktreePath: '/work/acme',
     egressAllowlist: const ['docker.io'],

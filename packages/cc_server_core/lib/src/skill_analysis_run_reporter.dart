@@ -67,7 +67,8 @@ class SkillAnalysisRunReporter {
     try {
       final stale = await _runs.nonTerminalRuns();
       for (final run in stale) {
-        if (!projectionTriggerEventTypes.contains(run.triggerEventType)) {
+        if (!run.isProjection ||
+            !projectionTriggerEventTypes.contains(run.triggerEventType)) {
           continue;
         }
         final now = _now();
@@ -263,6 +264,9 @@ class SkillAnalysisRun {
         templateId: SkillAnalysisTemplate.id,
         workspaceId: workspaceId,
         status: PipelineRunStatus.running,
+        // The scan op owns this run, not the engine: it holds no slot of the
+        // template's `maxParallelRuns`.
+        isProjection: true,
         triggerEventType: triggerEventType,
         triggerPayload: {
           ...?triggerPayload,

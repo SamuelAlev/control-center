@@ -224,6 +224,7 @@
     }
   },
   "teammate": "Spolupracovník",
+  "systemSender": "Systém",
   "agent": "Agent",
   "attachFile": "Přiložit soubor",
   "messageHint": "Zpráva",
@@ -292,8 +293,8 @@
   },
   "reposNotReadable": "Nelze číst: {names}",
   "installationSuspendedTitle": "Instalace GitHub App je pozastavena",
-  "installationSuspendedBody": "Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.",
-  "installationSuspendedNotice": "Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.",
+  "installationSuspendedBody": "Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu.",
+  "installationSuspendedNotice": "Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu.",
   "@reposNotReadable": {
     "description": "Notice naming the repos the poller could not read.",
     "placeholders": {
@@ -1027,6 +1028,10 @@
   "credentialsConnectCodePrompt": "Zadejte kód zobrazený v prohlížeči",
   "credentialsConnectCodeMalformed": "To nevypadá jako přihlašovací kód. Kódy mají 8 písmen a číslic.",
   "credentialsSignInInvalidCode": "Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.",
+  "credentialsSignInTooManyCodes": "Příliš mnoho chybných kódů. Spusťte přihlášení znovu.",
+  "credentialsSignInRetryLater": "Služba přihlášení právě neodpovídá. Počkejte minutu a zkuste to znovu.",
+  "credentialsSignInRefused": "Přihlášení bylo odmítnuto. Spusťte ho znovu a schvalte všechna požadovaná oprávnění.",
+  "credentialsSignInNotSaved": "Přihlášení proběhlo, ale server ho nedokázal uložit. Zkuste to znovu.",
   "credentialsSignInUnavailable": "Přihlášení k {provider} zatím na tomto serveru není nastavené.",
   "credentialsSignInPhoneUnreachable": "Zpětná adresa přihlášení tohoto serveru není z telefonu bezpečně dostupná. Přihlaste se v desktopové aplikaci, nebo požádejte vlastníka serveru o nastavení veřejné adresy HTTPS.",
   "credentialsLoginTimedOut": "Platnost přihlášení vypršela. Začněte nové přihlášení.",

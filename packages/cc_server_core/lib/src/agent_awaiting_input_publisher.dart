@@ -65,6 +65,7 @@ class AgentAwaitingInputPublisher {
       conversationId: request.conversationId,
       agentId: request.askedByAgentId,
       agentName: request.askedByName,
+      runId: request.runId,
     );
   }
 
@@ -176,6 +177,7 @@ class AgentAwaitingInputPublisher {
     String? conversationId,
     String? agentId,
     String? agentName,
+    String? runId,
   }) {
     final occurredAt = _clock().toUtc();
     final announced = () async {
@@ -191,6 +193,7 @@ class AgentAwaitingInputPublisher {
             conversationId: conversationId,
             agentId: agentId,
             agentName: name,
+            runId: runId,
             occurredAt: occurredAt,
           ),
         );

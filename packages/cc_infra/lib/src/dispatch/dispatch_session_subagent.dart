@@ -1,16 +1,7 @@
 part of 'dispatch_session.dart';
 
-String _stripFrontmatter(String md) {
-  final t = md.trimLeft();
-  if (t.startsWith('---')) {
-    final end = t.indexOf('\n---', 3);
-    if (end != -1) {
-      final nl = t.indexOf('\n', end + 1);
-      return nl == -1 ? '' : t.substring(nl + 1).trim();
-    }
-  }
-  return md.trim();
-}
+String _stripFrontmatter(String md) =>
+    MarkdownFrontmatter.parse(md).body.trim();
 
 extension _DispatchSessionSubagent on DispatchSession {
   Future<SubagentResult> _spawnSubagent(
@@ -26,6 +17,8 @@ extension _DispatchSessionSubagent on DispatchSession {
     bool Function()? budgetExceeded,
     required String baseSystemPrompt,
     required ToolApprovalCallback? approval,
+    Advisor? parentAdvisor,
+    AgentLoopHooks? parentHooks,
   }) async {
     final childCancel = req.context.cancel ?? _cancelSource.token;
     if (childCancel.isCancelled) {
@@ -161,6 +154,8 @@ extension _DispatchSessionSubagent on DispatchSession {
               budgetExceeded: budgetExceeded,
               baseSystemPrompt: baseSystemPrompt,
               approval: approval,
+              parentAdvisor: parentAdvisor,
+              parentHooks: parentHooks,
             ),
           ),
         ),
@@ -233,47 +228,62 @@ extension _DispatchSessionSubagent on DispatchSession {
       ),
       model: childModel,
       purpose: LlmCallPurpose.subagent,
-      callLedger: childAccounting.ledger,
-      tokenCalibration: deps.tokenCalibration,
-      externalBudgetExceeded: budgetExceeded,
-      overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
-      observationIngest: ToolObservationIngest(
-        store: deps.toolOutputStore,
-        retainMinTokens: runConfig.compaction.policy == CompactionPolicy.current
-            ? 0
-            : kToolOutputRetentionMinTokens,
-      ),
       maxTurns: subProfile.maxTurns,
       maxTokens: childGeneration.maxTokens ?? defaultHarnessMaxTokens,
       temperature: childGeneration.temperature,
       topP: childGeneration.topP,
       topK: childGeneration.topK,
       effort: childEffort,
-      toolTimeout: const Duration(minutes: 30),
-      approvalCallback: approval,
-      autoApprove: false,
-      maxParallelToolCalls: runConfig.maxParallelToolCalls < 2
-          ? runConfig.maxParallelToolCalls
-          : 2,
-      pauseGate: _pauseGate,
-      contextWindow: childWindow,
-      compactor: SnapcompactCompactor(
-        fallback: DefaultHarnessCompactor(
-          summarizer: LlmHarnessSummarizer(childProvider),
-          config: runConfig.compaction,
-          calibration: deps.tokenCalibration,
+      tools: LoopToolConfig(
+        overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
+        observationIngest: ToolObservationIngest(
+          store: deps.toolOutputStore,
+          retainMinTokens:
+              runConfig.compaction.policy == CompactionPolicy.current
+              ? 0
+              : kToolOutputRetentionMinTokens,
+        ),
+        toolTimeout: const Duration(minutes: 30),
+        approvalCallback: approval,
+        autoApprove: false,
+        maxParallelToolCalls: runConfig.maxParallelToolCalls < 2
+            ? runConfig.maxParallelToolCalls
+            : 2,
+      ),
+      guards: LoopGuardConfig(
+        callLedger: childAccounting.ledger,
+        externalBudgetExceeded: budgetExceeded,
+      ),
+      compaction: LoopCompactionConfig(
+        tokenCalibration: deps.tokenCalibration,
+        contextWindow: childWindow,
+        compactor: buildHarnessCompactor(
+          summaryProvider: childProvider,
           providerId: childProviderId,
           modelId: childModelId,
+          config: runConfig.compaction,
+          calibration: deps.tokenCalibration,
           purpose: LlmCallPurpose.subagent,
-          economics: CompactionEconomics(
-            cache: ProviderCacheEconomics.forProvider(childProviderId),
-          ),
+          readerHasVision: childModelInfo?.supportsImageInput ?? false,
+          preferSnapshots: runConfig.snapshotCompaction,
         ),
-        modelId: '$childProviderId/$childModelId',
-        readerHasVision: childModelInfo?.supportsImageInput ?? false,
-        providerId: childProviderId,
-        preferSnapshots: runConfig.snapshotCompaction,
-        config: runConfig.compaction,
+      ),
+      steering: LoopSteeringConfig(
+        pauseGate: _harness.pauseGate,
+        // What the parent run is subject to, the nested run is too: the user's
+        // pre-tool veto gates every call made on their behalf (a subagent was a
+        // trivial bypass), the advisor reviews the child's own transcript from
+        // a fresh cursor, and steering sent while the parent is blocked on this
+        // call reaches the child without being taken from the parent. The
+        // parent's completion contract is NOT inherited: its deliverable verbs
+        // (submit_plan, ...) are the parent's to call, and most child surfaces
+        // cannot reach them, so the child would always end `contractUnmet`.
+        hooks: parentHooks == null ? null : NestedRunHooks(parentHooks),
+        advisor: parentAdvisor == null
+            ? null
+            : AdvisorPanel.freshFor(parentAdvisor),
+        advisorEveryTurns: runConfig.advisorEveryTurns,
+        queue: _steering.nestedView(),
       ),
     );
     final childContext = HarnessToolContext(
@@ -292,25 +302,10 @@ extension _DispatchSessionSubagent on DispatchSession {
     final pilotKey =
         '${subProfile.type.name}|$childProviderId|'
         '${childModel ?? childProvider.defaultModel}';
-    final existingPilot = _subagentPilots[pilotKey];
-    Completer<void>? ownedPilot;
-    if (existingPilot == null) {
-      ownedPilot = Completer<void>();
-      _subagentPilots[pilotKey] = ownedPilot;
-    } else {
-      await Future.any([
-        existingPilot.future,
-        childCancel.whenCancelled,
-      ]).timeout(DispatchSession._subagentPilotWait).catchError((Object _) {});
-    }
-    void releasePilot() {
-      if (ownedPilot != null && !ownedPilot.isCompleted) {
-        ownedPilot.complete();
-      }
-      if (identical(_subagentPilots[pilotKey], ownedPilot)) {
-        _subagentPilots.remove(pilotKey);
-      }
-    }
+    final releasePilot = await _subagentPilots.enter(
+      pilotKey,
+      abandoned: childCancel.whenCancelled,
+    );
 
     try {
       await for (final event in deps.agentLoop.run(
@@ -324,12 +319,26 @@ extension _DispatchSessionSubagent on DispatchSession {
         cancel: childCancel,
       )) {
         releasePilot();
+        final transcriptEvent = await harnessTranscriptEvent(
+          event,
+          imageRefs: _toolImageRefs,
+        );
+        if (transcriptEvent != null) {
+          readMedia.add(transcriptEvent);
+        }
         switch (event) {
           case LoopTextDelta(:final text):
             buf.write(text);
-            readMedia.add(TextEvent(content: text));
-          case LoopThinkingDelta(:final thinking):
-            readMedia.add(ThinkingEvent(content: thinking));
+          case LoopThinkingDelta():
+            break;
+          case LoopTurnDiscarded(:final text):
+            // The abandoned attempt's text is withdrawn from the recording
+            // (above) and from the fallback answer buffer alike.
+            final kept = buf.length - text.length;
+            final current = buf.toString();
+            buf
+              ..clear()
+              ..write(kept <= 0 ? '' : current.substring(0, kept));
           case LoopTurnComplete(:final message):
             final text = message.textContent;
             if (text.trim().isNotEmpty) {
@@ -338,40 +347,16 @@ extension _DispatchSessionSubagent on DispatchSession {
           case LoopUsage():
             // Already recorded at each physical provider-call boundary.
             break;
-          case LoopToolCallStart(
-            :final toolName,
-            :final toolUseId,
-            :final args,
-          ):
-            readMedia.add(
-              ToolCallEvent(
-                toolName: toolName,
-                toolCallId: toolUseId,
-                inputs: args,
-              ),
-            );
+          case LoopToolCallStart(:final toolName):
             addEvent(
               DebugEvent(
                 content: '[harness] subagent "${req.label}": $toolName',
               ),
             );
-          case LoopToolCallResult(
-            :final toolName,
-            :final toolUseId,
-            :final result,
-          ):
-            readMedia.add(
-              ToolResultEvent(
-                toolCallId: toolUseId,
-                outputs: result.content,
-                toolName: toolName,
-                isError: result.isError,
-                images: await _toolImageRefs(toolName, result),
-              ),
-            );
+          case LoopToolCallResult():
+            break;
           case LoopError(:final message):
             isError = true;
-            readMedia.add(ErrorEvent(content: message, source: 'harness'));
             addEvent(
               DebugEvent(
                 content: '[harness] subagent "${req.label}" error: $message',

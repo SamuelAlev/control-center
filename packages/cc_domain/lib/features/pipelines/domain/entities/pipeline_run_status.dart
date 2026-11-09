@@ -34,7 +34,11 @@ enum PipelineRunStatus {
       this == PipelineRunStatus.failed ||
       this == PipelineRunStatus.cancelled;
 
-  /// Parses a stored status string, defaulting to [pending].
+  /// Parses a stored status string.
+  ///
+  /// Throws [FormatException] on an unknown value rather than defaulting: a
+  /// corrupt or newer-than-this-build status read as [pending] would look
+  /// startable to the engine's resume path.
   static PipelineRunStatus fromString(String value) {
     return switch (value) {
       'pending' => PipelineRunStatus.pending,
@@ -44,7 +48,7 @@ enum PipelineRunStatus {
       'completed' => PipelineRunStatus.completed,
       'failed' => PipelineRunStatus.failed,
       'cancelled' => PipelineRunStatus.cancelled,
-      _ => PipelineRunStatus.pending,
+      _ => throw FormatException('Unknown PipelineRunStatus "$value"'),
     };
   }
 

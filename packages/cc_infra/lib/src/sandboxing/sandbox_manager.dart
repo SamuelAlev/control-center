@@ -70,8 +70,8 @@ class SandboxManager {
 
   /// Broadcast stream of OS-level sandbox denials.
   ///
-  /// On macOS this is fed by `log stream` (see [SandboxViolationMonitor]).
-  /// On Linux/WSL2 the adapter feeds it via [reportLinuxStderr].
+  /// Fed by macOS `log stream` (see [SandboxViolationMonitor]). Linux denials
+  /// never reach it: they are per-child and parsed by [parseLinuxDenial].
   Stream<SandboxViolation> get violations => _violations.stream;
 
   /// The proxies a session is currently egressing through, if any. Exposed
@@ -122,18 +122,17 @@ class SandboxManager {
     _violationMonitor?.stream.listen(_violations.add);
   }
 
-  /// Parses a stderr line from a sandboxed process for `EPERM` /
-  /// `Operation not permitted` patterns and forwards a corresponding
-  /// violation if recognised. Linux/WSL2 entry point — see [violations].
-  void reportLinuxStderr(String line) {
+  /// The denial a sandboxed process's stderr [line] reports (`EPERM` /
+  /// `Operation not permitted`), or null when it reports none. Linux/WSL2
+  /// entry point: bwrap has no host-wide denial log, so the adapter reads each
+  /// child's own stderr and puts what this finds on THAT session's stream.
+  static SandboxViolation? parseLinuxDenial(String line) {
     if (!line.contains('Operation not permitted') &&
         !line.contains('EPERM') &&
         !line.contains('Permission denied')) {
-      return;
+      return null;
     }
-    _violations.add(
-      SandboxViolation(action: 'unknown', target: line.trim(), raw: line),
-    );
+    return SandboxViolation(action: 'unknown', target: line.trim(), raw: line);
   }
 
   /// Returns the argv to spawn that runs [argv] inside the sandbox described

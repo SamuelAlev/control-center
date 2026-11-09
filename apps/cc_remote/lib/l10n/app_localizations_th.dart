@@ -484,6 +484,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get teammate => 'เพื่อนร่วมทีม';
 
   @override
+  String get systemSender => 'ระบบ';
+
+  @override
   String get agent => 'เอเจนต์';
 
   @override
@@ -634,12 +637,12 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub หรือเชื่อมต่อโทเค็นที่มีสิทธิ์เข้าถึง';
+    return 'กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'การติดตั้ง GitHub App ถูกระงับ. กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub หรือเชื่อมต่อโทเค็นที่มีสิทธิ์เข้าถึง';
+    return 'การติดตั้ง GitHub App ถูกระงับ. กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub';
   }
 
   @override
@@ -2562,6 +2565,22 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'รหัสนี้ไม่ตรงกับการลงชื่อเข้าใช้นี้ ตรวจสอบแล้วลองอีกครั้ง';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'ใส่รหัสผิดหลายครั้งเกินไป เริ่มการลงชื่อเข้าใช้ใหม่';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'บริการลงชื่อเข้าใช้ไม่ตอบสนองในขณะนี้ รอหนึ่งนาทีแล้วลองอีกครั้ง';
+
+  @override
+  String get credentialsSignInRefused =>
+      'การลงชื่อเข้าใช้ถูกปฏิเสธ เริ่มใหม่และอนุมัติสิทธิ์ทั้งหมดที่ขอ';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'ลงชื่อเข้าใช้สำเร็จ แต่เซิร์ฟเวอร์บันทึกไม่ได้ ลองอีกครั้ง';
 
   @override
   String credentialsSignInUnavailable(String provider) {

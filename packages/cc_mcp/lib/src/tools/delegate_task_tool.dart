@@ -4,22 +4,24 @@ import 'package:cc_domain/cc_domain.dart' show DelegationRefusedException;
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
 import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 
 /// Delegates a task to another agent as a tracked child ticket, enforcing the
-/// deterministic delegation guards (PRD 22 §3) at the ticketing chokepoint.
-/// The ticket workflow checks persisted delegation ancestry. Pending asks are
-/// checked here as well, so the recipient cannot delegate back to the agent
+/// deterministic delegation guards (PRD 22 §3) through [PeerDelegationGate] —
+/// the one chokepoint every agent hand-off shares — before the child ticket
+/// exists. The gate checks the persisted delegation ancestry and the pending
+/// asks together, so the recipient cannot delegate back to the agent
 /// currently waiting for its answer.
 class DelegateTaskTool extends McpTool {
   /// Creates a [DelegateTaskTool].
   DelegateTaskTool({
     required this._service,
-    required this._pendingHops,
-  });
+    required PendingDelegationHops pendingHops,
+  }) : _gate = PeerDelegationGate(service: _service, pendingHops: pendingHops);
 
   final TicketWorkflowService _service;
-  final PendingDelegationHops _pendingHops;
+  final PeerDelegationGate _gate;
 
   @override
   String get name => 'delegate_task';
@@ -96,11 +98,18 @@ class DelegateTaskTool extends McpTool {
     if (fromAgentId is! String || fromAgentId.isEmpty) {
       return CallResult.error('Missing or invalid argument: from_agent_id');
     }
-    if (_pendingHops.wouldCycle(workspaceId, fromAgentId, toAgentId)) {
-      return CallResult.error(
-        'Delegation refused: cycle detected '
-        '(${[..._pendingHops.chain(workspaceId, fromAgentId), toAgentId].join(' → ')}).',
-      );
+    final parentTicketId = arguments['parent_ticket_id'] as String?;
+    final spaceId = arguments['space_id'] as String?;
+    final refusal = await _gate.refusal(
+      workspaceId: workspaceId,
+      fromAgentId: fromAgentId,
+      recipientId: toAgentId,
+      handOff: PeerHandOff.ticket,
+      parentTicketId: parentTicketId,
+      spaceId: spaceId,
+    );
+    if (refusal != null) {
+      return CallResult.error(refusal);
     }
     final description = _composeDescription(
       arguments['description'] as String?,
@@ -108,14 +117,14 @@ class DelegateTaskTool extends McpTool {
     );
 
     try {
-      final ticket = await _service.delegateGuarded(
+      final ticket = await _service.createDelegatedTicket(
         workspaceId: workspaceId,
         title: title.trim(),
         assignedAgentId: toAgentId,
-        parentTicketId: arguments['parent_ticket_id'] as String?,
+        parentTicketId: parentTicketId,
         delegatedByAgentId: fromAgentId,
         description: description,
-        spaceId: arguments['space_id'] as String?,
+        spaceId: spaceId,
       );
       return CallResult.success(
         jsonEncode({
@@ -128,7 +137,7 @@ class DelegateTaskTool extends McpTool {
         }),
       );
     } on DelegationRefusedException catch (e) {
-      // The guard's reason is client-safe and surfaced verbatim to the agent.
+      // The parent vanished after the gate ran; the reason is client-safe.
       return CallResult.error(e.message);
     }
   }

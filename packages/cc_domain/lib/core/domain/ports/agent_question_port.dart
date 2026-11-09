@@ -50,6 +50,7 @@ class AgentQuestionRequest {
     this.multiSelect = false,
     this.askedByAgentId,
     this.askedByName,
+    this.runId,
   });
 
   /// Workspace owning [spaceId]. A space id is a uuid, not an access
@@ -83,6 +84,11 @@ class AgentQuestionRequest {
 
   /// Display name of the asking agent.
   final String? askedByName;
+
+  /// The run (run-log id) that is blocked on the answer, when the asker
+  /// knows it. Lets that run's silence watchdog pause for exactly its own
+  /// questions, not a concurrent run's by the same agent.
+  final String? runId;
 }
 
 /// The user's answer to an [AgentQuestionRequest].
@@ -147,6 +153,22 @@ class AgentQuestionAnswer {
     return parts.isEmpty ? '(no answer)' : parts.join('\n');
   }
 }
+
+/// The model-facing description of `ask_user`, shared by the harness tool and
+/// the MCP tool so the two surfaces cannot drift.
+const String kAskUserToolDescription =
+    'Ask the operator a structured question. This is the ONLY way to ask '
+    'them anything: it renders a form in the conversation and the run waits '
+    'for the answer. Never write a question as a chat message — that ends '
+    'the turn and they have to re-prompt. Use it when the answer changes '
+    'what you build and you cannot settle it from the code, the request, or '
+    'a sensible default (a preference between real alternatives, a missing '
+    'requirement, an ambiguity whose readings lead to different work). Do '
+    'NOT use it to report progress, to ask permission (the approval gate '
+    'handles that), or to confirm something you can verify yourself. Offer '
+    'concrete {label, description?} options when you can; set '
+    'allow_free_text when the list may not cover the answer; set '
+    'multi_select when several options may apply.';
 
 /// Reads the argument map both `ask_user` callers share: the harness tool and
 /// the MCP tool. One parser so the two surfaces cannot disagree about what a
@@ -288,7 +310,8 @@ class AskUserOutcome {
 /// in its MCP tool call or PTY relay — receives the answer and continues.
 abstract interface class AgentQuestionPort {
   /// Surfaces [request] and resolves once the user submits the form. Returns
-  /// `null` if the question is dismissed, times out, or is [abandoned].
+  /// `null` if the question is dismissed, times out, or is [abandoned]. Throws
+  /// [ArgumentError] when [request] names no destination to render in.
   ///
   /// [abandoned] completes when the asker stops waiting before an answer
   /// arrives: its MCP client gave up on the call, or its run was stopped. The

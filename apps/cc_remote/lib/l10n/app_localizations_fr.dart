@@ -494,6 +494,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get teammate => 'Collègue';
 
   @override
+  String get systemSender => 'Système';
+
+  @override
   String get agent => 'Agent';
 
   @override
@@ -646,12 +649,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String installationSuspendedBody(String names) {
-    return 'Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub, ou connectez un jeton qui y a accès.';
+    return 'Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub.';
   }
 
   @override
   String installationSuspendedNotice(String names) {
-    return 'Installation GitHub App suspendue. Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub, ou connectez un jeton qui y a accès.';
+    return 'Installation GitHub App suspendue. Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub.';
   }
 
   @override
@@ -2613,6 +2616,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get credentialsSignInInvalidCode =>
       'Ce code ne correspond pas à cette connexion. Vérifiez-le et réessayez.';
+
+  @override
+  String get credentialsSignInTooManyCodes =>
+      'Trop de codes erronés. Relancez la connexion.';
+
+  @override
+  String get credentialsSignInRetryLater =>
+      'Le service de connexion ne répond pas pour le moment. Patientez une minute, puis réessayez.';
+
+  @override
+  String get credentialsSignInRefused =>
+      'La connexion a été refusée. Relancez-la et approuvez toutes les autorisations demandées.';
+
+  @override
+  String get credentialsSignInNotSaved =>
+      'La connexion a réussi, mais le serveur n\'a pas pu l\'enregistrer. Réessayez.';
 
   @override
   String credentialsSignInUnavailable(String provider) {

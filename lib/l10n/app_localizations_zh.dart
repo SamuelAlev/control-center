@@ -9,6 +9,14 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return '现在无法发送：$error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered => '你的回答未送达。该问题可能已被回答，或代理已停止等待。';
+
+  @override
   String get succeeded => '成功';
 
   @override
@@ -2522,9 +2530,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addGif => '添加 GIF';
-
-  @override
-  String get addGithubRepoPrompt => '添加至少一个 GitHub 仓库后才能查看 pull request';
 
   @override
   String get addLocalCheckoutDescription => '添加一个本地检出，让此工作区开始以它为目标。';
@@ -5734,9 +5739,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pipelineStepDurationLabel => '时长';
 
   @override
-  String get pipelineStepBranch => '分支';
-
-  @override
   String get pipelineStepViewConversation => '查看对话';
 
   @override
@@ -6783,12 +6785,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reviewRequested => '已请求评审';
 
   @override
-  String get connectGitHubHint => '在「设置 → 工作区 → 个人资料与身份 → 代码托管」中登录 GitHub';
-
-  @override
-  String get connectGitHubToLoadPrs => '连接 GitHub 以加载 pull request';
-
-  @override
   String get noRepositoriesConfigured => '未配置仓库';
 
   @override
@@ -7438,12 +7434,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createAsDraft => '创建为草稿';
-
-  @override
-  String get composePrNoRepo => '未选择 GitHub 仓库';
-
-  @override
-  String get composePrNoRepoHint => '选择已关联 GitHub 仓库的工作区以打开 pull request。';
 
   @override
   String get composePrPickBranches => '选择 base 和 compare 分支以预览变更。';
@@ -16238,6 +16228,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInErrorInvalidCode => '该代码与此次登录不匹配。请检查后重试。';
 
   @override
+  String get signInErrorTooManyCodes => '错误代码次数过多。请重新开始登录。';
+
+  @override
+  String get signInErrorStaleRequest => '此次登录已失效。请重新开始。';
+
+  @override
+  String get signInErrorInvalidRequest => '服务器无法读取此登录请求。请重新开始。';
+
+  @override
+  String get signInErrorRateLimited => '当前登录尝试过多。请等待一分钟后重试。';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider 已接受登录，但服务器无法保存。请重试。';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider 目前没有响应。请几分钟后重试。';
   }
@@ -16268,7 +16275,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      '此 Linear 工作区已连接到另一台 Control Center 服务器。';
+      '此 Slack 工作区已连接到另一台 Control Center 服务器。';
 
   @override
   String get signInErrorNotAdmin =>
@@ -16689,11 +16696,52 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => '切换应用';
+
+  @override
+  String openOnForge(String forge) {
+    return '在 $forge 上打开';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return '显示前 $count 个文件。$forge 不列出其余文件。';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => '连接代码托管平台以加载拉取请求';
+
+  @override
+  String get connectForgeHint =>
+      '在「设置 → 工作区 → 个人资料与身份 → 代码托管」中连接 GitHub、GitLab 或 Bitbucket';
+
+  @override
+  String get addForgeRepoPrompt =>
+      '至少添加一个 GitHub、GitLab 或 Bitbucket 上的仓库以查看拉取请求';
+
+  @override
+  String get composePrNoForgeRepo => '未选择托管的仓库';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      '选择一个包含 GitHub、GitLab 或 Bitbucket 仓库的工作区来创建拉取请求。';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return '连接 $forge 以在此仓库中创建拉取请求';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
 class AppLocalizationsZhHk extends AppLocalizationsZh {
   AppLocalizationsZhHk() : super('zh_HK');
+
+  @override
+  String steeringForceSendFailed(String error) {
+    return '現在無法傳送：$error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered => '你的回答未送達。這個問題可能已有人回答，或代理已停止等待。';
 
   @override
   String get succeeded => '已成功';
@@ -19209,9 +19257,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get addGif => '新增 GIF';
-
-  @override
-  String get addGithubRepoPrompt => '請至少新增一個 GitHub 存放庫以查看 pull request';
 
   @override
   String get addLocalCheckoutDescription => '新增本機 checkout，即可從此工作區指定目標。';
@@ -22421,9 +22466,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get pipelineStepDurationLabel => '時長';
 
   @override
-  String get pipelineStepBranch => '分支';
-
-  @override
   String get pipelineStepViewConversation => '檢視對話';
 
   @override
@@ -23469,12 +23511,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get reviewRequested => '審查請求';
 
   @override
-  String get connectGitHubHint => '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中登入 GitHub';
-
-  @override
-  String get connectGitHubToLoadPrs => '連接 GitHub 以載入 pull request';
-
-  @override
   String get noRepositoriesConfigured => '尚未設定任何儲存庫';
 
   @override
@@ -24124,12 +24160,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get createAsDraft => '建立為草稿';
-
-  @override
-  String get composePrNoRepo => '未選取 GitHub 儲存庫';
-
-  @override
-  String get composePrNoRepoHint => '選擇具有 GitHub 連結儲存庫的工作區以建立 pull request。';
 
   @override
   String get composePrPickBranches => '選擇基礎與比較分支以預覽變更。';
@@ -32928,6 +32958,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get signInErrorInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
 
   @override
+  String get signInErrorTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
+
+  @override
+  String get signInErrorStaleRequest => '這次登入已失效。請重新開始。';
+
+  @override
+  String get signInErrorInvalidRequest => '伺服器無法讀取這個登入要求。請重新開始。';
+
+  @override
+  String get signInErrorRateLimited => '目前登入嘗試次數過多。請等待一分鐘後再試一次。';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider 已接受登入，但伺服器無法儲存。請再試一次。';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider 目前沒有回應。請幾分鐘後再試一次。';
   }
@@ -32958,7 +33005,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      '此 Linear 工作區已連接到另一台 Control Center 伺服器。';
+      '此 Slack 工作區已連接到另一台 Control Center 伺服器。';
 
   @override
   String get signInErrorNotAdmin =>
@@ -33379,11 +33426,52 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get workspaceProviderAppSwitchAction => '切換應用程式';
+
+  @override
+  String openOnForge(String forge) {
+    return '在 $forge 上開啟';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return '顯示首 $count 個檔案。$forge 不會列出其餘檔案。';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => '連結程式碼託管平台以載入拉取請求';
+
+  @override
+  String get connectForgeHint =>
+      '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中連結 GitHub、GitLab 或 Bitbucket';
+
+  @override
+  String get addForgeRepoPrompt =>
+      '至少新增一個 GitHub、GitLab 或 Bitbucket 上的儲存庫以查看拉取請求';
+
+  @override
+  String get composePrNoForgeRepo => '未選取託管的儲存庫';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      '選取一個包含 GitHub、GitLab 或 Bitbucket 儲存庫的工作區來建立拉取請求。';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return '連結 $forge 以在此儲存庫中建立拉取請求';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
 class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
+
+  @override
+  String steeringForceSendFailed(String error) {
+    return '現在無法傳送：$error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered => '你的回答未送達。這個問題可能已有人回答，或代理已停止等待。';
 
   @override
   String get succeeded => '已成功';
@@ -35899,9 +35987,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get addGif => '新增 GIF';
-
-  @override
-  String get addGithubRepoPrompt => '請至少新增一個 GitHub 存放庫以查看 pull request';
 
   @override
   String get addLocalCheckoutDescription => '新增本機 checkout，即可從此工作區指定目標。';
@@ -39111,9 +39196,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pipelineStepDurationLabel => '時長';
 
   @override
-  String get pipelineStepBranch => '分支';
-
-  @override
   String get pipelineStepViewConversation => '檢視對話';
 
   @override
@@ -40159,12 +40241,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get reviewRequested => '審查請求';
 
   @override
-  String get connectGitHubHint => '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中登入 GitHub';
-
-  @override
-  String get connectGitHubToLoadPrs => '連接 GitHub 以載入 pull request';
-
-  @override
   String get noRepositoriesConfigured => '尚未設定任何儲存庫';
 
   @override
@@ -40814,12 +40890,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get createAsDraft => '建立為草稿';
-
-  @override
-  String get composePrNoRepo => '未選取 GitHub 儲存庫';
-
-  @override
-  String get composePrNoRepoHint => '選擇具有 GitHub 連結儲存庫的工作區以建立 pull request。';
 
   @override
   String get composePrPickBranches => '選擇基礎與比較分支以預覽變更。';
@@ -49619,6 +49689,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get signInErrorInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
 
   @override
+  String get signInErrorTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
+
+  @override
+  String get signInErrorStaleRequest => '這次登入已失效。請重新開始。';
+
+  @override
+  String get signInErrorInvalidRequest => '伺服器無法讀取這個登入要求。請重新開始。';
+
+  @override
+  String get signInErrorRateLimited => '目前登入嘗試次數過多。請等待一分鐘後再試一次。';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider 已接受登入，但伺服器無法儲存。請再試一次。';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider 目前沒有回應。請幾分鐘後再試一次。';
   }
@@ -49649,7 +49736,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      '此 Linear 工作區已連接到另一台 Control Center 伺服器。';
+      '此 Slack 工作區已連接到另一台 Control Center 伺服器。';
 
   @override
   String get signInErrorNotAdmin =>
@@ -50070,4 +50157,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get workspaceProviderAppSwitchAction => '切換應用程式';
+
+  @override
+  String openOnForge(String forge) {
+    return '在 $forge 上開啟';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return '顯示前 $count 個檔案。$forge 不會列出其餘檔案。';
+  }
+
+  @override
+  String get connectForgeToLoadPrs => '連結程式碼託管平台以載入拉取請求';
+
+  @override
+  String get connectForgeHint =>
+      '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中連結 GitHub、GitLab 或 Bitbucket';
+
+  @override
+  String get addForgeRepoPrompt =>
+      '至少新增一個 GitHub、GitLab 或 Bitbucket 上的儲存庫以查看拉取請求';
+
+  @override
+  String get composePrNoForgeRepo => '未選取託管的儲存庫';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      '選取一個包含 GitHub、GitLab 或 Bitbucket 儲存庫的工作區來建立拉取請求。';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return '連結 $forge 以在此儲存庫中建立拉取請求';
+  }
 }

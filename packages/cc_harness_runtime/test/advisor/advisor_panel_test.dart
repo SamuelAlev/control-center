@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -11,7 +12,10 @@ class _Fixed implements Advisor {
   int resets = 0;
 
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async {
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async {
     reviews++;
     if (throws) {
       throw StateError('advisor exploded');

@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart'
+    show gitHubRestApiVersion;
 import 'package:cc_infra/src/network/app_network.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/sandboxing/github_app_token_minter.dart'
@@ -384,6 +386,6 @@ class GitHubAppClient {
   HttpHeaders _appOptions() => HttpHeaders.rawMap({
     'Authorization': 'Bearer ${buildAppJwt()}',
     'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
+    'X-GitHub-Api-Version': gitHubRestApiVersion,
   });
 }

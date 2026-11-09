@@ -4,6 +4,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -12,12 +13,12 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_infra/src/git/review_publisher_service.dart';
-import 'package:cc_infra/src/network/github_pr_client.dart';
-import 'package:cc_infra/src/network/models/github_review.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rhttp/rhttp.dart';
 
 class _FakeMessaging implements MessagingRepository {
   _FakeMessaging(this._messages);
@@ -291,47 +292,54 @@ class _FakeReviewSpaces implements ReviewSpaceRepository {
   }
 }
 
-/// A no-op [RhttpClient]: the fake overrides every method the service calls,
-/// so the transport is never touched and no native library is loaded.
-class _NullHttpClient implements RhttpClient {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-/// Fake PR client that records submit calls and can simulate a 422 on the
+/// Fake forge client that records submit calls and can simulate a 422 on the
 /// inline-comments attempt.
-class _FakeGitHubPrClient extends GitHubPrClient {
-  _FakeGitHubPrClient({this.rejectInlineWith422 = false})
-    : super(_NullHttpClient());
+class _FakeGitHubPrClient implements ForgePrClient {
+  _FakeGitHubPrClient({this.rejectInlineWith422 = false});
 
   final bool rejectInlineWith422;
   final List<
-    ({String event, String? body, List<Map<String, dynamic>>? comments})
+    ({String event, String? body, List<PendingReviewComment>? comments})
   >
   calls = [];
 
   @override
-  Future<GitHubReview> submitReview(
-    String owner,
-    String repo, {
+  ForgeHost get forge => ForgeHost.github;
+
+  @override
+  ForgeCapabilities get capabilities => capabilitiesOf(ForgeHost.github);
+
+  @override
+  String get owner => 'acme';
+
+  @override
+  String get repo => 'widgets';
+
+  @override
+  Future<int?> submitReview({
     required int prNumber,
-    required String event,
+    required ForgeReviewVerdict verdict,
     String? body,
-    String? commitId,
-    List<Map<String, dynamic>>? comments,
-    CancelToken? cancelToken,
+    List<PendingReviewComment> comments = const [],
+    ForgeCancelToken? cancelToken,
   }) async {
-    calls.add((event: event, body: body, comments: comments));
-    if (rejectInlineWith422 && comments != null && comments.isNotEmpty) {
+    calls.add((
+      event: switch (verdict) {
+        ForgeReviewVerdict.approve => 'APPROVE',
+        ForgeReviewVerdict.requestChanges => 'REQUEST_CHANGES',
+        ForgeReviewVerdict.comment => 'COMMENT',
+      },
+      body: body,
+      comments: comments,
+    ));
+    if (rejectInlineWith422 && comments.isNotEmpty) {
       throw const NetworkException('Unprocessable entity', statusCode: 422);
     }
-    return GitHubReview(
-      id: 7001,
-      state: GitHubReviewState.commented,
-      body: body ?? '',
-      submittedAt: DateTime.utc(2026),
-    );
+    return 7001;
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 ReviewSpaceAssociation _assoc({
@@ -392,8 +400,8 @@ void main() {
       final github = _FakeGitHubPrClient();
       final reviews = _FakeReviewSpaces(_assoc());
       final service = ReviewPublisherService(
-        githubPrClientFor: (_, {required workspaceId, required owner}) =>
-            github,
+        forgeClientFor:
+            (_, {required workspaceId, required repoFullName}) async => github,
         messaging: _FakeMessaging([
           // consensus + anchored → inline
           _node(
@@ -436,8 +444,9 @@ void main() {
 
     test('rejects a space owned by another workspace', () async {
       final service = ReviewPublisherService(
-        githubPrClientFor: (_, {required workspaceId, required owner}) =>
-            _FakeGitHubPrClient(),
+        forgeClientFor:
+            (_, {required workspaceId, required repoFullName}) async =>
+                _FakeGitHubPrClient(),
         messaging: _FakeMessaging([]),
         reviewSpaces: _FakeReviewSpaces(_assoc(workspaceId: 'ws-A')),
       );
@@ -453,8 +462,9 @@ void main() {
       () async {
         final github = _FakeGitHubPrClient(rejectInlineWith422: true);
         final service = ReviewPublisherService(
-          githubPrClientFor: (_, {required workspaceId, required owner}) =>
-              github,
+          forgeClientFor:
+              (_, {required workspaceId, required repoFullName}) async =>
+                  github,
           messaging: _FakeMessaging([
             _node(
               id: 'n-1',
@@ -484,8 +494,8 @@ void main() {
     test('all_open selection includes unconfirmed findings', () async {
       final github = _FakeGitHubPrClient();
       final service = ReviewPublisherService(
-        githubPrClientFor: (_, {required workspaceId, required owner}) =>
-            github,
+        forgeClientFor:
+            (_, {required workspaceId, required repoFullName}) async => github,
         messaging: _FakeMessaging([
           _node(
             id: 'n-1',
@@ -514,8 +524,9 @@ void main() {
 
     test('errors when the space is not linked to a review', () async {
       final service = ReviewPublisherService(
-        githubPrClientFor: (_, {required workspaceId, required owner}) =>
-            _FakeGitHubPrClient(),
+        forgeClientFor:
+            (_, {required workspaceId, required repoFullName}) async =>
+                _FakeGitHubPrClient(),
         messaging: _FakeMessaging([]),
         reviewSpaces: _FakeReviewSpaces(_assoc(spaceId: 'ch-OTHER')),
       );

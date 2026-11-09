@@ -221,6 +221,50 @@ class GitHubPrClient {
     return link.contains('rel="next"');
   }
 
+  /// Runs one REST call, letting a cancellation through untouched and mapping
+  /// every other transport failure onto the domain's `NetworkException` — the
+  /// one place the `try / rethrow cancel / mapHttpException` shape lives.
+  Future<T> _guard<T>(Future<T> Function() call) async {
+    try {
+      return await call();
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
+  /// Every page of a `per_page=100` list endpoint, up to [maxPages], following
+  /// the `Link: rel="next"` header.
+  ///
+  /// One request used to be the whole answer, so a long conversation (more
+  /// than 100 reviews, review comments, issue comments or timeline events)
+  /// silently lost its tail on GitHub only. [maxPages] bounds a runaway thread
+  /// at 1000 items.
+  Future<List<T>> _getAllPages<T>(
+    String path,
+    T Function(Map<String, dynamic>) fromJson, {
+    HttpHeaders? headers,
+    int maxPages = 10,
+    CancelToken? cancelToken,
+  }) => _guard(() async {
+    final items = <T>[];
+    for (var page = 1; page <= maxPages; page++) {
+      final response = await _httpClient.get(
+        path,
+        query: {'per_page': '100', 'page': '$page'},
+        headers: headers,
+        cancelToken: cancelToken,
+      );
+      items.addAll(_decodeList(httpJsonBody(response), fromJson));
+      if (!_hasNextPage(response)) {
+        break;
+      }
+    }
+    return items;
+  });
+
   /// Cheap change probe for the open-PR list of [owner]/[repo], using a
   /// conditional request. Presents [etag] as `If-None-Match`; GitHub answers
   /// 304 (rate-limit-free) when nothing changed, or 200 with a fresh ETag when
@@ -672,20 +716,11 @@ class GitHubPrClient {
     CancelToken? cancelToken,
   }) async {
     _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/pulls/$number/reviews',
-        query: {'per_page': '100'},
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubReview.fromJson);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-
-      throw mapHttpException(e);
-    }
+    return _getAllPages(
+      '/repos/$owner/$repo/pulls/$number/reviews',
+      GitHubReview.fromJson,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Lists inline review comments (attached to specific diff lines) for a PR.
@@ -696,21 +731,12 @@ class GitHubPrClient {
     CancelToken? cancelToken,
   }) async {
     _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/pulls/$number/comments',
-        query: {'per_page': '100'},
-        headers: const HttpHeaders.rawMap(_fullBodyHeader),
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubReviewComment.fromJson);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-
-      throw mapHttpException(e);
-    }
+    return _getAllPages(
+      '/repos/$owner/$repo/pulls/$number/comments',
+      GitHubReviewComment.fromJson,
+      headers: const HttpHeaders.rawMap(_fullBodyHeader),
+      cancelToken: cancelToken,
+    );
   }
 
   /// Lists issue-style comments on the pull request conversation timeline.
@@ -721,21 +747,12 @@ class GitHubPrClient {
     CancelToken? cancelToken,
   }) async {
     _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/issues/$number/comments',
-        query: {'per_page': '100'},
-        headers: const HttpHeaders.rawMap(_fullBodyHeader),
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubIssueComment.fromJson);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-
-      throw mapHttpException(e);
-    }
+    return _getAllPages(
+      '/repos/$owner/$repo/issues/$number/comments',
+      GitHubIssueComment.fromJson,
+      headers: const HttpHeaders.rawMap(_fullBodyHeader),
+      cancelToken: cancelToken,
+    );
   }
 
   /// Lists conversation-timeline events for the PR, filtered to the kinds
@@ -749,28 +766,20 @@ class GitHubPrClient {
     CancelToken? cancelToken,
   }) async {
     _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/issues/$number/timeline',
-        query: {'per_page': '100'},
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubTimelineEvent.fromJson)
-          .where(
-            (e) =>
-                e.event == 'review_requested' ||
-                e.event == 'review_request_removed' ||
-                e.event == 'labeled' ||
-                e.event == 'unlabeled',
-          )
-          .toList(growable: false);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-
-      throw mapHttpException(e);
-    }
+    final events = await _getAllPages(
+      '/repos/$owner/$repo/issues/$number/timeline',
+      GitHubTimelineEvent.fromJson,
+      cancelToken: cancelToken,
+    );
+    return events
+        .where(
+          (e) =>
+              e.event == 'review_requested' ||
+              e.event == 'review_request_removed' ||
+              e.event == 'labeled' ||
+              e.event == 'unlabeled',
+        )
+        .toList(growable: false);
   }
 
   /// Lists the issue events of a PR (`GET /repos/{o}/{r}/issues/{n}/events`),
@@ -787,29 +796,12 @@ class GitHubPrClient {
     CancelToken? cancelToken,
   }) async {
     _requireOwnerRepo(owner, repo);
-    final events = <GitHubTimelineEvent>[];
-    try {
-      for (var page = 1; page <= maxPages; page++) {
-        final response = await _httpClient.get(
-          '/repos/$owner/$repo/issues/$number/events',
-          query: {'per_page': '100', 'page': '$page'},
-          cancelToken: cancelToken,
-        );
-        events.addAll(
-          _decodeList(httpJsonBody(response), GitHubTimelineEvent.fromJson),
-        );
-        if (!_hasNextPage(response)) {
-          break;
-        }
-      }
-      return events;
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-
-      throw mapHttpException(e);
-    }
+    return _getAllPages(
+      '/repos/$owner/$repo/issues/$number/events',
+      GitHubTimelineEvent.fromJson,
+      maxPages: maxPages,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Lists check runs for a commit SHA.

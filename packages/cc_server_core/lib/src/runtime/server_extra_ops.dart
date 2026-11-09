@@ -1,6 +1,7 @@
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
+import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
@@ -27,6 +28,7 @@ import 'package:cc_server_core/src/catalog/calendar_write_ops.dart';
 import 'package:cc_server_core/src/catalog/changelog_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
+import 'package:cc_server_core/src/catalog/forge_compose_ops.dart';
 import 'package:cc_server_core/src/catalog/gif_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
@@ -39,6 +41,7 @@ import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
 import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
+import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart'
     show ServerCalendarWrites;
 import 'package:cc_server_core/src/identity/caching_workspace_membership_repository.dart';
@@ -97,6 +100,8 @@ ExtraOpsResult buildServerExtraOps({
   KlipyGifs? klipyGifs,
   ServerCalendarWrites? calendarWrites,
   PrMergeConflictService? prMergeConflicts,
+  ForgePrClientResolver? forgeClientFor,
+  ForgeConnectionView? forgeConnections,
   required DatabaseBackupPort? databaseBackup,
   required ConversationTitlePort? conversationTitles,
   required WorkspaceSettingsRepository? workspaceSettings,
@@ -151,6 +156,13 @@ ExtraOpsResult buildServerExtraOps({
       tree: codeGraphTree,
     ),
     ...buildPrMergeConflictOps(prMergeConflicts),
+    ...buildForgeComposeOps(
+      linkedRepos: (workspaceId) =>
+          workspaceRepository.watchReposForWorkspace(workspaceId).first,
+      members: membershipRepository,
+      clientFor: forgeClientFor,
+      connections: forgeConnections,
+    ),
     ...buildBackupOps(databaseBackup: databaseBackup),
     ...buildConversationTitleOps(conversationTitles),
     ...buildAccountPoolOps(workspaceSettings),

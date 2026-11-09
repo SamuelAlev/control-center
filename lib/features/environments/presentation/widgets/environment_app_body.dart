@@ -43,7 +43,7 @@ class EnvironmentAppBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final host = EnvironmentHostScope.maybeOf(context);
-    final open = component.state == 'running' || component.state == 'ready';
+    final open = component.phase?.isUp ?? false;
     final status = environment.status;
     // Launch needs a running environment: a stopped one has no contract.
     final canLaunch =

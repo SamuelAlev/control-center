@@ -18,7 +18,6 @@ class PipelineStepRun {
     this.outputJson,
     this.spaceId,
     this.errorMessage,
-    this.branchIndex,
     this.attemptCount = 0,
     this.priorAttempts = const [],
     required this.startedAt,
@@ -51,10 +50,6 @@ class PipelineStepRun {
   /// Error message if status is [PipelineStepStatus.failed].
   final String? errorMessage;
 
-  /// Identifies which parallel branch this step belongs to when multiple
-  /// `.listen()` calls fan out from the same source. Null for non-parallel.
-  final int? branchIndex;
-
   /// Number of body attempts so far (retry policy bookkeeping).
   final int attemptCount;
 
@@ -81,10 +76,8 @@ class PipelineStepRun {
           id == other.id &&
           pipelineRunId == other.pipelineRunId &&
           stepId == other.stepId &&
-          status == other.status &&
-          branchIndex == other.branchIndex;
+          status == other.status;
 
   @override
-  int get hashCode =>
-      Object.hash(id, pipelineRunId, stepId, status, branchIndex);
+  int get hashCode => Object.hash(id, pipelineRunId, stepId, status);
 }

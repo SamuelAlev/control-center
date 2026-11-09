@@ -5,6 +5,10 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/utils/single_flight.dart';
+import 'package:cc_host/cc_host.dart' show CcHostLog;
+import 'package:cc_server_core/src/connect/connect_client.dart'
+    show SealStanding, sealStandingOf;
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 
@@ -30,7 +34,29 @@ typedef ProviderTokenRefresh =
 /// null when this server no longer uses that Connect.
 typedef SealInstallIdLookup = Future<String?> Function(String connectOrigin);
 
-/// Server-side [ForgeCredentialPort]: **people's** forge credentials,
+/// One stored credential changed: [userId]'s [forge] sign-in in
+/// [workspaceId] (null for the global slot, which every workspace that
+/// inherits it sees).
+final class ForgeCredentialChange {
+  /// Creates the change.
+  const ForgeCredentialChange({
+    required this.forge,
+    required this.userId,
+    this.workspaceId,
+  });
+
+  /// The forge.
+  final ForgeHost forge;
+
+  /// Whose credential.
+  final String userId;
+
+  /// The workspace slot, or null for the global one.
+  final String? workspaceId;
+}
+
+/// Server-side [ForgeTokenStore] and [ForgeConnectionView]: **people's**
+/// forge credentials,
 /// resolved per call.
 ///
 /// GitHub is person-only here. A user's GitHub token is theirs and nobody
@@ -47,7 +73,7 @@ typedef SealInstallIdLookup = Future<String?> Function(String connectOrigin);
 /// tokens live in [_memory] for this process. Refreshes are single-flight per
 /// `(workspace, user, forge)` because GitHub refresh tokens are single-use,
 /// and only a [RefreshRejected] outcome clears a credential.
-class ForgeCredentials implements ForgeCredentialPort {
+class ForgeCredentials implements ForgeTokenStore, ForgeConnectionView {
   /// Creates a [ForgeCredentials].
   ForgeCredentials({
     required this._env,
@@ -77,8 +103,14 @@ class ForgeCredentials implements ForgeCredentialPort {
   /// Access tokens of sealed credentials, by storage key. Never persisted.
   final Map<String, ProviderToken> _memory = {};
 
+  /// A rotated sealed grant whose write failed, with the seal it replaced.
+  /// Connect spent that parent when it rotated, so this is the only copy of
+  /// the new seal: it is served from memory and written again on the next
+  /// call, never dropped while the stored grant is still its parent.
+  final Map<String, ({String parent, ProviderToken token})> _unsaved = {};
+
   /// In-flight refreshes, by storage key.
-  final Map<String, Future<ProviderToken?>> _refreshing = {};
+  final SingleFlight<String, ProviderToken?> _refreshing = SingleFlight();
 
   /// Cached viewer identity per (user, forge, workspace).
   final Map<String, String> _viewerCache = {};
@@ -101,7 +133,7 @@ class ForgeCredentials implements ForgeCredentialPort {
   String get bitbucketEmail => _env('BITBUCKET_EMAIL') ?? '';
 
   /// The credential for [forge]: [userId]'s own when given. Without a user,
-  /// GitHub answers null (use `GitHubClients.asScoped`); GitLab and
+  /// GitHub answers null (use `GitHubClients.mintScoped`/`forOwner`); GitLab and
   /// Bitbucket answer the owner's pasted token, then the environment.
   @override
   Future<String?> tokenFor(
@@ -207,6 +239,11 @@ class ForgeCredentials implements ForgeCredentialPort {
 
   /// Persists a rotated seal handed back by Connect on the way through
   /// another call (a scope mint that refreshed the parent token).
+  ///
+  /// Waits out a refresh of that credential already in flight, so the two
+  /// never interleave their read-modify-write. The in-memory access token
+  /// belonged to the old seal and is dropped: the next read asks Connect,
+  /// which answers a still-fresh sealed token without rotating it again.
   Future<void> adoptRotatedSeal(
     ForgeHost forge,
     String userId,
@@ -217,12 +254,20 @@ class ForgeCredentials implements ForgeCredentialPort {
     if (users == null || newSeal.isEmpty) {
       return;
     }
+    final key = UserCredentialsStore.forgeKey(
+      forge,
+      userId,
+      workspaceId: workspaceId,
+    );
+    while (_refreshing.isRunning(key)) {
+      await _refreshing.run(key, () async => null);
+    }
     final stored = await users.forgeToken(
       userId,
       forge,
       workspaceId: workspaceId,
     );
-    if (stored == null || !stored.isSealed) {
+    if (stored == null || !stored.isSealed || stored.seal == newSeal) {
       return;
     }
     await users.setForgeToken(
@@ -231,6 +276,7 @@ class ForgeCredentials implements ForgeCredentialPort {
       stored.copyWith(seal: newSeal),
       workspaceId: workspaceId,
     );
+    _memory.remove(key);
   }
 
   /// Stores a credential minted by a sign-in. Sealed credentials keep their
@@ -261,7 +307,7 @@ class ForgeCredentials implements ForgeCredentialPort {
 
   /// Pasted tokens are for GitLab and Bitbucket only. GitHub is sign-in only.
   @override
-  Future<void> setToken(
+  Future<ForgeConnection> setToken(
     ForgeHost forge,
     String token, {
     String? userId,
@@ -284,6 +330,7 @@ class ForgeCredentials implements ForgeCredentialPort {
       workspaceId: workspaceId,
     );
     _invalidate(forge, owner, workspaceId: workspaceId);
+    return _probedConnection(forge, userId: owner, workspaceId: workspaceId);
   }
 
   @override
@@ -317,8 +364,9 @@ class ForgeCredentials implements ForgeCredentialPort {
       ),
   ];
 
-  @override
-  Future<ForgeConnection> testConnection(
+  /// [forge]'s connection re-probed against the forge, refreshing the cached
+  /// viewer identity.
+  Future<ForgeConnection> _probedConnection(
     ForgeHost forge, {
     String? userId,
     String? workspaceId,
@@ -364,13 +412,22 @@ class ForgeCredentials implements ForgeCredentialPort {
   void _invalidate(ForgeHost forge, String userId, {String? workspaceId}) {
     _viewerCache.remove(_cacheKey(forge, userId, workspaceId: workspaceId));
     _viewerCache.remove(_cacheKey(forge, userId));
-    _revision++;
+    _changes.add(
+      ForgeCredentialChange(
+        forge: forge,
+        userId: userId,
+        workspaceId: workspaceId,
+      ),
+    );
   }
 
-  int _revision = 0;
+  final StreamController<ForgeCredentialChange> _changes =
+      StreamController.broadcast(sync: true);
 
-  /// Bumps whenever any credential changes.
-  int get revision => _revision;
+  /// Every stored credential change: a sign-in, a disconnect, a credential
+  /// cleared because it can never work again. Caches keyed on who signed in
+  /// as what (the PR bridge's account directory) drop their entry on it.
+  Stream<ForgeCredentialChange> get changes => _changes.stream;
 
   Future<ProviderToken?> _credentialFor(
     ForgeHost forge, {
@@ -473,21 +530,22 @@ class ForgeCredentials implements ForgeCredentialPort {
       return null;
     }
     if (stored.isSealed) {
-      final current = await currentSealInstallId?.call(stored.connectOrigin);
-      if (current == null) {
-        // Connect is off or points elsewhere right now: unusable, but kept,
-        // so switching back does not sign everybody out.
-        _memory.remove(key);
-        return null;
-      }
-      if (current != stored.sealInstallId) {
-        // Restored on another server or a rotated install key: the seal can
-        // never be unwrapped again, so the only honest state is "sign in
-        // again".
-        await users.clearForgeToken(userId, forge, workspaceId: workspaceId);
-        _memory.remove(key);
-        _invalidate(forge, userId, workspaceId: workspaceId);
-        return null;
+      switch (sealStandingOf(
+        sealInstallId: stored.sealInstallId,
+        currentInstallId: await currentSealInstallId?.call(
+          stored.connectOrigin,
+        ),
+      )) {
+        case SealStanding.parked:
+          _memory.remove(key);
+          return null;
+        case SealStanding.dead:
+          await users.clearForgeToken(userId, forge, workspaceId: workspaceId);
+          _memory.remove(key);
+          _invalidate(forge, userId, workspaceId: workspaceId);
+          return null;
+        case SealStanding.usable:
+          break;
       }
       final live = _memory[key];
       if (live != null && live.seal == stored.seal && !live.isExpired) {
@@ -501,30 +559,64 @@ class ForgeCredentials implements ForgeCredentialPort {
       _invalidate(forge, userId, workspaceId: workspaceId);
       return null;
     }
-    return _refreshing[key] ??=
-        _refresh(
-          key,
-          forge,
-          userId,
-          stored,
-          workspaceId: workspaceId,
-        ).whenComplete(() {
-          // A block body: `=> remove(key)` would return this very future and
-          // whenComplete would wait on itself.
-          _refreshing.remove(key);
-        });
+    return _refreshing.run(
+      key,
+      () => _refresh(key, forge, userId, workspaceId: workspaceId),
+    );
   }
 
+  /// Renews [userId]'s credential, inside the single flight for [key].
+  ///
+  /// The stored credential is re-read here, not handed in: a caller that read
+  /// it just before an earlier flight rotated the single-use refresh token
+  /// would otherwise spend the dead one, get `invalid_grant`, and sign the
+  /// person out. Whatever an earlier flight already renewed is answered as
+  /// is; only a credential that is still expired is refreshed.
   Future<ProviderToken?> _refresh(
     String key,
     ForgeHost forge,
-    String userId,
-    ProviderToken stored, {
+    String userId, {
     String? workspaceId,
   }) async {
     final users = _users!;
     final refresh = refreshUserToken;
     if (refresh == null) {
+      return null;
+    }
+    var stored = await users.forgeToken(
+      userId,
+      forge,
+      workspaceId: workspaceId,
+    );
+    if (stored == null) {
+      _memory.remove(key);
+      _unsaved.remove(key);
+      return null;
+    }
+    final orphan = _unsaved.remove(key);
+    if (orphan != null && stored.isSealed && orphan.parent == stored.seal) {
+      try {
+        await users.setForgeToken(
+          userId,
+          forge,
+          orphan.token,
+          workspaceId: workspaceId,
+        );
+      } on Object {
+        _unsaved[key] = orphan;
+        return orphan.token.isExpired ? null : orphan.token;
+      }
+      stored = orphan.token;
+    }
+    if (stored.isSealed) {
+      final live = _memory[key];
+      if (live != null && live.seal == stored.seal && !live.isExpired) {
+        return live;
+      }
+    } else if (!stored.isExpired) {
+      return stored;
+    }
+    if (!stored.canRefresh) {
       return null;
     }
     final RefreshOutcome outcome;
@@ -533,16 +625,42 @@ class ForgeCredentials implements ForgeCredentialPort {
     } on Object {
       return null;
     }
+    // Compare-and-set: a sign-out or sign-in that landed while the refresh
+    // was in the air wins; the renewal of the older grant is dropped.
+    final current = await users.forgeToken(
+      userId,
+      forge,
+      workspaceId: workspaceId,
+    );
+    if (current == null) {
+      _memory.remove(key);
+      return null;
+    }
+    if (!_sameGrant(current, stored)) {
+      return current.isSealed || current.isExpired ? null : current;
+    }
     switch (outcome) {
       case Refreshed(:final token):
-        await users.setForgeToken(
-          userId,
-          forge,
-          token,
-          workspaceId: workspaceId,
-        );
         if (token.isSealed) {
           _memory[key] = token;
+        }
+        try {
+          await users.setForgeToken(
+            userId,
+            forge,
+            token,
+            workspaceId: workspaceId,
+          );
+        } on Object catch (e) {
+          if (!token.isSealed) {
+            rethrow;
+          }
+          // The parent seal is spent upstream: keep the only copy.
+          _unsaved[key] = (parent: stored.seal, token: token);
+          CcHostLog.warning(
+            'forge: a renewed ${forge.name} sign-in could not be saved; kept '
+            'in memory and saved on the next use ($e)',
+          );
         }
         return token;
       case RefreshRejected():
@@ -555,6 +673,10 @@ class ForgeCredentials implements ForgeCredentialPort {
         return null;
     }
   }
+
+  static bool _sameGrant(ProviderToken a, ProviderToken b) => a.isSealed
+      ? a.seal == b.seal
+      : a.refreshToken == b.refreshToken && a.accessToken == b.accessToken;
 
   /// Whether [token] is a GitHub App sign-in this server accepts: a Connect
   /// seal, or an own-app user token (`ghu_`, expiring, refreshable) that

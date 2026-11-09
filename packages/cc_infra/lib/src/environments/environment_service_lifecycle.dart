@@ -280,7 +280,9 @@ mixin _LifecycleOps
     String? otherwise,
   ) async {
     final hasApp = env.components.any(
-      (state) => state.kind == 'app' && state.state == 'running',
+      (state) =>
+          state.kind == 'app' &&
+          state.phase == EnvironmentComponentPhase.running,
     );
     final definition = (await _load(
       env.workspaceId,
@@ -303,7 +305,10 @@ mixin _LifecycleOps
   Future<void> _onProcessState(EnvironmentProcessStateChange change) async {
     final state = change.state;
     if (state.kind == 'app' &&
-        const {'closed', 'crashed'}.contains(state.state)) {
+        const {
+          EnvironmentComponentPhase.closed,
+          EnvironmentComponentPhase.crashed,
+        }.contains(state.phase)) {
       await _closeWindow(change.environmentId, state.id);
     }
     await _update(change.workspaceId, change.environmentId, (row) {
@@ -343,7 +348,7 @@ mixin _LifecycleOps
     }
     final allUp = components
         .where((state) => state.kind == 'process')
-        .every((state) => state.state == 'ready');
+        .every((state) => state.phase == EnvironmentComponentPhase.ready);
     return allUp ? EnvironmentStatus.ready : EnvironmentStatus.degraded;
   }
 
@@ -393,8 +398,11 @@ mixin _LifecycleOps
       return;
     }
     if (!await _spaceExists(env.workspaceId, env.spaceId)) {
-      // Its space went without a release reaching it: nothing else will.
-      await _exclusive(_lockOf(env), () => _teardown(env, force: true));
+      // Its space went without a release reaching it, or a release left
+      // something behind: nothing else will try again.
+      if (_teardownDue(env)) {
+        await _exclusive(_lockOf(env), () => _teardown(env, force: true));
+      }
       return;
     }
     if (await _reconcileRig(env)) {
@@ -424,6 +432,10 @@ mixin _LifecycleOps
     if (!env.status.isRunning && env.status != EnvironmentStatus.failed) {
       return;
     }
+    if (env.placement == EnvironmentPlacement.rig.name) {
+      await _pollRig(env);
+      return;
+    }
     if (env.placement != 'host') {
       return;
     }
@@ -446,8 +458,10 @@ mixin _LifecycleOps
         missing |= report.state == EnvironmentReportedState.missing;
         healthy &= report.state == EnvironmentReportedState.ready;
       } else if (component is ComposeEnvironmentComponent) {
-        final plan = await _planOf(env, stack, component);
-        final services = await _d.compose.status(plan);
+        final services = await _d.compose.status(
+          _composeProject(env, stack, component),
+          services: _composeServices(env, component),
+        );
         healthy &= services.every((service) => service.isSettled);
         await _setComponent(
           env,
@@ -477,6 +491,55 @@ mixin _LifecycleOps
     if (row != null && row.status.isRunning) {
       await _applyRoutes(row, stack);
     }
+  }
+
+  /// [_poll] for a stack in a rig: the guest's compose project is asked how
+  /// its services are, the way a host stack is. A rig that is gone is
+  /// [_reconcileRig]'s to report.
+  Future<void> _pollRig(SpaceEnvironment env) async {
+    final rigId = env.rigId;
+    final host = _d.rigHost;
+    if (rigId == null || host == null) {
+      return;
+    }
+    final stack = await _stackOf(env);
+    final compose = stack.definition.components
+        .whereType<ComposeEnvironmentComponent>()
+        .where(stack.isEnabled)
+        .firstOrNull;
+    if (compose == null) {
+      return;
+    }
+    final List<ComposeServiceState> services;
+    try {
+      services = await host.services(
+        workspaceId: env.workspaceId,
+        rigId: rigId,
+        environmentId: env.id,
+      );
+    } on Object catch (e) {
+      CcInfraLog.warning('could not ask rig $rigId about ${env.id}: $e');
+      return;
+    }
+    await _setComponent(
+      env,
+      compose.id,
+      (state) => state.copyWith(
+        services: [for (final service in services) service.toJson()],
+      ),
+    );
+    final healthy =
+        services.isNotEmpty && services.every((service) => service.isSettled);
+    await _update(env.workspaceId, env.id, (row) {
+      if (row.status.isBusy || row.status == EnvironmentStatus.failed) {
+        return row;
+      }
+      return row.copyWith(
+        status: healthy && !row.needsRecreate
+            ? EnvironmentStatus.ready
+            : EnvironmentStatus.degraded,
+      );
+    });
   }
 
   Future<void> _stopIfIdle(SpaceEnvironment env) =>
@@ -582,7 +645,9 @@ mixin _LifecycleOps
       (role) => role.anchor && space.repo(role.repoId) != null,
     );
     if (dropped.any((role) => role.required) || !hasAnchor) {
-      await _exclusive(_lockOf(env), () => _teardown(env, force: true));
+      if (_teardownDue(env)) {
+        await _exclusive(_lockOf(env), () => _teardown(env, force: true));
+      }
       return true;
     }
     await _update(
@@ -718,7 +783,9 @@ mixin _LifecycleOps
       (row) => row.copyWith(
         components: [
           for (final state in row.components)
-            state.kind == 'app' ? state.copyWith(state: 'closed') : state,
+            state.kind == 'app'
+                ? state.copyWith(state: EnvironmentComponentPhase.closed.wire)
+                : state,
         ],
         // The router may have come back on another port.
         endpoints: [
@@ -738,7 +805,7 @@ mixin _LifecycleOps
     await _applyRoutes(current ?? env, stack);
     final stopped = {
       for (final state in env.components)
-        if (state.state == 'stopped') state.id,
+        if (state.phase == EnvironmentComponentPhase.stopped) state.id,
     };
     await _d.supervisor.recover(
       stateDir: stack.stateDir,
@@ -822,7 +889,10 @@ mixin _LifecycleOps
       }
       try {
         if (!await _spaceExists(ws, spaceId)) {
-          await _d.compose.destroyProject(container.environmentId);
+          await _d.compose.destroy(
+            ComposeProject(environmentId: container.environmentId),
+            removeLocalImages: false,
+          );
         } else {
           CcInfraLog.warning(
             'container ${container.name} has no environment, but its space '
@@ -847,8 +917,14 @@ mixin _LifecycleOps
       try {
         // A workspace this server no longer has can't use its ports, and the
         // lease table is this server's own.
+        // Unless a row still holds it: a teardown that left a stack behind
+        // keeps its ports until it is gone.
         if (!workspaces.contains(lease.workspaceId) ||
-            !await _spaceExists(lease.workspaceId, lease.spaceId)) {
+            (!await _spaceExists(lease.workspaceId, lease.spaceId) &&
+                (await _d.environments.forSpace(
+                  lease.workspaceId,
+                  lease.spaceId,
+                )).isEmpty)) {
           await _d.allocator.releaseSpace(
             workspaceId: lease.workspaceId,
             spaceId: lease.spaceId,

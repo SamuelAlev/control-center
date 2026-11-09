@@ -159,11 +159,12 @@ class RigEventListener {
 
   static String _reasonPhrase(RigCloseReason reason) => switch (reason) {
     RigCloseReason.requested => 'somebody closed it',
-    RigCloseReason.idleTimeout =>
-      'it was reclaimed after sitting idle (or to free memory for another '
-          'machine)',
+    RigCloseReason.idleTimeout => 'it was reclaimed after sitting idle',
+    RigCloseReason.memoryPressure =>
+      'it was the least recently used machine when another one needed its '
+          'memory',
     RigCloseReason.ttlExpired => 'it reached its hard time limit',
-    RigCloseReason.conversationEnded => 'the conversation that owned it ended',
+    RigCloseReason.conversationEnded => 'the space that owned it was deleted',
     RigCloseReason.workspaceGone => 'the workspace went away',
     RigCloseReason.serverShutdown => 'the server is shutting down',
     RigCloseReason.backendFailure => 'the hypervisor failed underneath it',

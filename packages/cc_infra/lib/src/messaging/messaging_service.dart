@@ -847,7 +847,7 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       content: '$name joined the space',
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'system',
     );
   }
@@ -857,7 +857,7 @@ class MessagingService implements MessagingPort {
       _repo.spaceExists(workspaceId, spaceId);
 
   /// Posts a system message into the space — senderId 'system', senderType
-  /// 'agent', messageType 'system', the same shape as the take-over refusal.
+  /// 'system', messageType 'system', the same shape as the take-over refusal.
   /// Used by the goal supervisor to narrate goal lifecycle events.
   Future<void> postSystemMessage(
     String workspaceId,
@@ -869,7 +869,7 @@ class MessagingService implements MessagingPort {
     spaceId: spaceId,
     content: content,
     senderId: 'system',
-    senderType: 'agent',
+    senderType: 'system',
     messageType: 'system',
     conversationId: conversationId,
   );
@@ -1058,7 +1058,7 @@ class MessagingService implements MessagingPort {
             'Dispatch refused: a human has taken over this conversation\'s '
             'worktree. Hand it back to resume agent work.',
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         messageType: 'system',
       );
       return null;
@@ -1319,7 +1319,7 @@ class MessagingService implements MessagingPort {
           ? 'Mention not delivered — ${refusals.single}'
           : 'Mentions not delivered:\n${refusals.map((r) => '• $r').join('\n')}',
       senderId: 'system',
-      senderType: 'agent',
+      senderType: 'system',
       messageType: 'system',
       conversationId: conversationId,
     );
@@ -1491,6 +1491,31 @@ class MessagingService implements MessagingPort {
         messageId: messageId,
       ) ??
       false;
+
+  /// In-process stop-and-send. The `steering.forceSend` op checks the
+  /// caller's stop permission and calls the queue directly; this server-side
+  /// port is trusted code, so it may stop runs.
+  @override
+  Future<String> forceSendSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final queue = steeringQueueService;
+    if (queue == null) {
+      return SteeringForceOutcome.notQueued.wire;
+    }
+    final outcome = await queue.forceSend(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: conversationId,
+      messageId: messageId,
+      mayStop: true,
+      stopRun: (runId) => stopRun(workspaceId, runId),
+    );
+    return outcome.wire;
+  }
 
   /// Fallback window, in tokens, when the space's agent has no configured
   /// `contextSize` (the window only feeds the pressure gate, which a forced

@@ -352,7 +352,13 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       if (optimistic != null) {
         ref.read(prOptimisticReviewStateProvider.notifier).set(prRef, null);
       }
-      showPrError(context, ref, e, (l) => l.failedToSubmitReview('$e'));
+      showPrError(
+        context,
+        ref,
+        e,
+        (l) => l.failedToSubmitReview('$e'),
+        prRef: prRef,
+      );
     }
   }
 

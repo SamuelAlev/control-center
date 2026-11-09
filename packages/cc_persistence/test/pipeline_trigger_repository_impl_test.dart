@@ -1,3 +1,4 @@
+import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
@@ -84,6 +85,55 @@ void main() {
 
       final result = await repo.getById('ws-1', 't-1');
       expect(result!.cronExpression, 'every:3600');
+    });
+  });
+
+  group('webhook route ownership (audit H4)', () {
+    test(
+      'a token routed to one workspace cannot be re-pointed by another',
+      () async {
+        await repo.insert(
+          makeTrigger(
+            id: 'victim',
+            eventType: PipelineTrigger.webhookEventType,
+          ).copyWith(webhookToken: 'tok-1'),
+        );
+
+        final hijack = makeTrigger(
+          id: 'attacker',
+          eventType: PipelineTrigger.webhookEventType,
+          workspaceId: 'ws-2',
+        ).copyWith(webhookToken: 'tok-1');
+        await expectLater(
+          repo.insert(hijack),
+          throwsA(isA<WorkspaceMismatchException>()),
+        );
+        // Refused before the row landed, and the route still points home.
+        expect(await repo.getById('ws-2', 'attacker'), isNull);
+        expect((await repo.byWebhookToken('tok-1'))?.id, 'victim');
+
+        await repo.insert(
+          makeTrigger(
+            id: 'attacker',
+            eventType: PipelineTrigger.webhookEventType,
+            workspaceId: 'ws-2',
+          ).copyWith(webhookToken: 'tok-2'),
+        );
+        await expectLater(
+          repo.update(hijack),
+          throwsA(isA<WorkspaceMismatchException>()),
+        );
+        expect((await repo.byWebhookToken('tok-1'))?.workspaceId, 'ws-1');
+      },
+    );
+
+    test('re-saving a trigger with its own token is allowed', () async {
+      final trigger = makeTrigger(
+        eventType: PipelineTrigger.webhookEventType,
+      ).copyWith(webhookToken: 'tok-1');
+      await repo.insert(trigger);
+      await repo.update(trigger.copyWith(match: const {'k': 'v'}));
+      expect((await repo.byWebhookToken('tok-1'))?.match, {'k': 'v'});
     });
   });
 

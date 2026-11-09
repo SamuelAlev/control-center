@@ -12,7 +12,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/harness/harness_run_accounting.dart';
 import 'package:test/test.dart';
 
-class _Provider implements LlmProviderPort {
+class _Provider extends LlmProviderPort {
   _Provider(this.replies);
   final List<List<LlmEvent>> replies;
   @override

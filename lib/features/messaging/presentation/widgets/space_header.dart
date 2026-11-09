@@ -293,7 +293,6 @@ class SpaceHeader extends ConsumerWidget {
       );
       return;
     }
-    ref.invalidate(takeoverStatusProvider(space.id));
     ref.read(codeServerTabRequestProvider(space.id).notifier).request();
   }
 }

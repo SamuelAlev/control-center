@@ -45,6 +45,26 @@ enum EnvironmentStatus {
 
   /// Whether anything is expected to be running.
   bool get isRunning => this == ready || this == degraded || this == starting;
+
+  /// Whether a row in this state may be written as [next].
+  ///
+  /// The table is the lifecycle's one statement of order, enforced where
+  /// rows are written. It forbids only what no real path does: a teardown
+  /// under way ends failed or gone, never back up; a stop under way is not
+  /// overtaken by a report that it is up; and nothing comes up from stopped
+  /// or gone without starting first. Every other move stays open, because a
+  /// failed environment can recover on its own.
+  bool canBecome(EnvironmentStatus next) {
+    if (next == this) {
+      return true;
+    }
+    return switch (this) {
+      destroying => next == failed || next == gone,
+      stopping => next != ready && next != degraded,
+      stopped || gone => next != ready && next != degraded,
+      creating || starting || ready || degraded || failed => true,
+    };
+  }
 }
 
 /// What a tool reports about itself.

@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -6,7 +7,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:test/test.dart';
 
 /// Replays one scripted list of events per `complete()` call; repeats the last.
-class _Scripted implements LlmProviderPort {
+class _Scripted extends LlmProviderPort {
   _Scripted(this.script);
   final List<List<LlmEvent>> script;
   int calls = 0;
@@ -67,6 +68,7 @@ class _FakeCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     if (force) {
       forced++;
@@ -229,7 +231,7 @@ Future<int> _peakConcurrencyWithHooks(AgentLoopHooks? hooks) async {
         userMessage: 'go',
         tools: tools,
         provider: provider,
-        config: AgentLoopConfig(hooks: hooks),
+        config: AgentLoopConfig(steering: LoopSteeringConfig(hooks: hooks)),
       )
       .toList();
   return meter.peak;
@@ -346,7 +348,9 @@ void main() {
             userMessage: 'do the first thing',
             tools: const [],
             provider: provider,
-            config: AgentLoopConfig(steering: steering),
+            config: AgentLoopConfig(
+              steering: LoopSteeringConfig(queue: steering),
+            ),
           )
           .toList();
       expect(provider.calls, 2, reason: 'follow-up should drive a second turn');
@@ -412,8 +416,10 @@ void main() {
             tools: [tool],
             provider: provider,
             config: AgentLoopConfig(
-              approvalCallback: (_, _) async =>
-                  const ToolGateDecision.deny(reason: 'not this time'),
+              tools: LoopToolConfig(
+                approvalCallback: (_, _) async =>
+                    const ToolGateDecision.deny(reason: 'not this time'),
+              ),
             ),
           )
           .toList();
@@ -450,7 +456,12 @@ void main() {
           userMessage: 'go',
           tools: const [],
           provider: provider,
-          config: AgentLoopConfig(contextWindow: 200000, compactor: compactor),
+          config: AgentLoopConfig(
+            compaction: LoopCompactionConfig(
+              contextWindow: 200000,
+              compactor: compactor,
+            ),
+          ),
         )
         .toList();
     expect(compactor.forced, 1, reason: 'overflow should force a compaction');
@@ -485,9 +496,11 @@ void main() {
           tools: const [],
           provider: provider,
           config: AgentLoopConfig(
-            contextWindow: 200000,
-            compactor: compactor,
-            advisor: advisor,
+            compaction: LoopCompactionConfig(
+              contextWindow: 200000,
+              compactor: compactor,
+            ),
+            steering: LoopSteeringConfig(advisor: advisor),
           ),
         )
         .toList();
@@ -500,7 +513,10 @@ void main() {
 class _ResetRecordingAdvisor implements Advisor {
   int resets = 0;
   @override
-  Future<AdvisorNote?> review(List<HarnessMessage> history) async => null;
+  Future<AdvisorNote?> review(
+    List<HarnessMessage> history, {
+    CancellationToken cancel = CancellationToken.none,
+  }) async => null;
   @override
   void reset() => resets++;
 }

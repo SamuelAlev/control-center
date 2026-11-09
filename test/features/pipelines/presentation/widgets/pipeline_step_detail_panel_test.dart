@@ -32,7 +32,6 @@ PipelineStepRun _stepRun({
   String? inputJson,
   String? outputJson,
   String? errorMessage,
-  int? branchIndex,
   List<PipelineStepAttempt> priorAttempts = const [],
   DateTime? startedAt,
   DateTime? finishedAt,
@@ -45,7 +44,6 @@ PipelineStepRun _stepRun({
     inputJson: inputJson,
     outputJson: outputJson,
     errorMessage: errorMessage,
-    branchIndex: branchIndex,
     priorAttempts: priorAttempts,
     startedAt: startedAt ?? DateTime(2026, 6, 1, 10, 0, 0),
     finishedAt: finishedAt,
@@ -172,29 +170,14 @@ void main() {
     expect(find.text('Duration'), findsOneWidget);
   });
 
-  testWidgets('shows branch index when present', (tester) async {
-    await tester.pumpWidget(
-      testWrap(
-        PipelineStepDetailPanel(
-          step: _stepDef(label: 'Build'),
-          stepRun: _stepRun(branchIndex: 2, finishedAt: _defaultFinishedAt),
-          now: DateTime(2026, 6, 1, 10, 2, 0),
-        ),
-      ),
-    );
-
-    expect(find.text('Branch'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
-  });
-
-  testWidgets('does not show branch row when branchIndex is null', (
+  testWidgets('shows no branch row (parallel branches carry no index)', (
     tester,
   ) async {
     await tester.pumpWidget(
       testWrap(
         PipelineStepDetailPanel(
           step: _stepDef(label: 'Build'),
-          stepRun: _stepRun(branchIndex: null, finishedAt: _defaultFinishedAt),
+          stepRun: _stepRun(finishedAt: _defaultFinishedAt),
           now: DateTime(2026, 6, 1, 10, 2, 0),
         ),
       ),

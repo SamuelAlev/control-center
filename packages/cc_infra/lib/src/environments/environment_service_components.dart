@@ -47,10 +47,31 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     List<String> log,
   ) async {
     final done = <String, Future<void>>{};
+    final starting = {for (final component in components) component.id};
     String? previous;
     for (final component in components) {
       final waits = component.after.isNotEmpty ? component.after : [?previous];
-      final dependencies = [for (final id in waits) ?done[id]];
+      final dependencies = <Future<void>>[];
+      for (final id in waits) {
+        final dependency = done[id];
+        if (dependency != null) {
+          dependencies.add(dependency);
+        } else if (starting.contains(id)) {
+          // Validation keeps `after` pointing backwards, so this is a
+          // definition that got past it: say so rather than race.
+          throw _EnvironmentServiceBase._failure(
+            'invalid-order',
+            '${component.displayName} waits for $id, which starts after it',
+          );
+        } else {
+          // Off here (its `enabledWhen` is false), or not something a start
+          // runs: there is nothing to wait for, and the run log says so.
+          log.add(
+            '${component.displayName} does not wait for $id: it is not '
+            'part of this start',
+          );
+        }
+      }
       done[component.id] = Future.wait(
         dependencies,
       ).then((_) => _startComponent(env, stack, component, mode, log));
@@ -69,7 +90,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     await _setComponent(
       env,
       component.id,
-      (state) => state.copyWith(state: 'starting'),
+      (state) => state.copyWith(state: EnvironmentComponentPhase.starting.wire),
     );
     try {
       switch (component) {
@@ -82,14 +103,15 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
         case TaskEnvironmentComponent():
           await _startTask(env, stack, component);
         case AppEnvironmentComponent():
-          break;
+          // `_startable` leaves apps out: they open once the stack is up.
+          throw StateError('An app is not started with its stack');
       }
     } on Object catch (e) {
       await _setComponent(
         env,
         component.id,
         (state) => state.copyWith(
-          state: 'failed',
+          state: EnvironmentComponentPhase.failed.wire,
           detail: _EnvironmentServiceBase._errorOf(e).message,
         ),
       );
@@ -115,7 +137,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       await _setComponent(
         env,
         component.id,
-        (state) => state.copyWith(state: 'ready'),
+        (state) => state.copyWith(state: EnvironmentComponentPhase.ready.wire),
       );
       return;
     }
@@ -147,7 +169,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
           for (final state in row.components)
             state.id == component.id
                 ? state.copyWith(
-                    state: 'ready',
+                    state: EnvironmentComponentPhase.ready.wire,
                     services: [
                       for (final service in services)
                         service.toJson(
@@ -276,7 +298,10 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
                   detail: report.detail,
                   services: [
                     for (final service in report.services)
-                      {'name': service, 'state': 'ready'},
+                      {
+                        'name': service,
+                        'state': EnvironmentComponentPhase.ready.wire,
+                      },
                   ],
                 )
               : state,
@@ -285,12 +310,13 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
   );
 
   String _componentStateOf(EnvironmentReportedState state) => switch (state) {
-    EnvironmentReportedState.ready => 'ready',
-    EnvironmentReportedState.starting => 'starting',
-    EnvironmentReportedState.stopped => 'stopped',
-    EnvironmentReportedState.missing => 'stopped',
-    EnvironmentReportedState.failed => 'failed',
-    EnvironmentReportedState.degraded => 'failed',
+    EnvironmentReportedState.ready => EnvironmentComponentPhase.ready.wire,
+    EnvironmentReportedState.starting =>
+      EnvironmentComponentPhase.starting.wire,
+    EnvironmentReportedState.stopped => EnvironmentComponentPhase.stopped.wire,
+    EnvironmentReportedState.missing => EnvironmentComponentPhase.stopped.wire,
+    EnvironmentReportedState.failed => EnvironmentComponentPhase.failed.wire,
+    EnvironmentReportedState.degraded => EnvironmentComponentPhase.failed.wire,
   };
 
   Future<void> _startProcess(
@@ -310,7 +336,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       env,
       component.id,
       (current) => current.copyWith(
-        state: 'ready',
+        state: EnvironmentComponentPhase.ready.wire,
         sessionId: state.sessionId,
         restarts: state.restarts,
       ),
@@ -343,7 +369,8 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       await _setComponent(
         env,
         task.id,
-        (state) => state.copyWith(state: 'pending'),
+        (state) =>
+            state.copyWith(state: EnvironmentComponentPhase.pending.wire),
       );
       return;
     }
@@ -414,8 +441,8 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       task.id,
       (state) => state.copyWith(
         state: run.status == EnvironmentRunStatus.succeeded
-            ? 'completed'
-            : 'failed',
+            ? EnvironmentComponentPhase.completed.wire
+            : EnvironmentComponentPhase.failed.wire,
         lastRunAt: run.completedAt,
         lastExitCode: run.exitCode,
       ),
@@ -467,14 +494,28 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       output: output,
     );
     await _d.runs.start(record(EnvironmentRunStatus.running));
-    final result = await host.exec(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      rigId: rigId,
-      argv: argv,
-      environment: environment,
-      timeout: Duration(seconds: task.timeoutSeconds),
-    );
+    final EnvironmentExecResult result;
+    try {
+      result = await host.exec(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        rigId: rigId,
+        argv: argv,
+        environment: environment,
+        timeout: Duration(seconds: task.timeoutSeconds),
+      );
+    } on Object catch (e) {
+      // The run is on record as running; only a terminal write ends it, and
+      // nothing else will make one before the next boot.
+      await _d.runs.finish(
+        workspaceId,
+        id,
+        status: EnvironmentRunStatus.failed,
+        completedAt: _d.now(),
+        error: _EnvironmentServiceBase._errorOf(e).message,
+      );
+      rethrow;
+    }
     final finished = record(
       result.exitCode == 0
           ? EnvironmentRunStatus.succeeded
@@ -509,6 +550,11 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
           if (!role.isSource) role.role.key: role.repo.path,
       },
       environment: stack.contract.environment(),
+      // Recorded the moment the rig exists, not once it is up: a start that
+      // fails after this still leaves a machine, and the quarantine on its
+      // worktrees, that stop, teardown and reconcile can only find by id.
+      onRigOpened: (rigId) =>
+          _update(env.workspaceId, env.id, (row) => row.copyWith(rigId: rigId)),
     );
     await _update(
       env.workspaceId,

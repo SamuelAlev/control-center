@@ -66,7 +66,6 @@ class InboundGitHubPrComment {
     required this.body,
     required this.authorId,
     required this.authorLogin,
-    required this.authorIsBot,
     required this.isReviewComment,
   });
 
@@ -83,12 +82,21 @@ class InboundGitHubPrComment {
   /// Author's login (`appslug[bot]` for app accounts). Display only.
   final String authorLogin;
 
-  /// Whether the author is a bot account — ours or anyone else's.
-  final bool authorIsBot;
-
   /// Whether this is an inline review comment (diff thread) rather than a
   /// conversation-timeline comment. Picks the lane replies post into.
   final bool isReviewComment;
+}
+
+/// What the bridge did with one inbound invocation.
+enum GitHubInboundOutcome {
+  /// Acted on, or deliberately ignored (a stranger to the bot, a read-only
+  /// member, a claim another server won). Never offered again.
+  done,
+
+  /// The author's GitHub account maps to no member signed in here yet. A
+  /// sign-in may simply not have been seen; the poller offers it again on a
+  /// later sweep (a bounded number of times).
+  authorUnknown,
 }
 
 /// The poller's view of the bridge: exactly the entry points discovery can
@@ -98,7 +106,7 @@ class InboundGitHubPrComment {
 abstract interface class GitHubPrConversationSink {
   /// Handles one eligible inbound comment (see
   /// [GitHubPrConversationBridge.handleInboundComment]).
-  Future<void> handleInboundComment({
+  Future<GitHubInboundOutcome> handleInboundComment({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -110,7 +118,7 @@ abstract interface class GitHubPrConversationSink {
 
   /// Handles a PR carrying the review label (see
   /// [GitHubPrConversationBridge.handleLabeledPullRequest]).
-  Future<void> handleLabeledPullRequest({
+  Future<GitHubInboundOutcome> handleLabeledPullRequest({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -348,7 +356,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// mention to qualify (the poller decides eligibility; this re-checks the
   /// gates it owns).
   @override
-  Future<void> handleInboundComment({
+  Future<GitHubInboundOutcome> handleInboundComment({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -357,25 +365,31 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     required InboundGitHubPrComment comment,
     bool isBotThread = false,
   }) async {
-    // 1. Loop guard, before anything that costs a request or a row.
-    if (comment.authorIsBot || isAutomatedReply(comment.body)) {
-      return;
+    // 1. Loop guard, before anything that costs a request or a row: any
+    // GitHub App account (ours or another bot) and our own attributed
+    // replies, which on Connect are authored by a person.
+    if (comment.authorLogin.toLowerCase().endsWith('[bot]') ||
+        isAutomatedReply(comment.body)) {
+      return GitHubInboundOutcome.done;
     }
     final gateway = _gatewayFor(workspaceId);
     final identity = await gateway.identity();
     if (identity == null) {
-      return;
+      return GitHubInboundOutcome.done;
     }
     final mention = mentionsBot(comment.body, identity.botLogin);
     if (!mention && !isBotThread) {
-      return;
+      return GitHubInboundOutcome.done;
     }
 
     // 2. Membership, by numeric id. Strangers and read-only members are
     // ignored silently: answering them would announce the bot to anyone.
-    final member = await _resolveActor(workspaceId, comment.authorId);
+    final actor = await _resolveActor(workspaceId, comment.authorId);
+    final member = actor.member;
     if (member == null) {
-      return;
+      return actor.known
+          ? GitHubInboundOutcome.done
+          : GitHubInboundOutcome.authorUnknown;
     }
 
     // 3. The claim, as that member.
@@ -400,7 +414,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
             ),
     );
     if (!claimed) {
-      return;
+      return GitHubInboundOutcome.done;
     }
     final asker = _Asker(
       userId: member.userId,
@@ -432,7 +446,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         asker: asker,
         body: body,
       );
-      return;
+      return GitHubInboundOutcome.done;
     }
 
     await _answerQuestion(
@@ -447,6 +461,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       asker: asker,
       question: question,
     );
+    return GitHubInboundOutcome.done;
   }
 
   /// Handles a PR that carries the review label — the reviewer-assignment
@@ -458,7 +473,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// to the repository, and claims the PR with their own 👀. The review runs
   /// with the labeller as its accountable human. Nothing is posted.
   @override
-  Future<void> handleLabeledPullRequest({
+  Future<GitHubInboundOutcome> handleLabeledPullRequest({
     required String workspaceId,
     required String owner,
     required String repo,
@@ -466,7 +481,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   }) async {
     final gateway = _gatewayFor(workspaceId);
     if (await gateway.identity() == null) {
-      return;
+      return GitHubInboundOutcome.done;
     }
     final GitHubPrActor? labeller;
     try {
@@ -476,14 +491,17 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         'github_pr_conversation: reading who labelled '
         '$owner/$repo#$prNumber failed: $e',
       );
-      return;
+      return GitHubInboundOutcome.done;
     }
     if (labeller == null) {
-      return;
+      return GitHubInboundOutcome.done;
     }
-    final member = await _resolveActor(workspaceId, labeller.accountId);
+    final actor = await _resolveActor(workspaceId, labeller.accountId);
+    final member = actor.member;
     if (member == null) {
-      return;
+      return actor.known
+          ? GitHubInboundOutcome.done
+          : GitHubInboundOutcome.authorUnknown;
     }
     final claimed = await _claim(
       gateway,
@@ -499,7 +517,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       ),
     );
     if (!claimed) {
-      return;
+      return GitHubInboundOutcome.done;
     }
     await _startReviewAndDescribe(
       workspaceId: workspaceId,
@@ -508,13 +526,15 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       prNumber: prNumber,
       userId: member.userId,
     );
+    return GitHubInboundOutcome.done;
   }
 
   // ── Inbound helpers ─────────────────────────────────────────────────────
 
-  /// The writing member who signed in to GitHub as [accountId], or null —
-  /// unknown accounts and read-only members alike.
-  Future<WorkspaceMember?> _resolveActor(
+  /// The writing member who signed in to GitHub as [accountId]. `known` is
+  /// false when the account maps to no member at all (perhaps a sign-in not
+  /// seen yet), true for a member who may not write.
+  Future<({WorkspaceMember? member, bool known})> _resolveActor(
     String workspaceId,
     int accountId,
   ) async {
@@ -522,7 +542,10 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       workspaceId,
       accountId,
     );
-    return member != null && member.role.canWrite ? member : null;
+    if (member == null) {
+      return (member: null, known: false);
+    }
+    return (member: member.role.canWrite ? member : null, known: true);
   }
 
   /// Whether this server owns the work: it can reply bounded by [userId],
@@ -685,8 +708,10 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       return;
     }
 
-    // The dispatch spawned the run asynchronously, so it cannot have
-    // completed before this returns — record the outbound reply now.
+    // The run id exists only once dispatch returns, and a run that fails
+    // fast can complete before the row below is written. [_onRunCompleted]
+    // keeps such completions briefly in [_unclaimedCompletions]; one found
+    // for this run after the write is replayed so the reply is not lost.
     final pending = _PendingReply(
       owner: owner,
       repo: repo,
@@ -702,6 +727,10 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       runLogId,
       jsonEncode(pending.toJson()),
     );
+    final early = _unclaimedCompletions[runLogId];
+    if (early != null) {
+      await _consumeSerialized(early.event, workspaceId, runLogId);
+    }
   }
 
   /// Who answers: the last agent that spoke in the space (the reviewer who
@@ -752,21 +781,81 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
 
   // ── Outbound lane ───────────────────────────────────────────────────────
 
-  Future<void> _onRunCompleted(AgentRunCompleted event) async {
+  /// Completions that arrived before any pending-reply row named them, by
+  /// run id, kept for [_unclaimedTtl] (a question's row is written right
+  /// after its dispatch returns).
+  final Map<String, ({AgentRunCompleted event, DateTime at})>
+  _unclaimedCompletions = {};
+
+  /// The consumption in flight per run id: a replayed completion queues
+  /// behind the live one, and the row is deleted before posting, so a reply
+  /// never posts twice.
+  final Map<String, Future<void>> _consuming = {};
+
+  static const Duration _unclaimedTtl = Duration(minutes: 2);
+  static const int _maxUnclaimed = 256;
+
+  Future<void> _onRunCompleted(AgentRunCompleted event) {
     final workspaceId = event.workspaceId;
     final runId = event.runId;
     if (workspaceId == null ||
         workspaceId.isEmpty ||
         runId == null ||
         runId.isEmpty) {
-      return;
+      return Future.value();
     }
+    // Before any await: a question whose row lands after this point finds
+    // the completion here and replays it.
+    _rememberUnclaimed(event, runId);
+    return _consumeSerialized(event, workspaceId, runId);
+  }
+
+  Future<void> _consumeSerialized(
+    AgentRunCompleted event,
+    String workspaceId,
+    String runId,
+  ) {
+    final previous = _consuming[runId] ?? Future<void>.value();
+    late final Future<void> next;
+    next = previous.then((_) async {
+      try {
+        await _consumeCompletion(event, workspaceId, runId);
+      } on Object catch (e) {
+        _onWarning?.call(
+          'github_pr_conversation: handling completed run $runId failed: $e',
+        );
+      } finally {
+        if (identical(_consuming[runId], next)) {
+          unawaited(_consuming.remove(runId));
+        }
+      }
+    });
+    _consuming[runId] = next;
+    return next;
+  }
+
+  void _rememberUnclaimed(AgentRunCompleted event, String runId) {
+    final now = DateTime.now();
+    _unclaimedCompletions
+      ..removeWhere((_, v) => now.difference(v.at) > _unclaimedTtl)
+      ..[runId] = (event: event, at: now);
+    while (_unclaimedCompletions.length > _maxUnclaimed) {
+      _unclaimedCompletions.remove(_unclaimedCompletions.keys.first);
+    }
+  }
+
+  Future<void> _consumeCompletion(
+    AgentRunCompleted event,
+    String workspaceId,
+    String runId,
+  ) async {
     final raw = await _cache(
       workspaceId,
     ).read(workspaceId, pendingReplyCacheKind, runId);
     if (raw == null) {
       return;
     }
+    _unclaimedCompletions.remove(runId);
     // Consume first: whatever happens below, this run's reply fires once.
     await _cache(
       workspaceId,
@@ -813,7 +902,10 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     }
     // And on behalf of the same person, who must still be a writing member
     // signed in as that GitHub account.
-    final member = await _resolveActor(workspaceId, pending.asker.accountId);
+    final member = (await _resolveActor(
+      workspaceId,
+      pending.asker.accountId,
+    )).member;
     if (member == null || member.userId != pending.asker.userId) {
       _onWarning?.call(
         'github_pr_conversation: not posting the answer to $where — the '

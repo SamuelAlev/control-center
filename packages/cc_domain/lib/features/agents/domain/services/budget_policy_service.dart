@@ -215,6 +215,7 @@ class BudgetEnforcementService {
       );
       _eventBus.publish(
         BudgetThresholdCrossed(
+          workspaceId: agent.workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
           spentCents: spent,
@@ -237,6 +238,7 @@ class BudgetEnforcementService {
       );
       _eventBus.publish(
         BudgetThresholdCrossed(
+          workspaceId: agent.workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
           spentCents: spent,

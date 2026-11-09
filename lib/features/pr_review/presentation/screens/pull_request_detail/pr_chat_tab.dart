@@ -1,9 +1,10 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/conversation_pane.dart';
+import 'package:control_center/features/pr_review/providers/pr_review_providers.dart'
+    show PrRef;
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -17,25 +18,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// conversations all work exactly as in the messaging IDE.
 class PrChatTab extends ConsumerWidget {
   /// Creates a [PrChatTab].
-  const PrChatTab({super.key, required this.pr});
+  const PrChatTab({super.key, required this.pr, required this.prRef});
 
   /// The pull request this chat is scoped to.
   final PullRequest pr;
+
+  /// The identity the detail screen keys every PR provider by (the chat focus
+  /// a "send to agent" sets is read under the same key).
+  final PrRef prRef;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final focus = workspaceId == null
-        ? null
-        : ref.watch(
-            prChatFocusProvider((
-              workspaceId: workspaceId,
-              repoFullName: pr.repoFullName,
-              number: pr.number,
-            )),
-          );
+    final focus = ref.watch(prChatFocusProvider(prRef));
     final spaceAsync = ref.watch(prSpaceProvider(PrSpaceKey.of(pr)));
     return spaceAsync.when(
       loading: () => Center(

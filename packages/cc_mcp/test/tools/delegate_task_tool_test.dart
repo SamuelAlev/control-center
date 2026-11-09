@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
@@ -20,6 +21,11 @@ void main() {
       service: TicketWorkflowService(
         repository: tickets,
         eventBus: DomainEventBus(),
+        resolveEffectiveAutonomy:
+            ({required workspaceId, required agentId, spaceId}) async =>
+                AutonomyLevel.actWithApproval,
+        resolveRemainingBudgetCents:
+            ({required workspaceId, required agentId}) async => null,
       ),
       pendingHops: pendingHops,
     );
@@ -59,6 +65,25 @@ void main() {
     expect(result.isError, isTrue);
     expect(result.content.first.text, contains('does not exist'));
   });
+  test('an unconfigured guard policy refuses instead of passing', () async {
+    final bare = DelegateTaskTool(
+      service: TicketWorkflowService(
+        repository: tickets,
+        eventBus: DomainEventBus(),
+      ),
+      pendingHops: pendingHops,
+    );
+    final result = await bare.run({
+      'workspace_id': 'ws-1',
+      'title': 'Look at this',
+      'to_agent_id': 'agent-b',
+      'from_agent_id': 'agent-a',
+    });
+    expect(result.isError, isTrue);
+    expect(result.content.first.text, contains('not configured'));
+    expect(tickets.store, isEmpty);
+  });
+
   test('cannot delegate to the caller of an active ask', () async {
     final release = pendingHops.enter('ws-1', 'agent-a', 'agent-b');
     final result = await tool.run({

@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/active_stream_registry.dart';
@@ -34,6 +35,7 @@ class _StreamContext {
     this.conversationId,
     this.workingDirectory,
     this.snapshotStartFuture,
+    this.spaceKind,
     this.requestedByUserId,
     this.onTurnCompleted,
   });
@@ -73,6 +75,11 @@ class _StreamContext {
 
   /// In-flight capture of the pre-turn git snapshot, awaited at finalization.
   final Future<String?>? snapshotStartFuture;
+
+  /// The kind of [spaceId], looked up when the turn starts so the finished
+  /// turn's notification can say it landed in an agent-only space without a
+  /// read on the finalization path. Null when it could not be resolved.
+  final Future<SpaceKind?>? spaceKind;
 
   /// Called once with the final text when a turn finishes CLEANLY with real
   /// content — the seam the owning service reacts to (waking the teammates the
@@ -208,6 +215,7 @@ class AgentStreamProcessor {
       dispatchResult: dispatchResult,
       workingDirectory: workingDirectory,
       snapshotStartFuture: snapshotStartFuture,
+      spaceKind: _spaceKindOf(workspaceId, spaceId),
       requestedByUserId: requestedByUserId,
       onTurnCompleted: onTurnCompleted,
     );
@@ -483,7 +491,7 @@ class AgentStreamProcessor {
     _embedAssistantResponse(ctx, content);
     // Fall back to the failure text so the notification says what went wrong
     // instead of arriving with an empty body.
-    _notifyMessageReceived(
+    await _notifyMessageReceived(
       ctx,
       content: content.isNotEmpty ? content : (failure ?? ''),
     );
@@ -587,7 +595,7 @@ class AgentStreamProcessor {
     await ctx.agentDispatchService.failRun(runLog, error.toString());
     // The turn's message is the only "agent finished" notification, so a
     // crashed turn still sends one — carrying what went wrong.
-    _notifyMessageReceived(ctx, content: content);
+    await _notifyMessageReceived(ctx, content: content);
   }
 
   Map<String, dynamic> _finalMetadata(
@@ -738,11 +746,24 @@ class AgentStreamProcessor {
     }
   }
 
-  void _notifyMessageReceived(_StreamContext ctx, {required String content}) {
+  /// The kind of the space a turn streams into; never throws.
+  Future<SpaceKind?> _spaceKindOf(String workspaceId, String spaceId) async {
+    try {
+      return (await _repo.getSpaceById(workspaceId, spaceId))?.kind;
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _notifyMessageReceived(
+    _StreamContext ctx, {
+    required String content,
+  }) async {
     final bus = ctx.eventBus;
     if (bus == null) {
       return;
     }
+    final kind = await ctx.spaceKind;
 
     // Stored content includes every progress update. Completion previews use
     // the last visible answer, not the opening narration; both terminal paths
@@ -782,6 +803,7 @@ class AgentStreamProcessor {
         workspaceId: ctx.dispatchResult.agent?.workspaceId,
         requestedByUserId: ctx.requestedByUserId,
         conversationId: ctx.conversationId,
+        inAgentOnlySpace: kind?.isAgentOnly ?? false,
         occurredAt: DateTime.now(),
       ),
     );

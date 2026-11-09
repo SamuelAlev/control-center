@@ -3,10 +3,6 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 
-/// Builds a [ForgePrClient] for one repo coordinate.
-typedef ForgePrClientFor =
-    ForgePrClient Function({required String owner, required String repo});
-
 /// A `PrDiffSource` backed by whatever forge the repo lives on.
 ///
 /// GitHub has a bespoke source that exploits its paged files endpoint; every
@@ -15,26 +11,38 @@ typedef ForgePrClientFor =
 /// here — the source exists only to satisfy the streaming shape the file
 /// loader expects.
 ///
-/// The client is rebuilt per request because a source instance is shared across
-/// repos while a client is pinned to one `(owner, repo)`.
+/// Pinned to one repository, like the PR repository that owns it: [_client]
+/// answers for its own repo only, so a request for another is refused.
 class ForgeClientPrDiffSource implements PrDiffSource {
-  /// Creates a [ForgeClientPrDiffSource] over [_clientFor].
-  const ForgeClientPrDiffSource(this._clientFor);
+  /// Creates a [ForgeClientPrDiffSource] over [_client].
+  const ForgeClientPrDiffSource(this._client);
 
-  final ForgePrClientFor _clientFor;
+  final ForgePrClient _client;
 
-  ForgePrClient _client(PrSourceRequest req) =>
-      _clientFor(owner: req.owner, repo: req.repo);
+  ForgePrClient _clientFor(PrSourceRequest req) {
+    if (req.owner.toLowerCase() != _client.owner.toLowerCase() ||
+        req.repo.toLowerCase() != _client.repo.toLowerCase()) {
+      throw ArgumentError(
+        'This diff source serves ${_client.owner}/${_client.repo}, not '
+        '${req.owner}/${req.repo}.',
+      );
+    }
+    return _client;
+  }
 
   @override
   Stream<PrFilesLoad> watchFiles(PrSourceRequest req) async* {
-    final files = await _client(req).listFiles(req.prNumber);
-    yield PrFilesLoad(files: files, isComplete: true);
+    final listing = await _clientFor(req).listFiles(req.prNumber);
+    yield PrFilesLoad(
+      files: listing.files,
+      isComplete: true,
+      truncated: listing.truncated,
+    );
   }
 
   @override
   Stream<List<PrCommit>> watchCommits(PrSourceRequest req) async* {
-    yield await _client(req).listCommits(req.prNumber);
+    yield await _clientFor(req).listCommits(req.prNumber);
   }
 
   @override
@@ -42,6 +50,6 @@ class ForgeClientPrDiffSource implements PrDiffSource {
     PrSourceRequest req,
     String sha,
   ) async* {
-    yield await _client(req).listCommitFiles(sha);
+    yield await _clientFor(req).listCommitFiles(sha);
   }
 }

@@ -11,7 +11,6 @@ void main() {
       String? inputJson,
       String? outputJson,
       String? errorMessage,
-      int? branchIndex,
       int attemptCount = 0,
       DateTime? finishedAt,
     }) => PipelineStepRun(
@@ -22,7 +21,6 @@ void main() {
       inputJson: inputJson,
       outputJson: outputJson,
       errorMessage: errorMessage,
-      branchIndex: branchIndex,
       attemptCount: attemptCount,
       startedAt: now,
       finishedAt: finishedAt,
@@ -33,7 +31,6 @@ void main() {
       expect(step.inputJson, isNull);
       expect(step.outputJson, isNull);
       expect(step.errorMessage, isNull);
-      expect(step.branchIndex, isNull);
       expect(step.attemptCount, 0);
       expect(step.finishedAt, isNull);
     });
@@ -60,7 +57,6 @@ void main() {
         inputJson: '{"a":1}',
         outputJson: '{"b":2}',
         errorMessage: null,
-        branchIndex: 3,
         attemptCount: 2,
         startedAt: now,
         finishedAt: now.add(const Duration(seconds: 10)),
@@ -70,12 +66,11 @@ void main() {
       expect(step.stepId, 'review');
       expect(step.inputJson, '{"a":1}');
       expect(step.outputJson, '{"b":2}');
-      expect(step.branchIndex, 3);
       expect(step.attemptCount, 2);
     });
 
     test(
-      'equality compares id, pipelineRunId, stepId, status, branchIndex',
+      'equality compares id, pipelineRunId, stepId, status',
       timeout: const Timeout.factor(2),
       () {
         final a = step0();
@@ -85,9 +80,6 @@ void main() {
 
         final c = step0(status: PipelineStepStatus.completed);
         expect(a, isNot(equals(c)));
-
-        final d = step0(branchIndex: 1);
-        expect(a, isNot(equals(d)));
       },
     );
 

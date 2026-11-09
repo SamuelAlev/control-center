@@ -358,14 +358,27 @@ mixin _WorktreeOps
   }
 
   /// See [WorktreeTaskPort.beforeRelease].
-  Future<void> beforeRelease(String workspaceId, String spaceId) async {
+  Future<void> beforeRelease(String workspaceId, String spaceId) {
     final space = '$workspaceId/$spaceId';
-    _releasing.add(space);
-    try {
-      await _release(workspaceId, spaceId);
-    } finally {
-      _releasing.remove(space);
+    final inFlight = _releases[space];
+    if (inFlight != null) {
+      return inFlight;
     }
+    _releasing[space] = (_releasing[space] ?? 0) + 1;
+    late final Future<void> release;
+    release = _release(workspaceId, spaceId).whenComplete(() {
+      final left = (_releasing[space] ?? 1) - 1;
+      if (left <= 0) {
+        _releasing.remove(space);
+      } else {
+        _releasing[space] = left;
+      }
+      if (identical(_releases[space], release)) {
+        _releases.remove(space);
+      }
+    });
+    _releases[space] = release;
+    return release;
   }
 
   Future<void> _release(String workspaceId, String spaceId) async {
@@ -390,10 +403,13 @@ mixin _WorktreeOps
       CcInfraLog.error('teardown of space $spaceId failed', e, st);
     }
     try {
-      await _d.allocator.releaseSpace(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-      );
+      // A row that outlived its teardown still runs on its ports.
+      if ((await _d.environments.forSpace(workspaceId, spaceId)).isEmpty) {
+        await _d.allocator.releaseSpace(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
+      }
     } on Object catch (e) {
       CcInfraLog.warning('lease release of space $spaceId failed: $e');
     }

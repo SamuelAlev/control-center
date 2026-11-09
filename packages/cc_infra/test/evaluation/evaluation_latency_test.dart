@@ -5,6 +5,7 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_po
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
@@ -27,7 +28,7 @@ class _Factory extends HarnessProviderFactory {
   }) => provider;
 }
 
-class _StreamedProvider implements LlmProviderPort {
+class _StreamedProvider extends LlmProviderPort {
   _StreamedProvider(
     this.turns, {
     this.unobservedFirst = false,
@@ -101,6 +102,7 @@ class _AuxCompactor implements HarnessCompactor {
     int reservedOutputTokens = 0,
     String selfAgentName = 'assistant',
     bool force = false,
+    CancellationToken cancel = CancellationToken.none,
   }) async {
     if (!requested) {
       requested = true;

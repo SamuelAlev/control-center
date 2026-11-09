@@ -1,7 +1,7 @@
 // Web binding for the calendar "record this event as a meeting" hook.
 //
-// Meeting recording captures native audio + transcribes on-device — desktop-
-// only. On web the hook reports an honest "not available on web" error and
+// Starting a recording from a calendar event uses the desktop's native audio
+// capture. On web the hook reports an honest "not available on web" error and
 // records nothing, so the calendar still renders (events are read over RPC);
 // only the record-and-link action is unavailable.
 library;

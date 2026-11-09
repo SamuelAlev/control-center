@@ -9,6 +9,15 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String steeringForceSendFailed(String error) {
+    return 'Kunde inte skicka det nu: $error';
+  }
+
+  @override
+  String get questionAnswerNotDelivered =>
+      'Ditt svar levererades inte. Frågan kan redan vara besvarad, eller så har agenten slutat vänta.';
+
+  @override
   String get succeeded => 'Lyckades';
 
   @override
@@ -2615,10 +2624,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get addGif => 'Lägg till GIF';
-
-  @override
-  String get addGithubRepoPrompt =>
-      'Lägg till minst ett GitHub-arkiv för att se pull requests';
 
   @override
   String get addLocalCheckoutDescription =>
@@ -5924,9 +5929,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get pipelineStepDurationLabel => 'Varaktighet';
 
   @override
-  String get pipelineStepBranch => 'Gren';
-
-  @override
   String get pipelineStepViewConversation => 'Visa samtal';
 
   @override
@@ -7014,14 +7016,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reviewRequested => 'Granskning begärd';
 
   @override
-  String get connectGitHubHint =>
-      'Logga in på GitHub i Inställningar → Arbetsyta → Profil och identitet → Kodvärd';
-
-  @override
-  String get connectGitHubToLoadPrs =>
-      'Anslut GitHub för att läsa in pull requests';
-
-  @override
   String get noRepositoriesConfigured => 'Inga arkiv konfigurerade';
 
   @override
@@ -7679,13 +7673,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get createAsDraft => 'Skapa som utkast';
-
-  @override
-  String get composePrNoRepo => 'Inget GitHub-arkiv valt';
-
-  @override
-  String get composePrNoRepoHint =>
-      'Välj en arbetsyta med ett GitHub-länkat arkiv för att öppna en pull request.';
 
   @override
   String get composePrPickBranches =>
@@ -16834,6 +16821,27 @@ class AppLocalizationsSv extends AppLocalizations {
       'Koden hör inte till den här inloggningen. Kontrollera den och försök igen.';
 
   @override
+  String get signInErrorTooManyCodes =>
+      'För många felaktiga koder. Starta inloggningen igen.';
+
+  @override
+  String get signInErrorStaleRequest =>
+      'Den här inloggningen är inte längre giltig. Starta den igen.';
+
+  @override
+  String get signInErrorInvalidRequest =>
+      'Servern kunde inte läsa den här inloggningsbegäran. Starta den igen.';
+
+  @override
+  String get signInErrorRateLimited =>
+      'För många inloggningsförsök just nu. Vänta en minut och försök igen.';
+
+  @override
+  String signInErrorStoreFailed(String provider) {
+    return '$provider godkände inloggningen, men servern kunde inte spara den. Försök igen.';
+  }
+
+  @override
   String signInErrorProviderUnavailable(String provider) {
     return '$provider svarar inte just nu. Försök igen om några minuter.';
   }
@@ -16864,7 +16872,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get signInErrorTeamBoundElsewhere =>
-      'Den här Linear-arbetsytan är redan ansluten till en annan Control Center-server.';
+      'Den här Slack-arbetsytan är redan ansluten till en annan Control Center-server.';
 
   @override
   String get signInErrorNotAdmin =>
@@ -17297,4 +17305,38 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get workspaceProviderAppSwitchAction => 'Byt app';
+
+  @override
+  String openOnForge(String forge) {
+    return 'Öppna på $forge';
+  }
+
+  @override
+  String prFilesTruncatedNotice(String forge, int count) {
+    return 'Visar de första $count filerna. $forge listar inte resten.';
+  }
+
+  @override
+  String get connectForgeToLoadPrs =>
+      'Anslut en kodvärd för att läsa in pull requests';
+
+  @override
+  String get connectForgeHint =>
+      'Anslut GitHub, GitLab eller Bitbucket i Inställningar → Arbetsyta → Profil och identitet → Kodvärd';
+
+  @override
+  String get addForgeRepoPrompt =>
+      'Lägg till minst ett repo på GitHub, GitLab eller Bitbucket för att se pull requests';
+
+  @override
+  String get composePrNoForgeRepo => 'Inget värdbaserat repo har valts';
+
+  @override
+  String get composePrNoForgeRepoHint =>
+      'Välj en arbetsyta med ett repo på GitHub, GitLab eller Bitbucket för att öppna en pull request.';
+
+  @override
+  String composePrForgeNotConnected(String forge) {
+    return 'Anslut $forge för att öppna en pull request i det här repot';
+  }
 }

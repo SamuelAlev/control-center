@@ -4,6 +4,7 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/src/oauth/harness_oauth_broker.dart';
 import 'package:cc_harness_runtime/src/oauth/oauth_provider.dart';
 import 'package:cc_harness_runtime/src/oauth/pkce.dart';
+import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 import 'package:test/test.dart';
 
 /// A fake OAuth provider that does not bind a real port — exchange / refresh
@@ -287,7 +288,9 @@ void main() {
           Uri.parse('http://127.0.0.1:$port/cb?code=FAKE$suffix'),
         );
         final response = await request.close();
-        final page = await response.transform(const SystemEncoding().decoder).join();
+        final page = await response
+            .transform(const SystemEncoding().decoder)
+            .join();
         await _until(
           () => broker.status(start.flowId).state == HarnessOAuthState.error,
         );
@@ -474,6 +477,100 @@ void main() {
           expect(store.saved.single.accessToken, 'refreshed-token');
         },
       );
+
+      test(
+        'a stale caller gets the stored newer pair without spending its token',
+        () async {
+          final store = _RecordingStore();
+          var refreshes = 0;
+          final broker = _broker(
+            store: store,
+            providers: [
+              _FakeProvider(
+                providerId: 'anthropic',
+                refreshResult: (c) {
+                  refreshes++;
+                  return null;
+                },
+              ),
+            ],
+          );
+          // Another flight already rotated the pair and persisted it.
+          final newer = ProviderCredential(
+            providerId: 'anthropic',
+            method: HarnessAuthMethod.oauth,
+            accessToken: 'new',
+            refreshToken: 'r2',
+            email: 'a@example.com',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          );
+          await store.save(newer);
+          // This caller captured the credential BEFORE that flight finished.
+          final stale = newer.copyWith(
+            accessToken: 'old',
+            refreshToken: 'r1',
+            expiresAt: DateTime(2000),
+          );
+          // Even a forced refresh (the old token earned the 401) re-reads.
+          final out = await broker.refreshIfNeeded(stale, force: true);
+          expect(out.accessToken, 'new');
+          expect(out.refreshToken, 'r2');
+          expect(refreshes, 0, reason: 'the spent r1 is never replayed');
+        },
+      );
+
+      test('a rejected refresh token is not re-sent', () async {
+        final store = _RecordingStore();
+        var refreshes = 0;
+        final broker = _broker(
+          store: store,
+          providers: [
+            _FakeProvider(
+              providerId: 'anthropic',
+              refreshResult: (_) {
+                refreshes++;
+                throw ProviderHttpException(400, '{"error":"invalid_grant"}');
+              },
+            ),
+          ],
+        );
+        final cred = ProviderCredential(
+          providerId: 'anthropic',
+          method: HarnessAuthMethod.oauth,
+          accessToken: 'old',
+          refreshToken: 'revoked',
+          expiresAt: DateTime(2000),
+        );
+        expect((await broker.refreshIfNeeded(cred)).accessToken, 'old');
+        expect((await broker.refreshIfNeeded(cred)).accessToken, 'old');
+        expect(refreshes, 1);
+      });
+
+      test('a transient refresh failure is retried next time', () async {
+        var refreshes = 0;
+        final broker = _broker(
+          store: _RecordingStore(),
+          providers: [
+            _FakeProvider(
+              providerId: 'anthropic',
+              refreshResult: (_) {
+                refreshes++;
+                throw ProviderHttpException(503, 'unavailable');
+              },
+            ),
+          ],
+        );
+        final cred = ProviderCredential(
+          providerId: 'anthropic',
+          method: HarnessAuthMethod.oauth,
+          accessToken: 'old',
+          refreshToken: 'r',
+          expiresAt: DateTime(2000),
+        );
+        await broker.refreshIfNeeded(cred);
+        await broker.refreshIfNeeded(cred);
+        expect(refreshes, 2);
+      });
 
       test('returns the original when refresh throws', () async {
         final store = _RecordingStore();

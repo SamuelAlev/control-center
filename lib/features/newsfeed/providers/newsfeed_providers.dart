@@ -10,8 +10,7 @@ import 'package:control_center/features/newsfeed/providers/filter_list_bindings.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provider for the newsfeed repository the UI reads through — the cc_data
-/// RPC adapter over the desktop's in-process RPC server (the composition
-/// flip). The newsfeed is PER-USER: the surface is session-scoped (the server
+/// RPC adapter over the connected server. The newsfeed is PER-USER: the surface is session-scoped (the server
 /// resolves the user from the RPC session), so unlike the server-side
 /// `NewsfeedRepository` port it carries no user ids. Server-side EXECUTION
 /// uses the DAO repository in `cc_server`.
