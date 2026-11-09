@@ -2600,6 +2600,27 @@ class AppLocalizationsIt extends AppLocalizations {
       'In attesa dell\'autorizzazione nel browser…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Inserisci il codice mostrato nel browser';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Non sembra un codice di accesso. I codici hanno 8 lettere e cifre.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Questo codice non corrisponde a questo accesso. Controllalo e riprova.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'L\'accesso a $provider non è ancora configurato su questo server.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'L\'indirizzo di ritorno dell\'accesso di questo server non è raggiungibile in modo sicuro da un telefono. Accedi dall\'app desktop oppure chiedi al proprietario del server di configurare un indirizzo HTTPS pubblico.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'L\'accesso è scaduto. Avvia un nuovo tentativo.';
 
@@ -2620,10 +2641,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Completa l\'accesso';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Il callback del browser di questo server non è raggiungibile in modo sicuro da un telefono. Chiedi al proprietario del server di configurare un callback HTTPS pubblico oppure aggiungi un token.';
 
   @override
   String get credentialsUpdateToken => 'Aggiorna token';

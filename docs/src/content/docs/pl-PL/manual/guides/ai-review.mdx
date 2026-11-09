@@ -2,7 +2,7 @@
 title: Używaj recenzji opartej na AI
 description: Uruchom potok pr_review na PR, przeczytaj ustalenia i werdykt, a następnie opublikuj recenzję w GitHubie.
 slug: pl-PL/podrecznik/poradniki/recenzja-ai
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Ten poradnik pokazuje, jak zlecić agentom-recenzentom recenzję pull requesta i
@@ -119,14 +119,17 @@ Publikowanie to osobny krok, celowo uzależniony od decyzji użytkownika. Potok
 Control Center wysyła **jedną** recenzję w GitHubie. Ustalenia już rozwiązane lub
 odrzucone są pomijane. Przycisk obejmuje każde pozostałe otwarte ustalenie i w
 przypadku werdyktu **Ship** wysyła `APPROVE`. (Narzędzie MCP
-`publish_review_to_github` nadal domyślnie obejmuje tylko ustalenia potwierdzone
-przez innego recenzenta i nie zatwierdza, chyba że przekażesz `approve_on_ship`.)
+`publish_review_to_github` domyślnie obejmuje tylko ustalenia potwierdzone
+przez innego recenzenta i nigdy nie zatwierdza: publikuje jako automatyzacja,
+więc `approve_on_ship` nie ma tam żadnego efektu.)
 Te, które mają kotwicę pliku i wiersza, stają się komentarzami w treści;
 wszystko pozostałe trafia do treści podsumowania, każde ze stopką
 „— Control Center AI review”, żeby źródło było jednoznaczne. Werdykt **Block**
 jest wysyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako
 `APPROVE` z tego przycisku. Potem pojawia się powiadomienie **Opublikowano**.
-Recenzja jest publikowana pod tożsamością aplikacji serwera.
+Recenzja jest publikowana jako Ty, na Twoim własnym logowaniu do GitHuba: jeśli
+nie jesteś zalogowany do GitHuba, publikacja się nie powiedzie i poprosi
+o zalogowanie.
 
 Jeśli GitHub odrzuci kotwicę w treści, bo dany wiersz nie należy do diffu, cała
 recenzja jest wysyłana ponownie, a każde ustalenie trafia do treści podsumowania,

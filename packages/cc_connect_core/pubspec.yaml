@@ -1,0 +1,20 @@
+name: cc_connect_core
+description: "Pure-Dart contract shared by Control Center Connect (apps/cc_connect) and cc_server: per-origin Ed25519 install identity, RFC 9421 request signatures, the epoch-signed /v1/config, fixed provider lanes and the wire schemas. No dart:io, FFI, Flutter, drift or infrastructure packages."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # SHA-256 for content digests and install ids.
+  crypto: ^3.0.7
+  # Ed25519 + HKDF-SHA256 (pure Dart, web-safe).
+  cryptography: ^2.9.0
+  meta: any
+
+dev_dependencies:
+  test: any
+  lints: any

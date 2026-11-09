@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:cc_domain/features/auth/domain/entities/api_credentials.dart';
-import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
@@ -39,18 +38,20 @@ class _FakeRunRepo implements PipelineRunRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
-/// A fake [CredentialsRepository].
-class _FakeCredsRepo implements CredentialsRepository {
-  _FakeCredsRepo(this._creds);
-  final ApiCredentials _creds;
-
-  @override
-  Future<ApiCredentials> loadCredentials() async => _creds;
-
+/// A [CredentialBrokerPort] the validation and dry-run paths never reach.
+class _UnusedBroker implements CredentialBrokerPort {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
 }
+
+/// No OS sandbox: validation and dry run answer before one is needed.
+final _sandbox = BashScriptSandbox(
+  wrap: null,
+  deniedPaths: const [],
+  broker: _UnusedBroker(),
+  linkedRepo: (_, _) async => null,
+);
 
 /// Helper: build a step definition with the given config.
 PipelineStepDefinition _step(String id, PipelineNodeConfig config) =>
@@ -91,9 +92,6 @@ void main() {
   late PipelineBodyRegistry registry;
 
   final runRepo = _FakeRunRepo();
-  final credsRepo = _FakeCredsRepo(
-    const ApiCredentials(githubToken: 'gh_token'),
-  );
   final processRegistry = StepProcessRegistry();
 
   /// Registers the bashScript body with a template carrying [config] and
@@ -111,7 +109,7 @@ void main() {
       registry,
       templateRepository: templateRepo,
       runRepository: runRepo,
-      credentialsRepository: credsRepo,
+      sandbox: _sandbox,
       stepProcessRegistry: processRegistry,
       runDirPath: (_) async => Directory.systemTemp.path,
     );
@@ -136,7 +134,7 @@ void main() {
         registry,
         templateRepository: templateRepo,
         runRepository: runRepo,
-        credentialsRepository: credsRepo,
+        sandbox: _sandbox,
         stepProcessRegistry: processRegistry,
         runDirPath: (_) async => Directory.systemTemp.path,
       );

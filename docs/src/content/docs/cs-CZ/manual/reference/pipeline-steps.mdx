@@ -2,7 +2,7 @@
 title: Typy kroků pipeline
 description: Druhy kroků pipeline, klíče těl, jejich konfigurace a výsledky kroků.
 slug: cs-CZ/prirucka/referencni-prirucka/kroky-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Krok pipeline má dvě na sobě nezávislé osy:
@@ -42,7 +42,7 @@ Shellový krok bez agenta (`bash -c`). Zástupné symboly `{{key}}` ve skriptu s
 | `script`     | Shellový příkaz ke spuštění (povinné)              |
 | `outputKey`  | Stavový klíč, který při exitu 0 dostane ořezaný stdout |
 
-Běží s cwd `<cc_root>/pipelines/<pipelineRunId>/` (sdílí ho všechny bash kroky v běhu) a s `GITHUB_TOKEN` v prostředí. Do stavu taky zapíše `<stepId>_runDir`. Nenulový exit krok shodí a přiloží konec stderr.
+Běží uvnitř sandboxu operačního systému hostitele s cwd `<cc_root>/pipelines/<pipelineRunId>/` (sdílí ho všechny bash kroky v běhu); na hostiteli bez sandboxu krok selže. Datový adresář serveru a soubor `.env` jsou nečitelné, git a `gh` nevidí žádnou konfiguraci hostitele a `GH_TOKEN` / `GITHUB_TOKEN` obsahují token `read` pro jediný repozitář jen tehdy, když `repo_full_name` (stav nebo payload spouštěče) jmenuje repozitář GitHub propojený s pracovním prostorem. Vytvořit nebo upravit šablonu s tímto krokem smí jen admin pracovního prostoru. Do stavu taky zapíše `<stepId>_runDir`. Nenulový exit krok shodí a přiloží konec stderr.
 
 ### `conversation.promptAgent`
 

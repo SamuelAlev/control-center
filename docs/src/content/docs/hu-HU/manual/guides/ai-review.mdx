@@ -2,7 +2,7 @@
 title: MI-alapú átnézés használata
 description: Futtassa a pr_review pipeline-t egy PR-en, olvassa el a megállapításokat és az ítéletet, majd tegye közzé az átnézést a GitHubon.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Ez az útmutató bemutatja, hogyan végeztethet átnézést átnéző ügynökökkel egy
@@ -123,15 +123,17 @@ GitHubra.
 A Control Center **egyetlen** GitHub-átnézést küld. A már megoldott vagy
 elvetett megállapítások kimaradnak. A gomb minden még nyitott megállapítást
 tartalmaz, és **Ship** esetén `APPROVE`-ot küld. (A `publish_review_to_github`
-MCP eszköz továbbra is csak a társak által megerősített megállapításokat veszi
-alapul, és nem hagy jóvá, hacsak nem adja át az `approve_on_ship` értéket.)
+MCP eszköz alapértelmezés szerint csak a társak által megerősített
+megállapításokat veszi alapul, és soha nem hagy jóvá: automatizálásként tesz
+közzé, így ott az `approve_on_ship` hatástalan.)
 Azok, amelyek fájl- és sorhorgonyt hordoznak, soron belüli megjegyzésekké
 válnak; minden más az összefoglaló törzsébe hajlik, mindegyik egy
 „— Control Center AI review” láblécet kap, hogy a forrás egyértelmű legyen. A
 **Block** ítélet `REQUEST_CHANGES`-ként, a **Hold** `COMMENT`-ként, a **Ship**
 pedig ezzel a gombbal `APPROVE`-ként kerül beküldésre. Ekkor egy felugró
-értesítés ezt írja: **Közzétéve**. Az átnézés a szerver alkalmazásidentitása
-alatt kerül közzétételre.
+értesítés ezt írja: **Közzétéve**. Az átnézés az Ön nevében, az Ön saját
+GitHub-bejelentkezésével kerül közzétételre: ha nincs bejelentkezve a GitHubra,
+a közzététel meghiúsul, és bejelentkezést kér.
 
 Ha a GitHub elutasít egy soron belüli horgonyt, mert a sor nem része a diffnek,
 a teljes átnézés újraküldésre kerül, minden megállapítást az összefoglaló

@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/host_ffmpeg.dart';
 import 'package:path/path.dart' as p;
 
@@ -145,7 +146,9 @@ class AdbClient {
   /// separately.
   static Future<List<String>> avds(String emulatorPath) async {
     try {
-      final result = await Process.run(emulatorPath, ['-list-avds']);
+      final result = await ChildProcess.run(emulatorPath, [
+        '-list-avds',
+      ], toolchain: true);
       if (result.exitCode != 0) {
         return const [];
       }
@@ -184,18 +187,9 @@ class AdbClient {
   }
 
   static Future<String?> _locateTool(String binary, String sdkSubdir) async {
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        binary,
-      ]);
-      if (result.exitCode == 0) {
-        final path = '${result.stdout}'.split('\n').first.trim();
-        if (path.isNotEmpty) {
-          return path;
-        }
-      }
-    } on Object {
-      // Fall through to the SDK layout.
+    final onPath = await ChildProcess.which(binary);
+    if (onPath != null) {
+      return onPath;
     }
     final sdk = sdkRoot();
     if (sdk == null) {
@@ -207,7 +201,9 @@ class AdbClient {
 
   /// The serials of every attached device that is fully booted.
   static Future<List<String>> devices(String adbPath) async {
-    final result = await Process.run(adbPath, ['devices']);
+    final result = await ChildProcess.run(adbPath, [
+      'devices',
+    ], toolchain: true);
     if (result.exitCode != 0) {
       return const [];
     }
@@ -608,17 +604,10 @@ class AdbClient {
   /// Device-global on one emulator: a later reverse of the same device port
   /// replaces the previous target. The ports service plants these only for
   /// the Android rig's own conversation and drops them on detach.
-  Future<void> reverse({
-    required int devicePort,
-    required int hostPort,
-  }) async {
+  Future<void> reverse({required int devicePort, required int hostPort}) async {
     _assertTcpPort(devicePort, 'devicePort');
     _assertTcpPort(hostPort, 'hostPort');
-    await _expectOk([
-      'reverse',
-      'tcp:$devicePort',
-      'tcp:$hostPort',
-    ]);
+    await _expectOk(['reverse', 'tcp:$devicePort', 'tcp:$hostPort']);
   }
 
   /// Removes one reverse for [devicePort].

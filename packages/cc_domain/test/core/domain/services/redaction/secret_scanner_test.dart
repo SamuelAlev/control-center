@@ -38,6 +38,26 @@ void main() {
       );
     });
 
+    test('flags Slack, Linear and Google OAuth tokens', () {
+      for (final (value, reason) in [
+        ('xoxb-1234567890-AbCdEfGhIjKl', 'Slack token'),
+        ('xoxe.xoxb-1-MS0yLTEyMzQ1Njc4', 'Slack token'),
+        ('xoxe-1-My0xLTEyMzQ1Njc4OTA', 'Slack token'),
+        ('xapp-1-A0123456789-123456', 'Slack token'),
+        ('lin_oauth_${'0f1e2d3c' * 4}', 'Linear token'),
+        ('lin_api_${'a1B2' * 5}', 'Linear token'),
+        ('ya29.a0AfH6SMBxAbcDefGhiJklMno', 'Google OAuth token'),
+        ('1//0gAbCdEfGhIjKlMnOpQrStUv', 'Google OAuth token'),
+        ('github_pat_11ABCDEFG0_${'x' * 30}', 'GitHub token'),
+      ]) {
+        expect(
+          scanner.scan(value).map((f) => f.reason),
+          contains(reason),
+          reason: value,
+        );
+      }
+    });
+
     test('walks nested maps and lists, reporting paths', () {
       final findings = scanner.scan({
         'a': [

@@ -286,10 +286,7 @@ cc_lib_ext() { # macos|linux|windows
 # ---------------------------------------------------------------------------
 
 # Echoes the path to the `dart build cli` bundle for an OS, building it first
-# when it is absent.
-#
-# Whatever `builtin_credentials.sh inject` wrote is compiled into that bundle,
-# so injection must precede the first call — an existing bundle is reused as-is.
+# when it is absent. An existing bundle is reused as-is.
 ensure_cc_server_bundle() { # macos|linux|windows [x64|arm64]
   local bundle exe dart
   bundle="apps/cc_server/build/cli/$(cc_cli_dir "$1" "${2:-}")/bundle"

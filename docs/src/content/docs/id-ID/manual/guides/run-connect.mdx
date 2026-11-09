@@ -1,0 +1,277 @@
+---
+title: Jalankan server Connect
+description: Jalankan Control Center Connect Anda sendiri dari image Docker cc-connect, atau pasang di dalam cc_server, agar server Anda memasukkan orang melalui app penyedia yang Anda daftarkan.
+slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect menjalankan proses masuk penyedia (GitHub, Google Calendar, Linear, Slack) untuk
+server yang belum mendaftarkan app mereka sendiri. Panduan ini menunjukkan cara menjalankan Connect Anda
+sendiri, sehingga app penyedia, rahasianya, dan daftar server yang diizinkan memakainya tetap berada di
+tangan Anda.
+
+Apa yang dilihat dan tidak dilihat Connect dijelaskan dalam [referensi Connect](/id-ID/panduan-pengguna/referensi/connect/).
+Bacalah itu terlebih dahulu jika Anda sedang mempertimbangkan untuk menjalankan satu.
+
+:::note[Anda mungkin tidak memerlukannya]
+Satu server dapat mendaftarkan app-nya sendiri sebagai gantinya: **Pengaturan → Server → Single sign-on →
+Aplikasi penyedia**, tempat **Buat aplikasi GitHub saya** menyiapkan GitHub hanya dalam satu langkah. App
+milik server hanya berlaku di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect milik Control Center atau Connect kustom, Connect menangani setiap jalur, sedangkan app ruang kerja tetap berlaku. Jalankan Connect ketika beberapa server sebaiknya
+memakai satu kumpulan app bersama.
+:::
+
+## Prasyarat
+
+- Alamat **HTTPS** publik untuk Connect, misalnya `https://connect.example.com`, di belakang proxy yang
+  mengakhiri TLS. HTTP biasa hanya diterima di loopback
+- Docker, atau `cc_server` yang dapat Anda mulai ulang dengan variabel lingkungan tambahan
+- Izin untuk mendaftarkan app pada setiap penyedia yang ingin Anda layani
+- Server yang akan memakainya, dengan pemiliknya di dekat Anda: setiap server memiliki id instalasi yang Anda
+  tambahkan ke daftar izin Connect
+
+## Langkah 1: Pilih alamatnya
+
+Pilih URL sekarang dan simpan. `CONNECT_PUBLIC_URL` terlibat dalam setiap hal yang dilakukan Connect:
+tanda tangan permintaan, segel kredensial, URL pengalihan penyedia, dan id instalasi setiap server semuanya
+terikat padanya. Mengubahnya di kemudian hari berarti mendaftarkan ulang pengalihan dan setiap orang masuk
+ulang.
+
+## Langkah 2: Daftarkan app penyedia
+
+Daftarkan hanya penyedia yang ingin Anda layani. Penyedia yang variabelnya belum lengkap akan dikeluarkan dari
+konfigurasi Connect, dan server melihatnya sebagai tidak tersedia. `<base>` di bawah adalah `CONNECT_PUBLIC_URL` Anda.
+
+| Penyedia       | Daftarkan                                                                                                                                                                                                                                                            | Simpan                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` dengan **Redirect on update** aktif. Biarkan **Request user authorization (OAuth) during installation** nonaktif: jika aktif, GitHub mengabaikan setup URL. Biarkan **Expire user authorization tokens** aktif | App id, slug, client id, client secret |
+| **Google**     | Klien OAuth bertipe **Web application** dengan redirect URI `<base>/oauth/google/callback`, dan Google Calendar API diaktifkan                                                                                                                                       | Client id, client secret                |
+| **Linear**     | Aplikasi OAuth dengan callback URL `<base>/oauth/linear/callback` dan `<base>/oauth/linear_app/callback`                                                                                                                                                              | Hanya client id                         |
+| **Slack**      | Redirect URL `<base>/oauth/slack_oidc/callback` dan `<base>/oauth/slack/callback`. Event Subscriptions di `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash command di `<base>/v1/hooks/slack/commands`. Aktifkan token rotation | App id, client id, client secret, signing secret |
+
+Berikan GitHub App izin repositori berikut: **Metadata** baca, **Contents** baca dan tulis, **Pull requests**
+baca dan tulis, **Issues** baca dan tulis, **Checks**, **Actions**, dan **Commit statuses** baca. Tambahkan
+izin organisasi **Members** baca untuk permintaan tinjauan tim. Webhook boleh dimatikan: server melakukan polling.
+
+Connect tidak pernah memerlukan kunci privat GitHub App. Sebagai gantinya, ia mencetak token satu-repositori
+dari proses masuk milik seseorang sendiri. Linear juga tidak memerlukan rahasia: Connect mengembalikan kode ke
+server, dan server menyelesaikan pertukarannya sendiri.
+
+## Langkah 3: Kumpulkan id instalasi
+
+Connect hanya menjawab server dalam daftar izinnya. Pada setiap server, arahkan ke Connect Anda, lalu baca id
+instalasinya:
+
+1. Buka **Pengaturan → Server → Single sign-on**, buka kartu **Control Center Connect** dan pilih **Gunakan server Connect kustom**
+2. Masukkan URL Anda lalu simpan. Kartu menampilkan **Id instalasi** server
+
+Dari terminal di host server, hal yang sama adalah:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` mencetak id instalasi. Ia menampilkan `install_blocked` sampai Langkah 5 selesai, dan itu memang diharapkan.
+
+Id instalasi diturunkan per alamat Connect, sehingga server yang sama memiliki id berbeda untuk setiap Connect
+yang diajaknya bicara. Id itu hanya berubah ketika pemiliknya memutar kunci.
+
+## Langkah 4: Buat kunci segel
+
+Connect mengenkripsi setiap kredensial yang dikembalikannya dengan kunci segel. Buat satu dan simpan sebagai berkas rahasia:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Kehilangan kunci segel akan mengeluarkan semua orang: tidak ada segel yang dapat dibuka tanpanya.
+
+## Langkah 5: Mulai kontainer
+
+Setiap rilis menerbitkan `ghcr.io/samuelalev/cc-connect` dengan build provenance. Dalam produksi, pin tag versi.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Arahkan reverse proxy Anda ke port `8790`. Image berjalan sebagai pengguna tanpa hak istimewa, menyimpan
+state di volume `/data`, dan memiliki health check bawaan (`cc-connect --healthcheck`, yang memeriksa `/healthz`).
+
+Connect menolak mulai (kode keluar `78`) ketika konfigurasinya terbuka, tidak aman, atau setengah jadi, dan
+mencetak variabel mana yang salah. Daftar izin yang hilang, alamat `http` yang bukan loopback, kunci segel yang
+salah format, atau `NAME` dan `NAME_FILE` yang keduanya diatur akan menghentikannya.
+
+Titik pemeriksaan: pada setiap server, kartu Connect menampilkan **Berfungsi**, dan **Tempat setiap proses masuk
+berjalan** menyebut **Connect** untuk setiap penyedia yang Anda daftarkan. `cc_server connect status` mencetak
+`Health: ok` beserta jalur yang sama.
+
+## Pasang Connect di dalam cc_server
+
+Sebuah server dapat menjalankan Connect sendiri alih-alih kontainer terpisah. Layanan yang dipasang adalah layanan
+yang sama dengan yang dijalankan image.
+
+1. Letakkan variabel `CONNECT_*` di berkas `.env` server (atau lingkungannya), seperti di Langkah 5
+2. Tambahkan `CC_SERVER_CONNECT_HOST=on`
+3. Mulai ulang server. Log-nya mencetak `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect kemudian dilayani di `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` secara bawaan adalah origin URL publik server ditambah `/connect`. Atur secara eksplisit
+  di balik proxy. Path-nya harus persis `/connect`, dan harus HTTPS kecuali loopback
+- Hanya variabel `CONNECT_*` yang sampai ke layanan yang dipasang, sehingga ia tidak pernah meminjam app penyedia
+  milik server itu sendiri
+- `CONNECT_ALLOWED_INSTALLS` tetap wajib, termasuk untuk server penampung itu sendiri
+- Pemasangan yang salah konfigurasi menghentikan server agar tidak mulai, alih-alih melayani broker yang terbuka
+- Server demo tidak pernah memasangnya
+
+Daftarkan pengalihan penyedia terhadap `https://<server>/connect`, lalu arahkan server (termasuk server penampung)
+ke URL itu seperti di Langkah 3.
+
+## Referensi konfigurasi
+
+Setiap pengaturan adalah variabel lingkungan. Rahasia apa pun dapat diambil dari berkas yang dipasang: atur
+`NAME_FILE` sebagai pengganti `NAME`. Connect membaca ulang berkas paling sering setiap 30 detik dan menyimpan
+nilai baik terakhir. Rahasia yang ditandai **dual** juga menerima `NAME_PREVIOUS` (atau `NAME_PREVIOUS_FILE`)
+selama rotasi.
+
+### Alamat dan akses
+
+| Variabel                        | Bawaan    | Arti                                                                                                                             |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | wajib     | URL publik kanonis. HTTPS, atau `http` hanya di loopback. Path berarti dipasang. Tanpa query atau fragment                        |
+| `CONNECT_ALLOWED_INSTALLS`      | wajib     | Id instalasi dipisahkan koma. `*` hanya diterima bersama `CONNECT_SIGNED_CONFIG_FILE`                                             |
+| `CONNECT_DENY_INSTALLS`         |           | Id instalasi yang ditolak meski diizinkan                                                                                         |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Id pemilik GitHub numerik. Jika diatur, token repositori hanya dicetak untuk repositori yang mereka miliki                        |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Alamat bind dan port                                                                                                     |
+| `CONNECT_TRUST_PROXY`           | `0`       | Lompatan proxy tepercaya dalam `X-Forwarded-For` (0 sampai 8). Hanya dipakai untuk batas laju per alamat                          |
+
+### Jalur penyedia
+
+| Variabel                                                                    | Bawaan | Arti                                                                        |
+| --------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |        | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |        | Rahasia, dual                                                               |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |        | Klien Google. Rahasianya dual                                               |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |        | Aplikasi Linear. Tanpa rahasia                                              |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |        | App Slack                                                                   |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |        | Rahasia, dual                                                               |
+| `CONNECT_KLIPY_APP_KEY`                                                     |        | Kunci pencarian GIF Klipy. Rahasia, dual                                    |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` menyimpan kunci di Connect; `key` menyerahkannya ke server          |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`    | GitHub, Google, dan Slack: generasi yang dicatat dalam segel baru           |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`    | GitHub, Google, dan Slack: segel yang lebih lama harus masuk ulang          |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true` | Setiap jalur: `false` menghentikan proses masuk baru sementara yang ada tetap diperbarui |
+
+### Segel, state, dan penyimpanan
+
+| Variabel                                                  | Bawaan                     | Arti                                                                                                       |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` atau `gcp-kms`                                                                                     |
+| `CONNECT_SEAL_KEYS`                                       |                            | Rahasia, wajib untuk `local`. Entri `kid:key` dipisahkan koma, yang terbaru di depan; entri lama tetap dapat mendekripsi |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, wajib untuk `gcp-kms`                                   |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` untuk satu instance, `redis` untuk beberapa                                                       |
+| `CONNECT_REDIS_URL`                                       |                            | Rahasia. `redis://` atau `rediss://`                                                                       |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | Bundel CA untuk `rediss://`                                                                                |
+| `CONNECT_BINDINGS`                                        | `file`                     | Tempat pengikatan instalasi GitHub disimpan: `file` atau `firestore`                                       |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` di image)  | Menyimpan `bindings.json`                                                                                  |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`      | Untuk `CONNECT_BINDINGS=firestore`                                                                         |
+
+### Konfigurasi, log, dan batas
+
+| Variabel                                | Bawaan             | Arti                                                                                                |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Konfigurasi yang ditandatangani secara offline, disajikan apa adanya. Dipakai oleh Connect hosted Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Kunci yang harus diverifikasi oleh konfigurasi yang ditandatangani                                  |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoch konfigurasi yang dibuat oleh Connect yang di-self-host                                        |
+| `CONNECT_LOG_HMAC_KEY`                  | acak per proses    | Rahasia. Atur agar tag yang menggantikan id instalasi di log tetap stabil lintas restart dan instance |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Dilaporkan oleh `/v1/version`                                                                       |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Permintaan per instalasi                                                                            |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Permintaan per alamat                                                                               |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Permintaan untuk seluruh layanan                                                                    |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Peristiwa Slack per tim                                                                             |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Pencarian GIF per instalasi                                                                         |
+
+## Jalankan lebih dari satu instance
+
+Satu instance dengan `CONNECT_STATE=memory` sudah cukup untuk sebagian besar organisasi. Beberapa instance di
+belakang satu alamat memerlukan `CONNECT_STATE=redis`, dan salah satu dari `CONNECT_DATA_DIR` bersama atau
+`CONNECT_BINDINGS=firestore`, sehingga proses masuk yang dimulai di satu instance dapat diselesaikan di instance lain.
+
+## Rotasi rahasia penyedia
+
+Tidak ada yang dikeluarkan:
+
+1. Buat rahasia baru di penyedia dan simpan yang lama
+2. Pindahkan nilai lama ke `NAME_PREVIOUS`, letakkan yang baru di `NAME`, dan naikkan
+   `CONNECT_<LANE>_SECRET_GENERATION`. Berkas yang dipasang diambil dalam 30 detik
+3. Tunggu proses masuk menyegarkan diri, lalu hapus rahasia lama di penyedia dan hapus `NAME_PREVIOUS`
+
+Untuk merotasi kunci segel, letakkan entri `cc-connect-config seal-key` baru di awal `CONNECT_SEAL_KEYS` dan
+pertahankan entri lama sampai segelnya telah disegarkan.
+
+## Ganti app
+
+Server mengingat id app dan id klien yang diumumkan Connect Anda saat pertama kali memakainya. Jika Anda mengganti
+sebuah app, kartu Connect setiap server akan menampilkan **Aplikasi Connect berubah**, dan proses masuk melalui
+Connect dijeda sampai pemiliknya menekan **Percayai aplikasi baru**. Beri tahu pemilik server sebelum Anda beralih,
+agar mereka tahu bahwa perintah itu berasal dari Anda.
+
+## Blokir sebuah server
+
+Tambahkan id instalasinya ke `CONNECT_DENY_INSTALLS` lalu mulai ulang. Pemiliknya akan melihat
+"Connect telah memblokir id instalasi server ini" dan setiap proses masuk melalui Connect di sana akan berhenti.
+
+## Pemecahan masalah
+
+### Sebuah server menyatakan Connect telah memblokirnya
+
+Id instalasinya tidak ada di `CONNECT_ALLOWED_INSTALLS`, atau ada di `CONNECT_DENY_INSTALLS`. Id berubah ketika
+pemilik server memutar kunci; minta id yang baru.
+
+### Sebuah penyedia tampak tidak tersedia
+
+Salah satu variabelnya hilang, sehingga Connect mengeluarkan jalur tersebut. Periksa log startup dan tabel di atas.
+GitHub memerlukan keempat hal: app id, slug, client id, dan client secret; Google memerlukan client id dan client secret.
+
+### Proses masuk gagal dengan ketidakcocokan redirect
+
+Redirect yang didaftarkan di penyedia tidak sama persis dengan `CONNECT_PUBLIC_URL`. Bandingkan skema, host, port, dan
+path `/connect` untuk Connect yang dipasang.
+
+### Semua orang harus masuk ulang
+
+Kunci segel berubah atau hilang, sebuah server memutar kuncinya, atau data server dipulihkan ke mesin lain.
+Sebuah kredensial tersegel hanya dapat dibuka untuk instalasi dan Connect yang membuatnya.
+
+## Panduan terkait
+
+- [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
+- [Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
+
+## Referensi terkait
+
+- [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/)
+- [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/)

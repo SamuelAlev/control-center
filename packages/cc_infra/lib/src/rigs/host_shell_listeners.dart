@@ -9,6 +9,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/rig_ports.dart';
 
 /// The most listeners published per host-shell session. Matches
@@ -118,7 +119,7 @@ Future<List<RigOpenPort>> discoverHostShellListeners(int rootPid) async {
     return const [];
   }
   try {
-    final ps = await Process.run('ps', ['-axo', 'pid=,ppid=']);
+    final ps = await ChildProcess.run('ps', ['-axo', 'pid=,ppid=']);
     if (ps.exitCode != 0) {
       return const [];
     }
@@ -126,7 +127,7 @@ Future<List<RigOpenPort>> discoverHostShellListeners(int rootPid) async {
     if (tree.isEmpty) {
       return const [];
     }
-    final lsof = await Process.run('lsof', [
+    final lsof = await ChildProcess.run('lsof', [
       '-nP',
       '-iTCP',
       '-sTCP:LISTEN',

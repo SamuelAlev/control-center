@@ -2,7 +2,7 @@
 title: 使用 AI 輔助審查
 description: 對 PR 執行 pr_review 管線，閱讀發現項與判定，然後把審查發佈到 GitHub。
 slug: zh-HK/手冊/操作指南/ai-審查
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 本指南說明如何讓審查代理審查一個 pull request，以及如何把結果發佈到 GitHub。
@@ -96,11 +96,12 @@ Control Center 會啟動預置的 `pr_review` 管線，並開啟該 PR 的**檢�
 
 Control Center 只會送出**一條** GitHub 審查。已經解決或已忽略的發現項會被略過。該
 按鈕會包含所有仍然未解決的發現項，並且在 **Ship** 時提交 `APPROVE`。（MCP 工具
-`publish_review_to_github` 的預設行為仍然是只提交經同行確認的發現項，並且除非你傳入
-`approve_on_ship`，否則不會批准。）帶有檔案與行號錨點的發現項會變成行內評論；其餘
+`publish_review_to_github` 的預設行為是只提交經同行確認的發現項，並且絕不批准：它以
+自動化身分發佈，所以 `approve_on_ship` 在那裏沒有作用。）帶有檔案與行號錨點的發現項會變成行內評論；其餘
 一切都歸入摘要正文，每一項都帶有「— Control Center AI review」頁腳，令來源清楚明確。
 **Block** 判定會以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 則由
-該按鈕以 `APPROVE` 提交。隨後提示會顯示**已發佈**。審查會以伺服器的應用程式身分發佈。
+該按鈕以 `APPROVE` 提交。隨後提示會顯示**已發佈**。審查會以你的身分、用你自己的 GitHub
+登入發佈：如果你未登入 GitHub，發佈會失敗並請你先登入。
 
 如果 GitHub 因為某一行不屬於 diff 而拒絕一個行內錨點，整份審查會重新送出，並把每一
 項發現項都歸入正文，確保沒有任何東西被悄悄丟棄。

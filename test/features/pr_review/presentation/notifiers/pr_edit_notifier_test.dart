@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +17,7 @@ class _RecordingRepo extends EmptyPrReviewRepository {
   List<String> addedLabels = const [];
   List<String> removedLabels = const [];
   Completer<void>? gate;
+  Object? refuseWith;
 
   @override
   Future<void> updatePullRequest({
@@ -22,6 +26,10 @@ class _RecordingRepo extends EmptyPrReviewRepository {
     String? body,
   }) async {
     updatePrCalls++;
+    final refusal = refuseWith;
+    if (refusal != null) {
+      throw refusal;
+    }
     lastPrBody = body;
     final wait = gate;
     if (wait != null) {
@@ -119,6 +127,34 @@ void main() {
       expect(repo.updatePrCalls, 1);
     },
   );
+
+  test('an edit refused for want of a sign-in asks for one, once per '
+      'refusal', () async {
+    final notifier = container.read(prEditProvider(prRef).notifier);
+    repo.refuseWith = RemoteRpcException(
+      RpcErrorCodes.unauthorized,
+      'Sign in to GitHub',
+      {'kind': 'needs_sign_in', 'lane': 'github'},
+    );
+
+    expect(await notifier.saveTitle('t'), isNotNull);
+    expect(await notifier.saveTitle('t'), isNotNull);
+
+    final state = container.read(prEditProvider(prRef));
+    expect(state.signInRefusals, 2);
+    expect(state.refusedLane, ConnectOAuthLane.github);
+  });
+
+  test('any other failure asks for nothing', () async {
+    final notifier = container.read(prEditProvider(prRef).notifier);
+    repo.refuseWith = RemoteRpcException(
+      RpcErrorCodes.unauthorized,
+      'Not a member',
+    );
+
+    expect(await notifier.saveTitle('t'), isNotNull);
+    expect(container.read(prEditProvider(prRef)).signInRefusals, 0);
+  });
 
   test('toggleCommentTaskListItem PATCHes the named comment', () async {
     final notifier = container.read(prEditProvider(prRef).notifier);

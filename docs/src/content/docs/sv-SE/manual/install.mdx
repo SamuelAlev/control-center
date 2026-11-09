@@ -2,7 +2,7 @@
 title: Installera
 description: Använd Control Center i webbläsaren eller installera skrivbordsappen, ställ in en agentbackend och välj var servern körs.
 slug: sv-SE/handbok/installera
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center kan köras på två sätt: som en **webbapp** på
@@ -121,14 +121,9 @@ Modellistor serveras live av varje ansluten leverantör; [models.dev](https://mo
 
 En GitHub-inloggningsuppgift är **din och ligger på servern**, knuten till ditt användar-id — inte i klientens operativsystems nyckelring. Varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den.
 
-Om servern har en registrerad GitHub-app ([Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) erbjuder **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** **Logga in med GitHub** (ett device flow som servern kör). Annars klistrar du in en personlig åtkomsttoken:
+GitHub har bara inloggning: **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** erbjuder **Logga in på GitHub**, och det finns ingen token att klistra in. Inloggningen går via serverns egen GitHub-app ([Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) eller via Control Center Connect, beroende på vad serverägaren valde. Med serverns egen app kommer webbläsaren tillbaka till servern av sig själv; via Connect skriver du in koden på 8 tecken som webbläsaren visar, eller låter den öppna Control Center. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/).
 
-- Klassisk: `repo` och `read:org`
-- Finkornig: **Contents** och **Pull requests** (läs och skriv), **Checks** och **Actions** (läs)
-
-Skapa en på [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Servern avsöker token för kontonamnet när den sparas, så raden kan visa "inloggad som …"; en misslyckad avsökning sparar fortfarande token, och ett stavfel eller en saknad behörighet visar sig som en misslyckad begäran senare.
-
-Onboardingens första steg är den här anslutningen. Därefter är samma kort platsen där du byter ut eller rensar den. GitLab och Bitbucket använder samma kort; se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
+Onboardingen ber om den här anslutningen. Därefter är samma kort platsen där du loggar in igen eller kopplar från. GitLab och Bitbucket använder samma kort med en inklistrad personlig token; se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
 
 ## Välj var servern körs
 

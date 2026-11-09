@@ -1,9 +1,9 @@
 ---
 title: Rulează un server headless
 description: Rulează binarul headless cc_server sau imaginea lui Docker, asociază un client la el și configurează-l cu întreaga suprafață de flaguri CLI și variabile de mediu.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: ro-RO/manual/ghiduri-practice/ruleaza-server-headless
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Rulează `cc_server` pe o mașină care rămâne pornită, apoi conectează-te la el de
@@ -15,8 +15,10 @@ clienții doar afișează.
 ## Rulează în Docker (imagini precompilate)
 
 Fiecare versiune publică un stack auto-găzduit de patru imagini GHCR — backendul,
-cele două clienturi subțiri statice și releul de asociere opțional — plus o
-imagine separată `cc-server-demo` pentru gazda publică de demo. O instalare
+cele două clienturi subțiri statice și releul de asociere opțional — plus
+serviciul opțional de autentificare `cc-connect`
+([Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/))
+și o imagine separată `cc-server-demo` pentru gazda publică de demo. O instalare
 auto-găzduită nu are nevoie de o copie a codului sursă. Fixează un tag de
 versiune (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) sau mergi pe `latest`.
 
@@ -69,6 +71,12 @@ loopback:
 - **`/data` este singura stare.** Bazele de date SQLite, secretele
   dispozitivelor asociate, modelele descărcate și audio-ul întâlnirilor stau
   toate în volum — fă-i un backup, iar containerul devine eliminabil.
+- **Secretele providerilor stau într-un `.env` montat, niciodată în `-e`.**
+  Serverul refuză să pornească atunci când `GITHUB_APP_PRIVATE_KEY`,
+  `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` sau un
+  `SLACK_*SECRET*` se află în mediul procesului său. Montează fișierul doar
+  pentru citire la `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`) sau
+  configurează aplicațiile în Setări.
 - **Asociază un client din interiorul imaginii** înainte de prima conexiune,
   echivalentul în container al [pasului 3](#pasul-3-asociază-un-client-înainte-de-prima-pornire):
 
@@ -282,22 +290,37 @@ extensiei de editor lansate de server printr-un proxy public. Cererile HTTP
 publice sensibile sunt respinse; resursele necesită o sesiune criptată
 autentificată.
 
-## Pasul 6: Conectează un Google Calendar (opțional)
+## Pasul 6: Alege cum se autentifică oamenii
 
-Ca să sincronizezi calendarul unui spațiu de lucru fără nicio interfață grafică
-atașată, folosește fluxul cu cod de dispozitiv:
+Primul client care se conectează ca proprietar al serverului este întrebat cum
+autentifică acest server oamenii în GitHub, Google Calendar și Linear:
+**Folosește aplicațiile Control Center**, **Folosește aplicațiile mele** sau
+**Folosește un server Connect propriu**. Din terminal, aceeași alegere este:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Afișează un cod și un URL de aprobat pe alt dispozitiv, stochează tokenul de
-reîmprospătare pe partea de server și iese. O compilare din surse nu include
-niciun client Google, așa că variabilele de mediu pentru ID și secret sunt
-obligatorii — nu există un flag `--google-client-id`. Vezi [Conectează un Google
-Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
+`CC_CONNECT_URL` (`hosted`, `off` sau un URL) în mediul serverului sau în
+`.env` fixează în schimb alegerea. Cu **Folosește aplicațiile mele**,
+înregistrează fiecare provider în **Setări → Server → Autentificare unică →
+Aplicații provider**; **Creează aplicația mea GitHub** configurează GitHub
+într-un singur pas. Secretele providerilor își au locul în fișierul `.env` al
+serverului, niciodată în mediul exportat. Vezi
+[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/) și
+[Control Center Connect](/ro-RO/manual/referinta/connect/).
+
+Autentificările prin Connect se încheie cu un cod pe care îl afișează browserul,
+așa că serverul nu are nevoie de o adresă publică pentru ele. Autentificările
+prin aplicațiile proprii ale serverului întorc browserul la URL-ul public al
+serverului, așa că setează `--public-url` la o adresă pe care browserele
+oamenilor o pot accesa.
+
+Ca să găzduiești Connect pentru alte servere de pe acesta, setează
+`CC_SERVER_CONNECT_HOST=on`; vezi
+[Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/#montează-connect-în-cc_server).
 
 ## Configurare
 
@@ -356,6 +379,7 @@ furnizează criptarea cap la cap a clientului asociat și nu autorizează resurs
 - [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/)
 - [Rulează un worker din flotă](/ro-RO/manual/ghiduri-practice/ruleaza-worker-din-flota/)
 - [Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
+- [Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/)
 
 ## Concepte conexe
 

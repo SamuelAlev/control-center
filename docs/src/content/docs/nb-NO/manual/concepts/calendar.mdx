@@ -1,21 +1,28 @@
 ---
 title: Kalender og planlegging
-description: Hvordan Control Center synkroniserer Google Calendar på serveren, hvorfor påloggingen er en device-code-tilgang, og hva det skrivebeskyttede scopet dekker.
+description: Hvordan Control Center synkroniserer Google Calendar på serveren, hvordan påloggingen i nettleseren når fram til en headless server, og hva den kan endre hos Google.
 slug: nb-NO/handbok/konsepter/kalender
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center kobler til Google Calendar, slik at dagen din ligger side om side
 med flåten din. Det synkroniserer hendelsene dine, viser dem i måneds-, ukes-,
-dags- og agendavisning, varsler deg før et møte starter og gjør enhver hendelse
+dags- og agendavisning, lar deg booke, flytte, svare på og slette hendelser, varsler deg før et møte starter og gjør enhver hendelse
 om til et tatt opp og oppsummert [møte](/nb-NO/handbok/konsepter/moter/).
 
 ## Hva det endrer hos Google
 
-Nesten ingenting. Integrasjonen henter inn hendelser og viser dem. Den oppretter,
-redigerer eller sletter ingenting, og svarer ikke på invitasjoner. Hver
-device-code-tilkobling, enten innebygd eller din egen, ber om `calendar.readonly`
-pluss `openid email`.
+Bare det du gjør selv. Du kan svare på en invitasjon, booke en hendelse (dra over
+tidsrutenettet, eller med **+**-knappen), flytte eller endre størrelsen på en hendelse i rutenettet, og slette en hendelse. Bare dine egne hendelser og hendelser du arrangerer, kan flyttes: om en gjest flyttet dem, ville alle andre stå igjen på det gamle tidspunktet. Hver endring gjøres av
+serveren med din egen kontos pålogging, i dine egne kalendere, og serveren avviser en
+hendelse på et annet medlems konto eller på en kalender som er delt med deg som
+skrivebeskyttet. Google sender e-post til gjestene, som fra Google Calendar. Flytting eller sletting av
+én forekomst av en gjentakende hendelse lar resten av serien stå.
+
+Hver tilkobling, via Connect eller serverens egen Google-klient, ber om `calendar.events`
+(lese og endre hendelser) og `calendar.calendarlist.readonly` (se kalendere kontoen har)
+pluss `openid email`. Serveren avviser en pålogging som kommer tilbake med et annet sett,
+så en konto som ble koblet til med det tidligere skrivebeskyttede scopet må kobles til på nytt.
 
 Hendelser synkroniseres til arbeidsområdets egen database **på serveren**
 (`<dataDir>/<workspaceId>/workspace.db`) og vises av alle klienter over RPC.
@@ -23,45 +30,53 @@ Ingen klient har lagret noen Google-legitimasjon.
 
 ## Kontoer per arbeidsområde
 
-Kalenderkontoer er knyttet til arbeidsområdet, som alt annet i Control Center.
-Hvert [arbeidsområde](/nb-NO/handbok/konsepter/arbeidsomrader/) kobler til sin
-egen Google-konto (eller flere), og hendelser og tokens fra ett arbeidsområde er
-aldri synlige fra et annet. Når du bytter arbeidsområde, bytter du også hvilke
-kalendere du ser.
+Kalenderkontoer er knyttet til arbeidsområdet, som alt annet i Control Center,
+og hver av dem tilhører medlemmet som koblet den til. Hvert
+[arbeidsområde](/nb-NO/handbok/konsepter/arbeidsomrader/) kobler til sine egne
+Google-kontoer, og hendelser og legitimasjon fra ett arbeidsområde er aldri
+synlige fra et annet. To medlemmer som kobler til samme Google-adresse, får to
+kontoer. Når du bytter arbeidsområde, bytter du også hvilke kalendere du ser.
 
 Et arbeidsområde kan koble til **flere** Google-kontoer, for eksempel en
 jobbkonto og en privat konto, og hendelsene deres flettes sammen i de samme
 visningene.
 
-## Hvorfor påloggingen bruker en device code
+## Slik når påloggingen fram til serveren
 
-Den headless `cc_server` har ingen nettleser som kan ta imot en
-OAuth-omdirigering. Derfor bruker den ingen: den autoriserer med
-**device-code-tilgangen** (RFC 8628). Serveren viser en kort brukerkode og en
-Google-URL, du godkjenner på en hvilken som helst enhet som har nettleser, og
-serveren spør på nytt til du gjør det. En headless installasjon kan nettopp koble
-til en konto fordi det ikke finnes noe omdirigeringsendepunkt å hoste.
+Tilkoblingen er en pålogging i nettleseren, og serveren fullfører den. Hvilken
+klient som kjører den, er servereierens valg:
 
-Konsekvensen du bør kjenne til før du tar med egne legitimasjoner: klienttypen må
-være Googles «TV and Limited Input devices». Google gir bare et forhåndsgodkjent
-sett med scopes til den klienttypen, og et prosjekt der Calendar ikke er tillatt
-for den, feiler med `invalid_scope` — da trenger du en loopback- eller webklient
-i stedet.
+- **Serverens egen Google-klient.** En klient av typen nettapplikasjon,
+  registrert med omdirigeringen `<server origin>/oauth/google/callback`. Google
+  sender nettleseren rett tilbake til serveren, så nettleseren må kunne nå den
+- **Control Center Connect.** Google sender nettleseren tilbake til Connect, som
+  viser en kode på 8 tegn og en `control-center://`-lenke. Personen skriver inn
+  koden i appen, eller følger lenken, og serveren gjør krav på påloggingen med
+  den. Serveren trenger ingen offentlig adresse til dette, og slik kobler en
+  headless server på et privat nettverk til kalendere
 
-Tokens forlater aldri serveren. De skrives til serverens `secrets.json` i
-datamappen, med nøkkelen `google_google:<workspaceId>:<email>`, sammen med
-databasene og innenfor samme tillitsgrense som vertens filsystem. Serveren
-fornyer tilgangen automatisk, og når Google permanent ugyldiggjør en konto (en
+En egen klient har alltid forrang. En klient-id uten hemmeligheten er et
+uferdig oppsett og avviser pålogginger i stedet for å falle tilbake på Connect.
+
+Legitimasjonen forlater aldri serveren. Den skrives til serverens `secrets.json`
+i datamappen, med nøkkelen `google_google:<workspaceId>:<userId>:<email>`, sammen
+med databasene og innenfor samme tillitsgrense som vertens filsystem. En
+pålogging med egen klient lagrer tilgangs- og oppdateringstokenene sine. En
+pålogging via Connect lagrer bare en forseglet legitimasjon som Connect åpner for
+akkurat denne serveren; tilgangstokenet blir værende i minnet. Serveren fornyer
+tilgangen automatisk, og når Google permanent ugyldiggjør en konto (en
 tilbakekalt eller lenge utløpt økt), publiserer den `CalendarAuthExpired` og
-viser et **koble til på nytt**-banner i stedet for å feile i stillhet.
+viser et **koble til på nytt**-banner i stedet for å feile i stillhet. En
+pålogging denne serveren ikke lenger kan bruke (utstedt av en annen egen klient,
+eller forseglet for en annen installasjon eller Connect), fjernes neste gang den
+leses, og viser det samme banneret.
 
-Et bygg fra kildekoden inneholder **ingen** Google-legitimasjon i det hele tatt —
-du skaffer din egen klient-id og klienthemmelighet. Offisielle utgivelsesbygg har
-et innebygd ikke-fortrolig device-code-klient, slik at tilkoblingsflyten fungerer
-med en gang; serveren lagrer bare en markør som viser til det, aldri en kopi.
-`GOOGLE_OAUTH_CLIENT_ID` (og hemmeligheten) i miljøet har alltid forrang foran
-det innebygde paret. Det finnes bevisst ingen `--google-client-id`-flagg: ukjente
-flagg ignoreres, og en hemmelighet på kommandolinjen kan leses via `ps`.
+Ingen bygg har med seg Google-legitimasjon. Serverens klient kommer fra
+**Innstillinger → Server → Enkel pålogging → Leverandørapper** eller fra
+serverens `.env`-fil (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`). Det
+finnes bevisst ikke noe kommandolinjeflagg: en hemmelighet på kommandolinjen kan
+leses via `ps`, og serveren nekter å starte når hemmeligheten er eksportert i
+prosessmiljøet.
 
 For å kjøre ditt eget Google-prosjekt, se
 [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/).
@@ -123,7 +138,7 @@ opptaksflyt faktisk fungerer i nettleseren.
 
 :::note[Agenter kan ikke lese kalenderen din]
 Det finnes ingen MCP-verktøy for kalender. En agent kan ikke liste opp
-hendelser, lese detaljene i en hendelse eller svare på invitasjoner på dine
+hendelser, lese detaljene i en hendelse, booke, flytte, slette eller svare på invitasjoner på dine
 vegne; `calendar.*`-flaten er RPC kun for menneskelige klienter.
 :::
 

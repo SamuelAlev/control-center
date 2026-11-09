@@ -2,7 +2,7 @@
 title: Połącz host kodu
 description: Połącz GitHub, GitLab lub Bitbucket, aby powierzchnia pull requestów, rejestracja repozytoriów i uruchomienia agentów działały — jeden obszar roboczy może korzystać ze wszystkich trzech.
 slug: pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center współpracuje z trzema hostami kodu, które w całej aplikacji nazywane są **forge**: **GitHub**, **GitLab** i **Bitbucket Cloud**. Żaden z nich nie jest domyślny. Połącz jeden i wszystko działa; połącz kilka, a jeden obszar roboczy może naraz przechowywać repozytoria ze wszystkich.
@@ -13,9 +13,9 @@ Forge jest właściwością każdego **repozytorium**, odczytywaną ze zdalnego 
 
 1. Otwórz **Ustawienia → Obszar roboczy → Profil i tożsamość** (`/settings/workspace/profile`).
 2. Znajdź kartę **Hosting kodu**. Wymienione są wszystkie obsługiwane forge — połączone i niepołączone.
-3. Kliknij **Zaloguj się przez …**, jeśli wiersz to oferuje, albo **Dodaj token** i wklej token.
+3. Przy **GitHub** kliknij **Zaloguj się do GitHub**. Przy **GitLab** lub **Bitbucket** kliknij **Dodaj token** i wklej token.
 
-**Zaloguj się** pojawia się dla forge, dla którego Twój serwer ma zarejestrowaną aplikację — dziś jest to GitHub, przez przepływ urządzenia (zobacz [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)). Wszystko inne to wklejony token, czyli uczciwa propozycja zamiast przycisku, który nie może się powieść.
+**GitHub obsługuje tylko logowanie.** Logowanie przebiega przez własną GitHub App serwera albo przez Control Center Connect, zależnie od tego, co skonfigurował właściciel serwera (zobacz [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)); nie ma tokenu GitHub do wklejenia. GitLab i Bitbucket nadal przyjmują osobisty token.
 
 Tak czy inaczej poświadczenie jest **Twoje i znajduje się na serwerze**, przypisane do Twojego identyfikatora użytkownika: żaden token nie jest zapisywany na maszynie, na której go wpisano, każde urządzenie, z którego się logujesz, korzysta z tego samego, a żaden inny członek nie może go odczytać. Działa od **następnego żądania** — nie ma nic do zrestartowania, a rozłączenie natychmiast wstrzymuje jego wysyłanie.
 
@@ -24,29 +24,28 @@ Każdy wiersz mówi, skąd pochodzi jego poświadczenie, bo to różnica między
 | Podtytuł                         | Znaczenie                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `Zalogowano jako octocat`           | Używane są Twoje własne poświadczenia                                   |
-| `Zalogowano jako octocat · przez aplikację tego serwera` | Odpowiada tożsamość aplikacji serwera — nie jesteś zalogowany |
-| `Zalogowano jako octocat · ze środowiska` | Odpowiada zmienna środowiskowa serwera, a nie Twoje poświadczenie |
+| `Zalogowano jako octocat · ze środowiska` | Tylko GitLab lub Bitbucket: odpowiada zmienna środowiskowa serwera, a nie Twój token |
 | `Nie połączono`                  | Nie masz poświadczenia dla tego forge                               |
+| `Logowanie do GitHub nie jest jeszcze skonfigurowane na tym serwerze.` | Serwer nie ma ani własnej GitHub App, ani Connect; jedno z nich konfiguruje właściciel serwera |
 
 ### Jakiego tokenu wymaga każde forge
 
 | Forge         | Token                                                     | Gdzie go utworzyć                                        |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Klasyczny: `repo` i `read:org`. Drobnoziarnisty: Contents + Pull requests (odczyt/zapis), Checks + Actions (odczyt) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Osobisty token dostępu z zakresem `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Token API Atlassian oraz adres e-mail Twojego konta           | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket uwierzytelnia się **adresem e-mail konta jako nazwą użytkownika** i tokenem jako hasłem. Ustaw `BITBUCKET_EMAIL` w środowisku serwera, aby wiedział, z którym adresem e-mail ma połączyć token.
 
-### Albo użyj środowiska
+### Praca w tle
 
-W instalacji headless lub w CI serwer odczytuje następujące zmienne:
+Praca bez człowieka w tle (uruchomienia agentów, potoki, odpytywanie PR-ów) też potrzebuje poświadczenia, a każde forge rozwiązuje to inaczej:
 
-- **GitHub** — `GITHUB_TOKEN`, potem `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, potem `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, potem `BITBUCKET_TOKEN` (razem z `BITBUCKET_EMAIL`)
+- **GitHub** — token zawsze dla jednego repozytorium, wydany z GitHub App serwera albo przez Connect i ograniczony do tego, co może tam zrobić odpowiedzialny członek. Nigdy nie jest to całe przekazane logowanie osoby i żadna zmienna środowiskowa ani wklejony token go nie zastępuje. Zobacz [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/#w-czyim-imieniu-działa-twoje-poświadczenie)
+- **GitLab** — wklejony token właściciela serwera, potem `GITLAB_TOKEN`, potem `CI_JOB_TOKEN`
+- **Bitbucket** — wklejony token właściciela serwera, potem `BITBUCKET_API_TOKEN`, potem `BITBUCKET_TOKEN` (razem z `BITBUCKET_EMAIL`)
 
-To **poświadczenia serwera**, nie Twoje, a rozróżnienie ma kluczowe znaczenie: żądanie wysłane w Twoim imieniu używa wyłącznie Twoich poświadczeń, więc środowisko nigdy po cichu Cię nie zastępuje. Praca bez człowieka w tle — webhooki, odpytywanie PR-ów, synchronizacja zgłoszeń — sięga najpierw po tożsamość aplikacji serwera, potem po poświadczenia właściciela serwera, a na końcu po środowisko. Kolejność jest stała, więc „zalogowałem się i nic się nie zmieniło” nigdy nie jest obsługiwanym wynikiem.
+Zmienne środowiskowe GitLab i Bitbucket to **poświadczenia serwera**, nie Twoje: żądanie wysłane w Twoim imieniu używa wyłącznie Twojego tokenu, więc środowisko nigdy po cichu Cię nie zastępuje.
 
 ## Na każdym forge jesteś inną osobą
 
@@ -94,11 +93,11 @@ GitLab nazywa pull request **merge request**. Control Center w całym swoim mode
 
 ### Lista PR-ów jest pusta i informuje, że forge nie jest połączony
 
-Nie masz poświadczenia dla tego forge. Zaloguj się albo wklej token w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**. Repozytoria innych forge pozostają bez zmian.
+Nie masz poświadczenia dla tego forge. Zaloguj się do GitHuba albo wklej token GitLab lub Bitbucket w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**. Repozytoria innych forge pozostają bez zmian.
 
 ### Połączyłem forge, ale jego repozytoria nadal nic nie pokazują
 
-Sprawdź podtytuł wiersza. Jeśli widnieje w nim „przez aplikację tego serwera” lub „ze środowiska”, odpowiada inne poświadczenie niż oczekiwane — Twoje własne poświadczenie ma pierwszeństwo przy wszystkim, o co prosisz, więc jeśli podtytuł mówi co innego, Twoje nie zostało zapisane.
+Sprawdź podtytuł wiersza. Jeśli w wierszu GitLab lub Bitbucket widnieje „ze środowiska”, odpowiada inne poświadczenie niż oczekiwane — Twój własny token ma pierwszeństwo przy wszystkim, o co prosisz, więc jeśli podtytuł mówi co innego, Twój nie został zapisany. W przypadku GitHuba sprawdź, czy GitHub App jest zainstalowana na koncie, do którego należą repozytoria.
 
 ### Repozytorium nie chce się zarejestrować
 

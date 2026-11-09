@@ -1,9 +1,35 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:control_center/features/settings/presentation/widgets/agent_account_pools_tab.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_apps_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/workspace_provider_apps_card.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// What `settings` itself puts on Server → Single sign-on: this server's own
+/// provider apps, below the Connect card that decides whether they are needed.
+/// On Workspace → General, after the GitHub identity: the workspace's own
+/// Google Calendar, Linear and Klipy apps.
+const List<SettingsSectionContribution> settingsSettingsSections = [
+  SettingsSectionContribution(
+    id: 'settings.provider-apps',
+    slot: SettingsSlot.serverSignIn,
+    order: 20,
+    builder: _buildProviderApps,
+  ),
+  SettingsSectionContribution(
+    id: 'settings.workspace-provider-apps',
+    slot: SettingsSlot.workspaceGeneral,
+    order: 6,
+    builder: _buildWorkspaceProviderApps,
+  ),
+];
+
+Widget _buildProviderApps(BuildContext context) => const ProviderAppsSection();
+
+Widget _buildWorkspaceProviderApps(BuildContext context) =>
+    const WorkspaceProviderAppsCard();
 
 /// What `settings` itself contributes to the agent registry's detail pane.
 ///

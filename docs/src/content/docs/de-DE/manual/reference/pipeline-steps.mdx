@@ -2,7 +2,7 @@
 title: Pipeline-Schrittarten
 description: Referenz zu Schrittarten, Body-Schlüsseln, ihrer Konfiguration und den Schrittergebnissen.
 slug: de-DE/handbuch/referenz/pipeline-schritte
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Ein Pipeline-Schritt hat zwei unabhängige Achsen:
@@ -42,7 +42,7 @@ Shell-Schritt ohne Agent (`bash -c`). Platzhalter `{{key}}` im Skript werden aus
 | `script`           | Auszuführender Shell-Befehl (erforderlich)                    |
 | `outputKey`        | Zustandsschlüssel, der bei Exit 0 das getrimmte stdout erhält |
 
-Läuft mit dem cwd `<cc_root>/pipelines/<pipelineRunId>/` (von allen Bash-Schritten eines Laufs geteilt) und `GITHUB_TOKEN` in der Umgebung. Schreibt außerdem `<stepId>_runDir` in den Zustand. Ein Exit ungleich null lässt den Schritt mit dem Ende von stderr scheitern.
+Läuft in der OS-Sandbox des Hosts mit dem cwd `<cc_root>/pipelines/<pipelineRunId>/` (von allen Bash-Schritten eines Laufs geteilt); auf einem Host ohne Sandbox schlägt der Schritt fehl. Das Datenverzeichnis und die `.env`-Datei des Servers sind nicht lesbar, git und `gh` sehen keine Konfiguration des Hosts, und `GH_TOKEN` / `GITHUB_TOKEN` enthalten nur dann ein `read`-Token für ein einzelnes Repository, wenn `repo_full_name` (Zustand oder Nutzlast des Triggers) ein mit dem Arbeitsbereich verknüpftes GitHub-Repo nennt. Eine Vorlage mit diesem Schritt anzulegen oder zu bearbeiten erfordert einen Administrator des Arbeitsbereichs. Schreibt außerdem `<stepId>_runDir` in den Zustand. Ein Exit ungleich null lässt den Schritt mit dem Ende von stderr scheitern.
 
 ### `conversation.promptAgent`
 

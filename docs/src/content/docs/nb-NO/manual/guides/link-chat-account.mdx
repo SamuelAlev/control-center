@@ -2,7 +2,7 @@
 title: Koble til Slack-kontoen din
 description: Bevis at en Slack-identitet er din, slik at agenter handler på meldingene dine og arbeidet ditt tilskrives deg.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-chatkonto
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Denne veiledningen viser hvordan du kobler chat-identiteten din til Control Center-brukeren din, og hvordan du fjerner en kobling.
@@ -17,29 +17,38 @@ Et medlem uten kobling som nevner boten, får et svar i den Slack-tråden som fo
 
 ## Koble til med en kode
 
+Kobling krever begge sider: å sende en kode fra Slack beviser Slack-kontoen, og å bekrefte den i Control Center beviser at kontoen er din.
+
 1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet** og rull ned til kortet **Knyttede chat-kontoer**
-2. I Slack-blokken klikker du på **Knytt Slack-kontoen min**
-3. Kopier kommandoen den viser, for eksempel:
+2. I Slack-blokken klikker du på **Knytt Slack-kontoen min**. Dialogen viser en engangskode, for eksempel:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. I Slack sender du den kommandoen til boten — en DM er det enkleste stedet
-5. Boten bekrefter med Control Center-brukeren du nå er koblet til, og dialogen du lot stå åpen, oppdateres til å si det samme i samme øyeblikk — du trenger ikke lukke den og se etter
+3. I Slack sender du koden til boten i en **direktemelding**: bare koden, ingenting annet
+4. Boten svarer «Got it. Confirm this Slack account in Control Center to finish linking.», og dialogen du lot stå åpen, viser Slack-profilen som sendte koden: navnet og Slack-medlems-ID-en
+5. Hvis det er kontoen din, klikker du på **Bekreft**. Koblingen opprettes, dialogen sier fra, og boten bekrefter i den samme direktemeldingen
+6. Hvis den ikke er din, klikker du på **Avslå**. Ingenting kobles, og koden slutter å virke; klikk på **Hent en ny kode** for å prøve igjen
+
+Å lukke dialogen gjør ikke at et krav går tapt. En kode som kommer senere, venter på raden **Knytt Slack-kontoen min** på profilsiden din, med de samme knappene **Bekreft** og **Avslå**.
+
+Hvorfor bekreftelsessteget finnes: en kode som noen leser over skulderen din og sender fra en annen Slack-konto, ville ellers fått den kontoen til å handle som deg. Bare du kan bekrefte, og bare akkurat den profilen som sendte koden.
 
 Koden:
 
 - Er til engangsbruk og utløper **15 minutter** etter at den er generert
 - Genereres alltid for _deg_, aldri for et teammedlem
+- Virker bare i en direktemelding til boten. I en kanal er den bare en melding
+- Kan bare gjøres krav på av et fullverdig medlem av Slack-arbeidsområdet der boten er installert, ikke av en gjest eller noen fra en annen organisasjon
 - Erstatter enhver kode du allerede har, så hvis du trykker på knappen igjen, blir den forrige ugyldig
 - Ligger bare i minnet, så en omstart av serveren gjør utestående koder ugyldige — trykk på knappen igjen
 
-En kode som er ukjent, utløpt eller generert for et annet arbeidsområde, feiler på samme uskiljelige måte: «that code is not valid (or has expired)».
+En kode som er ukjent, utløpt, avslått eller generert for et annet arbeidsområde, feiler på samme uskiljelige måte: «That code is not valid (or has expired).»
 
 ## Automatisk kobling via e-post
 
-Hvis Slack-profilen din har en bekreftet e-postadresse som stemmer med en Control Center-bruker som **allerede er medlem av dette arbeidsområdet**, kobler broen deg til første gang du snakker med den. Ingen kode trengs.
+Hvis Slack-profilen din har en bekreftet e-postadresse som stemmer med den verifiserte e-postadressen til en Control Center-bruker som **allerede er medlem av dette arbeidsområdet**, kobler broen deg til første gang du snakker med den. Ingen kode trengs.
 
 Begge delene må stemme: e-posttreffet beviser identiteten, men bare medlemskap gir tilgang, så en fremmed hvis e-postadresse tilfeldigvis finnes på serveren, blir ikke koblet til noe. Oversikten viser hvordan hver kobling ble opprettet («matchet på e-post» eller «knyttet med en kode»).
 
@@ -51,7 +60,7 @@ Oversikten hører til administrasjonen av arbeidsområdet og ligger derfor på d
 
 Din egen status står på profilsiden din: raden **Knytt Slack-kontoen min** viser «Knyttet til _your-slack-id_» når du er koblet til, og ber deg koble til når du ikke er det.
 
-Oversikten er et levende abonnement, fordi endringen skjer på den andre siden — du skriver inn koden i Slack, så ingen forespørsel fra appen kan bære svaret tilbake.
+Oversikten og kravet er levende abonnementer, fordi endringen skjer på den andre siden: du sender koden i Slack, så ingen forespørsel fra appen kan bære svaret tilbake.
 
 ## Fjern koblingen
 
@@ -73,9 +82,13 @@ Slack-kontoen din er koblet til en Control Center-bruker, men den brukeren har i
 
 Rollene `viewer` og `guest` kan ikke starte arbeid. En admin må heve rollen din til `member` eller høyere.
 
-### Skråstrekkommandoen gjenkjennes ikke
+### Boten sier at koden ikke er gyldig
 
-Sjekk at skråstrekkommandoen finnes i Slack, og at du sender kommandoen som innstillingsdialogen viste deg — en admin kan ha gitt den nytt navn, og i så fall viser dialogen det gjeldende navnet.
+Koden er utløpt, allerede brukt, avslått eller erstattet av en nyere. Klikk på **Knytt Slack-kontoen min** igjen og send den nye koden.
+
+### Boten behandler koden min som en forespørsel
+
+Du sendte den i en kanal, eller Slack-kontoen din er allerede koblet til. Koder tas bare imot i en direktemelding, og en melding som ser ut som en kode fra en koblet konto, er en vanlig forespørsel.
 
 ## Relaterte veiledninger
 

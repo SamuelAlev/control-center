@@ -1,6 +1,9 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:control_center/features/auth/providers/oauth_providers.dart'
+    show needsSignInLane;
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,6 +25,8 @@ class PrEditState {
     this.pendingLabels = const {},
     this.hiddenIssueCommentIds = const {},
     this.hiddenReviewCommentIds = const {},
+    this.signInRefusals = 0,
+    this.refusedLane,
   });
 
   /// Whether a title save is in flight.
@@ -58,6 +63,14 @@ class PrEditState {
   /// forges number them independently, so id 12 is not one comment.
   final Set<int> hiddenReviewCommentIds;
 
+  /// How many edits the server refused for want of the reader's own
+  /// sign-in. A counter rather than a flag so every refusal can be noticed,
+  /// even two in a row.
+  final int signInRefusals;
+
+  /// The sign-in the latest such refusal asked for.
+  final ConnectOAuthLane? refusedLane;
+
   /// Returns a copy with the given fields replaced.
   PrEditState copyWith({
     bool? savingTitle,
@@ -71,6 +84,8 @@ class PrEditState {
     Set<String>? pendingLabels,
     Set<int>? hiddenIssueCommentIds,
     Set<int>? hiddenReviewCommentIds,
+    int? signInRefusals,
+    ConnectOAuthLane? refusedLane,
   }) {
     return PrEditState(
       savingTitle: savingTitle ?? this.savingTitle,
@@ -87,6 +102,8 @@ class PrEditState {
           hiddenIssueCommentIds ?? this.hiddenIssueCommentIds,
       hiddenReviewCommentIds:
           hiddenReviewCommentIds ?? this.hiddenReviewCommentIds,
+      signInRefusals: signInRefusals ?? this.signInRefusals,
+      refusedLane: refusedLane ?? this.refusedLane,
     );
   }
 }
@@ -145,6 +162,19 @@ class PrEditNotifier extends Notifier<PrEditState> {
 
   static String _msg(Object e) => e is AppException ? e.message : e.toString();
 
+  /// The error message for a failed edit. A refusal for want of the
+  /// reader's own sign-in is also recorded, so the screen can offer one.
+  String _fail(Object e) {
+    final lane = needsSignInLane(e, fallback: ConnectOAuthLane.github);
+    if (lane != null) {
+      state = state.copyWith(
+        signInRefusals: state.signInRefusals + 1,
+        refusedLane: lane,
+      );
+    }
+    return _msg(e);
+  }
+
   /// Saves the PR [title]. Returns null on success, else an error message.
   Future<String?> saveTitle(String title) async {
     final repo = _repo;
@@ -157,7 +187,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       _refreshDetail();
       return null;
     } catch (e) {
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(savingTitle: false);
     }
@@ -176,7 +206,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       return null;
     } catch (e) {
       state = state.copyWith(clearOptimisticBody: true);
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(savingBody: false);
     }
@@ -243,7 +273,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       final remaining = Map<int, String>.of(state.optimisticComments)
         ..remove(commentId);
       state = state.copyWith(optimisticComments: remaining);
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(
         savingCommentIds: state.savingCommentIds.difference({commentId}),
@@ -296,7 +326,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       return null;
     } catch (e) {
       state = write(hidden);
-      return _msg(e);
+      return _fail(e);
     }
   }
 
@@ -326,7 +356,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       _refreshDetail();
       return null;
     } catch (e) {
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(
         pendingAssignees: state.pendingAssignees.difference(keys),
@@ -362,7 +392,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       _refreshDetail();
       return null;
     } catch (e) {
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(
         pendingLabels: state.pendingLabels.difference(keys),
@@ -408,7 +438,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       _refreshReviewers();
       return null;
     } catch (e) {
-      return _msg(e);
+      return _fail(e);
     }
   }
 
@@ -431,7 +461,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
       _refreshReviewers();
       return null;
     } catch (e) {
-      return _msg(e);
+      return _fail(e);
     } finally {
       state = state.copyWith(
         pendingReviewers: state.pendingReviewers.difference({key}),

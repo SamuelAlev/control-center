@@ -1,8 +1,7 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
-import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_mini_month.dart';
 import 'package:control_center/features/calendar/presentation/widgets/google_calendar_connect_dialog.dart';
 import 'package:control_center/features/calendar/providers/calendar_sync_providers.dart';
 import 'package:control_center/features/calendar/providers/connect_account_provider.dart';
@@ -38,201 +37,11 @@ class CalendarSidebar extends ConsumerWidget {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(14, 16, 14, 12),
-            child: _MiniMonth(),
+            child: CalendarMiniMonth(),
           ),
           Container(height: 1, color: t.borderSecondary),
           Expanded(child: _CalendarsSection(workspaceId: workspaceId)),
         ],
-      ),
-    );
-  }
-}
-
-/// A 6-week mini calendar. Tapping a day focuses it; the chevrons page the
-/// displayed month without moving the selection. The displayed month follows
-/// [selectedDateProvider] when it changes elsewhere (header nav / Today).
-class _MiniMonth extends ConsumerStatefulWidget {
-  const _MiniMonth();
-
-  @override
-  ConsumerState<_MiniMonth> createState() => _MiniMonthState();
-}
-
-class _MiniMonthState extends ConsumerState<_MiniMonth> {
-  late DateTime _displayMonth = startOfMonth(ref.read(selectedDateProvider));
-
-  void _page(int delta) {
-    setState(() {
-      _displayMonth = DateTime(_displayMonth.year, _displayMonth.month + delta);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final selected = ref.watch(selectedDateProvider);
-    final l10n = AppLocalizations.of(context);
-    // In week view the rail mirrors the grid's framing: the whole week holding
-    // the focused day is banded, not just the day, so the navigator reflects
-    // what the body shows. Other views frame a single day (or month), so no band.
-    final weekView =
-        ref.watch(calendarViewModeProvider) == CalendarViewMode.week;
-    final activeWeekStart = dayKey(startOfWeek(selected));
-
-    // Keep the grid in sync when the focused date moves from outside the rail.
-    ref.listen(selectedDateProvider, (_, next) {
-      final month = startOfMonth(next);
-      if (month != _displayMonth) {
-        setState(() => _displayMonth = month);
-      }
-    });
-
-    final today = dayKey(DateTime.now());
-    final gridStart = startOfMonthGrid(_displayMonth);
-    final days = [
-      for (var i = 0; i < 42; i++) gridStart.add(Duration(days: i)),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                DateFormat.yMMMM().format(_displayMonth),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: t.textPrimary,
-                ),
-              ),
-            ),
-            CcIconButton(
-              icon: AppIcons.chevronLeft,
-              variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
-              tooltip: l10n.calendarPreviousPeriod,
-              semanticLabel: l10n.calendarPreviousPeriod,
-              onPressed: () => _page(-1),
-            ),
-            CcIconButton(
-              icon: AppIcons.chevronRight,
-              variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
-              tooltip: l10n.calendarNextPeriod,
-              semanticLabel: l10n.calendarNextPeriod,
-              onPressed: () => _page(1),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            for (final label in _weekdayLabels())
-              Expanded(
-                child: Center(
-                  child: Text(
-                    label,
-                    style: TextStyle(fontSize: 10, color: t.textTertiary),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        for (var week = 0; week < 6; week++)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: weekView && dayKey(days[week * 7]) == activeWeekStart
-                  ? t.bgQuaternary
-                  : const Color(0x00000000),
-            ),
-            child: Row(
-              children: [
-                for (var d = 0; d < 7; d++)
-                  Expanded(
-                    child: _MiniDayCell(
-                      day: days[week * 7 + d],
-                      inMonth: days[week * 7 + d].month == _displayMonth.month,
-                      isToday: dayKey(days[week * 7 + d]) == today,
-                      isSelected:
-                          dayKey(days[week * 7 + d]) == dayKey(selected),
-                      onTap: () => ref
-                          .read(selectedDateProvider.notifier)
-                          .select(days[week * 7 + d]),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  List<String> _weekdayLabels() {
-    // Monday-first, short labels from the active locale.
-    final monday = startOfWeek(DateTime.now());
-    return [
-      for (var i = 0; i < 7; i++)
-        DateFormat.E().format(monday.add(Duration(days: i))),
-    ];
-  }
-}
-
-class _MiniDayCell extends StatelessWidget {
-  const _MiniDayCell({
-    required this.day,
-    required this.inMonth,
-    required this.isToday,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final DateTime day;
-  final bool inMonth;
-  final bool isToday;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-
-    final Color textColor;
-    if (isSelected) {
-      textColor = t.textWhite;
-    } else if (!inMonth) {
-      textColor = t.textTertiary;
-    } else if (isToday) {
-      textColor = t.accent;
-    } else {
-      textColor = t.textPrimary;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(1),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? t.accent
-                : (isToday ? t.bgBrandPrimary : const Color(0x00000000)),
-          ),
-          child: Text(
-            '${day.day}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected || isToday
-                  ? FontWeight.w600
-                  : CcTypography.regularWeight,
-              color: textColor,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -282,9 +91,11 @@ class _CalendarsSectionState extends ConsumerState<_CalendarsSection> {
             account: account,
             syncing: _syncing,
             onSync: _syncNow,
-            onDisconnect: () => ref
-                .read(connectGoogleCalendarProvider.notifier)
-                .disconnect(account.id),
+            onDisconnect: () => disconnectGoogleCalendar(
+              ref,
+              workspaceId: widget.workspaceId,
+              accountId: account.id,
+            ),
           ),
           for (final cal
               in ref
@@ -312,7 +123,11 @@ class _CalendarsSectionState extends ConsumerState<_CalendarsSection> {
             size: CcButtonSize.sm,
             icon: AppIcons.plus,
             fullWidth: true,
-            onPressed: () => showGoogleCalendarConnectDialog(context),
+            onPressed: () => showGoogleCalendarConnectDialog(
+              context,
+              ref,
+              workspaceId: widget.workspaceId,
+            ),
             child: Text(l10n.calendarAddAccount),
           ),
         ),

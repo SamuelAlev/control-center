@@ -2,7 +2,7 @@
 title: API-Schlüssel verwalten
 description: Wo die einzelnen Zugangsdaten liegen — bei deinem Nutzerkonto auf dem Server, beim Server selbst oder bei einer externen CLI — und wie du sie setzt, rotierst und entfernst.
 slug: de-DE/handbuch/anleitungen/api-schluessel
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Diese Anleitung zeigt, wo jede Zugangsdatenart, die Control Center nutzt, gespeichert ist und wie du sie änderst.
@@ -11,18 +11,21 @@ Diese Anleitung zeigt, wo jede Zugangsdatenart, die Control Center nutzt, gespei
 
 | Zugangsdaten | Gespeichert | Wer sie nutzt |
 | --- | --- | --- |
-| Deine Forge- und Ticket-Zugangsdaten | Die Geheimnisdatei des Servers mit Modus 0600, unter deiner Nutzer-ID | Alles, was du anfragst: die PR-Oberfläche, deine Agentenläufe, deine Bilder |
-| Die App-Identität des Servers | Dieselbe Datei, dazu `server_settings` für alles, was kein Geheimnis ist | Arbeit, die kein Mensch angefordert hat: Webhooks, PR-Polling, Ticket-Synchronisierung |
+| Deine Forge- und Ticket-Anmeldung | Die Geheimnisdatei des Servers mit Modus 0600, unter deiner Nutzer-ID | Alles, was du tust: die PR-Oberfläche, Reviews, Merges, deine Linear-Aktionen |
+| Die Anbieter-Apps des Servers | Dieselbe Datei, dazu `server_settings` für alles, was kein Geheimnis ist | Die Anmeldung von Personen und Tokens für ein einzelnes Repository für Agenten, Pipelines und Polling |
+| Der Installationsschlüssel für Connect | Dieselbe Datei (`connect_install_key`) | Die Identifizierung dieses Servers gegenüber Control Center Connect |
 | Schlüssel der Modellanbieter und OAuth-Tokens | Der eigene Zugangsdatenspeicher des Servers | Der eingebaute Adapter, für jeden Arbeitsbereich der Installation |
-| Slack-Bot-Tokens | `<dataDir>/<workspaceId>/chat_credentials/` auf dem Server | Die Chat-Brücke dieses Arbeitsbereichs |
+| Slack-Bot-Zugangsdaten | `<dataDir>/<workspaceId>/chat_credentials/` auf dem Server | Die Chat-Brücke dieses Arbeitsbereichs: die Tokens deiner eigenen App oder die versiegelte Berechtigung der gemeinsamen App |
 | Zugangsdaten einer externen CLI | Was diese CLI selbst verwendet | Claude Code, auf dem Server-Host |
 
-## Zwei GitHub-Zugangsdaten, und sie beantworten verschiedene Fragen
+## GitHub: deine Anmeldung und Tokens für ein einzelnes Repository
 
-- **Deine** stammen aus der Anmeldung (Device Flow) oder einem eingefügten Token. Sie gelten für jede Anfrage *in deinem Namen*, deshalb trägt ein Kommentar, der für dich gepostet wird, deinen Namen. Ein anderes Mitglied kann sie nicht lesen und verbindet seine eigenen
-- **Die des Servers** stammen aus der GitHub App, die der Betreiber registriert hat. Sie beantworten alles ohne Aufrufer — der Forge-Zugang bleibt, wenn eine Person geht oder ein Token rotiert
+- **Deine** stammt aus **Bei GitHub anmelden**. Sie gilt für jede Anfrage *in deinem Namen*, deshalb trägt ein Review, das für dich gepostet wird, deinen Namen. Ein anderes Mitglied kann sie nicht nutzen und meldet sich selbst an. Ein GitHub-Token zum Einfügen gibt es nicht
+- **Arbeit, bei der niemand tippt** (Agenten, Pipelines, Polling, Bot-Antworten), bekommt ein Token für jeweils ein Repository, ausgestellt über die GitHub App des Servers oder über Control Center Connect und begrenzt auf das, was ein verantwortliches Mitglied dort tun darf. Es ist nie deine vollständig weitergereichte Anmeldung
 
-Deine setzt du in der Karte **Code-Hosting** unter **Einstellungen → Arbeitsbereich → Profil und Identität**; die des Servers unter **Anbieter-Apps** bei **Einstellungen → Server → Single sign-on**. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/) und [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/).
+Deine setzt du in der Karte **Code-Hosting** unter **Einstellungen → Arbeitsbereich → Profil und Identität**; die App des Servers unter **Anbieter-Apps** bei **Einstellungen → Server → Single sign-on**. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/) und [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/).
+
+GitLab und Bitbucket nehmen weiterhin ein eingefügtes persönliches Token, das genauso gespeichert wird. Siehe [Einen Code-Host verbinden](/de-DE/handbuch/anleitungen/code-host-verbinden/).
 
 :::note[Es gibt auch einen Bildschirm nur über die URL]
 `/workspaces/<workspaceId>/api-keys` zeigt dieselben zwei Karten wie der erste Schritt des Onboardings. **In der Oberfläche gibt es nirgends einen Navigationseintrag**; erreichbar ist er nur, indem du die URL eintippst. Nimm stattdessen Einstellungen → Arbeitsbereich → Profil und Identität.
@@ -46,30 +49,32 @@ Der Dialog **Umgebungsvariablen** je Adapter sieht nach dem Ort für einen solch
 
 ## Einen Ticket-Anbieter verbinden
 
-Die Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Allgemein** hält beide Hälften einer Entscheidung: bei welchem Anbieter deine Tickets liegen und die Zugangsdaten dafür. Wählst du **Lokal**, blendet das die Zeile mit den Zugangsdaten aus — lokale Tickets liegen in der eigenen Datenbank dieses Servers und haben nichts, wogegen sie sich authentifizieren.
+Die Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Allgemein** hält beide Hälften einer Entscheidung: bei welchem Anbieter deine Tickets liegen und wer Control Center ist, wenn es mit ihm spricht. Wählst du **Lokal**, blendet das die Linear-Zeilen aus — lokale Tickets liegen in der eigenen Datenbank dieses Servers und haben nichts, wogegen sie sich authentifizieren.
 
-Dein Schlüssel liegt auf dem Server unter deiner Nutzer-ID, wie der der Forge. Seinen eigenen Linear-Schlüssel hält der Server getrennt (**Anbieter-Apps**); darauf läuft die Ticket-Synchronisierung, wenn kein Mensch sie angefordert hat. In die Sandbox eines Agenten wird kein Ticketing-Schlüssel injiziert; Agenten schreiben Tickets über die Werkzeuge von Control Center, die die Regel **In einen externen Tracker schreiben** fragen. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
+Linear hat zwei Anmeldungen und keinen eingefügten Schlüssel: **Linear** ist deine, für das, was du tust, und **Linear-Automatisierung** ist die Control-Center-App des Arbeitsbereichs, von einem Administrator verbunden, für Ticket-Synchronisierung, Pipelines und Agenten. Der Server kann außerdem einen **Service-API-Schlüssel** (**Anbieter-Apps**) für Arbeitsbereiche ohne verbundene Automatisierung halten. In die Sandbox eines Agenten werden keine Ticketing-Zugangsdaten injiziert; Agenten schreiben Tickets über die Werkzeuge von Control Center, die die Regel **In einen externen Tracker schreiben** fragen. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
 
 ## Rotieren oder widerrufen
 
-- **Deine GitHub-Zugangsdaten**: klicke auf **Trennen**, melde dich dann erneut an oder füge das neue Token ein. Widerrufe das alte auf GitHub
-- **Die App des Servers**: erzeuge auf der GitHub-Seite der App einen neuen privaten Schlüssel oder ein Client-Secret, füge es unter **Anbieter-Apps** ein und klicke auf **Testen**
+- **Deine GitHub-Anmeldung**: klicke auf **Trennen**, dann erneut auf **Bei GitHub anmelden**. Das Trennen verwirft auch jedes Token, das der Server in deinem Namen ausgestellt hat
+- **Ein GitLab- oder Bitbucket-Token**: klicke auf **Token aktualisieren** und füge das neue ein. Widerrufe danach das alte bei der Forge
+- **Die App des Servers**: erzeuge auf der Seite der App beim Anbieter einen neuen privaten Schlüssel oder ein Client-Secret, füge es unter **Anbieter-Apps** ein und klicke auf **Testen**
+- **Der Installationsschlüssel für Connect**: **Schlüssel rotieren** auf der Karte **Control Center Connect** oder `cc_server connect rotate-key --yes`. Alle, die sich über Connect angemeldet haben, melden sich erneut an. Siehe [Control Center Connect](/de-DE/handbuch/referenz/connect/)
 - **Ein Modellanbieter**: melde dich in seiner Zeile ab (OAuth) oder entferne den Schlüssel, und verbinde ihn erneut
-- **Slack**: füge die Tokens im Verbindungsdialog erneut ein. Siehe [Slack-Integration einrichten](/de-DE/handbuch/anleitungen/slack-integration/)
+- **Slack**: Bei deiner eigenen App fügst du die Tokens im Verbindungsdialog erneut ein. Die gemeinsame App von Control Center hat kein Token zum Rotieren: Ihr Bot-Token wird über Connect erneuert, und **Trennen** widerruft es und deinstalliert den Bot aus Slack. Siehe [Slack-Integration einrichten](/de-DE/handbuch/anleitungen/slack-integration/)
 
 ## Fehlersuche
 
-### Die PR-Liste ist leer, aber mein Token funktioniert in `curl`
+### Ein GitLab- oder Bitbucket-Token funktioniert in `curl`, aber nicht hier
 
-Prüfe den Untertitel der Zeile **Code-Hosting**. Nennt er eine andere Quelle („über die App dieses Servers“, „aus der Umgebung“), sind die Zugangsdaten, die du prüfst, nicht die, die antworten — deine wurden nicht gespeichert.
+Prüfe den Untertitel der Zeile **Code-Hosting**. Lautet er „aus der Umgebung“, antworten die Zugangsdaten des Servers, nicht deine — deine wurden nicht gespeichert.
 
-### Das Token wird angenommen, spätere Anfragen scheitern
+### Ein GitLab- oder Bitbucket-Token wird angenommen, spätere Anfragen scheitern
 
-Das Token wird so geprüft, wie es gespeichert ist, deshalb nennt die Zeile das Konto dahinter — nur das Konto, nicht die Scopes. Ein Token mit zu wenigen Scopes verbindet sich und scheitert danach an einzelnen Anfragen. Prüfe die Scopes und das Ablaufdatum:
+Das Token wird so geprüft, wie es gespeichert ist, deshalb nennt die Zeile das Konto dahinter — nur das Konto, nicht die Scopes. Ein Token mit zu wenigen Scopes verbindet sich und scheitert danach an einzelnen Anfragen. Prüfe seine Scopes und sein Ablaufdatum bei der Forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Ein Anbieter meldet, dass die Anmeldung auf diesem Server nicht eingerichtet ist
+
+Der Server hat für diesen Anbieter weder eine eigene App noch Control Center Connect. Der Server-Eigentümer wählt eins davon unter **Einstellungen → Server → Single sign-on**.
 
 ## Verwandte Anleitungen
 

@@ -1,30 +1,118 @@
 ---
 title: Konfigurera Linear-integration
-description: Lagra en Linear-API-nyckel på servern så att agenter kan anropa Linear, och välj Linear som ärendeleverantör för nya ärenden.
+description: Logga in på Linear, anslut arbetsytans Linear-automatisering och välj Linear som ärendeleverantör för nya ärenden.
 slug: sv-SE/handbok/how-to-guider/linear-integration
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Klistra in en Linear-API-nyckel på servern kopplad till din användare, på samma
-sätt som du ansluter en kodvärd. Ärenden, projekt, länkar, medarbetare,
-delegering och tilldelning fungerar alla mot Control Centers egen databas utan
-att någon extern tjänst krävs — se
+Linear har två identiteter i Control Center, och båda är inloggningar i
+webbläsaren: din, för det du gör, och arbetsytans Control Center-app, för det som
+agenter och pipelines gör. Ärenden, projekt, länkar, medarbetare, delegering och
+tilldelning fungerar alla mot Control Centers egen databas utan att någon extern
+tjänst krävs — se
 [Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/).
 
-## Lagra din Linear-nyckel
+## Förutsättningar
 
-**API-nyckel för ärenden** finns under **Inställningar → Arbetsyta → Allmänt**,
-på kortet **Ärenden**. Den lagrar nyckeln på servern kopplad till ditt
-användar-id. Serverns egen nyckel för obevakat arbete kommer från
-`LINEAR_API_KEY` eller kortet **Leverantörsappar**. Ingen ärendenyckel läggs i
-en agents sandlåda: agenter skriver ärenden via Control Centers egna verktyg,
-som först frågar regeln **Skriv till ett externt ärendesystem**.
+- Servern kan logga in personer på Linear: via Control Center Connect, eller med
+  serverns egen Linear-applikation
+  ([Registrera din egen Linear-applikation](#registrera-din-egen-linear-applikation)).
+  Serverägaren väljer under **Inställningar → Server → Enkel inloggning**
+- En administratör i arbetsytan, för att välja Linear som ärendeleverantör och
+  ansluta Linear-automatisering
 
-## Stämpla nya ärenden som Linear
+## Välj Linear för arbetsytan
 
-**Ärendeleverantör** (onboardingens första steg, och
-`/workspaces/<workspaceId>/api-keys`) erbjuder `local` och `linear`. Väljer du
-`linear` stämplas `provider: linear` på ärenden du skapar från och med då.
+1. Gå till **Inställningar → Arbetsyta → Allmänt** och leta upp kortet **Ärenden**
+2. Ställ in **Ärendeleverantör** på **Linear**
+
+Ärenden som du skapar från och med då stämplas med `provider: linear`. **Lokal**
+behåller ärendena i serverns egen databas och döljer Linear-raderna: det finns
+inget att autentisera mot.
+
+## Logga in på Linear
+
+På samma kort är raden **Linear** din:
+
+1. Klicka på **Logga in på Linear**
+2. Godkänn i din webbläsare
+3. Med serverns egen applikation märker dialogen det själv. Via Connect skriver
+   du in koden på 8 tecken som webbläsaren visar, eller låter den öppna Control
+   Center via `control-center://`-länken
+
+Allt du gör i Linear från Control Center körs på den här inloggningen och inget
+annat. Om du inte är inloggad ber appen dig logga in i stället för att agera som
+någon annan.
+
+## Anslut Linear-automatisering
+
+Raden **Linear-automatisering** är arbetsytans Control Center-app i Linear.
+Ärendesynk, pipelines och agenter skriver med den, så automatiserade ärenden och
+kommentarer visas som Control Center och inte som en person.
+
+1. En administratör i arbetsytan klickar på **Anslut Linear för automatisering**
+2. Administratören godkänner appen för Linear-arbetsytan i webbläsaren, som ovan
+
+Raden visar sedan ”Ansluten till _din Linear-arbetsyta_”. Bara administratörer i
+arbetsytan kan ansluta eller koppla från den.
+
+Ingen Linear-inloggningsuppgift läggs i en agents sandlåda: agenter skriver
+ärenden via Control Centers egna verktyg, som först frågar regeln **Skriv till
+ett externt ärendesystem**.
+
+## Registrera din egen Linear-applikation
+
+Använd din egen applikation när du har valt **Använd mina egna appar**. Serverns egen applikation gäller bara då: med Control Center Connect eller en egen Connect sköter Connect alla spår, Linear inräknat, och serverns applikation och tjänst-API-nyckel förblir sparade men oanvända. En arbetsytas egen applikation ([nedan](#ge-en-arbetsyta-en-egen-linear-applikation)) gäller fortfarande i alla lägen.
+
+1. Skapa en OAuth-applikation på
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Lägg till båda callback-URL:erna som **Inställningar → Server → Enkel
+   inloggning → Leverantörsappar → Linear** visar under **Callback-URL:er**,
+   ordagrant: `<server origin>/oauth/linear/callback` och
+   `<server origin>/oauth/linear_app/callback`
+3. Klistra in **Klient-ID** i Linear-blocket
+
+Det finns ingen klienthemlighet: servern loggar in med PKCE. Linears
+uppdateringstoken går ut efter 30 dagar utan användning, så servern förnyar en
+gång om dagen varje Linear-inloggning som är äldre än 20 dagar.
+
+Samma block tar emot en valfri **Tjänst-API-nyckel**. Det är serverns egen
+Linear-inloggningsuppgift för automatisering i arbetsytor som inte har anslutit
+Linear-automatisering. Förvara den i **Inställningar** eller i serverns
+`.env`-fil som `LINEAR_API_KEY`: servern vägrar starta när `LINEAR_API_KEY` är
+exporterad i dess processmiljö.
+
+## Ge en arbetsyta en egen Linear-applikation
+
+En arbetsyta kan logga in i Linear via en egen applikation i stället för serverns. Bara en administratör eller ägare för arbetsytan kan konfigurera det.
+
+1. Skapa en OAuth-applikation för Linear enligt stegen ovan
+2. Gå till **Inställningar → Arbetsyta → Allmänt → Leverantörsappar** och öppna **Linear**
+3. Välj **Använd arbetsytans egna app**
+4. Lägg till båda callback-URL:erna som raden visar under **Callback-URL:er** i Linear-applikationen, ordagrant
+5. Klistra in **Klient-ID** och, valfritt, en **Tjänst-API-nyckel** för den här arbetsytans automatisering
+
+Arbetsytans applikation besvarar sedan varje Linear-inloggning och automatiseringsbegäran i den här arbetsytan, oavsett hur servern loggar in personer. Den faller aldrig tillbaka på serverns applikation eller på Connect: tills ett klient-ID är satt är Linear av i den här arbetsytan, och raden säger vad som saknas. Tjänst-API-nyckeln används bara här; utan den behövs **Anslut Linear för automatisering** för synken.
+
+Byte mellan serverns applikation och arbetsytans, eller byte av arbetsytans klient-ID, loggar ut alla i den här arbetsytan från Linear och kopplar bort deras automatisering. De loggar in igen via den nya applikationen. **Använd serverns app** tar bort arbetsytans sparade fält. Hemligheter är skrivskyddade: raden visar bara om en sådan är sparad. Andra arbetsytor på servern påverkas inte.
+
+## Felsökning
+
+### Raden Linear säger att inloggningen inte är konfigurerad
+
+Servern har varken en egen Linear-applikation eller Connect. Serverägaren väljer
+en av dem under **Inställningar → Server → Enkel inloggning**. När arbetsytan använder sin egen applikation säger raden i stället att dess konfiguration inte är klar: en administratör för arbetsytan lägger till klient-ID:t under **Inställningar → Arbetsyta → Allmänt → Leverantörsappar**.
+
+### Ärendesynken misslyckas med ett autentiseringsfel
+
+Arbetsytan har ingen ansluten Linear-automatisering och servern har ingen
+tjänst-API-nyckel, så synken har ingen inloggningsuppgift. En administratör i
+arbetsytan klickar på **Anslut Linear för automatisering**.
+
+### Anslutningen av automatisering säger att Linear-arbetsytan är ansluten någon annanstans
+
+Control Center-appen för den Linear-arbetsytan är redan ansluten till en annan
+Control Center-server.
 
 ## Relaterade guider
 

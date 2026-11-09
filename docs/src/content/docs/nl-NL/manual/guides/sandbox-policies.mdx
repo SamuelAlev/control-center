@@ -2,7 +2,7 @@
 title: Sandboxbeleid configureren
 description: Wat een agentrun begrenst, hoe je ziet of de OS-sandbox hem omhult en hoe de actieregels bepalen wat een agent mag pushen of bereiken.
 slug: nl-NL/handleiding/gidsen/sandboxbeleid
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Of een agentrun in een sandbox draait, wordt op de server beslist, bij het
@@ -73,9 +73,10 @@ een goedkeuringsverzoek met de repo en de refs; bij **Weigeren** toont git
 
 Hoe elke regel de run bereikt:
 
-- **Pushen** wordt afgedwongen via wat de run bezit. Het GitHub-token is een
-  installatietoken van de GitHub App met alleen leesrechten, dat inhoud kan
-  lezen en met pull requests kan werken. De git-configuratie stuurt elke
+- **Pushen** wordt afgedwongen via wat de run bezit. Het GitHub-token dekt de
+  ene repository van de run en kan niet pushen: het kan inhoud lezen en, als het
+  verantwoordelijke lid mag pushen, opmerkingen plaatsen op pull requests. De
+  git-configuratie stuurt elke
   GitHub-push naar een loopback-gateway op `cc_server`, die de regel raadpleegt
   en de push pas daarna doorstuurt met een schrijftoken dat de agent nooit ziet.
   De gateway stuurt alleen door naar de eigen repo van de worktree of naar een
@@ -93,18 +94,13 @@ Hoe elke regel de run bereikt:
   harness bij elke aanroep vragen. Zolang het netwerk aan staat, staat GitHub
   altijd op de uitgaande allowlist.
 
-:::caution[Zonder GitHub App is de pushregel alleen een advies]
-Zonder geconfigureerde GitHub App krijgt de run het personal access token als
-terugval, dat niet tot alleen lezen kan worden beperkt. `git push` loopt nog
-steeds via de gateway en de regel, maar code die het token rechtstreeks
-gebruikt, kan eromheen pushen. Configureer de GitHub App om de regel bindend te
-maken.
-
-De GitHub-inloggegevens van de run zijn altijd die van de broker — een tot de
-repo beperkt installatietoken van de GitHub App, of de PAT als terugval — nooit
-het eigen opgeslagen token van het aanvragende lid. De server-PAT wordt
-achtergehouden voor een run die handelt voor een lid dat niet de eigenaar is en
-GitHub niet heeft gekoppeld.
+:::note[Waar het GitHub-token van de run vandaan komt]
+Het token wordt voor de run uitgegeven via de GitHub App van de werkruimte, de
+eigen app van de server of Control Center Connect, en is beperkt tot wat het
+verantwoordelijke lid (degene die het vroeg, anders de eigenaar van de
+werkruimte) in die repository mag doen. Het is nooit de volledige, doorgegeven
+aanmelding van een lid, en er is geen reservetoken: als er geen kan worden
+uitgegeven, start de run zonder, en zijn notities vermelden waarom.
 :::
 
 ## Controleren of je agentruns in een sandbox draaien

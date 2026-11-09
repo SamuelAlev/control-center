@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:rhttp/rhttp.dart';
@@ -156,10 +157,25 @@ void main() {
         expect(event.verb, 'ticket');
         expect(event.rest, 'Fix the login test | It fails on CI.');
         expect(event.externalUserId, 'U1');
+        // Regression: the channel was read from `space_id`, a key Slack never
+        // sends, so every command reply fell back to a channel of ''.
         expect(event.externalChannelId, 'C1');
-        expect(event.replyHandle, 'https://hooks.slack.test/commands/Tr1');
+        expect(event.replyHandle, 'https://hooks.slack.com/commands/T1/Tr1');
       },
     );
+
+    test('a response url off Slack’s hooks host is never kept', () async {
+      await h.command(
+        '/cc',
+        'help',
+        responseUrl: 'https://attacker.example/commands/Tr1',
+      );
+
+      final event = h.events.single as ChatCommandEvent;
+      // Without a reply handle the bridge answers ephemerally instead of
+      // posting the reply to wherever the payload pointed.
+      expect(event.replyHandle, isNull);
+    });
 
     test(
       'a bare command has an empty verb rather than a missing one',
@@ -171,6 +187,55 @@ void main() {
         expect(event.rest, '');
       },
     );
+  });
+
+  group('starting', () {
+    test('the bot the token was saved as opens the transport', () async {
+      h.api.authTest = {
+        'ok': true,
+        'team_id': 'T1',
+        'user_id': 'BOT',
+        'bot_id': 'B1',
+      };
+
+      await h.adapter.start();
+
+      expect(h.transport.started, isTrue);
+      expect(h.adapter.lastError, isNull);
+    });
+
+    test('a token for another bot opens nothing', () async {
+      h.api.authTest = {
+        'ok': true,
+        'team_id': 'T1',
+        'user_id': 'BOT',
+        'bot_id': 'B-someone-else',
+      };
+
+      await h.adapter.start();
+
+      expect(h.transport.started, isFalse);
+      expect(h.adapter.state, ChatConnectionState.error);
+      expect(h.adapter.lastError, 'bot_identity_mismatch');
+    });
+
+    test('a revoked token opens nothing', () async {
+      h.api.fail('auth.test', 'token_revoked');
+
+      await h.adapter.start();
+
+      expect(h.transport.started, isFalse);
+      expect(h.adapter.lastError, 'token_revoked');
+    });
+
+    test('a Slack outage is not a refusal', () async {
+      h.api.fail('auth.test', 'internal_error');
+
+      await h.adapter.start();
+
+      // The transport proves the connection itself.
+      expect(h.transport.started, isTrue);
+    });
   });
 
   group('outbound translation', () {
@@ -256,6 +321,13 @@ void main() {
       () async {
         expect(await h.adapter.respondToCommand(null, markdown: 'hi'), isFalse);
         expect(await h.adapter.respondToCommand('', markdown: 'hi'), isFalse);
+        expect(
+          await h.adapter.respondToCommand(
+            'https://hooks.slack.test/commands/Tr1',
+            markdown: 'hi',
+          ),
+          isFalse,
+        );
         expect(h.api.commandReplies, isEmpty);
       },
     );
@@ -276,6 +348,35 @@ void main() {
       expect(profile?.email, 'dana@example.com');
       expect(profile?.isBot, isFalse);
       expect(profile?.teamId, 'T1');
+      expect(profile?.fullMember, isTrue);
+      // Slack did not say the address is confirmed, so it is not.
+      expect(profile?.emailConfirmed, isFalse);
+    });
+
+    test('a guest or a visitor is never a full member', () async {
+      h.api.users['U4'] = {
+        'id': 'U4',
+        'name': 'gus',
+        'team_id': 'T1',
+        'is_restricted': true,
+        'is_email_confirmed': true,
+        'profile': {'email': 'gus@example.com'},
+      };
+      h.api.users['U5'] = {
+        'id': 'U5',
+        'name': 'vic',
+        // A Slack Connect visitor from another organization.
+        'team_id': 'T9',
+        'is_email_confirmed': true,
+        'profile': {'email': 'vic@example.com'},
+      };
+
+      final guest = await h.adapter.userProfile('U4');
+      final visitor = await h.adapter.userProfile('U5');
+
+      expect(guest?.fullMember, isFalse);
+      expect(guest?.emailConfirmed, isTrue);
+      expect(visitor?.fullMember, isFalse);
     });
 
     test('the capability set states Slack’s real limits', () {
@@ -808,7 +909,7 @@ void main() {
 
     test('a command reply carries the card as a block', () async {
       final answered = await h.adapter.respondToCommand(
-        'https://hooks.slack.test/commands/Tr1',
+        'https://hooks.slack.com/commands/T1/Tr1',
         markdown: 'Filed **CC-1** — Rotate the certificate.',
         card: _card.copyWith(status: ChatTaskStatus.complete),
       );
@@ -900,8 +1001,9 @@ class _Harness {
     adapter = SlackChatAdapter(
       workspaceId: 'ws-1',
       api: api.client,
-      appToken: 'xapp-1',
+      transport: ({required onEnvelope, required onStateChanged}) => transport,
       botUserId: 'BOT',
+      botId: 'B1',
       botName: 'controlcenter',
       teamId: 'T1',
     );
@@ -909,6 +1011,7 @@ class _Harness {
   }
 
   late final _SlackApiStub api;
+  final transport = _FakeTransport();
   late final SlackChatAdapter adapter;
   final events = <ChatInboundEvent>[];
   late final StreamSubscription<ChatInboundEvent> _sub;
@@ -930,7 +1033,11 @@ class _Harness {
     await pumpEventQueue();
   }
 
-  Future<void> command(String command, String text) async {
+  Future<void> command(
+    String command,
+    String text, {
+    String? responseUrl,
+  }) async {
     final trigger = 'Tr${++_triggers}';
     await adapter.handleEnvelope(
       SlackEnvelope.fromJson({
@@ -942,8 +1049,9 @@ class _Harness {
           'command': command,
           'text': text,
           'user_id': 'U1',
-          'space_id': 'C1',
-          'response_url': 'https://hooks.slack.test/commands/$trigger',
+          'channel_id': 'C1',
+          'response_url':
+              responseUrl ?? 'https://hooks.slack.com/commands/T1/$trigger',
         },
       }),
     );
@@ -956,8 +1064,27 @@ class _Harness {
   }
 }
 
+/// A transport that only records whether the adapter opened it.
+class _FakeTransport implements SlackTransport {
+  bool started = false;
+
+  @override
+  ChatConnectionState get state => started
+      ? ChatConnectionState.connected
+      : ChatConnectionState.disconnected;
+
+  @override
+  String? get lastError => null;
+
+  @override
+  Future<void> start() async => started = true;
+
+  @override
+  Future<void> stop() async => started = false;
+}
+
 /// A real [SlackApiClient] over a [TestHttpClient]: calls are observed as Slack
-/// would see them (method + JSON payload) and any method can be made to fail.
+/// would see them (method + payload) and any method can be made to fail.
 class _SlackApiStub {
   _SlackApiStub() {
     client = SlackApiClient(
@@ -978,6 +1105,7 @@ class _SlackApiStub {
         : 'response_url';
     final decoded = switch (request.body) {
       HttpBodyJson(:final json) => json,
+      HttpBodyForm(:final form) => form,
       _ => null,
     };
     return httpTextResponse(
@@ -997,6 +1125,7 @@ class _SlackApiStub {
   final List<Map<String, dynamic>> appends = [];
   final List<Map<String, dynamic>> commandPayloads = [];
   final Map<String, Map<String, dynamic>> users = {};
+  Map<String, dynamic> authTest = const {'ok': true};
   final Map<String, String> _failures = {};
   final Map<String, String> _onceFailures = {};
 
@@ -1031,6 +1160,8 @@ class _SlackApiStub {
       case 'chat.appendStream':
         appends.add(payload);
         return {'ok': true};
+      case 'auth.test':
+        return authTest;
       case 'users.info':
         final user = users[payload['user']];
         return user == null

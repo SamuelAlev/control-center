@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:archive/archive.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -396,7 +398,7 @@ class IosAutomationStore {
     if (Platform.isWindows) {
       return;
     }
-    final result = await Process.run('/bin/chmod', [mode, path]);
+    final result = await ChildProcess.run('/bin/chmod', [mode, path]);
     if (result.exitCode != 0) {
       throw IosAutomationException(
         'chmod $mode failed for $path: ${result.stderr}',

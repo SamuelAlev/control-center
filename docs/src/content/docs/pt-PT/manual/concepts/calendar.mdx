@@ -1,21 +1,33 @@
 ---
 title: Calendário e agendamento
-description: Como o Control Center sincroniza o Google Calendar no servidor, porque é que o início de sessão é uma autorização device-code e o que abrange o âmbito só de leitura.
+description: Como o Control Center sincroniza o Google Calendar no servidor, como o início de sessão no navegador chega a um servidor headless e o que pode alterar na Google.
 slug: pt-PT/manual/conceitos/calendario
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 O Control Center liga-se ao Google Calendar para que o seu dia fique ao lado da
 sua frota. Sincroniza os seus eventos, mostra-os nas vistas de mês, semana, dia
-e agenda, avisa-o antes de uma reunião começar e transforma qualquer evento numa
+e agenda, permite-lhe criar, mover, responder a convites e eliminar eventos,
+avisa-o antes de uma reunião começar e transforma qualquer evento numa
 [reunião](/pt-PT/manual/conceitos/reunioes/) gravada e resumida.
 
 ## O que altera no Google
 
-Quase nada. A integração importa os eventos e apresenta-os. Não cria, edita,
-elimina nem responde a convites. Todas as ligações device-code, incorporadas ou
-com as suas próprias credenciais, pedem `calendar.readonly` e
-`openid email`.
+Apenas o que faz por si próprio. Pode responder a um convite, criar um evento
+(arrastando pela grelha horária ou com o botão **+**), mover ou esticar um evento na
+grelha e eliminar um evento. Só se movem os seus próprios eventos e os que organiza:
+uma alteração de um convidado deixaria todos os outros na hora antiga. Cada alteração
+é feita pelo servidor com o início de sessão da sua própria conta, nos seus próprios
+calendários, e o servidor recusa um evento na conta de outro membro ou num calendário
+partilhado consigo só de leitura. A Google envia os e-mails aos convidados, tal como
+faria a partir do Google Calendar. Mover ou eliminar uma ocorrência de um evento
+recorrente deixa o resto da série intacto.
+
+Todas as ligações, através do Connect ou do cliente Google do próprio servidor, pedem
+`calendar.events` (ler e alterar eventos) e `calendar.calendarlist.readonly` (ver que
+calendários tem a conta), além de `openid email`. O servidor recusa um início de sessão
+que regresse com um conjunto diferente, por isso uma conta ligada com o âmbito anterior
+só de leitura tem de ser novamente ligada.
 
 Os eventos são sincronizados para a base de dados do próprio espaço de trabalho
 **no servidor** (`<dataDir>/<workspaceId>/workspace.db`) e apresentados por
@@ -24,46 +36,57 @@ todos os clientes através de RPC. Nenhum cliente detém credenciais da Google.
 ## Contas por espaço de trabalho
 
 As contas de calendário têm o âmbito do espaço de trabalho, como tudo o resto no
-Control Center. Cada [espaço de trabalho](/pt-PT/manual/conceitos/espacos-de-trabalho/)
-liga a sua própria conta Google (ou várias) e os eventos e tokens de um espaço
-de trabalho nunca são visíveis a partir de outro. Mudar de espaço de trabalho
-muda os calendários que vê.
+Control Center, e cada uma pertence ao membro que a ligou. Cada
+[espaço de trabalho](/pt-PT/manual/conceitos/espacos-de-trabalho/) liga as suas
+próprias contas Google e os eventos e credenciais de um espaço de trabalho nunca
+são visíveis a partir de outro. Dois membros que liguem o mesmo endereço Google
+ficam com duas contas. Mudar de espaço de trabalho muda os calendários que vê.
 
 Um espaço de trabalho pode ligar **várias** contas Google, como uma conta de
 trabalho e uma pessoal, e os seus eventos são combinados nas mesmas vistas.
 
-## Porque é que o início de sessão usa um código de dispositivo
+## Como o início de sessão chega ao servidor
 
-O `cc_server` headless não tem navegador para capturar um redirecionamento
-OAuth. Por isso não usa nenhum: autoriza com a **concessão device-code**
-(RFC 8628). O servidor mostra um código de utilizador curto e um URL da Google,
-aprova num dispositivo qualquer que tenha navegador e o servidor vai
-perguntando até que o faça. Uma instalação headless consegue ligar uma conta
-precisamente porque não há nenhum endpoint de redirecionamento para alojar.
+Ligar é um início de sessão no navegador, e quem o conclui é o servidor. O
+cliente que o executa é uma escolha do proprietário do servidor:
 
-A consequência a saber antes de usar as suas próprias credenciais: o tipo de
-cliente tem de ser "TV and Limited Input devices" da Google. A Google só concede
-a esse tipo de cliente um conjunto de âmbitos pré-aprovado, e um projeto em que
-o Calendar não está autorizado para esse tipo falha com `invalid_scope` — nesse
-caso precisaria de um cliente loopback ou web.
+- **O cliente Google do próprio servidor.** Um cliente do tipo Aplicação Web
+  registado com o redirecionamento `<server origin>/oauth/google/callback`. A
+  Google envia o navegador diretamente de volta ao servidor, pelo que o
+  navegador tem de o conseguir alcançar
+- **Control Center Connect.** A Google envia o navegador de volta ao Connect,
+  que mostra um código de 8 caracteres e uma ligação `control-center://`. A
+  pessoa escreve o código na aplicação, ou segue a ligação, e o servidor
+  reclama o início de sessão com ele. O servidor não precisa de endereço
+  público para isso, e é assim que um servidor headless numa rede privada liga
+  calendários
 
-Os tokens nunca saem do servidor. São escritos no `secrets.json` do servidor, no
-respetivo diretório de dados, com a chave
-`google_google:<workspaceId>:<email>`, juntamente com as bases de dados e sob a
-mesma fronteira de confiança do sistema de ficheiros do anfitrião. O servidor
-renova o acesso automaticamente e, quando a Google invalida uma conta em
-definitivo (uma sessão revogada ou expirada há muito tempo), publica
-`CalendarAuthExpired` e mostra um banner **Voltar a ligar** em vez de falhar em
-silêncio.
+Um cliente próprio tem sempre precedência. Um ID de cliente sem o respetivo
+segredo é uma configuração incompleta e recusa inícios de sessão em vez de
+recorrer ao Connect.
 
-Uma compilação a partir do código-fonte não inclui **nenhumas** credenciais da
-Google — fornece o seu próprio ID de cliente e segredo. As compilações oficiais
-incluem um cliente device-code não confidencial, para que o fluxo de ligação
-funcione de imediato; o servidor guarda apenas um marcador que o referencia,
-nunca uma cópia. `GOOGLE_OAUTH_CLIENT_ID` (e o respetivo segredo) no ambiente
-tem sempre precedência sobre o par incorporado. Deliberadamente, não existe
-nenhuma flag `--google-client-id`: as flags desconhecidas são ignoradas e um
-segredo numa linha de comandos pode ser lido através de `ps`.
+As credenciais nunca saem do servidor. São escritas no `secrets.json` do
+servidor, no respetivo diretório de dados, com a chave
+`google_google:<workspaceId>:<userId>:<email>`, juntamente com as bases de
+dados e sob a mesma fronteira de confiança do sistema de ficheiros do
+anfitrião. Um início de sessão com o cliente próprio guarda os tokens de acesso
+e de renovação. Um início de sessão através do Connect guarda apenas uma
+credencial selada que o Connect abre só para este servidor; o token de acesso
+fica na memória. O servidor renova o acesso automaticamente e, quando a Google
+invalida uma conta em definitivo (uma sessão revogada ou expirada há muito
+tempo), publica `CalendarAuthExpired` e mostra um banner **Voltar a ligar** em
+vez de falhar em silêncio. Um início de sessão que este servidor já não
+consegue usar (emitido por outro cliente próprio, ou selado para outra
+instalação ou outro Connect) é apagado da próxima vez que é lido e mostra o
+mesmo banner.
+
+Nenhuma compilação inclui credenciais da Google. O cliente do servidor vem de
+**Definições → Servidor → Início de sessão único → Aplicações do fornecedor**
+ou do ficheiro `.env` do servidor (`GOOGLE_OAUTH_CLIENT_ID`,
+`GOOGLE_OAUTH_CLIENT_SECRET`). Deliberadamente, não existe nenhuma flag de
+linha de comandos: um segredo numa linha de comandos pode ser lido através de
+`ps`, e o servidor recusa-se a arrancar quando o segredo é exportado no
+ambiente do processo.
 
 Para executar o seu próprio projeto Google, consulte
 [Ligar um Google Calendar](/pt-PT/manual/guias/ligar-calendario/).
@@ -127,7 +150,7 @@ de reuniões funcione no navegador.
 
 :::note[Os agentes não conseguem ler o seu calendário]
 Não existem ferramentas MCP de calendário. Um agente não consegue listar
-eventos, ler os detalhes de um evento nem responder a um convite em seu nome; a
+eventos, ler os detalhes de um evento, criar, mover, eliminar nem responder a um convite em seu nome; a
 superfície `calendar.*` é RPC, apenas para clientes humanos.
 :::
 

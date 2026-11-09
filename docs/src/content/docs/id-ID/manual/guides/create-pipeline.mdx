@@ -2,7 +2,7 @@
 title: Buat templat pipeline
 description: Susun templat alur kerja DAG di editor pipeline — tambahkan node, hubungkan, deklarasikan input, dan buat agar dapat dijalankan.
 slug: id-ID/panduan-pengguna/panduan-praktis/buat-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Templat pipeline disusun di pengaturan ruang kerja. Entri **Pipeline** di bilah
@@ -128,10 +128,17 @@ Menambahkan **Skrip**. Tidak ada kolom direktori kerja maupun lingkungan, karena
 keduanya tidak dapat dikonfigurasi:
 
 - Setiap langkah bash dalam satu eksekusi berbagi cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` disuntikkan dari penyimpanan kredensial, sehingga `gh` dan
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` berfungsi tanpa penyiapan.
-- Skrip dijalankan sebagai executable literal `bash`, sehingga `bash` harus ada
-  di `PATH` host server. Hal ini perlu diperhatikan di Windows.
+- Skrip berjalan di dalam sandbox OS host, seperti perintah agen. Host tanpa sandbox (Windows, atau
+  Linux tanpa `bwrap`) menggagalkan langkah itu alih-alih menjalankannya tanpa batasan. Direktori
+  data dan berkas `.env` server tidak dapat dibaca dari dalam.
+- Git dan `gh` tidak melihat konfigurasi host apa pun: tidak ada login tersimpan, credential helper,
+  atau hook global.
+- Ketika pipeline menyebut repo GitHub yang tertaut ke ruang kerja (`repo_full_name` di state atau
+  payload pemicu), `GH_TOKEN` dan `GITHUB_TOKEN` memegang token yang hanya dapat membaca repo itu,
+  sehingga `gh` dan `git clone` terhadapnya berfungsi tanpa penyiapan. Jika tidak, tidak ada token
+  GitHub sama sekali.
+- Hanya admin ruang kerja yang dapat membuat atau mengedit pipeline dengan langkah bash.
+- Skrip dijalankan sebagai executable literal `bash`, sehingga `bash` harus ada di `PATH` host server.
 
 ### Router
 

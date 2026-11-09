@@ -2,18 +2,18 @@
 title: Percakapan PR
 description: Bagaimana komentar PR GitHub menjadi giliran agen tanpa webhook, apa yang mengotorisasi penulisnya, dan siapa yang diatribusikan pada tiap sisi percakapan.
 slug: id-ID/panduan-pengguna/konsep/percakapan-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Pull request sudah menjadi tempat percakapan tentang kode berlangsung.
 Percakapan PR menjadikannya permukaan pada ruang kerja Control Center, sama
 seperti [jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/)
-menjadikan Slack demikian: sebut bot GitHub App milik server di sebuah PR,
-balas di dalam utas tinjauannya, atau tambahkan label `ai-review`, dan
-pekerjaannya berlangsung di space tinjauan milik PR — dengan atribusi dan
-pagar pengaman yang sama seperti apa pun yang diketik di aplikasi. Komentar
-juga digerbangi oleh keanggotaan; label tidak, karena label tidak punya
-penulis. Jawaban bot kembali di GitHub, di jalur tempat pertanyaan diajukan.
+menjadikan Slack demikian: sebut `@usectrl` (atau bot GitHub App ruang kerja)
+di sebuah PR, balas di dalam utas tinjauannya, atau tambahkan label `ai-review`,
+dan pekerjaannya berlangsung di space tinjauan milik PR — dengan atribusi dan
+pagar pengaman yang sama seperti apa pun yang diketik di aplikasi. Komentar dan
+label digerbangi dengan cara yang sama: pada anggota yang menulis atau
+menambahkannya. Jawaban bot kembali di GitHub, di jalur tempat pertanyaan diajukan.
 
 Tiga keputusan membentuk fitur ini, dan masing-masing adalah keputusan yang
 sama yang dibuat jembatan chat untuk chat, dinyatakan kembali untuk forge:
@@ -24,18 +24,20 @@ datang dari luar**, dan **siapa yang diatribusikan pada tiap sisinya**.
 
 Satu-satunya kanal push GitHub untuk sebuah app adalah webhook, dan webhook
 memerlukan URL masuk — satu hal yang sengaja tidak pernah diwajibkan oleh
-permukaan ini. Jadi penemuannya berupa penyapuan: kira-kira setiap menit, satu
-pencarian ber-alias per instalasi app meminta GitHub mencari PR yang menyebut
-bot (atau slug pendeknya) dan PR terbuka yang membawa label tinjauan; PR yang
-sudah punya space tinjauan akan dibaca utas komentarnya; dan semuanya
-dibandingkan berdasarkan id komentar terhadap apa yang terlihat pada penyapuan
-sebelumnya.
+permukaan ini. Jadi penemuannya berupa penyapuan: satu pencarian ber-alias per
+instalasi app meminta GitHub mencari PR yang menyebut bot (atau slug pendeknya)
+dan PR terbuka yang membawa label tinjauan; PR yang sudah punya space tinjauan
+akan dibaca utas komentarnya; dan semuanya dibandingkan berdasarkan id komentar
+terhadap apa yang terlihat pada penyapuan sebelumnya. App milik sendiri menyapu
+setiap menit atas paling banyak 25 PR. Lewat Connect, panggilan menggunakan kuota
+GitHub milik masing-masing anggota, sehingga penyapuan berjalan setiap dua menit
+atas paling banyak 10 PR, dan ruang kerja yang kuota GitHub-nya di bawah 15%
+dilewati hingga pulih. Connect sendiri tidak pernah melihat konten PR.
 
 Konsekuensi desainnya layak disebutkan:
 
 - **Latensi adalah interval penyapuan, bukan peristiwa.** Pengakuan 👀 tiba
-  dalam waktu sekitar satu menit. Tidak ada hal mendesak yang bergantung
-  padanya.
+  dalam satu penyapuan. Tidak ada hal mendesak yang bergantung padanya.
 - **Tepat sekali, per komentar.** Id komentar unik di seluruh GitHub; setiap id
   dicatat begitu diklasifikasikan sebagai memenuhi syarat, sebelum apa pun
   menindaklanjutinya. Crash dapat menghilangkan penanganan sebuah komentar,
@@ -52,85 +54,92 @@ Konsekuensi desainnya layak disebutkan:
   adalah jalur untuk menjalankan ulang.
 
 Pencarian berjalan sekali per akun instalasi pada klien milik pemilik itu
-sendiri, karena token instalasi hanya melihat repo instalasinya sendiri — satu
-kredensial tingkat server akan diam-diam melewatkan setiap PR di bawah
-instalasi app yang lain.
+sendiri, karena token hanya melihat repo instalasinya sendiri — satu kredensial
+tingkat server akan diam-diam melewatkan setiap PR di bawah instalasi app yang lain.
 
 ## Keanggotaan yang mengotorisasi, bukan komentarnya
 
-Komentar PR datang hanya membawa login penulis — identitas eksternal yang
-belum terautentikasi sampai terbukti. Bot menyelesaikannya terhadap indeks
-terbalik anggota ruang kerja dan akun GitHub mereka yang terhubung, yang
-dibangun ulang berdasarkan TTL karena orang-orang masuk dan diundang saat
-server berjalan.
+Komentar PR datang hanya membawa login penulis — identitas eksternal yang belum
+terautentikasi sampai terbukti. Server menyelesaikan ID akun GitHub numerik dan
+tidak dapat berubah milik penulis (tidak pernah login, yang bisa diganti nama dan
+dipakai ulang) terhadap proses masuk GitHub anggota ruang kerja, yang dibangun
+ulang berdasarkan TTL karena orang-orang masuk dan diundang saat server berjalan.
+Untuk label `ai-review`, orang yang diselesaikan adalah siapa pun yang menambahkannya
+paling baru.
 
-Perilaku fail-closed tampak seperti tangga, dan setiap anak tangganya menjawab
-di utas tempat penolakannya terjadi:
+Tiga pemeriksaan, berurutan, dan kegagalan di salah satunya diam saja — tidak ada yang diposting:
 
-- **Login yang tidak dikenal** — tidak ditautkan, atau ditautkan oleh seseorang
-  yang bukan anggota ruang kerja ini — diberi tahu untuk masuk dan memastikan
-  bahwa dirinya termasuk anggota
-- **Anggota hanya-baca** (`viewer` atau `guest`) diberi tahu bahwa perannya
-  tidak dapat memulai pekerjaan
+- **Anggota yang sudah masuk.** Akun harus milik anggota _ruang kerja ini_ yang masuk
+  ke GitHub di server ini
+- **Peran tulis.** `viewer` dan `guest` tidak dapat memulai pekerjaan
+- **Akses push.** Balasan memakai token `bot` yang dibatasi pada akses anggota itu ke
+  repositori. Jika server tidak dapat mencetak token, ia tidak melanjutkan
 
-Dua kasus login tak dikenal berbagi satu balasan: indeks terbalik hanya
-mengembalikan anggota _ruang kerja ini_, jadi akun yang tidak ditautkan dan
-non-anggota yang ditautkan adalah luput yang sama. Tak satu pun dari mereka
-lanjut. Komentar tidak pernah diatribusikan kepada orang yang tidak
-mengirimnya, dan kata-kata orang asing tidak pernah masuk ke ruang kerja yang
+Setiap pemeriksaan berjalan sebelum pengakuan apa pun, sehingga orang asing tidak
+mendapat reaksi maupun balasan. Komentar tidak pernah diatribusikan kepada orang yang
+tidak mengirimnya, dan kata-kata orang asing tidak pernah masuk ke ruang kerja yang
 tidak dapat mereka lihat.
 
-Label `ai-review` tidak punya penulis untuk diselesaikan, jadi label ini tidak
-menaiki tangga tersebut. Menambahkannya memulai tinjauan di ruang kerja yang
-sudah menautkan repositori itu.
+### Klaim
+
+Langkah terakhir sebelum pekerjaan apa pun adalah reaksi 👀, ditambahkan dengan proses
+masuk GitHub penulis sendiri. GitHub menjawab `201` untuk reaksi baru dan `200` untuk
+reaksi yang sudah ada, sehingga reaksi itu berfungsi sebagai kunci: ketika orang yang
+sama masuk di dua server yang sama-sama menautkan repositori, hanya yang pertama bereaksi
+yang mengerjakan. Komentar yang dapat dilihat beberapa ruang kerja di satu server
+ditawarkan ke masing-masing, dan klaim yang sama yang memutuskannya.
 
 ## Dua identitas, dengan sengaja
 
 Tiap sisi percakapan membawa identitas yang berbeda, dan perbedaan itulah
 fiturnya:
 
-- **Di GitHub, bot adalah server.** Setiap komentar, reaksi, dan balasan yang
-  diposting jembatan memakai token instalasi app. Tidak ada yang mengklik apa
-  pun di klien, jadi tidak ada yang meminjam akun seseorang — aturan yang sama
-  yang menjauhkan webhook dan polling dari kredensial manusia.
-- **Di space, pertanyaannya milik Anda.** Pesan diatribusikan kepada anggota
-  yang menjadi hasil penyelesaian penulisnya, dan run agen dieksekusi atas nama
-  mereka: commit mencantumkan mereka sebagai ko-penulis, dan dial otonomi
-  serta pagar pengaman tindakan milik space berlaku persis seperti pada pesan
-  yang diketik di aplikasi. Penulisan ke forge dari run tetap keluar sebagai
-  app — aturan yang sama seperti butir di atas — bukan memakai token pribadi
-  anggota.
+- **Di GitHub, balasan adalah otomatisasi atas nama Anda.** Setiap balasan memakai
+  token `bot` untuk repositori tersebut, dibatasi pada akses anggota yang bertanya.
+  Pada app milik sendiri, penulisnya adalah akun `[bot]` app itu. Lewat Connect, token
+  App bersama adalah token pengguna, sehingga balasan ditulis oleh akun anggota yang
+  bertanya, bertindak melalui App. Bagaimanapun caranya, setiap balasan dimulai dengan
+  `**Control Center** (for @login):`, yang menyatakan siapa yang bertanya dan sekaligus
+  berfungsi sebagai penjaga loop.
+- **Di space, pertanyaannya milik Anda.** Pesan diatribusikan kepada anggota yang
+  menjadi hasil penyelesaian penulisnya, dan run agen dieksekusi atas nama mereka:
+  commit mencantumkan mereka sebagai ko-penulis, dan dial otonomi serta pagar pengaman
+  tindakan milik space berlaku persis seperti pada pesan yang diketik di aplikasi.
+  Penulisan ke forge dari run memakai token satu-repositori yang dibatasi oleh anggota
+  tersebut, bukan proses masuk mereka yang diserahkan utuh.
 
-Menerbitkan temuan tinjauan kembali ke GitHub tetap merupakan keputusan
-seseorang, yang dibuat di Control Center. Sebutan dapat _memulai_ sebuah
-tinjauan; hanya manusia yang menerbitkannya.
+Menerbitkan temuan tinjauan kembali ke GitHub tetap merupakan keputusan seseorang,
+yang dibuat di Control Center. Sebutan dapat _memulai_ sebuah tinjauan; hanya manusia
+yang menerbitkannya.
 
 ## Penjaga loop, dan nama pendeknya
 
-Semua yang ditulis oleh akun bot dibuang sebelum gerbang mana pun berjalan —
-milik kita secara khusus, dan setiap akhiran `[bot]`, sehingga bot peninjau
-milik app lain juga tidak dapat membangunkan bot kita. Tanpa ini, jawaban bot
-sendiri akan datang sebagai komentar baru dan memicunya berulang tanpa henti.
+Semua yang ditulis oleh akun bot dibuang sebelum gerbang mana pun berjalan — milik
+kita secara khusus, dan setiap akhiran `[bot]`, sehingga bot peninjau milik app lain
+juga tidak dapat membangunkan bot kita — dan begitu pula setiap komentar yang diawali
+prefiks `**Control Center** (for @`, karena balasan lewat Connect ditulis oleh akun
+seseorang. Tanpa ini, jawaban bot sendiri akan datang sebagai komentar baru dan
+memicunya berulang tanpa henti.
 
-Akhiran `[bot]` juga alasan bentuk pendek itu ada. GitHub menetapkan login akun
-app pada `<slug>[bot]`, tidak menyediakan autocomplete untuknya, dan tidak
-pernah me-resolve `@slug` ke app — jadi menerima slug telanjang adalah
-keputusan _pencocok_ kita, dan menemukannya memerlukan jalur pencarian **teks**
-komentar mentah alih-alih indeks sebutan GitHub. Biayanya dinyatakan alih-alih
-dihaluskan: pengguna manusia yang berbagi slug app akan menyapa bot dengan
-setiap sebutan bentuk pendek untuk dirinya sendiri. Nama app yang khas
-membuat tabrakan itu hanya hipotetis.
+Akhiran `[bot]` juga alasan bentuk pendek itu ada. GitHub menetapkan login akun app
+pada `<slug>[bot]`, tidak menyediakan autocomplete untuknya, dan tidak pernah
+me-resolve `@slug` ke app — jadi menerima slug telanjang adalah keputusan _pencocok_
+kita, dan menemukannya memerlukan jalur pencarian **teks** komentar mentah alih-alih
+indeks sebutan GitHub. Biayanya dinyatakan alih-alih dihaluskan: pengguna manusia yang
+berbagi slug app akan menyapa bot dengan setiap sebutan bentuk pendek untuk dirinya
+sendiri. Nama app yang khas membuat tabrakan itu hanya hipotetis.
 
 ## Apa yang sengaja tidak ditawarkan
 
-- **Tanpa publikasi otomatis.** Temuan mendarat di space tinjauan; menerbitkan
-  ke GitHub adalah tindakan manusia yang terpisah
-- **Tanpa identitas kabur.** Penulis diselesaikan ke tepat satu anggota atau
-  ditolak — tidak ada atribusi berdasarkan dugaan terbaik
-- **Tanpa webhook GitHub App.** Permukaan ini tidak pernah mendaftarkannya,
-  jadi tidak ada URL masuk yang perlu diekspos untuk komentar PR. Webhook
-  produk lain (pipeline, sinkronisasi tiket) merupakan penyiapan terpisah yang
-  opsional.
+- **Tanpa publikasi otomatis.** Temuan mendarat di space tinjauan; menerbitkan ke
+  GitHub adalah tindakan manusia yang terpisah
+- **Tanpa identitas kabur.** Penulis diselesaikan ke tepat satu anggota atau diabaikan
+  — tidak ada atribusi berdasarkan dugaan terbaik
+- **Tanpa persetujuan otomatis.** Otomatisasi dapat berkomentar dan meminta perubahan,
+  tetapi tinjauan `APPROVE` ditolak sebelum dikirim. Menyetujui adalah tindakan seseorang
+- **Tanpa webhook GitHub App.** Permukaan ini tidak pernah mendaftarkannya, jadi tidak
+  ada URL masuk yang perlu diekspos untuk komentar PR. Webhook produk lain (pipeline,
+  sinkronisasi tiket) merupakan penyiapan terpisah yang opsional.
 
 ## Lihat juga
 
@@ -139,7 +148,7 @@ membuat tabrakan itu hanya hipotetis.
 - [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/): tiga keputusan
   yang sama, dibuat untuk chat
 - [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/): dari
-  mana identitas bot berasal
+  mana identitas bot app milik sendiri berasal
 - [Multiplayer — identitas, keanggotaan dan kehadiran](/id-ID/panduan-pengguna/konsep/multiplayer/):
   principal dan peran yang dilalui login saat diselesaikan
 - [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): apa yang

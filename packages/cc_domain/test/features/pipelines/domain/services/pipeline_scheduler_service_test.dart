@@ -71,6 +71,7 @@ class _Engine implements PipelineEngine {
     String? dedupKey,
     String? parentPipelineRunId,
     String? parentStepId,
+    String? requestedByUserId,
     bool dryRun = false,
   }) async {
     attempts++;

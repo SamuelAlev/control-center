@@ -145,4 +145,98 @@ void main() {
       },
     );
   });
+
+  group('redactSecrets — provider token shapes', () {
+    // A `ghs_<appId>_<JWT>` installation token: underscores, dots and hyphens,
+    // about 520 characters.
+    final jwt = [
+      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
+      'eyJpc3MiOiIxMjM0NTYiLCJleHAiOjE3MDAwMDAwMDB9${'x' * 380}',
+      'Zm9vYmFy-c2lnbmF0dXJl_dGFpbA',
+    ].join('.');
+    final longGhs = 'ghs_123456_$jwt';
+
+    test('the long ghs_<appid>_<jwt> installation token, whole', () {
+      expect(longGhs.length, greaterThan(500));
+      expect(redactSecrets('token $longGhs.'), 'token ***REDACTED***.');
+      expect(redactSecrets('Bearer=$longGhs end'), isNot(contains('eyJ')));
+    });
+
+    test('every GitHub token prefix', () {
+      for (final token in [
+        'ghu_${'A1b2' * 10}',
+        'ghr_${'A1b2' * 10}',
+        'gho_${'A1b2' * 10}',
+        'ghp_${'A1b2' * 10}',
+        'ghs_${'A1b2' * 10}',
+        'github_pat_11ABCDEFG0_${'x9Y8' * 15}',
+      ]) {
+        expect(
+          redactSecrets('x $token y'),
+          'x ***REDACTED*** y',
+          reason: token,
+        );
+      }
+    });
+
+    test('Slack bot, user, rotating, refresh and app tokens', () {
+      for (final token in [
+        'xoxb-1234567890-0987654321-AbCdEfGhIjKlMnOpQrStUvWx',
+        'xoxp-1234567890-0987654321-1122334455-abcdef0123456789',
+        'xoxe.xoxb-1-MS0yLTEyMzQ1Njc4OTAtYWJjZGVm',
+        'xoxe.xoxp-1-MS0yLTEyMzQ1Njc4OTAtYWJjZGVm',
+        'xoxe-1-My0xLTEyMzQ1Njc4OTAtYWJjZGVmZ2hpams',
+        'xapp-1-A0123456789-1234567890123-abcdef0123456789',
+      ]) {
+        expect(
+          redactSecrets('x $token y'),
+          'x ***REDACTED*** y',
+          reason: token,
+        );
+      }
+    });
+
+    test('Linear API keys and OAuth tokens', () {
+      for (final token in [
+        'lin_api_${'a1B2' * 10}',
+        'lin_oauth_${'0f1e2d3c' * 8}',
+      ]) {
+        expect(
+          redactSecrets('x $token y'),
+          'x ***REDACTED*** y',
+          reason: token,
+        );
+      }
+    });
+
+    test('Google access and refresh tokens', () {
+      expect(
+        redactSecrets('x ya29.a0AfH6SMBx-Ab_cDeFgHiJkLmNoPqRsTuVwXyZ0123 y'),
+        'x ***REDACTED*** y',
+      );
+      expect(
+        redactSecrets('refresh=1//0gAbCdEfGhIjKlMnOpQrStUvWxYz-_0123456789'),
+        'refresh=***REDACTED***',
+      );
+      // A URL path is not a refresh token.
+      const url = 'https://example.com/a/1//AbCdEfGhIjKlMnOpQrStUvWx';
+      expect(redactSecrets(url), url);
+    });
+
+    test('the Basic x-access-token header git carries in its env', () {
+      const b64 = 'eC1hY2Nlc3MtdG9rZW46Z2hzX2FiY2RlZmdoaWprbG1ub3A=';
+      const params =
+          "GIT_CONFIG_PARAMETERS='http.https://github.com/.extraHeader="
+          "Authorization: Basic $b64'";
+      final redacted = redactSecrets(params);
+      expect(redacted, isNot(contains('eC1hY2Nlc3MtdG9rZW46')));
+      expect(redacted, startsWith('GIT_CONFIG_PARAMETERS='));
+      // The base64 alone, outside any header, is still credentials.
+      expect(
+        redactSecrets('header value $b64 end'),
+        'header value ***REDACTED*** end',
+      );
+      expect(redactSecrets('Authorization: token ghs_short'), '***REDACTED***');
+    });
+  });
 }

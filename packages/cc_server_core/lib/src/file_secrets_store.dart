@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_host/cc_host.dart';
+import 'package:cc_infra/cc_infra.dart' show ChildProcess;
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:path/path.dart' as p;
 
@@ -178,9 +179,12 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     if (Platform.isWindows) {
       return;
     }
-    final result = await Process.run('chmod', ['600', f.path]);
+    final result = await ChildProcess.run('chmod', ['600', f.path]);
     if (result.exitCode != 0) {
-      throw FileSystemException('Could not restrict secrets permissions', f.path);
+      throw FileSystemException(
+        'Could not restrict secrets permissions',
+        f.path,
+      );
     }
   }
 
@@ -225,12 +229,24 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     await _flush();
   }
 
+  /// Every stored key for which [matches] is true (never the values).
+  Future<List<String>> keysMatching(bool Function(String key) matches) async {
+    final map = await _load();
+    return [
+      for (final key in map.keys)
+        if (matches(key)) key,
+    ];
+  }
+
   /// Deletes every key for which [matches] is true. Returns how many were
-  /// removed. Used when a workspace is deleted so its App key, background PAT
-  /// and per-member overlay tokens do not outlive the tenant.
+  /// removed. Used when a workspace is deleted so its App key and per-member
+  /// overlay tokens do not outlive the tenant.
   Future<int> deleteMatching(bool Function(String key) matches) async {
     final map = await _load();
-    final keys = [for (final key in map.keys) if (matches(key)) key];
+    final keys = [
+      for (final key in map.keys)
+        if (matches(key)) key,
+    ];
     if (keys.isEmpty) {
       return 0;
     }

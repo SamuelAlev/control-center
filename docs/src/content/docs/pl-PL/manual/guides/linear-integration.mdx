@@ -1,32 +1,138 @@
 ---
 title: Skonfiguruj integrację Linear
-description: Zapisz klucz API Linear na serwerze, aby agenci mogli wywoływać Linear, oraz wybierz Linear jako dostawcę zgłoszeń dla nowych zgłoszeń.
+description: Zaloguj się do Linear, połącz automatyzację Linear obszaru roboczego i wybierz Linear jako dostawcę zgłoszeń dla nowych zgłoszeń.
 slug: pl-PL/podrecznik/poradniki/integracja-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Wklej klucz API Linear na serwerze, przypisany do swojego użytkownika — tak samo
-jak łączysz forge. Zgłoszenia, projekty, powiązania, współpracownicy, delegowanie
-i przypisywanie działają na własnej bazie danych Control Center i nie wymagają
-żadnej zewnętrznej usługi — zobacz
+Linear ma w Control Center dwie tożsamości i obie są logowaniem w przeglądarce:
+Twoją, do tego, co robisz Ty, oraz aplikację Control Center obszaru roboczego,
+do tego, co robią agenci i pipeline'y. Zgłoszenia, projekty, powiązania,
+współpracownicy, delegowanie i przypisywanie działają na własnej bazie danych
+Control Center i nie wymagają żadnej zewnętrznej usługi — zobacz
 [Twórz i zarządzaj zgłoszeniami](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/).
 
-## Zapisz klucz Linear
+## Wymagania wstępne
 
-**Klucz API zgłoszeń** znajduje się w **Ustawienia → Obszar roboczy → Ogólne**,
-na karcie **Zgłoszenia**. Przechowuje klucz na serwerze, przypisany do Twojego
-identyfikatora użytkownika. Własny klucz serwera do pracy bez udziału człowieka
-pochodzi ze zmiennej `LINEAR_API_KEY` lub z karty **Aplikacje dostawców**. Do
-sandboxa agenta nie trafia żaden klucz zgłoszeń: agenci zapisują zgłoszenia
-przez własne narzędzia Control Center, które najpierw pytają regułę **Zapis do
-zewnętrznego trackera**.
+- Serwer potrafi logować ludzi do Linear: przez Control Center Connect albo
+  przez własną aplikację Linear serwera
+  ([Zarejestruj własną aplikację Linear](#zarejestruj-własną-aplikację-linear)).
+  Wybiera właściciel serwera w **Ustawienia → Serwer → Logowanie jednokrotne**
+- Administrator obszaru roboczego, który wybierze Linear jako dostawcę zgłoszeń
+  i połączy automatyzację Linear
 
-## Oznaczaj nowe zgłoszenia jako Linear
+## Wybierz Linear dla obszaru roboczego
 
-**Dostawca zgłoszeń** (pierwszy krok konfiguracji oraz
-`/workspaces/<workspaceId>/api-keys`) oferuje `local` i `linear`. Wybranie
-`linear` nadaje zgłoszeniom tworzonym od tego momentu znacznik
-`provider: linear`.
+1. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i znajdź kartę **Zgłoszenia**
+2. Ustaw **Dostawca zgłoszeń** na **Linear**
+
+Zgłoszenia tworzone od tego momentu dostają znacznik `provider: linear`.
+**Lokalnie** trzyma zgłoszenia we własnej bazie danych tego serwera i ukrywa
+wiersze Linear: nie ma się do czego uwierzytelniać.
+
+## Zaloguj się do Linear
+
+Na tej samej karcie wiersz **Linear** należy do Ciebie:
+
+1. Kliknij **Zaloguj się do Linear**
+2. Zatwierdź w przeglądarce
+3. Przy własnej aplikacji serwera okno dialogowe samo to zauważy. Przy Connect
+   przepisz 8-cyfrowy kod, który pokaże przeglądarka, albo pozwól jej otworzyć
+   Control Center przez link `control-center://`
+
+Wszystko, co robisz w Linear z Control Center, działa na tym logowaniu i na
+niczym innym. Jeśli nie jesteś zalogowany, aplikacja poprosi Cię o zalogowanie,
+zamiast działać jako ktoś inny.
+
+## Połącz automatyzację Linear
+
+Wiersz **Automatyzacja Linear** to aplikacja Control Center obszaru roboczego
+w Linear. Synchronizacja zgłoszeń, pipeline'y i agenci zapisują przez nią, więc
+automatyczne issues i komentarze pojawiają się jako Control Center, a nie jako
+człowiek.
+
+1. Administrator obszaru roboczego klika **Połącz Linear na potrzeby automatyzacji**
+2. W przeglądarce zatwierdza aplikację dla obszaru roboczego Linear, tak jak wyżej
+
+Wiersz pokazuje wtedy „Połączono z _Twoim obszarem roboczym Linear_”. Połączyć
+go lub rozłączyć mogą tylko administratorzy obszaru roboczego.
+
+Do sandboxa agenta nie trafia żadne poświadczenie Linear: agenci zapisują
+zgłoszenia przez własne narzędzia Control Center, które najpierw pytają regułę
+**Zapis do zewnętrznego trackera**.
+
+## Zarejestruj własną aplikację Linear
+
+Użyj własnej aplikacji, gdy wybrano **Użyj własnych aplikacji**. Aplikacja serwera
+obowiązuje tylko wtedy: przy aplikacjach Control Center albo własnym Connect Connect
+obsługuje każdą ścieżkę, także Linear, a aplikacja serwera i klucz API usługi pozostają
+zapisane, ale nieużywane. Aplikacja obszaru roboczego
+([poniżej](#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear)) nadal obowiązuje we
+wszystkich trybach.
+
+1. Utwórz aplikację OAuth na
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Dodaj oba adresy URL wywołania zwrotnego, które **Ustawienia → Serwer →
+   Logowanie jednokrotne → Aplikacje dostawców → Linear** pokazuje pod
+   **Adresy URL wywołania zwrotnego**, dosłownie:
+   `<server origin>/oauth/linear/callback` i
+   `<server origin>/oauth/linear_app/callback`
+3. Wklej **Identyfikator klienta** w bloku Linear
+
+Nie ma sekretu klienta: serwer loguje się przez PKCE. Tokeny odświeżania Linear
+wygasają po 30 dniach nieużywania, więc serwer raz dziennie odświeża każde
+logowanie do Linear starsze niż 20 dni.
+
+Ten sam blok przyjmuje opcjonalny **Klucz API usługi**. To własne poświadczenie
+serwera do Linear dla automatyzacji w obszarach roboczych, które nie połączyły
+automatyzacji Linear. Trzymaj go w **Ustawieniach** albo w pliku `.env` serwera
+jako `LINEAR_API_KEY`: serwer odmawia startu, gdy `LINEAR_API_KEY` jest
+wyeksportowany w środowisku jego procesu.
+
+## Daj jednemu obszarowi roboczemu własną aplikację Linear
+
+Obszar roboczy może logować się do Linear przez własną aplikację zamiast aplikacji
+serwera. Ustawić to może tylko administrator lub właściciel obszaru roboczego.
+
+1. Utwórz aplikację OAuth Linear tak jak w krokach powyżej
+2. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i otwórz **Aplikacje dostawców**, a następnie kartę **Linear**
+3. Wybierz **Użyj własnej aplikacji tego obszaru roboczego**
+4. Dodaj do aplikacji Linear oba adresy URL wywołania zwrotnego, które wiersz pokazuje pod **Adresy URL wywołania zwrotnego**, dosłownie
+5. Wklej jej **Identyfikator klienta** i, opcjonalnie, **Klucz API usługi** dla automatyzacji tego obszaru roboczego
+
+Aplikacja obszaru roboczego obsługuje wtedy każde logowanie do Linear i każde żądanie
+automatyzacji w tym obszarze roboczym, niezależnie od tego, jak serwer loguje ludzi. Nigdy
+nie przechodzi na aplikację serwera ani na Connect: dopóki nie ustawiono identyfikatora
+klienta, Linear jest w tym obszarze roboczym wyłączony, a wiersz mówi, czego brakuje.
+Jej klucz API usługi jest używany tylko tutaj; bez niego synchronizacja wymaga
+**Połącz Linear na potrzeby automatyzacji**.
+
+Przełączenie między aplikacją serwera a aplikacją obszaru roboczego albo zmiana identyfikatora
+klienta obszaru roboczego wylogowuje wszystkich członków obszaru roboczego z Linear i rozłącza
+ich automatyzację. Logują się ponownie przez nową aplikację. **Użyj aplikacji tego serwera**
+usuwa zapisane pola obszaru roboczego. Sekrety są tylko do zapisu: wiersz pokazuje jedynie,
+czy któryś jest zapisany. Inne obszary robocze na serwerze nie są zmieniane.
+
+## Rozwiązywanie problemów
+
+### Wiersz Linear informuje, że logowanie nie jest skonfigurowane
+
+Serwer nie ma ani własnej aplikacji Linear, ani Connect. Jedno z nich wybiera
+właściciel serwera w **Ustawienia → Serwer → Logowanie jednokrotne**. Gdy obszar roboczy
+używa własnej aplikacji, wiersz zamiast tego mówi, że konfiguracja nie jest zakończona:
+administrator obszaru roboczego dodaje identyfikator klienta w **Ustawienia → Obszar
+roboczy → Ogólne → Aplikacje dostawców**.
+
+### Synchronizacja zgłoszeń kończy się błędem uwierzytelniania
+
+Obszar roboczy nie ma połączonej automatyzacji Linear, a serwer nie ma klucza
+API usługi, więc synchronizacja nie ma żadnego poświadczenia. Administrator
+obszaru roboczego klika **Połącz Linear na potrzeby automatyzacji**.
+
+### Połączenie automatyzacji informuje, że obszar roboczy Linear jest połączony gdzie indziej
+
+Aplikacja Control Center tego obszaru roboczego Linear jest już połączona
+z innym serwerem Control Center.
 
 ## Powiązane poradniki
 

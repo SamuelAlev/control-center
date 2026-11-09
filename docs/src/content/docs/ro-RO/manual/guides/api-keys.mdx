@@ -2,7 +2,7 @@
 title: Gestionează cheile API
 description: Unde se află fiecare credențial — contul tău de utilizator de pe server, serverul însuși sau un CLI extern — și cum să îl setezi, să îl rotești și să îl elimini.
 slug: ro-RO/manual/ghiduri-practice/chei-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Acest ghid îți arată unde este stocat fiecare credențial folosit de Control Center
@@ -14,27 +14,33 @@ server; care dintre ele răspunde la o anumită cerere depinde de existența unu
 
 | Credențial                     | Unde este stocat                                          | Cine îl folosește                                                 |
 | ------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------- |
-| Credențialul tău de host de cod / tichete | Fișierul de secrete 0600 al serverului, indexat după id-ul tău de utilizator | Orice ceri tu: zona de PR-uri, rulările agenților tăi, imaginile tale |
-| Identitatea de aplicație a serverului | Același fișier, plus `server_settings` pentru cele care nu sunt secrete | Munca pe care nu a cerut-o niciun om: webhook-uri, interogarea periodică a PR-urilor, sincronizarea tichetelor |
+| Autentificarea ta la host de cod / tichete | Fișierul de secrete 0600 al serverului, indexat după id-ul tău de utilizator | Orice faci tu: zona de PR-uri, revizuirile, îmbinările, acțiunile tale în Linear |
+| Aplicațiile provider ale serverului | Același fișier, plus `server_settings` pentru cele care nu sunt secrete | Autentificarea oamenilor și tokenurile pentru un singur depozit pentru agenți, pipeline-uri și interogarea periodică |
+| Cheia de instalare Connect     | Același fișier (`connect_install_key`)                     | Identificarea acestui server față de Control Center Connect       |
 | Chei de provideri de modele și tokenuri OAuth | Depozitul de credențiale al serverului                    | Adaptorul încorporat, pentru fiecare spațiu de lucru din instalare |
-| Tokenuri de bot Slack          | `<dataDir>/<workspaceId>/chat_credentials/` pe server      | Puntea de chat pentru spațiul de lucru respectiv                  |
+| Credențiale de bot Slack       | `<dataDir>/<workspaceId>/chat_credentials/` pe server      | Puntea de chat pentru spațiul de lucru respectiv: tokenurile propriei tale aplicații sau grantul sigilat al aplicației partajate |
 | Credențiale de CLI extern      | Orice folosește CLI-ul respectiv                           | Claude Code, pe hostul serverului                                 |
 
-## Două credențiale GitHub, care răspund la întrebări diferite
+## GitHub: autentificarea ta și tokenuri pentru un singur depozit
 
-- **Al tău**, rezultat din autentificare (flux de dispozitiv) sau din lipirea unui
-  token. Este cel pe care îl folosește fiecare cerere făcută *în numele tău*, așa
-  că un comentariu publicat pentru tine îți poartă numele. Un alt membru nu îl
-  poate citi și își conectează propriul credențial
-- **Al serverului**, provenit din GitHub App pe care a înregistrat-o operatorul.
-  Răspunde la tot ce nu are un apelant — astfel încât accesul la hostul de cod nu
-  dispare când o persoană pleacă sau rotește un token
+- **Al tău**, din **Autentifică-te în GitHub**. Este cel pe care îl folosește
+  fiecare cerere făcută *în numele tău*, așa că o revizuire publicată pentru
+  tine îți poartă numele. Un alt membru nu îl poate folosi și se autentifică
+  singur. Nu există niciun token GitHub de lipit
+- **Munca pe care nu o tastează nimeni** (agenți, pipeline-uri, interogarea
+  periodică, răspunsurile botului) primește un token pentru câte un singur
+  depozit, emis din GitHub App a serverului sau prin Control Center Connect și
+  limitat la ce poate face acolo un membru responsabil. Nu este niciodată
+  autentificarea ta predată întreagă
 
 Al tău se setează în cardul **Găzduire de cod** din **Setări → Spațiu de lucru →
-Profil și identitate**; al serverului, în **Aplicații provider** din **Setări →
+Profil și identitate**; aplicația serverului, în **Aplicații provider** din **Setări →
 Server → Autentificare unică**. Vezi
 [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
 și [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
+
+GitLab și Bitbucket primesc în continuare un token personal lipit, stocat la fel.
+Vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
 :::note[Există și un ecran accesibil doar prin URL]
 `/workspaces/<workspaceId>/api-keys` afișează aceleași două carduri ca primul pas
@@ -73,48 +79,63 @@ timp ce serverul citește propria copie și nimic nu le face legătura. Vezi
 ## Conectează un furnizor de tichete
 
 Cardul **Ticketing** din **Setări → Spațiu de lucru → General** conține ambele
-jumătăți ale unei singure decizii: la ce furnizor îți stau tichetele și
-credențialul pentru acesta. Alegerea **Local** ascunde rândul credențialului —
-tichetele locale se află în baza de date proprie a acestui server și nu au la ce
-să se autentifice.
+jumătăți ale unei singure decizii: la ce furnizor îți stau tichetele și cine
+este Control Center când vorbește cu el. Alegerea **Local** ascunde rândurile
+Linear — tichetele locale se află în baza de date proprie a acestui server și nu
+au la ce să se autentifice.
 
-Cheia ta este stocată pe server, asociată id-ului tău de utilizator, la fel ca cea
-de host de cod. Serverul își păstrează separat propria cheie Linear (**Aplicații
-provider**), pe care rulează sincronizarea tichetelor când nu a cerut niciun om.
-Nicio cheie de ticketing nu este injectată în sandbox-ul unui agent; agenții
-scriu tichete prin instrumentele Control Center, care întreabă regula **Scrie
-într-un tracker extern**. Vezi
+Linear are două autentificări și nicio cheie de lipit: **Linear** este a ta,
+pentru ce faci tu, iar **Automatizare Linear** este aplicația Control Center a
+spațiului de lucru, conectată de un administrator, pentru sincronizarea
+tichetelor, pipeline-uri și agenți. Serverul poate deține și o **Cheie API de
+serviciu** (**Aplicații provider**) pentru spațiile de lucru fără automatizare
+conectată. Niciun credențial de ticketing nu este injectat în sandbox-ul unui
+agent; agenții scriu tichete prin instrumentele Control Center, care întreabă
+regula **Scrie într-un tracker extern**. Vezi
 [Configurează integrarea Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/).
 
 ## Rotește sau revocă
 
-- **Credențialul tău GitHub**: apasă **Deconectează**, apoi autentifică-te din nou
-  sau lipește noul token. Revocă-l pe cel vechi pe GitHub
+- **Autentificarea ta GitHub**: apasă **Deconectează**, apoi din nou
+  **Autentifică-te în GitHub**. Deconectarea anulează și toate tokenurile pe
+  care serverul le-a emis în numele tău
+- **Un token GitLab sau Bitbucket**: apasă **Actualizează tokenul** și lipește-l
+  pe cel nou, apoi revocă-l pe cel vechi pe forge
 - **Aplicația serverului**: generează o cheie privată sau un client secret nou în
-  pagina GitHub a aplicației, lipește-l în **Aplicații provider** și apasă **Test**
+  pagina aplicației la provider, lipește-l în **Aplicații provider** și apasă
+  **Test**
+- **Cheia de instalare Connect**: **Schimbă cheia** pe cardul **Control Center
+  Connect** sau `cc_server connect rotate-key --yes`. Toți cei care s-au
+  autentificat prin Connect se autentifică din nou. Vezi
+  [Control Center Connect](/ro-RO/manual/referinta/connect/)
 - **Un provider de modele**: pe rândul său, deconectează-te (OAuth) sau elimină
   cheia, apoi conectează-te din nou
-- **Slack**: lipește din nou tokenurile în dialogul de conectare. Vezi
+- **Slack**: pentru propria ta aplicație, lipește din nou tokenurile în dialogul
+  de conectare. Aplicația partajată Control Center nu are niciun token de rotit:
+  tokenul ei de bot este reînnoit prin Connect, iar **Deconectează** îl revocă și
+  dezinstalează botul din Slack. Vezi
   [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
 
 ## Depanare
 
-### Lista de PR-uri este goală, dar tokenul meu funcționează în `curl`
+### Un token GitLab sau Bitbucket funcționează în `curl`, dar nu aici
 
-Verifică subtitlul rândului **Găzduire de cod**. Dacă indică o altă sursă („prin
-aplicația acestui server”, „din mediu”), credențialul pe care îl testezi nu este
-cel care răspunde — al tău nu a fost salvat.
+Verifică subtitlul rândului **Găzduire de cod**. Dacă scrie „din mediu”,
+credențialul care răspunde este al serverului, nu al tău — al tău nu a fost
+salvat.
 
-### Tokenul este acceptat, dar cererile ulterioare eșuează
+### Un token GitLab sau Bitbucket este acceptat, dar cererile ulterioare eșuează
 
 Tokenul este verificat așa cum este stocat, așa că rândul indică contul din
 spatele lui — dar numai contul, nu și scope-urile. Un token cu prea puține
-scope-uri se conectează, apoi eșuează la cereri individuale. Verifică scope-urile
-și expirarea:
+scope-uri se conectează, apoi eșuează la cereri individuale. Verifică-i
+scope-urile și expirarea pe forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Un provider spune că autentificarea nu este configurată pe acest server
+
+Serverul nu are nici aplicație proprie pentru acel provider, nici Control Center
+Connect. Proprietarul serverului alege una dintre ele în **Setări → Server →
+Autentificare unică**.
 
 ## Ghiduri conexe
 

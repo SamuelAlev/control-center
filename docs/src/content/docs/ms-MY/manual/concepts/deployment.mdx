@@ -2,7 +2,7 @@
 title: Penerapan dan klien
 description: Bagaimana seni bina klien nipis Control Center memisahkan pelayan tanpa kepala daripada klien desktop, web dan mudah alihnya.
 slug: ms-MY/manual-pengguna/konsep/penerapan
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center bukan satu program tunggal. Ia ialah **seni bina klien nipis**:
@@ -207,7 +207,7 @@ pekerja setempat akan gagal dan bukannya dilaksanakan. Hari ini, hanya
 | Pelaksanaan ejen                               | menjalankannya (atau memajakkannya keluar) | melaksanakan tugas pajakan | —     | —                                |
 | Pemaparan UI                                   | —                          | —                              | penuh          | penuh (web) / banyak membaca (telefon) |
 | Rakaman mesyuarat (mik + audio mesyuarat)      | —                          | —                              | rakaman natif  | web sahaja, melalui audio kongsi skrin |
-| OAuth kalendar (Google)                        | menyimpan token            | —                              | —              | —                                |
+| Log masuk pembekal (GitHub, Google, Linear)    | menjalankan dan menyimpannya | —                              | —              | —                                |
 
 Kedua-dua lapisan tidak mengasingkan dengan cara yang sama. `cc_server` membalut
 larian yang dilaksanakannya sendiri dalam kotak pasir OS hos di mana ada bahagian
@@ -221,6 +221,8 @@ itu, memajakkan kerja keluar memindahkan pelaksanaan ke luar kotak pasir
 walaupun pada hos yang memilikinya. Lihat
 [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
 untuk apa yang mengehadkan sesuatu larian dalam setiap kes.
+
+Log masuk pembekal diselesaikan pada pelayan, melalui apl sendirinya atau melalui [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/), perkhidmatan pilihan yang menjalankan OAuth pembekal untuk pelayan yang tiada apl sendiri. Connect memulangkan kelayakan yang hanya boleh digunakan oleh pelayan ini dan tidak pernah melihat kandungan repo. Klien hanya membuka pelayar dan, untuk log masuk melalui Connect, menghantar balik kod yang ditunjukkannya.
 
 Rakaman mesyuarat berlaku pada klien kerana ia memerlukan mikrofon dan audio
 mesyuarat itu — pelayan di dalam almari tidak boleh merakam panggilan anda.

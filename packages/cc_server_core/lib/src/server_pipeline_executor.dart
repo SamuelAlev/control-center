@@ -6,7 +6,6 @@ import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
-import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/services/code_indexer.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
@@ -68,7 +67,6 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required AgentRunLogRepository agentRunLogRepository,
   required AgentRepository agentRepository,
   required TeamRepository teamRepository,
-  required CredentialsRepository credentials,
   required MessagingPort messagingPort,
   required MessagingRepository messagingRepository,
   // Read by `messaging.createSpace` to publish the room's copy-on-write
@@ -76,8 +74,13 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   // clone a repo per run now address instead.
   required IsolatedRepoRepository isolatedRepoRepository,
   required AgentDispatchPort agentDispatchPort,
-  required GitHubPrClient Function(String workspaceId, String owner)
+  required GitHubPrClient Function(
+    String workspaceId,
+    String owner, {
+    String? actingUserId,
+  })
   githubPrClientFor,
+  AutomatedReviewAttribution? automatedReviewAttribution,
   required OrchestrationRepository orchestrationRepository,
   required TicketWorkflowService ticketWorkflow,
   required CodeIndexer codeIndexer,
@@ -86,6 +89,10 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required DomainEventBus eventBus,
   required SchemaValidatorPort schemaValidator,
   required Future<String> Function(String runId) runDirPath,
+  // `pipeline.bashScript`'s confinement: the OS sandbox (null fails every
+  // shell step closed), the server-private paths it may not touch, and the
+  // broker that mints its one-repository read token.
+  required BashScriptSandbox bashScriptSandbox,
   // Backs `messaging.createSpace`'s pull-request lane (`extras['pr']`):
   // resolves the PR's one review space (creating it + its association when
   // absent) so the review's reviewers share a single checkout of the repo under
@@ -142,14 +149,15 @@ ServerPipelineExecutor buildServerPipelineExecutor({
     registry,
     templateRepository: templateRepository,
     runRepository: runRepository,
-    credentialsRepository: credentials,
     stepProcessRegistry: stepProcess,
     runDirPath: runDirPath,
+    sandbox: bashScriptSandbox,
     execute: enableBashScript,
   );
   registerPrReviewBodies(
     registry,
     githubPrClientFor: githubPrClientFor,
+    automatedAttribution: automatedReviewAttribution,
     finalizeReview: finalizeReview,
   );
   // The `messaging.createSpace` entry node every agent-bearing template opens

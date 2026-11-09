@@ -78,12 +78,6 @@ web/*.js.map
 !.env.template
 **/secrets.*
 
-# The pristine copy scripts/release/builtin_credentials.sh sets aside while the
-# real credentials sit in builtin_credentials.dart. Its presence means the
-# TRACKED file currently holds secrets — ignoring the backup keeps a mid-build
-# `git add -A` from committing it too.
-packages/cc_server_core/lib/src/builtin_credentials.dart.orig
-
 coverage
 
 sentry.properties

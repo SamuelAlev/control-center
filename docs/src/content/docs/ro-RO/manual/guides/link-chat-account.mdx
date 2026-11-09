@@ -2,7 +2,7 @@
 title: Leagă contul tău Slack
 description: Dovedește că o identitate Slack este a ta, astfel încât agenții să acționeze pe baza mesajelor tale, iar munca ta să ți se atribuie.
 slug: ro-RO/manual/ghiduri-practice/leaga-cont-de-chat
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Acest ghid îți arată cum să legi identitatea ta de chat de utilizatorul tău
@@ -25,36 +25,58 @@ care explică cum să facă legarea. Nimic nu este trimis.
 
 ## Leagă cu un cod
 
+Legarea are nevoie de ambele părți: trimiterea unui cod din Slack dovedește
+contul Slack, iar confirmarea lui în Control Center dovedește că acel cont este
+al tău.
+
 1. Mergi la **Setări → Spațiu de lucru → Profil și identitate** și derulează
    până la cardul **Conturi de chat legate**
-2. În blocul Slack, apasă **Leagă-mi contul Slack**
-3. Copiază comanda pe care o afișează, de exemplu:
+2. În blocul Slack, apasă **Leagă-mi contul Slack**. Dialogul afișează un cod
+   de unică folosință, de exemplu:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. În Slack, trimite acea comandă botului — un DM este locul cel mai simplu
-5. Botul confirmă utilizatorul Control Center de care ești acum legat, iar
-   dialogul pe care l-ai lăsat deschis se actualizează spunând acest lucru în
-   același moment — nu trebuie să îl închizi ca să verifici
+3. În Slack, trimite acel cod botului într-un **mesaj direct**: doar codul,
+   nimic altceva
+4. Botul răspunde „Got it. Confirm this Slack account in Control Center to
+   finish linking.”, iar dialogul pe care l-ai lăsat deschis afișează profilul
+   Slack care a trimis codul: numele lui și ID-ul de membru Slack
+5. Dacă este contul tău, apasă **Confirmă**. Legătura este făcută, dialogul
+   spune asta, iar botul confirmă în același mesaj direct
+6. Dacă nu este al tău, apasă **Refuză**. Nu se leagă nimic, iar codul nu mai
+   funcționează; apasă **Obține un cod nou** ca să încerci din nou
+
+Închiderea dialogului nu pierde o revendicare. Un cod care sosește mai târziu
+așteaptă pe rândul **Leagă-mi contul Slack** din pagina ta de profil, cu
+aceleași **Confirmă** și **Refuză**.
+
+De ce pasul de confirmare: un cod citit peste umărul tău și trimis din contul
+Slack al altcuiva ar face altfel ca acel cont să acționeze ca tine. Doar tu poți
+confirma, și doar exact profilul care a trimis codul.
 
 Codul:
 
 - Se folosește o singură dată și expiră **15 minute** după ce este generat
 - Este generat mereu pentru _tine_, niciodată pentru un coleg
+- Funcționează doar într-un mesaj direct către bot. Într-un canal este doar un
+  mesaj
+- Poate fi revendicat doar de un membru deplin al spațiului de lucru Slack în
+  care este instalat botul, nu de un invitat sau de cineva din altă organizație
 - Înlocuiește orice cod pe care îl ai deja, așa că apăsarea din nou a butonului
   îl invalidează pe cel anterior
 - Există doar în memorie, așa că o repornire a serverului invalidează codurile
   încă nefolosite — apasă din nou butonul
 
-Un cod necunoscut, expirat sau generat pentru un alt spațiu de lucru eșuează în
-același mod indistinguibil: „that code is not valid (or has expired)”.
+Un cod necunoscut, expirat, refuzat sau generat pentru un alt spațiu de lucru
+eșuează în același mod indistinguibil: „That code is not valid (or has
+expired).”
 
 ## Legarea automată după email
 
-Dacă profilul tău Slack conține un email verificat care corespunde unui
-utilizator Control Center ce este **deja membru al acestui spațiu de lucru**,
+Dacă profilul tău Slack conține un email confirmat care corespunde emailului
+verificat al unui utilizator Control Center ce este **deja membru al acestui spațiu de lucru**,
 puntea te leagă prima dată când vorbești cu ea. Nu este nevoie de cod.
 
 Ambele jumătăți contează: potrivirea emailului dovedește identitatea, dar numai
@@ -77,8 +99,8 @@ Starea ta se află pe pagina de profil: rândul **Leagă-mi contul Slack** scrie
 „Legat de _your-slack-id_” odată ce ești legat și îți spune să faci legarea când
 nu ești.
 
-Lista este o abonare în direct, pentru că schimbarea se produce de cealaltă
-parte — tu tastezi codul în Slack, așa că nicio cerere din aplicație nu poate
+Lista și revendicarea sunt abonări în direct, pentru că schimbarea se produce
+de cealaltă parte: tu trimiți codul în Slack, așa că nicio cerere din aplicație nu poate
 aduce răspunsul înapoi.
 
 ## Dezlegare
@@ -107,11 +129,16 @@ prezență](/ro-RO/manual/concepte/multiplayer/).
 Rolurile `viewer` și `guest` nu pot porni muncă. Un administrator trebuie să îți
 ridice rolul la `member` sau mai sus.
 
-### Comanda slash nu este recunoscută
+### Botul spune că codul nu este valid
 
-Verifică faptul că respectiva comandă slash există în Slack și că trimiți comanda
-pe care ți-a arătat-o dialogul de setări — un administrator poate să o fi
-redenumit, caz în care dialogul afișează numele actual.
+Codul a expirat, a fost deja folosit, a fost refuzat sau a fost înlocuit de unul
+mai nou. Apasă din nou **Leagă-mi contul Slack** și trimite codul nou.
+
+### Botul îmi tratează codul ca pe o cerere
+
+L-ai trimis într-un canal sau contul tău Slack este deja legat. Codurile sunt
+acceptate doar într-un mesaj direct, iar un mesaj în formă de cod de la un cont
+legat este o cerere obișnuită.
 
 ## Ghiduri conexe
 

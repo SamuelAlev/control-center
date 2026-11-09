@@ -27,6 +27,7 @@ import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile
 import 'package:cc_domain/features/dispatch/domain/prompts/capability_preamble.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts, DeliveredPromptContext;
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
@@ -71,9 +72,9 @@ import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/media/media_read_scope.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
-import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/skills/active_repo_tracker.dart';
@@ -756,8 +757,11 @@ class DispatchSession implements SteeringSessionView {
     'ask_user',
   };
 
-  /// The requesting human's Git identity, independent of agent credit.
+  /// The run's Git identity variables, independent of agent credit.
   Map<String, String> _gitIdentityEnv = const {};
+
+  /// Who the run's commits name; the gateway holds every pushed commit to it.
+  AgentCommitIdentity? _commitIdentity;
 
   /// Control Center's co-author trailer, only when attribution is enabled.
   String? _coAuthorTrailer;
@@ -775,19 +779,15 @@ class DispatchSession implements SteeringSessionView {
           workspaceId: workspaceId,
         ) ??
         true;
-    final human = await deps.resolveGitIdentity?.call(
+    final identity = await deps.resolveCommitIdentity?.call(
       requestedByUserId,
       workspaceId: workspaceId,
     );
-    if (human == null) {
+    if (identity == null) {
       throw StateError('The requester has no Git identity.');
     }
-    final env = <String, String>{
-      'GIT_AUTHOR_NAME': human.name,
-      'GIT_COMMITTER_NAME': human.name,
-      'GIT_AUTHOR_EMAIL': human.email,
-      'GIT_COMMITTER_EMAIL': human.email,
-    };
+    _commitIdentity = identity;
+    final env = <String, String>{...identity.environment};
     _coAuthorTrailer = creditAgent
         ? 'Co-Authored-By: Control Center <hi@usectrl.dev>'
         : null;
@@ -1160,12 +1160,12 @@ class DispatchSession implements SteeringSessionView {
         }
       }
 
-      // GitHub App READ scope cannot push; fallback PATs cannot be narrowed.
-      // Shell preflight always checks push policy, and gateway-routed pushes
-      // independently authorize the actual refs using a server-held token.
+      // The REVIEW scope cannot push. Shell preflight always checks push
+      // policy, and gateway-routed pushes independently authorize the actual
+      // refs using a server-held token.
       final scoped = await deps.broker.mint(
         conversationId: conversationId ?? 'unknown',
-        scope: ForgeTokenScope.read,
+        scope: ForgeTokenScope.review,
         repoOwner: repoOwner,
         repoName: repoName,
         // The member who asked for this run. It bounds the run's forge
@@ -1224,7 +1224,7 @@ class DispatchSession implements SteeringSessionView {
             wsId: wsId,
           );
         case AdapterTransport.acp:
-          await _runAcp(scopedNotes: scoped.notes);
+          await _runAcp(scoped: scoped);
         case AdapterTransport.harness:
           await _runHarness(scoped: scoped, wsId: wsId);
       }

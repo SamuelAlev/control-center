@@ -1,35 +1,38 @@
 ---
 title: Snakk med Control Center fra en GitHub-PR
-description: Be serverens GitHub App-bot om en gjennomgang eller still et spørsmål direkte fra PR-samtalen, uten webhook eller offentlig URL.
+description: Be Control Center om en gjennomgang eller still et spørsmål direkte fra PR-samtalen, uten webhook eller offentlig URL.
 slug: nb-NO/handbok/slik-gjor-du/github-pr-samtaler
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Denne guiden viser deg hvordan du kan jobbe med Control Center uten å forlate
 GitHub: be om en AI-gjennomgang fra PR-siden, still boten et spørsmål i en
 kommentar, og hold samtalen gående i gjennomgangstrådene dens.
 
-Boten er serverens egen [GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/) — den samme
-som allerede logger folk inn og kjører bakgrunnsarbeid. Ingenting nytt
-registreres, og ingenting trenger å være tilgjengelig fra internett: serveren
+Svarene kommer gjennom arbeidsområdets GitHub-spor: serverens egen
+[GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/), eller den delte appen til
+Control Center via Connect. Ingenting nytt registreres, og ingenting trenger å være tilgjengelig fra internett: serveren
 oppdager det som ble sagt på GitHub ved polling, så en bærbar maskin bak NAT
 oppfører seg nøyaktig som en offentlig utrulling.
 
 ## Forutsetninger
 
-- Serveren har sin GitHub App [registrert og
-  installert](/nb-NO/handbok/slik-gjor-du/github-app/), med **Pull requests: read and write**
-  (for kommentarer, tråder og reaksjoner) og **Issues: read** (for
-  kommentarsøket). Begge står allerede i den guidens tillatelsesliste
+- Arbeidsområdet har et GitHub-spor: serverens egen GitHub App eller Connect,
+  med appen [installert](/nb-NO/handbok/slik-gjor-du/github-app/#installer-den-der-repoene-dine-ligger)
+  på kontoen som eier repoet. En egen app trenger **Pull requests** og
+  **Issues** med lese- og skrivetilgang, noe **Opprett min GitHub-app** allerede
+  gir
 - Repoet er koblet til et arbeidsområde i Control Center
+- Du er [logget inn på GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/) på
+  denne serveren, og du kan pushe til repoet
 - Ingen webhook-URL, ingen tunnel, ingen callback — det finnes ingenting å
   konfigurere på nettverkssiden
 
 ## Finn navnet på boten din
 
-Omtal `@usectrl`, den dedikerte GitHub-kontoen til Control Center. Dette er standardutløseren; serverens konfigurerte GitHub App håndterer fortsatt forespørselen og publiserer svar. Du trenger ikke legitimasjon for `usectrl`-kontoen.
+Omtal `@usectrl`, den dedikerte GitHub-kontoen til Control Center. Dette er standardutløseren; arbeidsområdets GitHub-spor håndterer fortsatt forespørselen og publiserer svar. Du trenger ikke legitimasjon for `usectrl`-kontoen.
 
-Appens egen pålogging, `<appslug>[bot]`, og kortformen `@appslug` fungerer også. Slik finner du dette valgfrie aliaset:
+Appens egen pålogging, `<appslug>[bot]`, og kortformen `@appslug` fungerer også. Slik finner du dette valgfrie aliaset på din egen app:
 
 1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til
    **Leverandørapper**-kortet
@@ -53,11 +56,11 @@ som **Spør AI**-knappen starter:
 
 - **Legg til etiketten `ai-review`** på PR-en. Dette er det nærmeste GitHub
   kommer å tildele boten som reviewer — appkontoer kan ikke fylle den innebygde
-  plassen for forespurte reviewere. Det er ingen kommentar å reagere på, så
-  ingenting publiseres på GitHub; gjennomgangen starter i Control Center
-- **Kommenter `@usectrl review`** (eller bare `@usectrl`) i PR-samtalen. Boten
-  reagerer med 👀 og svarer deretter når gjennomgangen har startet (eller at en
-  allerede kjører)
+  plassen for forespurte reviewere. Kontoen din reagerer på PR-en med 👀, og
+  gjennomgangen starter i Control Center; ingen kommentar publiseres
+- **Kommenter `@usectrl review`** (eller bare `@usectrl`) i PR-samtalen. En 👀
+  dukker opp på kommentaren din, og deretter sier et svar at gjennomgangen har
+  startet (eller at en allerede kjører)
 
 Reviewerne arbeider i PR-ens gjennomgangsområde; les og publiser funnene som i
 [Bruk AI-drevet gjennomgang](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/). Å publisere tilbake til
@@ -78,11 +81,12 @@ Kommenter i PR-samtalen:
 
 Dette skjer, i rekkefølge:
 
-1. Boten reagerer med 👀 så du vet at kommentaren ble sett
+1. En 👀 dukker opp på kommentaren din, fra din egen konto, så du vet at
+   kommentaren ble sett
 2. Spørsmålet legges inn i PR-ens gjennomgangsområde **som deg** — samme
    tilskrivning som om du hadde skrevet det i Control Center
-3. En agent svarer i området, og svaret publiseres tilbake på PR-en som en
-   kommentar som @-nevner deg
+3. En agent svarer i området, og svaret publiseres tilbake på PR-en. Hvert svar
+   begynner med `**Control Center** (for @your-login):`
 
 Et spørsmål på en PR uten noen gjennomgang ennå vekker arbeidsområdets
 CEO-agent; når en gjennomgang har kjørt, svarer agenten som snakket sist, så
@@ -109,35 +113,46 @@ så den trenger fortsatt en @-omtale.
 
 ## Hvem boten snakker med
 
-En GitHub-kommentar kommer inn som lite annet enn en pålogging, så boten løser
-opp forfatteren før den gjør noe:
+Serveren løser opp forfatteren av en kommentar, eller den som la til etiketten
+`ai-review`, før den gjør noe:
 
-- **GitHub-kontoen din må være koblet til identiteten din** i Control Center —
-  [logg inn med GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/), eller lim inn et token,
-  fra **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**
-- **Du må være medlem med en skriverolle** (`member`, `admin` eller `owner`)
-  i arbeidsområdet som kobler til repoet
+- **GitHub-kontoen må være logget inn** på denne serveren. Matchingen skjer på
+  GitHubs numeriske konto-id, aldri på påloggingsnavnet. Logg inn fra
+  **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**
+- **Vedkommende må være medlem med en skriverolle** (`member`, `admin` eller
+  `owner`) i arbeidsområdet som kobler til repoet
+- **Vedkommende må kunne pushe** til repoet på GitHub. Svar bruker et token som er
+  begrenset til den personens tilgang, så den som bare kan lese, får ikke noe
+  svar
 
-Alle andre får ett høflig svar som forklarer hva som mangler — en ukjent
-pålogging (ikke tilkoblet, eller tilkoblet men ikke medlem her) og en
-skrivebeskyttet rolle er de to tilfellene — og ordene deres kommer aldri inn i
-arbeidsområdet. Etiketten `ai-review` er ikke betinget på denne måten: den har
-ingen forfatter, så den starter gjennomgangen i arbeidsområdet som allerede har
-repoet tilkoblet.
+Alle andre ignoreres i stillhet: ingenting publiseres, og ordene deres kommer
+aldri inn i arbeidsområdet. Kommentarer fra boter, og Control Centers egne svar,
+behandles aldri som spørsmål.
+
+### To servere, én PR
+
+👀 er også måten serverne blir enige om hvem som svarer. Den legges til med
+forfatterens egen pålogging, og GitHub forteller serveren om reaksjonen er ny.
+Hvis du er logget inn på to Control Center-servere som begge kobler til repoet,
+svarer den første som reagerer, og den andre forblir stille. Det samme gjelder
+etiketten.
 
 ## Hva du kan forvente
 
 | Ting               | Oppførsel                                                                |
 | ------------------ | ------------------------------------------------------------------------ |
-| Bekreftelse         | 👀 på en kommentar innen omtrent et minutt — søkerundeintervallet. Etiketten `ai-review` har ingen kommentar å reagere på |
-| Svar                | Publiseres som boten (appen), i sporet spørsmålet ble stilt i             |
+| Bekreftelse         | 👀 fra kontoen din på kommentaren (eller på PR-en, for etiketten), innen én søkerunde |
+| Svar                | Publiseres i sporet spørsmålet ble stilt i, og begynner med `**Control Center** (for @your-login):`. Med en egen app er forfatteren appens bot; via Connect er det kontoen din, som handler gjennom den delte appen |
 | Tilskrivning i området | Spørsmålet er ditt; agenten kjører på dine vegne, under områdets autonomiinnstillinger |
 | Gjennomganger       | Funn lander i gjennomgangsområdet; publisering til GitHub er manuell      |
 
-Forsinkelsen på omtrent ett minutt er prisen for å ikke trenge noen innkommende
-nettverkstilgang i det hele tatt. Ingenting med søkerunden haster, og ingenting
-går tapt mens serveren er offline — en kommentar som kommer inn i nedetiden,
-fanges opp i neste søkerunde.
+En søkerunde kjører hvert minutt med en egen app og sjekker opptil 25 pull
+requests; via Connect kjører den hvert andre minutt og sjekker opptil 10, fordi
+disse kallene deler hvert medlems egen GitHub-kvote. Et arbeidsområde med under
+15 % igjen av GitHub-kvoten hoppes over til den har hentet seg inn. Forsinkelsen
+er prisen for å ikke trenge noen innkommende nettverkstilgang i det hele tatt.
+Ingenting går tapt mens serveren er offline — en kommentar som kommer inn i
+nedetiden, fanges opp i neste søkerunde.
 
 ## Feilsøking
 
@@ -146,18 +161,22 @@ fanges opp i neste søkerunde.
 - Er appen **installert** på kontoen som eier repoet, og er repoet **koblet**
   til et arbeidsområde? Et ukoblet repo hoppes over før noe registreres, så å
   koble det til senere leverer fortsatt
-- Er GitHub-kontoen din koblet, og er du medlem med en skriverolle? Sjekk PR-en
-  for botens avvisningssvar — det sier hvilken av delene det gjelder
+- Er du logget inn på GitHub på denne serveren, medlem med en skriverolle og
+  i stand til å pushe til repoet? Serveren ignorerer alle andre uten å svare
+- På den delte appen til Control Center: er organisasjonens installasjon
+  autorisert for denne serveren? Se
+  [Autoriser denne serveren for en organisasjon](/nb-NO/handbok/slik-gjor-du/github-app/#autoriser-denne-serveren-for-en-organisasjon)
 - Fortsatt ingenting? Serverloggen navngir søkerunden og PR-en når noe
   mislykkes; se etter `pr_conversation:` (søket) og
   `github_pr_conversation:` (broen)
 
 **Etiketten starter ikke en gjennomgang.**
 
-Den utløses én gang per PR. Hvis en gjennomgang allerede har kjørt, eller
+Den utløses én gang per PR, og personen som la den til, går gjennom de samme
+kontrollene som forfatteren av en kommentar. Hvis en gjennomgang allerede har kjørt, eller
 etiketten ble lagt til før serveren noen gang så PR-en (den første søkerunden
 registrerer etterslepet i stillhet i stedet for å storme det), omtaler du boten
-i stedet — `@myapp review` starter alltid én med mindre en gjennomgang allerede
+i stedet — `@usectrl review` starter alltid én med mindre en gjennomgang allerede
 er i gang.
 
 **Botens svar kom aldri fram til GitHub.**

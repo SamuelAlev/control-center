@@ -2,7 +2,7 @@
 title: Tipos de pasos de pipeline
 description: Referencia de los tipos de pasos de pipeline, las claves de cuerpo de los pasos, su configuración y los resultados de los pasos.
 slug: es-ES/manual/referencia/pasos-de-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Un paso de pipeline tiene dos ejes independientes:
@@ -42,7 +42,7 @@ Paso de shell sin agente (`bash -c`). Los marcadores `{{key}}` del script se sus
 | `script`               | Comando de shell que se ejecuta (obligatorio)    |
 | `outputKey`            | Clave de estado que recibe la salida estándar recortada si el código de salida es 0 |
 
-Se ejecuta con el directorio de trabajo `<cc_root>/pipelines/<pipelineRunId>/` (compartido por todos los pasos bash de una ejecución) y `GITHUB_TOKEN` en el entorno. También escribe `<stepId>_runDir` en el estado. Un código de salida distinto de cero hace fallar el paso con la cola de stderr.
+Se ejecuta dentro del entorno aislado del sistema operativo del host con el directorio de trabajo `<cc_root>/pipelines/<pipelineRunId>/` (compartido por todos los pasos bash de una ejecución); en un host sin entorno aislado, el paso falla. El directorio de datos del servidor y su archivo `.env` no se pueden leer, git y `gh` no ven ninguna configuración del host, y `GH_TOKEN` / `GITHUB_TOKEN` contienen un token `read` de un solo repositorio solo cuando `repo_full_name` (estado o carga del disparador) nombra un repo de GitHub vinculado al espacio de trabajo. Crear o editar una plantilla con este paso requiere un administrador del espacio de trabajo. También escribe `<stepId>_runDir` en el estado. Un código de salida distinto de cero hace fallar el paso con la cola de stderr.
 
 ### `conversation.promptAgent`
 

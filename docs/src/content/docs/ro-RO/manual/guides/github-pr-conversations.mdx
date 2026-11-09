@@ -1,37 +1,40 @@
 ---
 title: Vorbește cu Control Center dintr-un PR GitHub
-description: Cere botului GitHub App al serverului o revizuire sau pune o întrebare chiar din conversația PR-ului, fără webhook și fără URL public.
+description: Cere-i lui Control Center o revizuire sau pune o întrebare chiar din conversația PR-ului, fără webhook și fără URL public.
 slug: ro-RO/manual/ghiduri-practice/conversatii-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Acest ghid îți arată cum să lucrezi cu Control Center fără să părăsești GitHub:
 cere o revizuire IA chiar din pagina PR-ului, pune botului o întrebare într-un
 comentariu și continuă conversația în firele lui de revizuire.
 
-Botul este chiar [GitHub App](/ro-RO/manual/ghiduri-practice/github-app/) al
-serverului tău — același care deja autentifică oameni și rulează munca din
-fundal. Nu se înregistrează nimic nou și nimic nu trebuie să fie accesibil din
+Răspunsurile vin prin banda GitHub a spațiului de lucru: propria
+[GitHub App](/ro-RO/manual/ghiduri-practice/github-app/) a serverului tău sau
+aplicația partajată a Control Center prin Connect. Nu se înregistrează nimic nou și nimic nu trebuie să fie accesibil din
 internet: serverul descoperă ce s-a spus pe GitHub prin interogare periodică,
 așa că un laptop aflat în spatele unui NAT se comportă exact ca o implementare
 publică.
 
 ## Cerințe preliminare
 
-- Serverul are GitHub App-ul
-  [înregistrat și instalat](/ro-RO/manual/ghiduri-practice/github-app/), cu
-  permisiunile **Pull requests: read and write** (pentru comentarii, fire și
-  reacții) și **Issues: read** (pentru căutarea de comentarii). Ambele sunt deja
-  în lista de permisiuni din acel ghid
+- Spațiul de lucru are o bandă GitHub: GitHub App proprie a serverului sau
+  Connect, cu aplicația
+  [instalată](/ro-RO/manual/ghiduri-practice/github-app/#instaleaz-o-acolo-unde-sunt-depozitele-tale)
+  pe contul care deține repozitoriul. O aplicație proprie are nevoie de
+  **Pull requests** și **Issues** cu citire și scriere, pe care
+  **Creează aplicația mea GitHub** le acordă deja
 - Repozitoriul este legat de un spațiu de lucru din Control Center
+- Ești [autentificat în GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+  pe acest server și poți face push în repozitoriu
 - Fără URL de webhook, fără tunel, fără callback — nu e nimic de configurat pe
   partea de rețea
 
 ## Găsește numele botului tău
 
-Menționează `@usectrl`, contul GitHub dedicat al Control Center. Acesta este declanșatorul implicit; GitHub App configurată pe serverul tău gestionează în continuare solicitarea și publică răspunsurile. Nu ai nevoie de acreditările contului `usectrl`.
+Menționează `@usectrl`, contul GitHub dedicat al Control Center. Acesta este declanșatorul implicit; banda GitHub a spațiului tău de lucru gestionează în continuare solicitarea și publică răspunsurile. Nu ai nevoie de acreditările contului `usectrl`.
 
-Loginul propriu al aplicației, `<appslug>[bot]`, și forma scurtă `@appslug` funcționează și ele. Ca să găsești acest alias opțional:
+Loginul propriu al aplicației, `<appslug>[bot]`, și forma scurtă `@appslug` funcționează și ele. Ca să găsești acest alias opțional pe propria ta aplicație:
 
 1. Mergi la **Setări → Server → Autentificare unică** și derulează până la
    cardul **Aplicații provider**
@@ -56,12 +59,11 @@ pornește butonul **Întreabă AI**:
 
 - **Adaugă eticheta `ai-review`** pe PR. Este cel mai apropiat lucru de a atribui
   botul ca recenzent pe care îl oferă GitHub — conturile de aplicație nu pot
-  ocupa locul nativ de recenzent solicitat. Nu există niciun comentariu la care
-  să se reacționeze, așa că nu se publică nimic pe GitHub; revizuirea pornește în
-  Control Center
+  ocupa locul nativ de recenzent solicitat. Contul tău reacționează la PR cu 👀,
+  iar revizuirea pornește în Control Center; nu se postează niciun comentariu
 - **Comentează `@usectrl review`** (sau doar `@usectrl`) în conversația PR-ului.
-  Botul reacționează cu 👀, apoi răspunde când revizuirea a pornit (sau că una
-  rulează deja)
+  Pe comentariul tău apare un 👀, apoi un răspuns spune că revizuirea a pornit
+  (sau că una rulează deja)
 
 Recenzenții lucrează în spațiul de revizuire al PR-ului; citește și publică
 constatările ca în
@@ -83,11 +85,12 @@ Comentează în conversația PR-ului:
 
 Ce se întâmplă, în ordine:
 
-1. Botul reacționează cu 👀 ca să știi că comentariul a fost văzut
+1. Pe comentariul tău apare un 👀, de pe propriul tău cont, ca să știi că
+   comentariul a fost văzut
 2. Întrebarea este postată în spațiul de revizuire al PR-ului **ca tine** — aceeași
    atribuire ca și cum ai fi tastat-o în Control Center
-3. Un agent răspunde în spațiu, iar răspunsul este postat înapoi pe PR ca un
-   comentariu care te menționează cu @
+3. Un agent răspunde în spațiu, iar răspunsul este postat înapoi pe PR. Fiecare
+   răspuns începe cu `**Control Center** (for @your-login):`
 
 O întrebare pe un PR fără nicio revizuire încă trezește agentul CEO al spațiului
 de lucru; după ce a rulat o revizuire, răspunde agentul care a vorbit ultimul,
@@ -114,34 +117,46 @@ superior, așa că are nevoie în continuare de o mențiune cu @.
 
 ## Cu cine vorbește botul
 
-Un comentariu GitHub sosește purtând nu mult mai mult decât un login, așa că
-botul rezolvă autorul înainte de a face orice:
+Serverul rezolvă autorul unui comentariu, sau pe cel care a adăugat eticheta
+`ai-review`, înainte de a face orice:
 
-- **Contul tău GitHub trebuie să fie legat de identitatea ta** în Control Center
-  — [autentifică-te cu GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
-  sau lipește un token, din **Setări → Spațiu de lucru → Profil și identitate →
+- **Contul GitHub trebuie să fie autentificat** pe acest server. Potrivirea se
+  face după id-ul numeric al contului GitHub, niciodată după login.
+  Autentifică-te din **Setări → Spațiu de lucru → Profil și identitate →
   Găzduire de cod**
-- **Trebuie să fii membru cu un rol de scriere** (`member`, `admin` sau `owner`)
-  în spațiul de lucru care leagă repozitoriul
+- **Persoana trebuie să fie membru cu un rol de scriere** (`member`, `admin`
+  sau `owner`) în spațiul de lucru care leagă repozitoriul
+- **Persoana trebuie să poată face push** în repozitoriu pe GitHub. Răspunsurile
+  folosesc un token limitat la accesul acelei persoane, așa că cineva care poate
+  doar citi nu primește niciun răspuns
 
-Oricine altcineva primește un singur răspuns politicos care explică ce lipsește —
-un login necunoscut (nelegat, sau legat dar care nu este membru aici) și un rol
-doar în citire sunt cele două cazuri — iar vorbele lor nu intră niciodată în
-spațiul de lucru. Eticheta `ai-review` nu este condiționată astfel: nu are autor,
-așa că pornește revizuirea în spațiul de lucru care deja leagă repo-ul.
+Oricine altcineva este ignorat în tăcere: nu se postează nimic, iar vorbele lui
+nu intră niciodată în spațiul de lucru. Comentariile boților și răspunsurile
+proprii ale Control Center nu sunt niciodată tratate drept întrebări.
+
+### Două servere, un singur PR
+
+👀 este și felul în care serverele se înțeleg cine răspunde. Este adăugat cu
+autentificarea proprie a autorului, iar GitHub îi spune serverului dacă reacția
+este nouă. Dacă ești autentificat pe două servere Control Center care leagă
+amândouă repozitoriul, primul care reacționează răspunde, iar celălalt tace.
+Același lucru e valabil pentru etichetă.
 
 ## Ce să te aștepți
 
 | Lucru                | Comportament                                                             |
 | -------------------- | ------------------------------------------------------------------------ |
-| Confirmare           | 👀 pe un comentariu în circa un minut — intervalul de scanare. Eticheta `ai-review` nu are niciun comentariu la care să reacționeze |
-| Răspunsuri           | Postate ca botul (aplicația), în firul în care a fost pusă întrebarea     |
+| Confirmare           | 👀 de pe contul tău pe comentariu (sau pe PR, pentru etichetă), în decurs de o scanare |
+| Răspunsuri           | Postate în firul în care a fost pusă întrebarea, începând cu `**Control Center** (for @your-login):`. Pe o aplicație proprie, autorul este botul aplicației; prin Connect este contul tău, acționând prin aplicația partajată |
 | Atribuirea în spațiu | Întrebarea este a ta; agentul rulează în numele tău, sub setările de autonomie ale spațiului |
 | Revizuiri            | Constatările ajung în spațiul de revizuire; publicarea pe GitHub este manuală |
 
-Latența de circa un minut este prețul plătit pentru a nu avea deloc nevoie de
-acces de rețea de intrare. Nimic din scanare nu este urgent și nimic nu se
-pierde cât timp serverul este offline — un comentariu care sosește în timpul unei
+O scanare rulează în fiecare minut pe o aplicație proprie și verifică până la 25
+de pull request-uri; prin Connect rulează la fiecare două minute și verifică
+până la 10, pentru că acele apeluri împart cota GitHub proprie a fiecărui
+membru. Un spațiu de lucru a cărui cotă GitHub este sub 15% este sărit până se
+reface. Latența este prețul plătit pentru a nu avea deloc nevoie de acces de
+rețea de intrare. Nimic nu se pierde cât timp serverul este offline — un comentariu care sosește în timpul unei
 perioade de nefuncționare este prins la scanarea următoare.
 
 ## Depanare
@@ -151,17 +166,21 @@ perioade de nefuncționare este prins la scanarea următoare.
 - Aplicația este **instalată** pe contul care deține repo-ul, iar repo-ul este
   **legat** de un spațiu de lucru? Un repo nelegat este sărit înainte de a se
   înregistra ceva, așa că legarea lui mai târziu livrează totuși
-- Contul tău GitHub este legat și ești membru cu un rol de scriere? Verifică pe
-  PR răspunsul de refuz al botului — spune care dintre ele
+- Ești autentificat în GitHub pe acest server, membru cu un rol de scriere și
+  poți face push în repo? Serverul îi ignoră pe toți ceilalți fără să răspundă
+- Pe aplicația partajată a Control Center, instalarea organizației este
+  autorizată pentru acest server? Vezi
+  [Autorizează acest server pentru o organizație](/ro-RO/manual/ghiduri-practice/github-app/#autorizează-acest-server-pentru-o-organizație)
 - Tot nimic? Jurnalul serverului numește scanarea și PR-ul când ceva eșuează;
   caută `pr_conversation:` (interogatorul) și `github_pr_conversation:` (puntea)
 
 **Eticheta nu pornește o revizuire.**
 
-Se declanșează o singură dată per PR. Dacă o revizuire a rulat deja, sau eticheta
+Se declanșează o singură dată per PR, iar persoana care a adăugat-o trece prin
+aceleași verificări ca autorul unui comentariu. Dacă o revizuire a rulat deja, sau eticheta
 a fost adăugată înainte ca serverul să vadă vreodată PR-ul (prima scanare
 înregistrează restanța în silență, în loc să o ia cu asalt), menționează botul în
-schimb — `@myapp review` pornește întotdeauna una, dacă nu este deja o revizuire
+schimb — `@usectrl review` pornește întotdeauna una, dacă nu este deja o revizuire
 în curs.
 
 **Răspunsul botului nu a ajuns niciodată pe GitHub.**

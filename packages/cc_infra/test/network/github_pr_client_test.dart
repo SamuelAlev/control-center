@@ -920,6 +920,47 @@ void main() {
       expect(r.content, '+1');
     });
 
+    test('a 201 is a new reaction; a 200 is one the user already left — the '
+        'PR bridge\'s claim', () async {
+      final fresh = build(
+        (r) =>
+            httpTextResponse(r, {'id': 1, 'content': 'eyes'}, statusCode: 201),
+      );
+      final again = build(
+        (r) => httpTextResponse(r, {'id': 1, 'content': 'eyes'}),
+      );
+
+      for (final (b, created) in [(fresh, true), (again, false)]) {
+        expect(
+          (await b.client.createIssueCommentReaction(
+            owner,
+            repo,
+            commentId: 5,
+            content: 'eyes',
+          )).created,
+          created,
+        );
+        expect(
+          (await b.client.createReviewCommentReaction(
+            owner,
+            repo,
+            commentId: 5,
+            content: 'eyes',
+          )).created,
+          created,
+        );
+        expect(
+          (await b.client.createIssueReaction(
+            owner,
+            repo,
+            issueNumber: 7,
+            content: 'eyes',
+          )).created,
+          created,
+        );
+      }
+    });
+
     test('createReviewCommentReaction throws on non-map', () async {
       final b = build((r) => httpTextResponse(r, <Object>[]));
       await expectLater(
@@ -1063,6 +1104,34 @@ void main() {
       final users = await b.client.listAssignableUsers(owner, repo);
       expect(users.map((u) => u.login), ['u1', 'u2']);
     });
+
+    test(
+      'listIssueEvents pages every event with the actor\'s numeric id',
+      () async {
+        var page = 0;
+        final b = build((r) {
+          page++;
+          return httpTextResponse(
+            r,
+            [
+              {
+                'event': page == 1 ? 'labeled' : 'unlabeled',
+                'actor': {'login': 'octocat', 'id': 583231, 'avatar_url': ''},
+                'label': {'name': 'ai-review', 'color': 'fff'},
+              },
+            ],
+            headers: {if (page == 1) 'link': '<x>; rel="next"'},
+          );
+        });
+
+        final events = await b.client.listIssueEvents(owner, repo, 7);
+
+        expect(events.map((e) => e.event), ['labeled', 'unlabeled']);
+        expect(events.first.actor?.id, 583231);
+        expect(events.first.label?.name, 'ai-review');
+        expect(b.fake.requests.first.url, contains('/issues/7/events'));
+      },
+    );
 
     test('listRequestableTeams returns [] on 404', () async {
       final b = build(

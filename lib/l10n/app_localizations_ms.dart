@@ -1145,6 +1145,99 @@ class AppLocalizationsMs extends AppLocalizations {
   String get calendarRsvpFailed => 'Tidak dapat mengemas kini jawapan anda';
 
   @override
+  String get calendarNewEvent => 'Acara baharu';
+
+  @override
+  String get calendarComposerTitleHint => 'Tambah tajuk';
+
+  @override
+  String get calendarComposerStarts => 'Mula';
+
+  @override
+  String get calendarComposerEnds => 'Tamat';
+
+  @override
+  String get calendarComposerDate => 'Tarikh';
+
+  @override
+  String get calendarComposerEndDate => 'Hari terakhir';
+
+  @override
+  String get calendarComposerGuestsHint => 'Tambah tetamu melalui e-mel';
+
+  @override
+  String get calendarComposerMeet => 'Tambah pautan Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Tambah lokasi';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Tambah penerangan';
+
+  @override
+  String get calendarComposerCalendar => 'Kalendar';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Tambah tajuk untuk menyimpan acara';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Salah satu e-mel tetamu tidak sah';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Acara mesti tamat selepas ia bermula';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Acara tidak dapat dicipta. Cuba lagi.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Tetamu akan menerima jemputan e-mel daripada Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Padam acara';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Padam “$title”?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody =>
+      'Acara ini akan dialih keluar daripada Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Acara ini akan dialih keluar daripada Google Calendar dan setiap tetamu akan dimaklumkan bahawa ia dibatalkan.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Acara ini hanya dialih keluar daripada kalendar anda. Penganjur dan tetamu lain masih memilikinya.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Hanya kejadian ini dipadam; baki siri kekal.';
+
+  @override
+  String get calendarDeleteFailed => 'Acara tidak dapat dipadam. Cuba lagi.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Acara tidak dapat dialihkan. Acara kembali ke tempat asal.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Mencipta acara kalendar';
+
+  @override
+  String get activityMovedCalendarEvent => 'Mengalihkan acara kalendar';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Memadam acara kalendar';
+
+  @override
   String get calendarAddAccount => 'Tambah akaun kalendar';
 
   @override
@@ -1155,9 +1248,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sambungkan akaun Google untuk menyegerakkan acara ke ruang kerja ini. Kalendar ini milik anda di sini.';
 
   @override
-  String get calendarConnecting => 'Menyambung…';
-
-  @override
   String get calendarSyncNow => 'Segerak sekarang';
 
   @override
@@ -1166,32 +1256,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Tidak dapat menyambung Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Rahsia klien';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Masukkan ID klien kod peranti OAuth Google dan rahsia untuk projek anda. Pelayan menjalankan sambungan dan segerak — penyemak imbas anda tidak pernah memegang token.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Buka halaman pengesahan pada mana-mana peranti, log masuk dan masukkan kod ini:';
-
-  @override
-  String get calendarConnectOpenPage => 'Buka halaman pengesahan';
-
-  @override
-  String get calendarConnectWaiting => 'Menunggu kelulusan…';
-
-  @override
-  String get calendarConnectDenied => 'Kebenaran ditolak. Sila cuba lagi.';
-
-  @override
-  String get calendarConnectExpired => 'Kod telah luput. Sila cuba lagi.';
 
   @override
   String get notificationMeetingStartsSoon =>
@@ -2414,9 +2478,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mengubah akses repositori ahli';
 
   @override
-  String get activityUpdatedGitHubToken => 'Mengemas kini token GitHub';
-
-  @override
   String get activityRefreshedWeather => 'Memuat semula ramalan cuaca';
 
   @override
@@ -2452,9 +2513,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'Membalas jemputan acara';
-
-  @override
-  String get activityStartedCalendarConnect => 'Memulakan sambungan kalendar';
 
   @override
   String get activityDisconnectedCalendar => 'Memutuskan kalendar';
@@ -4749,7 +4807,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get searchGifs => 'Cari GIF';
 
   @override
-  String get searchGifsHint => 'Cari GIF...';
+  String get searchGifsHint => 'Cari di KLIPY';
 
   @override
   String get searchInDiffHint => 'Cari dalam diff…';
@@ -5232,9 +5290,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Ejen tanpa nama';
-
-  @override
-  String get updateKey => 'Kemas kini kunci';
 
   @override
   String get updateLabel => 'Kemas kini';
@@ -6293,7 +6348,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Berjalan dengan bash -c. GITHUB_TOKEN ditetapkan. Pemegang tempat diganti sebelum pelaksanaan.';
+      'Berjalan dengan bash -c dalam kotak pasir sistem pengendalian. GH_TOKEN dan GITHUB_TOKEN memegang token baca sahaja untuk repositori yang dipautkan. Pemegang tempat diletakkan dalam tanda petik dan diganti sebelum pelaksanaan.';
 
   @override
   String get nodeConfigRouteKeys => 'Kunci laluan';
@@ -6964,7 +7019,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Log masuk ke GitHub atau tambah token dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod';
+      'Log masuk ke GitHub dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -11930,7 +11985,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Sebut bot dalam $provider untuk meletakkan ejen pada sesuatu, atau failkan tiket dengan $command.';
+    return 'Sebut bot dalam $provider untuk meletakkan ejen pada sesuatu, atau buat draf tiket dengan $command.';
   }
 
   @override
@@ -12017,7 +12072,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Hantar perintah ini kepada bot dalam $provider. Ia berfungsi sekali dan luput dalam 15 minit.';
+    return 'Hantar kod ini kepada bot $provider dalam mesej langsung. Ia berfungsi sekali dan luput dalam 15 minit.';
   }
 
   @override
@@ -12183,20 +12238,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → salin token OAuth pengguna bot.';
-
-  @override
-  String get calendarUseBuiltinApp => 'Gunakan apl Google Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Luluskan dengan akaun Google anda. Tiada apa untuk disediakan dalam Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Gunakan klien Google Cloud saya sendiri';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Masukkan klien OAuth dari projek Google Cloud anda sendiri.';
 
   @override
   String get aboutTitle => 'Perihal';
@@ -12892,18 +12933,15 @@ class AppLocalizationsMs extends AppLocalizations {
   String get signInAgain => 'Log masuk semula';
 
   @override
-  String get signInNotFinished =>
-      'Log masuk belum kembali lagi. Selesaikannya dalam penyemak imbas, kemudian semak lagi.';
+  String get forgeSignInBannerTitle =>
+      'Hos kod tidak disambungkan dalam ruang kerja ini';
 
   @override
-  String get signedOutTitle => 'Anda telah log keluar';
+  String get forgeSignInBannerBody =>
+      'Log masuk telah tamat tempoh atau dibatalkan, atau ruang kerja ini menggunakan GitHub App sendiri. Pull request, semakan dan penyegerakan repositori dijeda sehingga anda log masuk.';
 
   @override
-  String get signedOutSubtitle =>
-      'Sambungan hos kod anda tidak lagi sah — token luput, atau aksesnya ditarik balik. Tiada yang lain berubah: log masuk semula dan semuanya ada di mana anda meninggalkannya.';
-
-  @override
-  String get viaServerApp => 'melalui apl pelayan ini';
+  String get forgeSignInBannerAction => 'Log masuk';
 
   @override
   String get ticketing => 'Tiket';
@@ -12921,14 +12959,11 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ticketProviderLocal => 'Setempat';
 
   @override
-  String get addKey => 'Tambah kunci';
-
-  @override
   String get providerApps => 'Apl penyedia';
 
   @override
   String get providerAppsDescription =>
-      'Ruang kerja mewarisi GitHub App ini kecuali mereka memilih App lain atau token akses peribadi. Kerja latar belakang — webhook, pengundian, segerak — berjalan pada app, bukan token seseorang.';
+      'Aplikasi yang didaftarkan sendiri oleh pelayan ini dengan setiap penyedia. Orang log masuk melaluinya, dan kerja latar seperti webhook, tinjauan dan penyegerakan berjalan padanya, tidak sekali-kali pada log masuk seseorang.';
 
   @override
   String get providerAppId => 'ID apl';
@@ -12941,9 +12976,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Rahsia klien';
-
-  @override
-  String get providerApiKey => 'Kunci API';
 
   @override
   String get providerCallbackUrl => 'URL panggil balik';
@@ -12964,17 +12996,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Kelayakan berfungsi. Dipasang pada: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Masukkan kod ini pada halaman $provider yang baru dibuka. Ia telah disalin ke papan keratan anda.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Menunggu anda selesai dalam penyemak imbas…';
-
-  @override
-  String get copyCodeAndOpen => 'Salin kod dan buka';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13319,7 +13340,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Untuk ruang kerja yang mewarisi GitHub App pemasangan ini. Ruang dengan App atau PAT sendiri dikonfigurasi di Ruang kerja → Umum.';
+      'Digunakan oleh ruang kerja yang mewarisi aplikasi GitHub pemasangan ini. Ruang kerja dengan aplikasi sendiri mengkonfigurasinya di Ruang kerja → Umum.';
 
   @override
   String get providerAppsGroupPrConversations => 'Perbualan pull request';
@@ -14874,7 +14895,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Cara kerja GitHub latar belakang mengesahkan dalam ruang kerja ini. Mewarisi App pemasangan, App lain, atau token akses peribadi sahaja.';
+      'Cara kerja GitHub latar belakang dalam ruang kerja ini membuat pengesahan: dengan aplikasi pemasangan ini, atau dengan aplikasi ruang kerja itu sendiri.';
 
   @override
   String get workspaceGitHubModeInherit => 'Guna GitHub App pemasangan ini';
@@ -14883,28 +14904,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Guna GitHub App lain';
 
   @override
-  String get workspaceGitHubModePat => 'Token akses peribadi sahaja';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Menggunakan GitHub App di Pelayan → Aplikasi pembekal.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Identiti bot dan pengundian ruang kerja ini. Ahli log masuk di Anda melalui App ini.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Token latar belakang';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Untuk pengundian dan ejen dalam ruang kerja ini. Bukan token profil ahli.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Token latar belakang disimpan.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Tiada token latar belakang disimpan.';
 
   @override
   String get profileOverlayHint =>
@@ -16762,4 +16767,537 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Tukar ruang kerja';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Log masuk ke $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Sambung Linear untuk automasi';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Membuka $provider dalam pelayar…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Luluskan permintaan pada halaman $provider dalam pelayar. Tetingkap ini akan tahu sendiri apabila anda selesai.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Menunggu $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Log masuk tidak selesai';
+
+  @override
+  String get signInReopenPage => 'Buka semula halaman log masuk';
+
+  @override
+  String get signInCodePrompt => 'Masukkan kod yang dipaparkan dalam pelayar';
+
+  @override
+  String get signInCodeMalformed =>
+      'Itu tidak kelihatan seperti kod log masuk. Kod terdiri daripada 8 huruf dan digit.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Jika pelayar menawarkan untuk membuka Control Center, benarkan dan anda tidak perlu menaip kod.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Log masuk ke $provider sebagai $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Log masuk ke $provider';
+  }
+
+  @override
+  String get signInErrorExpired =>
+      'Log masuk ini telah tamat tempoh. Mulakan semula.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Log masuk ke $provider dibatalkan atau ditolak.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider memberikan kebenaran yang lebih sedikit daripada yang diperlukan Control Center. Log masuk semula dan luluskan semua kebenaran.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Kod itu tidak sepadan dengan log masuk ini. Semak dan cuba lagi.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider tidak bertindak balas sekarang. Cuba lagi dalam beberapa minit.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider menerima log masuk, tetapi pelayan tidak dapat menyelesaikannya. Cuba lagi.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Aplikasi $provider pelayan ini tersalah konfigurasi. Minta pemilik pelayan menyemak Tetapan → Pelayan → Daftar masuk tunggal.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Log masuk $provider anda telah tamat. Log masuk semula untuk terus bekerja atas nama anda sendiri.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'Aplikasi $provider tidak dipasang di tempat yang diperlukan. Pasang dan cuba lagi.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Pemasangan aplikasi GitHub ini sudah dibenarkan untuk pelayan Control Center lain.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Ruang kerja Linear ini sudah disambungkan ke pelayan Control Center lain.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Hanya pentadbir atau pemilik ruang kerja Slack boleh menyambungkannya ke Control Center buat kali pertama. Minta salah seorang daripada mereka menambah aplikasi itu.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'Aplikasi $provider digantung. Tarik balik penggantungan di $provider dan cuba lagi.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect telah menyekat pelayan ini. Hubungi pengendali pelayan Connect anda.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Log masuk gagal atas sebab yang tidak dilaporkan oleh pelayan. Cuba lagi.';
+
+  @override
+  String get signInPhishingTitle => 'Log masuk tidak dimulakan di sini';
+
+  @override
+  String get signInPhishingBody =>
+      'Log masuk ini tidak dimulakan daripada aplikasi ini. Jika seseorang menghantar pautan ini kepada anda, jangan teruskan.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Tiada apa-apa dihantar. Menyelesaikan log masuk yang dimulakan orang lain akan menyambungkan akaun anda ke pelayan mereka.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Log masuk ke $provider diperlukan';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Tindakan ini berjalan atas nama anda di $provider, dan anda belum log masuk. Log masuk, kemudian cuba lagi.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Anda belum log masuk ke $provider. Semua yang anda lakukan di sini berjalan atas nama anda, jadi log masuk dahulu.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Log masuk ke $provider belum disediakan pada pelayan ini.';
+  }
+
+  @override
+  String get githubInstallations => 'Pemasangan aplikasi GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Tempat aplikasi GitHub dipasang, dalam kalangan akaun tempat repositori ruang kerja ini dimiliki. Pemasangan organisasi hanya berfungsi pada pelayan yang dibenarkan oleh pentadbirnya.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'Aplikasi GitHub tidak dipasang pada mana-mana akaun tempat repositori ruang kerja ini dimiliki.';
+
+  @override
+  String get githubInstallApp => 'Pasang aplikasi GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Benarkan pelayan ini';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Pelayan ini kini boleh menggunakan pemasangan pada $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Digantung';
+
+  @override
+  String get githubInstallationAuthorized => 'Dibenarkan';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Tidak dibenarkan';
+
+  @override
+  String get linearAutomationTitle => 'Automasi Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Membolehkan ejen dan saluran paip ruang kerja ini bertindak dalam Linear sebagai aplikasi, bukan sebagai individu. Pentadbir ruang kerja yang menyambungkannya.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Disambungkan ke $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Gunakan aplikasi Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Log masuk melalui Control Center Connect. Connect memeterai setiap log masuk supaya hanya pelayan ini boleh membukanya, mengeluarkan token GitHub yang terhad kepada satu repositori, tidak menyimpan sebarang kunci repositori dan tidak pernah menerima kod sumber anda.';
+
+  @override
+  String get connectModeOwn => 'Gunakan aplikasi saya sendiri';
+
+  @override
+  String get connectModeOwnHint =>
+      'Daftarkan sendiri aplikasi GitHub, Google dan Linear di Tetapan → Pelayan → Daftar masuk tunggal, dan sambungkan aplikasi Slack sendiri setiap ruang kerja dalam tetapannya. \"Cipta aplikasi GitHub saya\" menyediakan GitHub dalam satu langkah.';
+
+  @override
+  String get connectModeCustom => 'Gunakan pelayan Connect tersuai';
+
+  @override
+  String get connectModeCustomHint =>
+      'Organisasi anda menjalankan pelayan Connect sendiri. Log masuk pergi ke sana dan bukannya ke pelayan Control Center.';
+
+  @override
+  String get connectModeUnset => 'Belum disediakan';
+
+  @override
+  String get connectCustomUrlLabel => 'URL pelayan Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Masukkan alamat HTTPS, contohnya https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'HTTP biasa hanya sampai ke Connect pada mesin ini. Gunakan HTTPS untuk apa-apa sahaja dalam rangkaian.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Aplikasi dihoskan Control Center belum tersedia dalam binaan ini. Gunakan aplikasi anda sendiri atau pelayan Connect tersuai.';
+
+  @override
+  String get connectErrorSignature =>
+      'Konfigurasi Connect gagal semakan tandatangan. Log masuk melalui Connect dijeda sehingga ia disahkan semula.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect memberikan konfigurasi yang lebih lama daripada yang sudah dilihat pelayan ini, jadi ia ditolak. Log masuk melalui Connect dijeda.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Pelayan ini tidak dapat mencapai Connect sekarang. Log masuk yang menggunakannya akan gagal sehingga ia kembali.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect telah menyekat ID pemasangan pelayan ini. Hubungi pengendali pelayan Connect anda.';
+
+  @override
+  String get connectErrorPinsChanged => 'Aplikasi Connect telah berubah';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect menjawab dengan cara yang tidak difahami pelayan ini. Kemas kini pelayan atau semak URL Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect melaporkan masalah tanpa penjelasan. Jalankan ujian untuk mencuba lagi.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Pelayan Connect anda kini menamakan aplikasi GitHub, Google, Linear atau Slack yang berbeza daripada yang disematkan oleh pelayan ini semasa penggunaan pertama. Percayai hanya jika pengendalinya telah memaklumkan anda terlebih dahulu.';
+
+  @override
+  String get connectConfirmPins => 'Percayai aplikasi baharu';
+
+  @override
+  String get connectStale =>
+      'Konfigurasi yang digunakan lebih lama daripada dijangka. Jalankan ujian untuk menyegarkannya.';
+
+  @override
+  String get connectLaneSourceOwn => 'Aplikasi sendiri';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Mati';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Aplikasi siapa yang digunakan oleh pelayan ini untuk GitHub, Google Calendar, Linear, Slack dan carian GIF.';
+
+  @override
+  String get connectFactMode => 'Aplikasi log masuk';
+
+  @override
+  String get connectFactHealth => 'Status';
+
+  @override
+  String get connectFactEpoch => 'Versi konfigurasi';
+
+  @override
+  String get connectHealthOff => 'Tidak digunakan';
+
+  @override
+  String get connectHealthOk => 'Berfungsi';
+
+  @override
+  String get connectHealthDown => 'Tidak berfungsi';
+
+  @override
+  String get connectLocked =>
+      'CC_CONNECT_URL dalam persekitaran pelayan ini menetapkan perkara ini. Ubah di sana dan mulakan semula pelayan.';
+
+  @override
+  String get connectLanesTitle => 'Tempat setiap log masuk berjalan';
+
+  @override
+  String get connectLanesDescription =>
+      'Aplikasi sendiri sentiasa diutamakan berbanding Connect untuk pembekalnya.';
+
+  @override
+  String get connectServerGroup => 'Pelayan ini';
+
+  @override
+  String get connectInstallId => 'ID pemasangan';
+
+  @override
+  String get connectInstallIdHint =>
+      'Mengenal pasti pelayan ini kepada Connect. Berikan kepada pemilik organisasi atau pengendali Connect yang memintanya.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Diberikan kali pertama pelayan ini menggunakan Connect.';
+
+  @override
+  String get connectTestOk => 'Connect berfungsi.';
+
+  @override
+  String get connectRotateKey => 'Putar kunci';
+
+  @override
+  String get connectRotateKeyTitle => 'Putar kunci Connect pelayan ini?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Pelayan ini mendapat kunci dan ID pemasangan baharu. Setiap log masuk melalui Connect berhenti berfungsi dan semua orang perlu log masuk semula. Log masuk melalui aplikasi anda sendiri tidak terjejas.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Kunci diputar. Semua orang yang log masuk melalui Connect perlu log masuk semula.';
+
+  @override
+  String get connectCliLabel => 'Daripada terminal';
+
+  @override
+  String get onboardingStepSignIn => 'Log masuk';
+
+  @override
+  String get onboardingConnectTitle => 'Pilih cara orang log masuk';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center berfungsi dengan GitHub, Google Calendar, Linear, Slack dan carian GIF melalui aplikasi yang didaftarkan dengan setiap pembekal. Pilih aplikasi siapa yang digunakan oleh pelayan ini. Anda boleh mengubahnya kemudian di Tetapan → Pelayan → Daftar masuk tunggal.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Cipta aplikasi GitHub untuk pelayan ini sekarang, atau tambah aplikasi anda kemudian di Tetapan → Pelayan → Daftar masuk tunggal.';
+
+  @override
+  String get providerServiceApiKey => 'Kunci API perkhidmatan';
+
+  @override
+  String get providerAppPartial => 'Persediaan belum selesai';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Masih tiada: $fields. Sehingga semua medan diisi, log masuk untuk pembekal ini ditolak dan bukannya dihantar melalui Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'ID klien melog masuk ahli. Kunci API perkhidmatan membolehkan pelayan ini membaca dan menulis dalam Linear sendiri.';
+
+  @override
+  String get providerCallbackUrls => 'URL panggilan balik';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Daftarkan dengan pembekal tepat seperti yang dipaparkan.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Cipta aplikasi GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub mendaftarkan aplikasi dengan kebenaran dan panggilan balik yang betul, kemudian menyerahkan kelayakannya kepada pelayan ini. Tiada apa-apa perlu disalin secara manual.';
+
+  @override
+  String get providerAppCreateGitHub => 'Cipta aplikasi GitHub saya';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Organisasi (pilihan)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Biarkan kosong untuk mencipta aplikasi di bawah akaun GitHub anda sendiri. Menciptanya di bawah organisasi memerlukan pemilik organisasi itu.';
+
+  @override
+  String get providerAppSignInReady => 'Orang boleh log masuk.';
+
+  @override
+  String get chatLinkWaiting => 'Menunggu mesej langsung anda…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Adakah ini akaun $provider anda?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Akaun ini menghantar kod anda kepada bot. Sahkan hanya jika ia milik anda: setelah dipautkan, apa yang dihantarnya dalam $provider bertindak sebagai anda dalam ruang kerja ini.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Tolak';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Tiada apa-apa dipautkan. Dapatkan kod baharu jika anda masih mahu memautkan akaun $provider anda.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Dapatkan kod baharu';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Tambah Control Center ke $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center telah ditambah ke $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Memasang aplikasi Control Center kongsi dalam ruang kerja $provider anda. Tiada aplikasi untuk dicipta dan tiada token untuk ditampal.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Tambah ke $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Berjalan pada aplikasi Control Center kongsi, jadi tiada token atau tetapan bot untuk diurus di sini.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Draf tiket daripada sembang';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Draf hanya menjadi tiket tunggakan apabila anda menciptanya di sini. Draf yang ditinggalkan dibuang selepas sehari.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Daripada $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Cipta tiket';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '$key dicipta';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Apl penyedia';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Apl Google Calendar, Linear dan Klipy yang digunakan ruang kerja ini. Secara lalai, ia menggunakan apl pelayan ini atau Control Center Connect. Ruang kerja yang mempunyai apl sendiri tidak akan beralih kepada apl tersebut.';
+
+  @override
+  String get workspaceProviderAppModeInherit => 'Gunakan apl pelayan ini';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Log masuk dan permintaan menggunakan apl pelayan ini atau Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn => 'Gunakan apl ruang kerja ini';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Hanya apl ruang kerja ini digunakan. Selagi belum lengkap, penyedia ini dimatikan di sini dan tidak beralih kepada apl lain.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Apl pelayan';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Apl sendiri';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Masih tiada: $fields. Sehingga semua medan diisi, penyedia ini dimatikan dalam ruang kerja ini dan tidak beralih kepada apl pelayan.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Menukar apl akan log keluar semua orang dalam ruang kerja ini. Mereka perlu log masuk semula dengan apl baharu.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Kunci apl';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Carian GIF dalam ruang kerja ini menggunakan kunci ini.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Tukar apl $provider?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Semua orang yang bersambung kepada $provider dalam ruang kerja ini melalui apl pelayan ini perlu log masuk semula dengan apl ruang kerja.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Ini akan memadam bukti kelayakan $provider ruang kerja. Semua orang yang bersambung melalui apl ruang kerja perlu log masuk semula.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Tukar apl';
 }

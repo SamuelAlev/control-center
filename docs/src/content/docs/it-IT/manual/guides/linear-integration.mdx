@@ -1,32 +1,137 @@
 ---
 title: Configura l'integrazione Linear
-description: Archivia una chiave API di Linear sul server in modo che gli agenti possano chiamare Linear e scegli Linear come provider di ticket per i nuovi ticket.
+description: Accedi a Linear, collega l'automazione Linear di uno spazio di lavoro e scegli Linear come provider di ticket per i nuovi ticket.
 slug: it-IT/manuale/guide/integrazione-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Incolla una chiave API di Linear sul server associandola al tuo utente, come
-faresti per collegare un forge. Ticket, progetti, collegamenti, collaboratori,
-delega e assegnazione funzionano tutti sul database di Control Center, senza che
-sia necessario alcun servizio esterno — vedi
+Linear ha due identità in Control Center, ed entrambe sono accessi dal browser:
+la tua, per ciò che fai tu, e l'app Control Center dello spazio di lavoro, per
+ciò che fanno gli agenti e le pipeline. Ticket, progetti, collegamenti,
+collaboratori, delega e assegnazione funzionano tutti sul database di Control
+Center, senza che sia necessario alcun servizio esterno — vedi
 [Crea e gestisci i ticket](/it-IT/manuale/guide/gestisci-ticket/).
 
-## Salva la tua chiave Linear
+## Prerequisiti
 
-**Chiave API ticketing** si trova in **Impostazioni → Spazio di lavoro → Generale**,
-sulla scheda Ticket. La chiave viene archiviata sul server associandola al tuo ID
-utente. La chiave del server per il lavoro senza supervisione proviene da
-`LINEAR_API_KEY` o dalla scheda **App del fornitore**. Nel sandbox di un agente
-non viene messa alcuna chiave di ticketing: gli agenti scrivono i ticket tramite
-gli strumenti di Control Center, che prima interrogano la regola **Scrivere su un
-tracker esterno**.
+- Il server può far accedere le persone a Linear: tramite Control Center
+  Connect, oppure con l'applicazione Linear del server
+  ([Registra la tua applicazione Linear](#registra-la-tua-applicazione-linear)).
+  Il proprietario del server sceglie in **Impostazioni → Server → Accesso single
+  sign-on**
+- Un amministratore dello spazio di lavoro, per scegliere Linear come provider
+  di ticket e per collegare l'automazione Linear
 
-## Contrassegna i nuovi ticket come Linear
+## Scegli Linear per lo spazio di lavoro
 
-**Provider di ticket** (il primo passaggio dell'onboarding, e
-`/workspaces/<workspaceId>/api-keys`) offre `local` e `linear`. Scegliendo
-`linear` viene applicato `provider: linear` ai ticket che crei da quel momento in
-poi.
+1. Vai in **Impostazioni → Spazio di lavoro → Generale** e trova la scheda
+   **Ticket**
+2. Imposta **Provider di ticket** su **Linear**
+
+Ai ticket che crei da quel momento in poi viene applicato `provider: linear`.
+**Locale** mantiene i ticket nel database di questo server e nasconde le righe
+Linear: non c'è nulla con cui autenticarsi.
+
+## Accedi a Linear
+
+Nella stessa scheda, la riga **Linear** è la tua:
+
+1. Fai clic su **Accedi a Linear**
+2. Approva nel browser
+3. Con l'applicazione del server, la finestra di dialogo se ne accorge da sola.
+   Tramite Connect, digita il codice di 8 caratteri che mostra il browser,
+   oppure lascia che apra Control Center tramite il link `control-center://`
+
+Tutto ciò che fai in Linear da Control Center usa questo accesso e nient'altro.
+Se non hai effettuato l'accesso, l'app ti chiede di accedere invece di agire
+come qualcun altro.
+
+## Collega l'automazione Linear
+
+La riga **Automazione Linear** è l'app Control Center dello spazio di lavoro in
+Linear. La sincronizzazione dei ticket, le pipeline e gli agenti scrivono con
+essa, quindi le issue e i commenti automatici compaiono come Control Center e
+non come una persona.
+
+1. Un amministratore dello spazio di lavoro fa clic su **Collega Linear per
+   l'automazione**
+2. Approva l'app per lo spazio di lavoro Linear nel browser, come sopra
+
+La riga indica allora «Collegato a _il tuo spazio di lavoro Linear_». Solo gli
+amministratori dello spazio di lavoro possono collegarla o scollegarla.
+
+Nel sandbox di un agente non viene messa alcuna credenziale Linear: gli agenti
+scrivono i ticket tramite gli strumenti di Control Center, che prima
+interrogano la regola **Scrivere su un tracker esterno**.
+
+## Registra la tua applicazione Linear
+
+Usa la tua applicazione quando hai scelto **Usa le mie app**. L'applicazione del server vale solo in
+quel caso: con Connect di Control Center o un Connect personalizzato, Connect gestisce Linear, e
+l'applicazione del server e la sua chiave API di servizio restano salvate ma inutilizzate. L'[app dello
+spazio di lavoro](#assegna-a-uno-spazio-di-lavoro-unapp-propria-di-linear) vale in ogni modalità.
+
+1. Crea un'applicazione OAuth su
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Aggiungi, alla lettera, entrambi gli URL di callback che **Impostazioni →
+   Server → Accesso single sign-on → App del fornitore → Linear** mostra sotto
+   **URL di callback**: `<server origin>/oauth/linear/callback` e
+   `<server origin>/oauth/linear_app/callback`
+3. Incolla l'**Id client** nel blocco Linear
+
+Non c'è alcun segreto client: il server accede con PKCE. I token di
+aggiornamento di Linear scadono dopo 30 giorni di inutilizzo, quindi il server
+rinnova una volta al giorno ogni accesso Linear più vecchio di 20 giorni.
+
+Lo stesso blocco accetta una **Chiave API di servizio** facoltativa. È la
+credenziale Linear del server stesso per l'automazione negli spazi di lavoro che
+non hanno collegato l'automazione Linear. Conservala in **Impostazioni** o nel
+file `.env` del server come `LINEAR_API_KEY`: il server si rifiuta di avviarsi
+quando `LINEAR_API_KEY` è esportata nell'ambiente del suo processo.
+
+## Assegna a uno spazio di lavoro un'app propria di Linear
+
+Uno spazio di lavoro può accedere a Linear tramite un'applicazione propria invece di quella del server.
+Solo un amministratore o un proprietario dello spazio di lavoro può configurarla.
+
+1. Crea un'applicazione OAuth Linear come nei passi sopra
+2. Vai su **Impostazioni → Spazio di lavoro → Generale → App dei provider** e apri **Linear**
+3. Scegli **Usa l'app propria di questo workspace**
+4. Aggiungi all'applicazione Linear entrambi gli URL di callback che la riga mostra sotto **URL di callback**, alla lettera
+5. Incolla il suo **Id client** e, facoltativamente, una **Chiave API di servizio** per l'automazione di questo spazio di lavoro
+
+L'applicazione dello spazio di lavoro risponde a ogni accesso e richiesta di automazione Linear in questo spazio
+di lavoro, qualunque sia il modo in cui il server fa accedere le persone. Non ricade mai sull'applicazione del
+server o su Connect: finché non è impostato un ID client, Linear è disattivato in questo spazio di lavoro e la
+riga indica cosa manca. La sua chiave API di servizio viene usata solo qui; senza di essa, la sincronizzazione
+richiede **Collega Linear per l'automazione**.
+
+Passare tra l'applicazione del server e quella dello spazio di lavoro, o cambiare l'ID client dello spazio di
+lavoro, disconnette tutti in questo spazio di lavoro da Linear e scollega la loro automazione. Accedono di nuovo
+tramite la nuova applicazione. **Usa l'app di questo server** elimina i campi salvati dello spazio di lavoro. I
+segreti sono solo in scrittura: la riga mostra soltanto se ne è salvato uno. Gli altri spazi di lavoro del server
+non ne sono toccati.
+
+## Risoluzione dei problemi
+
+### La riga Linear dice che l'accesso non è configurato
+
+Il server non ha né un'applicazione Linear propria né Connect. Il proprietario
+del server ne sceglie uno in **Impostazioni → Server → Accesso single sign-on**. Se lo spazio di lavoro usa un'app
+propria, la riga dice invece che la sua configurazione non è completa: un amministratore dello spazio di lavoro
+aggiunge l'ID client in **Impostazioni → Spazio di lavoro → Generale → App dei provider**.
+
+### La sincronizzazione dei ticket fallisce con un errore di autenticazione
+
+Lo spazio di lavoro non ha alcuna automazione Linear collegata e il server non
+ha alcuna chiave API di servizio, quindi la sincronizzazione non ha credenziali.
+Un amministratore dello spazio di lavoro fa clic su **Collega Linear per
+l'automazione**.
+
+### Il collegamento dell'automazione dice che lo spazio di lavoro Linear è collegato altrove
+
+L'app Control Center di quello spazio di lavoro Linear è già collegata a un
+altro server Control Center.
 
 ## Guide correlate
 

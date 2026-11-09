@@ -2,7 +2,7 @@
 title: Déploiement et clients
 description: Comment l’architecture à client léger de Control Center sépare un serveur sans interface de ses clients de bureau, web et mobiles.
 slug: fr-FR/manuel/concepts/deploiement
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center n’est pas un seul programme. C’est une **architecture à client léger** : un serveur sans interface qui détient vos données et un ensemble de clients qui affichent une interface par une seule connexion RPC à ce serveur. Comprendre ce découpage explique pourquoi certaines choses s’exécutent là où elles le font et ce que chaque client peut ou non atteindre.
@@ -86,9 +86,11 @@ Un poste de bureau utilisé seul ne remarque rien de tout cela, parce que la ré
 | Exécution d’agents | l’exécute (ou la loue) | exécute les tâches louées | — | — |
 | Rendu de l’interface | — | — | complet | complet (web) / essentiellement en lecture (téléphone) |
 | Capture de réunion (micro + audio de la réunion) | — | — | capture native | web uniquement, via l’audio de partage d’écran |
-| OAuth du calendrier (Google) | stocke les jetons | — | — | — |
+| Connexions aux fournisseurs (GitHub, Google, Linear) | les exécute et les stocke | — | — | — |
 
 Les deux niveaux ne cloisonnent pas de la même façon. `cc_server` enveloppe les exécutions qu’il réalise lui-même dans le bac à sable du système d’exploitation de l’hôte lorsqu’un backend existe — Seatbelt sous macOS, bubblewrap sous Linux et WSL2 — et se rabat sur les autres frontières sous Windows ou sans `bwrap` et `socat`. **`cc_worker` ne cloisonne pas du tout.** Il annonce une capacité `sandbox` pour que le serveur puisse placer les tâches par plateforme, mais rien dans le worker n’en applique une : une tâche louée est lancée directement, bornée par l’environnement de la location et l’arbre de travail qui lui a été fourni. Louer du travail déplace donc l’exécution hors du bac à sable, même sur un hôte qui en possède un. Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) pour savoir ce qui borne une exécution dans chaque cas.
+
+Les connexions aux fournisseurs se terminent sur le serveur, au moyen de ses propres applications ou de [Control Center Connect](/fr-FR/manuel/reference/connect/), un service facultatif qui exécute l’OAuth des fournisseurs pour les serveurs dépourvus d’applications propres. Connect renvoie un identifiant que seul ce serveur peut utiliser et ne voit jamais le contenu des dépôts. Les clients se contentent d’ouvrir le navigateur et, pour une connexion via Connect, de transmettre le code qu’il affiche.
 
 La capture de réunion se fait sur un client, car elle a besoin d’un microphone et de l’audio de la réunion — un serveur dans un placard ne peut pas enregistrer votre appel. L’enregistrement est ensuite résumé par le pipeline du serveur, et les notes sont stockées là où chaque client peut les lire.
 

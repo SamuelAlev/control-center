@@ -2,7 +2,7 @@
 title: Instalar
 description: Utilize o Control Center no navegador ou instale a aplicação de ambiente de trabalho, configure um backend de agentes e escolha onde é executado o servidor.
 slug: pt-PT/manual/instalar
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 O Control Center funciona de duas formas: como **aplicação web** em
@@ -188,25 +188,20 @@ utilizador — não no porta-chaves do sistema operativo do cliente. Todos os
 dispositivos a partir dos quais inicia sessão usam a mesma, e nenhum outro membro a
 consegue ler.
 
-Se o servidor tiver uma GitHub App registada
-([Criar a GitHub App](/pt-PT/manual/guias/github-app/)),
-**Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código**
-oferece **Entrar com o GitHub** (um fluxo por código de dispositivo executado pelo
-servidor). Caso contrário, cole um token de acesso pessoal:
+O GitHub só aceita início de sessão: **Definições → Espaço de trabalho → Perfil e
+identidade → Hospedagem de código** oferece **Entrar no GitHub**, e não há
+nenhum token para colar. O início de sessão passa pela GitHub App do próprio
+servidor ([Criar a GitHub App](/pt-PT/manual/guias/github-app/)) ou pelo Control
+Center Connect, conforme o que o proprietário do servidor escolheu. Com a app do
+próprio servidor, o navegador volta sozinho ao servidor; através do Connect,
+escreve o código de 8 caracteres que o navegador mostra, ou deixa-o abrir o
+Control Center. Consulte
+[Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/).
 
-- Clássico: `repo` e `read:org`
-- Granular: **Contents** e **Pull requests** (leitura e escrita), **Checks** e
-  **Actions** (leitura)
-
-Crie um em [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-O servidor sonda o token para obter o nome da conta tal como está guardado, pelo
-que a linha pode indicar «sessão iniciada como …»; uma sondagem falhada continua a
-guardar o token, e um erro de escrita ou um escopo em falta manifesta-se mais tarde
-como um pedido falhado.
-
-O primeiro passo da configuração inicial é esta ligação. Depois disso, é no mesmo
-cartão que a substitui ou remove. O GitLab e o Bitbucket usam o mesmo cartão;
-consulte [Ligar um host de código](/pt-PT/manual/guias/ligar-host-de-codigo/).
+A configuração inicial pede esta ligação. Depois disso, é no mesmo cartão que
+volta a iniciar sessão ou se desliga. O GitLab e o Bitbucket usam o mesmo
+cartão com um token pessoal colado; consulte
+[Ligar um host de código](/pt-PT/manual/guias/ligar-host-de-codigo/).
 
 ## Escolher onde o servidor é executado
 

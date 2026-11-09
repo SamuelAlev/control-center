@@ -4,6 +4,8 @@ import 'package:cc_domain/features/meetings/domain/services/conferencing_apps.da
 import 'package:cc_domain/features/meetings/domain/services/meeting_detection.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_signal_collector.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Emits a [MeetingSignalKind.conferencingApp] signal when a per-meeting
 /// conferencing client (Zoom, Webex, …) is running. Cross-platform via `ps`
 /// (macOS/Linux) or `tasklist` (Windows). Persistent always-on clients (Teams,
@@ -49,11 +51,11 @@ class ProcessMeetingSignalCollector implements MeetingSignalCollector {
 
   static Future<List<String>> _defaultProcessList() async {
     if (Platform.isWindows) {
-      final result = await Process.run('tasklist', ['/fo', 'csv', '/nh']);
+      final result = await ChildProcess.run('tasklist', ['/fo', 'csv', '/nh']);
       return _splitLines(result.stdout);
     }
     // macOS + Linux: list every process's command name/path.
-    final result = await Process.run('ps', ['-axo', 'comm']);
+    final result = await ChildProcess.run('ps', ['-axo', 'comm']);
     return _splitLines(result.stdout);
   }
 

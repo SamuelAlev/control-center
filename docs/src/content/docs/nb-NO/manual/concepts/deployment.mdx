@@ -2,7 +2,7 @@
 title: Drift og klienter
 description: Hvordan tynnklientarkitekturen i Control Center skiller en headless server fra skrivebords-, nett- og mobilklientene.
 slug: nb-NO/handbok/konsepter/drift
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center er ikke ett program. Det er en **tynnklientarkitektur**: en
@@ -202,7 +202,7 @@ lokale workeren, mislykkes i stedet for å kjøre. I dag er det bare en ekte
 | Agentutførelse                                 | kjører det (eller leaser det ut) | utfører leide jobber   | —              | —                                |
 | UI-gjengivelse                                 | —                          | —                            | full           | full (nett) / mest lesing (telefon) |
 | Møteopptak (mikrofon + møtelyd)                | —                          | —                            | innebygd opptak | bare nett, via skjermdelingslyd  |
-| Kalender-OAuth (Google)                        | lagrer tokener             | —                            | —              | —                                |
+| Leverandørpålogginger (GitHub, Google, Linear) | kjører og lagrer dem       | —                            | —              | —                                |
 
 De to nivåene bruker ikke samme sandkasse. `cc_server` pakker kjøringene den
 utfører selv, inn i vertens OS-sandkasse der en backend finnes — Seatbelt på
@@ -215,6 +215,13 @@ fikk. Å lease ut arbeid flytter derfor utførelsen utenfor sandkassen, selv på
 en vert som har en. Se
 [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for
 hva som begrenser en kjøring i hvert tilfelle.
+
+Leverandørpålogginger fullføres på serveren, via dens egne apper eller via
+[Control Center Connect](/nb-NO/handbok/referanse/connect/), en valgfri tjeneste
+som kjører leverandørens OAuth for servere uten egne apper. Connect gir tilbake
+en legitimasjon som bare denne serveren kan bruke, og ser aldri innholdet i
+repoer. Klienter åpner bare nettleseren og sender, ved en pålogging via Connect,
+tilbake koden den viser.
 
 Møteopptak skjer på en klient, fordi det trenger en mikrofon og møtets lyd — en
 server i et skap kan ikke ta opp samtalen din. Opptaket oppsummeres deretter av

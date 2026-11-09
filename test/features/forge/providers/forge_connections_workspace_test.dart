@@ -1,3 +1,5 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart' show SignInLaneMode;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/demo_providers.dart';
@@ -43,18 +45,20 @@ void main() {
           return {
             'connections': [
               if (workspaceId == 'ws-a')
-                _github(username: 'alice-app', source: 'oauth')
+                _github(username: 'alice', source: 'oauth')
               else if (workspaceId == 'ws-b')
-                _github(username: 'bob-pat', source: 'settings'),
+                _github(username: 'bob', source: 'connect'),
             ],
           };
         }
-        if (op == 'oauth.providers') {
+        if (op == 'oauth.lanes') {
           return {
-            'providers': [
-              if (workspaceId != 'ws-b')
-                {'provider': 'github', 'flow': 'device'},
-              {'provider': 'linear', 'flow': 'redirect'},
+            'lanes': [
+              {
+                'lane': 'github',
+                'mode': workspaceId == 'ws-b' ? 'connect' : 'own',
+              },
+              {'lane': 'linear', 'mode': 'connect'},
             ],
           };
         }
@@ -63,9 +67,7 @@ void main() {
           return {
             'user': {
               'id': 'u-1',
-              'display_name': workspaceId == 'ws-b'
-                  ? 'Bob in B'
-                  : 'Alice in A',
+              'display_name': workspaceId == 'ws-b' ? 'Bob in B' : 'Alice in A',
             },
             'device_id': 'dev-1',
             'is_server_owner': true,
@@ -87,34 +89,38 @@ void main() {
   });
 
   test(
-    'GitHub login on workspace A stays distinct from a PAT on workspace B',
+    "GitHub sign-in on workspace A stays distinct from workspace B's",
     () async {
       final inA = await container.read(forgeConnectionsProvider.future);
-      expect(inA.single.username, 'alice-app');
+      expect(inA.single.username, 'alice');
       expect(inA.single.source.wire, 'oauth');
 
-      final signInA = await container.read(signInProvidersProvider.future);
-      expect(signInA.containsKey('github'), isTrue);
+      final signInA = await container.read(oauthLanesProvider('ws-a').future);
+      expect(signInA[ConnectOAuthLane.github]?.mode, SignInLaneMode.own);
 
       final meA = await container.read(currentIdentityProvider.future);
       expect(meA.user.displayName, 'Alice in A');
 
-      await container.read(activeWorkspaceIdProvider.notifier).setActive('ws-b');
+      await container
+          .read(activeWorkspaceIdProvider.notifier)
+          .setActive('ws-b');
 
       final inB = await container.read(forgeConnectionsProvider.future);
-      expect(inB.single.username, 'bob-pat');
-      expect(inB.single.source.wire, 'settings');
+      expect(inB.single.username, 'bob');
+      expect(inB.single.source.wire, 'connect');
 
-      final signInB = await container.read(signInProvidersProvider.future);
-      expect(signInB.containsKey('github'), isFalse);
+      final signInB = await container.read(oauthLanesProvider('ws-b').future);
+      expect(signInB[ConnectOAuthLane.github]?.mode, SignInLaneMode.connect);
 
       final meB = await container.read(currentIdentityProvider.future);
       expect(meB.user.displayName, 'Bob in B');
 
-      await container.read(activeWorkspaceIdProvider.notifier).setActive('ws-a');
+      await container
+          .read(activeWorkspaceIdProvider.notifier)
+          .setActive('ws-a');
 
       final backToA = await container.read(forgeConnectionsProvider.future);
-      expect(backToA.single.username, 'alice-app');
+      expect(backToA.single.username, 'alice');
       expect(
         (await container.read(currentIdentityProvider.future)).user.displayName,
         'Alice in A',

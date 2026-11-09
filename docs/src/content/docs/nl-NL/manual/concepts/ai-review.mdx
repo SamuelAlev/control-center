@@ -2,7 +2,7 @@
 title: AI-review
 description: Hoe een pull request een gereviewde pull request wordt — reviewruimtes, reviewnodes en consensus tussen peers, cohorten en assen, het oordeel Ship/Hold/Block, en waarom publiceren een stap blijft die je zelf zet.
 slug: nl-NL/handleiding/concepten/ai-review
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## De vorm van een review
@@ -213,10 +213,12 @@ GitHub** drukt:
   bevinding in de tekst opgenomen, zodat niets stilzwijgend verdwijnt.
 - Een **Block**-oordeel wordt ingediend als `REQUEST_CHANGES`; **Hold** als
   `COMMENT`; **Ship** als `APPROVE` vanaf de knop (`approve_on_ship: true`). De
-  MCP-tool laat Ship als `COMMENT` tenzij je `approve_on_ship` meegeeft.
-- De review wordt geplaatst onder de app-identiteit van de server. Wie op
-  Publiceren heeft gedrukt, wordt vastgelegd voor de rolpoort en het
-  auditlogboek; diegene is niet de GitHub-auteur.
+  MCP-tool publiceert als automatisering en laat Ship altijd als `COMMENT`.
+- De knop **Publiceren naar GitHub** plaatst de review als de persoon die erop
+  drukte, met diens eigen GitHub-aanmelding: de releasepoort is van die persoon,
+  dus de review ook. Een publicatie zonder persoon erachter is automatisering, en
+  die keurt nooit goed: Ship gaat dan uit als `COMMENT`, en op Control Center
+  Connect krijgt het bericht het voorvoegsel `**Control Center** (for @login):`.
 
 Publiceren declareert de actieklasse `prPublish`, dus het controlepunt van de
 beveiligingen houdt het net als elke muterende actie tegen — het vraagt standaard

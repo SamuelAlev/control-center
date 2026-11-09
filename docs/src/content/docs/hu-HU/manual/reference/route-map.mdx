@@ -2,16 +2,16 @@
 title: Útvonaltérkép
 description: Minden útvonal, amelyet a Control Center regisztrál, a hozzá tartozó képernyővel és lekérdezési paramétereivel.
 slug: hu-HU/kezikonyv/referencia/utvonalterkep
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Alkalmazáshéj
 
-Az alkalmazáshéj (`ControlCenterLayout`) egy `ShellRoute` segítségével csomagolja az összes munkaterületen belüli útvonalat. **A héjon belüli célpontok mindegyike munkaterület-előtagot kap — `/workspaces/:workspaceId/…` —, és az URL-ben szereplő munkaterület-azonosító az aktív munkaterület egyetlen igazságforrása.** Előtag nélkül csak a kontextus előtti felületek vannak: `/splash`, `/onboarding`, `/signed-out` és a puszta `/workspaces` választó — mind teljes képernyős, a héjon kívül.
+Az alkalmazáshéj (`ControlCenterLayout`) egy `ShellRoute` segítségével csomagolja az összes munkaterületen belüli útvonalat. **A héjon belüli célpontok mindegyike munkaterület-előtagot kap — `/workspaces/:workspaceId/…` —, és az URL-ben szereplő munkaterület-azonosító az aktív munkaterület egyetlen igazságforrása.** Előtag nélkül csak a kontextus előtti felületek vannak: `/splash`, `/onboarding` és a puszta `/workspaces` választó — mind teljes képernyős, a héjon kívül.
 
 A kapu akkor teljes, ha legalább egy kódhoszt csatlakoztatva van **a bejelentkezett felhasználó számára**, és létezik legalább egy munkaterület.
 
-A hiányzó hitelesítő adat és a hiányzó beállítás különböző képernyő, a megkülönböztető pedig a `users.onboarding_finished_at`, amelyet a hívó saját `identity.me` válaszából olvasunk ki — soha nem a „léteznek munkaterületek” feltétel, mert az abban a pillanatban téves, amikor valakit olyan munkaterületbe hívnak meg, amelyet ő soha nem hozott létre. Csatlakoztatott kódhoszt nélkül az a fiók, amely már átesett a bevezetésen, a `/signed-out` oldalra kerül, hogy újra hitelesítse magát; amelyik még nem, az a `/onboarding` oldalra. Amíg a jelző ismeretlen, az őr az indítási képernyőn tart, ahelyett hogy találgatna, mert soha nem irányít vissza a bevezetésből.
+A hiányzó hitelesítő adat és a hiányzó beállítás másként van kezelve, a megkülönböztető pedig a `users.onboarding_finished_at`, amelyet a hívó saját `identity.me` válaszából olvasunk ki — soha nem a „léteznek munkaterületek” feltétel, mert az abban a pillanatban téves, amikor valakit olyan munkaterületbe hívnak meg, amelyet ő soha nem hozott létre. Csatlakoztatott kódhoszt nélkül a bevezetésen már átesett fiók az alkalmazásban marad, a munkaterület-héj pedig figyelmeztetést jelenít meg a Beállítások → Munkaterület → Profil és identitás oldalra mutató hivatkozással, ahol a bejelentkezés van; amelyik még nem, az a `/onboarding` oldalra. Amíg a jelző ismeretlen, az őr az indítási képernyőn tart, ahelyett hogy találgatna, mert soha nem irányít vissza a bevezetésből.
 
 ## Előtag nélküli útvonalak
 
@@ -19,7 +19,6 @@ A hiányzó hitelesítő adat és a hiányzó beállítás különböző képern
 | -------------------------- | -------------------------------------------------- |
 | `/splash`                  | Indítási képernyő, amely feloldja a bevezetési kaput |
 | `/onboarding`              | Kódhoszt csatlakoztatása, munkaterület létrehozása vagy csatlakozás egy meglévőhöz, homokozó, alapértelmezett adapter, majd hang. A munkaterület lépés kimarad, ha a fiók már tartozik egyhez |
-| `/signed-out`              | Újrahitelesítés: ugyanaz a **Kódtárhely** kártya, amelyet a Beállítások megjelenít, lépéssáv és folytatás gomb nélkül — az útválasztó magától továbblép, amint egy kódhoszt jelentkezik |
 | `/workspaces`              | Munkaterület-lista és választó                     |
 | `/workspaces/:workspaceId` | Átirányít a `/workspaces/:workspaceId/inbox` címre |
 

@@ -89,6 +89,7 @@ void main() {
   late _Conversations conversations;
   late _Orchestrations orchestrations;
   late List<Orchestration> approvedRows;
+  late List<String?> approvers;
   late List<String> hookSpaces;
   late PlanDocumentApprovalService service;
 
@@ -97,6 +98,7 @@ void main() {
     conversations = _Conversations();
     orchestrations = _Orchestrations();
     approvedRows = [];
+    approvers = [];
     hookSpaces = [];
     plans.docs['p1'] = _plan();
     conversations.rows[_conversation] = Conversation(
@@ -120,8 +122,10 @@ void main() {
             required workspaceId,
             required orchestrationId,
             approvedNodeKeys,
+            approvedByUserId,
           }) async {
             approvedRows.add(orchestrations.rows[orchestrationId]!);
+            approvers.add(approvedByUserId);
           },
       onApproved: (plan, spaceId, orchestrationId) async =>
           hookSpaces.add(spaceId),
@@ -129,6 +133,15 @@ void main() {
   });
 
   final orchestrationId = PlanDocumentCompiler.orchestrationIdFor('p1');
+
+  test('the run records who approved the plan', () async {
+    await service.approve(
+      workspaceId: _ws,
+      planId: 'p1',
+      approvedByUserId: 'alice',
+    );
+    expect(approvers, ['alice']);
+  });
 
   test('the plan runs in the space its conversation belongs to', () async {
     // Storing the conversation id as the room matched no space, so every step

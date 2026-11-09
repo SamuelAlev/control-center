@@ -972,7 +972,8 @@ class _TestRepoIsolationPort implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
@@ -1115,6 +1116,7 @@ class _TestCredentialBrokerPort implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override

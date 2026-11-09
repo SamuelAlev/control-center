@@ -2,7 +2,7 @@
 title: Sandlåda och säkerhet
 description: Vad som faktiskt begränsar en agent i Control Center i dag, hur långt OS-sandlådan når och vilka gränser som håller på en värd som saknar backend.
 slug: sv-SE/handbok/koncept/sandlada-och-sakerhet
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Var OS-sandlådan når och inte når]
@@ -117,7 +117,7 @@ icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen
 godkännandeprompt. Dess läs-, skriv- och redigeringsanrop sker inuti dess egen process och Control Center ser dem aldrig. Dess `Bash`-anrop skickas, innan de körs, till en hook på servern som klassificerar kommandoraden och frågar den matchande regeln, och de `mcp__*`-verktyg som Control Center serverar passerar grinden som vanligt. Där en backend
 finns sker de osedda anropen fortfarande inuti sandlådeinlindningen, så OS:et är
 gränsen runt dem. Där ingen finns är ingenting det. Varje adapter anger detta i
-sin verkställighetsmatris — se [adapternas ärlighetsmatris](/sv-SE/handbok/koncept/racken/#the-adapter-honesty-matrix).
+sin verkställighetsmatris — se [adapternas ärlighetsmatris](/sv-SE/handbok/koncept/racken/#adapternas-ärlighetsmatris).
 
 ## Pushar går genom Control Center
 
@@ -127,10 +127,11 @@ avgörs av [räckena](/sv-SE/handbok/koncept/racken/) — tillåt, fråga först
 — och samma regler gäller oavsett vilken adapter som kör agenten.
 
 En push är den åtgärd som måste hålla även mot en agent som försöker kringgå en
-regel, så den framtvingas genom vad agenten har, inte genom vad den kör. Med en
-GitHub-app konfigurerad får en körning i en GitHub-worktree en repo-avgränsad
-installationstoken som kan läsa innehåll och arbeta med pull requests men inte
-pusha. Körningens git-konfiguration skriver om varje push-URL till GitHub
+regel, så den framtvingas genom vad agenten har, inte genom vad den kör. En
+körning i en GitHub-worktree får en token för just det repot, utfärdad från
+arbetsytans GitHub-app, serverns egen app eller Control Center Connect. Den kan
+läsa innehåll och, när den ansvariga medlemmen kan pusha, kommentera på pull
+requests, men den kan inte pusha. Körningens git-konfiguration skriver om varje push-URL till GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) till
 **agentkörningsgatewayen**, en loopback-slutpunkt på `cc_server`. Gatewayen
 läser vilka refs pushen uppdaterar, frågar regeln **Pusha till en remote** — så
@@ -159,12 +160,10 @@ igen det vanliga sättet att skriva en åtgärd, och en agent som är fast beslu
 att dölja en (`eval`, en skriptfil, ett direkt API-anrop) kan göra det. Pushar
 är inte beroende av det.
 
-:::caution[Utan GitHub-app är pushregeln bara rådgivande]
-Utan en konfigurerad GitHub-app faller mäklaren tillbaka på en personlig
-åtkomsttoken, som inte kan begränsas till enbart läsning. Regeln gäller
-fortfarande för `git push`, eftersom git skickar pushen till gatewayen, men kod
-som använder token i miljön direkt kan pusha förbi den.
-:::
+Varje GitHub-token som en körning får är begränsad två gånger: till ett enda
+repo, och till vad den ansvariga medlemmen (den som frågade, annars arbetsytans
+ägare) kan göra där. Det finns ingen reservuppgift. När ingen token kan utfärdas
+startar körningen utan, och dess anteckningar förklarar varför.
 
 Ingen API-nyckel för ärenden läggs i en sandlåda. Agenter skriver ärenden via
 Control Centers MCP-verktyg, som frågar **Skriv till ett externt
@@ -173,9 +172,10 @@ Control Centers MCP-verktyg, som frågar **Skriv till ett externt
 Regeln **Använd nätverket** läses en gång, när körningen startar. En sandlådas
 nätverk är antingen på eller av, så neka stänger av det medan tillåt och fråga
 först lämnar det på; harnessens verktyg `web_fetch` och `web_search` frågar
-fortfarande vid varje anrop. Inloggningsuppgifterna återkallas när körningen
-rivs ner, tillsammans med varje skrivtoken som gatewayen har präglat, så ett
-handtag överlever inte körningen.
+fortfarande vid varje anrop. Körningens handtag för inloggningsuppgifter släpps
+när den rivs ner. Token bakom dem delas per medlem och repo och går ut inom
+ungefär en timme; en medlem som loggar ut från GitHub eller lämnar arbetsytan tar
+på en gång bort alla token som utfärdats för medlemmens räkning.
 
 ## Vad sandlådan tillför och var den slutar
 

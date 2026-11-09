@@ -8,6 +8,7 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bot_pro
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_host/cc_host.dart';
+import 'package:cc_infra/cc_infra.dart' show ChatLinkCode;
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 
 /// Serializes a [ChatUserLink] for the settings roster, joined with the user it
@@ -23,6 +24,18 @@ Map<String, dynamic> chatUserLinkToWire(ChatUserLink link, User? user) => {
   'method': link.method.wire,
   'linkedAt': link.linkedAt.toIso8601String(),
 };
+
+/// Serializes a member's outstanding link code: the code, its expiry and —
+/// once somebody sent it to the bot — the chat profile that did, which the
+/// member confirms or declines.
+Map<String, dynamic>? chatLinkCodeToWire(ChatLinkCode? code) => code == null
+    ? null
+    : {
+        'provider': code.provider.wire,
+        'code': code.code,
+        'expiresAt': code.expiresAt.toUtc().toIso8601String(),
+        if (code.claim case final claim?) 'claim': claim.toJson(),
+      };
 
 /// The workspace-scoped chat-bridge ops.
 ///
@@ -111,6 +124,7 @@ List<RepoOp> buildChatOps({
   RepoOp(
     name: 'chat.beginUserLink',
     kind: RepoOpKind.mutate,
+    minRole: WorkspaceRole.viewer,
     requiredArgs: const ['provider'],
     handler: (ctx) async {
       // Always the CALLER's own identity: a code that could be minted for
@@ -124,6 +138,109 @@ List<RepoOp> buildChatOps({
         'code': code.code,
         'expires_at': code.expiresAt.toIso8601String(),
       };
+    },
+  ),
+  RepoOp(
+    name: 'chat.pendingUserLink',
+    kind: RepoOpKind.read,
+    minRole: WorkspaceRole.viewer,
+    requiredArgs: const ['provider'],
+    handler: (ctx) async => {
+      // Only ever the caller's own code.
+      'pending': chatLinkCodeToWire(
+        connector.pendingUserLink(
+          ctx.workspaceId!,
+          ctx.userId,
+          provider: _provider(ctx.args),
+        ),
+      ),
+    },
+  ),
+  RepoOp(
+    name: 'chat.confirmUserLink',
+    kind: RepoOpKind.mutate,
+    minRole: WorkspaceRole.viewer,
+    requiredArgs: const ['provider', 'external_user_id'],
+    handler: (ctx) async {
+      final externalUserId = (ctx.args['external_user_id'] as String).trim();
+      if (externalUserId.isEmpty) {
+        throw const ValidationException('external_user_id is required.');
+      }
+      // The caller confirms the profile that claimed THEIR code; nobody can
+      // confirm a link on another member's behalf.
+      final link = await connector.confirmUserLink(
+        workspaceId: ctx.workspaceId!,
+        userId: ctx.userId,
+        provider: _provider(ctx.args),
+        externalUserId: externalUserId,
+      );
+      return {
+        'link': chatUserLinkToWire(link, await users.getById(link.userId)),
+      };
+    },
+  ),
+  RepoOp(
+    name: 'chat.declineUserLink',
+    kind: RepoOpKind.mutate,
+    minRole: WorkspaceRole.viewer,
+    requiredArgs: const ['provider'],
+    handler: (ctx) async {
+      connector.declineUserLink(
+        ctx.workspaceId!,
+        ctx.userId,
+        provider: _provider(ctx.args),
+      );
+      return {'ok': true};
+    },
+  ),
+  RepoOp(
+    name: 'chat.ticketDrafts',
+    kind: RepoOpKind.read,
+    minRole: WorkspaceRole.member,
+    handler: (ctx) async => {
+      'drafts': [
+        for (final draft in connector.ticketDraftsFor(
+          ctx.workspaceId!,
+          ctx.userId,
+        ))
+          draft.toJson(),
+      ],
+    },
+  ),
+  RepoOp(
+    name: 'chat.confirmTicketDraft',
+    kind: RepoOpKind.mutate,
+    minRole: WorkspaceRole.member,
+    requiredArgs: const ['draft_id'],
+    handler: (ctx) async {
+      // Only the reporter's own draft; the ticket is created by them, now.
+      final ticket = await connector.confirmTicketDraft(
+        workspaceId: ctx.workspaceId!,
+        userId: ctx.userId,
+        draftId: ctx.args['draft_id'] as String,
+        title: ctx.args['title'] as String?,
+        description: ctx.args['description'] as String?,
+      );
+      return {
+        'ticket': {
+          'id': ticket.id,
+          'key': ticket.displayKey,
+          'title': ticket.title,
+        },
+      };
+    },
+  ),
+  RepoOp(
+    name: 'chat.discardTicketDraft',
+    kind: RepoOpKind.mutate,
+    minRole: WorkspaceRole.member,
+    requiredArgs: const ['draft_id'],
+    handler: (ctx) async => {
+      'ok': connector.discardTicketDraft(
+        ctx.workspaceId!,
+        ctx.userId,
+        ctx.args['draft_id'] as String,
+      ),
     },
   ),
   RepoOp(
@@ -240,10 +357,11 @@ List<RepoOp> buildChatOps({
 
 /// The chat-bridge reactive queries.
 ///
-/// Only the roster is watched and it is watched because the *other* side makes
-/// the change: a member types the link code in the chat app, so no client
-/// request can carry the answer back. Everything else here is request/response —
-/// connections change only when somebody presses a button in settings.
+/// Each is watched because the *other* side makes the change: a member sends
+/// their link code to the bot, or drafts a ticket with a slash command, so no
+/// client request can carry the answer back. Everything else here is
+/// request/response — connections change only when somebody presses a button
+/// in settings.
 List<WatchQuery> buildChatWatchQueries({
   required ChatConnector connector,
   required UserRepository users,
@@ -257,6 +375,30 @@ List<WatchQuery> buildChatWatchQueries({
           provider: _optionalProvider(ctx.args),
         )
         .asyncMap((links) async => {'links': await _linksToWire(links, users)}),
+  ),
+  WatchQuery(
+    name: 'chat.watchPendingUserLink',
+    minRole: WorkspaceRole.viewer,
+    // The caller's own code only, filtered per subscriber.
+    handler: (ctx) => connector
+        .watchPendingUserLink(
+          ctx.workspaceId!,
+          ctx.userId,
+          provider: _provider(ctx.args),
+        )
+        .map((code) => {'pending': chatLinkCodeToWire(code)}),
+  ),
+  WatchQuery(
+    name: 'chat.watchTicketDrafts',
+    minRole: WorkspaceRole.member,
+    // The caller's own drafts only, filtered per subscriber.
+    handler: (ctx) => connector
+        .watchTicketDrafts(ctx.workspaceId!, ctx.userId)
+        .map(
+          (drafts) => {
+            'drafts': [for (final d in drafts) d.toJson()],
+          },
+        ),
   ),
 ];
 

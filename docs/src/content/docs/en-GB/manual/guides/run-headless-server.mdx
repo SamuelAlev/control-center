@@ -1,9 +1,9 @@
 ---
 title: Run a headless server
 description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: en-GB/manual/guides/run-headless-server
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Run `cc_server` on a machine that stays on, then connect to it from your desktop,
@@ -14,8 +14,9 @@ runs the agents and makes every external API call; the clients only render.
 ## Run in Docker (prebuilt images)
 
 Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
+the two static thin clients and the optional pairing relay — plus the optional
+`cc-connect` sign-in service ([Run a Connect server](/en-GB/manual/guides/run-connect/))
+and a separate `cc-server-demo` image for the public demo host. A self-hosted install needs
 no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
 or ride `latest`.
 
@@ -66,6 +67,11 @@ Things worth knowing before you expose any of this beyond loopback:
 - **`/data` is the only state.** The SQLite databases, paired-device secrets,
   downloaded models and meeting audio all live in the volume — back it up and
   the container becomes disposable.
+- **Provider secrets go in a mounted `.env`, never `-e`.** The server refuses to
+  start when `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` or a `SLACK_*SECRET*` is in its
+  process environment. Mount the file read-only at `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), or configure the apps in Settings.
 - **Pair a client from inside the image** before the first connection, the
   container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
 
@@ -267,20 +273,34 @@ Do not expose the server-launched editor extension's private loopback
 report/command gateway through a public proxy. Sensitive public HTTP requests
 are rejected; resources require an authenticated encrypted session.
 
-## Step 6: Connect a Google Calendar (optional)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+## Step 6: Choose how people sign in
+
+The first client to connect as the server owner is asked how this server signs
+people in to GitHub, Google Calendar and Linear: **Use Control Center's apps**,
+**Use my own apps**, or **Use a custom Connect server**. From the terminal, the
+same choice is:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/en-GB/manual/guides/connect-calendar/).
+`CC_CONNECT_URL` (`hosted`, `off` or a URL) in the server's environment or `.env`
+pins the choice instead. With **Use my own apps**, register each provider in
+**Settings → Server → Single sign-on → Provider apps**; **Create my GitHub App**
+sets up GitHub in one step. Provider secrets belong in the server's `.env` file,
+never the exported environment. See [Create the GitHub App](/en-GB/manual/guides/github-app/)
+and [Control Center Connect](/en-GB/manual/reference/connect/).
+
+Sign-ins through Connect finish with a code the browser shows, so the server
+needs no public address for them. Sign-ins through the server's own apps return
+the browser to the server's public URL, so set `--public-url` to an address
+people's browsers can reach.
+
+To host Connect for other servers from this one, set `CC_SERVER_CONNECT_HOST=on`;
+see [Run a Connect server](/en-GB/manual/guides/run-connect/#mount-connect-inside-cc_server).
 
 ## Configuration
 
@@ -334,6 +354,7 @@ not provide the paired client's end-to-end encryption or authorise resources):
 - [Pair a device](/en-GB/manual/guides/pair-a-device/)
 - [Run a fleet worker](/en-GB/manual/guides/run-fleet-worker/)
 - [Connect a Google Calendar](/en-GB/manual/guides/connect-calendar/)
+- [Run a Connect server](/en-GB/manual/guides/run-connect/)
 
 ## Related concepts
 

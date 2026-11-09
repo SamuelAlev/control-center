@@ -2,7 +2,7 @@
 title: Een codehost verbinden
 description: Verbind GitHub, GitLab of Bitbucket zodat het PR-oppervlak, reporegistratie en agent-runs werken — één werkruimte kan alle drie gebruiken.
 slug: nl-NL/handleiding/gidsen/codehost-verbinden
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center werkt met drie codehosts, die in de hele app **forges** heten: **GitHub**, **GitLab** en **Bitbucket Cloud**. Geen van de drie is de standaard. Verbind er één en alles werkt; verbind er meerdere en één werkruimte kan tegelijk repo's van alle drie bevatten.
@@ -13,9 +13,9 @@ De forge is een eigenschap van elke **repo**, uitgelezen uit de `origin`-remote 
 
 1. Open **Instellingen → Werkruimte → Profiel en identiteit** (`/settings/workspace/profile`).
 2. Zoek de kaart **Codehosting**. Elke ondersteunde forge staat erin, verbonden of niet.
-3. Druk op **Inloggen met …** als de rij die optie biedt, of op **Token toevoegen** en plak er een.
+3. Druk bij **GitHub** op **Inloggen bij GitHub**. Druk bij **GitLab** of **Bitbucket** op **Token toevoegen** en plak er een.
 
-**Inloggen** verschijnt voor een forge waarvoor je server een app geregistreerd heeft — vandaag is dat GitHub, via een deviceflow (zie [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)). Al het andere is een geplakt token: het eerlijke aanbod in plaats van een knop die niet kan afronden.
+**GitHub kent alleen aanmelden.** De aanmelding loopt via de eigen GitHub App van de server of via Control Center Connect, afhankelijk van wat de servereigenaar heeft ingesteld (zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)); er is geen GitHub-token om te plakken. GitLab en Bitbucket nemen nog steeds een persoonlijk token.
 
 Hoe dan ook zijn de inloggegevens **van jou en staan ze op de server**, gekoppeld aan je gebruikers-id: er wordt geen token opgeslagen op de machine waarop je hem hebt ingevoerd, elk apparaat waarop je inlogt gebruikt hetzelfde token, en geen ander lid kan het lezen. Ze gaan in bij de **volgende aanvraag** — er valt niets te herstarten, en loskoppelen stopt het versturen onmiddellijk.
 
@@ -24,29 +24,29 @@ Elke rij vertelt waar de inloggegevens vandaan komen, want dat is het verschil t
 | Ondertitel                                    | Betekenis                                                          |
 | --------------------------------------------- | ------------------------------------------------------------------ |
 | `Ingelogd als octocat`                        | Je eigen inloggegevens worden gebruikt                             |
-| `Ingelogd als octocat · via de app van deze server` | De app-identiteit van de server antwoordt — je bent niet ingelogd |
-| `Ingelogd als octocat · uit de omgeving`      | Een omgevingsvariabele van de server antwoordt, niet je inloggegevens |
+| `Ingelogd als octocat · uit de omgeving`      | Alleen GitLab of Bitbucket: een omgevingsvariabele van de server antwoordt, niet je token |
 | `Niet verbonden`                              | Je hebt geen inloggegevens voor deze forge                         |
+| `Inloggen bij GitHub is op deze server nog niet ingesteld.` | De server heeft geen eigen GitHub App en ook geen Connect; de servereigenaar stelt er een in |
 
 ### Welk token elke forge nodig heeft
 
 | Forge         | Token                                                     | Waar je hem aanmaakt                                      |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Klassiek: `repo` en `read:org`. Fijnmazig: Contents + Pull requests (lezen/schrijven), Checks + Actions (lezen) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Een persoonlijk toegangstoken met `api`                   | gitlab.com → User settings → Access tokens                |
 | **Bitbucket** | Een Atlassian API-token, plus je account-e-mailadres      | id.atlassian.com → Security → API tokens                  |
 
 Bitbucket authenticeert met je **account-e-mailadres als gebruikersnaam** en het token als wachtwoord. Zet `BITBUCKET_EMAIL` in de serveromgeving, zodat duidelijk is welk e-mailadres bij het token hoort.
 
-### Of gebruik de omgeving
+### Achtergrondwerk
 
-Voor een headless installatie of een CI-installatie leest de server deze:
+Werk zonder mens erachter (agentruns, pipelines, PR-polling) heeft ook
+inloggegevens nodig, en elke forge regelt dat anders:
 
-- **GitHub** — `GITHUB_TOKEN`, dan `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, dan `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, dan `BITBUCKET_TOKEN` (met `BITBUCKET_EMAIL`)
+- **GitHub** — een token voor telkens één repository, uitgegeven via de GitHub App van de server of via Connect en beperkt tot wat een verantwoordelijk lid daar mag doen. Het is nooit de volledige, doorgegeven aanmelding van een persoon, en geen omgevingsvariabele of geplakt token neemt die plaats in. Zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/#namens-wie-je-inloggegevens-spreken)
+- **GitLab** — het geplakte token van de servereigenaar, dan `GITLAB_TOKEN`, dan `CI_JOB_TOKEN`
+- **Bitbucket** — het geplakte token van de servereigenaar, dan `BITBUCKET_API_TOKEN`, dan `BITBUCKET_TOKEN` (met `BITBUCKET_EMAIL`)
 
-Dit zijn de inloggegevens van de **server**, niet die van jou, en dat onderscheid is essentieel: een aanvraag die namens jou wordt gedaan, gebruikt jouw inloggegevens en niets anders, dus de omgeving neemt het nooit stilletjes van je over. Werk zonder mens erachter — webhooks, PR-polling, ticketsynchronisatie — bepaalt eerst de app-identiteit van de server, dan de inloggegevens van de eigenaar van de server, dan de omgeving. Die volgorde ligt vast, zodat “ik heb me ingelogd en er is niets veranderd” nooit een uitkomst kan zijn.
+De omgevingsvariabelen voor GitLab en Bitbucket zijn de inloggegevens van de **server**, niet die van jou: een aanvraag die namens jou wordt gedaan, gebruikt jouw token en niets anders, dus de omgeving neemt het nooit stilletjes van je over.
 
 ## Je bent een ander persoon op elke forge
 
@@ -94,11 +94,11 @@ GitLab noemt een pull request een **merge request**. Control Center zegt in zijn
 
 ### De PR-lijst is leeg en zegt dat een forge niet verbonden is
 
-Je hebt geen inloggegevens voor die forge. Log in of plak een token in **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**. De repo's van andere forges blijven onaangetast.
+Je hebt geen inloggegevens voor die forge. Meld je aan bij GitHub, of plak een GitLab- of Bitbucket-token, in **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**. De repo's van andere forges blijven onaangetast.
 
 ### Ik heb een forge verbonden, maar de repo's tonen nog niets
 
-Controleer de ondertitel van de rij. Staat daar “via de app van deze server” of “uit de omgeving”, dan antwoorden andere inloggegevens dan je verwachtte — voor alles wat jij opvraagt, winnen je eigen inloggegevens, dus als er iets anders staat, zijn die van jou niet opgeslagen.
+Controleer de ondertitel van de rij. Staat bij een GitLab- of Bitbucket-rij “uit de omgeving”, dan antwoorden andere inloggegevens dan je verwachtte — voor alles wat jij opvraagt, wint je eigen token, dus als er iets anders staat, is dat van jou niet opgeslagen. Controleer bij GitHub of de GitHub App is geïnstalleerd op het account dat eigenaar is van de repo's.
 
 ### Een repo laat zich niet registreren
 

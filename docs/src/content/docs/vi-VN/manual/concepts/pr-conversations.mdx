@@ -2,17 +2,17 @@
 title: Hội thoại PR
 description: Cách một bình luận trên PR GitHub trở thành một lượt agent mà không cần webhook, điều gì cấp quyền cho tác giả, và mỗi bên của cuộc hội thoại được quy kết cho ai.
 slug: vi-VN/so-tay/khai-niem/hoi-thoai-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Một pull request vốn đã là nơi diễn ra cuộc hội thoại về mã nguồn. Hội thoại PR
 biến nó thành một bề mặt trên không gian làm việc Control Center, giống như một
 [cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/) biến Slack thành một bề mặt: nhắc
-đến bot GitHub App của máy chủ trong một PR, trả lời bên trong các luồng đánh
-giá của nó, hoặc thêm nhãn `ai-review`, và công việc diễn ra ngay trong không
-gian đánh giá của PR — dưới cùng cách quy kết và cùng rào chắn như bất cứ điều
-gì được gõ trong ứng dụng. Một bình luận cũng phải qua cổng tư cách thành viên;
-còn nhãn thì không, vì nó không có tác giả. Câu trả lời của bot quay trở lại
+đến `@usectrl` (hoặc bot GitHub App của không gian làm việc) trên một PR, trả lời
+bên trong các luồng đánh giá của nó, hoặc thêm nhãn `ai-review`, và công việc diễn
+ra trong không gian đánh giá của PR — dưới cùng cách quy kết và cùng rào chắn như
+bất cứ điều gì được gõ trong ứng dụng. Một bình luận và một nhãn đều được kiểm soát
+theo cùng cách: dựa trên thành viên đã viết hoặc đã thêm nó. Câu trả lời quay lại
 GitHub, đúng trong làn mà câu hỏi được đặt ra.
 
 Ba quyết định định hình nên tính năng này, và mỗi quyết định cũng chính là
@@ -24,16 +24,19 @@ bên ngoài** và **mỗi bên được quy kết cho ai**.
 
 Kênh đẩy (push) duy nhất mà GitHub dành cho một app là webhook, mà webhook thì
 cần một URL đến — đúng thứ mà bề mặt này cố tình không bao giờ đòi hỏi. Nên
-việc phát hiện là một lượt quét: cứ khoảng một phút, mỗi cài đặt app chạy một
-tìm kiếm có bí danh để hỏi GitHub về những PR có nhắc đến bot (hoặc slug ngắn
-của nó) và về những PR đang mở mang nhãn đánh giá; những PR đã có không gian
-đánh giá thì được đọc các luồng bình luận của chúng, và mọi thứ được đối chiếu
-theo id bình luận với những gì đã thấy ở lượt quét trước.
+việc phát hiện là một lượt quét: một tìm kiếm có bí danh cho mỗi cài đặt app hỏi
+GitHub về những PR nhắc đến bot (hoặc slug ngắn của nó) và về những PR đang mở
+mang nhãn đánh giá; những PR đã có không gian đánh giá thì được đọc các luồng bình
+luận của chúng, và mọi thứ được đối chiếu theo id bình luận với những gì đã thấy ở
+lượt quét trước. Một app riêng quét mỗi phút trên tối đa 25 PR. Qua Connect, các
+lệnh gọi dùng hạn mức GitHub của chính các thành viên, nên lượt quét chạy hai phút
+một lần trên tối đa 10 PR, và một không gian làm việc dưới 15% hạn mức của nó sẽ
+bị bỏ qua cho đến khi hồi phục. Bản thân Connect không bao giờ thấy nội dung PR.
 
 Những hệ quả thiết kế đáng được gọi tên:
 
 - **Độ trễ là một khoảng quét, không phải một sự kiện.** Phản hồi xác nhận 👀
-  đến trong khoảng một phút. Không có gì gấp gáp nào phụ thuộc vào nó.
+  đến trong một lượt quét. Không có gì gấp gáp nào phụ thuộc vào nó.
 - **Đúng một lần, cho mỗi bình luận.** Id bình luận là duy nhất trên toàn
   GitHub; mỗi id được ghi lại ngay khi nó được phân loại là đủ điều kiện, trước
   khi bất cứ thứ gì tác động lên nó. Một cú sập có thể làm mất việc xử lý một
@@ -49,98 +52,106 @@ Những hệ quả thiết kế đáng được gọi tên:
   mãi. Việc thêm lại một nhãn sau khi gỡ nó là vô hình đối với lượt quét; một
   lượt nhắc đến mới là đường chạy lại.
 
-Tìm kiếm chạy một lần cho mỗi tài khoản cài đặt, trên máy khách của chính chủ
-sở hữu đó, vì token cài đặt chỉ nhìn thấy các kho mã thuộc cài đặt của chính
-nó — một thông tin xác thực duy nhất dùng chung toàn máy chủ sẽ âm thầm bỏ sót
-mọi PR thuộc các cài đặt khác của app.
+Tìm kiếm chạy một lần cho mỗi tài khoản cài đặt, trên máy khách của chính chủ sở
+hữu đó, vì một token chỉ nhìn thấy các kho mã thuộc cài đặt của chính nó — một
+thông tin xác thực duy nhất dùng chung toàn máy chủ sẽ âm thầm bỏ sót mọi PR thuộc
+các cài đặt khác của app.
 
 ## Tư cách thành viên cấp quyền, chứ không phải bình luận
 
-Một bình luận PR đến chỉ mang theo không hơn gì tên đăng nhập của tác giả — một
-danh tính bên ngoài chưa được xác thực cho đến khi được chứng minh. Bot phân
-giải nó dựa trên một chỉ mục nghịch đảo gồm các thành viên của không gian làm
-việc và các tài khoản GitHub đã liên kết của họ, được dựng lại theo TTL vì
-người ta vẫn đăng nhập và được mời trong lúc máy chủ đang chạy.
+Một bình luận PR đến mang theo một tác giả — một danh tính bên ngoài chưa được xác
+thực cho đến khi được chứng minh. Máy chủ phân giải id tài khoản GitHub dạng số,
+bất biến của tác giả (không bao giờ dùng tên đăng nhập, vì tên đó có thể bị đổi và
+tái sử dụng) đối chiếu với các đăng nhập GitHub của thành viên không gian làm việc,
+được dựng lại theo TTL vì người ta vẫn đăng nhập và được mời trong lúc máy chủ đang
+chạy. Với nhãn `ai-review`, người được phân giải là người đã thêm nhãn gần nhất.
 
-Việc đóng lại khi không chắc chắn trông giống một cái thang, và mỗi bậc đều trả
-lời ngay trong luồng mà nó từ chối:
+Ba kiểm tra theo thứ tự, và trượt ở bất kỳ kiểm tra nào đều im lặng — không có gì
+được đăng:
 
-- **Một tên đăng nhập không rõ** — chưa được liên kết, hoặc được liên kết bởi
-  một người không phải thành viên của không gian làm việc này — được yêu cầu
-  đăng nhập và bảo đảm rằng mình thuộc về đây
-- **Một thành viên chỉ đọc** (`viewer` hoặc `guest`) được thông báo rằng vai
-  trò của họ không thể khởi động công việc
+- **Một thành viên đã đăng nhập.** Tài khoản phải thuộc về một thành viên của _không
+  gian làm việc này_ đã đăng nhập GitHub trên máy chủ này
+- **Vai trò ghi.** `viewer` và `guest` không thể khởi động công việc
+- **Quyền push.** Các câu trả lời dùng một token `bot` giới hạn theo quyền truy cập
+  kho mã của thành viên đó. Nếu máy chủ không cấp được token, nó không tiếp tục
 
-Hai trường hợp tên đăng nhập không rõ dùng chung một câu trả lời: chỉ mục nghịch
-đảo chỉ trả về thành viên của không gian làm việc _này_, nên một tài khoản chưa
-liên kết và một người đã liên kết nhưng không phải thành viên là cùng một kiểu
-trượt. Không trường hợp nào trong số đó được đi tiếp. Một bình luận không bao
-giờ bị quy kết cho người không gửi nó, và lời của người lạ không bao giờ bước
-vào một không gian làm việc mà họ không thể nhìn thấy.
+Mọi kiểm tra chạy trước mọi lời xác nhận, nên một người lạ không nhận được phản
+ứng hay câu trả lời nào. Một bình luận không bao giờ được quy kết cho người không
+gửi nó, và lời của người lạ không bao giờ bước vào một không gian làm việc mà họ
+không thể nhìn thấy.
 
-Nhãn `ai-review` không có tác giả để phân giải, nên nó không leo lên cái thang
-này. Thêm nó sẽ khởi động việc đánh giá trong không gian làm việc đã liên kết
-với kho mã đó.
+### Nhận xử lý bình luận
+
+Bước cuối cùng trước mọi công việc là một phản ứng 👀, được thêm bằng đăng nhập
+GitHub của chính tác giả. GitHub trả về `201` cho một phản ứng mới và `200` cho một
+phản ứng đã tồn tại, nên phản ứng đó đóng vai trò như một khóa: khi cùng một người
+đăng nhập trên hai máy chủ cùng liên kết một kho mã, chỉ máy chủ nào phản ứng trước
+mới thực hiện công việc. Một bình luận mà nhiều không gian làm việc trên một máy chủ
+cùng thấy sẽ được đưa cho từng không gian, và cùng cơ chế nhận xử lý đó quyết định.
 
 ## Hai danh tính, là cố ý
 
-Mỗi bên của cuộc hội thoại mang một danh tính khác nhau, và chính sự khác biệt
-đó làm nên tính năng:
+Mỗi bên của cuộc hội thoại mang một danh tính khác nhau, và chính sự khác biệt đó
+làm nên tính năng:
 
-- **Trên GitHub, bot chính là máy chủ.** Mọi bình luận, cảm xúc và câu trả lời
-  mà cầu đăng lên đều dùng token cài đặt của app. Không ai bấm gì trong một máy
-  khách, nên không thứ gì mượn tài khoản của một người — cùng nguyên tắc giữ
-  cho webhook và polling không dùng thông tin xác thực của con người.
-- **Trong space, câu hỏi là của bạn.** Tin nhắn được quy kết cho thành viên mà
-  tác giả phân giải thành, và lượt chạy agent thực thi thay mặt họ: các commit
-  ghi họ là đồng tác giả, còn núm tự chủ và rào chắn hành động của space áp
-  dụng đúng như với một tin nhắn được gõ trong ứng dụng. Các thao tác ghi lên
-  máy chủ mã từ lượt chạy vẫn diễn ra dưới danh nghĩa app — cùng nguyên tắc như
-  gạch đầu dòng phía trên — chứ không dùng token cá nhân của thành viên.
+- **Trên GitHub, câu trả lời là tự động hóa thay mặt bạn.** Mọi câu trả lời dùng
+  một token `bot` cho đúng kho mã đó, giới hạn theo quyền truy cập của thành viên
+  đang hỏi. Trên app riêng, tác giả là tài khoản `[bot]` của app. Qua Connect, token
+  của App dùng chung là token người dùng, nên câu trả lời được ghi là tài khoản của
+  thành viên đang hỏi, hoạt động thông qua App. Dù theo cách nào, mỗi câu trả lời
+  cũng bắt đầu bằng `**Control Center** (for @login):`, cho biết ai đã hỏi và đồng
+  thời đóng vai trò chốt chặn vòng lặp.
+- **Trong space, câu hỏi là của bạn.** Tin nhắn được quy kết cho thành viên mà tác
+  giả phân giải thành, và lượt chạy agent thực thi thay mặt họ: các commit ghi họ là
+  đồng tác giả, còn núm tự chủ và rào chắn hành động của space áp dụng đúng như với
+  một tin nhắn được gõ trong ứng dụng. Các thao tác ghi lên máy chủ mã từ lượt chạy
+  dùng các token một-repo bị giới hạn bởi thành viên đó, chứ không bao giờ là đăng
+  nhập của họ được chuyển nguyên vẹn.
 
-Việc công bố các phát hiện của đánh giá trở lại GitHub vẫn là quyết định của
-con người, được đưa ra trong Control Center. Một lượt nhắc đến có thể _khởi
-động_ một cuộc đánh giá; chỉ con người mới công bố nó.
+Việc công bố các phát hiện của đánh giá trở lại GitHub vẫn là quyết định của con
+người, được đưa ra trong Control Center. Một lượt nhắc đến có thể _khởi động_ một
+cuộc đánh giá; chỉ con người mới công bố nó.
 
 ## Chốt chặn vòng lặp, và cái tên ngắn
 
-Mọi thứ được tạo bởi một tài khoản bot đều bị loại bỏ trước khi bất kỳ cổng nào
-chạy — cụ thể là bot của chúng ta, và mọi hậu tố `[bot]`, để bot đánh giá của
-một app khác cũng không thể đánh thức bot của chúng ta. Không có điều này, chính
-những câu trả lời của bot sẽ đến như những bình luận mới và kích hoạt nó lặp lại
-mãi mãi.
+Mọi thứ do một tài khoản bot tạo ra đều bị loại bỏ trước khi bất kỳ cổng nào chạy —
+cụ thể là bot của chúng ta, và mọi hậu tố `[bot]`, để bot đánh giá của một app khác
+cũng không thể đánh thức bot của chúng ta — và cũng vậy với mọi bình luận bắt đầu
+bằng tiền tố `**Control Center** (for @`, vì câu trả lời qua Connect được ghi bằng
+tài khoản của một người. Không có điều này, chính những câu trả lời sẽ đến như những
+bình luận mới và khiến cầu nối tự kích hoạt lại mãi mãi.
 
 Hậu tố `[bot]` cũng là lý do tồn tại của dạng ngắn. GitHub cố định tên đăng nhập
 của một tài khoản app thành `<slug>[bot]`, không cung cấp tính năng tự động hoàn
 thành cho nó, và không bao giờ phân giải `@slug` thành app — nên việc chấp nhận
-slug trần là quyết định của bộ so khớp _của chúng ta_, và để phát hiện nó cần
-một làn tìm kiếm thô trên **văn bản** bình luận thay vì chỉ mục nhắc đến của
-GitHub. Cái giá được nói thẳng ra thay vì làm mờ đi: một người dùng trùng slug
-với app sẽ vô tình gọi bot bằng mọi lượt nhắc đến dạng ngắn về chính mình.
-Những cái tên app đủ đặc trưng khiến va chạm chỉ còn là giả thuyết.
+slug trần là quyết định của bộ so khớp _của chúng ta_, và để phát hiện nó cần một
+làn tìm kiếm thô trên **văn bản** bình luận thay vì chỉ mục nhắc đến của GitHub.
+Cái giá được nói thẳng ra thay vì làm mờ đi: một người dùng trùng slug với app sẽ
+vô tình gọi bot bằng mọi lượt nhắc đến dạng ngắn về chính mình. Những cái tên app đủ
+đặc trưng khiến va chạm chỉ còn là giả thuyết.
 
 ## Những gì được cố ý không cung cấp
 
-- **Không tự động công bố.** Các phát hiện đáp xuống không gian đánh giá; công
-  bố lên GitHub là một hành động riêng, do con người thực hiện
-- **Không có danh tính mờ.** Tác giả hoặc phân giải thành đúng một thành viên,
-  hoặc bị từ chối — không có kiểu quy kết theo phỏng đoán
-- **Không có webhook GitHub App.** Bề mặt này không bao giờ đăng ký một webhook
-  như vậy, nên không có URL đến nào phải phơi ra cho các bình luận PR. Những
-  webhook khác của sản phẩm (quy trình, đồng bộ phiếu) là một thiết lập riêng và
-  tùy chọn.
+- **Không tự động công bố.** Các phát hiện đáp xuống không gian đánh giá; công bố
+  lên GitHub là một hành động riêng, do con người thực hiện
+- **Không có danh tính mờ.** Tác giả hoặc phân giải thành đúng một thành viên, hoặc
+  bị bỏ qua — không có kiểu quy kết theo phỏng đoán
+- **Không tự phê duyệt.** Tự động hóa có thể bình luận và yêu cầu thay đổi, nhưng một
+  đánh giá `APPROVE` bị từ chối trước khi được gửi. Phê duyệt là hành động của một người
+- **Không có webhook GitHub App.** Bề mặt này không bao giờ đăng ký một webhook như
+  vậy, nên không có URL đến nào phải phơi ra cho các bình luận PR. Những webhook khác
+  của sản phẩm (quy trình, đồng bộ phiếu) là một thiết lập riêng và tùy chọn.
 
 ## Xem thêm
 
 - [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/):
   hướng dẫn thực hành cho tất cả những điều trên
-- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/): cũng ba quyết định đó, nhưng
-  dành cho chat
-- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): nơi danh tính
-  của bot bắt nguồn
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/): cũng ba quyết định đó, nhưng dành
+  cho chat
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): nơi danh tính của
+  một bot app riêng bắt nguồn
 - [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/):
   những chủ thể và vai trò mà một tên đăng nhập được phân giải qua
-- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): những gì agent trả lời được
-  phép làm
-- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/): quy
-  trình mà một lượt nhắc đến hoặc một nhãn khởi động
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): những gì agent trả lời được phép làm
+- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/): quy trình
+  mà một lượt nhắc đến hoặc một nhãn khởi động

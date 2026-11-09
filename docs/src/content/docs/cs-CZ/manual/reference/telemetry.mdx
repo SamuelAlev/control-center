@@ -2,7 +2,7 @@
 title: Analytika používání
 description: Co Control Center zaznamenává, když je analytika používání zapnutá, kdo o tom rozhoduje a co se nikdy neodesílá.
 slug: cs-CZ/prirucka/referencni-prirucka/analytika-pouzivani
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center umí odesílat **pseudonymní události o používání** do instance [Umami](https://umami.is). Analytika používání je **vypnutá, dokud ji provozovatel serveru nezapne**. Nastavení patří serveru a platí pro každého klienta, který je k němu připojený: desktopovou aplikaci, webovou aplikaci, telefon i samotný server.
@@ -95,9 +95,12 @@ Zaznamenává je desktopová aplikace, webová aplikace a telefon u věcí, kter
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Neúspěšný běh se zkusil znovu |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Běh se zrušil z aplikace |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Běžící krok se násilně ukončil |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Skončil pokus o přihlášení ke kalendáři |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true, když přihlášení proběhlo přes Control Center Connect, a ne přes vlastního klienta Google serveru), `duration_s` | Skončil pokus o přihlášení ke kalendáři |
 | `calendar_disconnected` | `workspace_id` | Odpojil se kalendářový účet |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Na pozvánku přišla odpověď |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (počet), `conference` | V Google Calendar byla rezervována událost |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Událost byla přesunuta nebo změněn její rozsah na mřížce kalendáře |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Událost byla smazána z Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Z události v kalendáři se spustilo nahrávání |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Otevřel se odkaz na schůzku (telefon). Z odkazu se odvodí jen poskytovatel |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Použilo se centrum oznámení |

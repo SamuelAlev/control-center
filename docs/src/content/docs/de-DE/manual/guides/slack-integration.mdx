@@ -1,11 +1,11 @@
 ---
 title: Slack-Integration einrichten
-description: Verbinde eine Slack-App mit einem Arbeitsbereich von Control Center, damit Mitglieder Agenten aus Slack steuern können.
+description: Verbinde Slack mit einem Arbeitsbereich von Control Center, über die gemeinsame App von Control Center oder eine eigene, damit Mitglieder Agenten aus Slack steuern können.
 slug: de-DE/handbuch/anleitungen/slack-integration
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Diese Anleitung zeigt dir, wie du Slack mit einem Arbeitsbereich von Control Center verbindest, entweder indem Control Center die App anlegt oder indem du sie selbst baust.
+Diese Anleitung zeigt dir, wie du Slack mit einem Arbeitsbereich von Control Center verbindest: indem du die gemeinsame App von Control Center hinzufügst, oder mit einer eigenen App, die Control Center für dich anlegt oder die du selbst baust.
 
 Für einen geführten ersten Durchlauf siehe [Slack mit deinem Arbeitsbereich verbinden](/de-DE/handbuch/tutorials/erste-chat-bruecke/).
 
@@ -20,9 +20,37 @@ oder Matrix gibt es nicht.
 
 - Die Rolle `owner` oder `admin` im Arbeitsbereich von Control Center — eine Chat-App zu verbinden ändert die Einstellungen des Arbeitsbereichs
 - Die Berechtigung, im Slack-Workspace Apps anzulegen und zu installieren
-- Nichts muss öffentlich erreichbar sein: Die Verbindung geht nach außen (Socket Mode), der Server braucht also keinen eingehenden Port, keinen Tunnel und keine Domain
+- Nichts muss öffentlich erreichbar sein: Deine eigene App verbindet sich per Socket Mode nach außen, und die Ereignisse der gemeinsamen App erreichen den Server über einen Long Poll zu Control Center Connect. Der Server braucht also keinen eingehenden Port, keinen Tunnel und keine Domain
 
-## Drei Wege zur App
+## Gemeinsame App oder eigene
+
+Ein Arbeitsbereich läuft immer auf genau einer der beiden.
+
+| Modus                                 | Braucht                                                                                                       | Du bekommst                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Gemeinsame App von Control Center** | Der Server nutzt Control Center Connect (**Einstellungen → Server → Single sign-on**), und Connect bedient Slack | Einen Klick und eine Slack-Anmeldung. Keine App anzulegen, kein Token einzufügen, nichts zu rotieren |
+| **Deine eigene App**                  | Eine Slack-App in deinem Slack-Workspace, auf einem der drei Wege unten angelegt                               | Eigenen Bot-Namen, eigene Beschreibungen und eigenen Slash-Befehl, aus Control Center bearbeitbar |
+
+### Die gemeinsame App von Control Center hinzufügen
+
+1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+2. Such im Slack-Block die Zeile **Control Center zu Slack hinzufügen** und klicke auf **Zu Slack hinzufügen**
+3. Dein Browser öffnet Slack. Melde dich mit Slack an, wähle den Slack-Workspace und genehmige die Installation
+4. Zeigt der Browser einen Code, tippe ihn in den Dialog ein, den Control Center offen gelassen hat. Gibt dich der Browser von selbst an die App zurück, gibt es nichts einzutippen
+5. Eine Meldung nennt den Slack-Workspace, dem die App hinzugefügt wurde, und der Slack-Block zeigt, dass die Verbindung über die gemeinsame App von Control Center läuft
+
+Nur ein Admin des Arbeitsbereichs kann die App hinzufügen. Die Zeile sagt, warum sie nicht starten kann, wenn der Server seine eigenen Apps statt Connect nutzt, wenn dein Connect keine Slack-App hat oder wenn dieser Arbeitsbereich schon eine eigene Slack-App verbunden hat.
+
+So unterscheidet sie sich von deiner eigenen App:
+
+- Slack schickt die Ereignisse der gemeinsamen App an Connect. Connect behält nur einen Verweis (Team, Kanal und Nachrichten-ID) und verwirft den Nachrichtentext; der Server fragt Connect per Long Poll nach Verweisen und liest jede Nachricht selbst bei Slack. Der Text eines Slash-Befehls läuft dagegen durch Connect, deshalb legt [`/cc ticket`](#ticketentwürfe-aus-slack) nur einen Entwurf an
+- Das Bot-Token wird für diesen Server versiegelt und über Connect erneuert, es gibt also kein Token einzufügen oder zu rotieren
+- Name, Beschreibungen und Slash-Befehl des Bots sind die der gemeinsamen App. Die Slack-Zeile sagt, dass die Verbindung über die gemeinsame App läuft, und bietet kein **Bot anpassen** an
+- Ein Slack-Workspace ist immer nur an einen Server von Control Center gebunden. Fügst du die App von einem anderen Server aus hinzu, zieht sie dorthin um, und die Verbindung dieses Servers endet
+
+Um den Modus zu wechseln, trenne die Verbindung und verbinde auf die andere Art.
+
+### Deine eigene App: drei Wege dorthin
 
 | Weg                    | Du lieferst                              | Control Center erledigt                                                                                                      |
 | ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +60,7 @@ oder Matrix gibt es nicht.
 
 Nur der geführte Weg lässt die App danach auch aus Control Center _verwaltbar_, und genau das schaltet [Den Chatbot anpassen](/de-DE/handbuch/anleitungen/chatbot-anpassen/) frei. Eine App über **In Slack erstellen** lässt sich später zu einer verwalteten machen, indem du im Verbindungsdialog ein Konfigurationstoken einfügst.
 
-Es gibt absichtlich keine Schaltfläche „Control Centers Slack-App installieren“. Eine verteilte Slack-App zu installieren braucht ein gemeinsames Client-Secret (Slack hat kein PKCE), und Socket Mode verteilt die Ereignisse einer App zufällig über ihre Verbindungen — eine gemeinsame App würde die Nachrichten deines Arbeitsbereichs also an die Server anderer Leute liefern. Jeder Arbeitsbereich besitzt deshalb seine eigene App, und bei den drei Wegen geht es darum, wie wenig Arbeit dich das kostet.
+Die Ereignisse deiner eigenen App laufen nie durch Connect: Socket Mode liefert sie direkt an diesen Server.
 
 ## Option A: Control Center die App anlegen lassen
 
@@ -103,6 +131,8 @@ message.im
 
 ## Verbinden
 
+So erreichen die Tokens deiner eigenen App Control Center. Die gemeinsame App braucht nichts davon.
+
 1. Geh zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
 2. Klicke im Slack-Block auf **Slack verbinden**
 3. Fülle die Felder aus:
@@ -125,8 +155,8 @@ Ohne das optionale App-Konfigurationstoken funktioniert die Verbindung — den B
 
 ## Was das Verbinden bewirkt
 
-- Speichert die Zugangsdaten im eigenen Verzeichnis des Arbeitsbereichs, neben seiner Datenbank, nur für den Eigentümer lesbar. An einen Client gehen sie nie zurück
-- Öffnet eine Socket-Mode-Verbindung für diesen Arbeitsbereich und empfängt Erwähnungen, Antworten in Slack-Threads, Direktnachrichten und Slash-Befehle
+- Speichert die Zugangsdaten im eigenen Verzeichnis des Arbeitsbereichs, neben seiner Datenbank, nur für den Eigentümer lesbar. An einen Client gehen sie nie zurück. Bei der gemeinsamen App ist das die versiegelte Berechtigung; das kurzlebige Bot-Token, zu dem sie erneuert wird, bleibt im Arbeitsspeicher
+- Empfängt Erwähnungen, Antworten in Slack-Threads, Direktnachrichten und Slash-Befehle: über eine Socket-Mode-Verbindung bei deiner eigenen App oder über den einen Long Poll des Servers zu Connect bei der gemeinsamen App
 - Nimmt jeden Slack-Thread, den die Brücke schon führte, wieder auf, sodass eine neue Verbindung bestehende Unterhaltungen fortsetzt, statt sie hängen zu lassen
 - Kostet nichts für Arbeitsbereiche ohne Chat-App: kein Socket, keine Timer, kein Verkehr
 
@@ -143,8 +173,8 @@ woanders wiederherzustellen heißt, Slack dort neu zu verbinden.
 Zugang zur Brücke ist die **Mitgliedschaft** im Arbeitsbereich, nie der Besitz
 eines Tokens. Ein Slack-Konto muss mit einem Nutzer von Control Center
 verknüpft sein, der Mitglied mit einer schreibenden Rolle ist. Verbinden,
-Trennen, die geführte Einrichtung, der Einrichtungs-Link und die
-Bot-Anpassung sind Admin-Aktionen.
+Trennen, die Installation der gemeinsamen App, die geführte Einrichtung, der
+Einrichtungs-Link und die Bot-Anpassung sind Admin-Aktionen.
 :::
 
 ## Prüfen
@@ -167,7 +197,25 @@ Das Nachdenken als Textwand und die Ausgabe der Tools verlassen Control Center n
 
 Passiert beim Klick nichts, ist der Server, der die Nachricht geschickt hat, von dem Rechner aus nicht erreichbar, auf dem du geklickt hast (ein Server, der nur auf Loopback hört, angeklickt von einem Smartphone, zum Beispiel), oder Control Center läuft dort nicht. Ein Server ohne erreichbare Adresse schickt eine Karte ohne Schaltfläche, statt einer, die ins Leere führt.
 
+## Ticketentwürfe aus Slack
+
+Jedes verknüpfte Mitglied mit einer schreibenden Rolle kann aus Slack ein Ticket vorschlagen:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Der Text vor dem `|` ist der Titel, der Text danach die Beschreibung. Der Bot antwortet, dass er das Ticket entworfen hat. Noch wird nichts angelegt, und keine Ticket-Automatisierung springt an: Der Entwurf wartet unter **Einstellungen → Arbeitsbereich → Profil und Identität → Ticketentwürfe aus dem Chat** auf dich. Dort kannst du Titel und Beschreibung korrigieren und dann auf **Ticket erstellen** oder **Verwerfen** klicken.
+
+- Nur das Mitglied, das den Befehl ausgeführt hat, sieht den Entwurf
+- Einen liegen gelassenen Entwurf verwirft der Server nach einem Tag. Entwürfe liegen nur im Arbeitsspeicher, also verwirft auch ein Neustart des Servers sie
+- Die Karte erscheint nur, solange du Entwürfe hast
+
+Der Text eines Befehls lässt sich nicht erneut bei Slack lesen und ist bei der gemeinsamen App durch Connect gelaufen. Erst wenn du das Ticket in Control Center anlegst, wird es deins.
+
 ## Ein Token rotieren
+
+Das gilt für deine eigene App. Die gemeinsame App hat kein Token zum Rotieren.
 
 Füge den neuen Wert im Verbindungsdialog neu ein und klicke auf **Slack verbinden**. Verbinden ersetzt die laufende Verbindung dieses Arbeitsbereichs, der Socket wird also mit den neuen Zugangsdaten neu aufgebaut.
 
@@ -175,7 +223,7 @@ Die beiden Pflicht-Tokens müssen bei jedem Verbinden da sein. Das optionale App
 
 ## Trennen
 
-Klicke in der Slack-Zeile auf **Trennen** (nur für Admins). Der Socket schließt sich, und die Zugangsdaten werden verworfen.
+Klicke in der Slack-Zeile auf **Trennen** (nur für Admins). Die Verbindung schließt sich, und die Zugangsdaten werden verworfen. Bei der gemeinsamen App deinstalliert Control Center außerdem den Bot aus dem Slack-Workspace und gibt seine Bindung an diesen Server frei.
 
 Verknüpfungen von Bereichen und Nutzern bleiben absichtlich erhalten: Dieselbe App neu zu verbinden stellt jeden angebundenen Slack-Thread wieder her. Es sind Zeilen des Arbeitsbereichs, das Löschen des Arbeitsbereichs entfernt sie also ohnehin.
 
@@ -212,7 +260,7 @@ Die Aufgabenkarten von Slack gehören zur selben neuen Oberfläche Agents & AI A
 
 ### „Control Center braucht ein App-Konfigurationstoken, um den Bot zu bearbeiten“
 
-Die Zeile **Bot anpassen** ist deaktiviert, weil die Verbindung kein App-Konfigurationstoken hat. Das ist bei einer von Hand gebauten App oder einer App über **In Slack erstellen** zu erwarten — Slack hat Control Center nie gesagt, welche App es ist. Erzeuge auf api.slack.com/apps ein Token-Paar und verbinde neu, mit ausgefülltem Refresh-Token.
+Die Zeile **Bot anpassen** ist deaktiviert, weil die Verbindung kein App-Konfigurationstoken hat. (Bei der gemeinsamen App gibt es gar keine Zeile **Bot anpassen**: Der Bot ist der der gemeinsamen App.) Das ist bei einer von Hand gebauten App oder einer App über **In Slack erstellen** zu erwarten — Slack hat Control Center nie gesagt, welche App es ist. Erzeuge auf api.slack.com/apps ein Token-Paar und verbinde neu, mit ausgefülltem Refresh-Token.
 
 ### Eine lange Antwort ist abgeschnitten
 

@@ -2,16 +2,16 @@
 title: Bản đồ tuyến
 description: Mọi tuyến mà Control Center đăng ký, kèm màn hình và tham số truy vấn của nó.
 slug: vi-VN/so-tay/tham-chieu/ban-do-tuyen
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Khung ứng dụng
 
-Khung ứng dụng (`ControlCenterLayout`) bọc mọi tuyến bên trong không gian làm việc qua một `ShellRoute`. **Mọi đích đến trong khung đều mang tiền tố không gian làm việc — `/workspaces/:workspaceId/…` — và id không gian làm việc trong URL là nguồn chân lý duy nhất cho không gian làm việc đang hoạt động.** Chỉ những bề mặt trước ngữ cảnh là không có tiền tố: `/splash`, `/onboarding`, `/signed-out` và trình chọn `/workspaces` trần, tất cả đều toàn màn hình và nằm ngoài khung.
+Khung ứng dụng (`ControlCenterLayout`) bọc mọi tuyến bên trong không gian làm việc qua một `ShellRoute`. **Mọi đích đến trong khung đều mang tiền tố không gian làm việc — `/workspaces/:workspaceId/…` — và id không gian làm việc trong URL là nguồn chân lý duy nhất cho không gian làm việc đang hoạt động.** Chỉ những bề mặt trước ngữ cảnh là không có tiền tố: `/splash`, `/onboarding` và trình chọn `/workspaces` trần, tất cả đều toàn màn hình và nằm ngoài khung.
 
 Chốt chặn hoàn tất khi có ít nhất một máy chủ mã được kết nối **cho người dùng đã đăng nhập** và có ít nhất một không gian làm việc tồn tại.
 
-Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thiếu là hai màn hình khác nhau, và yếu tố phân biệt là `users.onboarding_finished_at` đọc từ chính `identity.me` của người gọi — không bao giờ là "đã có không gian làm việc tồn tại", vì điều đó sai ngay khi ai đó được mời vào một không gian làm việc mà họ chưa từng tạo. Khi không có máy chủ mã nào được kết nối, một tài khoản đã hoàn tất thiết lập ban đầu sẽ đến `/signed-out` để xác thực lại; tài khoản chưa hoàn tất thì đến `/onboarding`. Khi cờ này vẫn chưa rõ, chốt chặn giữ nguyên màn hình splash thay vì đoán, bởi nó không bao giờ chuyển hướng ngược ra khỏi onboarding.
+Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thiếu được xử lý khác nhau, và yếu tố phân biệt là `users.onboarding_finished_at` đọc từ chính `identity.me` của người gọi — không bao giờ là "đã có không gian làm việc tồn tại", vì điều đó sai ngay khi ai đó được mời vào một không gian làm việc mà họ chưa từng tạo. Khi không có máy chủ mã nào được kết nối, một tài khoản đã hoàn tất thiết lập ban đầu vẫn ở trong ứng dụng: khung không gian làm việc hiển thị cảnh báo kèm liên kết đến **Cài đặt → Không gian làm việc → Hồ sơ & danh tính**, nơi có đăng nhập. Tài khoản chưa hoàn tất thì đến `/onboarding`. Khi cờ này vẫn chưa rõ, chốt chặn giữ nguyên màn hình splash thay vì đoán, bởi nó không bao giờ chuyển hướng ngược ra khỏi onboarding.
 
 ## Tuyến không có tiền tố
 
@@ -19,7 +19,6 @@ Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thi
 | ------------------------- | ------------------------------------------------ |
 | `/splash`                 | Màn hình splash lúc khởi động, nơi phân giải chốt chặn thiết lập ban đầu |
 | `/onboarding`             | Kết nối một máy chủ mã, tạo hoặc tham gia một không gian làm việc, sandbox, adapter mặc định, rồi đến giọng nói. Bước không gian làm việc bị bỏ qua khi tài khoản đã thuộc về một không gian làm việc |
-| `/signed-out`             | Xác thực lại: đúng thẻ kết nối máy chủ mã mà Cài đặt hiển thị, không có thanh bước và không có nút tiếp tục — bộ định tuyến tự rời đi khi một máy chủ mã báo về |
 | `/workspaces`             | Danh sách và trình chọn không gian làm việc      |
 | `/workspaces/:workspaceId` | Chuyển hướng đến `/workspaces/:workspaceId/inbox` |
 

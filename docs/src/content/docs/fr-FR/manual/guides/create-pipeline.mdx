@@ -2,7 +2,7 @@
 title: Créer un modèle de pipeline
 description: Rédigez un modèle de workflow DAG dans l’éditeur de pipeline — ajoutez des nœuds, câblez-les, déclarez des entrées et rendez-le exécutable.
 slug: fr-FR/manuel/guides/creer-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Les modèles de pipeline se rédigent dans les paramètres de l’espace de travail.
@@ -137,11 +137,22 @@ ni champ d’environnement, car ni l’un ni l’autre n’est configurable :
 
 - Chaque étape bash d’une exécution partage le répertoire courant
   `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` est injecté depuis le magasin d’identifiants, si bien que `gh`
-  et `git clone https://x-access-token:$GITHUB_TOKEN@…` fonctionnent sans
-  configuration.
+- Le script s’exécute dans le bac à sable du système d’exploitation de l’hôte,
+  comme les commandes d’un agent. Sur un hôte sans bac à sable (Windows, ou
+  Linux sans `bwrap`), l’étape échoue au lieu de s’exécuter sans confinement.
+  Le répertoire de données du serveur et son fichier `.env` sont illisibles
+  depuis l’intérieur.
+- Git et `gh` ne voient aucune configuration de l’hôte : ni identifiants
+  enregistrés, ni gestionnaire d’identifiants, ni hooks globaux.
+- Lorsque le pipeline nomme un dépôt GitHub lié à l’espace de travail
+  (`repo_full_name` dans l’état ou dans la charge utile du déclencheur),
+  `GH_TOKEN` et `GITHUB_TOKEN` contiennent un jeton qui ne peut lire que ce
+  dépôt, si bien que `gh` et `git clone` fonctionnent sur lui sans
+  configuration. Sinon, aucun jeton GitHub n’est fourni.
+- Seul un administrateur de l’espace de travail peut créer ou modifier un
+  pipeline comportant une étape bash.
 - Le script est lancé comme l’exécutable littéral `bash`, donc `bash` doit
-  figurer dans le `PATH` de l’hôte du serveur. C’est une considération Windows.
+  figurer dans le `PATH` de l’hôte du serveur.
 
 ### Routeur
 

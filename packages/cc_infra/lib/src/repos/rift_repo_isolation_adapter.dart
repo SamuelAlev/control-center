@@ -24,8 +24,8 @@ import 'package:path/path.dart' as p;
 /// (`missingRiftIsExpected`; no MSVC CoW) and as [destroy] for persisted
 /// `gitWorktree` rows (teardown removes source state). Unrecognised `.rift`
 /// markers are cleared and re-adopted in place. Missing `librift_ffi` where
-/// it ships is `RiftException(code: 'unavailable')`. Fetch auth URL is a
-/// transient arg only — never written to `.git/config`.
+/// it ships is `RiftException(code: 'unavailable')`. The fetch URL and token
+/// are transient args only — never written to `.git/config`, never in argv.
 class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// Creates a [RiftRepoIsolationAdapter].
   ///
@@ -108,29 +108,32 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     '-B',
   ];
 
-  /// Splits an `authUrl` of the form `https://x-access-token:TOKEN@github.com/…`
-  /// into the CLEAN url + an auth env so the token rides in
-  /// `GIT_CONFIG_PARAMETERS` (env, not argv, so invisible to `ps`) and git
-  /// sends it as an Authorization header (never echoed on stderr). Token-less
-  /// / non-GitHub URLs pass through with the base env (VULN-010).
-  ({String url, Map<String, String> env}) _resolveAuth(String? authUrl) {
-    if (authUrl == null || authUrl.isEmpty) {
+  /// The fetch URL plus an auth env: [token] rides in `GIT_CONFIG_PARAMETERS`
+  /// (env, not argv, so invisible to `ps`) as an Authorization header scoped
+  /// to `https://github.com/` (never echoed on stderr). A URL that carries
+  /// credentials itself is refused rather than passed to git.
+  ({String url, Map<String, String> env}) _resolveAuth(
+    String? url,
+    String? token,
+  ) {
+    if (url == null || url.isEmpty) {
       return (url: '', env: _baseEnv);
     }
-    final uri = Uri.tryParse(authUrl);
-    final userInfo = uri?.userInfo ?? '';
-    if (uri == null || uri.host != 'github.com' || !userInfo.contains(':')) {
-      return (url: authUrl, env: _baseEnv);
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.userInfo.isNotEmpty) {
+      throw ArgumentError.value(
+        '<redacted>',
+        'fetchUrl',
+        'carries credentials',
+      );
     }
-    final token = userInfo.split(':').skip(1).join(':');
-    if (token.isEmpty) {
-      return (url: authUrl, env: _baseEnv);
+    if (token == null || token.isEmpty || uri.host != 'github.com') {
+      return (url: url, env: _baseEnv);
     }
-    final clean = uri.replace(userInfo: '').toString();
     final b64 = base64Encode(utf8.encode('x-access-token:$token'));
     final param =
         "'http.https://github.com/.extraHeader=Authorization: Basic $b64'";
-    return (url: clean, env: {..._baseEnv, 'GIT_CONFIG_PARAMETERS': param});
+    return (url: url, env: {..._baseEnv, 'GIT_CONFIG_PARAMETERS': param});
   }
 
   @override
@@ -140,7 +143,8 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
@@ -148,7 +152,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   }) async {
     cancel?.throwIfCancelled();
     await Directory(destParentDir).create(recursive: true);
-    final auth = _resolveAuth(authUrl);
+    final auth = _resolveAuth(fetchUrl, fetchToken);
 
     if (!_rift.isAvailable) {
       if (!_missingRiftIsExpected) {
@@ -166,7 +170,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
         name: name,
         branch: branch,
         baseRef: await _startRef(sourcePath, baseRef, headRef, cancel: cancel),
-        authUrl: auth.url,
+        fetchUrl: auth.url,
         authEnv: auth.env,
         headRef: headRef,
         pristine: pristine,
@@ -196,7 +200,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       // Resolved from the COPY, which carries the source's refs verbatim — so
       // the answer is identical and git never even reads the source.
       baseRef: await _startRef(copyPath, baseRef, headRef, cancel: cancel),
-      authUrl: auth.url,
+      fetchUrl: auth.url,
       authEnv: auth.env,
       headRef: headRef,
       cancel: cancel,
@@ -226,9 +230,8 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     final elapsed = Stopwatch()..start();
     final heartbeat = Timer.periodic(
       _copyHeartbeat,
-      (_) => onOutput(
-        'Still copying (${provisioningElapsed(elapsed.elapsed)})',
-      ),
+      (_) =>
+          onOutput('Still copying (${provisioningElapsed(elapsed.elapsed)})'),
     );
     try {
       final path = await copy();
@@ -496,7 +499,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required String worktree,
     required String branch,
     required String baseRef,
-    required String? authUrl,
+    required String? fetchUrl,
     required Map<String, String> authEnv,
     String? headRef,
     CancellationToken? cancel,
@@ -518,15 +521,15 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     // [branch] at exactly that commit and check it out — so the copy lands on
     // the fetched commits (e.g. a PR head), never a fresh branch off the base.
     if (headRef != null && headRef.isNotEmpty) {
-      // `_resolveAuth` normalises a missing/empty auth URL to '' (never null),
+      // `_resolveAuth` normalises a missing/empty fetch URL to '' (never null),
       // so guard on emptiness too — fetching a PR head-ref needs a real remote
       // URL and `git fetch '' <ref>` would silently target the wrong remote.
-      if (authUrl == null || authUrl.isEmpty) {
-        throw StateError('Cannot check out $headRef without an auth URL');
+      if (fetchUrl == null || fetchUrl.isEmpty) {
+        throw StateError('Cannot check out $headRef without an fetch URL');
       }
       onOutput?.call('Fetching $headRef');
       final fetch = await _git.run(
-        [..._fetchArgs(onOutput), authUrl, headRef],
+        [..._fetchArgs(onOutput), fetchUrl, headRef],
         workdir: worktree,
         env: authEnv,
         onProgress: onOutput,
@@ -559,7 +562,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
 
     final fetched = await _fetchToFetchHead(
       workdir: worktree,
-      authUrl: authUrl,
+      fetchUrl: fetchUrl,
       authEnv: authEnv,
       ref: baseRef,
       cancel: cancel,
@@ -610,15 +613,15 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
 
   /// Resolves a fetch URL that is not the named remote `origin` (fetching
   /// `origin` would update `refs/remotes/origin/*` and can lock/delete
-  /// `origin/main`). Empty [authUrl] falls back to `git remote get-url origin`
+  /// `origin/main`). Empty [fetchUrl] falls back to `git remote get-url origin`
   /// so the URL is still positional. Never returns `''`.
   Future<String?> _resolveFetchUrl(
-    String? authUrl,
+    String? fetchUrl,
     String workdir, {
     CancellationToken? cancel,
   }) async {
-    if (authUrl != null && authUrl.isNotEmpty) {
-      return authUrl;
+    if (fetchUrl != null && fetchUrl.isNotEmpty) {
+      return fetchUrl;
     }
     final remote = await _git.run(
       ['remote', 'get-url', 'origin'],
@@ -636,7 +639,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// whether the fetch succeeded. A missing URL is a skip, not a failure.
   Future<bool> _fetchToFetchHead({
     required String workdir,
-    required String? authUrl,
+    required String? fetchUrl,
     required Map<String, String> authEnv,
     required String ref,
     CancellationToken? cancel,
@@ -645,7 +648,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     if (ref.isEmpty) {
       return false;
     }
-    final url = await _resolveFetchUrl(authUrl, workdir, cancel: cancel);
+    final url = await _resolveFetchUrl(fetchUrl, workdir, cancel: cancel);
     if (url == null) {
       return false;
     }
@@ -674,7 +677,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required String name,
     required String branch,
     required String baseRef,
-    required String? authUrl,
+    required String? fetchUrl,
     required Map<String, String> authEnv,
     String? headRef,
     bool pristine = false,
@@ -688,15 +691,15 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     // touches the source .git — accepted on the fallback path), then add a
     // worktree with [branch] (re)created at exactly that commit.
     if (headRef != null && headRef.isNotEmpty) {
-      // `_resolveAuth` normalises a missing/empty auth URL to '' (never null),
+      // `_resolveAuth` normalises a missing/empty fetch URL to '' (never null),
       // so guard on emptiness too — fetching a PR head-ref needs a real remote
       // URL and `git fetch '' <ref>` would silently target the wrong remote.
-      if (authUrl == null || authUrl.isEmpty) {
-        throw StateError('Cannot check out $headRef without an auth URL');
+      if (fetchUrl == null || fetchUrl.isEmpty) {
+        throw StateError('Cannot check out $headRef without an fetch URL');
       }
       onOutput?.call('Fetching $headRef');
       final fetch = await _git.run(
-        [..._fetchArgs(onOutput), authUrl, headRef],
+        [..._fetchArgs(onOutput), fetchUrl, headRef],
         workdir: sourcePath,
         env: authEnv,
         onProgress: onOutput,
@@ -748,7 +751,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     // only on this fallback path.
     final fetched = await _fetchToFetchHead(
       workdir: sourcePath,
-      authUrl: authUrl,
+      fetchUrl: fetchUrl,
       authEnv: authEnv,
       ref: baseRef,
       cancel: cancel,

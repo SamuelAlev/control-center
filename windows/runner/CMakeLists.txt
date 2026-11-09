@@ -27,16 +27,6 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MINOR=${FLUTT
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_PATCH=${FLUTTER_VERSION_PATCH}")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTTER_VERSION_BUILD}")
 
-# Reversed Google OAuth iOS client id — the OAuth redirect URL scheme this exe
-# registers with Windows (com.googleusercontent.apps.<CLIENT_ID>). PUBLIC, not a
-# secret; it MUST match GOOGLE_OAUTH_CLIENT_ID in .env and the values in
-# macos/Runner/Configs/AppInfo.xcconfig and the Linux .desktop file. Override
-# with -DGOOGLE_REVERSED_CLIENT_ID=... at configure time when you rotate it.
-if(NOT DEFINED GOOGLE_REVERSED_CLIENT_ID)
-  set(GOOGLE_REVERSED_CLIENT_ID "com.googleusercontent.apps.806422936280-h53u9n27h9pmvrbs2ci86hisla0addqn")
-endif()
-target_compile_definitions(${BINARY_NAME} PRIVATE "GOOGLE_REVERSED_CLIENT_ID=\"${GOOGLE_REVERSED_CLIENT_ID}\"")
-
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 import 'package:cc_natives/src/native_library.dart';
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:cc_natives/src/pty/pty_ffi_bindings.dart';
@@ -57,23 +58,22 @@ class Pty {
       'TERM': 'xterm-256color',
       // Keep tool output UTF-8 (vi etc. otherwise emit non-UTF-8 sequences).
       'LANG': 'en_US.UTF-8',
+      // A terminal starts from a handful of host variables, through the same
+      // allowlist (and strip list) as every other child the server spawns.
+      ...ChildEnvironment.build(
+        Platform.environment,
+        inheritBase: false,
+        inherit: const [
+          'LOGNAME',
+          'USER',
+          'DISPLAY',
+          'LC_TYPE',
+          'HOME',
+          'PATH',
+        ],
+      ),
+      ...?environment,
     };
-    const envValuesToCopy = {
-      'LOGNAME',
-      'USER',
-      'DISPLAY',
-      'LC_TYPE',
-      'HOME',
-      'PATH',
-    };
-    for (final entry in Platform.environment.entries) {
-      if (envValuesToCopy.contains(entry.key)) {
-        effectiveEnv[entry.key] = entry.value;
-      }
-    }
-    if (environment != null) {
-      effectiveEnv.addAll(environment);
-    }
 
     // argv: [executable, ...arguments, NULL]
     final argv = calloc<Pointer<Utf8>>(arguments.length + 2);

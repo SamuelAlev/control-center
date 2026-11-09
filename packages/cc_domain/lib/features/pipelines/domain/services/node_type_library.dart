@@ -78,9 +78,11 @@ NodeTypeLibrary defaultNodeTypeLibrary() {
       id: 'bash.script',
       displayName: 'Bash script',
       description:
-          'Runs a shell script with {{state}} substitution. GITHUB_TOKEN '
-          'is available in env. Useful for clones, builds, gh CLI — no '
-          'agent dispatched, no tokens burned.',
+          'Runs a shell script with {{state}} substitution in the OS '
+          'sandbox, away from server data and host git or gh config. When '
+          'the run targets a linked repo (repo_full_name), GH_TOKEN reads '
+          'that one repo. Useful for clones, builds, gh CLI — no agent '
+          'dispatched, no tokens burned. Only a workspace admin can add one.',
       defaultKind: StepKind.listen,
       defaultBodyKey: BuiltInBodyKeys.bashScript,
       defaultConfig: PipelineNodeConfig(

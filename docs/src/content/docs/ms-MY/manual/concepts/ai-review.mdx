@@ -2,7 +2,7 @@
 title: Semakan AI
 description: Bagaimana satu pull request menjadi pull request yang telah disemak — ruang semakan, nod semakan dan konsensus rakan sebaya, kohort dan paksi, keputusan Ship/Hold/Block, dan sebab penerbitan kekal sebagai langkah yang anda ambil.
 slug: ms-MY/manual-pengguna/konsep/semakan-ai
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Bentuk satu semakan
@@ -209,11 +209,8 @@ supaya sesuatu semakan tidak pernah diterbitkan dua kali. Apabila anda menekan
   supaya tiada apa-apa digugurkan secara senyap.
 - Keputusan **Block** diserahkan sebagai `REQUEST_CHANGES`; **Hold** sebagai
   `COMMENT`; **Ship** sebagai `APPROVE` daripada butang itu
-  (`approve_on_ship: true`). Alat MCP membiarkan Ship sebagai `COMMENT`
-  melainkan anda menghantar `approve_on_ship`.
-- Semakan disiarkan di bawah identiti aplikasi pelayan. Siapa yang menekan
-  Terbitkan direkodkan untuk pintu peranan dan log audit; ia bukan penulis
-  GitHub.
+  (`approve_on_ship: true`). Alat MCP menyiarkan sebagai automasi dan sentiasa membiarkan Ship sebagai `COMMENT`.
+- Butang **Terbitkan ke GitHub** menghantar semakan sebagai orang yang menekannya, menggunakan log masuk GitHub mereka sendiri: pintu keluaran ialah milik mereka, maka semakan itu juga. Penerbitan tanpa orang di belakangnya ialah automasi, dan automasi tidak pernah meluluskan: Ship dihantar sebagai `COMMENT`, dan pada Control Center Connect siaran itu dikreditkan dengan awalan `**Control Center** (for @login):`.
 
 Penerbitan mengisytiharkan kelas tindakan `prPublish`, jadi titik kawalan
 guardrail mengawalnya seperti sebarang tindakan yang mengubah keadaan — ia

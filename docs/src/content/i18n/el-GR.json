@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Σύνδεση Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Διακομιστής και ανάπτυξη",
   "docs.sidebar.guidesRunHeadlessServer": "Εκτέλεση headless διακομιστή",
+  "docs.sidebar.guidesRunConnect": "Εκτέλεση διακομιστή Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Σύνδεση σε απομακρυσμένο διακομιστή",
   "docs.sidebar.guidesRunFleetWorker": "Εκτέλεση εργάτη στόλου",
   "docs.sidebar.guidesBackUpAndRestore": "Αντίγραφο ασφαλείας και επαναφορά",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Συντομεύσεις πληκτρολογίου",
   "docs.sidebar.referenceRouteMap": "Χάρτης διαδρομών",
   "docs.sidebar.referenceCcServerCli": "CLI του cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Αντίγραφο ασφαλείας, εξαγωγή και εισαγωγή",
   "docs.sidebar.referenceTelemetry": "Αναλυτικά χρήσης",
   "docs.sidebar.referenceGlossary": "Γλωσσάρι"

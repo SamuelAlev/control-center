@@ -20,7 +20,7 @@ class ChatCredentialField {
     this.hint,
     this.secret = true,
     this.required = true,
-    this.expectedPrefix,
+    this.acceptedPrefixes = const [],
     this.prefixError,
   });
 
@@ -32,7 +32,10 @@ class ChatCredentialField {
         hint: json['hint'] as String?,
         secret: json['secret'] as bool? ?? true,
         required: json['required'] as bool? ?? true,
-        expectedPrefix: json['expectedPrefix'] as String?,
+        acceptedPrefixes: [
+          for (final p in (json['acceptedPrefixes'] as List?) ?? const [])
+            if (p is String && p.isNotEmpty) p,
+        ],
         prefixError: json['prefixError'] as String?,
       );
 
@@ -51,13 +54,20 @@ class ChatCredentialField {
   /// Whether connecting requires it.
   final bool required;
 
-  /// The prefix the provider's own token format guarantees (`xoxb-`), when it
-  /// has one. Cheap client- and server-side typo detection.
-  final String? expectedPrefix;
+  /// The prefixes the provider's own token formats guarantee (`xoxb-` and the
+  /// rotating `xoxe.xoxb-`), when it has any. A value must start with one of
+  /// them. Empty means any value is accepted. Cheap client- and server-side
+  /// typo detection.
+  final List<String> acceptedPrefixes;
 
-  /// What to tell the user when [expectedPrefix] does not match. Names where
-  /// the right value lives, which a generic "invalid token" cannot.
+  /// What to tell the user when no [acceptedPrefixes] entry matches. Names
+  /// where the right value lives, which a generic "invalid token" cannot.
   final String? prefixError;
+
+  /// Whether [value] starts with one of [acceptedPrefixes] (always true when
+  /// the field declares none).
+  bool acceptsPrefixOf(String value) =>
+      acceptedPrefixes.isEmpty || acceptedPrefixes.any(value.startsWith);
 
   /// Serializes to the wire map.
   Map<String, dynamic> toJson() => {
@@ -66,7 +76,7 @@ class ChatCredentialField {
     if (hint != null) 'hint': hint,
     'secret': secret,
     'required': required,
-    if (expectedPrefix != null) 'expectedPrefix': expectedPrefix,
+    if (acceptedPrefixes.isNotEmpty) 'acceptedPrefixes': acceptedPrefixes,
     if (prefixError != null) 'prefixError': prefixError,
   };
 
@@ -79,7 +89,7 @@ class ChatCredentialField {
           hint == other.hint &&
           secret == other.secret &&
           required == other.required &&
-          expectedPrefix == other.expectedPrefix &&
+          _stringListEq(acceptedPrefixes, other.acceptedPrefixes) &&
           prefixError == other.prefixError;
 
   @override
@@ -89,7 +99,7 @@ class ChatCredentialField {
     hint,
     secret,
     required,
-    expectedPrefix,
+    Object.hashAll(acceptedPrefixes),
     prefixError,
   );
 }
@@ -152,8 +162,7 @@ class ChatProviderDescriptor {
   /// Where the setup is documented.
   final String? docsUrl;
 
-  /// The bot command's name without its slash, so the link instruction reads
-  /// `/cc link CODE` for a provider that spells it that way.
+  /// The bot command's name without its slash (`cc` for `/cc ticket …`).
   final String commandName;
 
   /// Which credential field manages the provider-side app, when the provider has
@@ -175,9 +184,6 @@ class ChatProviderDescriptor {
 
   /// The product's name, for user-facing copy.
   String get displayName => provider.displayName;
-
-  /// The command a member sends to redeem a link code.
-  String linkCommand(String code) => '/$commandName link $code';
 
   /// The spec of [managementCredentialField], or null when the provider has no
   /// app-management credential (or declares one it does not collect).
@@ -207,10 +213,10 @@ class ChatProviderDescriptor {
       }
       return null;
     }
-    final prefix = field.expectedPrefix;
-    if (prefix != null && !raw.startsWith(prefix)) {
+    if (!field.acceptsPrefixOf(raw)) {
+      final expected = field.acceptedPrefixes.map((p) => '`$p`').join(' or ');
       throw ValidationException(
-        field.prefixError ?? '${field.label} must start with `$prefix`.',
+        field.prefixError ?? '${field.label} must start with $expected.',
       );
     }
     return raw;
@@ -275,6 +281,18 @@ class ChatProviderDescriptor {
     supportsSetupLink,
     credentialFields.length,
   );
+}
+
+bool _stringListEq(List<String> a, List<String> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool _fieldListEq(List<ChatCredentialField> a, List<ChatCredentialField> b) {

@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
-deretter miljøet, deretter standardverdien. Tredjepartslegitimasjon er
-unntaket — se nedenfor.
+deretter miljøet, deretter standardverdien. Leverandørlegitimasjon er
+unntaket — se [Leverandørapper og Connect](#leverandørapper-og-connect).
 
 :::caution[Ukjente flagg ignoreres i stillhet]
 Argumentparseren er håndskrevet og hopper over alt den ikke kjenner igjen, så en
@@ -44,7 +44,7 @@ ikke ha noen effekt.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | ikke satt                     | Forventet SHA-256 for den binæren, verifisert før hver oppstart av den                                                                                   |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | tom                           | Kommaadskilte tilleggsargumenter til tunnelkjøringen                                                                                                     |
 
-## Indeksering og tredjepartslegitimasjon
+## Indeksering og kjøretid
 
 | Flagg                | Miljøvariabel                  | Standard                              | Betydning                                                                                                                       |
 | -------------------- | ------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,15 +54,42 @@ ikke ha noen effekt.
 | `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`      | `on`                                  | Om harnesskjøringer sender et lite fast verktøysett pluss en navneindeks, og laster resten ved første bruk. Se nedenfor       |
 | `--credential-gate`  | `CC_SERVER_CREDENTIAL_GATE`    | `900`                                 | Sekunder en kjøring parkeres og venter på at et menneske fikser en legitimasjon den ikke kan bruke (begrenset til 0–3600). Se nedenfor |
 
-En tom verdi for en legitimasjon leses som ikke satt, så den innebygde
-reserveverdien gjelder fortsatt. Et bygg fra kildekode har ingen innebygd
-legitimasjon i det hele tatt.
+## Leverandørapper og Connect
 
-Google Calendar og Klipy-GIF-velgeren er **bare tilgjengelige via miljøet** — det
-finnes ikke noe `--google-client-id` / `--klipy-app-key`-flagg (ukjente flagg
-ignoreres). Sett `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` og
-`KLIPY_APP_KEY` i miljøet (eller i en `.env` ved siden av serveren). Tom verdi
-slår av funksjonen i stedet for å få oppstarten til å feile.
+Ingen bygg har med seg leverandørlegitimasjon. Hver leverandør kjører på
+Med Control Center Connect på kjører Connect hver leverandør, og egne apper forblir lagret, men ubrukt. Under
+**Bruk mine egne apper** kjører hver leverandør på serverens egen app når en er fullstendig konfigurert, ellers er den
+utilgjengelig. Arbeidsområdets egen app gjelder i begge tilfeller. Egne apper settes under
+**Innstillinger → Server → Enkel pålogging → Leverandørapper**, eller fylles én
+gang fra serverens `.env`-fil. Det finnes ingen flagg for dem: en hemmelighet på
+en kommandolinje kan leses via `ps`.
+
+| Variabel                       | Betydning                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Id-en til serverens GitHub App                                                                |
+| `GITHUB_APP_PRIVATE_KEY`       | Den private nøkkelen, på én linje med `\n`-escaper. **Bare `.env`**                           |
+| `GITHUB_CLIENT_ID`             | Client id-en, for å logge inn folk                                                            |
+| `GITHUB_CLIENT_SECRET`         | Client secret-en. **Bare `.env`**                                                             |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Serverens Google-klient av typen nettapplikasjon                                              |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Hemmeligheten. **Bare `.env`**                                                                |
+| `LINEAR_CLIENT_ID`             | Serverens Linear-applikasjon (PKCE, ingen hemmelighet)                                        |
+| `LINEAR_API_KEY`               | En Linear-tjenestenøkkel for automatisering. **Bare `.env`**                                  |
+| `KLIPY_APP_KEY`                | Serverens egen Klipy-nøkkel for GIF-søk. Brukes bare under **Bruk mine egne apper**               |
+| `CC_CONNECT_URL`               | `hosted`, `off` eller en Connect-URL. Låser Connect-valget; Innstillinger kan da ikke endre det |
+| `CC_SERVER_CONNECT_HOST`       | `on` monterer Control Center Connect på `<server>/connect`, konfigurert med `CONNECT_*`-variabler. Se [Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/#monter-connect-i-cc_server) |
+
+`.env`-filen leses fra serverens arbeidskatalog, ved siden av den kjørbare
+filen, eller fra en utsjekking av kildekoden over den; i Docker monterer du den
+på `/app/bin/.env`. Serveren **nekter å starte** (avslutningskode `78`) når
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+`LINEAR_API_KEY` eller en `SLACK_*SECRET*` er eksportert i prosessmiljøet, der
+hver underprosess kunne lese den. Fyllingen fra `.env` skjer én gang per felt, så
+en senere redigering i Innstillinger blir ikke overskrevet av en omstart. En tom
+verdi leses som ikke satt.
+
+Bakgrunnsarbeid for GitLab og Bitbucket leser også `GITLAB_TOKEN` /
+`CI_JOB_TOKEN` og `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` med
+`BITBUCKET_EMAIL`. GitHub har ingen legitimasjon i miljøet.
 
 ### `--sandbox`
 
@@ -116,7 +143,7 @@ legitimasjon avslutter turen nøyaktig som før porten fantes.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Kjører serveren til `SIGINT`/`SIGTERM`                                                              |
 | `cc_server pair`                              | Provisionerer en enhet og skriver ut id-en og paringsnøkkelen dens. Trygt mot en datamappe en server allerede betjener — den kjørende serveren plukker opp enheten uten omstart |
-| `cc_server calendar connect --workspace <id>` | Kobler en Google-konto til et arbeidsområde via enhetskodeflyten og avslutter                        |
+| `cc_server connect <command>`                 | Viser eller endrer hvilken Control Center Connect denne serveren bruker, uten å starte den           |
 | `cc_server update`                            | Ser etter, laster ned og verifiserer en nyere frittstående utgivelse                                 |
 | `cc_server --version`                         | Skriver ut byggeversjonen og git-SHA-en — den samme identiteten `/healthz` og RPC-håndtrykket annonserer |
 
@@ -142,6 +169,25 @@ enhets-id og nøkkel i URL-fragmentet). Telefonen parer med en annen nyttelast,
 utstedt fra paringspanelet i appen — serverens fulle tilkoblingsbeskrivelse pluss
 en utløpsdato. De to kan ikke byttes om — se [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/).
 :::
+
+### `connect`
+
+Leser og skriver de samme innstillingene som kortet **Control Center Connect**
+under **Innstillinger → Server → Enkel pålogging**, fra datamappen. En server som
+kjører, plukker opp en endring innen 10 minutter eller ved omstart.
+
+| Kommando                        | Hva den gjør                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Skriver ut modusen, URL-en, om `CC_CONNECT_URL` låser den, installasjons-ID-en, helsetilstanden og kilden for hvert spor (`own`, `connect` eller `off`) |
+| `cc_server connect enable`      | Bruker den hostede Connect-tjenesten til Control Center                                                          |
+| `cc_server connect enable --url <url>` | Bruker en egen Connect på den URL-en (HTTPS, eller `http` på loopback)                                   |
+| `cc_server connect disable`     | Slutter å bruke Connect. Bare serverens egne apper logger inn folk                                               |
+| `cc_server connect rotate-key --yes` | Lager en ny installasjonsnøkkel og en ny installasjons-ID. Alle som logget inn via Connect, logger inn på nytt. Uten `--yes` advarer den bare og avslutter med `2` |
+
+`status` uten kommando er standard. Hver kommando godtar `--data-dir`.
+`CC_CONNECT_URL` overstyrer det disse lagrer. En ukjent kommando avslutter med
+`64`. Se [Control Center Connect](/nb-NO/handbok/referanse/connect/) for modusene,
+installasjonsidentiteten og statuskodene.
 
 ### `update`
 
@@ -186,7 +232,7 @@ bare når verken hjemmemappen eller appdatamappen lar seg oppslå.
 | `global.db`                       | Arbeidsområderegisteret, brukere, parede enheter, nyhetsstrømmen og flåtekøen    |
 | `<workspaceId>/workspace.db`      | Én database per arbeidsområde — agenter, områder, saker, minne, kodegrafen       |
 | `<workspaceId>/chat_credentials/` | Chatbot-tokener, som ren JSON, slik at de følger med arbeidsområdet              |
-| `secrets.json`                    | Paringsnøkler, leverandørappens identitet, tokener per bruker og Google-tokener, SSO (`0600`) |
+| `secrets.json`                    | Paringsnøkler, installasjonsnøkkelen til Connect, leverandørapper, folks pålogginger (forseglet når de er gjort via Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Ett øyeblikksbilde av installasjonen — `manifest.json`, `global.db` og en kopi av hvert arbeidsområde |
 | `backups/exports/`                | Eksporter av enkeltarbeidsområder, `<workspaceId>-<timestamp>.db`                |
 | `backups/transfer/`               | Mellomlagring for ned- og opplasting av sikkerhetskopier; ryddes av ruten som skriver den |

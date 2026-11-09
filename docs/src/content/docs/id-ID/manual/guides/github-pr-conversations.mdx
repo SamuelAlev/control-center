@@ -1,36 +1,37 @@
 ---
 title: Bicara ke Control Center dari PR GitHub
-description: Minta tinjauan atau ajukan pertanyaan kepada bot GitHub App milik server langsung dari percakapan PR, tanpa webhook atau URL publik.
+description: Minta Control Center untuk tinjauan atau ajukan pertanyaan langsung dari percakapan PR, tanpa webhook atau URL publik.
 slug: id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan
 GitHub: minta tinjauan AI dari halaman PR, ajukan pertanyaan kepada bot di
 sebuah komentar, dan lanjutkan percakapan di utas tinjauannya.
 
-Bot ini adalah [GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/) milik server Anda
-sendiri — app yang sama yang sudah menangani proses masuk pengguna dan
-menjalankan pekerjaan latar belakang. Tidak ada yang didaftarkan baru, dan tidak
-ada yang harus dapat dijangkau dari internet: server menemukan apa yang
-dikatakan di GitHub lewat polling, sehingga laptop di balik NAT berperilaku
-persis seperti deployment publik.
+Balasan datang melalui jalur GitHub ruang kerja: [GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
+milik server Anda sendiri, atau App bersama Control Center melalui Connect. Tidak ada yang didaftarkan
+baru, dan tidak ada yang harus dapat dijangkau dari internet: server menemukan apa yang dikatakan di
+GitHub lewat polling, sehingga laptop di balik NAT berperilaku persis seperti deployment publik.
 
 ## Prasyarat
 
-- Server sudah [mendaftarkan dan
-  memasang](/id-ID/panduan-pengguna/panduan-praktis/github-app/) GitHub App-nya, dengan **Pull requests: read and write**
-  (untuk komentar, utas, dan reaksi) dan **Issues: read** (untuk pencarian
-  komentar). Keduanya sudah ada di daftar izin panduan tersebut
+- Ruang kerja memiliki jalur GitHub: GitHub App milik server atau Connect, dengan app
+  [terpasang](/id-ID/panduan-pengguna/panduan-praktis/github-app/) di akun pemilik repositori. App milik sendiri
+  memerlukan izin baca dan tulis **Pull requests** dan **Issues**, yang sudah diberikan **Buat aplikasi GitHub saya**
 - Repositori sudah ditautkan ke sebuah ruang kerja di Control Center
+- Anda sudah [masuk ke GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/) di server ini,
+  dan Anda dapat push ke repositori tersebut
 - Tanpa URL webhook, tanpa tunnel, tanpa callback — tidak ada yang perlu
   dikonfigurasi di sisi jaringan
 
 ## Cari nama bot Anda
 
-Sebut `@usectrl`, akun GitHub khusus Control Center. Ini adalah pemicu default; GitHub App yang dikonfigurasi di server Anda tetap memproses permintaan dan mengirim balasan. Anda tidak memerlukan kredensial akun `usectrl`.
+Sebut `@usectrl`, akun GitHub khusus Control Center. Ini adalah pemicu default; jalur GitHub ruang
+kerja Anda tetap memproses permintaan dan mengirim balasan. Anda tidak memerlukan kredensial akun `usectrl`.
 
-Login app itu sendiri, `<appslug>[bot]`, dan bentuk singkat `@appslug` juga berlaku. Untuk mencari alias opsional tersebut:
+Login app itu sendiri, `<appslug>[bot]`, dan bentuk singkat `@appslug` juga berlaku. Untuk mencari alias
+opsional tersebut pada app milik sendiri Anda:
 
 1. Buka **Pengaturan → Server → Single sign-on** dan gulir ke kartu
    **Aplikasi penyedia**
@@ -55,12 +56,11 @@ yang dimulai tombol **Tanya AI**:
 
 - **Tambahkan label `ai-review`** ke PR. Ini adalah hal terdekat yang
   ditawarkan GitHub untuk menugaskan bot sebagai peninjau — akun app tidak dapat
-  mengisi slot peninjau yang diminta secara native. Tidak ada komentar untuk
-  direaksikan, jadi tidak ada yang diposting ke GitHub; tinjauan dimulai di
-  Control Center
-- **Komentari `@usectrl review`** (atau cukup `@usectrl`) di percakapan PR. Bot
-  bereaksi dengan 👀, lalu membalas saat tinjauan sudah dimulai (atau bahwa satu
-  tinjauan sedang berjalan)
+  mengisi slot peninjau yang diminta secara native. Akun Anda bereaksi 👀 pada PR dan
+  tinjauan dimulai di Control Center; tidak ada komentar yang diposting
+- **Komentari `@usectrl review`** (atau cukup `@usectrl`) di percakapan PR. Sebuah 👀
+  muncul pada komentar Anda, lalu sebuah balasan menyatakan tinjauan sudah dimulai (atau bahwa
+  satu tinjauan sedang berjalan)
 
 Para peninjau bekerja di space tinjauan milik PR; baca dan publikasikan
 temuannya seperti pada [Gunakan tinjauan bertenaga AI](/id-ID/panduan-pengguna/panduan-praktis/tinjauan-ai/). Penerbitan
@@ -82,11 +82,11 @@ Komentari percakapan PR:
 
 Apa yang terjadi, secara berurutan:
 
-1. Bot bereaksi dengan 👀 agar Anda tahu komentarnya terlihat
+1. Sebuah 👀 muncul pada komentar Anda, dari akun Anda sendiri, agar Anda tahu komentarnya terlihat
 2. Pertanyaan diposting ke space tinjauan milik PR **atas nama Anda** —
    atribusi yang sama seperti jika Anda mengetiknya di Control Center
-3. Seorang agen menjawab di space tersebut, dan jawabannya diposting kembali di
-   PR sebagai komentar yang menyebut Anda dengan @
+3. Seorang agen menjawab di space tersebut, dan jawabannya diposting kembali di PR. Setiap
+   balasan dimulai dengan `**Control Center** (for @your-login):`
 
 Pertanyaan pada PR yang belum ditinjau akan membangunkan agen CEO ruang kerja;
 setelah sebuah tinjauan berjalan, agen yang terakhir berbicara akan menjawab,
@@ -113,35 +113,41 @@ baru, jadi tetap memerlukan @mention.
 
 ## Dengan siapa bot berbicara
 
-Komentar GitHub datang hanya membawa login, tidak lebih, sehingga bot
-menyelesaikan penulisnya sebelum melakukan apa pun:
+Server menyelesaikan penulis sebuah komentar, atau siapa pun yang menambahkan label `ai-review`,
+sebelum melakukan apa pun:
 
-- **Akun GitHub Anda harus ditautkan ke identitas Anda** di Control Center —
-  [masuk dengan GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/), atau tempel token,
-  dari **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**
-- **Anda harus menjadi anggota dengan peran tulis** (`member`, `admin`, atau
-  `owner`) di ruang kerja yang menautkan repositori tersebut
+- **Akun GitHub harus sudah masuk** di server ini. Pencocokannya memakai id akun GitHub numerik, tidak
+  pernah login. Masuk dari **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**
+- **Mereka harus anggota dengan peran tulis** (`member`, `admin`, atau `owner`) di ruang kerja
+  yang menautkan repositori tersebut
+- **Mereka harus dapat push** ke repositori di GitHub. Balasan memakai token yang dibatasi pada akses
+  orang itu, sehingga seseorang yang hanya dapat membaca tidak mendapat balasan
 
-Siapa pun selain itu mendapat satu balasan sopan yang menjelaskan apa yang
-kurang — login yang tidak dikenal (belum ditautkan, atau ditautkan tetapi bukan
-anggota di sini) dan peran hanya-baca adalah dua kasusnya — dan kata-kata mereka
-tidak pernah masuk ke ruang kerja. Label `ai-review` tidak digerbangi seperti
-ini: label ini tidak punya penulis, jadi label ini memulai tinjauan di ruang
-kerja yang sudah menautkan repo tersebut.
+Siapa pun selain itu diabaikan secara diam-diam: tidak ada yang diposting, dan kata-kata mereka tidak
+pernah masuk ke ruang kerja. Komentar dari bot, dan balasan Control Center sendiri, tidak pernah diperlakukan
+sebagai pertanyaan.
+
+### Dua server, satu PR
+
+Reaksi 👀 juga menjadi cara server-server menyepakati siapa yang menjawab. Reaksi itu ditambahkan
+dengan proses masuk penulis sendiri, dan GitHub memberi tahu server apakah reaksi itu baru. Jika Anda masuk di
+dua server Control Center yang sama-sama menautkan repositori, yang pertama bereaksi yang menjawab dan yang
+lain tetap diam. Hal yang sama berlaku untuk label.
 
 ## Yang bisa Anda harapkan
 
 | Hal                 | Perilaku                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
-| Pengakuan           | 👀 pada sebuah komentar dalam waktu sekitar satu menit — interval penyapuan. Label `ai-review` tidak punya komentar untuk direaksikan |
-| Jawaban             | Diposting sebagai bot (app), di jalur tempat pertanyaan diajukan          |
+| Pengakuan           | 👀 dari akun Anda pada komentar (atau pada PR, untuk label), dalam satu penyapuan |
+| Jawaban             | Diposting di jalur tempat pertanyaan diajukan, dimulai dengan `**Control Center** (for @your-login):`. Pada app milik sendiri, penulisnya adalah akun bot app; lewat Connect, itu akun Anda, bertindak melalui App |
 | Atribusi di dalam space | Pertanyaannya milik Anda; agen berjalan atas nama Anda, di bawah pengaturan otonomi space |
 | Tinjauan            | Temuan mendarat di space tinjauan; publikasi ke GitHub dilakukan secara manual |
 
-Latensi sekitar satu menit itu adalah harga yang dibayar agar tidak perlu akses
-jaringan masuk sama sekali. Tidak ada yang mendesak dari penyapuan ini, dan
-tidak ada yang hilang saat server offline — komentar yang tiba selama server
-mati akan tertangkap pada penyapuan berikutnya.
+Penyapuan berjalan setiap menit pada app milik sendiri dan memeriksa hingga 25 pull request; lewat Connect,
+berjalan setiap dua menit dan memeriksa hingga 10, karena panggilan-panggilan itu memakai kuota GitHub
+milik masing-masing anggota. Ruang kerja yang kuota GitHub-nya di bawah 15% akan dilewati hingga pulih.
+Latensi adalah harga yang dibayar agar tidak perlu akses jaringan masuk sama sekali. Tidak ada yang hilang
+saat server offline — komentar yang tiba selama server mati akan tertangkap pada penyapuan berikutnya.
 
 ## Pemecahan masalah
 
@@ -151,20 +157,20 @@ mati akan tertangkap pada penyapuan berikutnya.
   repo-nya sudah **ditautkan** ke sebuah ruang kerja? Repo yang belum ditautkan
   dilewati sebelum apa pun dicatat, jadi menautkannya nanti tetap akan
   mengantarkan
-- Apakah akun GitHub Anda sudah ditautkan, dan apakah Anda anggota dengan peran
-  tulis? Periksa PR untuk balasan penolakan dari bot — balasan itu menyebutkan
-  kasus yang mana
+- Apakah Anda sudah masuk ke GitHub di server ini, apakah Anda anggota dengan peran tulis, dan
+  dapatkah Anda push ke repo? Server mengabaikan siapa pun selain itu tanpa membalas
+- Pada app bersama Control Center, apakah pemasangan organisasi sudah diotorisasi untuk server ini?
+  Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
 - Masih tidak ada? Log server menyebutkan penyapuan dan PR-nya ketika ada yang
   gagal; cari `pr_conversation:` (penyapu) dan
   `github_pr_conversation:` (jembatan)
 
 **Label tidak memulai tinjauan.**
 
-Label ini menyala sekali per PR. Jika tinjauan sudah pernah berjalan, atau label
-ditambahkan sebelum server pernah melihat PR tersebut (penyapuan pertama
-mencatat tumpukan yang tertunda secara senyap alih-alih menyerbunya), sebut bot
-sebagai gantinya — `@myapp review` selalu memulai tinjauan kecuali sudah ada
-tinjauan yang sedang berjalan.
+Label ini menyala sekali per PR, dan orang yang menambahkannya melewati pemeriksaan yang sama dengan penulis
+komentar. Jika tinjauan sudah pernah berjalan, atau label ditambahkan sebelum server pernah melihat PR
+tersebut (penyapuan pertama mencatat tumpukan yang tertunda secara senyap alih-alih menyerbunya), sebut bot
+sebagai gantinya — `@usectrl review` selalu memulai tinjauan kecuali sudah ada tinjauan yang sedang berjalan.
 
 **Jawaban bot tidak pernah tiba di GitHub.**
 
@@ -175,8 +181,7 @@ penting.
 
 ## Panduan terkait
 
-- [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/): pendaftaran tempat bot ini
-  berasal
+- [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/): pendaftaran tempat identitas bot app milik sendiri berasal
 - [Gunakan tinjauan bertenaga AI](/id-ID/panduan-pengguna/panduan-praktis/tinjauan-ai/): membaca temuan yang
   dihasilkan tinjauan yang dimulai oleh sebutan
 - [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/): menautkan akun

@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: 헤드리스 서버의 모든 플래그, 환경 변수, 하위 명령, 데이터 디렉터리 경로를 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 모든 프로세스 플래그는 CLI 플래그나 환경 변수로 지정할 수 있습니다. 우선순위는
-플래그, 그다음 환경 변수, 마지막으로 기본값입니다. 서드파티 자격 증명은
-예외입니다 — 아래를 참고하십시오.
+플래그, 그다음 환경 변수, 마지막으로 기본값입니다. 프로바이더 자격 증명은
+예외입니다 — [프로바이더 앱과 Connect](#프로바이더-앱과-connect)를 참고하십시오.
 
 :::caution[알 수 없는 플래그는 조용히 무시됩니다]
 인수 파서는 직접 작성한 것이라 인식하지 못하는 것은 무엇이든 건너뜁니다. 따라서
@@ -44,7 +44,7 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | 미설정                        | 해당 바이너리의 예상 SHA-256이며, 실행할 때마다 검증합니다                                                                                                    |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | 비어 있음                     | 터널 실행에 전달할 콤마로 구분된 추가 인수                                                                                                                    |
 
-## 인덱싱과 서드파티 자격 증명
+## 인덱싱과 런타임
 
 | 플래그                | 환경 변수                       | 기본값 | 의미                                                                                                                                    |
 | --------------------- | ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,14 +54,37 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tool-deferral`     | `CC_SERVER_TOOL_DEFERRAL`       | `on`   | 하네스 실행이 소수의 상주 도구 세트와 이름 인덱스를 보내고 나머지는 처음 사용할 때 적재할지 여부입니다. 아래를 참고하십시오              |
 | `--credential-gate`   | `CC_SERVER_CREDENTIAL_GATE`     | `900`  | 자격 증명을 처리할 수 없을 때 사람이 고칠 때까지 실행을 보류하는 시간(초)입니다(0–3600으로 제한). 아래를 참고하십시오                   |
 
-자격 증명 값이 비어 있으면 설정되지 않은 것으로 간주되므로 내장 폴백이 그대로
-적용됩니다. 소스에서 빌드한 경우에는 내장 자격 증명이 전혀 없습니다.
+## 프로바이더 앱과 Connect
 
-Google Calendar와 Klipy GIF 선택기는 **환경 변수 전용**입니다 — `--google-client-id`
-/ `--klipy-app-key` 플래그는 없습니다(알 수 없는 플래그는 무시됩니다).
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` 그리고 `KLIPY_APP_KEY`를
-환경에(또는 서버 옆의 `.env`에) 설정하십시오. 비워 두면 부팅이 실패하는 대신 해당
-기능이 비활성화됩니다.
+프로바이더 자격 증명을 포함한 빌드는 없습니다. Control Center Connect가 켜져 있으면 Connect가 모든 프로바이더를 실행하고 서버 자체 앱은 저장만 되며 사용되지 않습니다. **내 앱 사용** 아래에서는 각 프로바이더가 서버 자체 앱이 완전히 구성되어 있으면 그것으로 실행되며, 아니면 사용할 수 없습니다. 워크스페이스 자체 앱은 두 경우 모두 우선합니다. 자체 앱은 **설정 → 서버 → 싱글 사인온 →
+프로바이더 앱**에서 설정하거나 서버의 `.env` 파일에서 한 번 초기값으로 채웁니다. 이를 위한
+플래그는 없습니다. 명령줄의 시크릿은 `ps`로 읽을 수 있기 때문입니다.
+
+| 변수                           | 의미                                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | 서버의 GitHub App ID                                                                          |
+| `GITHUB_APP_PRIVATE_KEY`       | 그 비공개 키. `\n` 이스케이프를 사용해 한 줄로 씁니다. **`.env` 전용**                         |
+| `GITHUB_CLIENT_ID`             | 사람들의 로그인에 쓰는 그 클라이언트 ID                                                       |
+| `GITHUB_CLIENT_SECRET`         | 그 클라이언트 시크릿. **`.env` 전용**                                                         |
+| `GOOGLE_OAUTH_CLIENT_ID`       | 서버의 Google 웹 애플리케이션 클라이언트                                                      |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | 그 시크릿. **`.env` 전용**                                                                    |
+| `LINEAR_CLIENT_ID`             | 서버의 Linear 애플리케이션(PKCE, 시크릿 없음)                                                 |
+| `LINEAR_API_KEY`               | 자동화용 Linear 서비스 키. **`.env` 전용**                                                    |
+| `KLIPY_APP_KEY`                | GIF 검색용 서버 자체 Klipy 키. **내 앱 사용** 아래에서만 사용됩니다                    |
+| `CC_CONNECT_URL`               | `hosted`, `off` 또는 Connect URL. Connect 선택을 고정하며, 이후 설정에서 바꿀 수 없습니다      |
+| `CC_SERVER_CONNECT_HOST`       | `on`이면 `CONNECT_*` 변수로 구성한 Control Center Connect를 `<server>/connect`에 마운트합니다. [Connect 서버 실행](/ko-KR/매뉴얼/사용-가이드/connect-서버-실행/#cc_server-안에-connect-마운트하기)을 참고하십시오 |
+
+`.env` 파일은 서버의 작업 디렉터리, 실행 파일 옆, 또는 그 위의 소스 체크아웃에서
+읽습니다. Docker에서는 `/app/bin/.env`에 마운트합니다. `GITHUB_APP_PRIVATE_KEY`,
+`GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` 또는 어떤
+`SLACK_*SECRET*`이든 모든 자식 프로세스가 읽을 수 있는 프로세스 환경에 내보내져 있으면
+서버는 **시작을 거부합니다**(종료 코드 `78`). `.env`에서의 초기값 채우기는 필드마다 한
+번만 일어나므로, 나중에 설정에서 편집한 내용이 재시작으로 되돌려지지 않습니다. 빈 값은
+설정되지 않은 것으로 간주됩니다.
+
+GitLab과 Bitbucket 백그라운드 작업은 `GITLAB_TOKEN` / `CI_JOB_TOKEN`과,
+`BITBUCKET_EMAIL`과 함께 `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN`도 읽습니다. GitHub에는
+환경 변수 자격 증명이 없습니다.
 
 ### `--sandbox`
 
@@ -112,7 +135,7 @@ Linux와 WSL2에서는 `bwrap`과 `socat`입니다. 아무것도 없는 곳 — 
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | `SIGINT`/`SIGTERM`이 올 때까지 서버를 실행합니다                                                                                    |
 | `cc_server pair`                              | 기기를 프로비저닝하고 그 id와 페어링 키를 출력합니다. 이미 서버가 서비스 중인 데이터 디렉터리에도 안전합니다 — 실행 중인 서버가 재시작 없이 새 기기를 인식합니다 |
-| `cc_server calendar connect --workspace <id>` | 기기 코드 흐름으로 Google 계정을 워크스페이스에 연결한 뒤 종료합니다                                                                |
+| `cc_server connect <command>`                 | 이 서버가 사용하는 Control Center Connect를 서버를 시작하지 않고 표시하거나 변경합니다                                              |
 | `cc_server update`                            | 더 새로운 독립 실행형 릴리스가 있는지 확인하고 내려받아 검증합니다                                                                  |
 | `cc_server --version`                         | 빌드 버전과 git SHA를 출력합니다 — `/healthz`와 RPC 핸드셰이크가 알리는 것과 동일한 아이덴티티입니다                                |
 
@@ -138,6 +161,25 @@ Linux와 WSL2에서는 `bwrap`과 `socat`입니다. 아무것도 없는 곳 — 
 호환되지 않습니다 — [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)을
 참고하십시오.
 :::
+
+### `connect`
+
+**설정 → 서버 → 싱글 사인온**의 **Control Center Connect** 카드와 같은 설정을 데이터
+디렉터리에서 읽고 씁니다. 실행 중인 서버는 변경 사항을 10분 이내에 또는 재시작할 때
+반영합니다.
+
+| 명령                            | 하는 일                                                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | 모드, URL, `CC_CONNECT_URL`로 고정되었는지 여부, 설치 ID, 상태, 각 레인의 출처(`own`, `connect` 또는 `off`)를 출력합니다 |
+| `cc_server connect enable`      | Control Center가 호스팅하는 Connect를 사용합니다                                                                 |
+| `cc_server connect enable --url <url>` | 그 URL의 사용자 지정 Connect를 사용합니다(HTTPS, 또는 루프백에서는 `http`)                                |
+| `cc_server connect disable`     | Connect 사용을 중지합니다. 서버 자체 앱만 사람들을 로그인시킵니다                                                |
+| `cc_server connect rotate-key --yes` | 새 설치 키와 설치 ID를 발급합니다. Connect를 통해 로그인한 모든 사람이 다시 로그인합니다. `--yes`가 없으면 경고만 하고 `2`로 종료합니다 |
+
+명령 없이 실행하면 `status`가 기본입니다. 각 명령은 `--data-dir`을 받습니다.
+`CC_CONNECT_URL`은 이 명령들이 저장한 값을 덮어씁니다. 알 수 없는 명령은 `64`로 종료합니다.
+모드, 설치 신원, 상태 코드는 [Control Center Connect](/ko-KR/매뉴얼/레퍼런스/connect/)를
+참고하십시오.
 
 ### `update`
 
@@ -183,7 +225,7 @@ Windows에서 `%APPDATA%\control-center`, 그 밖의 환경에서는
 | `global.db`                       | 워크스페이스 레지스트리, 사용자, 페어링된 기기, 뉴스피드, 플릿 큐           |
 | `<workspaceId>/workspace.db`      | 워크스페이스마다 하나씩 있는 데이터베이스 — 에이전트, 스페이스, 티켓, 메모리, 코드 그래프 |
 | `<workspaceId>/chat_credentials/` | 채팅 봇 토큰이며 평문 JSON으로 저장되어 워크스페이스와 함께 이동합니다     |
-| `secrets.json`                    | 페어링 키, 프로바이더 앱 아이덴티티, 사용자별 토큰과 Google 토큰, SSO(`0600`) |
+| `secrets.json`                    | 페어링 키, Connect 설치 키, 프로바이더 앱, 사람들의 로그인(Connect를 통한 것은 봉인됨), SSO(`0600`) |
 | `backups/<timestamp>/`            | 설치 스냅샷 하나 — `manifest.json`, `global.db`, 각 워크스페이스의 사본     |
 | `backups/exports/`                | 단일 워크스페이스 내보내기, `<workspaceId>-<timestamp>.db`                 |
 | `backups/transfer/`               | 백업 다운로드와 업로드를 위한 스테이징 영역이며, 이를 기록하는 라우트가 정리합니다 |

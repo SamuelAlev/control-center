@@ -2579,6 +2579,27 @@ class AppLocalizationsUk extends AppLocalizations {
       'Очікування авторизації у вашому браузері…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Введіть код, показаний у браузері';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Це не схоже на код входу. Коди складаються з 8 літер і цифр.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Цей код не відповідає цьому входу. Перевірте його й спробуйте знову.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Вхід у $provider на цьому сервері ще не налаштовано.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Адреса повернення входу цього сервера недоступна з телефона через захищене з’єднання. Увійдіть у настільному застосунку або попросіть власника сервера налаштувати загальнодоступну адресу HTTPS.';
+
+  @override
   String get credentialsLoginTimedOut => 'Час входу минув. Почніть вхід знову.';
 
   @override
@@ -2598,10 +2619,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Завершити вхід';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Захищений доступ до зворотного виклику браузера цього сервера з телефона неможливий. Попросіть власника сервера налаштувати загальнодоступний зворотний виклик HTTPS або додайте токен.';
 
   @override
   String get credentialsUpdateToken => 'Оновити токен';

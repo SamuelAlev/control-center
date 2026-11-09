@@ -2,7 +2,7 @@
 title: Glosarium
 description: Definisi istilah-istilah penting yang digunakan di seluruh Control Center.
 slug: id-ID/panduan-pengguna/referensi/glosarium
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Alur kerja berbasis DAG yang merangkai langkah-langkah (pengiriman agen, skrip, kondisional). Didefinisikan oleh templat; dieksekusi sebagai run.'],
 ['Rapat', 'Sesi rapat yang direkam dan ditranskripsikan secara lokal. Menangkap mikrofon dan audio sistem, mentranskripsikan di perangkat dengan model ASR yang dapat dipilih (Parakeet TDT v3 secara default; Parakeet TDT v2, Whisper large-v3-turbo, dan Whisper base.en adalah alternatifnya), memisahkan pembicara, dan merangkumnya menjadi catatan, item tindakan, dan keputusan. Model ASR yang dipilih dipasang paksa saat boot dan operasi perekaman baru menyala setelah satu kali mulai ulang. Bercakupan ruang kerja.'],
 ['CalendarEvent', 'Entri Google Calendar yang disinkronkan, bercakupan satu ruang kerja dan akun yang terhubung. Berbeda dari Rapat: event adalah komitmen terjadwal, Rapat adalah sesi yang direkam.'],
-['CalendarAccount', 'Akun Google yang terhubung, per ruang kerja dan email. Token penyegar OAuth disimpan di sisi server sebagai kunci google_* di berkas secrets.json pada direktori data dan tidak pernah mencapai klien; flag authExpiredAt menggerakkan banner penyambungan ulang.'],
+['CalendarAccount', 'Akun Google yang terhubung, per ruang kerja, anggota, dan email. Kredensialnya disimpan di sisi server sebagai kunci google_* di berkas secrets.json pada direktori data dan tidak pernah sampai ke klien; proses masuk melalui Connect hanya menyimpan segel kredensial (credential seal). Flag authExpiredAt menggerakkan banner hubungkan ulang.'],
 ['AgentRole', 'Peran terenumerasi (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Menentukan persona, akses memori, dan hierarki.'],
 ['AgentSkills', 'Himpunan pengenal skill yang tidak peka huruf besar-kecil yang menyuntikkan konteks relevan ke prompt pada saat pengiriman.'],
 ['Sumber skill', 'Repositori GitHub yang terdaftar per ruang kerja sebagai katalog skill. Tidak tepercaya secara desain: metadata repo hanya untuk tampilan dan setiap pemasangan melewati gerbang pemindaian fail-closed sebelum konten apa pun mencapai disk atau prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam sen) untuk satu run agen.'],
 ['WakeReason', 'Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.'],
 ['SandboxPort', 'Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan untuk peluncuran sandbox (hanya-baca untuk lingkungan agen, tulis hanya untuk jalur push di sisi server), lalu mencabutnya saat pembongkaran.'],
+['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan untuk peluncuran sandbox (token satu-repositori untuk lingkungan agen, tulis hanya untuk jalur push di sisi server), lalu melepaskannya saat pembongkaran.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) dari jalur repo Git lokal.'],
 ['EmbeddingPort', 'Menghasilkan vektor embedding teks bernorma satuan untuk pencarian semantik.'],
 ['NotificationPort', 'Menampilkan notifikasi desktop native dengan menghormati gerbang kategori/rute.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Putusan tinjauan', 'ship, hold, atau block. Setiap temuan P0 dengan keyakinan >= 0.7 memblokir; P0 lain atau P1 mana pun menahan; selain itu ship. Sumbu bergerbang yang gagal memaksa block dan tidak dapat dikalahkan suara oleh temuan.'],
 ['SessionRecording', 'Aliran peristiwa ditambah kaset HTTP/LLM dan I/O alat yang ditangkap untuk satu run, dipasangkan dengan sebuah AgentConfigHash.'],
 ['Sesi golden', 'SessionRecording yang disahkan dan dipatok per agen atau playbook.'],
+['Control Center Connect', 'Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google, Linear) untuk server tanpa aplikasi sendiri. Dihosting oleh Control Center, di-self-host, atau dimatikan. Mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori.'],
+['Segel kredensial', 'Kredensial terenkripsi yang hanya dapat dibuka oleh Connect yang membuatnya, terikat pada penyedia, alamat Connect, id instalasi, ruang kerja, akun, app, dan generasi secret. Server menyimpan segelnya; access token tetap berada di memori.'],
+['Id instalasi', 'Identitas sebuah server terhadap satu alamat Connect, diturunkan dari kunci instalasinya. Connect mengizinkan server berdasarkan id instalasi; memutar kunci mengubahnya dan mengeluarkan semua orang dari jalur Connect.'],
+['Pengikatan instalasi', 'Catatan Connect tentang server mana yang boleh memakai instalasi GitHub dari App bersama. Instalasi organisasi memerlukan admin untuk mengotorisasi setiap server.'],
+['Jalur proses masuk', 'Proses masuk peramban satu penyedia: `github`, `google`, `linear`, `linear_app`, atau `slack`. Setiap jalur berjalan di app milik server ketika app itu lengkap, jika tidak melalui Connect, dan jika tidak keduanya, tidak tersedia.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Menerbitkan kredensial bercakupan untuk peluncuran sandbox — hanya-baca untuk lingkungan agen, tulis hanya untuk jalur push di sisi server — lalu mencabutnya saat pembongkaran.
+**CredentialBrokerPort**: Menerbitkan kredensial bercakupan untuk peluncuran sandbox — token satu-repositori untuk lingkungan agen, tulis hanya untuk jalur push di sisi server — lalu melepaskannya saat pembongkaran.
 
 **GitRepoInspectorPort**: Mengekstrak metadata (owner, repo, branch) dari jalur repo Git lokal.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Entri Google Calendar yang disinkronkan, bercakupan satu ruang kerja dan akun yang terhubung. Berbeda dari Rapat: event adalah komitmen terjadwal; Rapat adalah sesi yang direkam. Ditautkan satu-ke-satu melalui `MeetingCalendarLink`.
 
-**CalendarAccount**: Akun Google yang terhubung, per ruang kerja dan email. Token penyegar OAuth disimpan di sisi server sebagai kunci `google_*` di `<dataDir>/secrets.json` dan tidak pernah mencapai klien; alur kode perangkat selesai di server. Flag `authExpiredAt` menggerakkan banner penyambungan ulang.
+**CalendarAccount**: Akun Google yang terhubung, per ruang kerja, anggota, dan email (`google:<workspaceId>:<userId>:<email>`). Kredensialnya disimpan di sisi server sebagai kunci `google_*` di `<dataDir>/secrets.json` dan tidak pernah sampai ke klien; proses masuk melalui Connect hanya menyimpan segel kredensial. Flag `authExpiredAt` menggerakkan banner hubungkan ulang.
 
 ## Istilah arsitektur
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Klien tipis ponsel — PWA web Flutter yang mengendalikan fleet dari jarak jauh melalui relay dengan perantara, dengan kebijakan alat yang menolak secara default.
 
 **cc_signaling_server**: Broker relay WebSocket tanpa status yang menghosting ruang bergerbang undangan — relay sederhana yang hanya meneruskan frame tersegel ujung ke ujung, tidak memegang data aplikasi, dan tidak pernah melihat PSK pemasangan.
+
+**Control Center Connect**: Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google Calendar, Linear) untuk server yang belum mendaftarkan app sendiri: versi yang dihosting Control Center, versi yang dijalankan sebuah organisasi (`cc-connect`, atau dipasang di `cc_server` pada `/connect`), atau tidak ada. Connect mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori. Lihat [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/).
+
+**Segel kredensial** (`credential_seal`): Kredensial terenkripsi yang hanya dapat dibuka oleh Connect yang membuatnya, terikat pada penyedia, alamat Connect, id instalasi, ruang kerja, akun, app, dan generasi secret. Server menyimpan segel dan id instalasi tempat segel itu dibuat; access token tetap berada di memori. Segel yang id instalasinya tidak lagi cocok akan dibuang dan pemiliknya masuk ulang.
+
+**Id instalasi** (`install_id`): Identitas sebuah server terhadap satu alamat Connect, diturunkan dari kunci instalasi di berkas secret-nya. Connect mengizinkan server berdasarkan id instalasi. Memutar kunci menghasilkan id baru dan mengeluarkan semua orang dari jalur Connect.
+
+**Pengikatan instalasi** (`install_binding`): Catatan Connect tentang server mana yang boleh memakai instalasi GitHub dari App bersama. Memasang melalui sebuah server akan mengikatnya; **Otorisasi server ini** oleh admin organisasi akan mengikat server lain.
+
+**Jalur proses masuk**: Proses masuk peramban satu penyedia — `github`, `google`, `linear`, `linear_app`, atau `slack`. Sebuah jalur berjalan di app milik server ketika app itu sudah lengkap, jika tidak melalui Connect, dan jika tidak keduanya, tidak tersedia. App milik sendiri yang dikonfigurasi sebagian adalah galat, tidak pernah jatuh kembali ke Connect.
 
 ## Lihat juga
 

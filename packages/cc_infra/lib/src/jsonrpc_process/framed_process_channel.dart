@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// `Content-Length`-framed JSON messages over a child process's stdio.
 ///
 /// **What it deliberately does not know.** This is FRAMING and process
@@ -56,13 +58,14 @@ class FramedProcessChannel {
     Map<String, String>? environment,
     String? name,
   }) async {
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       command,
       args,
       workingDirectory: workingDirectory,
       environment: environment,
-      // Inherit, so a server that needs PATH or a language SDK finds it.
-      includeParentEnvironment: true,
+      // The toolchain allowlist, so a server that needs PATH or a language
+      // SDK finds it.
+      toolchain: true,
     );
     return FramedProcessChannel._(process, name ?? command);
   }

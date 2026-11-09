@@ -50,10 +50,14 @@ class ApproveOrchestrationUseCase {
   /// approval gates until [approveNodes] releases them. Null approves every
   /// node. The set must be dependency-closed — an approved node whose
   /// upstream is deferred could never start, so that shape is rejected.
+  ///
+  /// [approvedByUserId] is the person who approved; the generated run records
+  /// them as its requester, so what it does on a forge is bounded by them.
   Future<void> approve({
     required String workspaceId,
     required String orchestrationId,
     Set<String>? approvedNodeKeys,
+    String? approvedByUserId,
   }) async {
     final loaded = await _orchestrations.getById(workspaceId, orchestrationId);
     if (loaded == null) {
@@ -79,7 +83,11 @@ class ApproveOrchestrationUseCase {
     }
 
     try {
-      o = await _materialize(workspaceId, o);
+      o = await _materialize(
+        workspaceId,
+        o,
+        approvedByUserId: approvedByUserId,
+      );
     } on Object catch (e, st) {
       CcInfraLog.error('ApproveOrchestration: materialization failed', e, st);
       await _fail(workspaceId, o, 'Materialization failed: $e');
@@ -154,8 +162,9 @@ class ApproveOrchestrationUseCase {
 
   Future<Orchestration> _materialize(
     String workspaceId,
-    Orchestration o,
-  ) async {
+    Orchestration o, {
+    String? approvedByUserId,
+  }) async {
     final proposal = o.proposal;
 
     // 1. Hires (idempotent: skip when hiredAgentIds already covers the hires).
@@ -273,6 +282,7 @@ class ApproveOrchestrationUseCase {
         templateId,
         workspaceId: workspaceId,
         triggerEventType: 'orchestration.approved',
+        requestedByUserId: approvedByUserId,
         triggerPayload: {
           'orchestration_id': o.id,
           'parent_ticket_id': o.parentTicketId,

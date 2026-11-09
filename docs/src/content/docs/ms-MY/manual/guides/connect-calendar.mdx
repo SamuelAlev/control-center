@@ -1,131 +1,139 @@
 ---
 title: Sambungkan Google Calendar
-description: Sambungkan Google Calendar ke ruang kerja, urus berbilang akaun dan sambung semula apabila token luput.
+description: Sambungkan Google Calendar ke ruang kerja, urus berbilang akaun dan sambung semula apabila log masuk luput.
 slug: ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
-Panduan ini menunjukkan cara menyambungkan Google Calendar ke ruang kerja.
-Sifatnya bagi setiap ruang kerja: ia menyegerakkan acara ruang kerja itu ke
-Control Center, baca sahaja. Lihat
-[Kalendar dan penjadualan](/ms-MY/manual-pengguna/konsep/kalendar/) untuk
-gambaran penuh.
+Panduan ini menunjukkan cara menyambungkan Google Calendar ke ruang kerja. Sifatnya bagi setiap
+ruang kerja dan setiap ahli: ia menyegerakkan acara anda untuk ruang kerja itu ke Control Center, di mana anda juga boleh menjawab jemputan, menempah, mengalih dan memadamkan acara. Lihat [Kalendar dan penjadualan](/ms-MY/manual-pengguna/konsep/kalendar/) untuk gambaran penuh.
+
+## Prasyarat
+
+- Pelayan boleh mendaftar masuk orang ke Google: sama ada melalui Control Center Connect, atau dengan klien
+  Google pelayan itu sendiri ([Bawa klien Google anda sendiri](#bawa-klien-google-anda-sendiri)). Pemilik
+  pelayan memilih dalam **Tetapan → Pelayan → Daftar masuk tunggal**
+- Ruang kerja yang terbuka: akaun kalendar sentiasa tergolong dalam satu ruang kerja
 
 ## Sambungkan akaun
 
 1. Buka **Kalendar** dalam bar sisi.
 2. Klik **Tambah akaun kalendar** dalam bar sisi kalendar. (Bahagian yang sama juga terletak di **Tetapan → Ruang kerja → Profil & identiti**, di bawah **Google Calendar**.)
-3. Pilih cara untuk memberi kebenaran:
-   - **Gunakan apl Google Control Center** — tiada apa yang perlu disediakan. Ini lalai apabila binaan anda menyertakannya.
-   - **Gunakan klien Google Cloud saya sendiri** — tampal id klien dan rahsia daripada projek anda sendiri (lihat [Bawa klien Google anda sendiri](#bawa-klien-google-anda-sendiri-fork-dan-self-hosting)).
-4. Klik **Sambung Google Calendar**. Dialog menunjukkan kod pendek dan pautan ke halaman peranti Google.
-5. Buka halaman itu pada mana-mana peranti, masukkan kod itu dan luluskan akses yang diminta. Dialog itu tertutup sendiri dan acara anda mula disegerakkan.
+3. Klik **Sambung Google Calendar**. Pelayar anda membuka halaman kebenaran Google.
+4. Pilih akaun dan luluskan akses kepada acara kalendar dan senarai kalendar anda.
 
-Pelayan, bukan peranti anda, yang menjalankan pertukaran ini dan menyimpan
-token penyegaran yang terhasil — itulah sebabnya kod itu diluluskan pada
-"mana-mana peranti" dan bukan dalam apl ini secara khusus.
+Cara ia selesai bergantung pada pihak yang menjalankan log masuk:
 
-Akaun itu disambungkan **hanya pada ruang kerja aktif**. Tukar ruang kerja dan
-anda akan melihat kalendar ruang kerja itu sebaliknya.
+- **Klien Google pelayan itu sendiri:** Google menghantar pelayar anda kembali ke pelayan dan dialog
+  tertutup sendiri
+- **Control Center Connect:** halaman pelayar memaparkan kod 8 aksara. Taip kod itu ke dalam dialog, atau
+  biarkan pelayar membuka Control Center melalui pautan `control-center://` dan langkau menaip kod
 
-Aliran sambungan meminta `calendar.readonly` serta e-mel anda — skop yang sama
-untuk apl terbina dalam dan untuk klien yang anda tampal. Control Center membaca
-acara; ia tidak mencipta, menyunting, memadam atau menjawab jemputan pada Google.
+Acara anda mula disegerakkan serta-merta. Pelayan, bukan peranti anda, yang melengkapkan pertukaran ini
+dan menyimpan kelayakan.
+
+Akaun itu disambungkan **hanya pada ruang kerja aktif**, dan ia milik anda: dua ahli yang menyambungkan
+alamat Google yang sama akan mendapat akaun yang berasingan. Tukar ruang kerja dan anda akan melihat
+kalendar ruang kerja itu sebaliknya.
+
+Aliran sambungan meminta `calendar.events` dan `calendar.calendarlist.readonly` serta `openid email`, tanpa mengira klien yang menjalankannya. Akaun yang disambungkan sebelum Control Center boleh menulis ke Google hanya mempunyai skop baca sahaja; ia akan meminta anda menyambung semula, dan log masuk baharu memberikan selebihnya.
+
+## Tempah, alih, jawab dan padam acara
+
+- **Tempah acara:** dalam paparan minggu atau hari, seret grid masa untuk melukis julat (dalam paparan bulan, seret merentasi hari untuk acara sepanjang hari). Kad dibuka di sebelah dengan tajuk, masa, tetamu, pautan Google Meet, lokasi, huraian dan kalendar tempat anda menempah. **Simpan** menempahnya pada Google dan membuka acara itu. Butang **+** pada pengepala kalendar membuka kad yang sama untuk sukuan jam kosong seterusnya. Tekan Esc untuk membatalkannya
+- **Alih acara:** seret acara ke masa atau hari lain, atau seret tepi bawahnya untuk menukar masa tamat. Acara itu muncul pada masa baharu selepas Google menerimanya; jika Google menolak, ia kembali ke tempat asal. Hanya acara anda sendiri dan acara yang anda anjurkan boleh dialih; jemputan kekal di tempat penganjurnya meletakkannya
+- **Jawab jemputan:** buka acara dan pilih **Ya**, **Mungkin** atau **Tidak**
+- **Padam acara:** buka dan klik ikon tong sampah. Pengesahan menunjukkan siapa yang terjejas: tetamu dimaklumkan bahawa acara yang anda anjurkan dibatalkan, manakala memadam jemputan hanya mengeluarkannya daripada kalendar anda. Memadam satu kejadian acara berulang tidak memadam baki siri itu
+
+Tetamu menerima jemputan, kemas kini atau pembatalan e-mel Google sendiri. Mengalih satu kejadian acara berulang tidak memadam baki siri itu. Anda hanya boleh menempah pada kalendar yang akaun anda dibenarkan tulis, dan hanya dengan akaun anda sendiri: kalendar yang disambungkan milik ahli lain tidak sekali-kali ditawarkan.
 
 ## Bagaimana penyegerakan berfungsi
 
-**Pelayan** yang memiliki jadual itu: ia menyapu akaun bersambung setiap ruang
-kerja setiap dua minit dan menulis acara itu ke dalam pangkalan data ruang kerja.
-Klien tidak pernah bercakap dengan Google — klien membaca apa yang ditulis oleh
-pelayan.
+## Bagaimana penyegerakan berfungsi
 
-Sapuan itu bersifat inkremental. Lintasan pertama bagi setiap kalendar mengambil
-tetingkap bergolek (60 hari ke belakang, 90 hari ke hadapan) dan menangkap token
-segerak Google; lintasan seterusnya membentangkan token itu dan hanya menerima
-apa yang berubah, dan itulah yang menjadikan irama dua minit ini berpatutan.
-Tetingkap itu ditambat semula dengan penyegerakan penuh setiap 24 jam dan setiap
-kali Google membatalkan token itu.
+**Pelayan** yang memiliki jadual itu: ia menyapu akaun bersambung setiap ruang kerja setiap dua minit dan
+menulis acara itu ke dalam pangkalan data ruang kerja. Klien tidak pernah bercakap dengan Google — klien
+membaca apa yang ditulis oleh pelayan.
 
-Token penyegaran hidup di sisi pelayan dalam `secrets.json` di bawah direktori
-data pelayan, ditulis untuk pemilik sahaja (`0600`) — bukan dalam keychain OS dan
-tidak pernah pada peranti klien.
+Sapuan itu bersifat inkremental. Lintasan pertama bagi setiap kalendar mengambil tetingkap bergolek (60 hari
+ke belakang, 90 hari ke hadapan) dan menangkap token segerak Google; lintasan seterusnya membentangkan token
+itu dan hanya menerima apa yang berubah, dan itulah yang menjadikan irama dua minit ini berpatutan. Tetingkap
+itu ditambat semula dengan penyegerakan penuh setiap 24 jam dan setiap kali Google membatalkan token itu.
+
+Kelayakan hidup di sisi pelayan dalam `secrets.json` di bawah direktori data pelayan, ditulis untuk pemilik
+sahaja (`0600`) — bukan dalam keychain OS dan tidak pernah pada peranti klien. Log masuk melalui Connect hanya
+menyimpan kelayakan bermeterai yang Connect boleh buka untuk pelayan ini sahaja; access token-nya hanya kekal
+dalam memori pelayan.
 
 ## Sambungkan berbilang akaun
 
-Satu ruang kerja boleh menyambungkan beberapa akaun Google (contohnya kerja dan
-peribadi). Ulangi langkah sambungan untuk setiap satu; acara mereka digabungkan
-ke dalam paparan bulan / minggu / agenda yang sama. Setiap akaun menyegerak dan
-menyegar secara berasingan dan setiap satu boleh diputuskan sendiri.
+Satu ruang kerja boleh menyambungkan beberapa akaun Google (contohnya kerja dan peribadi). Ulangi langkah
+sambungan untuk setiap satu; acara mereka digabungkan ke dalam paparan bulan / minggu / agenda yang sama.
+Setiap akaun menyegerak dan menyegar secara berasingan dan setiap satu boleh diputuskan sendiri.
 
 ## Sambung semula akaun yang luput
 
-Jika Google membatalkan token sesuatu akaun secara kekal (sesi yang ditarik balik
-atau lama luput), penyegerakan berhenti dan Control Center memaparkan banner
-**Sambung semula** pada kalendar, serta pemberitahuan desktop. Klik **Sambung
-semula** dan luluskan kod baharu; banner itu hilang pada penyegerakan berjaya
-yang seterusnya.
+Jika Google membatalkan log masuk sesuatu akaun secara kekal (sesi yang ditarik balik atau lama luput),
+penyegerakan berhenti dan Control Center memaparkan banner **Sambung semula** pada kalendar, serta
+pemberitahuan desktop. Klik **Sambung semula** dan daftar masuk semula; banner itu hilang pada penyegerakan
+berjaya yang seterusnya.
+
+Banner yang sama juga muncul apabila pelayan ini tidak lagi dapat menggunakan log masuk itu: pemilik pelayan
+bertukar kepada pelayan Connect yang lain atau memutar kunci Connect, klien Google milik pelayan berubah, atau
+direktori data dipulihkan ke mesin lain.
 
 ## Putuskan akaun
 
-Dari bar sisi kalendar (atau **Tetapan → Ruang kerja → Profil & identiti**),
-klik **Putuskan** pada akaun itu. Ini memadamkan acara yang disegerakkannya dan
-membersihkan token tersimpannya pada pelayan.
+Dari bar sisi kalendar (atau **Tetapan → Ruang kerja → Profil & identiti**), klik **Putuskan** pada akaun itu.
+Ini memadamkan acara yang disegerakkannya dan membersihkan kelayakan tersimpannya pada pelayan.
 
-## Sambung dari pelayan tanpa kepala
+## Bawa klien Google anda sendiri
 
-Pelayan tanpa GUI yang dipasang menyambungkan akaun yang sama dari terminalnya
-sendiri:
+Jalankan klien Google sendiri hanya apabila anda memilih **Gunakan aplikasi saya sendiri**. Klien pelayan hanya terpakai dalam kes itu: dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong, termasuk Google, dan klien pelayan kekal disimpan tetapi tidak digunakan. Untuk menjadikan skrin persetujuan menamakan projek anda sambil pelayan menggunakan Connect, berikan ruang kerja itu klien sendiri ([di bawah](#berikan-satu-ruang-kerja-klien-google-sendiri)); ini terpakai dalam semua mod.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. Dalam [Google Cloud Console](https://console.cloud.google.com/apis/credentials), dayakan **Google Calendar API** dan konfigurasikan **skrin persetujuan OAuth**, sambil menambah skop `calendar.events`, `calendar.calendarlist.readonly`, `openid` dan `email`. Selagi apl belum disahkan, tambah diri anda sebagai **pengguna ujian**.2. Cipta **ID klien OAuth** dengan jenis aplikasi **Web application**.
+3. Tambah URI ubah hala yang dibenarkan `<server origin>/oauth/google/callback`. **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia → Google** memaparkan URL tepat di bawah **Callback URLs**; salin persis seperti ia.
+4. Tampal **Client id** dan **Client secret** ke dalam blok Google yang sama, atau letakkannya dalam fail `.env` pelayan sebagai `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Ia mencetak kod dan URL, menunggu kelulusan, kemudian menyimpan token dan
-menyegerak pada sapuan seterusnya.
+Pelayan enggan bermula apabila `GOOGLE_OAUTH_CLIENT_SECRET` dieksport dalam persekitaran prosesnya; simpan
+dalam fail `.env` (dalam Docker, lekapkannya pada `/app/bin/.env`). Secret tidak pernah meninggalkan pelayan:
+tiada respons RPC yang membawanya. Client id tanpa secret ialah persediaan yang belum siap, dan log masuk
+Google ditolak sehingga kedua-duanya ditetapkan.
 
-Binaan daripada sumber **tidak** menyertakan klien Google, jadi id dan rahsia itu
-diperlukan — tetapkan `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
-Tiada bendera `--google-client-id` (bendera yang tidak dikenali diabaikan). Tanpa
-pasangan persekitaran itu, arahan ini keluar dengan ralat klien tiada.
+Menukar kepada klien yang berbeza akan mengeluarkan semua orang daripada Google Calendar: log masuk milik
+klien yang menerbitkannya.
 
-## Bawa klien Google anda sendiri (fork dan self-hosting)
+## Berikan satu ruang kerja klien Google sendiri
 
-Binaan keluaran menyertakan klien Google, jadi kebanyakan orang tidak pernah
-menyentuh perkara ini. Bawa klien anda sendiri jika anda membina daripada sumber,
-menjalankan pelayan sendiri atau mahu skrin persetujuan menamakan projek anda
-sendiri.
+Ruang kerja boleh menyambungkan Google Calendar melalui klien sendiri dan bukannya klien pelayan. Hanya pentadbir atau pemilik ruang kerja boleh menyediakannya.
 
-1. Dalam [Google Cloud Console](https://console.cloud.google.com/apis/credentials), dayakan **Google Calendar API** dan konfigurasikan **skrin persetujuan OAuth**, sambil menambah skop `calendar.readonly`, `openid` dan `email`. Selagi apl belum disahkan, tambah diri anda sebagai **pengguna ujian**. Menambah `calendar.events` pada skrin persetujuan tidak mendayakan RSVP — Control Center tidak pernah meminta skop itu.
-2. Cipta **ID klien OAuth** dengan jenis aplikasi **TVs and limited input devices** dan salin kedua-dua id klien dan rahsia klien.
-3. Bekalkan kedua-duanya sama ada bagi setiap sambungan (pilih **Gunakan klien Google Cloud saya sendiri** dalam dialog) atau untuk seluruh pelayan dengan `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Cipta klien Google **Web application** seperti langkah 1 dan 2 di atas
+2. Buka **Tetapan → Ruang kerja → Umum → Apl penyedia** dan buka **Google Calendar**
+3. Pilih **Gunakan apl ruang kerja ini**
+4. Tambahkan URI ubah hala yang dipaparkan oleh baris itu di bawah **URL panggil balik** ke klien, betul-betul seperti yang tertera
+5. Tampal **ID klien** dan **Rahsia klien**
 
-Pasangan untuk seluruh pelayan menggantikan pasangan terbina dalam di semua
-tempat, termasuk di sebalik pilihan "gunakan apl Google Control Center" — jadi
-pada pelayan anda sendiri, pilihan itu ialah apl anda.
+Akaun kalendar yang disambungkan dalam ruang kerja ini melalui klien itu, tanpa mengira cara pelayan mendaftar masuk orang. Ia tidak sekali-kali jatuh kembali kepada klien pelayan atau Connect: sehingga kedua-dua medan diisi, Google Calendar dimatikan dalam ruang kerja ini dan baris itu menyatakan apa yang tiada. Rahsia tidak sekali-kali meninggalkan pelayan.
 
-Rahsia klien tidak pernah meninggalkan pelayan: tiada respons RPC yang
-membawanya dan akaun yang disambungkan melalui klien pelayan itu sendiri
-menyimpan penanda dan bukan salinan pasangan itu, jadi memutarkannya hanyalah
-soal memulakan semula dengan nilai baharu.
+Menukar antara klien pelayan dan klien ruang kerja, atau menukar ID klien ruang kerja, menandakan setiap akaun Google dalam ruang kerja ini untuk disambung semula. **Gunakan apl pelayan ini** memadamkan medan ruang kerja yang disimpan. Ruang kerja lain pada pelayan tidak terjejas.
 
-### Penyelesaian masalah
+## Penyelesaian masalah
 
-| Gejala                                                   | Punca kemungkinan                                                                                                                                                                     |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialog tidak menawarkan pilihan terbina dalam            | Binaan ini tidak menyertakan klien Google (binaan sumber), atau pelayan dimulakan dengan hanya separuh daripada pasangan itu. Kedua-dua id dan rahsia diperlukan                        |
-| `invalid_scope` semasa memulakan aliran                  | Calendar tidak dibenarkan untuk klien kod peranti dalam projek Cloud itu. Gunakan projek klien loopback atau web sebaliknya                                                            |
-| `invalid_client` daripada Google                          | Klien itu bukan klien **TVs and limited input devices**, atau id dan rahsia itu daripada klien yang berbeza                                                                            |
-| Kelulusan berjaya tetapi penyegerakan kosong             | Akaun anda bukan **pengguna ujian** pada skrin persetujuan, atau `calendar.readonly` tidak diberikan                                                                                   |
-| Kod luput sebelum anda meluluskannya                     | Kod peranti berumur pendek. Mulakan sambungan semula untuk mendapatkan kod baharu                                                                                                       |
-| "Tidak dapat mengemas kini jawapan anda" pada RSVP       | Dijangka: aliran sambungan tidak pernah meminta `calendar.events`                                                                                                                       |
-| Penyegerakan berhenti dengan amaran penyegaran dalam log pelayan | Akaun itu disambungkan dengan klien yang tidak lagi dikonfigurasikan. Sambung semula akaun itu, atau pulihkan id dan rahsia klien itu                                          |
+| Gejala | Punca kemungkinan |
+| --- | --- |
+| **Sambung Google Calendar** memaklumkan log masuk belum disediakan | Pelayan tiada klien Google sendiri mahupun Connect. Pemilik pelayan memilih salah satu dalam **Tetapan → Pelayan → Daftar masuk tunggal** |
+| Google memaparkan `redirect_uri_mismatch` | Ubah hala yang didaftarkan pada klien tidak sepadan tepat dengan nilai **Callback URLs**, atau URL awam pelayan telah berubah |
+| `invalid_client` daripada Google | Id dan secret daripada dua klien yang berbeza, atau klien itu telah dipadamkan |
+| Kelulusan berjaya tetapi penyegerakan kosong | Akaun anda bukan **pengguna ujian** pada skrin persetujuan, atau salah satu skop yang diminta tidak diberikan |
+| Dialog memaklumkan kod tidak sepadan | Taip 8 aksara tepat seperti yang dipaparkan pelayar. Lima kod salah menamatkan log masuk; mulakan semula |
+| "Tidak dapat mengemas kini jawapan anda" pada RSVP, atau tempahan, peralihan dan pemadaman gagal | Akaun disambungkan dengan skop baca sahaja yang lama. Sambung semula; kalendar yang dikongsi secara baca sahaja juga menolak tulisan |
+| Semua orang perlu menyambung semula | Klien Google pelayan atau ruang kerja berubah, atau pilihan Connect atau kunci pelayan berubah. Lihat [Sambung semula akaun yang luput](#sambung-semula-akaun-yang-luput) |
 
 ## Panduan berkaitan
 
 - [Rakam dan ringkaskan mesyuarat](/ms-MY/manual-pengguna/panduan-cara/rakam-mesyuarat/): tukar acara menjadi rakaman
-- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): tempat token dan jadual penyegerakan berada
-- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): tempat kelayakan dan jadual penyegerakan berada
+- [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)
 
 ## Konsep berkaitan
 

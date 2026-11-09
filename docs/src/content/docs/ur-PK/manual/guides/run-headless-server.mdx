@@ -1,9 +1,9 @@
 ---
 title: ہیڈلیس سرور چلائیں
 description: cc_server ہیڈلیس بائنری یا اُس کی Docker امیج چلائیں، ایک کلائنٹ کو اُس کے ساتھ پیئر کریں اور CLI فلیگ اور ماحول کی مکمل سطح سے اُسے کنفیگر کریں۔
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 `cc_server` کو کسی ایسی مشین پر چلائیں جو آن رہتی ہو، پھر اپنے ڈیسک ٹاپ، براؤزر
@@ -15,8 +15,7 @@ sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
 ## Docker میں چلائیں (پہلے سے بنی امیجز)
 
 ہر ریلیز چار GHCR امیجز کا ایک خود میزبان اسٹیک شائع کرتی ہے — بیک اینڈ، دو
-اسٹیٹک تھن کلائنٹس اور اختیاری پیئرنگ ریلے — نیز عوامی ڈیمو ہوسٹ کے لیے ایک الگ
-`cc-server-demo` امیج۔ خود میزبان انسٹال کے لیے کسی سورس چیک آؤٹ کی ضرورت نہیں۔
+اسٹیٹک تھن کلائنٹس اور اختیاری پیئرنگ ریلے — اس کے ساتھ اختیاری `cc-connect` سائن اِن سروس ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، اور عوامی ڈیمو ہوسٹ کے لیے ایک الگ `cc-server-demo` امیج۔ خود میزبان انسٹال کے لیے کسی سورس چیک آؤٹ کی ضرورت نہیں۔
 کوئی ورژن ٹیگ پن کریں (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) یا `latest` پر
 چلتے رہیں۔
 
@@ -65,6 +64,7 @@ volumes:
   ٹریفک، کنکشن میٹاڈیٹا، عوامی اینڈ پوائنٹس اور ویب کلائنٹ کی ترسیل کی حفاظت
   کرتا ہے۔ سب کچھ `docker run -e …` یا compose کے `environment:` بلاک سے تبدیل
   کیا جا سکتا ہے۔
+- **فراہم کنندہ کے راز `-e` کے بجائے mount شدہ `.env` میں جائیں۔** جب `GITHUB_APP_PRIVATE_KEY`، `GITHUB_CLIENT_SECRET`، `GOOGLE_OAUTH_CLIENT_SECRET`، `LINEAR_API_KEY` یا کوئی `SLACK_*SECRET*` اس کے process ماحول میں ہو تو سرور شروع ہونے سے انکار کرتا ہے۔ فائل کو صرف پڑھنے کے لیے `/app/bin/.env` پر mount کریں (`-v /secure/cc.env:/app/bin/.env:ro`)، یا Settings میں apps ترتیب دیں۔
 - **`/data` ہی واحد حالت ہے۔** SQLite ڈیٹا بیسز، پیئر شدہ ڈیوائس کے راز، ڈاؤن لوڈ
   شدہ ماڈلز اور میٹنگ آڈیو سب والیوم میں رہتے ہیں — اُس کا بیک اپ رکھیں تو کنٹینر
   بے مصرف ہو جاتا ہے۔
@@ -271,21 +271,21 @@ node tool/stage_resource_assets.mjs build/web
 ہیں؛ ریسورسز کے لیے تصدیق شدہ انکرپٹڈ سیشن درکار ہوتا ہے۔
 
 
-## مرحلہ 6: Google Calendar جوڑیں (اختیاری)
+## مرحلہ 6: منتخب کریں کہ لوگ کیسے sign in کریں
 
-بغیر کسی GUI کے ورک اسپیس کا کیلنڈر سنک کرنے کے لیے ڈیوائس کوڈ فلو استعمال
-کریں:
+مالک سرور کے طور پر پہلا کلائنٹ جو جڑتا ہے اس سے پوچھا جاتا ہے کہ یہ سرور لوگوں کو GitHub، Google Calendar اور Linear میں کیسے sign in کرائے: **Use Control Center's apps**، **Use my own apps** یا **Use a custom Connect server**۔ ٹرمینل سے یہی انتخاب یوں ہے:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-یہ ایک کوڈ اور ایک URL پرنٹ کرتا ہے جسے کسی دوسری ڈیوائس پر منظور کرنا ہوتا ہے،
-ریفریش ٹوکن سرور کی طرف محفوظ کرتا ہے اور خارج ہو جاتا ہے۔ سورس بلڈ کے ساتھ کوئی
-Google کلائنٹ نہیں آتا، لہٰذا id اور secret ماحول متغیرات لازمی ہیں — کوئی
-`--google-client-id` فلیگ نہیں ہے۔ دیکھیں [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)۔
+`CC_CONNECT_URL` (`hosted`، `off` یا ایک URL) سرور کے ماحول یا `.env` میں اس کی بجائے انتخاب کو لاک کرتا ہے۔ **Use my own apps** کے ساتھ، ہر provider کو **Settings ← Server ← Single sign-on ← Provider apps** کے تحت رجسٹر کریں؛ **Create my GitHub App** GitHub کو ایک قدم میں سیٹ کرتا ہے۔ provider secrets سرور کی `.env` فائل سے تعلق رکھتے ہیں، کبھی برآمد شدہ ماحول سے نہیں۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) اور [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
+
+Connect کے ذریعے sign-ins براؤزر کے دکھائے ہوئے کوڈ پر ختم ہوتے ہیں، اس لیے سرور کو ان کے لیے عوامی پتے کی ضرورت نہیں۔ اپنی apps کے ذریعے sign-ins براؤزر کو سرور کے عوامی URL پر واپس بھیجتے ہیں، اس لیے `--public-url` کو ایسے پتے پر سیٹ کریں جس تک لوگوں کے براؤزر پہنچ سکیں۔
+
+اس سرور سے دوسرے سرورز کے لیے Connect میزبانی کرنے کے لیے `CC_SERVER_CONNECT_HOST=on` سیٹ کریں؛ دیکھیں [Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/#cc_server-کے-اندر-connect-mount-کریں)۔
 
 ## کنفیگریشن
 
@@ -339,6 +339,7 @@ cwd کے نسبتی `.cc_server` صرف اُس وقت استعمال ہوتا ہ
 - [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
 - [فلیٹ ورکر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/)
 - [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
+- [Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/)
 
 ## متعلقہ تصورات
 

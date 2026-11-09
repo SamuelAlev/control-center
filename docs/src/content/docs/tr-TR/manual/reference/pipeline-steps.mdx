@@ -2,7 +2,7 @@
 title: Pipeline adımları
 description: Pipeline adım türleri, adım gövdesi anahtarları, bunların yapılandırması ve adım sonuçları için referans.
 slug: tr-TR/kilavuz/referans/pipeline-adimlari
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Bir pipeline adımının birbirinden bağımsız iki ekseni vardır:
@@ -42,7 +42,7 @@ Ajansız kabuk adımı (`bash -c`). Betikteki `{{key}}` yer tutucuları, durum +
 | `script`           | Yürütülecek kabuk komutu (zorunlu)            |
 | `outputKey`        | 0 çıkışında kırpılmış stdout’u alan durum anahtarı |
 
-`cwd` `<cc_root>/pipelines/<pipelineRunId>/` (bir çalıştırmadaki tüm bash adımları tarafından paylaşılır) ve ortamda `GITHUB_TOKEN` ile çalışır. Ayrıca `<stepId>_runDir` değerini duruma yazar. Sıfırdan farklı çıkış, adımı stderr çıktısının sonuyla başarısız kılar.
+Ana makinenin işletim sistemi sandbox’ı içinde, `cwd` `<cc_root>/pipelines/<pipelineRunId>/` (bir çalıştırmadaki tüm bash adımları tarafından paylaşılır) ile çalışır; sandbox’ı olmayan bir ana makinede adım başarısız olur. Sunucunun veri dizini ve `.env` dosyası okunamaz, git ve `gh` ana makine yapılandırmasını görmez ve `GH_TOKEN` / `GITHUB_TOKEN` yalnızca `repo_full_name` (durum ya da tetikleyici yükü) çalışma alanına bağlı bir GitHub deposunu adlandırdığında tek depoluk bir `read` token’ı taşır. Bu adımı içeren bir şablonu oluşturmak ya da düzenlemek için çalışma alanı yöneticisi gerekir. Ayrıca `<stepId>_runDir` değerini duruma yazar. Sıfırdan farklı çıkış, adımı stderr çıktısının sonuyla başarısız kılar.
 
 ### `conversation.promptAgent`
 

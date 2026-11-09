@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Připojte Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Server a nasazení",
   "docs.sidebar.guidesRunHeadlessServer": "Spusťte headless server",
+  "docs.sidebar.guidesRunConnect": "Spusťte server Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Připojte se ke vzdálenému serveru",
   "docs.sidebar.guidesRunFleetWorker": "Spusťte worker flotily",
   "docs.sidebar.guidesBackUpAndRestore": "Záloha a obnovení",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Klávesové zkratky",
   "docs.sidebar.referenceRouteMap": "Mapa tras",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Záloha, export a import",
   "docs.sidebar.referenceTelemetry": "Analytika používání",
   "docs.sidebar.referenceGlossary": "Slovník"

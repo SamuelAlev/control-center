@@ -2,7 +2,7 @@
 title: Create a pipeline template
 description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
 slug: en-GB/manual/guides/create-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipeline templates are authored in workspace settings. The **Pipelines** entry
@@ -122,10 +122,19 @@ Adds **Script**. There are no working-directory or environment fields, because
 neither is configurable:
 
 - Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
+- The script runs in the host's OS sandbox, like an agent's commands. A host
+  with no sandbox (Windows, or Linux without `bwrap`) fails the step rather
+  than running it unconfined. The server's data directory and `.env` file are
+  unreadable from inside.
+- Git and `gh` see no host configuration: no stored login, credential helper
+  or global hooks.
+- When the pipeline names a GitHub repo linked to the workspace
+  (`repo_full_name` in state or the trigger payload), `GH_TOKEN` and
+  `GITHUB_TOKEN` hold a token that can only read that one repo, so `gh` and
+  `git clone` against it work without setup. Otherwise there is no GitHub token.
+- Only a workspace admin can create or edit a pipeline with a bash step.
 - The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+  the server host's `PATH`.
 
 ### Router
 

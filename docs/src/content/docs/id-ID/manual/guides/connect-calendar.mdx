@@ -1,36 +1,56 @@
 ---
 title: Hubungkan Google Calendar
-description: Hubungkan Google Calendar ke ruang kerja, kelola beberapa akun, dan hubungkan ulang saat token kedaluwarsa.
+description: Hubungkan Google Calendar ke ruang kerja, kelola beberapa akun, dan hubungkan ulang saat proses masuk kedaluwarsa.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
-Panduan ini menunjukkan cara menghubungkan Google Calendar ke ruang kerja.
-Koneksinya bersifat per ruang kerja: koneksi ini menyinkronkan acara ruang kerja
-tersebut ke Control Center, hanya-baca. Lihat
-[Kalender dan penjadwalan](/id-ID/panduan-pengguna/konsep/kalender/) untuk
-gambaran lengkapnya.
+Panduan ini menunjukkan cara menghubungkan Google Calendar ke ruang kerja. Koneksinya
+bersifat per ruang kerja dan per anggota: koneksi ini menyinkronkan acara Anda untuk
+ruang kerja tersebut ke Control Center, tempat Anda juga bisa menanggapi undangan, memesan, memindahkan, dan menghapus acara. Lihat
+[Kalender dan penjadwalan](/id-ID/panduan-pengguna/konsep/kalender/) untuk gambaran lengkapnya.
+
+## Prasyarat
+
+- Server dapat memasukkan orang ke Google: melalui Control Center Connect, atau dengan klien
+  Google milik server itu sendiri ([Bawa klien Google Anda sendiri](#bawa-klien-google-anda-sendiri)).
+  Pemilik server memilih di **Pengaturan → Server → Single sign-on**
+- Sebuah ruang kerja terbuka: sebuah akun kalender selalu menjadi milik satu ruang kerja
 
 ## Hubungkan akun
 
 1. Buka **Kalender** di bilah sisi.
 2. Klik **Tambah akun kalender** di bilah sisi kalender. (Bagian yang sama juga ada di **Pengaturan → Ruang kerja → Profil & identitas**, di bawah **Google Calendar**.)
-3. Pilih cara mengotorisasi:
-   - **Gunakan aplikasi Google Control Center** — tidak ada yang perlu disiapkan. Ini default bila build Anda menyertakannya.
-   - **Gunakan klien Google Cloud saya sendiri** — tempelkan client id dan secret dari proyek Anda sendiri (lihat [Bawa klien Google Anda sendiri](#bawa-klien-google-anda-sendiri-fork-dan-self-hosting)).
-4. Klik **Hubungkan Google Calendar**. Dialog menampilkan kode pendek dan tautan ke halaman perangkat Google.
-5. Buka halaman itu di perangkat mana pun, masukkan kodenya, lalu setujui akses yang diminta. Dialog menutup sendiri dan acara Anda mulai tersinkronisasi.
+3. Klik **Hubungkan Google Calendar**. Peramban Anda membuka halaman persetujuan Google.
+4. Pilih akun dan setujui akses ke acara kalender dan daftar kalender Anda.
 
-Server, bukan perangkat Anda, yang menjalankan pertukaran ini dan menyimpan
-token penyegaran yang dihasilkan — itulah sebabnya kode disetujui di "perangkat
-mana pun", bukan khusus di aplikasi ini.
+Cara penyelesaiannya bergantung pada siapa yang menjalankan proses masuk:
 
-Akun terhubung **hanya ke ruang kerja yang aktif**. Berpindah ruang kerja, dan
-Anda akan melihat kalender ruang kerja itu sebagai gantinya.
+- **Klien Google milik server itu sendiri:** Google mengirim peramban Anda kembali ke
+  server dan dialog menutup sendiri
+- **Control Center Connect:** halaman peramban menampilkan kode 8 karakter. Ketik kode itu
+  ke dialog, atau biarkan peramban membuka Control Center melalui tautan `control-center://`
+  dan lewati pengetikan kode
 
-Alur koneksi meminta `calendar.readonly` plus email Anda — scope yang sama untuk
-aplikasi bawaan maupun untuk klien yang Anda tempelkan. Control Center membaca
-acara; ia tidak membuat, mengubah, menghapus, atau menanggapi undangan di Google.
+Sinkronisasi acara Anda langsung dimulai. Server, bukan perangkat Anda, yang menyelesaikan
+pertukaran ini dan menyimpan kredensialnya.
+
+Akun terhubung **hanya ke ruang kerja yang aktif**, dan akun itu milik Anda: dua anggota yang
+menghubungkan alamat Google yang sama akan mendapatkan akun yang terpisah. Berpindah ruang
+kerja, dan Anda akan melihat kalender ruang kerja itu sebagai gantinya.
+
+Alur koneksi meminta `calendar.events` dan `calendar.calendarlist.readonly` plus `openid email`, apa pun klien yang menjalankannya. Akun yang terhubung sebelum Control Center dapat menulis ke Google hanya memiliki scope hanya-baca; akun itu diminta untuk dihubungkan ulang, dan proses masuk baru memberikan sisanya.
+
+## Pesan, pindahkan, jawab, dan hapus acara
+
+- **Pesan acara:** di tampilan minggu atau hari, seret kisi waktu untuk menggambar rentangnya (di tampilan bulan, seret melintasi hari untuk acara sepanjang hari). Sebuah kartu terbuka di sampingnya dengan judul, waktu, tamu, tautan Google Meet, lokasi, deskripsi, dan kalender tempat pemesanan dibuat. **Simpan** memesannya di Google dan membuka acara itu. Tombol **+** di header kalender membuka kartu yang sama untuk seperempat jam kosong berikutnya. Tekan Escape untuk membatalkannya
+- **Pindahkan acara:** seret acara ke waktu atau hari lain, atau seret tepi bawahnya untuk mengubah waktu selesai. Acara muncul di waktu baru setelah Google menerimanya; jika Google menolak, acara kembali ke posisi semula. Hanya acara Anda sendiri dan acara yang Anda selenggarakan yang bisa dipindahkan; undangan tetap di tempat penyelenggaranya menempatkannya
+- **Jawab undangan:** buka acara dan pilih **Ya**, **Mungkin**, atau **Tidak**
+- **Hapus acara:** buka acara lalu klik ikon tempat sampah. Konfirmasi menunjukkan siapa yang terdampak: tamu diberi tahu bahwa acara yang Anda selenggarakan dibatalkan, sedangkan menghapus undangan hanya menghapusnya dari kalender Anda. Menghapus satu kejadian dari acara berulang tidak menghapus sisa serinya
+
+Tamu menerima email undangan, pembaruan, atau pembatalan dari Google sendiri. Memindahkan satu kejadian dari acara berulang tidak menghapus sisa serinya. Anda hanya dapat memesan di kalender yang boleh ditulis oleh akun Anda, dan hanya dengan akun Anda sendiri: kalender terhubung milik anggota lain tidak pernah ditawarkan.
+
+## Cara sinkronisasi bekerja
 
 ## Cara sinkronisasi bekerja
 
@@ -45,9 +65,10 @@ berubah, itulah yang membuat irama dua menit terjangkau. Jendela ditambatkan
 ulang dengan sinkronisasi penuh setiap 24 jam dan setiap kali Google membatalkan
 token tersebut.
 
-Token penyegaran disimpan di sisi server dalam `secrets.json` di bawah direktori
-data server, ditulis hanya untuk pemiliknya (`0600`) — bukan di keychain OS dan
-tidak pernah di perangkat klien.
+Kredensial disimpan di sisi server dalam `secrets.json` di bawah direktori data server,
+ditulis hanya untuk pemiliknya (`0600`) — bukan di keychain OS dan tidak pernah di perangkat
+klien. Proses masuk melalui Connect hanya menyimpan kredensial tersegel yang dapat dibuka
+Connect khusus untuk server ini; access token-nya hanya berada di memori server.
 
 ## Hubungkan beberapa akun
 
@@ -58,71 +79,78 @@ menyegarkan diri secara independen, dan masing-masing dapat diputuskan sendiri.
 
 ## Hubungkan ulang akun yang kedaluwarsa
 
-Jika Google membatalkan token sebuah akun secara permanen (sesi yang dicabut atau
+Jika Google membatalkan proses masuk sebuah akun secara permanen (sesi yang dicabut atau
 sudah lama kedaluwarsa), sinkronisasi berhenti dan Control Center menampilkan
 banner **Hubungkan ulang** pada kalender, plus notifikasi desktop. Klik
-**Hubungkan ulang** dan setujui kode baru; banner hilang pada sinkronisasi
-berikutnya yang berhasil.
+**Hubungkan ulang** dan masuk lagi; banner hilang pada sinkronisasi berikutnya yang berhasil.
+
+Banner yang sama juga muncul ketika proses masuk tidak lagi dapat digunakan server ini: pemilik
+server beralih ke server Connect lain atau memutar kunci Connect, klien Google milik server
+berubah, atau direktori data dipulihkan ke mesin lain.
 
 ## Putuskan akun
 
 Dari bilah sisi kalender (atau **Pengaturan → Ruang kerja → Profil & identitas**),
 klik **Putuskan** pada akun tersebut. Tindakan ini menghapus acara
-tersinkronisasinya dan membersihkan token tersimpannya di server.
+tersinkronisasinya dan membersihkan kredensial tersimpannya di server.
 
-## Hubungkan dari server headless
+## Bawa klien Google Anda sendiri
 
-Server tanpa GUI terpasang menghubungkan akun yang sama dari terminalnya sendiri:
+Jalankan klien Google sendiri hanya ketika Anda memilih **Gunakan aplikasi saya sendiri**. Klien server
+hanya berlaku dalam kasus itu: dengan Connect milik Control Center atau Connect kustom, Connect menjalankan
+setiap jalur, termasuk Google, dan klien server tetap tersimpan tetapi tidak digunakan. Untuk membuat layar
+izin menyebut proyek Anda sendiri sementara server menggunakan Connect, berikan ruang kerja klien miliknya
+([di bawah](#berikan-satu-ruang-kerja-klien-google-miliknya)); ini berlaku di semua mode.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. Di [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktifkan **Google Calendar API** dan konfigurasikan **OAuth consent screen**, dengan menambahkan scope `calendar.events`, `calendar.calendarlist.readonly`, `openid`, dan `email`. Selagi aplikasi belum diverifikasi, tambahkan diri Anda sebagai **test user**.2. Buat **OAuth client ID** dengan jenis aplikasi **Web application**.
+3. Tambahkan URI pengalihan yang diizinkan `<server origin>/oauth/google/callback`. **Pengaturan → Server → Single sign-on → Aplikasi penyedia → Google** menampilkan URL persisnya di bawah **Callback URLs**; salin persis apa adanya.
+4. Tempelkan **Client id** dan **Client secret** ke blok Google yang sama, atau letakkan di berkas `.env` server sebagai `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Perintah ini mencetak kode dan URL, menunggu persetujuan, lalu menyimpan token
-dan menyinkronkan pada penyapuan berikutnya.
+Server menolak mulai ketika `GOOGLE_OAUTH_CLIENT_SECRET` diekspor di lingkungan prosesnya; simpan
+di berkas `.env` (di Docker, pasang di `/app/bin/.env`). Secret tidak pernah meninggalkan server:
+tidak ada respons RPC yang membawanya. Client id tanpa secret adalah pengaturan yang belum selesai,
+dan proses masuk Google ditolak sampai keduanya diisi.
 
-Build dari sumber **tidak** menyertakan klien Google, jadi id dan secret wajib
-diisi — setel `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`. Tidak
-ada flag `--google-client-id` (flag yang tidak dikenal akan diabaikan). Tanpa
-pasangan lingkungan tersebut, perintah keluar dengan galat klien tidak ditemukan.
+Mengganti ke klien yang berbeda akan mengeluarkan semua orang dari Google Calendar: sebuah proses
+masuk menjadi milik klien yang menerbitkannya.
 
-## Bawa klien Google Anda sendiri (fork dan self-hosting)
+## Berikan satu ruang kerja klien Google miliknya
 
-Build rilis disertai klien Google, jadi sebagian besar orang tidak perlu
-menyentuh ini. Bawa milik Anda sendiri jika Anda mem-build dari sumber,
-menjalankan server sendiri, atau ingin layar izin menyebut proyek Anda sendiri.
+Ruang kerja dapat terhubung ke Google Calendar lewat klien miliknya sendiri, bukan klien server. Hanya admin
+atau pemilik ruang kerja yang dapat mengaturnya.
 
-1. Di [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktifkan **Google Calendar API** dan konfigurasikan **OAuth consent screen**, dengan menambahkan scope `calendar.readonly`, `openid`, dan `email`. Selagi aplikasi belum diverifikasi, tambahkan diri Anda sebagai **test user**. Menambahkan `calendar.events` di layar izin tidak mengaktifkan RSVP — Control Center tidak pernah meminta scope itu.
-2. Buat **OAuth client ID** dengan jenis aplikasi **TVs and limited input devices** dan salin client id serta client secret-nya.
-3. Pasok keduanya baik per koneksi (pilih **Gunakan klien Google Cloud saya sendiri** di dialog) maupun di seluruh server dengan `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Buat klien Google **Web application** seperti pada langkah 1 dan 2 di atas
+2. Buka **Pengaturan → Ruang kerja → Umum → Aplikasi penyedia** dan buka **Google Calendar**
+3. Pilih **Gunakan aplikasi ruang kerja ini**
+4. Tambahkan URI pengalihan yang ditampilkan baris itu di bawah **URL callback** ke klien, persis apa adanya
+5. Tempelkan **Id klien** dan **Rahasia klien**
 
-Pasangan di seluruh server menggantikan pasangan bawaan di mana-mana, termasuk di
-balik opsi "gunakan aplikasi Google Control Center" — jadi di server Anda sendiri,
-opsi itu adalah aplikasi Anda.
+Akun kalender yang terhubung di ruang kerja ini melewati klien tersebut, apa pun cara server
+menjalankan proses masuk. Tidak pernah kembali ke klien server atau Connect: sampai kedua kolom
+terisi, Google Calendar nonaktif di ruang kerja ini dan baris itu menyebutkan apa yang kurang.
+Secret tidak pernah meninggalkan server.
 
-Client secret tidak pernah meninggalkan server: tidak ada respons RPC yang
-membawanya dan akun yang terhubung melalui klien milik server menyimpan penanda
-alih-alih salinan pasangan itu, jadi merotasinya cukup dengan memulai ulang dengan
-nilai baru.
+Berpindah antara klien server dan klien ruang kerja, atau mengubah client id ruang kerja, menandai
+setiap akun Google di ruang kerja ini untuk dihubungkan ulang. **Gunakan aplikasi server ini**
+menghapus kolom ruang kerja yang tersimpan. Ruang kerja lain di server tidak terpengaruh.
 
-### Pemecahan masalah
+## Pemecahan masalah
 
-| Gejala                                                   | Kemungkinan penyebab                                                                                                                                                                      |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialog tidak menawarkan opsi bawaan                      | Build ini tidak menyertakan klien Google (build dari sumber), atau server dijalankan dengan hanya separuh dari pasangan itu. Baik id maupun secret wajib diisi                          |
-| `invalid_scope` saat memulai alur                        | Calendar tidak diizinkan untuk klien kode perangkat di proyek Cloud itu. Gunakan proyek klien loopback atau web sebagai gantinya                                                          |
-| `invalid_client` dari Google                             | Klien bukan klien **TVs and limited input devices**, atau id dan secret-nya berasal dari klien yang berbeda                                                                               |
-| Persetujuan berhasil tetapi sinkronisasi kosong          | Akun Anda bukan **test user** di layar izin, atau `calendar.readonly` tidak diberikan                                                                                                     |
-| Kode kedaluwarsa sebelum Anda menyetujuinya              | Kode perangkat berumur pendek. Mulai koneksi lagi untuk mendapatkan kode baru                                                                                                             |
-| "Tidak dapat memperbarui respons Anda" pada RSVP         | Diharapkan: alur koneksi tidak pernah meminta `calendar.events`                                                                                                                           |
-| Sinkronisasi berhenti dengan peringatan penyegaran di log server | Akun dihubungkan dengan klien yang tidak lagi dikonfigurasi. Hubungkan ulang akun, atau pulihkan client id dan secret klien tersebut                                                  |
+| Gejala | Kemungkinan penyebab |
+| --- | --- |
+| **Hubungkan Google Calendar** menyatakan proses masuk belum disiapkan | Server tidak memiliki klien Google sendiri maupun Connect. Pemilik server memilih salah satunya di **Pengaturan → Server → Single sign-on** |
+| Google menampilkan `redirect_uri_mismatch` | Pengalihan yang didaftarkan pada klien tidak cocok persis dengan nilai **Callback URLs**, atau URL publik server telah berubah |
+| `invalid_client` dari Google | Id dan secret berasal dari dua klien berbeda, atau klien telah dihapus |
+| Persetujuan berhasil tetapi sinkronisasi kosong | Akun Anda bukan **test user** di layar izin, atau salah satu scope yang diminta tidak diberikan |
+| Dialog menyatakan kode tidak cocok | Ketik 8 karakter persis seperti yang ditampilkan peramban. Lima kali salah memasukkan kode akan mengakhiri proses masuk; mulai lagi |
+| "Tidak dapat memperbarui respons Anda", atau pemesanan, pemindahan, dan penghapusan gagal | Akun dihubungkan dengan scope hanya-baca lama. Hubungkan ulang; kalender yang dibagikan hanya-baca juga menolak penulisan |
+| Semua orang harus menghubungkan ulang | Klien Google server atau ruang kerja berubah, atau pilihan Connect atau kunci server berubah. Lihat [Hubungkan ulang akun yang kedaluwarsa](#hubungkan-ulang-akun-yang-kedaluwarsa) |
 
 ## Panduan terkait
 
 - [Rekam dan ringkas rapat](/id-ID/panduan-pengguna/panduan-praktis/rekam-rapat/): ubah acara menjadi rekaman
-- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): tempat token dan jadwal sinkronisasi berada
-- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): tempat kredensial dan jadwal sinkronisasi berada
+- [Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/)
 
 ## Konsep terkait
 

@@ -2,7 +2,7 @@
 title: Slack-fiók összekapcsolása
 description: Igazolja, hogy egy Slack-identitás az Öné, hogy az ügynökök az Ön üzeneteire cselekedjenek, és a munkája Önhöz legyen rendelve.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Ez az útmutató bemutatja, hogyan kapcsolhatja össze a csevegőidentitását a Control Center-felhasználójával, és hogyan választhatja le.
@@ -17,29 +17,38 @@ Egy össze nem kapcsolt tag, aki megemlíti a botot, abban a Slack szálban kap 
 
 ## Összekapcsolás kóddal
 
+Az összekapcsoláshoz mindkét oldal kell: a kód Slackből való elküldése a Slack-fiókot igazolja, a Control Centerben való megerősítése pedig azt, hogy az a fiók az Öné.
+
 1. Lépjen a **Beállítások → Munkaterület → Profil és identitás** helyre, és görgessen az **Összekapcsolt csevegőfiókok** kártyához
-2. A Slack blokkon kattintson **A Slack fiókom összekapcsolása** elemre
-3. Másolja ki a megjelenített parancsot, például:
+2. A Slack blokkon kattintson **A Slack fiókom összekapcsolása** elemre. A párbeszédablak egy egyszer használatos kódot mutat, például:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. A Slackben küldje el ezt a parancsot a botnak — a közvetlen üzenet (DM) a legegyszerűbb hely
-5. A bot megerősíti, melyik Control Center-felhasználóhoz kapcsolódott most, és a nyitva hagyott párbeszédablak ugyanabban a pillanatban frissül, hogy ezt jelezze — nem kell bezárnia és utána néznie
+3. A Slackben küldje el ezt a kódot a botnak **közvetlen üzenetben**: csak a kódot, semmi mást
+4. A bot ezt válaszolja: „Megvan. Az összekapcsolás befejezéséhez erősítse meg ezt a Slack-fiókot a Control Centerben.”, a nyitva hagyott párbeszédablak pedig megmutatja a kódot küldő Slack-profilt: a nevét és a Slack-tagazonosítóját
+5. Ha ez az Ön fiókja, kattintson a **Megerősítés** gombra. Az összekapcsolás létrejön, a párbeszédablak ezt jelzi, és a bot ugyanabban a közvetlen üzenetben megerősíti
+6. Ha nem az Öné, kattintson az **Elutasítás** gombra. Semmi nem kapcsolódik össze, és a kód érvényét veszti; az újrapróbálkozáshoz kattintson az **Új kód kérése** gombra
+
+A párbeszédablak bezárása nem veszít el egy igénylést. A később érkező kód a profiloldala **A Slack fiókom összekapcsolása** sorában várakozik, ugyanazzal a **Megerősítés** és **Elutasítás** lehetőséggel.
+
+Miért van megerősítési lépés: egy a válla fölött leolvasott és valaki más Slack-fiókjából elküldött kód különben azt a fiókot az Ön nevében cselekvővé tenné. Csak Ön erősítheti meg, és csak pontosan azt a profilt, amely a kódot elküldte.
 
 A kód:
 
 - Egyszer használatos, és a kiállításától számított **15 perc** után lejár
 - Mindig _Önnek_ állítják ki, soha nem egy csapattársnak
+- Csak a botnak küldött közvetlen üzenetben működik. Egy csatornában csak egy üzenet
+- Csak annak a Slack-munkaterületnek a teljes jogú tagja igényelheti, amelybe a bot telepítve van, vendég vagy más szervezetből érkező személy nem
 - Lép a már birtokolt kód helyébe, így a gomb ismételt megnyomása érvényteleníti az előzőt
 - Kizárólag a memóriában él, így a szerver újraindítása érvényteleníti a függőben lévő kódokat — nyomja meg ismét a gombot
 
-Egy ismeretlen, lejárt vagy másik munkaterülethez kiállított kód ugyanúgy, megkülönböztethetetlenül hibázik: „ez a kód nem érvényes (vagy lejárt)”.
+Egy ismeretlen, lejárt, elutasított vagy másik munkaterülethez kiállított kód ugyanúgy, megkülönböztethetetlenül hibázik: „Ez a kód nem érvényes (vagy lejárt).”
 
 ## Automatikus összekapcsolás e-mail alapján
 
-Ha a Slack-profiljában van egy ellenőrzött e-mail-cím, amely egy olyan Control Center-felhasználóhoz tartozik, aki **már tagja ennek a munkaterületnek**, a híd az első beszélgetés alkalmával összekapcsolja Önt. Kódra nincs szükség.
+Ha a Slack-profiljában van egy megerősített e-mail-cím, amely egyezik egy olyan Control Center-felhasználó ellenőrzött e-mail-címével, aki **már tagja ennek a munkaterületnek**, a híd az első beszélgetés alkalmával összekapcsolja Önt. Kódra nincs szükség.
 
 Mindkét feltétel számít: az e-mail-egyezés igazolja az identitást, de hozzáférést csak a tagság ad, így egy idegen, akinek a címe véletlenül létezik a szerveren, semmihez sem kapcsolódik. A névsor mutatja, hogyan jött létre az egyes kapcsolatok („e-mail alapján párosítva” vagy „kóddal összekapcsolva”).
 
@@ -51,7 +60,7 @@ A névsor a munkaterület adminisztrációjához tartozik, ezért a felület má
 
 A saját állapota a profiloldalán látható: az **A Slack fiókom összekapcsolása** sor az összekapcsolás után ezt írja: „Összekapcsolva: _your-slack-id_”, összekapcsolás hiányában pedig arra kéri, hogy kapcsolja össze.
 
-A névsor élő előfizetés, mert a változás a másik oldalon történik — Ön írja be a kódot a Slackbe, így egyetlen alkalmazásból érkező kérés sem hozhatja vissza a választ.
+A névsor és az igénylés élő előfizetés, mert a változás a másik oldalon történik: Ön küldi el a kódot a Slackben, így egyetlen alkalmazásból érkező kérés sem hozhatja vissza a választ.
 
 ## Leválasztás
 
@@ -73,9 +82,13 @@ A Slack-fiókja egy Control Center-felhasználóhoz van kapcsolva, de annak a fe
 
 A `viewer` és `guest` szerepkör nem indíthat munkát. Egy adminnak legalább `member` szintre kell emelnie a szerepkörét.
 
-### A slash-parancs nem ismerhető fel
+### A bot azt mondja, hogy a kód nem érvényes
 
-Ellenőrizze, hogy létezik-e a slash-parancs a Slackben, és hogy azt a parancsot küldi-e el, amelyet a beállítások párbeszédablak mutatott — lehetséges, hogy egy admin átnevezte, ilyenkor a párbeszédablak az aktuális nevet mutatja.
+A kód lejárt, már felhasználták, elutasították, vagy egy újabb lépett a helyébe. Kattintson ismét **A Slack fiókom összekapcsolása** elemre, és küldje el az új kódot.
+
+### A bot kérésként kezeli a kódomat
+
+Csatornában küldte el, vagy a Slack-fiókja már össze van kapcsolva. A kódokat csak közvetlen üzenetben fogadja, és egy összekapcsolt fiókból érkező, kódnak tűnő üzenet közönséges kérés.
 
 ## Kapcsolódó útmutatók
 

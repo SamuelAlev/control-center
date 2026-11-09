@@ -2,7 +2,7 @@
 title: Administrer API-nøkler
 description: Hvor hver påloggingsinformasjon ligger — brukerkontoen din på serveren, serveren selv eller en ekstern CLI — og hvordan du setter, roterer og fjerner den.
 slug: nb-NO/handbok/slik-gjor-du/api-nokler
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Denne veiledningen viser hvor hver påloggingsinformasjon Control Center bruker,
@@ -14,27 +14,32 @@ står et menneske bak den.
 
 | Påloggingsinformasjon                  | Lagret på                                                   | Hvem bruker den                                                    |
 | -------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------ |
-| Påloggingsinformasjonen din for kodevert/saker | Serverens hemmelighetsfil med modus 0600, knyttet til bruker-id-en din | Alt du ber om: PR-flaten, agentkjøringene dine, bildene dine |
-| Serverens app-identitet                | Samme fil, pluss `server_settings` for det som ikke er hemmeligheter | Arbeid ingen har bedt om: webhooker, PR-polling, sakssynkronisering |
+| Påloggingen din hos kodevert/saker     | Serverens hemmelighetsfil med modus 0600, knyttet til bruker-id-en din | Alt du gjør: PR-flaten, gjennomganger, sammenslåinger, Linear-handlingene dine |
+| Serverens leverandørapper              | Samme fil, pluss `server_settings` for det som ikke er hemmeligheter | Innlogging av personer, og tokener for ett repo til agenter, pipelines og polling |
+| Installasjonsnøkkelen til Connect      | Samme fil (`connect_install_key`)                           | Identifiserer denne serveren overfor Control Center Connect        |
 | Nøkler til modellleverandører og OAuth-tokens | Serverens eget lager for påloggingsinformasjon       | Den innebygde adapteren, for alle arbeidsområder i installasjonen  |
-| Slack-bot-tokens                       | `<dataDir>/<workspaceId>/chat_credentials/` på serveren    | Chatbroen for det arbeidsområdet                                   |
+| Påloggingsinformasjon for Slack-boten  | `<dataDir>/<workspaceId>/chat_credentials/` på serveren    | Chatbroen for det arbeidsområdet: tokenene til din egen app, eller den forseglede tillatelsen til den delte appen |
 | Påloggingsinformasjon for eksterne CLI-er | Det den CLI-en selv bruker                              | Claude Code, på serververten                                       |
 
-## To sett med GitHub-påloggingsinformasjon, og de svarer på forskjellige spørsmål
+## GitHub: påloggingen din, og tokener for ett repo
 
-- **Din**, fra innlogging (enhetsflyt) eller ved å lime inn et token. Den brukes
-  av enhver forespørsel som gjøres *på dine vegne*, så en kommentar som postes
-  for deg, bærer navnet ditt. Andre medlemmer kan ikke lese den, og kobler til
-  sin egen
-- **Serverens**, fra GitHub App-en operatøren registrerte. Den svarer på alt
-  uten noen oppringer — så tilgangen til kodeverten forsvinner ikke når én
-  person slutter eller roterer et token
+- **Din**, fra **Logg inn på GitHub**. Den brukes av enhver forespørsel som
+  gjøres *på dine vegne*, så en gjennomgang som legges ut for deg, bærer navnet
+  ditt. Andre medlemmer kan ikke bruke den, og logger inn selv. Det finnes ikke
+  noe GitHub-token å lime inn
+- **Arbeid der ingen skriver** (agenter, pipelines, polling, botsvar) får et
+  token for ett repo om gangen, utstedt fra serverens GitHub App eller via
+  Control Center Connect, og begrenset til det et ansvarlig medlem kan gjøre
+  der. Det er aldri påloggingen din overlevert i sin helhet
 
 Din settes i kortet **Kodehosting** under **Innstillinger → Arbeidsområde →
-Profil og identitet**; serverens i **Leverandørapper** under **Innstillinger →
+Profil og identitet**; serverens app i **Leverandørapper** under **Innstillinger →
 Server → Enkel pålogging**. Se
 [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
 og [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/).
+
+GitLab og Bitbucket tar fortsatt imot et innlimt personlig token, lagret på samme
+måte. Se [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/).
 
 :::note[Det finnes også en skjerm som bare nås via URL-en]
 `/workspaces/<workspaceId>/api-keys` viser de samme to kortene som første steg i
@@ -72,47 +77,60 @@ leser sin egen kopi, og ingenting bygger bro mellom de to. Se
 ## Koble til en saksleverandør
 
 Kortet **Saker** under **Innstillinger → Arbeidsområde → Generelt** rommer begge
-halvdelene av én beslutning: hvilken leverandør sakene dine ligger hos, og
-påloggingsinformasjonen for den. Velger du **Lokal**, skjules raden med
-påloggingsinformasjon — lokale saker ligger i serverens egen database og har
-ingenting å autentisere seg mot.
+halvdelene av én beslutning: hvilken leverandør sakene dine ligger hos, og hvem
+Control Center er når det snakker med den. Velger du **Lokal**, skjules
+Linear-radene — lokale saker ligger i serverens egen database og har ingenting å
+autentisere seg mot.
 
-Nøkkelen din lagres på serveren knyttet til bruker-id-en din, som
-kodevertnøkkelen. Serveren holder sin egen Linear-nøkkel separat
-(**Leverandørapper**), og det er den sakssynkroniseringen kjører på når ingen
-har bedt om det. Ingen saksnøkkel injiseres i en agents sandkasse; agenter
-skriver saker gjennom Control Centers verktøy, som spør regelen **Skriv til et
-eksternt oppfølgingssystem**. Se
+Linear har to pålogginger og ingen innlimt nøkkel: **Linear** er din, for det du
+gjør, og **Linear-automatisering** er arbeidsområdets Control Center-app, koblet
+til av en administrator, for sakssynkronisering, pipelines og agenter. Serveren
+kan også ha en **Tjeneste-API-nøkkel** (**Leverandørapper**) for arbeidsområder
+uten tilkoblet automatisering. Ingen påloggingsinformasjon for saker injiseres i
+en agents sandkasse; agenter skriver saker gjennom Control Centers verktøy, som
+spør regelen **Skriv til et eksternt oppfølgingssystem**. Se
 [Sett opp Linear-integrasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/).
 
 ## Roter eller tilbakekall
 
-- **Din GitHub-påloggingsinformasjon**: trykk **Koble fra**, og logg deretter inn
-  på nytt eller lim inn det nye tokenet. Tilbakekall det gamle på GitHub
+- **Din GitHub-pålogging**: trykk **Koble fra**, og deretter **Logg inn på
+  GitHub** igjen. Å koble fra fjerner også alle tokener serveren har utstedt på
+  dine vegne
+- **Et GitLab- eller Bitbucket-token**: trykk **Oppdater token** og lim inn det
+  nye, og tilbakekall deretter det gamle hos kodeverten
 - **Serverens app**: generer en ny privat nøkkel eller klienthemmelighet på
-  appens GitHub-side, lim den inn under **Leverandørapper** og trykk **Test**
+  appens side hos leverandøren, lim den inn under **Leverandørapper** og trykk
+  **Test**
+- **Installasjonsnøkkelen til Connect**: **Bytt nøkkel** på kortet **Control
+  Center Connect**, eller `cc_server connect rotate-key --yes`. Alle som logget
+  inn via Connect, logger inn på nytt. Se
+  [Control Center Connect](/nb-NO/handbok/referanse/connect/)
 - **En modellleverandør**: i raden dens, logg ut (OAuth) eller fjern nøkkelen, og
   koble til på nytt
-- **Slack**: lim inn tokenene på nytt i tilkoblingsdialogen. Se
+- **Slack**: for din egen app limer du inn tokenene på nytt i
+  tilkoblingsdialogen. Den delte appen til Control Center har ikke noe token å
+  rotere: bot-tokenet fornyes via Connect, og **Koble fra** tilbakekaller det og
+  avinstallerer boten fra Slack. Se
   [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
 
 ## Feilsøking
 
-### PR-listen er tom, men tokenet mitt virker i `curl`
+### Et GitLab- eller Bitbucket-token virker i `curl`, men ikke her
 
-Sjekk undertittelen til raden **Kodehosting**. Hvis den navngir en annen kilde
-(«via denne serverens app», «fra miljøet»), er det ikke
-påloggingsinformasjonen du tester som svarer — din ble ikke lagret.
+Sjekk undertittelen til raden **Kodehosting**. Hvis det står «fra miljøet», er
+det serverens påloggingsinformasjon som svarer, ikke din — din ble ikke lagret.
 
-### Tokenet godtas, men senere forespørsler mislykkes
+### Et GitLab- eller Bitbucket-token godtas, men senere forespørsler mislykkes
 
 Tokenet sondères slik det er lagret, så raden navngir kontoen bak det — men bare
 kontoen, ikke skopene. Et token med for få skop kobler til og mislykkes
-deretter på enkelte forespørsler. Sjekk skopene og utløpsdatoen:
+deretter på enkelte forespørsler. Sjekk skopene og utløpsdatoen hos kodeverten.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### En leverandør sier at påloggingen ikke er satt opp på denne serveren
+
+Serveren har verken en egen app for den leverandøren eller Control Center
+Connect. Servereieren velger en av dem under **Innstillinger → Server → Enkel
+pålogging**.
 
 ## Relaterte veiledninger
 

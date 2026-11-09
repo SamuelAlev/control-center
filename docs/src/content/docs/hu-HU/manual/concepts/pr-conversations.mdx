@@ -2,18 +2,18 @@
 title: PR-beszélgetések
 description: Hogyan lesz egy GitHub PR-hozzászólásból ügynökkör webhook nélkül, mi jogosítja fel a szerzőt, és kihez van rendelve a beszélgetés mindkét oldala.
 slug: hu-HU/kezikonyv/fogalmak/pr-beszelgetesek
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Egy pull request már önmagában is az a hely, ahol a kód körüli beszélgetés
 zajlik. A PR-beszélgetések egy Control Center-munkaterület felületévé teszik,
 ugyanúgy, ahogy egy [csevegőhíd](/hu-HU/kezikonyv/fogalmak/csevegohidak/) a
-Slackből az: említse meg @-tel a szerver GitHub App botját egy PR-en, válaszoljon
-az átnézési szálain belül, vagy adja hozzá az `ai-review` címkét, és a munka a PR
-átnézési terében történik — ugyanolyan attribúció és korlátok mellett, mint bármi,
-amit az alkalmazásban gépelnek be. A hozzászólás emellett tagsághoz kötött; a
-címke nem, mert nincs szerzője. A bot válaszai a GitHubon jönnek vissza, abban a
-szálban, ahol a kérdést feltették.
+Slackből az: említse meg @-tel a `@usectrl` fiókot (vagy a munkaterület GitHub App
+botját) egy PR-en, válaszoljon az átnézési szálain belül, vagy adja hozzá az
+`ai-review` címkét, és a munka a PR átnézési terében történik — ugyanolyan
+attribúció és korlátok mellett, mint bármi, amit az alkalmazásban gépelnek be. A
+hozzászólás és a címke ugyanúgy kapuzott: azon a tagon, aki írta vagy hozzáadta.
+A válaszok a GitHubon jönnek vissza, abban a szálban, ahol a kérdést feltették.
 
 Három döntés alakítja a funkciót, és mindegyik ugyanaz a döntés, amelyet a
 csevegőhíd a csevegéshez hozott, kódhosztra átfogalmazva: **melyik irányban fut a
@@ -24,17 +24,21 @@ rendelve a beszélgetés mindkét oldala**.
 
 A GitHub egyetlen push-csatornája egy alkalmazás számára a webhook, a webhookhoz
 pedig bejövő URL kell — pont az, amit ez a felület szándékosan soha nem igényel.
-A felderítés ezért pásztázás: nagyjából percenként, alkalmazástelepítésenként egy
+A felderítés ezért pásztázás: alkalmazástelepítésenként egy
 aliasolt keresés megkérdezi a GitHubot a botot (vagy annak rövid slugját) említő
 PR-ekről és az átnézési címkét viselő nyitott PR-ekről, azoknak a PR-eknek,
 amelyeknek már van átnézési terük, beolvassuk a hozzászólásszálait, és mindent a
 hozzászólás azonosítója alapján vetünk össze azzal, amit az előző pásztázás
-látott.
+látott. Saját alkalmazás percenként pásztáz, legfeljebb 25 PR-t. A Connecten
+keresztül a hívások a tagok saját GitHub-kvótáját használják, ezért a pásztázás
+kétpercenként fut, legfeljebb 10 PR-rel, és az a munkaterület, amely a kvótája
+15%-a alá esik, kimarad, amíg helyre nem áll. Maga a Connect soha nem látja a PR
+tartalmát.
 
 A tervezési következményeket érdemes megnevezni:
 
 - **A késleltetés egy pásztázási intervallum, nem egy esemény.** A 👀
-  visszaigazolás körülbelül egy percen belül megérkezik. Semmi sürgős nem múlik
+  visszaigazolás egy pásztázáson belül megérkezik. Semmi sürgős nem múlik
   rajta.
 - **Pontosan egyszer, hozzászólásonként.** A hozzászólás-azonosítók a GitHubon
   egyediek; mindegyiket abban a pillanatban rögzítjük, amikor jogosultként
@@ -52,54 +56,64 @@ A tervezési következményeket érdemes megnevezni:
   újrafuttatás útja az említés.
 
 A keresés telepítési fiókonként egyszer fut, az adott tulajdonos saját kliensén,
-mert egy telepítési token csak a saját telepítése repóit látja — egyetlen, a
+mert egy token csak a saját telepítése repóit látja — egyetlen, a
 teljes szerverre érvényes hitelesítő adat csendben elszalasztaná az alkalmazás
 összes többi telepítése alá tartozó PR-t.
 
 ## A tagság jogosít fel, nem a hozzászólás
 
-Egy PR-hozzászólás alig többet hoz magával, mint a szerző bejelentkezési nevét —
-egy hitelesítetlen külső identitást, amíg be nem bizonyosodik. A bot ezt a
-munkaterület tagjainak és a hozzájuk kapcsolt GitHub-fiókoknak a fordított indexe
-alapján oldja fel, amelyet TTL szerint építünk újra, mert az emberek
-bejelentkeznek és meghívót kapnak, miközben a szerver fut.
+Egy PR-hozzászólás egy szerzőt hoz magával — egy hitelesítetlen külső
+identitást, amíg be nem bizonyosodik. A szerver a szerző megváltoztathatatlan,
+numerikus GitHub-fiókazonosítóját (soha nem a bejelentkezési nevét, amely
+átnevezhető és újrahasznosítható) veti össze a munkaterület tagjainak
+GitHub-bejelentkezéseivel, amelyeket TTL szerint építünk újra, mert az emberek
+bejelentkeznek és meghívót kapnak, miközben a szerver fut. Az `ai-review`
+címkénél az a személy kerül feloldásra, aki legutóbb hozzáadta.
 
-A zártra váltó viselkedés egy létrához hasonlít, és minden fokozat abban a
-szálban válaszol, amelyben elutasított:
+Három ellenőrzés, sorrendben, és bármelyik bukása csendes — semmi nem kerül
+közzétételre:
 
-- **Egy ismeretlen bejelentkezési név** — nincs összekapcsolva, vagy
-  olyasvalaki kapcsolta össze, aki nem tagja ennek a munkaterületnek — azt a
-  választ kapja, hogy jelentkezzen be, és győződjön meg róla, hogy ide tartozik
-- **Egy csak olvasásra jogosult tag** (`viewer` vagy `guest`) azt a választ
-  kapja, hogy a szerepköre nem indíthat munkát
+- **Bejelentkezett tag.** A fióknak _ennek_ a munkaterületnek egy olyan
+  tagjához kell tartoznia, aki ezen a szerveren bejelentkezett a GitHubra
+- **Írási szerepkör.** A `viewer` és a `guest` nem indíthat munkát
+- **Push-hozzáférés.** A válaszok egy `bot` tokent használnak, amely az adott
+  tag repóhozzáférésére korlátozódik. Ha a szerver nem tud ilyet kiállítani, nem
+  folytatja
 
-A két ismeretlen bejelentkezési eset egyetlen választ oszt meg: a fordított index
-csak _ennek_ a munkaterületnek a tagját adja vissza, így egy nem összekapcsolt
-fiók és egy összekapcsolt, de nem tag felhasználó ugyanaz a kihagyás. Egyikük sem
-folytatja. Egy hozzászólást soha nem tulajdonítunk olyasvalakinek, aki nem ő
-küldte, és egy idegen szavai soha nem lépnek be olyan munkaterületre, amelyet nem
-láthat.
+Minden ellenőrzés bármilyen visszaigazolás előtt lefut, így egy idegen sem
+reakciót, sem választ nem kap. Egy hozzászólást soha nem tulajdonítunk
+olyasvalakinek, aki nem ő küldte, és egy idegen szavai soha nem lépnek be olyan
+munkaterületre, amelyet nem láthat.
 
-Az `ai-review` címkének nincs szerzője, akit fel lehetne oldani, ezért nem mászik
-fel ezen a létrán. A hozzáadása abban a munkaterületben indítja el az átnézést,
-amely már kapcsolódik a repóhoz.
+### A lefoglalás
+
+Minden munka előtti utolsó lépés egy 👀 reakció, amelyet a szerző saját
+GitHub-bejelentkezésével adunk hozzá. A GitHub új reakcióra `201`, már létezőre
+`200` választ ad, így a reakció zárként is szolgál: ha ugyanaz a személy két
+olyan szerveren is be van jelentkezve, amely egyaránt kapcsolja a repót, csak az
+elsőként reagáló végzi el a munkát. Egy olyan hozzászólást, amelyet egy szerver
+több munkaterülete is lát, mindegyiknek felkínálunk, és ugyanez a lefoglalás
+dönt.
 
 ## Két identitás, szándékosan
 
 A beszélgetés mindkét oldala más identitást visel, és épp a különbség maga a
 funkció:
 
-- **A GitHubon a bot maga a szerver.** Minden hozzászólás, reakció és válasz,
-  amelyet a híd közzétesz, az alkalmazás telepítési tokenjével megy ki. Senki nem
-  kattintott semmire egy kliensben, így semmi nem kölcsönöz egy személy fiókját —
-  ugyanaz a szabály, amely a webhookokat és a lekérdezést távol tartja az emberi
-  hitelesítő adatoktól.
+- **A GitHubon a válasz az Ön nevében végzett automatizálás.** Minden válasz egy
+  erre az egy repóra szóló `bot` tokennel megy ki, amely a kérdező tag
+  hozzáférésére korlátozódik. Saját alkalmazásnál a szerző az alkalmazás `[bot]`
+  fiókja. A Connecten keresztül a megosztott App tokenje felhasználói token, így
+  a válasz szerzője a kérdező tag fiókja, amely az Appon keresztül jár el. Így
+  vagy úgy, minden válasz `**Control Center** (for @login):` kezdettel indul,
+  ami megmondja, ki kérdezett, és egyben hurokvédelemként is szolgál.
 - **A térben a kérdés az Öné.** Az üzenet ahhoz a taghoz van rendelve, akivé a
   szerző feloldódott, és az ügynökfuttatás az ő nevében történik: a commitok
   társszerzőjeként tüntetik fel, a tér autonómiatárcsája és műveletkorlátai pedig
   pontosan úgy érvényesek, mint egy az alkalmazásban beírt üzenetre. A
-  futtatásból származó kódhoszt-írások továbbra is az alkalmazás nevében mennek
-  ki — ugyanaz a szabály, mint a fenti pontban —, nem a tag személyes tokenjével.
+  futtatásból származó kódhoszt-írások az adott tag által korlátozott, egyetlen
+  repóra szóló tokeneket használnak, soha nem a tag egészben átadott
+  bejelentkezését.
 
 Az átnézési megállapítások visszaközzététele a GitHubra továbbra is egy személy
 döntése marad, amelyet a Control Centerben hoz meg. Egy említés _elindíthat_ egy
@@ -109,8 +123,10 @@ döntése marad, amelyet a Control Centerben hoz meg. Egy említés _elindíthat
 
 Minden, amit botfiók írt, még azelőtt kiesik, hogy bármelyik kapu lefutna —
 konkrétan a miénk, és minden `[bot]` utótag, így egy másik alkalmazás átnéző
-botja sem ébresztheti fel a miénket. E nélkül a bot saját válaszai új
-hozzászólásként érkeznének meg, és a végtelenségig újraaktiválnák.
+botja sem ébresztheti fel a miénket —, és ugyanígy minden olyan hozzászólás,
+amely a `**Control Center** (for @` előtaggal kezdődik, mivel a Connecten
+keresztüli válasz szerzője egy személy fiókja. E nélkül a válaszok új
+hozzászólásként érkeznének meg, és a végtelenségig újraaktiválnák a hidat.
 
 A `[bot]` utótag az oka annak is, hogy létezik a rövid forma. A GitHub egy
 alkalmazásfiók bejelentkezési nevét `<slug>[bot]` formában rögzíti, nem kínál
@@ -127,7 +143,10 @@ alkalmazásnevek hipotetikussá teszik ezt az ütközést.
 - **Nincs automatikus közzététel.** A megállapítások az átnézési térbe kerülnek;
   a GitHubra való közzététel külön, emberi művelet
 - **Nincs homályos identitás.** A szerző pontosan egy tagra oldódik fel, vagy
-  elutasításra kerül — nincs találgatáson alapuló attribúció
+  figyelmen kívül marad — nincs találgatáson alapuló attribúció
+- **Nincs automatizált jóváhagyás.** Az automatizálás hozzászólhat és
+  változtatásokat kérhet, de az `APPROVE` átnézést elküldés előtt elutasítjuk. A
+  jóváhagyás egy személy cselekedete
 - **Nincs GitHub App webhook.** Ez a felület soha nem regisztrál egyet sem, így
   nincs PR-hozzászólásokhoz kitett bejövő URL. A termék egyéb webhookjai
   (pipeline-ok, jegyszinkronizáció) külön, opcionális beállítást jelentenek.
@@ -139,7 +158,7 @@ alkalmazásnevek hipotetikussá teszik ezt az ütközést.
 - [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/): ugyanaz a három
   döntés, a csevegéshez meghozva
 - [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/):
-  honnan származik a bot identitása
+  honnan származik egy saját alkalmazás botidentitása
 - [Többszereplős mód — identitás, tagság és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/):
   azok a szereplők és szerepkörök, amelyeken keresztül egy bejelentkezés feloldódik
 - [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): mit tehet meg a válaszoló

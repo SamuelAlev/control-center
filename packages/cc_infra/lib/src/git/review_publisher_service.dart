@@ -24,6 +24,20 @@ typedef GitHubPrClientResolver =
       required String owner,
     });
 
+/// How automation attributes what it posts when the post lands under a
+/// person's account rather than a bot's (Connect's shared App mints
+/// user-to-server tokens of the workspace's accountable human). Without it a
+/// reader cannot tell Control Center's findings from the person's own words,
+/// and the PR conversation bridge would not recognise replies in those
+/// threads as addressed to it. Answers null when automation posts as a bot
+/// account, which is attribution enough.
+typedef AutomatedReviewAttribution =
+    Future<String Function(String body)?> Function({
+      required String workspaceId,
+      required String owner,
+      String? actingUserId,
+    });
+
 /// Publishes a workspace's structured review findings to GitHub as a single
 /// pull-request review: inline line-anchored comments plus a verdict summary.
 ///
@@ -45,6 +59,7 @@ class ReviewPublisherService implements ReviewPublisherPort {
     required GitHubPrClientResolver githubPrClientFor,
     required this._messaging,
     required this._reviewSpaces,
+    this._automatedAttribution,
     BuildGitHubReviewUseCase? buildReview,
     ComputeReviewVerdictUseCase? computeVerdict,
   }) : _githubFor = githubPrClientFor,
@@ -52,6 +67,7 @@ class ReviewPublisherService implements ReviewPublisherPort {
        _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
 
   final GitHubPrClientResolver _githubFor;
+  final AutomatedReviewAttribution? _automatedAttribution;
   final MessagingRepository _messaging;
   final ReviewSpaceRepository _reviewSpaces;
   final BuildGitHubReviewUseCase _buildReview;
@@ -106,7 +122,9 @@ class ReviewPublisherService implements ReviewPublisherPort {
       walkthrough: summary == null
           ? null
           : ReviewWalkthroughSummary.fromMetadata(summary.metadata),
-      approveOnShip: approveOnShip,
+      // Automation never approves: only a person pressing publish may ship
+      // an APPROVE, and GitHub itself refuses one on their own PR.
+      approveOnShip: approveOnShip && actingUserId != null,
       // What the finalizer demoted at this review's level. Read from the
       // summary rather than recomputed here, so the published review collapses
       // exactly what the app collapsed — recomputing would let the two drift
@@ -129,16 +147,21 @@ class ReviewPublisherService implements ReviewPublisherPort {
       ),
     );
 
+    // A person pressing publish posts their own review, unattributed;
+    // automation names itself when it posts under somebody's account.
+    final attribute = actingUserId == null
+        ? await _automatedAttribution?.call(
+            workspaceId: workspaceId,
+            owner: owner,
+          )
+        : null;
     final submitted = await _submit(
-      github: _githubFor(
-        actingUserId,
-        workspaceId: workspaceId,
-        owner: owner,
-      ),
+      github: _githubFor(actingUserId, workspaceId: workspaceId, owner: owner),
       owner: owner,
       repo: repo,
       prNumber: association.prNumber,
       plan: plan,
+      attribute: attribute ?? _unattributed,
     );
 
     if (association.status != ReviewSpaceStatus.completed) {
@@ -243,12 +266,15 @@ class ReviewPublisherService implements ReviewPublisherPort {
     return raw is List ? raw.whereType<String>().toSet() : const {};
   }
 
+  static String _unattributed(String body) => body;
+
   Future<({int reviewId, bool usedFallback})> _submit({
     required GitHubPrClient github,
     required String owner,
     required String repo,
     required int prNumber,
     required GitHubReviewPlan plan,
+    required String Function(String body) attribute,
   }) async {
     if (plan.inlineComments.isEmpty) {
       final review = await github.submitReview(
@@ -256,7 +282,7 @@ class ReviewPublisherService implements ReviewPublisherPort {
         repo,
         prNumber: prNumber,
         event: plan.event,
-        body: plan.body,
+        body: attribute(plan.body),
       );
       return (reviewId: review.id, usedFallback: false);
     }
@@ -266,8 +292,11 @@ class ReviewPublisherService implements ReviewPublisherPort {
         repo,
         prNumber: prNumber,
         event: plan.event,
-        body: plan.body,
-        comments: plan.inlineComments.map((c) => c.toJson()).toList(),
+        body: attribute(plan.body),
+        comments: [
+          for (final c in plan.inlineComments)
+            {...c.toJson(), 'body': attribute(c.body)},
+        ],
       );
       return (reviewId: review.id, usedFallback: false);
     } on NetworkException catch (e) {
@@ -283,7 +312,7 @@ class ReviewPublisherService implements ReviewPublisherPort {
         repo,
         prNumber: prNumber,
         event: flat.event,
-        body: flat.body,
+        body: attribute(flat.body),
       );
       return (reviewId: review.id, usedFallback: true);
     }

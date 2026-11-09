@@ -2,27 +2,84 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/features/auth/domain/repositories/credentials_repository.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
+import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
+
+/// Wraps an argv in the host's OS sandbox (`SandboxManager.wrap`).
+typedef BashScriptSandboxWrap =
+    Future<SandboxWrapResult> Function({
+      required SandboxConfig config,
+      required List<String> argv,
+      String? workingDirectory,
+    });
+
+/// A GitHub repository linked to the running pipeline's workspace.
+typedef LinkedGitHubRepo = ({String owner, String name});
+
+/// The confinement a pipeline shell step runs under.
+///
+/// A shell step is operator-authored code executing on the server host, so it
+/// gets what an agent gets and no more: the OS sandbox (with the server's
+/// data directory and `.env` file unreadable), the child-environment
+/// allowlist, a git and `gh` with no host configuration, and — only when the
+/// pipeline targets a linked repository — a broker-minted one-repository
+/// `read` token.
+class BashScriptSandbox {
+  /// Creates a [BashScriptSandbox].
+  const BashScriptSandbox({
+    required this.wrap,
+    required this.deniedPaths,
+    required this.broker,
+    required this.linkedRepo,
+  });
+
+  /// The host's OS sandbox, or null when it has none (Windows, a Linux host
+  /// without `bwrap`, `--sandbox off`). Null fails every shell step closed.
+  final BashScriptSandboxWrap? wrap;
+
+  /// Server-private paths the script must not read or write: the data
+  /// directory and the `.env` file. The step's own run directory, which lives
+  /// under the data directory, is re-allowed.
+  final List<String> deniedPaths;
+
+  /// Mints the one-repository `read` token.
+  final CredentialBrokerPort broker;
+
+  /// The repo named `owner/name` when it is a GitHub repository linked to
+  /// the workspace; null otherwise, and then no token is minted.
+  final Future<LinkedGitHubRepo?> Function(
+    String workspaceId,
+    String repoFullName,
+  )
+  linkedRepo;
+}
 
 /// Registers agentless `pipeline.bashScript`: render `config.script` against
-/// state; cwd `<cc_root>/pipelines/<pipelineRunId>/`; expose `GITHUB_TOKEN`;
+/// state; run it under [sandbox] with cwd `<data>/pipelines/<pipelineRunId>/`;
 /// stream stdout/stderr (throttled) into the step-run; exit 0 →
 /// `config.outputKey`, else fail with stderr.
 void registerBashScriptBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,
   required PipelineRunRepository runRepository,
-  required CredentialsRepository credentialsRepository,
   required StepProcessRegistry stepProcessRegistry,
   required Future<String> Function(String pipelineRunId) runDirPath,
+  required BashScriptSandbox sandbox,
   // Fail-closed on a public demo: the body is still registered (an unknown
   // key would look like a wiring bug) but it never renders or spawns.
   bool execute = true,
@@ -63,79 +120,202 @@ void registerBashScriptBody(
       );
     }
 
-    final runDir = Directory(await runDirPath(ctx.pipelineRunId));
-    final creds = await credentialsRepository.loadCredentials();
-    final env = <String, String>{
-      ...Platform.environment,
-      if (creds.githubToken.isNotEmpty) 'GITHUB_TOKEN': creds.githubToken,
-    };
-
-    CcInfraLog.info('Running step "${ctx.stepId}" in ${runDir.path}');
-
-    final streamer = _OutputStreamer(
-      workspaceId: ctx.workspaceId,
-      stepRunId: ctx.stepRunId,
-      stepId: ctx.stepId,
-      script: rendered,
-      runDir: runDir.path,
-      repository: runRepository,
-    );
-
-    final process = await Process.start(
-      'bash',
-      ['-c', rendered],
-      workingDirectory: runDir.path,
-      environment: env,
-      runInShell: false,
-    );
-
-    // Expose a kill hook so the UI's Stop button can interrupt the process.
-    stepProcessRegistry.register(ctx.stepRunId, () {
-      try {
-        process.kill(ProcessSignal.sigterm);
-        Timer(const Duration(seconds: 2), () {
-          try {
-            process.kill(ProcessSignal.sigkill);
-          } on Object catch (_) {}
-        });
-      } on Object catch (e, st) {
-        CcInfraLog.error('kill failed', e, st);
-      }
-    });
-
-    // Pipe both streams through the streamer. Lines are tagged so the
-    // run-detail card can show interleaved stdout/stderr in order.
-    final stdoutSub = process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(streamer.appendStdout);
-    final stderrSub = process.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(streamer.appendStderr);
-
-    final exitCode = await process.exitCode;
-    await stdoutSub.cancel();
-    await stderrSub.cancel();
-    stepProcessRegistry.unregister(ctx.stepRunId);
-    await streamer.flush(exitCode: exitCode);
-
-    if (exitCode != 0) {
-      final tail = streamer.stderrTrimmed.isNotEmpty
-          ? streamer.stderrTrimmed
-          : streamer.stdoutTrimmed;
-      return StepResult.failed('bash exited $exitCode: $tail');
+    final wrap = sandbox.wrap;
+    if (wrap == null) {
+      return StepResult.failed(
+        'bashScript: this host has no OS sandbox (sandbox-exec on macOS, '
+        'bubblewrap on Linux), and shell steps never run unsandboxed. '
+        'Install the sandbox or remove the shell step.',
+      );
     }
 
-    final outputKey = stepConfig.outputKey;
-    final mutated = <String, dynamic>{
-      '${ctx.stepId}_runDir': runDir.path,
-      if (outputKey != null && outputKey.isNotEmpty)
-        outputKey: streamer.stdoutTrimmed,
-    };
+    final runDir = Directory(await runDirPath(ctx.pipelineRunId));
+    CcInfraLog.info('Running step "${ctx.stepId}" in ${runDir.path}');
 
-    return StepResult.ok(mutatedState: mutated);
+    final ghConfig = Directory.systemTemp.createTempSync('cc-pipeline-gh-');
+    ScopedCredentials? token;
+    try {
+      token = await _mintRepoToken(ctx, sandbox);
+      final env = <String, String>{
+        // No host git or gh configuration: no credential helper, no global
+        // hooks or signing program, no stored `gh` login.
+        ...IsolatedGit.isolationEnvironment,
+        'GH_CONFIG_DIR': ghConfig.path,
+        ...?token?.environment,
+      };
+      final config = await bashScriptSandboxConfig(
+        sessionId: 'pipeline-${ctx.pipelineRunId}::${ctx.stepId}',
+        workspaceId: ctx.workspaceId,
+        runDir: runDir.path,
+        deniedPaths: sandbox.deniedPaths,
+      );
+      final wrapped = await wrap(
+        config: config,
+        argv: ['bash', '-c', rendered],
+        workingDirectory: runDir.path,
+      );
+
+      final streamer = _OutputStreamer(
+        workspaceId: ctx.workspaceId,
+        stepRunId: ctx.stepRunId,
+        stepId: ctx.stepId,
+        script: rendered,
+        runDir: runDir.path,
+        repository: runRepository,
+      );
+
+      final process = await ChildProcess.start(
+        wrapped.executable,
+        wrapped.argv,
+        workingDirectory: runDir.path,
+        environment: {...wrapped.environment, ...env},
+        toolchain: true,
+      );
+
+      // Expose a kill hook so the UI's Stop button can interrupt the process.
+      stepProcessRegistry.register(ctx.stepRunId, () {
+        try {
+          process.kill(ProcessSignal.sigterm);
+          Timer(const Duration(seconds: 2), () {
+            try {
+              process.kill(ProcessSignal.sigkill);
+            } on Object catch (_) {}
+          });
+        } on Object catch (e, st) {
+          CcInfraLog.error('kill failed', e, st);
+        }
+      });
+
+      // Pipe both streams through the streamer. Lines are tagged so the
+      // run-detail card can show interleaved stdout/stderr in order.
+      final stdoutSub = process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(streamer.appendStdout);
+      final stderrSub = process.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(streamer.appendStderr);
+
+      final exitCode = await process.exitCode;
+      await stdoutSub.cancel();
+      await stderrSub.cancel();
+      stepProcessRegistry.unregister(ctx.stepRunId);
+      await streamer.flush(exitCode: exitCode);
+
+      if (exitCode != 0) {
+        final tail = streamer.stderrTrimmed.isNotEmpty
+            ? streamer.stderrTrimmed
+            : streamer.stdoutTrimmed;
+        return StepResult.failed('bash exited $exitCode: $tail');
+      }
+
+      final outputKey = stepConfig.outputKey;
+      final mutated = <String, dynamic>{
+        '${ctx.stepId}_runDir': runDir.path,
+        if (outputKey != null && outputKey.isNotEmpty)
+          outputKey: streamer.stdoutTrimmed,
+      };
+
+      return StepResult.ok(mutatedState: mutated);
+    } finally {
+      final handle = token?.handle;
+      if (handle != null) {
+        unawaited(
+          sandbox.broker.revoke(handle).catchError((Object e) {
+            CcInfraLog.warning('bashScript: token revoke failed: $e');
+          }),
+        );
+      }
+      try {
+        ghConfig.deleteSync(recursive: true);
+      } on FileSystemException {
+        // An empty temp directory left behind is harmless.
+      }
+    }
   });
+}
+
+/// The pipeline's target repository (`repo_full_name` in state or the trigger
+/// payload), minted a `read` token only when it is linked to the workspace.
+Future<ScopedCredentials?> _mintRepoToken(
+  PipelineContext ctx,
+  BashScriptSandbox sandbox,
+) async {
+  final target =
+      ctx.optional<String>('repo_full_name') ??
+      ctx.optional<String>('repoFullName');
+  if (target == null || target.trim().isEmpty) {
+    return null;
+  }
+  final repo = await sandbox.linkedRepo(ctx.workspaceId, target.trim());
+  if (repo == null) {
+    return null;
+  }
+  return sandbox.broker.mint(
+    conversationId: 'pipeline:${ctx.pipelineRunId}:${ctx.stepId}',
+    scope: ForgeTokenScope.read,
+    repoOwner: repo.owner,
+    repoName: repo.name,
+    workspaceId: ctx.workspaceId,
+  );
+}
+
+/// The sandbox a pipeline shell step runs in: the agent sandbox's policy
+/// (secret paths in `$HOME` denied, the restricted egress allowlist, exec
+/// denies) with [deniedPaths] unreadable and unwritable and [runDir] — which
+/// sits inside the data directory — re-allowed. Visible for tests.
+Future<SandboxConfig> bashScriptSandboxConfig({
+  required String sessionId,
+  required String workspaceId,
+  required String runDir,
+  required List<String> deniedPaths,
+}) async {
+  // Seatbelt matches the resolved path (`/var/folders` is
+  // `/private/var/folders`), and the denies below are emitted in both
+  // spellings: the run directory's allowances must name the resolved one to
+  // outrank them.
+  String real;
+  try {
+    real = Directory(runDir).resolveSymbolicLinksSync();
+  } on FileSystemException {
+    real = runDir;
+  }
+  final home = Platform.environment['HOME'];
+  final spec = SandboxSpec(
+    sessionId: sessionId,
+    workspaceId: workspaceId,
+    bindMounts: [SandboxBindMount(hostPath: real, guestPath: real)],
+    guestWorkdir: real,
+  );
+  final policy = const SandboxPolicyResolver().resolve(
+    spec: spec,
+    homeDir: (home != null && home.isNotEmpty) ? home : null,
+    runDir: real,
+  );
+  final config = await buildSandboxConfigFromPolicy(
+    policy.copyWith(
+      denyRead: [...policy.denyRead, ...deniedPaths],
+      // Linux hides a denied directory behind a tmpfs, which already keeps
+      // writes off the real one; a read-only re-bind of it there would make it
+      // readable again. Seatbelt needs the explicit write deny.
+      denyWrite: Platform.isLinux
+          ? policy.denyWrite
+          : [...policy.denyWrite, ...deniedPaths],
+    ),
+  );
+  // Seatbelt is last-match-wins: the run directory's read allowance follows
+  // the data directory's deny (its write and rename allowances are emitted
+  // last by the profile itself). bwrap re-binds the policy run dir after its
+  // tmpfs for the same effect.
+  return config.copyWith(
+    filesystem: FilesystemConfig(
+      denyRead: config.filesystem.denyRead,
+      allowRead: {...config.filesystem.allowRead, runDir, real}.toList(),
+      allowWrite: config.filesystem.allowWrite,
+      denyWrite: config.filesystem.denyWrite,
+    ),
+  );
 }
 
 /// Accumulates stdout/stderr from a bash subprocess and pushes throttled
@@ -293,20 +473,91 @@ class _BoundedLineBuffer {
   }
 }
 
-/// Escapes a value for safe interpolation into a bash DOUBLE-QUOTED context:
-/// backslash-escapes the four characters special inside `"..."` (`"`, `\`, `$`,
-/// backtick). A value escaped this way cannot close the surrounding quotes,
-/// expand variables, or run command substitutions — so an untrusted trigger
-/// value (e.g. an external ticket title) spliced into `"{{key}}"` in a bash
-/// script body cannot inject commands (VULN-007).
-String _shellEscape(String v) => v
-    .replaceAll('\\', r'\\')
-    .replaceAll(r'"', r'\"')
-    .replaceAll(r'$', r'\$')
-    .replaceAll(r'`', r'\`');
+/// The bash quoting a placeholder sits in.
+enum _ShellQuote { none, single, double }
 
-/// Substitutes `{{key}}` placeholders, shell-escaping each value so an
-/// untrusted trigger payload cannot inject commands. State takes precedence
+/// The quoting at each offset of [script] that starts a placeholder, read
+/// from the literal text before it: `'…'`, `"…"`, backslash escapes, and
+/// `$(…)` / backticks, which start a fresh unquoted context even inside
+/// double quotes.
+Map<int, _ShellQuote> _quotingAt(String script, Iterable<int> offsets) {
+  final wanted = offsets.toSet();
+  final out = <int, _ShellQuote>{};
+  // One frame per nesting level: its quoting, and the character that closes
+  // it (`)` for `$(`, a backtick for a backtick, none for the script).
+  final stack = <(_ShellQuote, String)>[(_ShellQuote.none, '')];
+  bool wordStart(int i) => i == 0 || RegExp(r'[\s;&|()]').hasMatch(script[i - 1]);
+  for (var i = 0; i < script.length; i++) {
+    final (quote, closer) = stack.last;
+    if (wanted.contains(i)) {
+      out[i] = quote;
+    }
+    final c = script[i];
+    final next = i + 1 < script.length ? script[i + 1] : '';
+    switch (quote) {
+      case _ShellQuote.single:
+        if (c == "'") {
+          stack.removeLast();
+        }
+      case _ShellQuote.double:
+        if (c == r'\') {
+          i++;
+        } else if (c == '"') {
+          stack.removeLast();
+        } else if (c == r'$' && next == '(') {
+          stack.add((_ShellQuote.none, ')'));
+          i++;
+        } else if (c == '`') {
+          stack.add((_ShellQuote.none, '`'));
+        }
+      case _ShellQuote.none:
+        if (c == r'\') {
+          i++;
+        } else if (c == '#' && wordStart(i)) {
+          // A comment: nothing in it quotes anything.
+          while (i + 1 < script.length && script[i + 1] != '\n') {
+            i++;
+            if (wanted.contains(i)) {
+              out[i] = quote;
+            }
+          }
+        } else if (closer.isNotEmpty && c == closer) {
+          stack.removeLast();
+        } else if (c == "'") {
+          stack.add((_ShellQuote.single, ''));
+        } else if (c == '"') {
+          stack.add((_ShellQuote.double, ''));
+        } else if (c == r'$' && next == '(') {
+          stack.add((_ShellQuote.none, ')'));
+          i++;
+        } else if (c == '`') {
+          stack.add((_ShellQuote.none, '`'));
+        }
+    }
+  }
+  return out;
+}
+
+/// Escapes [v] for the bash quoting it is spliced into, so it is always one
+/// literal word that cannot close its quotes, expand variables, run command
+/// substitutions or separate commands (VULN-007):
+/// - inside `"…"`: backslash-escape `"`, `\`, `$` and backtick;
+/// - inside `'…'`: close, emit an escaped quote, reopen (`'\''`);
+/// - unquoted: a single-quoted atom.
+String _shellEscape(String v, _ShellQuote quote) => switch (quote) {
+  _ShellQuote.double =>
+    v
+        .replaceAll('\\', r'\\')
+        .replaceAll(r'"', r'\"')
+        .replaceAll(r'$', r'\$')
+        .replaceAll(r'`', r'\`'),
+  _ShellQuote.single => v.replaceAll("'", r"'\''"),
+  _ShellQuote.none => "'${v.replaceAll("'", r"'\''")}'",
+};
+
+/// Substitutes `{{key}}` placeholders, shell-escaping each value for the
+/// quoting it sits in so an untrusted trigger payload cannot inject
+/// commands wherever the author put the placeholder. State takes precedence
 /// over the trigger payload. Missing keys render as empty strings.
 const TemplateRenderer _renderer = TemplateRenderer();
 
@@ -315,12 +566,17 @@ String _render(
   Map<String, dynamic> state,
   Map<String, dynamic>? triggerPayload,
 ) {
+  final quoting = _quotingAt(
+    template,
+    _renderer.placeholderOffsets(template),
+  );
   return _renderer
       .render(
         template,
         state: state,
         trigger: triggerPayload,
-        escape: _shellEscape,
+        escape: (value, offset) =>
+            _shellEscape(value, quoting[offset] ?? _ShellQuote.none),
       )
       .text;
 }

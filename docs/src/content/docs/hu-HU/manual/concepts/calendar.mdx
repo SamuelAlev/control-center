@@ -1,22 +1,32 @@
 ---
 title: Naptár és ütemezés
-description: Hogyan szinkronizálja a Control Center a Google Calendar szolgáltatást a szerveren, miért eszközkódos engedélyezés a bejelentkezés, és mit fed le az írásvédett hatókör.
+description: Hogyan szinkronizálja a Control Center a Google Calendar szolgáltatást a szerveren, hogyan éri el a böngészős bejelentkezés a headless szervert, és mit módosíthat a Google-on.
 slug: hu-HU/kezikonyv/fogalmak/naptar
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 A Control Center csatlakozik a Google Calendar szolgáltatáshoz, hogy a napod a
 flottád mellett legyen. Szinkronizálja az eseményeidet, havi, heti, napi és
-napirend nézetben jeleníti meg őket, figyelmeztet a megbeszélés kezdete előtt,
+napirend nézetben jeleníti meg őket, lehetővé teszi események lefoglalását, áthelyezését, megválaszolását és törlését, figyelmeztet a megbeszélés kezdete előtt,
 és bármely eseményt rögzített, összefoglalt
 [megbeszéléssé](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) alakít.
 
 ## Mit változtat a Google oldalán
 
-Szinte semmit. Az integráció behúzza az eseményeket, és megjeleníti őket. Nem
-hoz létre, szerkeszt, töröl és nem válaszol meghívókra. Minden eszközkódos
-csatlakoztatás — akár beépített, akár saját — a `calendar.readonly` és az
-`openid email` hatókört kéri.
+Csak amit te magad teszel. Megválaszolhatod a meghívókat, lefoglalhatsz egy
+eseményt (húzással az időrácson, vagy a **+** gombbal), áthelyezhetsz vagy átméretezhetsz eseményt a rácson, és törölhetsz eseményt. Csak a saját eseményeidet és az általad szervezett eseményeket helyezheted át: ha egy vendég mozgatná, mindenki más a régi időponton maradna.
+Minden változtatást a szerver végez a saját fiókod bejelentkezésével, a saját
+naptáraidon; a szerver visszautasítja a más tag fiókján lévő eseményt, illetve
+a neked csak olvasható módon megosztott naptárat. A Google e-mailben értesíti a
+vendégeket, ahogyan a Google Calendar-ból is tenné. Egy ismétlődő esemény egy
+előfordulásának áthelyezése vagy törlése nem törli a sorozat többi részét.
+
+Minden csatlakoztatás — akár a Connecten, akár a szerver saját Google-kliensén
+keresztül — a `calendar.events` (események olvasása és módosítása) és a
+`calendar.calendarlist.readonly` (a fiók naptárainak megtekintése) hatókört, valamint
+az `openid email` hatókört kéri. A szerver elutasítja azt a bejelentkezést, amely más
+hatókörkészlettel tér vissza, így a korábbi, csak olvasható hatókörrel csatlakoztatott
+fiókot újra kell csatlakoztatni.
 
 Az események a munkaterület saját adatbázisába szinkronizálódnak **a szerveren**
 (`<dataDir>/<workspaceId>/workspace.db`), és minden kliens RPC-n keresztül
@@ -24,48 +34,59 @@ jeleníti meg őket. Egyetlen kliens sem tárol Google-hitelesítő adatot.
 
 ## Munkaterületenkénti fiókok
 
-A naptárfiókok munkaterület-hatókörűek, mint a Control Centerben minden más.
-Minden [munkaterület](/hu-HU/kezikonyv/fogalmak/munkateruletek/) a saját
-Google-fiókját csatlakoztatja (vagy akár többet), és az egyik munkaterület
-eseményei és tokenjei soha nem láthatók egy másikból. A munkaterületek
+A naptárfiókok munkaterület-hatókörűek, mint a Control Centerben minden más, és
+mindegyik ahhoz a taghoz tartozik, aki csatlakoztatta. Minden
+[munkaterület](/hu-HU/kezikonyv/fogalmak/munkateruletek/) a saját
+Google-fiókjait csatlakoztatja, és az egyik munkaterület eseményei és hitelesítő
+adatai soha nem láthatók egy másikból. Ha két tag ugyanazt a Google-címet
+csatlakoztatja, két fiók jön létre. A munkaterületek
 váltásával az is vált, hogy mely naptárakat látod.
 
 Egy munkaterület **több** Google-fiókot is csatlakoztathat, például egy
 munkahelyi és egy személyes fiókot, és ezek eseményei ugyanazokban a nézetekben
 egyesülnek.
 
-## Miért eszközkód a bejelentkezés
+## Hogyan éri el a bejelentkezés a szervert
 
-A headless `cc_server` mögött nincs böngésző, amely elkapná az
-OAuth-átirányítást. Ezért nem is használ ilyet: **eszközkód-engedélyezéssel**
-(RFC 8628) hitelesít. A szerver megjelenít egy rövid felhasználói kódot és egy
-Google URL-t, te bármely böngészővel rendelkező eszközön jóváhagyod, a szerver
-pedig addig kérdez, amíg meg nem teszed. Egy headless telepítés éppen azért tud
-fiókot csatlakoztatni, mert nincs átirányítási végpont, amit hosztolni kellene.
+A csatlakoztatás böngészős bejelentkezés, és a szerver fejezi be. Hogy melyik
+kliens futtatja, azt a szerver tulajdonosa választja ki:
 
-Egy következményt érdemes tudni, mielőtt saját hitelesítő adatokat hozol: a
-kliens típusa a Google „TV and Limited Input devices” kliensének kell lennie. A
-Google ehhez a kliens típushoz csak egy engedélyezett hatókörkészletet ad meg,
-és az a projekt, amelyben a Naptár nincs számára engedélyezve, `invalid_scope`
-hibával bukik el — helyette loopback- vagy webes klienst kellene használnod.
+- **A szerver saját Google-kliense.** Egy Web application típusú kliens, a
+  `<server origin>/oauth/google/callback` átirányítással regisztrálva. A Google
+  közvetlenül a szerverre küldi vissza a böngészőt, ezért a böngészőnek el kell
+  érnie azt
+- **Control Center Connect.** A Google a Connectre küldi vissza a böngészőt, amely
+  egy 8 karakteres kódot és egy `control-center://` hivatkozást mutat. A
+  felhasználó beírja a kódot az alkalmazásba, vagy megnyitja a hivatkozást, a
+  szerver pedig ezzel veszi át a bejelentkezést. A szervernek ehhez nincs
+  szüksége nyilvános címre; így csatlakoztat naptárakat egy magánhálózaton futó
+  headless szerver
 
-A tokenek soha nem hagyják el a szervert. A szerver `secrets.json` fájljába
-íródnak az adatkönyvtárában, `google_google:<workspaceId>:<email>` kulccsal, az
-adatbázisok mellett, ugyanazon a hoszt-fájlrendszer bizalmi határon belül. A
-szerver automatikusan frissíti a hozzáférést, és amikor a Google véglegesen
+A saját kliens mindig elsőbbséget élvez. A titok nélküli kliensazonosító
+befejezetlen beállítás, és elutasítja a bejelentkezéseket, ahelyett hogy a
+Connectre váltana.
+
+A hitelesítő adatok soha nem hagyják el a szervert. A szerver `secrets.json`
+fájljába íródnak az adatkönyvtárában,
+`google_google:<workspaceId>:<userId>:<email>` kulccsal, az adatbázisok mellett,
+ugyanazon a hoszt-fájlrendszer bizalmi határon belül. A saját klienses
+bejelentkezés a hozzáférési és a frissítő tokenjét tárolja. A Connectes
+bejelentkezés csak egy lepecsételt hitelesítő adatot tárol, amelyet a Connect
+kizárólag ennek a szervernek nyit meg; a hozzáférési token a memóriában marad.
+A szerver automatikusan frissíti a hozzáférést, és amikor a Google véglegesen
 érvénytelenít egy fiókot (visszavont vagy rég lejárt munkamenet), közzéteszi a
 `CalendarAuthExpired` eseményt, és egy **Újracsatlakozás** sávot jelenít meg
-ahelyett, hogy csendben elbukna.
+ahelyett, hogy csendben elbukna. Az a bejelentkezés, amelyet ez a szerver már
+nem tud használni (egy másik saját kliens adta ki, vagy más telepítéshez, illetve
+más Connecthez pecsételték), a következő olvasáskor törlődik, és ugyanezt a sávot
+mutatja.
 
-A forrásból készült build **semmilyen** Google-hitelesítő adatot nem tartalmaz —
-a saját kliens-azonosítódat és titkodat adod meg. A hivatalos kiadási buildek
-beégetnek egy nem bizalmas eszközkódos klienst, hogy a csatlakozási folyamat
-azonnal működjön; a szerver csak egy rá hivatkozó jelölőt tárol, másolatot soha.
-A környezetben megadott `GOOGLE_OAUTH_CLIENT_ID` (és a hozzá tartozó titok)
-mindig elsőbbséget élvez a beégetett párral szemben. Szándékosan nincs
-`--google-client-id` kapcsoló: az ismeretlen kapcsolókat a rendszer figyelmen
-kívül hagyja, a parancssorban szereplő titok pedig a `ps` segítségével
-kiolvasható.
+Egyetlen build sem tartalmaz Google-hitelesítő adatot. A szerver kliense a
+**Beállítások → Szerver → Egyszeri bejelentkezés → Szolgáltatói alkalmazások**
+helyről vagy a szerver `.env` fájljából (`GOOGLE_OAUTH_CLIENT_ID`,
+`GOOGLE_OAUTH_CLIENT_SECRET`) származik. Szándékosan nincs parancssori kapcsoló:
+a parancssorban szereplő titok a `ps` segítségével kiolvasható, és a szerver nem
+indul el, ha a titok a folyamata környezetébe van exportálva.
 
 A saját Google-projekt futtatásáról lásd:
 [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
@@ -131,7 +152,7 @@ megbeszélések képernyő saját rögzítési folyamata működik a böngésző
 
 :::note[Az ügynökök nem olvassák a naptáradat]
 Nincsenek naptárhoz tartozó MCP-eszközök. Egy ügynök nem tud eseményeket
-listázni, egy esemény részleteit elolvasni vagy a nevedben visszajelezni; a
+listázni, egy esemény részleteit elolvasni, a nevedben lefoglalni, áthelyezni, törölni vagy visszajelezni; a
 `calendar.*` felület kizárólag emberi kliensek számára elérhető RPC.
 :::
 

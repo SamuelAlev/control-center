@@ -45,8 +45,7 @@ stage_natives "$NATIVES" "$OUT" dll
 # it over loopback RPC — it owns the database. The installer's recursive [Files]
 # glob over the Release dir picks it up.
 #
-# Whatever `builtin_credentials.sh inject` wrote is compiled in here, so that
-# step has to precede this one (a bundle built earlier is reused as-is).
+# A bundle built earlier is reused as-is.
 CC_SERVER_BUNDLE="$(ensure_cc_server_bundle windows "$ARCH")"
 log "Embedding cc_server backend"
 rm -rf "$OUT/cc_server"

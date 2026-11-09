@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
+
 /// Stops [process] and, best-effort, its descendants: reap the child tree, SIGTERM, wait
 /// [grace], then SIGKILL.
 ///
@@ -14,7 +16,12 @@ Future<void> terminateProcessTree(
 }) async {
   if (!Platform.isWindows) {
     try {
-      await Process.run('pkill', ['-TERM', '-P', '${process.pid}']);
+      await Process.run(
+        'pkill',
+        ['-TERM', '-P', '${process.pid}'],
+        environment: ChildEnvironment.build(Platform.environment),
+        includeParentEnvironment: false,
+      );
     } on Object {
       // pkill unavailable (a minimal container) — fall through to the direct
       // kill; the direct child still dies, we just cannot promise the tree.

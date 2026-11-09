@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Restricts [path] to its owner: `0700` for a directory, `0600` for a file.
 ///
 /// dart:io has no chmod API, so this shells out to `chmod` — which is exactly
@@ -12,7 +14,10 @@ Future<void> restrictToOwner(String path, {required bool directory}) async {
   if (Platform.isWindows) {
     return; // App-support ACLs govern Windows.
   }
-  final result = await Process.run('chmod', [directory ? '700' : '600', path]);
+  final result = await ChildProcess.run('chmod', [
+    directory ? '700' : '600',
+    path,
+  ]);
   if (result.exitCode != 0) {
     throw FileSystemException('Cannot protect path', path);
   }

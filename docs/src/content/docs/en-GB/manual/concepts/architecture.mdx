@@ -3,7 +3,7 @@ title: Architecture
 description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
 dateModified: 2026-09-19
 slug: en-GB/manual/concepts/architecture
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Overview
@@ -113,9 +113,9 @@ Both databases are owned by `cc_persistence` and opened only by `cc_server`; no 
 **go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
 
 - Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
+- Three pre-context routes are unprefixed: `/splash`, `/onboarding` and `/workspaces` (the picker)
+- `ShellRoute` wraps the app shell; those three surfaces render full-screen outside it
+- Auth guard: incomplete setup goes to `/onboarding`. A completed setup whose forge credential is gone stays in the app, and the workspace shell shows a warning that links to the sign-in. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
 - Onboarding gate in `features/auth/providers/`
 
 ## Networking (server-side)

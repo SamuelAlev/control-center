@@ -3,7 +3,7 @@ title: Architektura
 description: Jak zbudowany jest Control Center — model serwera z cienkim klientem, Clean Architecture w podejściu feature-first oraz porty i adaptery.
 dateModified: 2026-09-19
 slug: pl-PL/podrecznik/koncepcje/architektura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Przegląd
@@ -113,9 +113,9 @@ Obie bazy danych należą do `cc_persistence` i otwiera je wyłącznie `cc_serve
 **go_router**, z jednym faktem, który rządzi resztą: **każde miejsce docelowe w aplikacji ma prefiks obszaru roboczego** w postaci `/workspaces/:workspaceId/…`. Identyfikator obszaru roboczego w adresie URL jest jedynym źródłem prawdy o aktywnym obszarze roboczym — `activeWorkspaceIdProvider` jest sterowany trasą, a nie odwrotnie — dlatego odczyt danych w zakresie obszaru roboczego poza trasą z prefiksem nie ma skąd wziąć swojego identyfikatora.
 
 - _Funkcje_ budujące trasy w `router/routes.dart`, każda przyjmuje identyfikator obszaru roboczego jako pierwszy argument, a nie stałe tekstowe
-- Cztery trasy sprzed kontekstu nie mają prefiksu: `/splash`, `/onboarding`, `/signed-out` i `/workspaces` (wybór obszaru roboczego)
-- `ShellRoute` opakowuje powłokę aplikacji; te cztery widoki renderują się na pełnym ekranie poza nią
-- Strażnik uwierzytelniania: nieukończona konfiguracja trafia do `/onboarding`; ukończona konfiguracja, której poświadczenie hosta kodu zniknęło, trafia do `/signed-out`. Ukończona oznacza, że dla zalogowanego użytkownika podłączono co najmniej jeden host kodu i istnieje co najmniej jeden obszar roboczy — niekoniecznie GitHub, a CLI `gh` nie jest metodą uwierzytelniania
+- Trzy trasy sprzed kontekstu nie mają prefiksu: `/splash`, `/onboarding` i `/workspaces` (wybór obszaru roboczego)
+- `ShellRoute` opakowuje powłokę aplikacji; te trzy widoki renderują się na pełnym ekranie poza nią
+- Strażnik uwierzytelniania: nieukończona konfiguracja trafia do `/onboarding`. Ukończona konfiguracja, której poświadczenie hosta kodu zniknęło, pozostaje w aplikacji, a powłoka obszaru roboczego pokazuje ostrzeżenie z linkiem do logowania. Ukończona oznacza, że dla zalogowanego użytkownika podłączono co najmniej jeden host kodu i istnieje co najmniej jeden obszar roboczy — niekoniecznie GitHub, a CLI `gh` nie jest metodą uwierzytelniania
 - Brama onboardingu w `features/auth/providers/`
 
 ## Sieć (po stronie serwera)

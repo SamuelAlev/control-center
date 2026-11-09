@@ -8,6 +8,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_infra/src/dispatch/sandboxed_agent_dispatch_adapter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -85,6 +86,7 @@ class _FakeBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async {
     if (mintStaller != null) {
       return mintStaller!.future;
@@ -123,8 +125,11 @@ SandboxedAgentDispatchAdapter _adapter({
     agentRepository: agentRepo ?? _FakeAgentRepo(),
     runLogRepository: null,
     eventBus: null,
-    resolveGitIdentity: (_, {workspaceId}) async =>
-        (name: 'Test User', email: 'test@example.test'),
+    resolveCommitIdentity: (_, {workspaceId}) async =>
+        AgentCommitIdentity.owner(
+          name: 'Test User',
+          email: 'test@example.test',
+        ),
   );
 }
 

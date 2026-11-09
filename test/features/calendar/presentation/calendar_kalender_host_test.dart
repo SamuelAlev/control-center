@@ -1,8 +1,10 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
+import 'package:control_center/features/calendar/presentation/providers/calendar_event_write_provider.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_all_day_gutter.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_kalender_host.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_overflow_overlay.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kalender/kalender.dart' as k;
 import 'package:material_ui/material_ui.dart';
@@ -572,5 +574,235 @@ void main() {
       expect(find.text('00:00'), findsNothing);
       expect(find.text('09:00'), findsNothing);
     });
+  });
+
+  group('CalendarKalenderHost drag to create', () {
+    testWidgets('dragging down empty time hands over the drawn span', (
+      tester,
+    ) async {
+      final slots = <CalendarSlot>[];
+      await tester.pumpWidget(
+        testWrap(
+          CalendarKalenderHost(
+            mode: CalendarViewMode.day,
+            focusedDate: _midMorning,
+            events: const [],
+            now: _midMorning,
+            onOpenEvent: (_) {},
+            onCreate: slots.add,
+          ),
+        ),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+
+      final from = tester.getCenter(
+        find.byKey(k.MultiDayBody.singleChildScrollViewKey),
+      );
+      final gesture = await tester.startGesture(
+        from,
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      for (var i = 0; i < 6; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      final slot = slots.single;
+      expect(slot.allDay, isFalse);
+      expect(slot.end.isAfter(slot.start), isTrue);
+      expect(slot.start.day, _midMorning.day);
+      expect(slot.anchor, isNot(Offset.zero));
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('the span shows as a tile while it is being drawn', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testWrap(
+          CalendarKalenderHost(
+            mode: CalendarViewMode.day,
+            focusedDate: _midMorning,
+            events: const [],
+            now: _midMorning,
+            onOpenEvent: (_) {},
+            onCreate: (_) {},
+            draft: (slot) => CalendarEvent(
+              id: 'composer-preview',
+              workspaceId: 'ws',
+              accountId: 'acct',
+              externalEventId: '',
+              calendarId: 'primary',
+              title: 'New event',
+              startTime: slot.start,
+              endTime: slot.end,
+              updatedAt: slot.start,
+            ),
+          ),
+        ),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(k.MultiDayBody.singleChildScrollViewKey)),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      for (var i = 0; i < 6; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await tester.pump();
+      }
+      expect(find.text('New event'), findsOneWidget);
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('the placeholder tile never opens as an event', (tester) async {
+      final opened = <CalendarEvent>[];
+      final preview = CalendarEvent(
+        id: 'composer-preview',
+        workspaceId: 'ws',
+        accountId: 'acct',
+        externalEventId: '',
+        calendarId: 'primary',
+        title: 'New event',
+        startTime: _midMorning,
+        endTime: _midMorning.add(const Duration(hours: 1)),
+        updatedAt: _midMorning,
+      );
+      await tester.pumpWidget(
+        testWrap(
+          CalendarKalenderHost(
+            mode: CalendarViewMode.day,
+            focusedDate: _midMorning,
+            events: const [],
+            now: _midMorning,
+            onOpenEvent: opened.add,
+            onCreate: (_) {},
+            composing: CalendarSlot(
+              start: preview.startTime,
+              end: preview.endTime,
+              allDay: false,
+              anchor: Offset.zero,
+            ),
+            draft: (_) => preview,
+          ),
+        ),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('New event'));
+      await tester.pumpAndSettle();
+      expect(opened, isEmpty);
+    });
+  });
+
+  group('CalendarKalenderHost drag to move', () {
+    CalendarEvent standup() => CalendarEvent(
+      id: 'evt-1',
+      workspaceId: 'ws',
+      accountId: 'acct',
+      externalEventId: 'g-1',
+      calendarId: 'primary',
+      title: 'Standup',
+      startTime: _midMorning,
+      endTime: _midMorning.add(const Duration(hours: 1)),
+      updatedAt: _midMorning,
+    );
+
+    Future<void> drag(WidgetTester tester, String title) async {
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text(title)),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      for (var i = 0; i < 6; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    Widget host({
+      required List<CalendarEvent> events,
+      required Future<bool> Function(CalendarEvent, CalendarSlot) onMove,
+      bool movable = true,
+    }) => testWrap(
+      CalendarKalenderHost(
+        mode: CalendarViewMode.day,
+        focusedDate: _midMorning,
+        events: events,
+        now: _midMorning,
+        onOpenEvent: (_) {},
+        canMove: (_) => movable,
+        onMove: onMove,
+      ),
+    );
+
+    testWidgets('a dropped tile hands over its new span, same length', (
+      tester,
+    ) async {
+      final moves = <(CalendarEvent, CalendarSlot)>[];
+      final event = standup();
+      await tester.pumpWidget(
+        host(
+          events: [event],
+          onMove: (e, to) async {
+            moves.add((e, to));
+            return true;
+          },
+        ),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+
+      await drag(tester, 'Standup');
+
+      final (moved, to) = moves.single;
+      expect(moved, event);
+      expect(to.allDay, isFalse);
+      expect(to.start.isAfter(_midMorning), isTrue);
+      expect(to.start.isUtc, isFalse);
+      expect(to.end.difference(to.start), const Duration(hours: 1));
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('a refused move puts the tile back', (tester) async {
+      await tester.pumpWidget(
+        host(events: [standup()], onMove: (_, _) async => false),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+      final before = tester.getTopLeft(find.text('Standup'));
+
+      await drag(tester, 'Standup');
+
+      expect(tester.getTopLeft(find.text('Standup')), before);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('an event the person may not move stays put', (tester) async {
+      final moves = <CalendarEvent>[];
+      await tester.pumpWidget(
+        host(
+          events: [standup()],
+          movable: false,
+          onMove: (e, _) async {
+            moves.add(e);
+            return true;
+          },
+        ),
+      );
+      await _pumpUntilBodyVisible(tester);
+      await tester.pumpAndSettle();
+
+      await drag(tester, 'Standup');
+
+      expect(moves, isEmpty);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
   });
 }

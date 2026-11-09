@@ -2,7 +2,7 @@
 title: Revisão com IA
 description: Como uma pull request se torna uma pull request revista — espaços de revisão, nós de revisão e consenso entre pares, coortes e eixos, o veredicto Ship/Hold/Block e porque é que a publicação continua a ser um passo teu.
 slug: pt-PT/manual/conceitos/revisao-com-ia
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## A forma de uma revisão
@@ -210,11 +210,13 @@ primes **Publicar no GitHub**:
   integrada no corpo, para que nada seja descartado em silêncio.
 - Um veredicto **Block** é submetido como `REQUEST_CHANGES`; **Hold** como
   `COMMENT`; **Ship** como `APPROVE` a partir do botão (`approve_on_ship: true`).
-  A ferramenta MCP deixa Ship como `COMMENT`, a menos que passes
-  `approve_on_ship`.
-- A revisão é publicada sob a identidade da aplicação do servidor. Quem premiu
-  Publicar é registado para o portão de funções e o registo de auditoria; não é
-  o autor no GitHub.
+  A ferramenta MCP publica como automação e deixa sempre Ship como `COMMENT`.
+- O botão **Publicar no GitHub** publica a revisão como a pessoa que o premiu,
+  com o próprio início de sessão dela no GitHub: o portão de lançamento é dela,
+  por isso a revisão também o é. Uma publicação sem uma pessoa por trás é
+  automação, que nunca aprova: nesse caso, Ship sai como `COMMENT` e, no
+  Control Center Connect, a publicação é atribuída com o prefixo
+  `**Control Center** (for @login):`.
 
 A publicação declara a classe de ação `prPublish`, por isso o ponto de
 estrangulamento das barreiras condiciona-a como qualquer ação mutável — pede

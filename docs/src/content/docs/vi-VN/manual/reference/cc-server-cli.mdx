@@ -2,12 +2,12 @@
 title: CLI cc_server
 description: Mọi cờ, biến môi trường, lệnh con và đường dẫn thư mục dữ liệu của máy chủ không giao diện.
 slug: vi-VN/so-tay/tham-chieu/cli-cc-server
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Mọi cờ của tiến trình nhận một cờ CLI hoặc một biến môi trường; cờ thắng, rồi đến
-biến môi trường, rồi đến giá trị mặc định. Thông tin xác thực của bên thứ ba là
-ngoại lệ — xem bên dưới.
+biến môi trường, rồi đến giá trị mặc định. Thông tin xác thực nhà cung cấp là
+ngoại lệ — xem [Ứng dụng nhà cung cấp và Connect](#ứng-dụng-nhà-cung-cấp-và-connect).
 
 :::caution[Các cờ không xác định bị bỏ qua âm thầm]
 Bộ phân tích đối số được viết thủ công và bỏ qua mọi thứ nó không nhận ra, nên một lỗi
@@ -44,7 +44,7 @@ tác dụng.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | chưa đặt                      | SHA-256 mong đợi của tệp nhị phân đó, được kiểm tra trước mỗi lần sinh tiến trình                                                                            |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | rỗng                          | Các đối số bổ sung phân tách bằng dấu phẩy cho lệnh gọi tunnel                                                                                               |
 
-## Lập chỉ mục và thông tin xác thực bên thứ ba
+## Lập chỉ mục và thời gian chạy
 
 | Cờ                       | Biến môi trường                 | Mặc định                              | Ý nghĩa                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -54,15 +54,38 @@ tác dụng.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Liệu các lượt chạy harness có gửi một tập công cụ thường trú nhỏ cộng một chỉ mục tên, phần còn lại được nạp ở lần dùng đầu tiên hay không. Xem bên dưới |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Số giây một lượt chạy tạm dừng chờ người sửa một thông tin xác thực không thể phục vụ nó (giới hạn trong khoảng 0–3600). Xem bên dưới |
 
-Giá trị rỗng cho một thông tin xác thực được hiểu là chưa đặt, nên phương án dự
-phòng tích hợp sẵn vẫn được áp dụng. Một bản dựng từ mã nguồn hoàn toàn không mang
-theo thông tin xác thực tích hợp nào.
+## Ứng dụng nhà cung cấp và Connect
 
-Google Calendar và bộ chọn GIF Klipy **chỉ có qua biến môi trường** — không có cờ
-`--google-client-id` / `--klipy-app-key` (các cờ không xác định bị bỏ qua). Hãy đặt
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` và `KLIPY_APP_KEY` trong môi
-trường (hoặc một tệp `.env` bên cạnh máy chủ). Giá trị rỗng sẽ tắt tính năng đó thay
-vì khiến quá trình khởi động thất bại.
+Không bản dựng nào mang thông tin xác thực nhà cung cấp. Với Control Center Connect đang bật, Connect chạy mọi nhà cung cấp và các ứng dụng riêng của máy chủ được giữ lại nhưng không dùng. Dưới **Dùng ứng dụng của riêng tôi**, mỗi nhà cung cấp chạy trên ứng dụng riêng của máy chủ khi ứng dụng đó được cấu hình đầy đủ, nếu không thì không khả dụng. Ứng dụng riêng của một không gian làm việc thắng trong cả hai trường hợp. Ứng dụng riêng được
+đặt trong **Cài đặt → Máy chủ → Đăng nhập một lần → Ứng dụng nhà cung cấp**, hoặc được nạp
+một lần từ tệp `.env` của máy chủ. Không có cờ nào cho chúng: một bí mật trên dòng lệnh có
+thể bị đọc qua `ps`.
+
+| Biến                           | Ý nghĩa                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Id GitHub App của máy chủ                                                                     |
+| `GITHUB_APP_PRIVATE_KEY`       | Khóa riêng của nó, trên một dòng với các escape `\n`. **Chỉ `.env`**                          |
+| `GITHUB_CLIENT_ID`             | Id client của nó, để đăng nhập người dùng                                                     |
+| `GITHUB_CLIENT_SECRET`         | Bí mật client của nó. **Chỉ `.env`**                                                          |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Máy khách Google Web application của máy chủ                                                  |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Bí mật của nó. **Chỉ `.env`**                                                                 |
+| `LINEAR_CLIENT_ID`             | Ứng dụng Linear của máy chủ (PKCE, không có bí mật)                                           |
+| `LINEAR_API_KEY`               | Khóa dịch vụ Linear cho tự động hóa. **Chỉ `.env`**                                           |
+| `KLIPY_APP_KEY`                | Khóa Klipy riêng của máy chủ để tìm GIF, chỉ dùng dưới **Dùng ứng dụng của riêng tôi**        |
+| `CC_CONNECT_URL`               | `hosted`, `off`, hoặc một URL Connect. Khóa lựa chọn Connect; khi đó Cài đặt không thể đổi    |
+| `CC_SERVER_CONNECT_HOST`       | `on` gắn Control Center Connect tại `<server>/connect`, được cấu hình bởi các biến `CONNECT_*`. Xem [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/#gắn-connect-bên-trong-cc_server) |
+
+Tệp `.env` được đọc từ thư mục làm việc của máy chủ, cạnh tệp thực thi, hoặc từ một bản
+checkout mã nguồn ở phía trên; trong Docker, gắn nó tại `/app/bin/.env`. Máy chủ **từ chối
+khởi động** (mã thoát `78`) khi `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` hoặc bất kỳ `SLACK_*SECRET*` nào được export
+trong môi trường tiến trình của nó, nơi mọi tiến trình con đều có thể đọc được. Việc nạp từ
+`.env` diễn ra một lần cho mỗi trường, nên một chỉnh sửa sau đó trong Cài đặt không bị lần
+khởi động lại hoàn tác. Giá trị rỗng được coi là chưa đặt.
+
+Công việc nền của GitLab và Bitbucket cũng đọc `GITLAB_TOKEN` / `CI_JOB_TOKEN` và
+`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` với `BITBUCKET_EMAIL`. GitHub không có thông tin
+xác thực trong môi trường.
 
 ### `--sandbox`
 
@@ -116,7 +139,7 @@ hỏng kết thúc lượt đúng như trước khi có cổng này.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Chạy máy chủ cho tới khi nhận `SIGINT`/`SIGTERM`                                                    |
 | `cc_server pair`                              | Cấp phát một thiết bị và in ra id cùng khóa ghép nối của nó. An toàn khi thư mục dữ liệu đang được một máy chủ phục vụ — máy chủ đang chạy sẽ nhận thiết bị mà không cần khởi động lại |
-| `cc_server calendar connect --workspace <id>` | Kết nối một tài khoản Google với một không gian làm việc qua luồng mã thiết bị, rồi thoát          |
+| `cc_server connect <command>`                 | Hiển thị hoặc thay đổi Control Center Connect nào máy chủ này dùng, mà không khởi động nó       |
 | `cc_server update`                            | Kiểm tra, tải về và xác minh một bản phát hành độc lập mới hơn                                      |
 | `cc_server --version`                         | In phiên bản bản dựng và SHA git — đúng danh tính mà `/healthz` và bước bắt tay RPC quảng bá       |
 
@@ -142,6 +165,25 @@ payload khác, được tạo từ bảng ghép nối trong ứng dụng — b�
 máy chủ cùng một thời hạn. Hai loại này không thể thay thế cho nhau — xem
 [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
 :::
+
+### `connect`
+
+Đọc và ghi cùng các cài đặt như thẻ **Control Center Connect** trong **Cài đặt → Máy chủ →
+Đăng nhập một lần**, từ thư mục dữ liệu. Một máy chủ đang chạy nhận thay đổi trong vòng 10
+phút hoặc khi khởi động lại.
+
+| Lệnh                                  | Tác dụng                                                                                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`            | In chế độ, URL, việc `CC_CONNECT_URL` có khóa nó hay không, id cài đặt, tình trạng và nguồn của từng làn (`own`, `connect` hoặc `off`)     |
+| `cc_server connect enable`            | Dùng Control Center Connect do Control Center lưu trữ                                                                                      |
+| `cc_server connect enable --url <url>` | Dùng một Connect tùy chỉnh tại URL đó (HTTPS, hoặc `http` trên loopback)                                                                   |
+| `cc_server connect disable`           | Ngừng dùng Connect. Chỉ các ứng dụng riêng của máy chủ mới đăng nhập được người dùng                                                        |
+| `cc_server connect rotate-key --yes`  | Tạo khóa cài đặt và id cài đặt mới. Mọi người đã đăng nhập qua Connect sẽ phải đăng nhập lại. Không có `--yes` thì nó chỉ cảnh báo và thoát với mã `2` |
+
+`status` không kèm lệnh là mặc định. Mỗi lệnh đều nhận `--data-dir`. `CC_CONNECT_URL` ghi đè
+mọi thứ mà các lệnh này lưu. Lệnh không xác định thoát với mã `64`. Xem
+[Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/) để biết các chế độ, danh tính cài
+đặt và mã trạng thái.
 
 ### `update`
 
@@ -186,7 +228,7 @@ chỉ được dùng khi không phân giải được thư mục home hay thư m
 | `global.db`                       | Sổ đăng ký không gian làm việc, người dùng, thiết bị đã ghép nối, bảng tin và hàng đợi đội máy |
 | `<workspaceId>/workspace.db`      | Một cơ sở dữ liệu cho mỗi không gian làm việc — agent, space, phiếu, bộ nhớ, đồ thị mã    |
 | `<workspaceId>/chat_credentials/` | Token bot chat, dưới dạng JSON thuần, để chúng đi kèm không gian làm việc                   |
-| `secrets.json`                    | Khóa ghép nối, danh tính ứng dụng của nhà cung cấp, token theo từng người dùng và token Google, SSO (`0600`) |
+| `secrets.json`                    | Khóa ghép nối, khóa cài đặt Connect, ứng dụng của nhà cung cấp, đăng nhập của người dùng (được niêm phong khi tạo qua Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Một ảnh chụp nhanh bản cài đặt — `manifest.json`, `global.db` và một bản sao của từng không gian làm việc |
 | `backups/exports/`                | Bản xuất của một không gian làm việc, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Khu trung chuyển cho việc tải lên và tải xuống bản sao lưu; được dọn bởi tuyến ghi vào đó     |

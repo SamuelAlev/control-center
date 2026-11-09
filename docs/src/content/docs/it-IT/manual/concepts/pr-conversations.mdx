@@ -2,19 +2,20 @@
 title: Conversazioni sulle PR
 description: Come un commento a una PR GitHub diventa il turno di un agente senza webhook, cosa autorizza l'autore e a chi viene attribuito ciascun lato della conversazione.
 slug: it-IT/manuale/concetti/conversazioni-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Una pull request è già il luogo in cui avviene la conversazione sul codice. Le
 conversazioni sulle PR la rendono una superficie su uno spazio di lavoro di
 Control Center, allo stesso modo in cui un
 [ponte di chat](/it-IT/manuale/concetti/ponti-di-chat/) rende tale Slack:
-@menziona il bot della GitHub App del server su una PR, rispondi all'interno
-dei suoi thread di revisione oppure aggiungi l'etichetta `ai-review`, e il
-lavoro avviene nello spazio di revisione della PR — con la stessa attribuzione
-e gli stessi guardrail di qualsiasi cosa digitata nell'app. Anche un commento è
-vincolato all'appartenenza; l'etichetta no, perché non ha un autore. Le
-risposte del bot tornano su GitHub, nel canale in cui è stata posta la domanda.
+@menziona `@usectrl` (o il bot della GitHub App dello spazio di lavoro) su una
+PR, rispondi all'interno dei suoi thread di revisione oppure aggiungi
+l'etichetta `ai-review`, e il lavoro avviene nello spazio di revisione della
+PR — con la stessa attribuzione e gli stessi guardrail di qualsiasi cosa
+digitata nell'app. Un commento e un'etichetta sono vincolati allo stesso modo:
+al membro che li ha scritti o aggiunti. Le risposte tornano su GitHub, nel
+canale in cui è stata posta la domanda.
 
 Tre decisioni danno forma alla funzionalità, e ciascuna è la stessa decisione
 che il ponte di chat ha preso per la chat, riformulata per una forge: **in
@@ -25,17 +26,21 @@ arriva dall'esterno** e **a chi è attribuito ciascun lato**.
 
 L'unico canale push di GitHub per un'app è un webhook, e un webhook richiede un
 URL in ingresso — l'unica cosa che questa superficie non richiede mai, di
-proposito. La scoperta è quindi una scansione: all'incirca ogni minuto, una
-ricerca con alias per ogni installazione dell'app chiede a GitHub le PR che
-menzionano il bot (o il suo slug breve) e le PR aperte che portano l'etichetta
-di revisione, le PR che hanno già uno spazio di revisione vedono leggere i
-propri thread di commenti, e tutto viene confrontato per id del commento con
-quanto visto alla scansione precedente.
+proposito. La scoperta è quindi una scansione: una ricerca con alias per ogni
+installazione dell'app chiede a GitHub le PR che menzionano il bot (o il suo
+slug breve) e le PR aperte che portano l'etichetta di revisione, le PR che hanno
+già uno spazio di revisione vedono leggere i propri thread di commenti, e tutto
+viene confrontato per id del commento con quanto visto alla scansione
+precedente. Un'app propria esegue la scansione ogni minuto su al massimo 25 PR.
+Tramite Connect le chiamate consumano la quota GitHub dei membri stessi, quindi
+la scansione viene eseguita ogni due minuti su al massimo 10 PR, e uno spazio di
+lavoro sotto il 15% della propria quota viene saltato finché non si riprende.
+Connect stesso non vede mai il contenuto delle PR.
 
 Vale la pena dare un nome alle conseguenze progettuali:
 
 - **La latenza è un intervallo di scansione, non un evento.** La conferma 👀
-  arriva entro circa un minuto. Nulla di urgente vi dipende.
+  arriva entro una scansione. Nulla di urgente vi dipende.
 - **Esattamente una volta, per commento.** Gli id dei commenti sono unici in
   tutto GitHub; ciascuno viene registrato nel momento in cui è classificato
   come idoneo, prima che qualsiasi cosa agisca su di esso. Un crash può perdere
@@ -52,55 +57,66 @@ Vale la pena dare un nome alle conseguenze progettuali:
   scansione; una menzione è la via per rieseguire.
 
 La ricerca viene eseguita una volta per account di installazione sul client di
-quel proprietario, perché un token di installazione vede solo i repository della
-propria installazione — un'unica credenziale a livello di server mancherebbe
+quel proprietario, perché un token vede solo i repository della propria
+installazione — un'unica credenziale a livello di server mancherebbe
 silenziosamente ogni PR sotto le altre installazioni dell'app.
 
 ## È l'appartenenza ad autorizzare, non il commento
 
-Un commento a una PR arriva portando poco più del login di un autore — un'identità
-esterna non autenticata finché non viene dimostrato il contrario. Il bot la
-risolve rispetto a un indice inverso dei membri dello spazio di lavoro e dei
-loro account GitHub collegati, ricostruito con un TTL perché le persone accedono
-e vengono invitate mentre il server è in esecuzione.
+Un commento a una PR arriva portando un autore — un'identità esterna non
+autenticata finché non viene dimostrato il contrario. Il server risolve l'id
+numerico immutabile dell'account GitHub dell'autore (mai il login, che può
+essere rinominato e riutilizzato) rispetto agli accessi GitHub dei membri dello
+spazio di lavoro, ricostruiti con un TTL perché le persone accedono e vengono
+invitate mentre il server è in esecuzione. Per l'etichetta `ai-review`, la
+persona risolta è chi l'ha aggiunta più di recente.
 
-Negare in caso di dubbio somiglia a una scala, e ogni gradino risponde nel
-thread in cui ha rifiutato:
+Tre controlli, in ordine, e il fallimento di uno qualsiasi è silenzioso — non
+viene pubblicato nulla:
 
-- **Un login sconosciuto** — non collegato, o collegato da qualcuno che non è
-  membro di questo spazio di lavoro — riceve l'indicazione di accedere e di
-  assicurarsi di appartenervi
-- **Un membro in sola lettura** (`viewer` o `guest`) riceve l'indicazione che
-  il suo ruolo non può avviare lavoro
+- **Un membro che ha effettuato l'accesso.** L'account deve appartenere a un
+  membro di _questo_ spazio di lavoro che ha effettuato l'accesso a GitHub su
+  questo server
+- **Un ruolo di scrittura.** `viewer` e `guest` non possono avviare lavoro
+- **Accesso in push.** Le risposte usano un token `bot` limitato all'accesso di
+  quel membro al repository. Se il server non riesce a emetterne uno, non
+  procede
 
-I due casi di login sconosciuto condividono una sola risposta: l'indice inverso
-restituisce solo un membro di _questo_ spazio di lavoro, quindi un account non
-collegato e un non membro collegato sono lo stesso mancato riscontro. Nessuno
-di essi procede. Un commento non viene mai attribuito a qualcuno che non lo ha
-inviato, e le parole di un estraneo non entrano mai in uno spazio di lavoro che
-non può vedere.
+Ogni controllo viene eseguito prima di qualsiasi conferma, quindi un estraneo
+non riceve né reazioni né risposte. Un commento non viene mai attribuito a
+qualcuno che non lo ha inviato, e le parole di un estraneo non entrano mai in
+uno spazio di lavoro che non può vedere.
 
-L'etichetta `ai-review` non ha un autore da risolvere, quindi non risale questa
-scala. Aggiungerla avvia la revisione nello spazio di lavoro che ha già
-collegato il repository.
+### La rivendicazione
+
+L'ultimo passo prima di qualsiasi lavoro è una reazione 👀, aggiunta con
+l'accesso GitHub dell'autore stesso. GitHub risponde `201` per una nuova
+reazione e `200` per una che esiste già, quindi la reazione funziona anche da
+lock: quando la stessa persona ha effettuato l'accesso su due server che
+collegano entrambi il repository, solo il primo a reagire esegue il lavoro. Un
+commento visto da più spazi di lavoro su uno stesso server viene offerto a
+ciascuno, e decide la stessa rivendicazione.
 
 ## Due identità, di proposito
 
 Ciascun lato della conversazione porta un'identità diversa, e la differenza è
 la funzionalità:
 
-- **Su GitHub, il bot è il server.** Ogni commento, reazione e risposta
-  pubblicati dal ponte viaggia sul token di installazione dell'app. Nessuno ha
-  cliccato nulla in un client, quindi nulla prende in prestito l'account di una
-  persona — la stessa regola che tiene i webhook e il polling lontani dalle
-  credenziali umane.
+- **Su GitHub, la risposta è automazione per tuo conto.** Ogni risposta viaggia
+  su un token `bot` per quell'unico repository, limitato all'accesso del membro
+  che ha chiesto. Con un'app propria l'autore è l'account `[bot]` dell'app.
+  Tramite Connect un token per l'App condivisa è un token utente, quindi la
+  risposta è firmata dall'account del membro che ha chiesto, che agisce tramite
+  l'App. In entrambi i casi ogni risposta inizia con
+  `**Control Center** (for @login):`, che dice chi ha chiesto e funge anche da
+  protezione anti-loop.
 - **Nello spazio, la domanda è tua.** Il messaggio è attribuito al membro in cui
   l'autore si è risolto, e l'esecuzione dell'agente avviene per suo conto: i
   commit lo vedono come coautore, e il selettore dell'autonomia e i guardrail
   delle azioni dello spazio si applicano esattamente come a un messaggio
-  digitato nell'app. Le scritture sulla forge provenienti dall'esecuzione
-  escono comunque come l'app — la stessa regola del punto precedente — non sul
-  token personale del membro.
+  digitato nell'app. Le scritture sulla forge provenienti dall'esecuzione usano
+  token limitati a un repository e circoscritti da quel membro, mai il suo
+  accesso consegnato per intero.
 
 Pubblicare i risultati della revisione di nuovo su GitHub resta una decisione
 di una persona, presa in Control Center. Una menzione può _avviare_ una
@@ -111,8 +127,10 @@ revisione; solo un essere umano la pubblica.
 Tutto ciò che è stato creato da un account bot viene scartato prima che venga
 eseguito qualsiasi controllo — il nostro in particolare, e ogni suffisso
 `[bot]`, così nemmeno il bot di revisione di un'altra app può svegliare il
-nostro. Senza questo, le risposte stesse del bot arriverebbero come nuovi
-commenti e lo riattiverebbero all'infinito.
+nostro — e lo stesso vale per ogni commento che inizia con il prefisso
+`**Control Center** (for @`, poiché una risposta tramite Connect è firmata
+dall'account di una persona. Senza questo, le risposte arriverebbero come nuovi
+commenti e riattiverebbero il ponte all'infinito.
 
 Il suffisso `[bot]` è anche il motivo per cui esiste la forma breve. GitHub
 fissa il login di un account app a `<slug>[bot]`, non offre alcun completamento
@@ -128,8 +146,11 @@ di se stesso. Nomi di app distintivi rendono la collisione ipotetica.
 - **Nessuna pubblicazione automatica.** I risultati arrivano nello spazio di
   revisione; pubblicare su GitHub è un'azione separata, umana
 - **Nessuna identità approssimativa.** L'autore si risolve in esattamente un
-  membro oppure viene rifiutato — non esiste un'attribuzione basata su
+  membro oppure viene ignorato — non esiste un'attribuzione basata su
   congetture
+- **Nessuna approvazione automatica.** L'automazione può commentare e
+  richiedere modifiche, ma una revisione `APPROVE` viene rifiutata prima di
+  essere inviata. Approvare è un atto di una persona
 - **Nessun webhook della GitHub App.** Questa superficie non ne registra mai
   uno, quindi non c'è alcun URL in ingresso da esporre per i commenti delle PR.
   Gli altri webhook del prodotto (pipeline, sincronizzazione dei ticket) sono
@@ -142,7 +163,7 @@ di se stesso. Nomi di app distintivi rendono la collisione ipotetica.
 - [Ponti di chat](/it-IT/manuale/concetti/ponti-di-chat/): le stesse tre decisioni,
   prese per la chat
 - [Crea la GitHub App](/it-IT/manuale/guide/github-app/): da dove viene
-  l'identità del bot
+  l'identità del bot di un'app propria
 - [Multigiocatore — identità, appartenenza e presenza](/it-IT/manuale/concetti/multigiocatore/):
   i principali e i ruoli attraverso cui si risolve un login
 - [Guardrail](/it-IT/manuale/concetti/guardrail/): cosa è consentito fare

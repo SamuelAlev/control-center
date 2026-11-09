@@ -2,7 +2,7 @@
 title: KI-gestützte Review nutzen
 description: Führe die Pipeline pr_review auf einem PR aus, lies die Befunde und das Verdikt und veröffentliche das Review auf GitHub.
 slug: de-DE/handbuch/anleitungen/ki-review
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Diese Anleitung zeigt, wie Reviewer-Agenten einen Pull Request prüfen und wie du
@@ -118,14 +118,15 @@ Control Center sendet **ein** GitHub-Review. Schon erledigte oder abgelehnte
 Befunde werden übersprungen. Die Schaltfläche nimmt jeden verbleibenden offenen
 Befund mit und reicht bei **Ship** `APPROVE` ein. (Das MCP-Tool
 `publish_review_to_github` bleibt standardmäßig bei nur von einem Peer
-bestätigten Befunden und gibt nicht frei, solange du nicht
-`approve_on_ship` übergibst.) Befunde mit Anker auf Datei und Zeile werden
+bestätigten Befunden und gibt nie frei: Es veröffentlicht als Automatisierung,
+`approve_on_ship` wirkt dort also nicht.) Befunde mit Anker auf Datei und Zeile werden
 Inline-Kommentare. Alles andere wandert in den Text der Zusammenfassung, jeder
 mit der Fußzeile "— Control Center AI review", damit die Quelle eindeutig ist.
 Ein Verdikt **Block** wird als `REQUEST_CHANGES` eingereicht, **Hold** als
 `COMMENT` und **Ship** als `APPROVE` von dieser Schaltfläche. Ein Toast zeigt
-danach **Veröffentlicht**. Das Review wird unter der App-Identität des Servers
-gepostet.
+danach **Veröffentlicht**. Das Review wird als du gepostet, über deine eigene
+GitHub-Anmeldung: Bist du nicht bei GitHub angemeldet, schlägt das
+Veröffentlichen fehl und fordert dich auf, dich anzumelden.
 
 Lehnt GitHub einen Inline-Anker ab, weil die Zeile nicht zum Diff gehört, wird
 das gesamte Review erneut gesendet und jeder Befund in den Text genommen, damit

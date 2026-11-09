@@ -134,9 +134,10 @@ and the same rules apply whichever adapter runs the agent.
 
 A push is the action that has to hold even against an agent working around a
 rule, so it is enforced by what the agent holds rather than by what it runs.
-With a GitHub App configured, a run in a GitHub worktree gets a repo-scoped
-installation token that can read contents and work with pull requests but
-cannot push. The run's git configuration rewrites every GitHub push URL
+A run in a GitHub worktree gets a token for that one repository, minted from
+the workspace's GitHub App, the server's own app or Control Center Connect. It
+can read contents and, when the accountable member can push, comment on pull
+requests, but it cannot push. The run's git configuration rewrites every GitHub push URL
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) to the
 **agent run gateway**, a loopback endpoint on `cc_server`. The gateway reads
 which refs the push updates, asks the **Push to a remote** rule — so a
@@ -162,12 +163,10 @@ external tracker**; package installs are **Install a package**; `curl` and
 an action, and an agent determined to hide one (`eval`, a script file, a raw
 API call) can. Pushes do not depend on it.
 
-:::caution[Without a GitHub App the push rule is advisory]
-With no GitHub App configured, the broker falls back to a personal access
-token, which cannot be narrowed to read-only. The rule still holds for
-`git push`, because git sends the push to the gateway, but code that uses the
-token in the environment directly can push around it.
-:::
+Every GitHub token a run receives is bounded twice: to one repository, and to
+what the accountable member (the one who asked, else the workspace owner) can
+do there. There is no fallback credential. When no token can be minted, the
+run starts without one and its notes say why.
 
 No ticketing API key is placed in a sandbox. Agents write tickets through
 Control Center's MCP tools, which ask **Write to an external tracker**.
@@ -175,8 +174,10 @@ Control Center's MCP tools, which ask **Write to an external tracker**.
 The **Access the network** rule is read once, when the run starts. A sandbox's
 network is either on or off, so a deny turns it off while allow and ask first
 leave it on; the harness's `web_fetch` and `web_search` tools still ask per
-call. Credentials are revoked when the run tears down, together with any write
-token the gateway minted, so a handle does not outlive the run.
+call. The run's credential handles are released when it tears down. The
+tokens behind them are shared per member and repository and expire within
+about an hour; a member signing out of GitHub or leaving the workspace drops
+every token minted on their behalf at once.
 
 ## What the sandbox adds and where it stops
 

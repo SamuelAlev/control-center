@@ -2,16 +2,16 @@
 title: Mapa de rutas
 description: Todas las rutas que registra Control Center, con su pantalla y sus parámetros de consulta.
 slug: es-MX/manual/referencia/mapa-de-rutas
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell de la aplicación
 
-El shell de la aplicación (`ControlCenterLayout`) envuelve cada ruta dentro del espacio de trabajo mediante un `ShellRoute`. **Todo destino dentro del shell lleva el prefijo del espacio de trabajo — `/workspaces/:workspaceId/…` — y el id del espacio de trabajo en la URL es la única fuente de verdad del espacio de trabajo activo.** Solo las superficies previas al contexto no llevan prefijo: `/splash`, `/onboarding`, `/signed-out` y el selector `/workspaces` sin más, todas a pantalla completa y fuera del shell.
+El shell de la aplicación (`ControlCenterLayout`) envuelve cada ruta dentro del espacio de trabajo mediante un `ShellRoute`. **Todo destino dentro del shell lleva el prefijo del espacio de trabajo — `/workspaces/:workspaceId/…` — y el id del espacio de trabajo en la URL es la única fuente de verdad del espacio de trabajo activo.** Solo las superficies previas al contexto no llevan prefijo: `/splash`, `/onboarding` y el selector `/workspaces` sin más, todas a pantalla completa y fuera del shell.
 
 La puerta está completa cuando hay al menos un host de código conectado **para el usuario que inició sesión** y existe al menos un espacio de trabajo.
 
-Una credencial ausente y una configuración ausente son pantallas distintas, y el discriminante es `users.onboarding_finished_at`, leído del propio `identity.me` de quien llama — nunca «existen espacios de trabajo», que es falso en cuanto invitan a alguien a un espacio de trabajo que nunca creó. Sin ningún host de código conectado, una cuenta que ya pasó por el onboarding va a `/signed-out` para volver a autenticarse; una que no, va a `/onboarding`. Mientras el indicador siga siendo desconocido, la guardia retiene la pantalla de inicio en lugar de suponer, porque nunca redirige de vuelta fuera del onboarding.
+Una credencial ausente y una configuración ausente se tratan de forma distinta, y el discriminante es `users.onboarding_finished_at`, leído del propio `identity.me` de quien llama — nunca «existen espacios de trabajo», que es falso en cuanto invitan a alguien a un espacio de trabajo que nunca creó. Sin ningún host de código conectado, una cuenta que ya pasó por el onboarding se queda en la aplicación: el shell del espacio de trabajo muestra una advertencia con un enlace a Ajustes → Espacio de trabajo → Perfil e identidad, donde está el inicio de sesión; una que no, va a `/onboarding`. Mientras el indicador siga siendo desconocido, la guardia retiene la pantalla de inicio en lugar de suponer, porque nunca redirige de vuelta fuera del onboarding.
 
 ## Rutas sin prefijo
 
@@ -19,7 +19,6 @@ Una credencial ausente y una configuración ausente son pantallas distintas, y e
 | -------------------------- | -------------------------------------------------- |
 | `/splash`                  | Pantalla de inicio de arranque que resuelve la puerta de onboarding |
 | `/onboarding`              | Conectar un host de código, crear un espacio de trabajo o unirse a uno, sandbox, adaptador predeterminado y, por último, voz. El paso del espacio de trabajo se omite cuando la cuenta ya pertenece a uno |
-| `/signed-out`              | Volver a autenticarse: la misma tarjeta de conexiones de host de código que muestra Ajustes, sin barra de pasos ni botón de continuar — el enrutador sale por su cuenta en cuanto un host de código se reporta |
 | `/workspaces`              | Lista y selector de espacios de trabajo            |
 | `/workspaces/:workspaceId` | Redirige a `/workspaces/:workspaceId/inbox`        |
 

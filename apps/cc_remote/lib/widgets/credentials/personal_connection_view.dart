@@ -9,10 +9,6 @@ mixin _PersonalConnectionView
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final canSignIn =
-        widget.signInFlow == 'device' ||
-        (widget.signInFlow == 'redirect' &&
-            phoneCanUseRedirect(widget.redirectUri));
     return CcCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,28 +56,35 @@ mixin _PersonalConnectionView
                 child: Text(l.credentialsRemove),
               ),
             ],
-            _PersonalSignInForm(
-              canSignIn: canSignIn,
-              connected: widget.connected,
-              signInFlow: widget.signInFlow,
-              verificationUrl: _verificationUrl,
-              userCode: _userCode,
-              busy: _busy,
-              onBegin: _begin,
-              onStop: _stop,
-            ),
-            _PersonalTokenForm(
-              connected: widget.connected,
-              editing: _editing,
-              busy: _busy,
-              controller: _token,
-              onEdit: () => setState(() => _editing = true),
-              onSave: _save,
-              onCancel: () {
-                _token.clear();
-                setState(() => _editing = false);
-              },
-            ),
+            if (widget.lane != null)
+              _PersonalSignInForm(
+                provider: widget.name,
+                canSignIn: _canSignIn,
+                ownUnreachable: _ownUnreachable,
+                unavailable:
+                    widget.laneInfo?.mode == SignInLaneMode.unavailable,
+                connected: widget.connected,
+                needsAttention: widget.statusError?.isNotEmpty == true,
+                attempt: _attempt,
+                code: _code,
+                busy: _busy,
+                onBegin: _begin,
+                onConfirmCode: _confirmCode,
+                onStop: _stop,
+              )
+            else
+              _PersonalTokenForm(
+                connected: widget.connected,
+                editing: _editing,
+                busy: _busy,
+                controller: _token,
+                onEdit: () => setState(() => _editing = true),
+                onSave: _save,
+                onCancel: () {
+                  _token.clear();
+                  setState(() => _editing = false);
+                },
+              ),
           ],
           if (_error != null)
             Padding(

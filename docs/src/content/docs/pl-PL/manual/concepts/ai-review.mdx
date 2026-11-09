@@ -2,7 +2,7 @@
 title: Recenzja AI
 description: Jak pull request staje się zrecenzowanym pull requestem — przestrzenie recenzji, węzły recenzji i konsensus recenzentów, kohorty i osie, werdykt Ship/Hold/Block oraz dlaczego publikowanie pozostaje krokiem, który wykonujesz sam.
 slug: pl-PL/podrecznik/koncepcje/recenzja-ai
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Kształt recenzji
@@ -105,8 +105,8 @@ Potok celowo nie zamieszcza niczego na GitHubie; publikowanie jest uzależnione 
 - Przesyłana jest jedna recenzja GitHub. Ustalenia już rozwiązane lub odrzucone są pomijane. Przycisk publikuje każde pozostałe otwarte ustalenie (`selection: all_open`). Narzędzie MCP `publish_review_to_github` nadal domyślnie ogranicza się do ustaleń potwierdzonych przez innych recenzentów (`consensus`).
 - Ustalenia zakotwiczone w pliku i wierszu stają się komentarzami w linii; wszystko inne trafia do treści podsumowania, a każde niesie stopkę „— Control Center AI review”, żeby źródło było jednoznaczne.
 - Kotwice są ponownie weryfikowane wobec _bieżącego_ diffu PR-a w momencie publikowania. Komentarz do kodu, który został już przepisany, to najbardziej niszcząca zaufanie rzecz, jaką recenzent może zostawić; jeśli GitHub i tak odrzuci kotwicę w linii, cała recenzja jest wysyłana ponownie, a każde ustalenie trafia do treści, żeby nic nie zniknęło po cichu.
-- Werdykt **Block** jest przesyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako `APPROVE` z przycisku (`approve_on_ship: true`). Narzędzie MCP zostawia Ship jako `COMMENT`, chyba że przekażesz `approve_on_ship`.
-- Recenzja jest zamieszczana pod tożsamością aplikacji serwera. Kto nacisnął Opublikuj, jest zapisywane na potrzeby bramki roli i dziennika audytu; nie jest to autor z GitHuba.
+- Werdykt **Block** jest przesyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako `APPROVE` z przycisku (`approve_on_ship: true`). Narzędzie MCP publikuje jako automatyzacja i zawsze zostawia Ship jako `COMMENT`.
+- Przycisk **Opublikuj na GitHubie** zamieszcza recenzję jako osoba, która go nacisnęła, na jej własnym logowaniu do GitHuba: bramka wydania należy do niej, więc recenzja też. Publikacja, za którą nie stoi żadna osoba, jest automatyzacją, a ta nigdy nie zatwierdza: Ship trafia wtedy jako `COMMENT`, a w Control Center Connect wpis jest podpisywany prefiksem `**Control Center** (for @login):`.
 
 Publikowanie deklaruje klasę akcji `prPublish`, więc punkt kontrolny guardraili traktuje je jak każdą akcję zmieniającą stan — domyślnie pyta o zgodę, a gdy nie jest podłączony żaden zatwierdzający, odmawia działania. Zobacz [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 

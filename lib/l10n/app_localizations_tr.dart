@@ -1141,6 +1141,98 @@ class AppLocalizationsTr extends AppLocalizations {
   String get calendarRsvpFailed => 'Yanıtınız güncellenemedi';
 
   @override
+  String get calendarNewEvent => 'Yeni etkinlik';
+
+  @override
+  String get calendarComposerTitleHint => 'Bir başlık ekleyin';
+
+  @override
+  String get calendarComposerStarts => 'Başlangıç';
+
+  @override
+  String get calendarComposerEnds => 'Bitiş';
+
+  @override
+  String get calendarComposerDate => 'Tarih';
+
+  @override
+  String get calendarComposerEndDate => 'Son gün';
+
+  @override
+  String get calendarComposerGuestsHint => 'E-postayla katılımcı ekleyin';
+
+  @override
+  String get calendarComposerMeet => 'Google Meet bağlantısı ekleyin';
+
+  @override
+  String get calendarComposerLocationHint => 'Konum ekleyin';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Açıklama ekleyin';
+
+  @override
+  String get calendarComposerCalendar => 'Takvim';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Etkinliği kaydetmek için bir başlık ekleyin';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Katılımcı e-postalarından biri geçerli değil';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Etkinlik, başladıktan sonra bitmelidir';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Etkinlik oluşturulamadı. Tekrar deneyin.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Katılımcılar Google\'dan e-posta davetiyesi alır.';
+
+  @override
+  String get calendarDeleteEvent => 'Etkinliği sil';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '“$title” silinsin mi?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Google Calendar\'dan kaldırılır.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Google Calendar\'dan kaldırılır ve tüm katılımcılara iptal edildiği bildirilir.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Yalnızca takviminizden kaldırılır. Düzenleyen ve diğer katılımcılar etkinliği tutmaya devam eder.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Yalnızca bu tekrar silinir; serinin geri kalanı kalır.';
+
+  @override
+  String get calendarDeleteFailed => 'Etkinlik silinemedi. Tekrar deneyin.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Etkinlik taşınamadı. Eski yerine geri döndü.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Bir takvim etkinliği oluşturdu';
+
+  @override
+  String get activityMovedCalendarEvent => 'Bir takvim etkinliğini taşıdı';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Bir takvim etkinliğini sildi';
+
+  @override
   String get calendarAddAccount => 'Takvim hesabı ekle';
 
   @override
@@ -1151,9 +1243,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Etkinlikleri bu çalışma alanına eşitlemek için bir Google hesabı bağlayın. Bu takvimler burada size aittir.';
 
   @override
-  String get calendarConnecting => 'Bağlanıyor…';
-
-  @override
   String get calendarSyncNow => 'Şimdi eşitle';
 
   @override
@@ -1162,34 +1251,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Google Calendar bağlanamadı';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Projeniz için Google OAuth device-code client ID ve secret değerlerini girin. Bağlantıyı ve eşitlemeyi sunucu yürütür — tarayıcınız token’ları hiçbir zaman tutmaz.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Herhangi bir cihazda doğrulama sayfasını açın, oturum açın ve şu kodu girin:';
-
-  @override
-  String get calendarConnectOpenPage => 'Doğrulama sayfasını aç';
-
-  @override
-  String get calendarConnectWaiting => 'Onay bekleniyor…';
-
-  @override
-  String get calendarConnectDenied =>
-      'Yetkilendirme reddedildi. Lütfen yeniden deneyin.';
-
-  @override
-  String get calendarConnectExpired =>
-      'Kodun süresi doldu. Lütfen yeniden deneyin.';
 
   @override
   String get notificationMeetingStartsSoon => 'Toplantı yakında başlıyor';
@@ -2410,9 +2471,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir üyenin depo erişimini değiştirdi';
 
   @override
-  String get activityUpdatedGitHubToken => 'GitHub token\'ını güncelledi';
-
-  @override
   String get activityRefreshedWeather => 'Hava durumu tahminini yeniledi';
 
   @override
@@ -2449,9 +2507,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'Etkinlik davetine yanıt verdi';
-
-  @override
-  String get activityStartedCalendarConnect => 'Takvim bağlantısını başlattı';
 
   @override
   String get activityDisconnectedCalendar => 'Takvimin bağlantısını kesti';
@@ -4744,7 +4799,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get searchGifs => 'GIF ara';
 
   @override
-  String get searchGifsHint => 'GIF ara...';
+  String get searchGifsHint => 'KLIPY’de ara';
 
   @override
   String get searchInDiffHint => 'Diff içinde ara…';
@@ -5227,9 +5282,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Adsız ajan';
-
-  @override
-  String get updateKey => 'Anahtarı güncelle';
 
   @override
   String get updateLabel => 'Güncelle';
@@ -6285,7 +6337,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'bash -c ile çalışır. GITHUB_TOKEN ayarlıdır. Yer tutucular çalıştırılmadan önce değiştirilir.';
+      'İşletim sistemi korumalı alanında bash -c ile çalışır. GH_TOKEN ve GITHUB_TOKEN, bağlı depo için salt okunur bir belirteç içerir. Yer tutucular çalıştırılmadan önce tırnağa alınıp değiştirilir.';
 
   @override
   String get nodeConfigRouteKeys => 'Rota anahtarları';
@@ -6953,7 +7005,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub’a giriş yapın veya Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin';
+      'Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümünden GitHub’a giriş yapın';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -11907,7 +11959,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '$provider içinde botu etiketleyerek bir ajana iş verin veya $command ile bilet açın.';
+    return '$provider içinde botu etiketleyerek bir ajana iş verin veya $command ile bilet taslakları oluşturun.';
   }
 
   @override
@@ -11994,7 +12046,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Bu komutu $provider içinde bota gönder. Bir kez çalışır ve 15 dakika sonra süresi dolar.';
+    return 'Bu kodu doğrudan mesajla $provider botuna gönder. Bir kez çalışır ve 15 dakika sonra süresi dolar.';
   }
 
   @override
@@ -12162,21 +12214,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → bot user OAuth token\'ı kopyala.';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'Control Center\'ın Google uygulamasını kullan';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Google hesabınla onayla. Google Cloud\'da kurulum yok.';
-
-  @override
-  String get calendarUseOwnClient => 'Kendi Google Cloud istemcimi kullan';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Kendi Google Cloud projenindeki bir OAuth istemcisini gir.';
 
   @override
   String get aboutTitle => 'Hakkında';
@@ -12870,18 +12907,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get signInAgain => 'Yeniden oturum aç';
 
   @override
-  String get signInNotFinished =>
-      'Oturum açma henüz dönmedi. Tarayıcınızda tamamlayın, sonra yeniden denetleyin.';
+  String get forgeSignInBannerTitle =>
+      'Bu çalışma alanında kod barındırma bağlı değil';
 
   @override
-  String get signedOutTitle => 'Oturumunuz kapatıldı';
+  String get forgeSignInBannerBody =>
+      'Bir oturum açmanın süresi doldu ya da iptal edildi veya bu çalışma alanı kendi GitHub App\'ini kullanıyor. Oturum açana kadar pull request\'ler, incelemeler ve depo eşitlemesi duraklatıldı.';
 
   @override
-  String get signedOutSubtitle =>
-      'Kod barındırma bağlantınız artık geçerli değil — bir token’ın süresi doldu veya erişimi iptal edildi. Başka bir şey değişmedi: yeniden oturum açın, her şey kaldığı yerde.';
-
-  @override
-  String get viaServerApp => 'bu sunucunun uygulaması üzerinden';
+  String get forgeSignInBannerAction => 'Oturum aç';
 
   @override
   String get ticketing => 'Biletler';
@@ -12899,14 +12933,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ticketProviderLocal => 'Yerel';
 
   @override
-  String get addKey => 'Anahtar ekle';
-
-  @override
   String get providerApps => 'Sağlayıcı uygulamaları';
 
   @override
   String get providerAppsDescription =>
-      'Çalışma alanları başka bir App veya kişisel erişim belirteci seçmedikçe bu GitHub App\'i miras alır. Arka plan işi — webhook\'lar, yoklama, eşitleme — uygulamada çalışır, birinin belirtecinde değil.';
+      'Bu sunucunun her sağlayıcıya kendisinin kaydettiği uygulamalar. Kişiler bunlar üzerinden oturum açar; webhook\'lar, yoklama ve eşitleme gibi arka plan işleri de bunlar üzerinde çalışır, asla bir kişinin oturumu üzerinde değil.';
 
   @override
   String get providerAppId => 'Uygulama id';
@@ -12919,9 +12950,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'İstemci gizli anahtarı';
-
-  @override
-  String get providerApiKey => 'API anahtarı';
 
   @override
   String get providerCallbackUrl => 'Geri çağırma URL’si';
@@ -12942,17 +12970,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Kimlik bilgileri çalışıyor. Kurulu olduğu yer: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Az önce açılan $provider sayfasına bu kodu girin. Panonuza kopyalandı.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Tarayıcıda işlemi tamamlamanız bekleniyor…';
-
-  @override
-  String get copyCodeAndOpen => 'Kodu kopyala ve aç';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13297,7 +13314,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Bu kurulumun GitHub App\'ini miras alan çalışma alanları için. Kendi App\'i veya PAT\'ı olan bir çalışma alanı Çalışma alanı → Genel altında ayarlanır.';
+      'Bu kurulumun GitHub uygulamasını devralan çalışma alanları tarafından kullanılır. Kendi uygulaması olan bir çalışma alanı bunu Çalışma alanı → Genel bölümünde ayarlar.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request konuşmaları';
@@ -14851,7 +14868,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Bu çalışma alanında arka plan GitHub işinin nasıl kimlik doğruladığı. Kurulumun App\'ini miras al, başka bir App kullan veya yalnızca kişisel erişim belirteci.';
+      'Bu çalışma alanındaki arka plan GitHub işlerinin nasıl kimlik doğruladığı: bu kurulumun uygulamasıyla veya çalışma alanının kendi uygulamasıyla.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -14861,28 +14878,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Farklı bir GitHub App kullan';
 
   @override
-  String get workspaceGitHubModePat => 'Yalnızca kişisel erişim belirteci';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Sunucu → Sağlayıcı uygulamaları altındaki GitHub App\'i kullanır.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Bu çalışma alanının bot ve yoklama kimliği. Üyeler Siz\'de bu App ile oturum açar.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Arka plan belirteci';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Bu çalışma alanındaki yoklama ve ajanlar için. Bir üyenin profil belirteci değildir.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Arka plan belirteci saklanıyor.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Saklanan arka plan belirteci yok.';
 
   @override
   String get profileOverlayHint =>
@@ -16738,4 +16739,540 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Çalışma alanını değiştir';
+
+  @override
+  String signInToProvider(String provider) {
+    return '$provider hesabıyla oturum aç';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Otomasyon için Linear’ı bağla';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '$provider tarayıcıda açılıyor…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Tarayıcıda $provider sayfasındaki isteği onayla. Bu pencere işin bittiğini kendiliğinden fark eder.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '$provider bekleniyor…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Oturum açma tamamlanmadı';
+
+  @override
+  String get signInReopenPage => 'Oturum açma sayfasını yeniden aç';
+
+  @override
+  String get signInCodePrompt => 'Tarayıcında gösterilen kodu gir';
+
+  @override
+  String get signInCodeMalformed =>
+      'Bu bir oturum açma koduna benzemiyor. Kodlar 8 harf ve rakamdan oluşur.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Tarayıcın Control Center’ı açmayı önerirse izin ver; böylece kodu yazman gerekmez.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '$provider oturumu $account olarak açıldı';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '$provider oturumu açıldı';
+  }
+
+  @override
+  String get signInErrorExpired =>
+      'Bu oturum açma işleminin süresi doldu. Yeniden başlat.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider oturum açma işlemi iptal edildi veya reddedildi.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider, Control Center’ın ihtiyaç duyduğundan daha az izin verdi. Yeniden oturum aç ve tüm izinleri onayla.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Bu kod bu oturum açma işlemiyle eşleşmiyor. Kontrol edip yeniden dene.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider şu anda yanıt vermiyor. Birkaç dakika sonra yeniden dene.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider oturum açmayı kabul etti, ancak sunucu işlemi tamamlayamadı. Yeniden dene.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Bu sunucunun $provider uygulaması yanlış ayarlanmış. Sunucu sahibinden Ayarlar → Sunucu → Tek oturum açma bölümünü kontrol etmesini iste.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return '$provider oturumunun süresi doldu. Kendi adına çalışmaya devam etmek için yeniden oturum aç.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider uygulaması gereken yerde yüklü değil. Yükle ve yeniden dene.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Bu GitHub uygulaması kurulumu zaten başka bir Control Center sunucusu için yetkilendirilmiş.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Bu Linear çalışma alanı zaten başka bir Control Center sunucusuna bağlı.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Bir Slack çalışma alanını Control Center\'a ilk kez yalnızca o alanın bir yöneticisi veya sahibi bağlayabilir. Uygulamayı eklemesini içlerinden birinden isteyin.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider uygulaması askıya alınmış. $provider üzerinde askıyı kaldır ve yeniden dene.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect bu sunucuyu engelledi. Connect sunucunu işleten kişiyle iletişime geç.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Oturum açma, sunucunun bildirmediği bir nedenle başarısız oldu. Yeniden dene.';
+
+  @override
+  String get signInPhishingTitle => 'Oturum açma burada başlatılmadı';
+
+  @override
+  String get signInPhishingBody =>
+      'Bu oturum açma işlemi bu uygulamadan başlatılmadı. Bu bağlantıyı sana biri gönderdiyse devam etme.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Hiçbir şey gönderilmedi. Başkasının başlattığı bir oturum açmayı tamamlamak hesabını onun sunucusuna bağlardı.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '$provider oturumu gerekli';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Bu işlem $provider üzerinde senin adına çalışır ve oturum açmamışsın. Oturum aç, ardından yeniden dene.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return '$provider oturumun açık değil. Burada yaptığın her şey senin adına çalışır, bu yüzden önce oturum aç.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '$provider oturum açma bu sunucuda henüz ayarlanmadı.';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub uygulaması kurulumları';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub uygulamasının yüklü olduğu yerler; yalnızca bu çalışma alanının depolarının ait olduğu hesaplar arasından. Bir kuruluşun kurulumu yalnızca yöneticilerinin yetkilendirdiği sunucularda çalışır.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'GitHub uygulaması, bu çalışma alanının depolarının ait olduğu hesaplardan hiçbirine yüklü değil.';
+
+  @override
+  String get githubInstallApp => 'GitHub uygulamasını yükle';
+
+  @override
+  String get githubAuthorizeServer => 'Bu sunucuyu yetkilendir';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Bu sunucu artık $account üzerindeki kurulumu kullanabilir.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Askıda';
+
+  @override
+  String get githubInstallationAuthorized => 'Yetkili';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Yetkisiz';
+
+  @override
+  String get linearAutomationTitle => 'Linear otomasyonu';
+
+  @override
+  String get linearAutomationHint =>
+      'Bu çalışma alanındaki ajanların ve işlem hatlarının Linear’da bir kişi olarak değil, uygulama olarak hareket etmesini sağlar. Çalışma alanı yöneticileri bağlar.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '$account ile bağlı';
+  }
+
+  @override
+  String get connectModeHosted => 'Control Center’ın uygulamalarını kullan';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Oturum açma işlemleri Control Center Connect üzerinden yürür. Connect her oturum açmayı yalnızca bu sunucunun açabileceği şekilde mühürler, tek bir depoyla sınırlı GitHub belirteçleri üretir, hiçbir depo anahtarı tutmaz ve kaynak kodunu asla almaz.';
+
+  @override
+  String get connectModeOwn => 'Kendi uygulamalarımı kullan';
+
+  @override
+  String get connectModeOwnHint =>
+      'GitHub, Google ve Linear uygulamalarını Ayarlar → Sunucu → Tek oturum açma bölümünde kendin kaydet; her çalışma alanının kendi Slack uygulamasını da o alanın ayarlarından bağla. “GitHub uygulamamı oluştur” GitHub’ı tek adımda kurar.';
+
+  @override
+  String get connectModeCustom => 'Özel bir Connect sunucusu kullan';
+
+  @override
+  String get connectModeCustomHint =>
+      'Kuruluşun kendi Connect sunucusunu çalıştırıyor. Oturum açma işlemleri Control Center’ınki yerine oraya gider.';
+
+  @override
+  String get connectModeUnset => 'Henüz ayarlanmadı';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect sunucusu URL’si';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'https://connect.example.com gibi bir HTTPS adresi gir.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'Düz HTTP yalnızca bu makinedeki bir Connect\'e ulaşır. Ağ üzerindeki her şey için HTTPS kullanın.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Control Center’ın barındırılan uygulamaları bu sürümde henüz kullanılamıyor. Kendi uygulamalarını veya özel bir Connect sunucusunu kullan.';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect yapılandırması imza denetiminden geçemedi. Connect üzerinden oturum açma, yapılandırma yeniden doğrulanana kadar duraklatıldı.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect, bu sunucunun daha önce gördüğünden eski bir yapılandırma sundu, bu yüzden reddedildi. Connect üzerinden oturum açma duraklatıldı.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Bu sunucu şu anda Connect’e ulaşamıyor. Connect’i kullanan oturum açma işlemleri o geri gelene kadar başarısız olacak.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect bu sunucunun kurulum kimliğini engelledi. Connect sunucunu işleten kişiyle iletişime geç.';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect’in uygulamaları değişti';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect, bu sunucunun anlamadığı bir şekilde yanıt verdi. Sunucuyu güncelle veya Connect URL’sini kontrol et.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect açıklamadığı bir sorun bildirdi. Yeniden denemek için bir test çalıştır.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Connect sunucun artık bu sunucunun ilk kullanımda sabitlediklerinden farklı GitHub, Google, Linear veya Slack uygulamaları bildiriyor. Yalnızca işletmecisi bunu önceden haber verdiyse güven.';
+
+  @override
+  String get connectConfirmPins => 'Yeni uygulamalara güven';
+
+  @override
+  String get connectStale =>
+      'Kullanılan yapılandırma beklenenden eski. Yenilemek için bir test çalıştır.';
+
+  @override
+  String get connectLaneSourceOwn => 'Kendi uygulaman';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Kapalı';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Bu sunucunun GitHub, Google Calendar, Linear, Slack ve GIF araması için kimin uygulamalarını kullandığı.';
+
+  @override
+  String get connectFactMode => 'Oturum açma uygulamaları';
+
+  @override
+  String get connectFactHealth => 'Durum';
+
+  @override
+  String get connectFactEpoch => 'Yapılandırma sürümü';
+
+  @override
+  String get connectHealthOff => 'Kullanılmıyor';
+
+  @override
+  String get connectHealthOk => 'Çalışıyor';
+
+  @override
+  String get connectHealthDown => 'Çalışmıyor';
+
+  @override
+  String get connectLocked =>
+      'Bunu sunucunun ortamındaki CC_CONNECT_URL belirliyor. Orada değiştir ve sunucuyu yeniden başlat.';
+
+  @override
+  String get connectLanesTitle => 'Her oturum açmanın çalıştığı yer';
+
+  @override
+  String get connectLanesDescription =>
+      'Kendi uygulaman, sağlayıcısı için her zaman Connect’ten önce gelir.';
+
+  @override
+  String get connectServerGroup => 'Bu sunucu';
+
+  @override
+  String get connectInstallId => 'Kurulum kimliği';
+
+  @override
+  String get connectInstallIdHint =>
+      'Bu sunucuyu Connect’e tanıtır. İsteyen kuruluş sahibine veya Connect işletmecisine ver.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Bu sunucu Connect’i ilk kez kullandığında atanır.';
+
+  @override
+  String get connectTestOk => 'Connect çalışıyor.';
+
+  @override
+  String get connectRotateKey => 'Anahtarı değiştir';
+
+  @override
+  String get connectRotateKeyTitle =>
+      'Bu sunucunun Connect anahtarı değiştirilsin mi?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Bu sunucu yeni bir anahtar ve kurulum kimliği alır. Connect üzerinden yapılan tüm oturum açmalar çalışmayı bırakır ve herkesin yeniden oturum açması gerekir. Kendi uygulamaların üzerinden yapılan oturum açmalar etkilenmez.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Anahtar değiştirildi. Connect üzerinden oturum açan herkesin yeniden oturum açması gerekiyor.';
+
+  @override
+  String get connectCliLabel => 'Terminalden';
+
+  @override
+  String get onboardingStepSignIn => 'Oturum açma';
+
+  @override
+  String get onboardingConnectTitle => 'Kişilerin nasıl oturum açacağını seç';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center, her sağlayıcıya kayıtlı uygulamalar aracılığıyla GitHub, Google Calendar, Linear, Slack ve GIF aramasıyla çalışır. Bu sunucunun kimin uygulamalarını kullanacağını seç. Bunu daha sonra Ayarlar → Sunucu → Tek oturum açma bölümünden değiştirebilirsin.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Bu sunucu için şimdi bir GitHub uygulaması oluştur ya da uygulamalarını daha sonra Ayarlar → Sunucu → Tek oturum açma bölümünden ekle.';
+
+  @override
+  String get providerServiceApiKey => 'Hizmet API anahtarı';
+
+  @override
+  String get providerAppPartial => 'Kurulum tamamlanmadı';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Hâlâ eksik: $fields. Tüm alanlar doldurulana kadar bu sağlayıcının oturum açma işlemleri Connect’e yönlendirilmek yerine reddedilir.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'İstemci kimliği üyelerin oturumunu açar. Hizmet API anahtarı, bu sunucunun Linear’da kendi başına okuyup yazmasını sağlar.';
+
+  @override
+  String get providerCallbackUrls => 'Geri çağırma URL’leri';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Sağlayıcıya tam olarak gösterildiği gibi kaydet.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'GitHub uygulaması oluştur';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub doğru izinlere ve geri çağırmaya sahip bir uygulama kaydeder, ardından kimlik bilgilerini bu sunucuya teslim eder. Elle kopyalanacak bir şey yok.';
+
+  @override
+  String get providerAppCreateGitHub => 'GitHub uygulamamı oluştur';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Kuruluş (isteğe bağlı)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Uygulamayı kendi GitHub hesabınız altında oluşturmak için boş bırakın. Bir kuruluş altında oluşturmak için o kuruluşun sahibi olmanız gerekir.';
+
+  @override
+  String get providerAppSignInReady => 'Kişiler oturum açabilir.';
+
+  @override
+  String get chatLinkWaiting => 'Doğrudan mesajın bekleniyor…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Bu senin $provider hesabın mı?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Bu hesap kodunu bota gönderdi. Yalnızca senin hesabınsa onayla: bağlandıktan sonra bu hesabın $provider içinde gönderdikleri bu çalışma alanında senin adına işlem yapar.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Reddet';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Hiçbir şey bağlanmadı. $provider hesabını hâlâ bağlamak istiyorsan yeni bir kod al.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Yeni kod al';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Control Center’ı $provider çalışma alanına ekle';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center, $workspace çalışma alanına eklendi';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Paylaşılan Control Center uygulamasını $provider çalışma alanına kurar. Oluşturulacak bir uygulama ya da yapıştırılacak bir belirteç yoktur.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '$provider çalışma alanına ekle';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Paylaşılan Control Center uygulamasında çalışır; bu yüzden burada yönetilecek belirteç veya bot ayarı yoktur.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Sohbetten bilet taslakları';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Taslak yalnızca burada oluşturduğunda biriktirme listesinde bir bilete dönüşür. Bırakılan taslaklar bir gün sonra silinir.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Kaynak: $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Bilet oluştur';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '$key oluşturuldu';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Sağlayıcı uygulamaları';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Bu çalışma alanının hangi Google Calendar, Linear ve Klipy uygulamalarını kullandığı. Varsayılan olarak bu sunucunun uygulamalarını veya Control Center Connect\'i kullanır. Kendi uygulamasına sahip bir çalışma alanı bunlara asla geri dönmez.';
+
+  @override
+  String get workspaceProviderAppModeInherit =>
+      'Bu sunucunun uygulamasını kullan';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Oturum açma ve istekler bu sunucunun kendi uygulamasını veya Control Center Connect\'i kullanır.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Bu çalışma alanının kendi uygulamasını kullan';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Yalnızca bu çalışma alanının uygulaması kullanılır. Eksik olduğu sürece bu sağlayıcı burada kapalıdır ve başka bir uygulamaya geri dönmez.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Sunucunun uygulaması';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Kendi uygulaması';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Hâlâ eksik: $fields. Tüm alanlar doldurulana kadar bu sağlayıcı bu çalışma alanında kapalıdır. Bu sunucunun uygulamasına geri dönmez.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Uygulamayı değiştirmek, bu çalışma alanındaki herkesin oturumunu kapatır. Yeni uygulamayla yeniden oturum açarlar.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Uygulama anahtarı';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Bu çalışma alanında GIF araması bu anahtarı kullanır.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '$provider uygulaması değiştirilsin mi?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Bu çalışma alanında sunucunun uygulaması üzerinden $provider hesabına bağlı olan herkesin, çalışma alanının uygulamasıyla yeniden oturum açması gerekir.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Bu işlem çalışma alanının $provider kimlik bilgilerini siler. Çalışma alanının uygulaması üzerinden bağlanan herkesin yeniden oturum açması gerekir.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Uygulamayı değiştir';
 }

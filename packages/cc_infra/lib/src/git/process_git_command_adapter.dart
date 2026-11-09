@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_harness/cancellation.dart';
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 
 /// Adapter that shells out to the system `git` binary.
 class ProcessGitCommandAdapter implements GitCommandPort {
@@ -80,12 +80,10 @@ class ProcessGitCommandAdapter implements GitCommandPort {
     void Function(String line)? onProgress,
     CancellationToken? cancel,
   }) async {
-    final process = await Process.start(
-      'git',
+    final process = await IsolatedGit.start(
       RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
       workingDirectory: workdir,
       environment: _buildEnv(env),
-      runInShell: false,
     );
 
     // Kill the process the moment the caller cancels (a stopped conversation
@@ -243,12 +241,10 @@ class ProcessGitCommandAdapter implements GitCommandPort {
   ) async {
     Process process;
     try {
-      process = await Process.start(
-        'git',
+      process = await IsolatedGit.start(
         RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
         workingDirectory: workdir,
         environment: _buildEnv(env),
-        runInShell: false,
       );
     } catch (e, st) {
       controller.addError(e, st);
@@ -333,18 +329,13 @@ class ProcessGitCommandAdapter implements GitCommandPort {
     stderr: 'git ${args.firstOrNull ?? ''} was cancelled',
   );
 
-  Map<String, String> _buildEnv(Map<String, String>? extra) {
-    // Start from the current process environment so PATH, HOME etc. are
-    // available (git needs HOME for config lookups).
-    final env = Map<String, String>.from(Platform.environment);
-    // Disable interactive prompts so the process never hangs waiting for input.
-    env['GIT_TERMINAL_PROMPT'] = '0';
-    env['GIT_ASKPASS'] = 'echo';
-    if (extra != null) {
-      env.addAll(extra);
-    }
-    return env;
-  }
+  /// The caller's variables (a `GIT_CONFIG_PARAMETERS` auth header, an
+  /// identity) for [IsolatedGit], which supplies the allowlisted base and the
+  /// isolation. `GIT_ASKPASS=echo` answers any credential prompt with nothing.
+  Map<String, String> _buildEnv(Map<String, String>? extra) => {
+    'GIT_ASKPASS': 'echo',
+    ...?extra,
+  };
 }
 
 /// Cap on retained git stderr. Generous — a real error message is a few lines —

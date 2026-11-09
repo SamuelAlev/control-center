@@ -2,7 +2,7 @@
 title: Spravujte API klíče
 description: Kde který přihlašovací údaj leží, u tvého účtu na serveru, u serveru samotného nebo u externího CLI, a jak ho nastavit, obměnit a odebrat.
 slug: cs-CZ/prirucka/navody/api-klice
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Tenhle návod ukazuje, kde leží každý přihlašovací údaj, který Control Center
@@ -14,26 +14,31 @@ stojí člověk.
 
 | Přihlašovací údaj                    | Uložení                                                   | Kdo ho používá                                                  |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Tvůj údaj k forge / ticketům         | Soubor tajemství serveru s právy 0600, klíčovaný tvým id uživatele | Všechno, o co požádáš: plocha PR, tvoje běhy agentů, tvoje obrázky |
-| Identita aplikace serveru            | Tentýž soubor, plus `server_settings` pro netajné hodnoty | Práce, o kterou nikdo nepožádal: webhooky, dotazování na PR, synchronizace ticketů |
+| Tvoje přihlášení k forge / ticketům | Soubor tajemství serveru s právy 0600, klíčovaný tvým id uživatele | Všechno, co děláš: plocha PR, revize, sloučení, tvoje akce v Linear |
+| Aplikace poskytovatelů serveru       | Tentýž soubor, plus `server_settings` pro netajné hodnoty | Přihlašování lidí a tokeny pro jediný repozitář pro agenty, pipelines a dotazování |
+| Instalační klíč Connect              | Tentýž soubor (`connect_install_key`)                    | Identifikace tohoto serveru vůči Control Center Connect          |
 | Klíče poskytovatelů modelů a tokeny OAuth | Vlastní úložiště přihlašovacích údajů serveru        | Vestavěný adaptér, pro každý pracovní prostor na instalaci       |
-| Tokeny bota Slack                    | `<dataDir>/<workspaceId>/chat_credentials/` na serveru    | Chatový most toho pracovního prostoru                            |
+| Pověření bota Slack                  | `<dataDir>/<workspaceId>/chat_credentials/` na serveru    | Chatový most toho pracovního prostoru: tokeny vlastní aplikace, nebo zapečetěný grant sdílené aplikace |
 | Přihlašovací údaje externího CLI     | To, co používá dané CLI                                   | Claude Code, na hostiteli serveru                                |
 
-## Dva přihlašovací údaje GitHubu a každý odpovídá na jinou otázku
+## GitHub: tvoje přihlášení a tokeny pro jediný repozitář
 
-- **Tvůj**, z přihlášení (device flow) nebo z vloženého tokenu. Ten použije každý
-  požadavek *tvým jménem*, takže komentář odeslaný za tebe nese tvoje jméno.
-  Jiný člen ho nepřečte a připojí si vlastní
-- **Serverový**, z GitHub App, kterou zaregistroval operátor. Odpovídá na
-  všechno, u čeho není volající, takže přístup k forge nezmizí, když někdo
-  odejde nebo obmění token
+- **Tvoje**, z **Přihlásit se k GitHub**. To použije každý požadavek *tvým
+  jménem*, takže revize odeslaná za tebe nese tvoje jméno. Jiný člen ho použít
+  nemůže a přihlásí se sám. Token GitHubu se nevkládá
+- **Práce, u které nikdo nepíše** (agenti, pipelines, dotazování, odpovědi bota),
+  dostane token vždy pro jeden repozitář, vydaný z GitHub App serveru nebo přes
+  Control Center Connect a omezený na to, co tam smí odpovědný člen. Nikdy to
+  není celé předané tvoje přihlášení
 
-Tvůj nastavíš na kartě **Hostování kódu** v **Nastavení → Pracovní prostor →
-Profil a identita**; serverový v **Aplikace poskytovatelů** v **Nastavení →
+Tvoje nastavíš na kartě **Hostování kódu** v **Nastavení → Pracovní prostor →
+Profil a identita**; aplikaci serveru v **Aplikace poskytovatelů** v **Nastavení →
 Server → Jednotné přihlášení**. Viz
 [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/) a
 [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/).
+
+GitLab a Bitbucket pořád berou vložený osobní token, uložený stejným způsobem.
+Viz [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
 :::note[Je tu i obrazovka jen přes URL]
 `/workspaces/<workspaceId>/api-keys` vykreslí tytéž dvě karty jako první krok
@@ -69,46 +74,58 @@ klíč pro některé z nich vložíš, ale není. Zapisuje na tvoje zařízení,
 ## Připoj ticketovací službu
 
 Karta **Ticketing** v **Nastavení → Pracovní prostor → Obecné** drží obě
-poloviny jednoho rozhodnutí: ve které službě tickety žijí a jaký přihlašovací
-údaj k ní patří. Když zvolíš **Místní**, řádek s údajem zmizí. Místní tickety
-žijí v databázi tohoto serveru a není k čemu se ověřovat.
+poloviny jednoho rozhodnutí: ve které službě tickety žijí a kým je Control
+Center, když s ní mluví. Když zvolíš **Místní**, řádky Linear zmizí. Místní
+tickety žijí v databázi tohoto serveru a není k čemu se ověřovat.
 
-Tvůj klíč leží na serveru u tvého id uživatele, stejně jako ten k forge. Server
-si vlastní klíč Linear drží zvlášť (**Aplikace poskytovatelů**). Na něm běží
-synchronizace ticketů, když o ni nikdo nepožádal. Do sandboxu agenta se žádný
-klíč ticketingu nevkládá; agenti zapisují tickety přes nástroje Control Center,
-které se ptají pravidla **Zápis do externího trackeru**. Viz
+Linear má dvě přihlášení a žádný vkládaný klíč: **Linear** je tvoje, pro to, co
+děláš ty, a **Automatizace Linear** je aplikace Control Center pracovního
+prostoru, kterou připojí admin, pro synchronizaci ticketů, pipelines a agenty.
+Server může navíc držet **Servisní klíč API** (**Aplikace poskytovatelů**) pro
+pracovní prostory bez připojené automatizace. Do sandboxu agenta se žádné
+pověření ticketingu nevkládá; agenti zapisují tickety přes nástroje Control
+Center, které se ptají pravidla **Zápis do externího trackeru**. Viz
 [Nastavte integraci Linear](/cs-CZ/prirucka/navody/integrace-linear/).
 
 ## Obměň nebo odvolej
 
-- **Tvůj přihlašovací údaj GitHubu**: stiskni **Odpojit**, pak se přihlas znovu
-  nebo vlož nový token. Starý odvolej na GitHubu
-- **Aplikace serveru**: na stránce aplikace na GitHubu vygeneruj nový soukromý
-  klíč nebo client secret, vlož ho do **Aplikace poskytovatelů** a stiskni
-  **Test**
+- **Tvoje přihlášení ke GitHubu**: stiskni **Odpojit**, pak znovu **Přihlásit se
+  k GitHub**. Odpojení zároveň zruší všechny tokeny, které server vydal tvým
+  jménem
+- **Token GitLabu nebo Bitbucketu**: stiskni **Aktualizovat token** a vlož nový,
+  pak starý odvolej na forge
+- **Aplikace serveru**: na stránce aplikace u poskytovatele vygeneruj nový
+  soukromý klíč nebo client secret, vlož ho do **Aplikace poskytovatelů**
+  a stiskni **Test**
+- **Instalační klíč Connect**: **Vyměnit klíč** na kartě **Control Center
+  Connect**, nebo `cc_server connect rotate-key --yes`. Každý, kdo se přihlásil
+  přes Connect, se přihlásí znovu. Viz
+  [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/)
 - **Poskytovatel modelu**: na jeho řádku se odhlas (OAuth) nebo klíč odeber,
   pak se připoj znovu
-- **Slack**: tokeny vlož znovu v dialogu připojení. Viz
+- **Slack**: u vlastní aplikace vlož tokeny znovu v dialogu připojení. Sdílená
+  aplikace Control Center nemá token k obměně: její token bota se obnovuje přes
+  Connect a **Odpojit** ho odvolá a bota ze Slacku odinstaluje. Viz
   [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
 
 ## Řešení problémů
 
-### Seznam PR je prázdný, ale token mi v `curl` funguje
+### Token GitLabu nebo Bitbucketu funguje v `curl`, ale tady ne
 
-Podívej se na podtitul řádku **Hostování kódu**. Když jmenuje jiný zdroj
-(„přes aplikaci tohoto serveru“, „z prostředí“), přihlašovací údaj, který
-zkoušíš, není ten, který odpovídá. Tvůj se neuložil.
+Podívej se na podtitul řádku **Hostování kódu**. Když v něm stojí „z prostředí“,
+odpovídá přihlašovací údaj serveru, ne tvůj. Tvůj se neuložil.
 
-### Token projde, ale pozdější požadavky selžou
+### Token GitLabu nebo Bitbucketu projde, ale pozdější požadavky selžou
 
 Token se ověřuje tak, jak je uložený, takže řádek pojmenuje účet za ním, ale
 jen účet, ne scopes. Token s příliš úzkými scopes se připojí a pak selžou
-jednotlivé požadavky. Zkontroluj scopes a platnost:
+jednotlivé požadavky. Zkontroluj jeho scopes a platnost na forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Poskytovatel hlásí, že přihlášení na tomto serveru není nastavené
+
+Server nemá pro daného poskytovatele vlastní aplikaci ani Control Center
+Connect. Jedno z nich vybere vlastník serveru v **Nastavení → Server →
+Jednotné přihlášení**.
 
 ## Související návody
 

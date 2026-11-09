@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
@@ -14,8 +15,12 @@ import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart'
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
+import 'package:cc_infra/src/dispatch/pushed_commit_inspector.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:path/path.dart' as p;
+
+part 'agent_run_git_objects.dart';
+part 'agent_run_native_tools.dart';
 
 /// Who a registered agent run is, as the action policy needs to know it.
 class AgentRunGrant {
@@ -30,7 +35,7 @@ class AgentRunGrant {
     this.runId,
     this.repoOwner,
     this.repoName,
-    this.committerEmail,
+    this.identity,
     this.worktreeRoot,
     this.runnerStateDirs = const [],
   });
@@ -63,9 +68,10 @@ class AgentRunGrant {
   /// See [repoOwner].
   final String? repoName;
 
-  /// The run's git committer email (`GIT_COMMITTER_EMAIL`). The host signs
-  /// only objects committed or tagged as this identity; null signs nothing.
-  final String? committerEmail;
+  /// Who the run's commits name and whether the host key may sign them.
+  /// Every pushed commit must match it and the host signs only objects
+  /// committed as it; null pushes no commits and signs nothing.
+  final AgentCommitIdentity? identity;
 
   /// The run's working tree. A native write inside it is the agent's own work.
   final String? worktreeRoot;
@@ -78,7 +84,13 @@ class AgentRunGrant {
 /// A registered run's handle on the gateway: what to put in its environment
 /// and how to point Claude Code's hooks at it.
 class AgentRunLease {
-  AgentRunLease._(this.secret, this.base, {this.repoOwner, this.repoName});
+  AgentRunLease._(
+    this.secret,
+    this.base, {
+    this.repoOwner,
+    this.repoName,
+    this.mayHostSign = false,
+  });
 
   /// Env var carrying [secret] to the agent process.
   static const String tokenEnvKey = 'CC_AGENT_RUN_TOKEN';
@@ -127,7 +139,23 @@ class AgentRunLease {
   /// See [repoOwner].
   final String? repoName;
 
+  /// Whether the run's commits may be signed with the host key. When not,
+  /// [gitConfig] turns signing off and points every signer at `false`.
+  final bool mayHostSign;
+
   String get _gitBase => '$base/agent/git/';
+
+  /// `git -c` pairs that keep a run that may not use the host key from
+  /// signing at all. The user's global `commit.gpgsign` would otherwise make
+  /// every commit fail, and an explicit `-S` still reaches nothing that signs.
+  static const List<(String, String)> unsignedGitConfig = [
+    ('commit.gpgsign', 'false'),
+    ('tag.gpgsign', 'false'),
+    ('push.gpgsign', 'false'),
+    ('gpg.program', 'false'),
+    ('gpg.ssh.program', 'false'),
+    ('gpg.x509.program', 'false'),
+  ];
 
   /// `git -c` pairs that route conventional GitHub PUSH URLs through the gateway.
   ///
@@ -143,6 +171,7 @@ class AgentRunLease {
     ])
       ('url.${_gitBase}github.com/.pushInsteadOf', origin),
     ('http.$_gitBase.extraHeader', '$tokenHeader: $secret'),
+    if (!mayHostSign) ...unsignedGitConfig,
   ];
 
   /// `git -c` pairs that let the run fetch its own repo with its forge token.
@@ -251,108 +280,13 @@ exit 2
   }
 }
 
-/// What one of Claude Code's own file or web tools is about to do, in the
-/// action policy's terms.
-class _NativeToolAction {
-  const _NativeToolAction(this.summary, this.request);
-
-  /// Reads a hook's `tool_name` and `tool_input`. Null when the tool is not one
-  /// the policy governs, or its input does not say what it would touch.
-  static _NativeToolAction? of(
-    Object? toolName,
-    Map<dynamic, dynamic> input,
-    AgentRunGrant grant,
-  ) {
-    switch (toolName) {
-      case 'Write' || 'Edit' || 'MultiEdit':
-        return _write(input['file_path'], grant);
-      case 'NotebookEdit':
-        return _write(input['notebook_path'], grant);
-      case 'WebFetch':
-        final url = input['url'];
-        if (url is! String || url.trim().isEmpty) {
-          return null;
-        }
-        final host = Uri.tryParse(url)?.host ?? '';
-        return _NativeToolAction(
-          'web fetch: $url',
-          ActionRequest(
-            classes: const {ActionClass.networkEgress},
-            hosts: [if (host.isNotEmpty) host],
-          ),
-        );
-      case 'WebSearch':
-        final query = input['query'];
-        if (query is! String || query.trim().isEmpty) {
-          return null;
-        }
-        return _NativeToolAction(
-          'web search: $query',
-          const ActionRequest(classes: {ActionClass.networkEgress}),
-        );
-    }
-    return null;
-  }
-
-  /// A write is only a policy question when it leaves the run's own ground.
-  /// Inside it nothing is declared, as for the harness's own write tools.
-  static _NativeToolAction? _write(Object? raw, AgentRunGrant grant) {
-    if (raw is! String || raw.trim().isEmpty) {
-      return null;
-    }
-    final root = grant.worktreeRoot;
-    final target = _resolved(raw, relativeTo: root);
-    final owned = [?root, ...grant.runnerStateDirs].map(_resolved);
-    final inside = owned.any((dir) => p.isWithin(dir, target));
-    return _NativeToolAction(
-      'write: $target',
-      ActionRequest(
-        classes: {if (!inside) ActionClass.fileWriteOutsideWorktree},
-        paths: [target],
-      ),
-    );
-  }
-
-  /// [path] with `..` and symlinks gone, so neither can walk a write out of
-  /// its directory. A file about to be created resolves through its deepest
-  /// ancestor that exists.
-  static String _resolved(String path, {String? relativeTo}) {
-    var existing = p.normalize(
-      p.isAbsolute(path) ? path : p.join(relativeTo ?? '', path),
-    );
-    final missing = <String>[];
-    while (true) {
-      try {
-        return p.joinAll([
-          File(existing).resolveSymbolicLinksSync(),
-          ...missing.reversed,
-        ]);
-      } on FileSystemException {
-        final parent = p.dirname(existing);
-        if (parent == existing) {
-          return p.joinAll([existing, ...missing.reversed]);
-        }
-        missing.add(p.basename(existing));
-        existing = parent;
-      }
-    }
-  }
-
-  /// How the action reads in an approval and the audit trail.
-  final String summary;
-
-  /// What the policy can match on.
-  final ActionRequest request;
-}
-
 /// The host side of the action policy for code running inside an agent's
 /// sandbox: a push proxy and a Claude Code hook endpoint, served on the same
 /// loopback listener agents already dial for MCP.
 ///
 /// **Push proxy.** Conventional push URLs route here. The gateway reads the
 /// ref updates, asks policy with the actual refs, then forwards using a
-/// server-held write credential. A GitHub App read token cannot push directly;
-/// an unnarrowable fallback PAT can, so shell preflight must gate pushes too.
+/// server-held write credential: the run's own token is read-only.
 ///
 /// **Commit signing.** The sandbox cannot reach the user's SSH agent, so its
 /// signing shim posts the commit or tag object here and the host signs it
@@ -385,9 +319,11 @@ class AgentRunGateway {
     Uri? githubBase,
     this._mayUseHostSigner,
     CommitSigner? signer,
+    Future<List<PushedGitObject>> Function(File pack)? inspectPack,
   }) : _httpClient = httpClient ?? HttpClient.new,
        _githubBase = githubBase ?? Uri.parse('https://github.com'),
-       _signer = signer ?? HostCommitSigner();
+       _signer = signer ?? HostCommitSigner(),
+       _inspectPack = inspectPack ?? PushedCommitInspector.inspect;
 
   /// How long Claude Code waits on the hook. Generous, because "ask first"
   /// waits on a human.
@@ -430,6 +366,9 @@ class AgentRunGateway {
   final Uri _githubBase;
   final CommitSigner _signer;
 
+  /// Reads the commits and tags out of a pushed pack.
+  final Future<List<PushedGitObject>> Function(File pack) _inspectPack;
+
   /// Whether a run acting for this member (null: programmatic dispatch) may
   /// sign with the host's key. Null refuses every run.
   final Future<bool> Function(String? actingUserId)? _mayUseHostSigner;
@@ -463,6 +402,7 @@ class AgentRunGateway {
       base,
       repoOwner: grant.repoOwner,
       repoName: grant.repoName,
+      mayHostSign: grant.identity?.mayHostSign ?? false,
     );
   }
 
@@ -776,22 +716,26 @@ class AgentRunGateway {
         'Control Center only signs well-formed, unsigned git commits and tags.',
       );
     }
+    final identity = grant.identity;
     final mayUse = _mayUseHostSigner;
-    if (mayUse == null || !await mayUse(grant.actingUserId)) {
+    if (identity == null ||
+        !identity.mayHostSign ||
+        mayUse == null ||
+        !await mayUse(grant.actingUserId)) {
       return _plain(
         request,
         HttpStatus.forbidden,
-        "Control Center signs only for this machine's owner, and this run acts "
-        'for another member. Commit unsigned (git commit --no-gpg-sign).',
+        "Control Center signs only runs the machine's owner asked for, and "
+        'this one is not. Commit unsigned (git commit --no-gpg-sign).',
       );
     }
-    final expected = grant.committerEmail?.trim().toLowerCase() ?? '';
-    if (expected.isEmpty || object.signerEmail.toLowerCase() != expected) {
+    final expected = identity.committerEmail.trim().toLowerCase();
+    if (object.signerEmail.toLowerCase() != expected) {
       return _plain(
         request,
         HttpStatus.forbidden,
         'Control Center signs only as this run '
-        '(${grant.committerEmail ?? 'no identity'}); this ${object.kind} '
+        '(${identity.committerEmail}); this ${object.kind} '
         'names ${object.signerEmail}.',
       );
     }
@@ -923,7 +867,16 @@ class AgentRunGateway {
           '$owner/$name. Install the GitHub App on it or connect GitHub.',
         );
       }
-      return _forward(request, owner, repoSegment, rest, token);
+      // `no-thin`: the push that follows must carry every object it names, or
+      // its commits could not be read before they are forwarded.
+      return _forward(
+        request,
+        owner,
+        repoSegment,
+        rest,
+        token,
+        rewriteAdvertisement: true,
+      );
     }
 
     // The push: read the ref updates, decide, then forward or reject.
@@ -1010,15 +963,145 @@ class AgentRunGateway {
         'Control Center has no GitHub credential that can push here.',
       );
     }
-    return _forward(
-      request,
-      owner,
-      repoSegment,
-      rest,
-      token,
-      body: _replay(preamble.takeBytes(), iterator),
-      decodedBody: compressed,
+
+    // Every commit and tag the push adds must carry the run's identity: read
+    // them all before a byte reaches GitHub.
+    final spool = await Directory.systemTemp.createTemp('cc-push-');
+    try {
+      final spooled = File('${spool.path}/rest');
+      // The chunk that completed the commands usually carries the start of
+      // the pack too: it is spooled (and inspected) with the rest.
+      final head = preamble.takeBytes();
+      final commandBytes = head.sublist(0, commands.end);
+      final problem = await _spoolAndInspect(
+        head.sublist(commands.end),
+        iterator,
+        spooled,
+        commands,
+        grant.identity,
+      );
+      if (problem != null) {
+        return await _rejectPush(request, commands, 'Control Center: $problem');
+      }
+      return await _forward(
+        request,
+        owner,
+        repoSegment,
+        rest,
+        token,
+        body: _replayFile(commandBytes, spooled),
+        decodedBody: compressed,
+      );
+    } finally {
+      try {
+        await spool.delete(recursive: true);
+      } on FileSystemException {
+        // Best effort.
+      }
+    }
+  }
+
+  /// Cap on a spooled push body (GitHub refuses pushes over 2 GiB).
+  static const int _maxPushBytes = 2 * 1024 * 1024 * 1024;
+
+  /// Writes the rest of the push (push options, then the pack) to [rest] —
+  /// [leading], the bytes already read past the commands, first — and checks
+  /// every commit and tag in the pack against [identity]. Returns why the
+  /// push is refused, or null.
+  Future<String?> _spoolAndInspect(
+    List<int> leading,
+    StreamIterator<List<int>> iterator,
+    File rest,
+    _PushCommands commands,
+    AgentCommitIdentity? identity,
+  ) async {
+    final sink = rest.openWrite();
+    var written = leading.length;
+    var tooLarge = false;
+    sink.add(leading);
+    try {
+      while (await iterator.moveNext()) {
+        written += iterator.current.length;
+        if (written > _maxPushBytes) {
+          tooLarge = true;
+          continue;
+        }
+        sink.add(iterator.current);
+      }
+    } finally {
+      await sink.close();
+    }
+    if (tooLarge) {
+      return 'this push is too large to inspect.';
+    }
+    // Push options are a few pkt-lines; the pack signature follows them.
+    final handle = await rest.open();
+    final List<int> head;
+    try {
+      head = await handle.read(1 << 20);
+    } finally {
+      await handle.close();
+    }
+    final packStart = _packOffset(
+      head,
+      pushOptions: commands.capabilities.contains('push-options'),
     );
+    if (packStart == null) {
+      return 'the pushed pack could not be read.';
+    }
+    if (packStart >= written) {
+      return null;
+    }
+    final pack = File('${rest.path}.pack');
+    final source = rest.openRead(packStart);
+    await source.pipe(pack.openWrite());
+    final List<PushedGitObject> objects;
+    try {
+      objects = await _inspectPack(pack);
+    } on FormatException catch (e) {
+      return 'the pushed commits could not be inspected (${e.message}).';
+    }
+    if (objects.isEmpty) {
+      return null;
+    }
+    if (identity == null) {
+      return 'this run has no commit identity, so it cannot push commits.';
+    }
+    return PushedCommitInspector.violation(objects, identity);
+  }
+
+  /// Where the pack starts in the body that follows the ref updates: right
+  /// away, or after a flush-terminated block of push options. Null when the
+  /// bytes are neither.
+  static int? _packOffset(List<int> head, {required bool pushOptions}) {
+    var offset = 0;
+    if (pushOptions) {
+      while (true) {
+        if (offset + 4 > head.length) {
+          return head.isEmpty ? 0 : null;
+        }
+        final length = int.tryParse(
+          ascii.decode(head.sublist(offset, offset + 4), allowInvalid: true),
+          radix: 16,
+        );
+        if (length == null || (length > 0 && length < 4)) {
+          return null;
+        }
+        offset += length == 0 ? 4 : length;
+        if (length == 0) {
+          break;
+        }
+      }
+    }
+    if (offset == head.length) {
+      return offset;
+    }
+    if (offset + 4 <= head.length &&
+        ascii.decode(head.sublist(offset, offset + 4), allowInvalid: true) ==
+            'PACK') {
+      return offset;
+    }
+    return null;
   }
 
   /// Whether the operator already answered this push's `ask` at the shell
@@ -1133,6 +1216,7 @@ class AgentRunGateway {
     String token, {
     Stream<List<int>>? body,
     bool decodedBody = false,
+    bool rewriteAdvertisement = false,
   }) async {
     final upstream = _githubBase.replace(
       path: '/$owner/$repoSegment/$rest',
@@ -1166,6 +1250,33 @@ class AgentRunGateway {
         await out.addStream(body);
       }
       final response = await out.close();
+      if (rewriteAdvertisement && response.statusCode == HttpStatus.ok) {
+        final advertised = await response.fold<BytesBuilder>(
+          BytesBuilder(copy: false),
+          (b, chunk) => b..add(chunk),
+        );
+        final rewritten = withNoThin(advertised.takeBytes());
+        if (rewritten == null) {
+          return await _plain(
+            request,
+            HttpStatus.badGateway,
+            'Control Center could not read GitHub\'s ref advertisement.',
+          );
+        }
+        request.response.statusCode = response.statusCode;
+        for (final header in const [
+          HttpHeaders.contentTypeHeader,
+          HttpHeaders.cacheControlHeader,
+        ]) {
+          final value = response.headers.value(header);
+          if (value != null) {
+            request.response.headers.set(header, value);
+          }
+        }
+        request.response.add(rewritten);
+        await request.response.close();
+        return;
+      }
       request.response.statusCode = response.statusCode;
       for (final header in const [
         HttpHeaders.contentTypeHeader,
@@ -1234,16 +1345,72 @@ class AgentRunGateway {
   static String _shortRef(String ref) =>
       ref.startsWith('refs/heads/') ? ref.substring('refs/heads/'.length) : ref;
 
-  static Stream<List<int>> _replay(
-    List<int> head,
-    StreamIterator<List<int>> rest,
-  ) async* {
+  static Stream<List<int>> _replayFile(List<int> head, File rest) async* {
     if (head.isNotEmpty) {
       yield head;
     }
-    while (await rest.moveNext()) {
-      yield rest.current;
+    yield* rest.openRead();
+  }
+
+  /// [advertisement] (a receive-pack ref advertisement) with `no-thin` added
+  /// to the capabilities on its first ref line, or null when it is not one.
+  ///
+  /// A client must not send a thin pack to a server advertising `no-thin`, so
+  /// every object a push names arrives in its own pack and can be read.
+  /// Public for tests.
+  static List<int>? withNoThin(List<int> advertisement) {
+    final out = BytesBuilder(copy: false);
+    var offset = 0;
+    var rewritten = false;
+    while (offset + 4 <= advertisement.length) {
+      final length = int.tryParse(
+        ascii.decode(
+          advertisement.sublist(offset, offset + 4),
+          allowInvalid: true,
+        ),
+        radix: 16,
+      );
+      if (length == null || (length > 0 && length < 4)) {
+        return null;
+      }
+      if (length == 0) {
+        out.add(advertisement.sublist(offset, offset + 4));
+        offset += 4;
+        continue;
+      }
+      if (offset + length > advertisement.length) {
+        return null;
+      }
+      final payload = advertisement.sublist(offset + 4, offset + length);
+      final nul = payload.indexOf(0);
+      if (!rewritten && nul >= 0) {
+        final tail = payload.sublist(nul + 1);
+        final newline = tail.isNotEmpty && tail.last == 0x0a;
+        final caps = utf8
+            .decode(newline ? tail.sublist(0, tail.length - 1) : tail)
+            .split(' ')
+            .where((c) => c.isNotEmpty)
+            .toList();
+        if (!caps.contains('no-thin')) {
+          caps.add('no-thin');
+        }
+        out.add(
+          _pktBytes([
+            ...payload.sublist(0, nul + 1),
+            ...utf8.encode(caps.join(' ')),
+            if (newline) 0x0a,
+          ]),
+        );
+        rewritten = true;
+      } else {
+        out.add(advertisement.sublist(offset, offset + length));
+      }
+      offset += length;
     }
+    if (offset != advertisement.length || !rewritten) {
+      return null;
+    }
+    return out.takeBytes();
   }
 
   static List<int> _pkt(String line) => _pktBytes(utf8.encode(line));
@@ -1285,178 +1452,5 @@ class AgentRunGateway {
       ..headers.contentType = ContentType.text
       ..write('$message\n');
     await request.response.close();
-  }
-}
-
-/// A commit or tag object the gateway is willing to sign, parsed strictly.
-///
-/// Git hands its signer the object exactly as it will be stored, minus the
-/// signature. Anything else (a push certificate, an already signed object,
-/// bytes that merely start like a commit) is not something the user's key
-/// signs on an agent's behalf.
-class SignableGitObject {
-  const SignableGitObject._(this.kind, this.signerEmail);
-
-  /// `commit` or `tag`.
-  final String kind;
-
-  /// The committer's (commit) or tagger's (tag) email.
-  final String signerEmail;
-
-  static final RegExp _oid = RegExp(r'^(?:[0-9a-f]{40}|[0-9a-f]{64})$');
-
-  // `Name <email> <seconds> <+hhmm>`, as git writes an ident line.
-  static final RegExp _ident = RegExp(r'^[^<>\n]* <([^<>\n]+)> \d+ [+-]\d{4}$');
-
-  static const Set<String> _tagTypes = {'commit', 'tree', 'blob', 'tag'};
-
-  /// Parses [bytes], or returns null when they are not a signable object.
-  static SignableGitObject? parse(List<int> bytes) {
-    var split = -1;
-    for (var i = 0; i + 1 < bytes.length; i++) {
-      if (bytes[i] == 0x0a && bytes[i + 1] == 0x0a) {
-        split = i;
-        break;
-      }
-    }
-    if (split <= 0 || bytes.contains(0)) {
-      return null;
-    }
-    final String headerBlock;
-    try {
-      // Headers are UTF-8; an `encoding` header re-encodes only the message.
-      headerBlock = utf8.decode(bytes.sublist(0, split));
-    } on FormatException {
-      return null;
-    }
-    // Continuation lines (a leading space) belong to the header above them;
-    // only `mergetag` legitimately has them in an object being signed.
-    final headers = <(String, String)>[];
-    for (final line in headerBlock.split('\n')) {
-      if (line.startsWith(' ')) {
-        if (headers.isEmpty || headers.last.$1 != 'mergetag') {
-          return null;
-        }
-        continue;
-      }
-      final space = line.indexOf(' ');
-      if (space <= 0) {
-        return null;
-      }
-      headers.add((line.substring(0, space), line.substring(space + 1)));
-    }
-    return switch (headers.first.$1) {
-      'tree' => _commit(headers),
-      'object' => _tag(headers),
-      _ => null,
-    };
-  }
-
-  // tree, parent*, author, committer, then only encoding/mergetag. A
-  // `gpgsig` header means it is already signed: git strips signatures before
-  // signing, so that is not an object git asked to sign.
-  static SignableGitObject? _commit(List<(String, String)> headers) {
-    var i = 0;
-    if (!_oid.hasMatch(headers[i++].$2)) {
-      return null;
-    }
-    while (i < headers.length && headers[i].$1 == 'parent') {
-      if (!_oid.hasMatch(headers[i++].$2)) {
-        return null;
-      }
-    }
-    if (i + 1 >= headers.length ||
-        headers[i].$1 != 'author' ||
-        headers[i + 1].$1 != 'committer' ||
-        !_ident.hasMatch(headers[i].$2)) {
-      return null;
-    }
-    final committer = _ident.firstMatch(headers[i + 1].$2);
-    if (committer == null) {
-      return null;
-    }
-    for (final (name, _) in headers.skip(i + 2)) {
-      if (name != 'encoding' && name != 'mergetag') {
-        return null;
-      }
-    }
-    return SignableGitObject._('commit', committer.group(1)!);
-  }
-
-  // object, type, tag, tagger: exactly what `git tag -s` writes.
-  static SignableGitObject? _tag(List<(String, String)> headers) {
-    if (headers.length != 4 ||
-        !_oid.hasMatch(headers[0].$2) ||
-        headers[1].$1 != 'type' ||
-        !_tagTypes.contains(headers[1].$2) ||
-        headers[2].$1 != 'tag' ||
-        headers[2].$2.isEmpty ||
-        headers[3].$1 != 'tagger') {
-      return null;
-    }
-    final tagger = _ident.firstMatch(headers[3].$2);
-    return tagger == null ? null : SignableGitObject._('tag', tagger.group(1)!);
-  }
-}
-
-/// The ref updates at the front of a `git-receive-pack` request.
-/// An operator's approval of a pushing shell command, for [AgentRunGateway]'s
-/// push proxy to honor rather than ask again.
-class _ShellPushApproval {
-  const _ShellPushApproval({required this.refs, required this.until});
-
-  /// The branches the approved command named, or null when it did not.
-  final List<String>? refs;
-
-  /// When the approval stops answering the gateway's ask.
-  final DateTime until;
-}
-
-class _PushCommands {
-  const _PushCommands(this.refs, this.capabilities);
-
-  /// Full ref names being updated (`refs/heads/main`).
-  final List<String> refs;
-
-  /// Capabilities the client sent on its first command.
-  final Set<String> capabilities;
-
-  /// Parses pkt-lines up to the first flush. Null while incomplete.
-  static _PushCommands? parse(Uint8List bytes) {
-    final refs = <String>[];
-    final caps = <String>{};
-    var offset = 0;
-    while (offset + 4 <= bytes.length) {
-      final length = int.tryParse(
-        ascii.decode(bytes.sublist(offset, offset + 4), allowInvalid: true),
-        radix: 16,
-      );
-      if (length == null || (length > 0 && length < 4)) {
-        throw const FormatException('Invalid push packet length.');
-      }
-      if (length == 0) {
-        return _PushCommands(refs, caps);
-      }
-      if (offset + length > bytes.length) {
-        return null;
-      }
-      var line = utf8.decode(
-        bytes.sublist(offset + 4, offset + length),
-        allowMalformed: true,
-      );
-      offset += length;
-      final nul = line.indexOf('\u0000');
-      if (nul >= 0) {
-        caps.addAll(line.substring(nul + 1).trim().split(' '));
-        line = line.substring(0, nul);
-      }
-      // `<old-oid> <new-oid> <ref>`; a signed push's certificate lines and
-      // shallow lines carry no ref update.
-      final parts = line.trim().split(' ');
-      if (parts.length == 3 && parts[2].startsWith('refs/')) {
-        refs.add(parts[2]);
-      }
-    }
-    return null;
   }
 }

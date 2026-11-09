@@ -2,7 +2,7 @@
 title: Instalare
 description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center rulează în două moduri: ca **aplicație web** la
@@ -124,14 +124,9 @@ Listele de modele sunt servite live de fiecare provider conectat; [models.dev](h
 
 O acreditare GitHub este **a ta și trăiește pe server**, indexată după id-ul tău de utilizator — nu în keychainul sistemului de operare al clientului. Fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi.
 
-Dacă serverul are înregistrată o GitHub App ([Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)), **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** oferă **Autentifică-te cu GitHub** (un device flow rulat de server). În caz contrar, lipește un token de acces personal:
+GitHub funcționează doar prin autentificare: **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** oferă **Autentifică-te în GitHub** și nu există niciun token de lipit. Autentificarea rulează prin GitHub App proprie a serverului ([Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) sau prin Control Center Connect, după cum a ales proprietarul serverului. Cu aplicația proprie a serverului, browserul revine singur la server; prin Connect, tastezi codul de 8 caractere pe care îl afișează browserul sau îl lași să deschidă Control Center. Vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/).
 
-- Clasic: `repo` și `read:org`
-- Cu granularitate fină: **Contents** și **Pull requests** (citire și scriere), **Checks** și **Actions** (citire)
-
-Creează unul la [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Serverul sondează tokenul pentru numele de cont în momentul în care este salvat, așa că rândul poate afișa „autentificat ca …”; o sondare eșuată salvează totuși tokenul, iar o greșeală de tastare sau un scope lipsă se manifestă mai târziu ca o cerere eșuată.
-
-Primul pas al onboardingului este această conexiune. După aceea, același card este locul unde o înlocuiești sau o ștergi. GitLab și Bitbucket folosesc același card; vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
+Onboardingul îți cere această conexiune. După aceea, același card este locul unde te autentifici din nou sau te deconectezi. GitLab și Bitbucket folosesc același card, cu un token personal lipit; vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
 ## Alege unde rulează serverul
 

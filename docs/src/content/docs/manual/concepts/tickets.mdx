@@ -129,9 +129,10 @@ Control Center's ticket is primary. Deleting a ticket is **local only**, so a
 vendor-backed ticket you delete is not deleted on the tracker and may reappear
 on the next sync. Collaborators and child tickets cascade.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Adapter credentials resolve per call on the server: a person's own Linear or
+GitHub sign-in for what they do, and the workspace's Linear automation (or the
+server's Linear service key) or a one-repository GitHub token for ticket sync. A
+new sign-in is picked up on the next request.
 
 ## Tickets and pipelines
 

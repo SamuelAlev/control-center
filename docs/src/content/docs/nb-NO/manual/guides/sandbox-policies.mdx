@@ -2,7 +2,7 @@
 title: Konfigurer sandkassepolicyer
 description: Hva som begrenser en agentkjøring, hvordan du ser om OS-sandkassen pakker den inn, og hvordan handlingsreglene avgjør hva en agent får pushe eller nå.
 slug: nb-NO/handbok/slik-gjor-du/sandkassepolicyer
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Om en agentkjøring er sandkasset, avgjøres på serveren, ved oppstart
@@ -74,9 +74,10 @@ godkjenning som oppgir repoet og refs; med **Nekt** skriver git ut
 
 Slik når hver regel kjøringen:
 
-- **Push** håndheves gjennom det kjøringen har. GitHub-tokenet er et
-  installasjonstoken for GitHub App som bare kan lese: det kan lese innhold og
-  jobbe med pull requests. Git-konfigurasjonen sender hver push til GitHub til
+- **Push** håndheves gjennom det kjøringen har. GitHub-tokenet dekker
+  kjøringens ene repo og kan ikke pushe: det kan lese innhold og, når det
+  ansvarlige medlemmet kan pushe, kommentere på pull requests.
+  Git-konfigurasjonen sender hver push til GitHub til
   en loopback-gateway på `cc_server`, som spør regelen og først da sender pushen
   videre med et skrivetoken agenten aldri ser. Gatewayen sender bare videre til
   worktreens eget repo eller til et GitHub-repo som er koblet til
@@ -93,17 +94,13 @@ Slik når hver regel kjøringen:
   ved hvert kall. Så lenge nettverket er på, står GitHub alltid på den utgående
   tillatelseslisten.
 
-:::caution[Uten GitHub App er push-regelen bare veiledende]
-Uten en konfigurert GitHub App får kjøringen det personlige tilgangstokenet som
-reserve, og det kan ikke begrenses til bare lesing. `git push` går fortsatt
-gjennom gatewayen og regelen, men kode som bruker tokenet direkte, kan pushe
-forbi den. Konfigurer GitHub App-en for å gjøre regelen bindende.
-
-GitHub-legitimasjonen til kjøringen er alltid bare meglerens — et
-repo-begrenset installasjonstoken for GitHub App, eller PAT-reserven — aldri
-det egne lagrede tokenet til medlemmet som ba om kjøringen. Serverens PAT
-holdes tilbake fra en kjøring som handler for et medlem som ikke er eieren og
-ikke har koblet til GitHub.
+:::note[Hvor kjøringens GitHub-token kommer fra]
+Tokenet utstedes for kjøringen fra arbeidsområdets GitHub App, serverens egen
+app eller Control Center Connect, og det er begrenset til det det ansvarlige
+medlemmet (den som spurte, ellers eieren av arbeidsområdet) kan gjøre i det
+repoet. Det er aldri et medlems egen pålogging overlevert i sin helhet, og det
+finnes ikke noe reservetoken: når det ikke kan utstedes noe, starter kjøringen
+uten, og notatene forklarer hvorfor.
 :::
 
 ## Sjekk om agentkjøringene dine er sandkasset

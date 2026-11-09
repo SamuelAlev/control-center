@@ -2,7 +2,7 @@
 title: YZ incelemesi
 description: Bir pull request nasıl incelenmiş bir hâle gelir — inceleme alanları, inceleme düğümleri ve akran uzlaşması, kohortlar ve eksenler, Ship/Hold/Block kararı ve yayınlamanın neden sizin attığınız bir adım olarak kaldığı.
 slug: tr-TR/kilavuz/kavramlar/yz-incelemesi
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Bir incelemenin biçimi
@@ -201,11 +201,13 @@ düğmesine bastığınızda:
   reddederse, hiçbir şey sessizce düşmesin diye tüm inceleme, her bulgu gövdeye
   katlanarak yeniden gönderilir.
 - **Block** kararı `REQUEST_CHANGES`; **Hold** `COMMENT`; **Ship** ise düğmeden
-  `APPROVE` olarak gönderilir (`approve_on_ship: true`). MCP aracı, siz
-  `approve_on_ship` vermediğiniz sürece Ship'i `COMMENT` olarak bırakır.
-- İnceleme, sunucunun uygulama kimliği altında yayınlanır. Yayınla'ya kimin
-  bastığı rol kapısı ve denetim günlüğü için kaydedilir; GitHub yazarı o
-  değildir.
+  `APPROVE` olarak gönderilir (`approve_on_ship: true`). MCP aracı otomasyon
+  olarak yayınlar ve Ship'i her zaman `COMMENT` olarak bırakır.
+- **GitHub'a yayınla** düğmesi incelemeyi, ona basan kişi olarak, o kişinin kendi
+  GitHub oturum açmasıyla gönderir: yayın kapısı onundur, dolayısıyla inceleme de
+  onundur. Arkasında bir kişi olmayan bir yayın otomasyondur ve otomasyon asla
+  onaylamaz: Ship bu durumda `COMMENT` olarak gider ve Control Center Connect'te
+  gönderi `**Control Center** (for @login):` önekiyle atfedilir.
 
 Yayınlama, `prPublish` eylem sınıfını bildirir; bu yüzden koruma darboğazı onu
 diğer tüm değiştirici eylemler gibi kapıya bağlar — varsayılan olarak sorar ve

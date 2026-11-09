@@ -2,7 +2,7 @@
 title: Pipeline-sablon létrehozása
 description: DAG-munkafolyamat-sablon készítése a pipelineszerkesztőben — csomópontok hozzáadása, összekötése, bemenetek deklarálása, és futtathatóvá tétele.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 A pipeline-sablonokat a munkaterület beállításaiban hozza létre. A munkaterület
@@ -134,10 +134,21 @@ mert egyik sem állítható be:
 
 - Egy futtatás minden bash-lépése ugyanazt a munkakönyvtárat használja:
   `<cc_root>/pipelines/<runId>/`.
-- A `GITHUB_TOKEN` a hitelesítőadat-tárból injektálódik, így a `gh` és a
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` beállítás nélkül működik.
+- A szkript a gazdagép operációsrendszer-homokozójában fut, akárcsak egy ügynök
+  parancsai. Homokozó nélküli gazdagépen (Windows, vagy Linux `bwrap` nélkül) a
+  lépés meghiúsul, ahelyett hogy korlátozás nélkül futna. A szerver
+  adatkönyvtára és `.env` fájlja belülről nem olvasható.
+- A git és a `gh` nem lát gazdagép-konfigurációt: nincs tárolt bejelentkezés,
+  hitelesítőadat-segéd vagy globális hook.
+- Ha a pipeline a munkaterülethez kapcsolt GitHub-repót nevez meg
+  (`repo_full_name` az állapotban vagy az eseményindító adataiban), a `GH_TOKEN`
+  és a `GITHUB_TOKEN` olyan tokent tartalmaz, amely csak ezt az egy repót
+  olvashatja, így a `gh` és a `git clone` erre a repóra beállítás nélkül
+  működik. Egyébként nincs GitHub-token.
+- Bash-lépést tartalmazó pipeline-t csak munkaterület-adminisztrátor hozhat
+  létre vagy szerkeszthet.
 - A szkript a szó szerinti `bash` végrehajtható fájlként indul, ezért a `bash`-nek
-  szerepelnie kell a szerverkiszolgáló `PATH`-jában. Ez Windows esetén szempont.
+  szerepelnie kell a szerverkiszolgáló `PATH`-jában.
 
 ### Router
 

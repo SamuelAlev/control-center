@@ -25,9 +25,11 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_server_core/src/connect/embedded_connect.dart';
+import 'package:cc_server_core/src/connect/github_manifest_service.dart';
+import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/favicon_transcode.dart';
 import 'package:cc_server_core/src/identity/oidc_service.dart';
-import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/saml_service.dart';
 import 'package:cc_server_core/src/identity/scim_service.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
@@ -354,6 +356,8 @@ class LocalRpcServer implements McpHostServer {
     this.mediaCredential,
     this.oidc,
     this.providerOAuth,
+    this.githubManifest,
+    this.connectHost,
     this.saml,
     this.scim,
     this.webClientUrl,
@@ -584,10 +588,19 @@ class LocalRpcServer implements McpHostServer {
   /// Null (the default) leaves the routes absent — SSO is never required.
   final OidcService? oidc;
 
-  /// Optional provider sign-in (`GET /oauth/<provider>/callback`) — the
-  /// browser round-trip that mints a user's own GitHub/Linear credential.
-  /// Null leaves the route absent; pasting a token still works.
-  final ProviderOAuthService? providerOAuth;
+  /// Optional own-app provider sign-in (`GET /oauth/<lane>/callback`) — the
+  /// browser round-trip that comes back to this server when a lane runs on
+  /// the operator's own app. Null leaves the route absent.
+  final ProviderSignInService? providerOAuth;
+
+  /// Optional one-click own GitHub App registration
+  /// (`/oauth/github/manifest/*`). Null leaves the routes absent.
+  final GitHubManifestService? githubManifest;
+
+  /// An embedded Connect served under `/connect` when the operator turned it
+  /// on (`CC_SERVER_CONNECT_HOST=on`). Null (the default) leaves `/connect`
+  /// absent.
+  final EmbeddedConnect? connectHost;
 
   /// Resolves the credential to present when the media proxy fetches a URL on
   /// behalf of a user, or null when that host needs none.
@@ -999,40 +1012,7 @@ class LocalRpcServer implements McpHostServer {
       await _serveInviteRedeem(request);
       return;
     }
-    if (request.uri.path == '/oidc/login') {
-      await _serveOidcLogin(request);
-      return;
-    }
-    if (request.uri.path == '/oidc/callback') {
-      await _serveOidcCallback(request);
-      return;
-    }
-    if (request.uri.path.startsWith('/oauth/')) {
-      await _serveProviderOAuthCallback(request);
-      return;
-    }
-    if (request.uri.path == '/saml/login') {
-      await _serveSamlLogin(request);
-      return;
-    }
-    if (request.uri.path == '/saml/acs') {
-      await _serveSamlAcs(request);
-      return;
-    }
-    if (request.uri.path == '/saml/claim') {
-      await _serveSamlGrantClaim(request);
-      return;
-    }
-    if (request.uri.path == '/saml/metadata') {
-      await _serveSamlMetadata(request);
-      return;
-    }
-    if (request.uri.path == '/auth/providers') {
-      await _serveAuthProviders(request);
-      return;
-    }
-    if (request.uri.path.startsWith('/scim/v2/')) {
-      await _serveScim(request);
+    if (await _serveAuthRoute(request)) {
       return;
     }
     if (request.uri.path.startsWith('${ChatDeepLinks.pathPrefix}/')) {
@@ -2380,14 +2360,11 @@ class LocalRpcServer implements McpHostServer {
     // broadcast: a close during the awaits above was emitted before this
     // listener existed, so check once more after subscribing. Otherwise the
     // session, its subscriptions and their watches outlive the socket.
-    session.stateSub = transport.state.listen(
-      (s) {
-        if (s == RemoteChannelState.closed) {
-          unawaited(_drop(session));
-        }
-      },
-      onDone: () => unawaited(_drop(session)),
-    );
+    session.stateSub = transport.state.listen((s) {
+      if (s == RemoteChannelState.closed) {
+        unawaited(_drop(session));
+      }
+    }, onDone: () => unawaited(_drop(session)));
     if (!transport.isOpen) {
       unawaited(_drop(session));
     }

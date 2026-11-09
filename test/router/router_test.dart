@@ -622,188 +622,6 @@ void main() {
 
       notifier.dispose();
     });
-
-    // -------------------------------------------------------------------------
-    // signedOut: a completed setup whose forge credential lapsed
-    // -------------------------------------------------------------------------
-    group('signedOut', () {
-      testWidgets('redirects to the re-auth screen, NOT onboarding', (
-        tester,
-      ) async {
-        // The whole point of the state: an operator with workspaces, a sandbox
-        // and a model already configured must not be walked through a five-step
-        // first-run flow to replace one expired token.
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.signedOut,
-        );
-
-        for (final route in <String>[
-          '/inbox',
-          '/pull-requests',
-          '/workspaces/abc',
-          '/settings',
-        ]) {
-          expect(
-            onboardingGuard(
-              context,
-              _stateWithLocation(route),
-              notifier,
-              () => 'ws-1',
-            ),
-            signedOutRoute,
-            reason: 'Expected the signed-out redirect for $route',
-          );
-        }
-
-        notifier.dispose();
-      });
-
-      testWidgets('leaves splash for the re-auth screen', (tester) async {
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.signedOut,
-        );
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(splashRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          signedOutRoute,
-        );
-
-        notifier.dispose();
-      });
-
-      testWidgets('stays put while still signed out', (tester) async {
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.signedOut,
-        );
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(signedOutRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          isNull,
-        );
-
-        notifier.dispose();
-      });
-
-      testWidgets('returns to the inbox the moment the credential lands', (
-        tester,
-      ) async {
-        // Unlike onboarding, this screen IS left automatically: signing back in
-        // is one action with nothing after it, so staying on it would read as a
-        // sign-in that silently failed.
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.signedOut,
-        );
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(signedOutRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          isNull,
-        );
-
-        notifier.value = OnboardingGate.complete;
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(signedOutRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          inboxRoute('ws-1'),
-        );
-
-        notifier.dispose();
-      });
-
-      testWidgets('falls back to the picker when no workspace resolves', (
-        tester,
-      ) async {
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.complete);
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(signedOutRoute),
-            notifier,
-            () => null,
-          ),
-          workspaceListRoute,
-        );
-
-        notifier.dispose();
-      });
-
-      testWidgets('does NOT eject a user who is mid-onboarding', (
-        tester,
-      ) async {
-        // A token that expires between the workspace step and the model step
-        // would otherwise throw the operator into the re-auth screen and strand
-        // the steps after it — and step 1 already carries the same forge card.
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.signedOut,
-        );
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(onboardingRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          isNull,
-        );
-
-        notifier.dispose();
-      });
-
-      testWidgets('a never-onboarded user still gets onboarding', (
-        tester,
-      ) async {
-        await tester.pumpWidget(const SizedBox());
-        final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(
-          OnboardingGate.incomplete,
-        );
-
-        expect(
-          onboardingGuard(
-            context,
-            _stateWithLocation(signedOutRoute),
-            notifier,
-            () => 'ws-1',
-          ),
-          onboardingRoute,
-        );
-
-        notifier.dispose();
-      });
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -820,7 +638,7 @@ void main() {
       // The demo regression: a visitor redeems into a furnished workspace, but
       // `oauth.*` and `credentials.*` are absent from a demo server's op
       // registry, so no forge can ever be connected. Running the normal gate
-      // resolved to `signedOut` and offered a sign-in for a credential that
+      // resolved to `incomplete` and offered a setup flow for a credential that
       // cannot exist, in front of a workspace that was already set up.
       final container = ProviderContainer(
         overrides: [
@@ -911,33 +729,41 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.complete);
     });
 
-    test(
-      'resolves to signedOut when a FINISHED setup lost its forge',
-      () async {
-        // The credential is the only missing piece, so this is a re-auth, not a
-        // setup. It must not resolve to `incomplete` — that would re-ask for a
-        // workspace they already have and read as if the install was reset.
-        final container = _gateContainer(
-          workspaces: [_workspaceRow()],
-          connections: const [_disconnectedGitHub],
-          onboardingFinished: true,
-        );
-        addTearDown(container.dispose);
+    test('a FINISHED setup that lost its forge stays in the app', () async {
+      // The credential is the only missing piece: the shell warns in place and
+      // offers the sign-in. It must not resolve to `incomplete` — that would
+      // re-ask for a workspace they already have and read as if the install
+      // was reset.
+      final container = _gateContainer(
+        workspaces: [_workspaceRow()],
+        connections: const [_disconnectedGitHub],
+        onboardingFinished: true,
+      );
+      addTearDown(container.dispose);
 
-        container.read(onboardingGateProvider);
-        await Future<void>.delayed(Duration.zero);
-        expect(
-          container.read(onboardingGateProvider),
-          OnboardingGate.signedOut,
-        );
-      },
-    );
+      container.read(onboardingGateProvider);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
+    });
+
+    test('a FINISHED setup with no forge and no workspace onboards', () async {
+      final container = _gateContainer(
+        workspaces: const [],
+        connections: const [_disconnectedGitHub],
+        onboardingFinished: true,
+      );
+      addTearDown(container.dispose);
+
+      container.read(onboardingGateProvider);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
+    });
 
     test('an INVITED member with no forge onboards, not re-auths', () async {
       // The case that killed the old "workspaces prove you were signed in
       // once" inference: an invited member has a workspace they never created
-      // and has never onboarded. Sending them to the re-auth screen would skip
-      // the sandbox, model and dictation setup they still need.
+      // and has never onboarded. Landing them in the app would skip the
+      // sandbox, model and dictation setup they still need.
       final container = _gateContainer(
         workspaces: [_workspaceRow()],
         connections: const [_disconnectedGitHub],

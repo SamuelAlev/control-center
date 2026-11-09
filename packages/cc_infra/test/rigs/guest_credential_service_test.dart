@@ -23,6 +23,7 @@ class _FakeBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async {
     if (fail) {
       throw StateError('no credential available');
@@ -78,7 +79,10 @@ void main() {
     actingUserId: actingUserId,
   );
 
-  Future<HttpClientResponse> post(Object? body, {String path = '/credential'}) async {
+  Future<HttpClientResponse> post(
+    Object? body, {
+    String path = '/credential',
+  }) async {
     final request = await client.post('127.0.0.1', port, path);
     final bytes = utf8.encode(body is String ? body : jsonEncode(body));
     request.headers.contentType = ContentType.json;
@@ -117,7 +121,10 @@ void main() {
         'secret': 's3cret',
         'host': 'github.com',
       });
-      expect(response.headers.value(HttpHeaders.cacheControlHeader), 'no-store');
+      expect(
+        response.headers.value(HttpHeaders.cacheControlHeader),
+        'no-store',
+      );
       await response.drain<void>();
     });
   });
@@ -181,13 +188,14 @@ void main() {
 
     test('a non-POST or wrong path is a 404', () async {
       register();
-      final get = await (await client.get('127.0.0.1', port, '/credential'))
-          .close();
+      final get = await (await client.get(
+        '127.0.0.1',
+        port,
+        '/credential',
+      )).close();
       expect(get.statusCode, HttpStatus.notFound);
       await get.drain<void>();
-      final wrongPath = await post({
-        'rig_id': 'rig-1',
-      }, path: '/anything-else');
+      final wrongPath = await post({'rig_id': 'rig-1'}, path: '/anything-else');
       expect(wrongPath.statusCode, HttpStatus.notFound);
       await wrongPath.drain<void>();
     });
@@ -208,18 +216,20 @@ void main() {
       await response.drain<void>();
     });
 
-    test('a broker that cannot mint is a 503, not a 200 with no token',
-        () async {
-      register();
-      broker.fail = true;
-      final response = await post({
-        'rig_id': 'rig-1',
-        'secret': 's3cret',
-        'host': 'github.com',
-      });
-      expect(response.statusCode, HttpStatus.serviceUnavailable);
-      await response.drain<void>();
-    });
+    test(
+      'a broker that cannot mint is a 503, not a 200 with no token',
+      () async {
+        register();
+        broker.fail = true;
+        final response = await post({
+          'rig_id': 'rig-1',
+          'secret': 's3cret',
+          'host': 'github.com',
+        });
+        expect(response.statusCode, HttpStatus.serviceUnavailable);
+        await response.drain<void>();
+      },
+    );
   });
 
   group('body cap', () {

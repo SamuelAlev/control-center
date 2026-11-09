@@ -1,35 +1,39 @@
 ---
 title: Rozmawiaj z Control Center z PR w GitHub
-description: Poproś bota aplikacji GitHub App swojego serwera o recenzję albo zadaj mu pytanie bezpośrednio z rozmowy w PR — bez webhooka i publicznego adresu URL.
+description: Poproś Control Center o recenzję albo zadaj pytanie bezpośrednio z rozmowy w PR — bez webhooka i publicznego adresu URL.
 slug: pl-PL/podrecznik/poradniki/rozmowy-w-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Ten poradnik pokazuje, jak pracować z Control Center bez opuszczania GitHuba:
 poproś o recenzję AI ze strony PR-a, zadaj botowi pytanie w komentarzu i prowadź
 rozmowę dalej w jego wątkach recenzji.
 
-Bot to należąca do Twojego serwera [aplikacja GitHub App](/pl-PL/podrecznik/poradniki/github-app/) —
-ta sama, która już loguje ludzi i wykonuje pracę w tle. Nic nowego nie jest
+Odpowiedzi przychodzą przez ścieżkę GitHub obszaru roboczego: należącą do Twojego
+serwera [aplikację GitHub App](/pl-PL/podrecznik/poradniki/github-app/) albo
+współdzieloną App od Control Center przez Connect. Nic nowego nie jest
 rejestrowane i nic nie musi być osiągalne z internetu: serwer odkrywa to, co
 powiedziano na GitHubie, przez odpytywanie, więc laptop za NAT-em zachowuje się
 dokładnie jak publiczne wdrożenie.
 
 ## Wymagania wstępne
 
-- Serwer ma swoją aplikację GitHub App [zarejestrowaną i
-  zainstalowaną](/pl-PL/podrecznik/poradniki/github-app/), z uprawnieniami **Pull requests: odczyt i zapis**
-  (dla komentarzy, wątków i reakcji) oraz **Issues: odczyt** (dla wyszukiwania
-  komentarzy). Oba są już na liście uprawnień w tamtym poradniku
+- Obszar roboczy ma ścieżkę GitHub: własną GitHub App serwera albo Connect,
+  z aplikacją [zainstalowaną](/pl-PL/podrecznik/poradniki/github-app/#zainstaluj-ją-tam-gdzie-są-twoje-repozytoria)
+  na koncie, do którego należy repozytorium. Własna aplikacja potrzebuje
+  **Pull requests** i **Issues** z odczytem i zapisem, co **Utwórz moją
+  aplikację GitHub** już przyznaje
 - Repozytorium jest połączone z obszarem roboczym w Control Center
+- Jesteś [zalogowany do GitHuba](/pl-PL/podrecznik/poradniki/integracja-github/)
+  na tym serwerze i możesz wykonywać push do repozytorium
 - Żadnego URL-a webhooka, żadnego tunelu, żadnego callbacku — po stronie sieci
   nie ma nic do skonfigurowania
 
 ## Znajdź nazwę swojego bota
 
-Wspomnij `@usectrl`, dedykowane konto GitHub Control Center. To domyślny wyzwalacz; skonfigurowana na Twoim serwerze GitHub App nadal obsługuje żądanie i publikuje odpowiedzi. Nie potrzebujesz danych uwierzytelniających do konta `usectrl`.
+Wspomnij `@usectrl`, dedykowane konto GitHub Control Center. To domyślny wyzwalacz; ścieżka GitHub Twojego obszaru roboczego nadal obsługuje żądanie i publikuje odpowiedzi. Nie potrzebujesz danych uwierzytelniających do konta `usectrl`.
 
-Login samej aplikacji, `<appslug>[bot]`, oraz krótka forma `@appslug` również działają. Aby znaleźć ten opcjonalny alias:
+Login samej aplikacji, `<appslug>[bot]`, oraz krótka forma `@appslug` również działają. Aby znaleźć ten opcjonalny alias we własnej aplikacji:
 
 1. Przejdź do **Ustawienia → Serwer → Logowanie jednokrotne** i przewiń do
    karty **Aplikacje dostawców**
@@ -53,12 +57,11 @@ uruchamia przycisk **Zapytaj AI**:
 
 - **Dodaj etykietę `ai-review`** do PR-a. To najbliższy odpowiednik przypisania
   bota jako recenzenta, jaki oferuje GitHub — konta aplikacji nie mogą zająć
-  natywnego miejsca żądanego recenzenta. Nie ma komentarza, na który trzeba by
-  zareagować, więc nic nie jest publikowane na GitHubie; recenzja startuje
-  w Control Center
-- **Skomentuj `@usectrl review`** (albo samo `@usectrl`) w rozmowie w PR. Bot
-  reaguje 👀, a następnie odpowiada, gdy recenzja się rozpoczęła (albo że jedna
-  już trwa)
+  natywnego miejsca żądanego recenzenta. Twoje konto reaguje na PR 👀, a recenzja
+  startuje w Control Center; żaden komentarz nie jest publikowany
+- **Skomentuj `@usectrl review`** (albo samo `@usectrl`) w rozmowie w PR. Na Twoim
+  komentarzu pojawia się 👀, a potem odpowiedź informuje, że recenzja się
+  rozpoczęła (albo że jedna już trwa)
 
 Recenzenci pracują w przestrzeni recenzji PR-a; czytaj i publikuj ustalenia jak
 w [Używaj recenzji opartej na AI](/pl-PL/podrecznik/poradniki/recenzja-ai/). Publikowanie z powrotem
@@ -79,11 +82,12 @@ Skomentuj rozmowę w PR:
 
 Co się dzieje, po kolei:
 
-1. Bot reaguje 👀, żebyś wiedział, że komentarz został zauważony
+1. Na Twoim komentarzu pojawia się 👀, z Twojego własnego konta, żebyś wiedział,
+   że komentarz został zauważony
 2. Pytanie trafia do przestrzeni recenzji PR-a **jako Ty** — z tą samą
    atrybucją, co gdybyś wpisał je w Control Center
-3. Agent odpowiada w przestrzeni, a odpowiedź wraca na PR jako komentarz, który
-   Cię @-wspomina
+3. Agent odpowiada w przestrzeni, a odpowiedź wraca na PR. Każda odpowiedź
+   zaczyna się od `**Control Center** (for @your-login):`
 
 Pytanie w PR, który nie ma jeszcze recenzji, budzi agenta CEO obszaru roboczego;
 gdy recenzja już się odbyła, odpowiada agent, który odezwał się jako ostatni,
@@ -111,34 +115,45 @@ więc nadal wymaga @-wzmianki.
 
 ## Z kim rozmawia bot
 
-Komentarz z GitHuba przychodzi z niewiele więcej niż loginem, więc bot rozwiązuje
-autora, zanim cokolwiek zrobi:
+Zanim cokolwiek zrobi, serwer ustala autora komentarza albo osobę, która dodała
+etykietę `ai-review`:
 
-- **Twoje konto GitHub musi być połączone z Twoją tożsamością** w Control
-  Center — [zaloguj się przez GitHub](/pl-PL/podrecznik/poradniki/integracja-github/) albo wklej
-  token w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**
-- **Musisz być członkiem z uprawnieniami do zapisu** (`member`, `admin` lub
+- **Konto GitHub musi być zalogowane** na tym serwerze. Dopasowanie odbywa się
+  po numerycznym identyfikatorze konta GitHub, nigdy po loginie. Zaloguj się
+  w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**
+- **Musi to być członek z uprawnieniami do zapisu** (`member`, `admin` lub
   `owner`) w obszarze roboczym, który łączy repozytorium
+- **Musi móc wykonywać push** do repozytorium na GitHubie. Odpowiedzi używają
+  tokenu ograniczonego do dostępu tej osoby, więc ktoś, kto może tylko czytać,
+  nie dostaje odpowiedzi
 
-Każdy inny dostaje jedną uprzejmą odpowiedź wyjaśniającą, czego brakuje —
-nieznany login (niepołączony albo połączony, ale nienależący do tego obszaru)
-i rola tylko do odczytu to dwa przypadki — a jego słowa nigdy nie trafiają do
-obszaru roboczego. Etykieta `ai-review` nie jest w ten sposób bramkowana: nie ma
-autora, więc rozpoczyna recenzję w obszarze roboczym, który już łączy
-repozytorium.
+Wszyscy inni są po cichu ignorowani: nic nie jest publikowane, a ich słowa nigdy
+nie trafiają do obszaru roboczego. Komentarze botów i własne odpowiedzi Control
+Center nigdy nie są traktowane jako pytania.
+
+### Dwa serwery, jeden PR
+
+👀 to także sposób, w jaki serwery uzgadniają, który odpowiada. Reakcja jest
+dodawana z logowania autora, a GitHub informuje serwer, czy jest nowa. Jeśli
+jesteś zalogowany na dwóch serwerach Control Center, które oba łączą
+repozytorium, odpowiada ten, który zareaguje pierwszy, a drugi milczy. To samo
+dotyczy etykiety.
 
 ## Czego się spodziewać
 
 | Rzecz                | Zachowanie                                                               |
 | -------------------- | ------------------------------------------------------------------------ |
-| Potwierdzenie        | 👀 na komentarzu w ciągu około minuty — to interwał obchodu. Etykieta `ai-review` nie ma komentarza, na który mogłaby zareagować |
-| Odpowiedzi           | Publikowane jako bot (aplikacja), w tym samym wątku, w którym zadano pytanie |
+| Potwierdzenie        | 👀 z Twojego konta na komentarzu (albo na PR, w przypadku etykiety), w ciągu jednego obchodu |
+| Odpowiedzi           | Publikowane w tym samym wątku, w którym zadano pytanie, zaczynając od `**Control Center** (for @your-login):`. Przy własnej aplikacji autorem jest bot aplikacji; przez Connect jest to Twoje konto, działające przez współdzieloną App |
 | Atrybucja w przestrzeni | Pytanie należy do Ciebie; agent działa w Twoim imieniu, zgodnie z ustawieniami autonomii przestrzeni |
 | Recenzje             | Ustalenia trafiają do przestrzeni recenzji; publikacja na GitHubie jest ręczna |
 
-Okołominutowe opóźnienie to cena za brak jakiegokolwiek przychodzącego dostępu
-sieciowego. W obchodzie nie ma nic pilnego i nic nie ginie, gdy serwer jest
-offline — komentarz, który nadejdzie w czasie przestoju, zostanie wychwycony
+Obchód działa co minutę przy własnej aplikacji i sprawdza do 25 pull requestów;
+przez Connect działa co dwie minuty i sprawdza do 10, bo te wywołania korzystają
+z własnego limitu GitHub każdego członka. Obszar roboczy, którego limit GitHub
+spadł poniżej 15%, jest pomijany, dopóki się nie odnowi. Opóźnienie to cena za
+brak jakiegokolwiek przychodzącego dostępu sieciowego. Nic nie ginie, gdy serwer
+jest offline — komentarz, który nadejdzie w czasie przestoju, zostanie wychwycony
 przy następnym obchodzie.
 
 ## Rozwiązywanie problemów
@@ -149,17 +164,22 @@ przy następnym obchodzie.
   repozytorium, a repozytorium **połączone** z obszarem roboczym? Niepołączone
   repozytorium jest pomijane, zanim cokolwiek zostanie zapisane, więc
   połączenie go później nadal zadziała
-- Czy Twoje konto GitHub jest połączone i czy jesteś członkiem z uprawnieniami
-  do zapisu? Sprawdź w PR odpowiedź odmowną bota — mówi, o który warunek chodzi
+- Czy jesteś zalogowany do GitHuba na tym serwerze, jesteś członkiem
+  z uprawnieniami do zapisu i możesz wykonywać push do repozytorium? Serwer
+  ignoruje wszystkich innych bez odpowiedzi
+- Przy współdzielonej App od Control Center: czy instalacja organizacji jest
+  autoryzowana dla tego serwera? Zobacz
+  [Autoryzuj ten serwer dla organizacji](/pl-PL/podrecznik/poradniki/github-app/#autoryzuj-ten-serwer-dla-organizacji)
 - Nadal nic? Dziennik serwera podaje nazwę obchodu i PR-a, gdy coś się nie
   powiedzie; szukaj `pr_conversation:` (odpytywanie) i
   `github_pr_conversation:` (most)
 
 **Etykieta nie rozpoczyna recenzji.**
 
-Uruchamia się raz na PR. Jeśli recenzja już się odbyła albo etykietę dodano,
-zanim serwer w ogóle zobaczył PR (pierwszy obchód zapisuje zaległości po cichu,
-zamiast je szturmować), wspomnij bota — `@myapp review` zawsze rozpoczyna
+Uruchamia się raz na PR, a osoba, która ją dodała, przechodzi te same kontrole
+co autor komentarza. Jeśli recenzja już się odbyła albo etykietę dodano, zanim
+serwer w ogóle zobaczył PR (pierwszy obchód zapisuje zaległości po cichu, zamiast
+je szturmować), wspomnij bota — `@usectrl review` zawsze rozpoczyna
 recenzję, chyba że jakaś już trwa.
 
 **Odpowiedź bota nigdy nie dotarła na GitHuba.**

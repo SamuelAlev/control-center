@@ -2,7 +2,7 @@
 title: Configurer les politiques de bac à sable
 description: Ce qui limite une exécution d’agent, comment savoir si le bac à sable du système d’exploitation l’encapsule et comment les règles d’action décident de ce qu’un agent peut pousser ou atteindre.
 slug: fr-FR/manuel/guides/politiques-de-bac-a-sable
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Le fait qu’une exécution d’agent soit isolée dans un bac à sable se décide sur le
@@ -79,9 +79,10 @@ avec **Refuser**, git affiche
 
 Comment chaque règle atteint l’exécution :
 
-- **Le push** est appliqué par ce que détient l’exécution. Son jeton GitHub est
-  un jeton d’installation de GitHub App en lecture seule, qui peut lire le
-  contenu et travailler avec les pull requests. Sa configuration git envoie
+- **Le push** est appliqué par ce que détient l’exécution. Son jeton GitHub
+  couvre l’unique dépôt de l’exécution et ne peut pas pousser : il peut lire le
+  contenu et, lorsque le membre responsable peut pousser, commenter les pull
+  requests. Sa configuration git envoie
   chaque push GitHub à une passerelle en boucle locale sur `cc_server`, qui
   interroge la règle et ne transmet le push qu’ensuite, avec un jeton
   d’écriture que l’agent ne voit jamais. La passerelle ne transmet qu’au dépôt
@@ -102,18 +103,14 @@ Comment chaque règle atteint l’exécution :
   Tant que le réseau est activé, GitHub figure toujours sur la liste
   d’autorisation de sortie.
 
-:::caution[Sans GitHub App, la règle de push n’est qu’indicative]
-Sans GitHub App configurée, l’exécution reçoit le jeton d’accès personnel de
-repli, qu’il est impossible de restreindre à la lecture seule. `git push` passe
-toujours par la passerelle et la règle, mais du code qui utilise directement le
-jeton peut pousser en la contournant. Configurez la GitHub App pour que la
-règle soit contraignante.
-
-L’identifiant GitHub de l’exécution est toujours celui du courtier — un jeton
-d’installation de GitHub App limité au dépôt, ou le PAT de repli — jamais le
-jeton stocké du membre demandeur. Le PAT du serveur est retenu pour une
-exécution qui agit pour un membre qui n’est pas propriétaire et n’a pas
-connecté GitHub.
+:::note[D’où vient le jeton GitHub de l’exécution]
+Le jeton est émis pour l’exécution à partir de la GitHub App de l’espace de
+travail, de l’application propre au serveur ou de Control Center Connect, et il
+se limite à ce que le membre responsable (celui qui a demandé, sinon le
+propriétaire de l’espace de travail) peut faire sur ce dépôt. Ce n’est jamais la
+connexion d’un membre transmise telle quelle, et il n’existe aucun jeton de
+repli : lorsqu’aucun ne peut être émis, l’exécution démarre sans jeton et ses
+notes en donnent la raison.
 :::
 
 ## Vérifier si vos exécutions d’agent sont isolées

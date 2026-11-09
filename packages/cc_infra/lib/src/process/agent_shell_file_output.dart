@@ -3,6 +3,8 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:ffi/ffi.dart';
 
 /// Gets the descriptor listing for one command pid, never a client path.
@@ -160,7 +162,7 @@ class AgentShellFileOutput {
 
   static Future<String> _discover(int pid) async {
     if (Platform.isMacOS) {
-      final result = await Process.run('lsof', [
+      final result = await ChildProcess.run('lsof', [
         '-nP',
         '-a',
         '-p',
@@ -265,7 +267,7 @@ class _NativeFileTail {
       // command's lsof snapshot and our openat. Files of another type cannot
       // pass as output, even if replaced by a pipe before openat.
       if (Platform.isMacOS) {
-        final result = await Process.run('lsof', [
+        final result = await ChildProcess.run('lsof', [
           '-nP',
           '-a',
           '-p',

@@ -2,7 +2,7 @@
 title: Utwórz szablon potoku
 description: Napisz szablon przepływu pracy DAG w edytorze potoków — dodaj węzły, połącz je, zadeklaruj dane wejściowe i spraw, aby dał się uruchomić.
 slug: pl-PL/podrecznik/poradniki/tworzenie-potoku
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Szablony potoków tworzy się w ustawieniach obszaru roboczego. Pozycja **Potoki**
@@ -128,10 +128,21 @@ Dodaje pole **Skrypt bash**. Nie ma pól katalogu roboczego ani środowiska, bo
 żadne z nich nie jest konfigurowalne:
 
 - Każdy krok bash w uruchomieniu dzieli katalog roboczy `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` jest wstrzykiwany z magazynu poświadczeń, więc `gh` i
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` działają bez dodatkowej konfiguracji.
+- Skrypt działa w sandboxie systemu operacyjnego hosta, tak jak polecenia
+  agenta. Host bez sandboxa (Windows albo Linux bez `bwrap`) kończy krok
+  błędem, zamiast uruchomić go bez ograniczeń. Katalog danych serwera i plik
+  `.env` są ze środka nieczytelne.
+- Git i `gh` nie widzą żadnej konfiguracji hosta: zapisanego logowania,
+  pomocnika poświadczeń ani globalnych hooków.
+- Gdy potok wskazuje repozytorium GitHub połączone z obszarem roboczym
+  (`repo_full_name` w stanie albo w ładunku wyzwalacza), `GH_TOKEN`
+  i `GITHUB_TOKEN` zawierają token, który może tylko odczytywać to jedno
+  repozytorium, więc `gh` i `git clone` działają na nim bez dodatkowej
+  konfiguracji. W przeciwnym razie tokenu GitHub nie ma.
+- Potok z krokiem bash może utworzyć lub edytować tylko administrator obszaru
+  roboczego.
 - Skrypt jest uruchamiany jako dosłowny plik wykonywalny `bash`, więc `bash` musi
-  znajdować się w `PATH` hosta serwera. To kwestia systemu Windows.
+  znajdować się w `PATH` hosta serwera.
 
 ### Router
 

@@ -32,7 +32,8 @@ class GoogleCalendarEventsSyncResult {
   final String? nextSyncToken;
 }
 
-/// Read-only client for the Google Calendar API v3.
+/// Client for the Google Calendar API v3: lists calendars and events, and
+/// writes the person's own changes (RSVP, create, delete).
 ///
 /// Mirrors the GitHub clients: every method wraps the call in try/catch,
 /// re-throws cancellations and maps any other [RhttpException] through
@@ -226,8 +227,7 @@ class GoogleCalendarApiClient {
   ///
   /// Google merges arrays by replacement on PATCH, so callers must pass the
   /// full attendee list with the self attendee's `responseStatus` updated.
-  /// Requires the `calendar.events` scope; accounts connected with only
-  /// `calendar.readonly` will get a 403 (mapped to an [Exception]).
+  /// Invited guests hear about the new answer (`sendUpdates=all`).
   Future<void> patchEventResponse({
     required String accountId,
     required String calendarId,
@@ -244,6 +244,7 @@ class GoogleCalendarApiClient {
             method: HttpMethod.patch,
             url:
                 '$googleCalendarApiBaseUrl/calendars/$encodedCal/events/$encodedEvent',
+            query: const {'sendUpdates': 'all'},
             body: HttpBody.json(<String, dynamic>{'attendees': attendees}),
             expectBody: HttpExpectBody.text,
             cancelToken: cancelToken,
@@ -254,6 +255,131 @@ class GoogleCalendarApiClient {
     } on RhttpException catch (e) {
       if (e is RhttpCancelException) {
         rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
+  /// Moves [eventId] to [start] → [end] (Google `start` / `end` objects:
+  /// `{dateTime}` for a timed event, `{date}` for an all-day one) and returns
+  /// it as Google stored it. Guests are told of the new time
+  /// (`sendUpdates=all`). A recurring event's instance id moves only that
+  /// occurrence.
+  Future<GoogleCalendarEvent> patchEventTimes({
+    required String accountId,
+    required String calendarId,
+    required String eventId,
+    required Map<String, String> start,
+    required Map<String, String> end,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final encodedCal = Uri.encodeComponent(calendarId);
+      final encodedEvent = Uri.encodeComponent(eventId);
+      final response =
+          await _httpClient.send(
+                _tagged(
+                  BaseHttpRequest(
+                    method: HttpMethod.patch,
+                    url:
+                        '$googleCalendarApiBaseUrl/calendars/$encodedCal/events/$encodedEvent',
+                    query: const {'sendUpdates': 'all'},
+                    body: HttpBody.json(<String, dynamic>{
+                      'start': start,
+                      'end': end,
+                    }),
+                    expectBody: HttpExpectBody.text,
+                    cancelToken: cancelToken,
+                  ),
+                  accountId,
+                ),
+              )
+              as HttpTextResponse;
+      return GoogleCalendarEvent.fromJson(_asMap(httpJsonBody(response)));
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
+  /// Creates an event on [calendarId] from the Google event resource [event]
+  /// and returns it as Google stored it.
+  ///
+  /// [withConference] asks Google to attach a Meet link (the resource must
+  /// then carry a `conferenceData.createRequest`). Guests in the resource are
+  /// emailed their invitation (`sendUpdates=all`).
+  Future<GoogleCalendarEvent> insertEvent({
+    required String accountId,
+    required String calendarId,
+    required Map<String, dynamic> event,
+    bool withConference = false,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final encodedCal = Uri.encodeComponent(calendarId);
+      final response =
+          await _httpClient.send(
+                _tagged(
+                  BaseHttpRequest(
+                    method: HttpMethod.post,
+                    url:
+                        '$googleCalendarApiBaseUrl/calendars/$encodedCal/events',
+                    query: {
+                      'sendUpdates': 'all',
+                      if (withConference) 'conferenceDataVersion': '1',
+                    },
+                    body: HttpBody.json(event),
+                    expectBody: HttpExpectBody.text,
+                    cancelToken: cancelToken,
+                  ),
+                  accountId,
+                ),
+              )
+              as HttpTextResponse;
+      return GoogleCalendarEvent.fromJson(_asMap(httpJsonBody(response)));
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
+  /// Deletes [eventId] from [calendarId]. An organizer's delete cancels the
+  /// event for every guest, who are told (`sendUpdates=all`); a guest's
+  /// delete removes it from their own calendar only. An event Google already
+  /// forgot (404 or 410) counts as deleted.
+  Future<void> deleteEvent({
+    required String accountId,
+    required String calendarId,
+    required String eventId,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final encodedCal = Uri.encodeComponent(calendarId);
+      final encodedEvent = Uri.encodeComponent(eventId);
+      await _httpClient.send(
+        _tagged(
+          BaseHttpRequest(
+            method: HttpMethod.delete,
+            url:
+                '$googleCalendarApiBaseUrl/calendars/$encodedCal/events/$encodedEvent',
+            query: const {'sendUpdates': 'all'},
+            expectBody: HttpExpectBody.text,
+            cancelToken: cancelToken,
+          ),
+          accountId,
+        ),
+      );
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      if (e is RhttpStatusCodeException &&
+          (e.statusCode == 404 || e.statusCode == 410)) {
+        return;
       }
       throw mapHttpException(e);
     }

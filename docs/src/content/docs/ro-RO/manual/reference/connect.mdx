@@ -1,0 +1,186 @@
+---
+title: Referința Control Center Connect
+description: Ce vede Connect și ce nu vede niciodată, cele trei moduri, identitatea instalării, acreditările sigilate, încrederea în configurație și fiecare setare, operație și cod de stare.
+slug: ro-RO/manual/referinta/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect rulează autentificările la provideri pentru serverele care
+nu și-au înregistrat propriile aplicații. Un server folosește fie Connect-ul
+găzduit al Control Center, fie un Connect pe care îl rulează organizația lui
+([Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/)),
+fie niciunul. Alegerea se află în **Setări → Server → Autentificare unică →
+Control Center Connect**, în `cc_server connect` sau în `CC_CONNECT_URL`.
+
+## Benzi
+
+Sub **Folosește aplicațiile mele** (sau înainte ca cineva să aleagă), fiecare provider
+este o bandă, iar o bandă rulează pe aplicația proprie a serverului când una este
+configurată complet, altfel nu este disponibilă. Cu Control Center Connect sau cu un
+Connect propriu, Connect gestionează fiecare bandă pe care o servește: aplicațiile
+proprii ale serverului rămân salvate, dar nu sunt folosite, nici pentru autentificări,
+nici pentru automatizarea serverului, nici pentru starea raportată de server.
+Aplicația proprie a unui spațiu de lucru câștigă în orice mod.
+
+| Bandă        | Aplicația proprie are nevoie de                  | Prin Connect                                                         |
+| ------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
+| `github`     | App id, cheie privată, client id și client secret | Oamenii se autentifică în GitHub App partajată                      |
+| `google`     | Client id și client secret                       | Oamenii conectează Google Calendar                                   |
+| `linear`     | Client id                                        | Oamenii se autentifică în Linear                                     |
+| `linear_app` | Client id                                        | Un administrator al spațiului de lucru conectează actorul de aplicație Linear |
+| `slack`      | Conexiunea propriei aplicații Slack a unui spațiu de lucru | Un administrator al spațiului de lucru conectează Slack la aplicația Slack partajată |
+| `klipy`      | `KLIPY_APP_KEY`                                  | Căutare de GIF-uri, prin proxy-ul Connect                            |
+
+O aplicație proprie configurată doar parțial face din banda ei o eroare,
+niciodată o revenire tăcută la Connect. Un spațiu de lucru care folosește
+propria GitHub App (**Setări → Spațiu de lucru → General → Identitate GitHub**)
+nu trece niciodată prin Connect pentru GitHub, iar cel care folosește propria aplicație
+Google, Linear sau Klipy (**Setări → Spațiu de lucru → General → Aplicații ale providerilor**)
+nu trece niciodată prin aplicația serverului sau prin Connect pentru acel provider.
+Schimbarea alegerii Connect nu deconectează pe nimeni din aplicația proprie a unui
+spațiu de lucru.
+
+## Ce vede Connect și ce nu vede niciodată
+
+| Connect vede                                                                                  | Connect nu vede niciodată                                             |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ID-ul de instalare al serverului și semnăturile cererilor                                     | Codul sursă, conținutul depozitelor, diff-urile sau textul pull request-urilor |
+| Contul de provider care s-a autentificat, în timpul autentificării                            | Tichetele, transcrierile sau orice din baza de date a unui spațiu de lucru |
+| Spațiul de lucru căruia îi aparține o acreditare, ca id opac în interiorul sigiliului         | Cheia privată a unei GitHub App: tokenurile de depozit vin din autentificarea unei persoane |
+| Depozitul pentru care este emis un token GitHub pentru un singur depozit                      | Tokenurile de reîmprospătare în repaus: există doar în sigiliile pe care le păstrează serverul |
+| ID-urile instalărilor GitHub legate de server                                                 | Secretele Linear: serverul schimbă singur codul Linear                |
+| Termenii de căutare de GIF-uri, când face proxy pentru Klipy                                  | Parole, chei de asociere sau chei ale providerilor de modele          |
+| Referințele evenimentelor Slack (echipă, canal, id de mesaj) și textul comenzilor slash       | Textul mesajelor Slack: Connect îl elimină la sosire, iar serverul citește singur mesajul din Slack |
+
+Connect păstrează starea de scurtă durată (autentificări în curs, nonce-uri,
+cache-uri) cel mult 15 minute. Singurele lui înregistrări durabile sunt
+legăturile instalărilor: ce servere pot folosi ce instalare GitHub și de ce
+server este legată fiecare echipă Slack. Erorile poartă un cod, niciodată
+răspunsul providerului, iar jurnalele înregistrează ID-urile de instalare doar
+ca hash-uri cu cheie.
+
+## Moduri
+
+| Mod      | Setare                      | Comportament                                                                                             |
+| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Nesetat  | Server nou                  | Nicio bandă nu folosește Connect. Onboardingul îi cere proprietarului serverului să aleagă               |
+| `hosted` | **Folosește aplicațiile Control Center** | `https://connect.usectrl.dev`, cu o configurație semnată offline. Aplicațiile proprii ale serverului nu sunt folosite                            |
+| `custom` | **Folosește un server Connect propriu** | Un Connect la un URL HTTPS (`http` doar pe loopback), de încredere la prima utilizare. Aplicațiile proprii ale serverului nu sunt folosite        |
+| `off`    | **Folosește aplicațiile mele** | Nicio bandă nu folosește Connect. Doar aplicațiile proprii autentifică oamenii                        |
+
+`CC_CONNECT_URL` în mediul serverului sau în `.env` blochează alegerea: `hosted`,
+`off` sau un URL Connect. Setările afișează atunci blocarea și nu o pot schimba.
+
+Această compilare nu conține nicio cheie de configurație găzduită, așa că modul
+găzduit raportează `hosted_unprovisioned` și nu servește nicio bandă. Aplicațiile
+proprii și un Connect propriu funcționează.
+
+Un server citește configurația Connect cel mult o dată la 10 minute și așteaptă
+cel mult 5 secunde pentru fiecare apel. Când Connect nu este accesibil, ultima
+configurație bună rămâne în uz, iar Setările o marchează ca învechită.
+
+## Identitatea instalării
+
+| Element        | Ce este                                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Cheie de instalare | Un seed de 32 de octeți în fișierul de secrete al serverului (`connect_install_key`), separat de cheile de asociere ale dispozitivelor |
+| Cheie per Connect | O cheie Ed25519 derivată din seed și din adresa Connect-ului. Fiecare cerere către Connect este semnată cu ea (RFC 9421) |
+| ID de instalare | 26 de caractere derivate din acea cheie publică. Afișat în Setări și de `cc_server connect status`              |
+
+Același server are un ID de instalare diferit pentru fiecare adresă Connect.
+ID-ul se schimbă doar când cheia este schimbată.
+
+## Acreditări sigilate
+
+O autentificare prin Connect returnează un **sigiliu de acreditare**: un blob
+criptat pe care îl poate deschide doar Connect-ul care l-a creat. Este legat de
+provider, de adresa Connect, de ID-ul de instalare, de spațiul de lucru, de
+contul de provider, de aplicație și de generația secretului.
+
+- Serverul stochează sigiliul și ID-ul de instalare pentru care a fost sigilat.
+  Tokenurile de acces rămân în memorie
+- Pentru reîmprospătare, serverul trimite sigiliul înapoi și primește un nou
+  token de acces și un nou sigiliu
+- Un sigiliu al cărui ID de instalare sau adresă Connect nu se mai potrivește
+  este șters la următoarea citire, iar persoana respectivă se autentifică din
+  nou. Asta se întâmplă după o schimbare a cheii, o trecere la alt Connect sau
+  un director de date restaurat pe un alt server
+- Un sigiliu pe care Connect nu îl poate deschide este refuzat cu `access_denied`
+
+## Instalări GitHub
+
+O instalare a aplicației GitHub partajate poate fi folosită de un server doar
+când Connect a legat-o de ID-ul de instalare al acelui server.
+
+- **Instalează aplicația GitHub** din **Setări → Spațiu de lucru → General**
+  deschide GitHub cu un tichet valabil 15 minute. Connect leagă noua instalare
+  când cel care instalează deține contul personal sau administrează organizația
+- **Autorizează acest server** leagă o instalare care există deja. Doar un
+  administrator al organizației poate face asta
+- O instalare a unei organizații poate fi legată de mai multe servere; fiecare
+  are nevoie de autorizarea unui administrator
+
+## Încrederea în configurație
+
+| Connect  | Cum are serverul încredere în configurația lui                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Găzduit  | Verifică o semnătură Ed25519 față de cheile compilate în build. Refuză o epocă mai mică decât cea mai mare pe care a văzut-o (`rollback`) |
+| Propriu  | Fixează la prima utilizare app id-ul și client id-ul GitHub, client id-urile Google și Linear și app id-ul și client id-ul Slack. O schimbare întrerupe autentificările prin Connect (`pins_changed`) până când proprietarul serverului apasă **Acceptă aplicațiile noi** |
+
+## Operații
+
+Toate setările Connect sunt rezervate proprietarului serverului.
+
+| Operație              | Ce face                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `connect.status`      | Modul, URL-ul, blocarea, ID-ul de instalare, starea, epoca configurației și sursa fiecărei benzi |
+| `connect.configure`   | Setează `hosted`, `custom` (cu `url`) sau `off`                                        |
+| `connect.test`        | Preia din nou configurația și raportează starea                                        |
+| `connect.confirmPins` | Acceptă identificatorii schimbați ai unui Connect propriu                              |
+| `connect.rotateKey`   | Emite o nouă cheie de instalare. Fiecare autentificare prin Connect de pe acest server nu mai funcționează |
+
+Autentificările însele folosesc `oauth.lanes`, `oauth.begin`, `oauth.status`,
+`oauth.complete`, `oauth.connections` și `oauth.disconnect`. Persoana este
+întotdeauna apelantul autentificat.
+
+## Autentificarea prin Connect
+
+1. Serverul îi cere lui Connect să pornească banda și primește URL-ul de
+   autorizare al providerului, pe care îl verifică înainte să-l afișeze
+2. Persoana aprobă în browser. Providerul se întoarce la Connect
+3. Connect afișează un cod de 8 caractere și un link
+   `control-center://oauth-done`
+4. Persoana tastează codul în aplicație sau urmează linkul. Serverul revendică
+   autentificarea cu codul și cu propria dovadă a cererii
+
+O autentificare expiră după 10 minute. Cinci coduri greșite o încheie. Un link pe
+care această aplicație nu l-a pornit este refuzat cu **Autentificare nepornită
+de aici**.
+
+## Schimbă cheia de instalare
+
+**Schimbă cheia** pe cardul Connect sau `cc_server connect rotate-key --yes`:
+
+- Îi dă serverului o nouă cheie de instalare și un nou ID de instalare
+- Îi deconectează pe toți de pe fiecare bandă care rulează prin Connect
+- Lasă neatinse autentificările prin aplicațiile proprii ale serverului
+- Necesită adăugarea noului ID de instalare în lista de permisiuni a unui
+  Connect propriu
+
+## Coduri de stare
+
+| Cod                    | Semnificație                                                         |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Această compilare nu are o cheie de configurație găzduită            |
+| `signature`            | Configurația găzduită nu a trecut verificarea semnăturii             |
+| `rollback`             | Connect a servit o configurație mai veche decât cea pe care serverul a văzut-o deja |
+| `unreachable`          | Serverul nu poate ajunge la Connect                                  |
+| `install_blocked`      | Connect nu permite acest ID de instalare                             |
+| `pins_changed`         | Un Connect propriu a anunțat alți identificatori de aplicație        |
+| `protocol`             | Connect a răspuns într-o formă pe care acest server nu o înțelege    |
+
+## Conexe
+
+- [Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/)
+- [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)
+- [CLI-ul `cc_server`](/ro-RO/manual/referinta/cc-server-cli/)

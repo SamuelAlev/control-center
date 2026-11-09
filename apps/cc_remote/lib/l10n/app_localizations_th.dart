@@ -2553,6 +2553,26 @@ class AppLocalizationsTh extends AppLocalizations {
       'กำลังรอการอนุญาตในเบราว์เซอร์ของคุณ…';
 
   @override
+  String get credentialsConnectCodePrompt => 'ป้อนรหัสที่แสดงในเบราว์เซอร์';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'ดูไม่เหมือนรหัสลงชื่อเข้าใช้ รหัสประกอบด้วยตัวอักษรและตัวเลข 8 ตัว';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'รหัสนี้ไม่ตรงกับการลงชื่อเข้าใช้นี้ ตรวจสอบแล้วลองอีกครั้ง';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'เซิร์ฟเวอร์นี้ยังไม่ได้ตั้งค่าการลงชื่อเข้าใช้ $provider';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'ไม่สามารถเข้าถึงที่อยู่ตอบกลับการลงชื่อเข้าใช้ของเซิร์ฟเวอร์นี้จากโทรศัพท์ได้อย่างปลอดภัย ลงชื่อเข้าใช้จากแอปเดสก์ท็อป หรือขอให้เจ้าของเซิร์ฟเวอร์ตั้งค่าที่อยู่ HTTPS สาธารณะ';
+
+  @override
   String get credentialsLoginTimedOut =>
       'การเข้าสู่ระบบหมดอายุแล้ว เริ่มลงชื่อเข้าใช้อีกครั้ง';
 
@@ -2572,10 +2592,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'ลงชื่อเข้าใช้ให้เสร็จ';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'โทรศัพท์ไม่สามารถเข้าถึงจุดรับการตอบกลับจากเบราว์เซอร์ของเซิร์ฟเวอร์นี้อย่างปลอดภัยได้ ขอให้เจ้าของเซิร์ฟเวอร์ตั้งค่าจุดรับการตอบกลับ HTTPS สาธารณะ หรือเพิ่มโทเค็นแทน';
 
   @override
   String get credentialsUpdateToken => 'อัปเดตโทเค็น';

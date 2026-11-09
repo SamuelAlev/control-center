@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 
 /// macOS `sandbox-exec` with a generated Seatbelt profile.
@@ -138,6 +139,15 @@ abstract final class MacosSandbox {
             '(deny file-write-unlink (literal "${_escape(ancestor)}"))',
           );
         }
+      }
+      // A run directory inside a protected tree (a pipeline shell step's
+      // lives under the server's data directory) keeps renames and deletes
+      // within itself; nothing outside it is re-opened.
+      final runDir = policy?.runDir;
+      if (runDir != null &&
+          runDir.isNotEmpty &&
+          moveBlocked.any((p) => runDir == p || runDir.startsWith('$p/'))) {
+        lines.add('(allow file-write-unlink (subpath "${_escape(runDir)}"))');
       }
       lines.add('');
     }
@@ -358,7 +368,7 @@ exit 1
     if (current != content) {
       final tmp = File('${dir.path}/.$name.$pid.tmp')
         ..writeAsStringSync(content, flush: true);
-      Process.runSync('/bin/chmod', ['755', tmp.path]);
+      ChildProcess.runSync('/bin/chmod', ['755', tmp.path]);
       tmp.renameSync(file.path);
     }
     return dir.resolveSymbolicLinksSync();

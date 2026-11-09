@@ -29,7 +29,8 @@ void main() {
               'state': 'open',
               'is_draft': false,
               'is_merged': false,
-              'html_url': 'https://github.com/ControlCenter/application/pull/33982',
+              'html_url':
+                  'https://github.com/ControlCenter/application/pull/33982',
             };
           },
       onSwr: (key) => seenKey = key,
@@ -38,7 +39,11 @@ void main() {
     final op = ops.singleWhere((o) => o.name == 'pr_review.prPreview');
     final result = await op.handler(
       const RepoOpContext(
-        args: {'owner': 'ControlCenter', 'repo': 'application', 'number': 33982},
+        args: {
+          'owner': 'ControlCenter',
+          'repo': 'application',
+          'number': 33982,
+        },
         workspaceId: 'ws-1',
         deviceId: 'device-1',
         userId: 'user-1',
@@ -48,10 +53,7 @@ void main() {
     expect(seenUser, 'user-1');
     expect(seenWorkspace, 'ws-1');
     expect(seenKey, 'user-1|ControlCenter/application#33982');
-    expect(
-      result['preview'],
-      containsPair('title', 'feat: do something'),
-    );
+    expect(result['preview'], containsPair('title', 'feat: do something'));
   });
 
   test('commit preview is fetched and cached as the caller', () async {
@@ -71,7 +73,11 @@ void main() {
     final op = ops.singleWhere((o) => o.name == 'pr_review.commitPreview');
     await op.handler(
       const RepoOpContext(
-        args: {'owner': 'ControlCenter', 'repo': 'application', 'sha': 'abc123'},
+        args: {
+          'owner': 'ControlCenter',
+          'repo': 'application',
+          'sha': 'abc123',
+        },
         workspaceId: 'ws-1',
         deviceId: 'device-1',
         userId: 'user-1',
@@ -94,7 +100,6 @@ List<RepoOp> _ops({
         String owner,
         String repo, {
         required String userId,
-        bool asApp = false,
       }) async => throw UnimplementedError(),
   requireRepoCoords: (args) =>
       (owner: args['owner'] as String, repo: args['repo'] as String),

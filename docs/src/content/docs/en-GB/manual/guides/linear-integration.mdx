@@ -1,29 +1,117 @@
 ---
 title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+description: Sign in to Linear, connect a workspace's Linear automation, and choose Linear as the ticketing provider for new tickets.
 slug: en-GB/manual/guides/linear-integration
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/en-GB/manual/guides/manage-tickets/).
+Linear has two identities in Control Center, and both are browser sign-ins:
+yours, for what you do, and the workspace's Control Center app, for what agents
+and pipelines do. Tickets, projects, links, collaborators, delegation and
+assignment all work against Control Center's own database with no external
+service required — see [Create and manage tickets](/en-GB/manual/guides/manage-tickets/).
 
-## Store your Linear key
+## Prerequisites
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card. No ticketing key is placed in an agent's sandbox:
-agents write tickets through Control Center's own tools, which ask the
-**Write to an external tracker** rule first.
+- The server can sign people in to Linear: through Control Center Connect, or
+  with the server's own Linear application
+  ([Register your own Linear application](#register-your-own-linear-application)).
+  The server owner chooses in **Settings → Server → Single sign-on**
+- A workspace admin, to pick Linear as the ticketing provider and to connect
+  Linear automation
 
-## Stamp new tickets as Linear
+## Choose Linear for the workspace
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+1. Go to **Settings → Workspace → General** and find the **Ticketing** card
+2. Set **Ticketing provider** to **Linear**
+
+Tickets you create from then on are stamped `provider: linear`. **Local** keeps
+tickets in this server's own database and hides the Linear rows: there is
+nothing to authenticate to.
+
+## Sign in to Linear
+
+On the same card, the **Linear** row is yours:
+
+1. Click **Sign in to Linear**
+2. Approve in your browser
+3. With the server's own application, the dialog notices by itself. Through
+   Connect, type the 8-character code the browser shows, or let it open Control
+   Center through the `control-center://` link
+
+Anything you do in Linear from Control Center runs on this sign-in and nothing
+else. If you are not signed in, the app asks you to sign in rather than acting
+as somebody else.
+
+## Connect Linear automation
+
+The **Linear automation** row is the workspace's Control Center app in Linear.
+Ticket sync, pipelines and agents write with it, so automated issues and
+comments appear as Control Center rather than as a person.
+
+1. A workspace admin clicks **Connect Linear for automation**
+2. They approve the app for the Linear workspace in the browser, as above
+
+The row then reads "Connected to _your Linear workspace_". Only workspace admins
+can connect or disconnect it.
+
+No Linear credential is placed in an agent's sandbox: agents write tickets
+through Control Center's own tools, which ask the **Write to an external
+tracker** rule first.
+
+## Register your own Linear application
+
+Use your own application when you chose **Use my own apps**. The server's own application applies only then: with Control Center's or a custom Connect, Connect runs every lane, Linear included, and the server's application and service API key stay saved but unused. A workspace's own application ([below](#give-one-workspace-its-own-linear-application)) still applies in every mode.
+
+1. Create an OAuth application at
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Add both callback URLs that **Settings → Server → Single sign-on → Provider
+   apps → Linear** shows under **Callback URLs**, verbatim:
+   `<server origin>/oauth/linear/callback` and
+   `<server origin>/oauth/linear_app/callback`
+3. Paste the **Client id** into the Linear block
+
+There is no client secret: the server signs in with PKCE. Linear's refresh
+tokens expire after 30 days unused, so the server renews every Linear sign-in
+older than 20 days once a day.
+
+The same block takes an optional **Service API key**. It is the server's own
+Linear credential for automation in workspaces that have not connected Linear
+automation. Keep it in **Settings** or in the server's `.env` file as
+`LINEAR_API_KEY`: the server refuses to start when `LINEAR_API_KEY` is exported
+in its process environment.
+
+## Give one workspace its own Linear application
+
+A workspace can sign in to Linear through an application of its own instead of the server's. Only a workspace admin or owner can set it up.
+
+1. Create a Linear OAuth application as in the steps above
+2. Go to **Settings → Workspace → General → Provider apps** and open **Linear**
+3. Choose **Use this workspace's own app**
+4. Add both callback URLs the row shows under **Callback URLs** to the Linear application, verbatim
+5. Paste its **Client id**, and optionally a **Service API key** for this workspace's automation
+
+The workspace's application then answers every Linear sign-in and automation request in this workspace, whichever way the server signs people in. It never falls back to the server's application or to Connect: until a client id is set, Linear is off in this workspace and the row says what is missing. Its service API key is used only here; without one, sync needs **Connect Linear for automation**.
+
+Switching between the server's application and the workspace's, or changing the workspace's client id, signs everyone in this workspace out of Linear and disconnects its automation. They sign in again through the new application. **Use this server's app** deletes the workspace's saved fields. Secrets are write-only: the row shows only whether one is saved. Other workspaces on the server are not affected.
+
+## Troubleshooting
+
+### The Linear row says sign-in isn't set up
+
+The server has neither its own Linear application nor Connect. The server owner
+picks one in **Settings → Server → Single sign-on**. When the workspace uses its own application, the row instead says its setup isn't finished: a workspace admin adds the client id in **Settings → Workspace → General → Provider apps**.
+
+### Ticket sync fails with an authentication error
+
+The workspace has no Linear automation connected and the server has no service
+API key, so sync has no credential. A workspace admin clicks **Connect Linear
+for automation**.
+
+### Connecting automation says the Linear workspace is connected elsewhere
+
+That Linear workspace's Control Center app is already connected to another
+Control Center server.
 
 ## Related guides
 

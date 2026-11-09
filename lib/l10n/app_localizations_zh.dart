@@ -1100,6 +1100,89 @@ class AppLocalizationsZh extends AppLocalizations {
   String get calendarRsvpFailed => '无法更新你的回复';
 
   @override
+  String get calendarNewEvent => '新建活动';
+
+  @override
+  String get calendarComposerTitleHint => '添加标题';
+
+  @override
+  String get calendarComposerStarts => '开始';
+
+  @override
+  String get calendarComposerEnds => '结束';
+
+  @override
+  String get calendarComposerDate => '日期';
+
+  @override
+  String get calendarComposerEndDate => '最后一天';
+
+  @override
+  String get calendarComposerGuestsHint => '通过邮箱添加参与者';
+
+  @override
+  String get calendarComposerMeet => '添加 Google Meet 链接';
+
+  @override
+  String get calendarComposerLocationHint => '添加地点';
+
+  @override
+  String get calendarComposerDescriptionHint => '添加描述';
+
+  @override
+  String get calendarComposerCalendar => '日历';
+
+  @override
+  String get calendarComposerTitleRequired => '添加标题后才能保存活动';
+
+  @override
+  String get calendarComposerInvalidGuests => '有一个参与者的邮箱无效';
+
+  @override
+  String get calendarComposerEndBeforeStart => '活动结束时间必须晚于开始时间';
+
+  @override
+  String get calendarComposerSaveFailed => '无法创建活动，请重试。';
+
+  @override
+  String get calendarComposerGuestsNotified => 'Google 会向参与者发送邀请邮件。';
+
+  @override
+  String get calendarDeleteEvent => '删除活动';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '删除“$title”？';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => '将从 Google 日历中删除。';
+
+  @override
+  String get calendarDeleteConfirmGuests => '将从 Google 日历中删除，并通知所有参与者活动已取消。';
+
+  @override
+  String get calendarDeleteConfirmInvite => '仅从你的日历中删除。组织者和其他参与者仍会保留该活动。';
+
+  @override
+  String get calendarDeleteConfirmRecurring => '仅删除本次活动，系列中的其他活动会保留。';
+
+  @override
+  String get calendarDeleteFailed => '无法删除活动，请重试。';
+
+  @override
+  String get calendarMoveFailed => '无法移动活动，活动已恢复到原来的时间。';
+
+  @override
+  String get activityCreatedCalendarEvent => '已创建日历活动';
+
+  @override
+  String get activityMovedCalendarEvent => '已移动日历活动';
+
+  @override
+  String get activityDeletedCalendarEvent => '已删除日历活动';
+
+  @override
   String get calendarAddAccount => '添加日历账户';
 
   @override
@@ -1110,9 +1193,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '连接 Google 账户，将活动同步到此工作区。这些日历在这里属于你。';
 
   @override
-  String get calendarConnecting => '正在连接…';
-
-  @override
   String get calendarSyncNow => '立即同步';
 
   @override
@@ -1120,31 +1200,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get calendarConnectError => '无法连接 Google 日历';
-
-  @override
-  String get calendarClientIdLabel => '客户端 ID';
-
-  @override
-  String get calendarClientSecretLabel => '客户端密钥';
-
-  @override
-  String get calendarConnectCredsHint =>
-      '输入你项目的 Google OAuth 设备码客户端 ID 和密钥。连接与同步由服务器执行——你的浏览器绝不会持有令牌。';
-
-  @override
-  String get calendarConnectApproveInstruction => '在任意设备上打开验证页面，登录并输入此验证码：';
-
-  @override
-  String get calendarConnectOpenPage => '打开验证页面';
-
-  @override
-  String get calendarConnectWaiting => '等待批准…';
-
-  @override
-  String get calendarConnectDenied => '授权被拒绝。请重试。';
-
-  @override
-  String get calendarConnectExpired => '验证码已过期。请重试。';
 
   @override
   String get notificationMeetingStartsSoon => '会议即将开始';
@@ -2338,9 +2393,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get activityChangedMemberRepoAccess => '更改了成员的仓库访问权限';
 
   @override
-  String get activityUpdatedGitHubToken => '更新了 GitHub 令牌';
-
-  @override
   String get activityRefreshedWeather => '刷新了天气预报';
 
   @override
@@ -2375,9 +2427,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => '回复了活动邀请';
-
-  @override
-  String get activityStartedCalendarConnect => '启动了日历连接';
 
   @override
   String get activityDisconnectedCalendar => '断开了日历连接';
@@ -4607,7 +4656,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchGifs => '搜索 GIF';
 
   @override
-  String get searchGifsHint => '搜索 GIF...';
+  String get searchGifsHint => '搜索 KLIPY';
 
   @override
   String get searchInDiffHint => '在 diff 中搜索…';
@@ -5082,9 +5131,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get unnamedAgent => '未命名智能体';
-
-  @override
-  String get updateKey => '更新密钥';
 
   @override
   String get updateLabel => '更新';
@@ -6096,7 +6142,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      '通过 bash -c 运行。已设置 GITHUB_TOKEN。执行前会替换占位符。';
+      '在操作系统沙箱中通过 bash -c 运行。GH_TOKEN 和 GITHUB_TOKEN 包含关联仓库的只读令牌。执行前会将占位符加引号后替换。';
 
   @override
   String get nodeConfigRouteKeys => '路由键';
@@ -6737,8 +6783,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reviewRequested => '已请求评审';
 
   @override
-  String get connectGitHubHint =>
-      '登录 GitHub，或在「设置 → 工作区 → 个人资料与身份 → 代码托管」中添加令牌';
+  String get connectGitHubHint => '在「设置 → 工作区 → 个人资料与身份 → 代码托管」中登录 GitHub';
 
   @override
   String get connectGitHubToLoadPrs => '连接 GitHub 以加载 pull request';
@@ -11582,7 +11627,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '在 $provider 中提及机器人即可让智能体接手事务，或使用 $command 提交工单。';
+    return '在 $provider 中提及机器人即可让智能体接手事务，或使用 $command 起草工单。';
   }
 
   @override
@@ -11669,7 +11714,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return '在 $provider 中向机器人发送此命令。它只能使用一次，15 分钟后过期。';
+    return '通过私信将此代码发送给 $provider 机器人。它只能使用一次，15 分钟后过期。';
   }
 
   @override
@@ -11832,19 +11877,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatStepInstallHint => 'Install app → 复制 bot user OAuth token。';
-
-  @override
-  String get calendarUseBuiltinApp => '使用 Control Center 的 Google 应用';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      '用你的 Google 账户授权即可。无需在 Google Cloud 中做任何设置。';
-
-  @override
-  String get calendarUseOwnClient => '使用我自己的 Google Cloud 客户端';
-
-  @override
-  String get calendarUseOwnClientHint => '输入来自你自己 Google Cloud 项目的 OAuth 客户端。';
 
   @override
   String get aboutTitle => '关于';
@@ -12488,17 +12520,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInAgain => '重新登录';
 
   @override
-  String get signInNotFinished => '登录尚未返回。请在浏览器中完成后再检查。';
+  String get forgeSignInBannerTitle => '此工作区未连接代码托管';
 
   @override
-  String get signedOutTitle => '你已退出登录';
+  String get forgeSignInBannerBody =>
+      '某次登录已过期或被撤销，或者此工作区使用自己的 GitHub App。在你登录之前，拉取请求、评审和仓库同步都会暂停。';
 
   @override
-  String get signedOutSubtitle =>
-      '你的代码托管连接已失效——token 过期，或其访问权限被吊销。其他内容没有变化：重新登录后一切都在原处。';
-
-  @override
-  String get viaServerApp => '通过此服务器的应用';
+  String get forgeSignInBannerAction => '登录';
 
   @override
   String get ticketing => '工单系统';
@@ -12515,14 +12544,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ticketProviderLocal => '本地';
 
   @override
-  String get addKey => '添加密钥';
-
-  @override
   String get providerApps => '提供商应用';
 
   @override
   String get providerAppsDescription =>
-      '工作区继承此 GitHub App，除非选择其他 App 或仅使用个人访问令牌。后台工作——webhook、轮询、同步——在应用上运行，绝不用个人令牌。';
+      '此服务器自行在各提供方注册的应用。用户通过它们登录，Webhook、轮询和同步等后台工作也在它们上运行，绝不依赖某个人的登录。';
 
   @override
   String get providerAppId => '应用 ID';
@@ -12535,9 +12561,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerClientSecret => '客户端密钥';
-
-  @override
-  String get providerApiKey => 'API 密钥';
 
   @override
   String get providerCallbackUrl => '回调 URL';
@@ -12555,17 +12578,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return '凭据有效。安装于：$accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return '在刚打开的 $provider 页面上输入此代码。它已复制到你的剪贴板。';
-  }
-
-  @override
-  String get deviceCodeWaiting => '等待你在浏览器中完成操作…';
-
-  @override
-  String get copyCodeAndOpen => '复制代码并打开';
 
   @override
   String get couldNotOpenBrowser => '无法打开浏览器。请复制链接并自行完成登录。';
@@ -12882,7 +12894,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供继承此安装 GitHub App 的工作区使用。使用自己的 App 或 PAT 的工作区在工作区 → 常规中配置。';
+      '供继承此安装 GitHub 应用的工作区使用。拥有自己应用的工作区在“工作区 → 通用”中配置。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 对话';
@@ -14370,7 +14382,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      '此工作区后台 GitHub 工作的认证方式。继承此安装的 App、使用其他 App，或仅使用个人访问令牌。';
+      '此工作区后台 GitHub 工作的身份验证方式：使用此安装的应用，或使用工作区自己的应用。';
 
   @override
   String get workspaceGitHubModeInherit => '使用此安装的 GitHub App';
@@ -14379,25 +14391,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get workspaceGitHubModeApp => '使用其他 GitHub App';
 
   @override
-  String get workspaceGitHubModePat => '仅个人访问令牌';
-
-  @override
   String get workspaceGitHubInheritHint => '使用服务器 → 提供商应用中的 GitHub App。';
 
   @override
   String get workspaceGitHubAppHint => '此工作区的机器人和轮询身份。成员在「你」中通过此 App 登录。';
-
-  @override
-  String get workspaceGitHubPatLabel => '后台令牌';
-
-  @override
-  String get workspaceGitHubPatDescription => '用于此工作区的轮询和代理。不是成员的个人资料令牌。';
-
-  @override
-  String get workspaceGitHubHasPat => '已存储后台令牌。';
-
-  @override
-  String get workspaceGitHubNoPat => '未存储后台令牌。';
 
   @override
   String get profileOverlayHint =>
@@ -16174,6 +16171,524 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => '切换工作区';
+
+  @override
+  String signInToProvider(String provider) {
+    return '登录 $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => '连接 Linear 用于自动化';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '正在浏览器中打开 $provider…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return '请在浏览器中的 $provider 页面批准请求。完成后此窗口会自动察觉。';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '正在等待 $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => '登录未完成';
+
+  @override
+  String get signInReopenPage => '重新打开登录页面';
+
+  @override
+  String get signInCodePrompt => '输入浏览器中显示的代码';
+
+  @override
+  String get signInCodeMalformed => '这看起来不像登录代码。代码由 8 个字母和数字组成。';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      '如果浏览器提示打开 Control Center，请允许，这样就无需输入代码。';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '已以 $account 身份登录 $provider';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '已登录 $provider';
+  }
+
+  @override
+  String get signInErrorExpired => '此次登录已过期。请重新开始。';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider 登录已取消或被拒绝。';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider 授予的权限少于 Control Center 所需。请重新登录并批准所有权限。';
+  }
+
+  @override
+  String get signInErrorInvalidCode => '该代码与此次登录不匹配。请检查后重试。';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider 目前没有响应。请几分钟后重试。';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider 已接受登录，但服务器无法完成。请重试。';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return '此服务器的 $provider 应用配置有误。请让服务器所有者检查“设置 → 服务器 → 单点登录”。';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return '你的 $provider 登录已失效。请重新登录，以便继续以你本人的身份工作。';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider 应用未安装在需要它的位置。请安装后重试。';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      '此 GitHub 应用安装已授权给另一台 Control Center 服务器。';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      '此 Linear 工作区已连接到另一台 Control Center 服务器。';
+
+  @override
+  String get signInErrorNotAdmin =>
+      '只有 Slack 工作区的管理员或所有者才能首次将其连接到 Control Center。请让其中一人添加该应用。';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider 应用已被暂停。请在 $provider 上解除暂停后重试。';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect 已阻止此服务器。请联系你的 Connect 服务器运营者。';
+
+  @override
+  String get signInErrorUnknown => '登录失败，服务器未说明原因。请重试。';
+
+  @override
+  String get signInPhishingTitle => '登录并非从这里发起';
+
+  @override
+  String get signInPhishingBody => '此登录并非从本应用发起。如果有人把这个链接发给你，请不要继续。';
+
+  @override
+  String get signInPhishingDetail => '没有发送任何内容。完成他人发起的登录会把你的账号连接到对方的服务器。';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '需要登录 $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return '此操作会在 $provider 上以你的身份运行，而你尚未登录。请登录后重试。';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return '你尚未登录 $provider。你在这里的所有操作都以你的身份运行，请先登录。';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '此服务器尚未设置 $provider 登录。';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub 应用安装';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub 应用的安装位置，仅限于此工作区仓库所属的账户。组织的安装只在其管理员授权的服务器上有效。';
+
+  @override
+  String get githubInstallationsEmpty => 'GitHub 应用未安装在此工作区仓库所属的任何账户上。';
+
+  @override
+  String get githubInstallApp => '安装 GitHub 应用';
+
+  @override
+  String get githubAuthorizeServer => '授权此服务器';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return '此服务器现在可以使用 $account 上的安装。';
+  }
+
+  @override
+  String get githubInstallationSuspended => '已暂停';
+
+  @override
+  String get githubInstallationAuthorized => '已授权';
+
+  @override
+  String get githubInstallationNotAuthorized => '未授权';
+
+  @override
+  String get linearAutomationTitle => 'Linear 自动化';
+
+  @override
+  String get linearAutomationHint =>
+      '让此工作区的代理和流水线以应用而非个人的身份在 Linear 中操作。由工作区管理员连接。';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '已连接到 $account';
+  }
+
+  @override
+  String get connectModeHosted => '使用 Control Center 的应用';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      '登录通过 Control Center Connect 进行。Connect 会封存每次登录，确保只有此服务器能打开；它签发仅限单个仓库的 GitHub 令牌，不持有任何仓库密钥，也从不接收你的源代码。';
+
+  @override
+  String get connectModeOwn => '使用我自己的应用';
+
+  @override
+  String get connectModeOwnHint =>
+      '在“设置 → 服务器 → 单点登录”中自行注册 GitHub、Google 和 Linear 应用，并在每个工作区的设置中连接它自己的 Slack 应用。“创建我的 GitHub 应用”可一步完成 GitHub 设置。';
+
+  @override
+  String get connectModeCustom => '使用自定义 Connect 服务器';
+
+  @override
+  String get connectModeCustomHint =>
+      '你的组织运行自己的 Connect 服务器。登录将发往那里，而不是 Control Center 的服务器。';
+
+  @override
+  String get connectModeUnset => '尚未设置';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect 服务器 URL';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      '请输入 HTTPS 地址，例如 https://connect.example.com。';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      '明文 HTTP 只能访问本机上的 Connect。网络上的任何地址都请使用 HTTPS。';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      '此版本暂不提供 Control Center 的托管应用。请使用你自己的应用或自定义 Connect 服务器。';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect 的配置未通过签名校验。在重新验证之前，经由 Connect 的登录已暂停。';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect 提供的配置比此服务器已见过的更旧，因此已被拒绝。经由 Connect 的登录已暂停。';
+
+  @override
+  String get connectErrorUnreachable =>
+      '此服务器目前无法访问 Connect。在其恢复之前，使用 Connect 的登录都会失败。';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect 已阻止此服务器的安装 ID。请联系你的 Connect 服务器运营者。';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect 的应用已更改';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect 的响应方式此服务器无法理解。请更新服务器或检查 Connect URL。';
+
+  @override
+  String get connectErrorUnknown => 'Connect 报告了问题但未说明原因。运行测试以重试。';
+
+  @override
+  String get connectPinsConfirmHint =>
+      '你的 Connect 服务器现在指向的 GitHub、Google、Linear 或 Slack 应用，与此服务器首次使用时固定的不同。只有在其运营者事先告知你的情况下才信任它们。';
+
+  @override
+  String get connectConfirmPins => '信任新应用';
+
+  @override
+  String get connectStale => '当前使用的配置比预期更旧。运行测试以刷新。';
+
+  @override
+  String get connectLaneSourceOwn => '自有应用';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => '关闭';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      '此服务器在 GitHub、Google 日历、Linear、Slack 和 GIF 搜索中使用谁的应用。';
+
+  @override
+  String get connectFactMode => '登录应用';
+
+  @override
+  String get connectFactHealth => '状态';
+
+  @override
+  String get connectFactEpoch => '配置版本';
+
+  @override
+  String get connectHealthOff => '未使用';
+
+  @override
+  String get connectHealthOk => '正常';
+
+  @override
+  String get connectHealthDown => '异常';
+
+  @override
+  String get connectLocked => '此项由服务器环境中的 CC_CONNECT_URL 决定。请在那里修改并重启服务器。';
+
+  @override
+  String get connectLanesTitle => '每种登录在哪里进行';
+
+  @override
+  String get connectLanesDescription => '对于其提供商，自有应用始终优先于 Connect。';
+
+  @override
+  String get connectServerGroup => '此服务器';
+
+  @override
+  String get connectInstallId => '安装 ID';
+
+  @override
+  String get connectInstallIdHint =>
+      '向 Connect 标识此服务器。如有组织所有者或 Connect 运营者索要，请提供给他们。';
+
+  @override
+  String get connectInstallIdEmpty => '此服务器首次使用 Connect 时分配。';
+
+  @override
+  String get connectTestOk => 'Connect 运行正常。';
+
+  @override
+  String get connectRotateKey => '轮换密钥';
+
+  @override
+  String get connectRotateKeyTitle => '要轮换此服务器的 Connect 密钥吗？';
+
+  @override
+  String get connectRotateKeyBody =>
+      '此服务器将获得新的密钥和安装 ID。所有经由 Connect 完成的登录都将失效，所有人都需要重新登录。通过你自己的应用完成的登录不受影响。';
+
+  @override
+  String get connectRotateKeyDone => '密钥已轮换。所有通过 Connect 登录的人都需要重新登录。';
+
+  @override
+  String get connectCliLabel => '在终端中';
+
+  @override
+  String get onboardingStepSignIn => '登录';
+
+  @override
+  String get onboardingConnectTitle => '选择人们的登录方式';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center 通过在各提供商处注册的应用与 GitHub、Google 日历、Linear、Slack 和 GIF 搜索协作。请选择此服务器使用谁的应用。你可以稍后在“设置 → 服务器 → 单点登录”中更改。';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      '现在为此服务器创建一个 GitHub 应用，或稍后在“设置 → 服务器 → 单点登录”中添加你的应用。';
+
+  @override
+  String get providerServiceApiKey => '服务 API 密钥';
+
+  @override
+  String get providerAppPartial => '设置未完成';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return '仍缺少：$fields。在所有字段都设置好之前，此提供商的登录会被拒绝，而不会转由 Connect 处理。';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      '客户端 ID 用于成员登录。服务 API 密钥让此服务器能自行在 Linear 中读写。';
+
+  @override
+  String get providerCallbackUrls => '回调 URL';
+
+  @override
+  String get providerCallbackUrlHint => '请按显示内容原样在提供商处注册。';
+
+  @override
+  String get providerAppCreateGitHubTitle => '创建 GitHub 应用';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub 会注册一个具有正确权限和回调的应用，然后将其凭据交给此服务器。无需手动复制任何内容。';
+
+  @override
+  String get providerAppCreateGitHub => '创建我的 GitHub 应用';
+
+  @override
+  String get providerAppCreateGitHubOrg => '组织（可选）';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      '留空则在你自己的 GitHub 账号下创建应用。要在组织下创建，需要该组织的所有者。';
+
+  @override
+  String get providerAppSignInReady => '人们可以登录。';
+
+  @override
+  String get chatLinkWaiting => '正在等待你的私信…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return '这是你的 $provider 账户吗？';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return '此账户把你的代码发送给了机器人。只有在它属于你时才确认：关联后，它在 $provider 中发送的内容会在此工作区中以你的身份执行。';
+  }
+
+  @override
+  String get chatLinkDecline => '拒绝';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return '没有关联任何账户。如果你仍想关联你的 $provider 账户，请获取新代码。';
+  }
+
+  @override
+  String get chatLinkNewCode => '获取新代码';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return '将 Control Center 添加到 $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return '已将 Control Center 添加到 $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return '将共享的 Control Center 应用安装到你的 $provider 工作区。无需创建应用，也无需粘贴令牌。';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '添加到 $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      '运行在共享的 Control Center 应用上，因此这里没有需要管理的令牌或机器人设置。';
+
+  @override
+  String get chatTicketDraftsTitle => '来自聊天的工单草稿';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      '草稿只有在你于此处创建后才会成为待办工单。未处理的草稿会在一天后删除。';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return '来自 $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => '创建工单';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '已创建 $key';
+  }
+
+  @override
+  String get workspaceProviderApps => '提供商应用';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      '工作区使用的 Google 日历、Linear 和 Klipy 应用。默认使用本服务器的应用或 Control Center Connect。使用自有应用的工作区不会回退到它们。';
+
+  @override
+  String get workspaceProviderAppModeInherit => '使用本服务器的应用';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      '登录和请求会使用本服务器自己的应用，或 Control Center Connect。';
+
+  @override
+  String get workspaceProviderAppModeOwn => '使用此工作区自己的应用';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      '仅使用此工作区的应用。在配置完整之前，此工作区中的该提供商保持关闭，不会回退。';
+
+  @override
+  String get workspaceProviderAppStatusInherit => '服务器应用';
+
+  @override
+  String get workspaceProviderAppStatusOwn => '自有应用';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return '仍缺少：$fields。在所有字段设置完成之前，此工作区中的该提供商保持关闭，不会回退到本服务器的应用。';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      '更改应用会让此工作区中的所有人退出登录，他们需要使用新应用重新登录。';
+
+  @override
+  String get workspaceProviderAppKlipyKey => '应用密钥';
+
+  @override
+  String get workspaceProviderAppKlipyHint => '此工作区的 GIF 搜索使用此密钥。';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '切换 $provider 应用？';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return '此工作区中通过本服务器应用连接 $provider 的所有人，都需要使用工作区应用重新登录。';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return '这将删除工作区的 $provider 凭据。通过工作区应用连接的所有人都需要重新登录。';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => '切换应用';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -17271,6 +17786,90 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get calendarRsvpFailed => '無法更新你的回覆';
 
   @override
+  String get calendarNewEvent => '新增活動';
+
+  @override
+  String get calendarComposerTitleHint => '新增標題';
+
+  @override
+  String get calendarComposerStarts => '開始';
+
+  @override
+  String get calendarComposerEnds => '結束';
+
+  @override
+  String get calendarComposerDate => '日期';
+
+  @override
+  String get calendarComposerEndDate => '最後一日';
+
+  @override
+  String get calendarComposerGuestsHint => '以電郵新增參加者';
+
+  @override
+  String get calendarComposerMeet => '新增 Google Meet 連結';
+
+  @override
+  String get calendarComposerLocationHint => '新增地點';
+
+  @override
+  String get calendarComposerDescriptionHint => '新增描述';
+
+  @override
+  String get calendarComposerCalendar => '行事曆';
+
+  @override
+  String get calendarComposerTitleRequired => '新增標題先可以儲存活動';
+
+  @override
+  String get calendarComposerInvalidGuests => '有一個參加者電郵地址無效';
+
+  @override
+  String get calendarComposerEndBeforeStart => '活動結束時間必須遲過開始時間';
+
+  @override
+  String get calendarComposerSaveFailed => '無法建立活動，請再試一次。';
+
+  @override
+  String get calendarComposerGuestsNotified => 'Google 會向參加者發出電郵邀請。';
+
+  @override
+  String get calendarDeleteEvent => '刪除活動';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '要刪除「$title」嗎？';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => '活動會從 Google Calendar 中移除。';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      '活動會從 Google Calendar 中移除，並通知所有參加者活動已取消。';
+
+  @override
+  String get calendarDeleteConfirmInvite => '只會從你的行事曆中移除。主辦人及其他參加者仍會保留此活動。';
+
+  @override
+  String get calendarDeleteConfirmRecurring => '只會刪除這一次活動，系列中的其他活動會保留。';
+
+  @override
+  String get calendarDeleteFailed => '無法刪除活動，請再試一次。';
+
+  @override
+  String get calendarMoveFailed => '無法移動活動，活動已返回原來的時間。';
+
+  @override
+  String get activityCreatedCalendarEvent => '已建立行事曆活動';
+
+  @override
+  String get activityMovedCalendarEvent => '已移動行事曆活動';
+
+  @override
+  String get activityDeletedCalendarEvent => '已刪除行事曆活動';
+
+  @override
   String get calendarAddAccount => '新增日曆帳號';
 
   @override
@@ -17281,9 +17880,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '連結 Google 帳號，將活動同步到此工作區。這些日曆在這裡屬於你。';
 
   @override
-  String get calendarConnecting => '連接中…';
-
-  @override
   String get calendarSyncNow => '立即同步';
 
   @override
@@ -17291,31 +17887,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get calendarConnectError => '無法連接 Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => '用戶端 ID';
-
-  @override
-  String get calendarClientSecretLabel => '用戶端密鑰';
-
-  @override
-  String get calendarConnectCredsHint =>
-      '輸入專案的 Google OAuth 裝置代碼用戶端 ID 與密鑰。連接與同步由伺服器執行，瀏覽器不會保存權杖。';
-
-  @override
-  String get calendarConnectApproveInstruction => '在任何裝置上開啟驗證頁面，登入後輸入此代碼：';
-
-  @override
-  String get calendarConnectOpenPage => '開啟驗證頁面';
-
-  @override
-  String get calendarConnectWaiting => '等待核准中…';
-
-  @override
-  String get calendarConnectDenied => '授權遭拒，請再試一次。';
-
-  @override
-  String get calendarConnectExpired => '代碼已過期，請再試一次。';
 
   @override
   String get notificationMeetingStartsSoon => '會議即將開始';
@@ -18509,9 +19080,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get activityChangedMemberRepoAccess => '已變更成員的存放庫存取權限';
 
   @override
-  String get activityUpdatedGitHubToken => '已更新 GitHub 權杖';
-
-  @override
   String get activityRefreshedWeather => '已重新整理天氣預報';
 
   @override
@@ -18546,9 +19114,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get activityRespondedToInvitation => '已回應活動邀請';
-
-  @override
-  String get activityStartedCalendarConnect => '已開始連接日曆';
 
   @override
   String get activityDisconnectedCalendar => '已中斷日曆連接';
@@ -20777,7 +21342,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get searchGifs => '搜尋 GIF';
 
   @override
-  String get searchGifsHint => '搜尋 GIF…';
+  String get searchGifsHint => '搜尋 KLIPY';
 
   @override
   String get searchInDiffHint => '在 diff 中搜尋…';
@@ -21252,9 +21817,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get unnamedAgent => '未命名代理';
-
-  @override
-  String get updateKey => '更新金鑰';
 
   @override
   String get updateLabel => '更新';
@@ -22266,7 +22828,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get nodeConfigScriptHelp =>
-      '以 bash -c 執行。會設定 GITHUB_TOKEN。預留位置會在執行前替換。';
+      '在作業系統沙盒中以 bash -c 執行。GH_TOKEN 和 GITHUB_TOKEN 會帶有已連結儲存庫的唯讀權杖。預留位置會在執行前加上引號並替換。';
 
   @override
   String get nodeConfigRouteKeys => '路由鍵';
@@ -22907,8 +23469,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get reviewRequested => '審查請求';
 
   @override
-  String get connectGitHubHint =>
-      '登入 GitHub，或在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中新增權杖';
+  String get connectGitHubHint => '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中登入 GitHub';
 
   @override
   String get connectGitHubToLoadPrs => '連接 GitHub 以載入 pull request';
@@ -27754,7 +28315,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '在 $provider 中提及機器人即可派代理處理事情，或用 $command 建立工單。';
+    return '在 $provider 中提及機器人即可派代理處理事情，或用 $command 起草工單。';
   }
 
   @override
@@ -27841,7 +28402,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return '在 $provider 中將此指令傳送給機器人。它只能使用一次，並在 15 分鐘後失效。';
+    return '透過私訊將此代碼傳送給 $provider 機器人。它只能使用一次，並在 15 分鐘後失效。';
   }
 
   @override
@@ -28004,19 +28565,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get chatStepInstallHint => 'Install app → 複製 bot user OAuth token。';
-
-  @override
-  String get calendarUseBuiltinApp => '使用 Control Center 的 Google 應用程式';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      '用你的 Google 帳戶核准即可。無需在 Google Cloud 做任何設定。';
-
-  @override
-  String get calendarUseOwnClient => '使用我自己的 Google Cloud 用戶端';
-
-  @override
-  String get calendarUseOwnClientHint => '輸入來自你自己 Google Cloud 專案的 OAuth 用戶端。';
 
   @override
   String get aboutTitle => '關於';
@@ -28660,17 +29208,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get signInAgain => '再次登入';
 
   @override
-  String get signInNotFinished => '登入尚未返回。請在瀏覽器中完成後再檢查一次。';
+  String get forgeSignInBannerTitle => '此工作區尚未連接程式碼託管';
 
   @override
-  String get signedOutTitle => '你已登出';
+  String get forgeSignInBannerBody =>
+      '某次登入已過期或被撤銷，或此工作區使用自己的 GitHub App。在你登入之前，拉取請求、審查和儲存庫同步都會暫停。';
 
   @override
-  String get signedOutSubtitle =>
-      '你的程式碼託管連接已失效——可能是 token 過期，或其存取權被撤銷。其他一切不變：重新登入後，所有東西都會原封不動。';
-
-  @override
-  String get viaServerApp => '透過此伺服器的應用程式';
+  String get forgeSignInBannerAction => '登入';
 
   @override
   String get ticketing => '工單';
@@ -28687,14 +29232,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get ticketProviderLocal => '本機';
 
   @override
-  String get addKey => '新增金鑰';
-
-  @override
   String get providerApps => '供應商應用程式';
 
   @override
   String get providerAppsDescription =>
-      '工作區繼承此 GitHub App，除非選擇其他 App 或僅使用個人存取權杖。背景工作——webhook、輪詢、同步——在應用程式上執行，絕不用個人權杖。';
+      '此伺服器自行在各供應商註冊的應用程式。使用者透過它們登入，Webhook、輪詢和同步等背景工作也在它們上執行，絕不依賴某個人的登入。';
 
   @override
   String get providerAppId => '應用程式 id';
@@ -28707,9 +29249,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get providerClientSecret => '用戶端密鑰';
-
-  @override
-  String get providerApiKey => 'API 金鑰';
 
   @override
   String get providerCallbackUrl => '回呼 URL';
@@ -28727,17 +29266,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String providerAppInstalledOn(String accounts) {
     return '憑證可用。安裝於：$accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return '請在剛開啟的 $provider 頁面上輸入此代碼。它已複製到你的剪貼簿。';
-  }
-
-  @override
-  String get deviceCodeWaiting => '正在等你完成瀏覽器中的操作…';
-
-  @override
-  String get copyCodeAndOpen => '複製代碼並開啟';
 
   @override
   String get couldNotOpenBrowser => '無法開啟任何瀏覽器。請自行複製連結並完成登入。';
@@ -29056,7 +29584,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供繼承此安裝 GitHub App 的工作區使用。使用自己的 App 或 PAT 的工作區在工作區 → 一般中設定。';
+      '供繼承此安裝 GitHub 應用程式的工作區使用。擁有自己應用程式的工作區在「工作區 → 一般」中設定。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 對話';
@@ -30545,7 +31073,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      '此工作區背景 GitHub 工作的驗證方式。繼承此安裝的 App、使用其他 App，或僅使用個人存取權杖。';
+      '此工作區背景 GitHub 工作的驗證方式：使用此安裝的應用程式，或使用工作區自己的應用程式。';
 
   @override
   String get workspaceGitHubModeInherit => '使用此安裝的 GitHub App';
@@ -30554,25 +31082,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get workspaceGitHubModeApp => '使用其他 GitHub App';
 
   @override
-  String get workspaceGitHubModePat => '僅個人存取權杖';
-
-  @override
   String get workspaceGitHubInheritHint => '使用伺服器 → 提供者應用程式中的 GitHub App。';
 
   @override
   String get workspaceGitHubAppHint => '此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。';
-
-  @override
-  String get workspaceGitHubPatLabel => '背景權杖';
-
-  @override
-  String get workspaceGitHubPatDescription => '用於此工作區的輪詢和代理。不是成員的個人資料權杖。';
-
-  @override
-  String get workspaceGitHubHasPat => '已儲存背景權杖。';
-
-  @override
-  String get workspaceGitHubNoPat => '未儲存背景權杖。';
 
   @override
   String get profileOverlayHint => '這些欄位是你在此工作區的身分。空白欄位繼承帳戶名稱和電郵。切換工作區會切換此覆蓋層。';
@@ -32348,6 +32861,524 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get trayPanelSwitchWorkspace => '切換工作區';
+
+  @override
+  String signInToProvider(String provider) {
+    return '登入 $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => '連接 Linear 以進行自動化';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '正在瀏覽器中開啟 $provider…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return '請在瀏覽器中的 $provider 頁面核准要求。完成後此視窗會自動察覺。';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '正在等待 $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => '登入未完成';
+
+  @override
+  String get signInReopenPage => '重新開啟登入頁面';
+
+  @override
+  String get signInCodePrompt => '輸入瀏覽器中顯示的代碼';
+
+  @override
+  String get signInCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      '如果瀏覽器詢問是否開啟 Control Center，請允許，這樣就不必輸入代碼。';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '已以 $account 身分登入 $provider';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '已登入 $provider';
+  }
+
+  @override
+  String get signInErrorExpired => '此次登入已過期。請重新開始。';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider 登入已取消或遭拒。';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider 授予的權限少於 Control Center 所需。請重新登入並核准所有權限。';
+  }
+
+  @override
+  String get signInErrorInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider 目前沒有回應。請幾分鐘後再試一次。';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider 已接受登入，但伺服器無法完成。請再試一次。';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return '此伺服器的 $provider 應用程式設定錯誤。請伺服器擁有者檢查「設定 → 伺服器 → 單一登入」。';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return '你的 $provider 登入已失效。請重新登入，以便繼續以你本人的身分工作。';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider 應用程式未安裝在需要的位置。請安裝後再試一次。';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      '此 GitHub 應用程式安裝已授權給另一台 Control Center 伺服器。';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      '此 Linear 工作區已連接到另一台 Control Center 伺服器。';
+
+  @override
+  String get signInErrorNotAdmin =>
+      '只有 Slack 工作區的管理員或擁有者才可以首次將它連接到 Control Center。請其中一位加入這個應用程式。';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider 應用程式已遭停權。請在 $provider 解除停權後再試一次。';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect 已封鎖此伺服器。請聯絡你的 Connect 伺服器營運者。';
+
+  @override
+  String get signInErrorUnknown => '登入失敗，伺服器未說明原因。請再試一次。';
+
+  @override
+  String get signInPhishingTitle => '登入並非從這裡發起';
+
+  @override
+  String get signInPhishingBody => '這次登入並非從此應用程式發起。如果有人傳了這個連結給你，請不要繼續。';
+
+  @override
+  String get signInPhishingDetail => '沒有傳送任何內容。完成他人發起的登入，會把你的帳戶連接到對方的伺服器。';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '需要登入 $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return '此動作會在 $provider 上以你的身分執行，而你尚未登入。請登入後再試一次。';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return '你尚未登入 $provider。你在這裡的所有操作都以你的身分執行，請先登入。';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '此伺服器尚未設定 $provider 登入。';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub 應用程式安裝';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub 應用程式的安裝位置，僅限於此工作區存放庫所屬的帳戶。組織的安裝只在其管理員授權的伺服器上有效。';
+
+  @override
+  String get githubInstallationsEmpty => 'GitHub 應用程式未安裝在此工作區存放庫所屬的任何帳戶上。';
+
+  @override
+  String get githubInstallApp => '安裝 GitHub 應用程式';
+
+  @override
+  String get githubAuthorizeServer => '授權此伺服器';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return '此伺服器現在可以使用 $account 上的安裝。';
+  }
+
+  @override
+  String get githubInstallationSuspended => '已停權';
+
+  @override
+  String get githubInstallationAuthorized => '已授權';
+
+  @override
+  String get githubInstallationNotAuthorized => '未授權';
+
+  @override
+  String get linearAutomationTitle => 'Linear 自動化';
+
+  @override
+  String get linearAutomationHint =>
+      '讓此工作區的代理程式和管線以應用程式而非個人的身分在 Linear 中操作。由工作區管理員連接。';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '已連接到 $account';
+  }
+
+  @override
+  String get connectModeHosted => '使用 Control Center 的應用程式';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      '登入會經由 Control Center Connect 進行。Connect 會封存每次登入，確保只有此伺服器能開啟；它核發僅限單一存放庫的 GitHub 權杖，不持有任何存放庫金鑰，也從不接收你的原始碼。';
+
+  @override
+  String get connectModeOwn => '使用我自己的應用程式';
+
+  @override
+  String get connectModeOwnHint =>
+      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在每個工作區的設定中連接它自己的 Slack 應用程式。「建立我的 GitHub 應用程式」可一步完成 GitHub 設定。';
+
+  @override
+  String get connectModeCustom => '使用自訂 Connect 伺服器';
+
+  @override
+  String get connectModeCustomHint =>
+      '你的組織自行營運 Connect 伺服器。登入會送往那裡，而不是 Control Center 的伺服器。';
+
+  @override
+  String get connectModeUnset => '尚未設定';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect 伺服器網址';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      '請輸入 HTTPS 位址，例如 https://connect.example.com。';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      '未加密的 HTTP 只可連到這部電腦上的 Connect。網絡上的任何位址請使用 HTTPS。';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      '此版本尚未提供 Control Center 的代管應用程式。請使用你自己的應用程式或自訂 Connect 伺服器。';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect 的設定未通過簽章驗證。在重新驗證之前，經由 Connect 的登入已暫停。';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect 提供的設定比此伺服器已見過的更舊，因此遭到拒絕。經由 Connect 的登入已暫停。';
+
+  @override
+  String get connectErrorUnreachable =>
+      '此伺服器目前無法連接 Connect。在恢復之前，使用 Connect 的登入都會失敗。';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect 已封鎖此伺服器的安裝 ID。請聯絡你的 Connect 伺服器營運者。';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect 的應用程式已變更';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect 的回應方式此伺服器無法理解。請更新伺服器或檢查 Connect 網址。';
+
+  @override
+  String get connectErrorUnknown => 'Connect 回報了問題但未說明原因。執行測試以重試。';
+
+  @override
+  String get connectPinsConfirmHint =>
+      '你的 Connect 伺服器現在指向的 GitHub、Google、Linear 或 Slack 應用程式，與此伺服器首次使用時固定的不同。只有在其營運者事先告知你的情況下才信任它們。';
+
+  @override
+  String get connectConfirmPins => '信任新應用程式';
+
+  @override
+  String get connectStale => '目前使用的設定比預期更舊。執行測試以重新整理。';
+
+  @override
+  String get connectLaneSourceOwn => '自有應用程式';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => '關閉';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      '此伺服器在 GitHub、Google Calendar、Linear、Slack 和 GIF 搜尋中使用誰的應用程式。';
+
+  @override
+  String get connectFactMode => '登入應用程式';
+
+  @override
+  String get connectFactHealth => '狀態';
+
+  @override
+  String get connectFactEpoch => '設定版本';
+
+  @override
+  String get connectHealthOff => '未使用';
+
+  @override
+  String get connectHealthOk => '正常';
+
+  @override
+  String get connectHealthDown => '異常';
+
+  @override
+  String get connectLocked => '此項由伺服器環境中的 CC_CONNECT_URL 決定。請在那裡修改並重新啟動伺服器。';
+
+  @override
+  String get connectLanesTitle => '每種登入在哪裡進行';
+
+  @override
+  String get connectLanesDescription => '對於其提供者，自有應用程式一律優先於 Connect。';
+
+  @override
+  String get connectServerGroup => '此伺服器';
+
+  @override
+  String get connectInstallId => '安裝 ID';
+
+  @override
+  String get connectInstallIdHint =>
+      '向 Connect 識別此伺服器。若組織擁有者或 Connect 營運者索取，請提供給他們。';
+
+  @override
+  String get connectInstallIdEmpty => '此伺服器首次使用 Connect 時指派。';
+
+  @override
+  String get connectTestOk => 'Connect 運作正常。';
+
+  @override
+  String get connectRotateKey => '輪替金鑰';
+
+  @override
+  String get connectRotateKeyTitle => '要輪替此伺服器的 Connect 金鑰嗎？';
+
+  @override
+  String get connectRotateKeyBody =>
+      '此伺服器會取得新的金鑰和安裝 ID。所有經由 Connect 完成的登入都會失效，所有人都必須重新登入。透過你自己的應用程式完成的登入不受影響。';
+
+  @override
+  String get connectRotateKeyDone => '金鑰已輪替。所有透過 Connect 登入的人都必須重新登入。';
+
+  @override
+  String get connectCliLabel => '在終端機中';
+
+  @override
+  String get onboardingStepSignIn => '登入';
+
+  @override
+  String get onboardingConnectTitle => '選擇人們的登入方式';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center 透過在各提供者註冊的應用程式，與 GitHub、Google Calendar、Linear、Slack 和 GIF 搜尋協作。請選擇此伺服器使用誰的應用程式。你可以稍後在「設定 → 伺服器 → 單一登入」中變更。';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      '現在為此伺服器建立 GitHub 應用程式，或稍後在「設定 → 伺服器 → 單一登入」中新增你的應用程式。';
+
+  @override
+  String get providerServiceApiKey => '服務 API 金鑰';
+
+  @override
+  String get providerAppPartial => '設定未完成';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return '仍缺少：$fields。在所有欄位都設定好之前，此提供者的登入會遭拒，而不會改由 Connect 處理。';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      '用戶端 ID 用於成員登入。服務 API 金鑰讓此伺服器能自行在 Linear 中讀寫。';
+
+  @override
+  String get providerCallbackUrls => '回呼網址';
+
+  @override
+  String get providerCallbackUrlHint => '請依顯示內容原樣在提供者處註冊。';
+
+  @override
+  String get providerAppCreateGitHubTitle => '建立 GitHub 應用程式';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub 會註冊一個具備正確權限與回呼的應用程式，接著將其憑證交給此伺服器。不需要手動複製任何內容。';
+
+  @override
+  String get providerAppCreateGitHub => '建立我的 GitHub 應用程式';
+
+  @override
+  String get providerAppCreateGitHubOrg => '組織（選填）';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      '留空即會在你自己的 GitHub 帳戶下建立應用程式。如要在組織下建立，需要該組織的擁有人。';
+
+  @override
+  String get providerAppSignInReady => '人們可以登入。';
+
+  @override
+  String get chatLinkWaiting => '正在等待你的私訊…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return '這是你的 $provider 帳戶嗎？';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return '此帳戶把你的代碼傳送給了機器人。只有在它屬於你時才確認：連結後，它在 $provider 中送出的內容會在此工作區中以你的身分執行。';
+  }
+
+  @override
+  String get chatLinkDecline => '拒絕';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return '沒有連結任何帳戶。如果你仍想連結你的 $provider 帳戶，請取得新代碼。';
+  }
+
+  @override
+  String get chatLinkNewCode => '取得新代碼';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return '將 Control Center 加入 $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return '已將 Control Center 加入 $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return '將共用的 Control Center 應用程式安裝到你的 $provider 工作區。無需建立應用程式，也無需貼上權杖。';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '加入 $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      '在共用的 Control Center 應用程式上執行，因此這裡沒有需要管理的權杖或機器人設定。';
+
+  @override
+  String get chatTicketDraftsTitle => '來自聊天的工單草稿';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      '草稿只有在你於此處建立後才會成為待辦工單。未處理的草稿會在一天後刪除。';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return '來自 $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => '建立工單';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '已建立 $key';
+  }
+
+  @override
+  String get workspaceProviderApps => '供應商應用程式';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      '工作區使用的 Google Calendar、Linear、Klipy 應用程式。預設使用伺服器的應用程式或 Control Center Connect。設有自家應用程式的工作區不會退回使用這些應用程式。';
+
+  @override
+  String get workspaceProviderAppModeInherit => '使用伺服器的應用程式';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      '登入及請求會使用伺服器本身的應用程式，或 Control Center Connect。';
+
+  @override
+  String get workspaceProviderAppModeOwn => '使用工作區自家的應用程式';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      '只會使用此工作區的應用程式。設定完成前，此供應商在這裡會停用，不會退回使用其他應用程式。';
+
+  @override
+  String get workspaceProviderAppStatusInherit => '伺服器應用程式';
+
+  @override
+  String get workspaceProviderAppStatusOwn => '自家應用程式';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return '仍欠：$fields。所有欄位設定完成前，此工作區的此供應商會停用，不會退回使用伺服器的應用程式。';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      '更改應用程式會令此工作區所有人登出，他們要用新的應用程式重新登入。';
+
+  @override
+  String get workspaceProviderAppKlipyKey => '應用程式金鑰';
+
+  @override
+  String get workspaceProviderAppKlipyHint => '此工作區的 GIF 搜尋會使用這個金鑰。';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '切換 $provider 應用程式？';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return '此工作區中所有透過伺服器應用程式連接 $provider 的人，都要用工作區的應用程式重新登入。';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return '這會刪除工作區的 $provider 憑證。所有透過工作區應用程式連接的人都要重新登入。';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => '切換應用程式';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33445,6 +34476,90 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get calendarRsvpFailed => '無法更新你的回覆';
 
   @override
+  String get calendarNewEvent => '新增活動';
+
+  @override
+  String get calendarComposerTitleHint => '新增標題';
+
+  @override
+  String get calendarComposerStarts => '開始';
+
+  @override
+  String get calendarComposerEnds => '結束';
+
+  @override
+  String get calendarComposerDate => '日期';
+
+  @override
+  String get calendarComposerEndDate => '最後一天';
+
+  @override
+  String get calendarComposerGuestsHint => '以電子郵件新增參與者';
+
+  @override
+  String get calendarComposerMeet => '新增 Google Meet 連結';
+
+  @override
+  String get calendarComposerLocationHint => '新增地點';
+
+  @override
+  String get calendarComposerDescriptionHint => '新增描述';
+
+  @override
+  String get calendarComposerCalendar => '行事曆';
+
+  @override
+  String get calendarComposerTitleRequired => '新增標題後才能儲存活動';
+
+  @override
+  String get calendarComposerInvalidGuests => '有一位參與者的電子郵件無效';
+
+  @override
+  String get calendarComposerEndBeforeStart => '活動結束時間必須晚於開始時間';
+
+  @override
+  String get calendarComposerSaveFailed => '無法建立活動，請再試一次。';
+
+  @override
+  String get calendarComposerGuestsNotified => 'Google 會寄送邀請電子郵件給參與者。';
+
+  @override
+  String get calendarDeleteEvent => '刪除活動';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '要刪除「$title」嗎？';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => '會從 Google Calendar 移除。';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      '會從 Google Calendar 移除，並通知所有參與者活動已取消。';
+
+  @override
+  String get calendarDeleteConfirmInvite => '僅會從你的行事曆移除。主辦人和其他參與者仍會保留此活動。';
+
+  @override
+  String get calendarDeleteConfirmRecurring => '僅刪除這一次活動，系列中的其他活動會保留。';
+
+  @override
+  String get calendarDeleteFailed => '無法刪除活動，請再試一次。';
+
+  @override
+  String get calendarMoveFailed => '無法移動活動，活動已恢復到原來的時間。';
+
+  @override
+  String get activityCreatedCalendarEvent => '已建立行事曆活動';
+
+  @override
+  String get activityMovedCalendarEvent => '已移動行事曆活動';
+
+  @override
+  String get activityDeletedCalendarEvent => '已刪除行事曆活動';
+
+  @override
   String get calendarAddAccount => '新增日曆帳號';
 
   @override
@@ -33455,9 +34570,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '連結 Google 帳號，將活動同步到此工作區。這些日曆在這裡屬於你。';
 
   @override
-  String get calendarConnecting => '連線中…';
-
-  @override
   String get calendarSyncNow => '立即同步';
 
   @override
@@ -33465,31 +34577,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get calendarConnectError => '無法連線 Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => '用戶端 ID';
-
-  @override
-  String get calendarClientSecretLabel => '用戶端密鑰';
-
-  @override
-  String get calendarConnectCredsHint =>
-      '輸入專案的 Google OAuth 裝置代碼用戶端 ID 與密鑰。連線與同步由伺服器執行，瀏覽器不會保存權杖。';
-
-  @override
-  String get calendarConnectApproveInstruction => '在任何裝置上開啟驗證頁面，登入後輸入此代碼：';
-
-  @override
-  String get calendarConnectOpenPage => '開啟驗證頁面';
-
-  @override
-  String get calendarConnectWaiting => '等待核准中…';
-
-  @override
-  String get calendarConnectDenied => '授權遭拒，請再試一次。';
-
-  @override
-  String get calendarConnectExpired => '代碼已過期，請再試一次。';
 
   @override
   String get notificationMeetingStartsSoon => '會議即將開始';
@@ -34683,9 +35770,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get activityChangedMemberRepoAccess => '已變更成員的存放庫存取權限';
 
   @override
-  String get activityUpdatedGitHubToken => '已更新 GitHub 權杖';
-
-  @override
   String get activityRefreshedWeather => '已重新整理天氣預報';
 
   @override
@@ -34720,9 +35804,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get activityRespondedToInvitation => '已回應活動邀請';
-
-  @override
-  String get activityStartedCalendarConnect => '已開始連接日曆';
 
   @override
   String get activityDisconnectedCalendar => '已中斷日曆連線';
@@ -36951,7 +38032,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get searchGifs => '搜尋 GIF';
 
   @override
-  String get searchGifsHint => '搜尋 GIF…';
+  String get searchGifsHint => '搜尋 KLIPY';
 
   @override
   String get searchInDiffHint => '在 diff 中搜尋…';
@@ -37426,9 +38507,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get unnamedAgent => '未命名代理';
-
-  @override
-  String get updateKey => '更新金鑰';
 
   @override
   String get updateLabel => '更新';
@@ -38440,7 +39518,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get nodeConfigScriptHelp =>
-      '以 bash -c 執行。會設定 GITHUB_TOKEN。預留位置會在執行前替換。';
+      '在作業系統沙箱中以 bash -c 執行。GH_TOKEN 和 GITHUB_TOKEN 會帶有連結儲存庫的唯讀權杖。預留位置會在執行前加上引號並替換。';
 
   @override
   String get nodeConfigRouteKeys => '路由鍵';
@@ -39081,8 +40159,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get reviewRequested => '審查請求';
 
   @override
-  String get connectGitHubHint =>
-      '登入 GitHub，或在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中新增權杖';
+  String get connectGitHubHint => '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中登入 GitHub';
 
   @override
   String get connectGitHubToLoadPrs => '連接 GitHub 以載入 pull request';
@@ -43928,7 +45005,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '在 $provider 中提及機器人即可派代理處理事情，或用 $command 建立工單。';
+    return '在 $provider 中提及機器人即可派代理處理事情，或用 $command 起草工單。';
   }
 
   @override
@@ -44015,7 +45092,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return '在 $provider 中將此指令傳送給機器人。它只能使用一次，並在 15 分鐘後失效。';
+    return '透過私訊將此代碼傳送給 $provider 機器人。它只能使用一次，並在 15 分鐘後失效。';
   }
 
   @override
@@ -44178,19 +45255,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get chatStepInstallHint => 'Install app → 複製 bot user OAuth token。';
-
-  @override
-  String get calendarUseBuiltinApp => '使用 Control Center 的 Google 應用程式';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      '用你的 Google 帳戶核准即可。無需在 Google Cloud 做任何設定。';
-
-  @override
-  String get calendarUseOwnClient => '使用我自己的 Google Cloud 用戶端';
-
-  @override
-  String get calendarUseOwnClientHint => '輸入來自你自己 Google Cloud 專案的 OAuth 用戶端。';
 
   @override
   String get aboutTitle => '關於';
@@ -44834,17 +45898,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get signInAgain => '再次登入';
 
   @override
-  String get signInNotFinished => '登入尚未返回。請在瀏覽器中完成後再檢查一次。';
+  String get forgeSignInBannerTitle => '此工作區尚未連接程式碼託管';
 
   @override
-  String get signedOutTitle => '你已登出';
+  String get forgeSignInBannerBody =>
+      '某次登入已過期或遭撤銷，或此工作區使用自己的 GitHub App。在你登入之前，拉取要求、審查與儲存庫同步都會暫停。';
 
   @override
-  String get signedOutSubtitle =>
-      '你的程式碼託管連線已失效——可能是 token 過期，或其存取權被撤銷。其他一切不變：重新登入後，所有東西都會原封不動。';
-
-  @override
-  String get viaServerApp => '透過此伺服器的應用程式';
+  String get forgeSignInBannerAction => '登入';
 
   @override
   String get ticketing => '工單';
@@ -44861,14 +45922,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ticketProviderLocal => '本機';
 
   @override
-  String get addKey => '新增金鑰';
-
-  @override
   String get providerApps => '供應商應用程式';
 
   @override
   String get providerAppsDescription =>
-      '工作區繼承此 GitHub App，除非選擇其他 App 或僅使用個人存取權杖。背景工作——webhook、輪詢、同步——在應用程式上執行，絕不用個人權杖。';
+      '此伺服器自行在各供應商註冊的應用程式。使用者透過它們登入，Webhook、輪詢和同步等背景工作也在它們上執行，絕不依賴某個人的登入。';
 
   @override
   String get providerAppId => '應用程式 id';
@@ -44881,9 +45939,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerClientSecret => '用戶端密鑰';
-
-  @override
-  String get providerApiKey => 'API 金鑰';
 
   @override
   String get providerCallbackUrl => '回呼 URL';
@@ -44901,17 +45956,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String providerAppInstalledOn(String accounts) {
     return '憑證可用。安裝於：$accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return '請在剛開啟的 $provider 頁面上輸入此代碼。它已複製到你的剪貼簿。';
-  }
-
-  @override
-  String get deviceCodeWaiting => '正在等你完成瀏覽器中的操作…';
-
-  @override
-  String get copyCodeAndOpen => '複製代碼並開啟';
 
   @override
   String get couldNotOpenBrowser => '無法開啟任何瀏覽器。請自行複製連結並完成登入。';
@@ -45230,7 +46274,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供繼承此安裝 GitHub App 的工作區使用。使用自己的 App 或 PAT 的工作區在工作區 → 一般中設定。';
+      '供繼承此安裝 GitHub 應用程式的工作區使用。擁有自己應用程式的工作區在「工作區 → 一般」中設定。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 對話';
@@ -46719,7 +47763,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      '此工作區背景 GitHub 工作的驗證方式。繼承此安裝的 App、使用其他 App，或僅使用個人存取權杖。';
+      '此工作區背景 GitHub 工作的驗證方式：使用此安裝的應用程式，或使用工作區自己的應用程式。';
 
   @override
   String get workspaceGitHubModeInherit => '使用此安裝的 GitHub App';
@@ -46728,25 +47772,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get workspaceGitHubModeApp => '使用其他 GitHub App';
 
   @override
-  String get workspaceGitHubModePat => '僅個人存取權杖';
-
-  @override
   String get workspaceGitHubInheritHint => '使用伺服器 → 提供者應用程式中的 GitHub App。';
 
   @override
   String get workspaceGitHubAppHint => '此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。';
-
-  @override
-  String get workspaceGitHubPatLabel => '背景權杖';
-
-  @override
-  String get workspaceGitHubPatDescription => '用於此工作區的輪詢和代理。不是成員的個人資料權杖。';
-
-  @override
-  String get workspaceGitHubHasPat => '已儲存背景權杖。';
-
-  @override
-  String get workspaceGitHubNoPat => '未儲存背景權杖。';
 
   @override
   String get profileOverlayHint =>
@@ -48523,4 +49552,522 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get trayPanelSwitchWorkspace => '切換工作區';
+
+  @override
+  String signInToProvider(String provider) {
+    return '登入 $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => '連接 Linear 以進行自動化';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '正在瀏覽器中開啟 $provider…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return '請在瀏覽器中的 $provider 頁面核准要求。完成後此視窗會自動察覺。';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '正在等待 $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => '登入未完成';
+
+  @override
+  String get signInReopenPage => '重新開啟登入頁面';
+
+  @override
+  String get signInCodePrompt => '輸入瀏覽器中顯示的代碼';
+
+  @override
+  String get signInCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      '如果瀏覽器詢問是否開啟 Control Center，請允許，這樣就不必輸入代碼。';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '已以 $account 身分登入 $provider';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '已登入 $provider';
+  }
+
+  @override
+  String get signInErrorExpired => '此次登入已過期。請重新開始。';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider 登入已取消或遭拒。';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider 授予的權限少於 Control Center 所需。請重新登入並核准所有權限。';
+  }
+
+  @override
+  String get signInErrorInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider 目前沒有回應。請幾分鐘後再試一次。';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider 已接受登入，但伺服器無法完成。請再試一次。';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return '此伺服器的 $provider 應用程式設定錯誤。請伺服器擁有者檢查「設定 → 伺服器 → 單一登入」。';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return '你的 $provider 登入已失效。請重新登入，以便繼續以你本人的身分工作。';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider 應用程式未安裝在需要的位置。請安裝後再試一次。';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      '此 GitHub 應用程式安裝已授權給另一台 Control Center 伺服器。';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      '此 Linear 工作區已連接到另一台 Control Center 伺服器。';
+
+  @override
+  String get signInErrorNotAdmin =>
+      '只有 Slack 工作區的管理員或擁有者才能首次將其連接到 Control Center。請其中一位新增這個應用程式。';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider 應用程式已遭停權。請在 $provider 解除停權後再試一次。';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect 已封鎖此伺服器。請聯絡你的 Connect 伺服器營運者。';
+
+  @override
+  String get signInErrorUnknown => '登入失敗，伺服器未說明原因。請再試一次。';
+
+  @override
+  String get signInPhishingTitle => '登入並非從這裡發起';
+
+  @override
+  String get signInPhishingBody => '這次登入並非從此應用程式發起。如果有人傳了這個連結給你，請不要繼續。';
+
+  @override
+  String get signInPhishingDetail => '沒有傳送任何內容。完成他人發起的登入，會把你的帳號連接到對方的伺服器。';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '需要登入 $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return '此動作會在 $provider 上以你的身分執行，而你尚未登入。請登入後再試一次。';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return '你尚未登入 $provider。你在這裡的所有操作都以你的身分執行，請先登入。';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '此伺服器尚未設定 $provider 登入。';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub 應用程式安裝';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub 應用程式的安裝位置，僅限於此工作區儲存庫所屬的帳戶。組織的安裝只在其管理員授權的伺服器上有效。';
+
+  @override
+  String get githubInstallationsEmpty => 'GitHub 應用程式未安裝在此工作區儲存庫所屬的任何帳戶上。';
+
+  @override
+  String get githubInstallApp => '安裝 GitHub 應用程式';
+
+  @override
+  String get githubAuthorizeServer => '授權此伺服器';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return '此伺服器現在可以使用 $account 上的安裝。';
+  }
+
+  @override
+  String get githubInstallationSuspended => '已停權';
+
+  @override
+  String get githubInstallationAuthorized => '已授權';
+
+  @override
+  String get githubInstallationNotAuthorized => '未授權';
+
+  @override
+  String get linearAutomationTitle => 'Linear 自動化';
+
+  @override
+  String get linearAutomationHint =>
+      '讓此工作區的代理程式和管線以應用程式而非個人的身分在 Linear 中操作。由工作區管理員連接。';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '已連接到 $account';
+  }
+
+  @override
+  String get connectModeHosted => '使用 Control Center 的應用程式';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      '登入會經由 Control Center Connect 進行。Connect 會封存每次登入，確保只有此伺服器能開啟；它核發僅限單一存放庫的 GitHub 權杖，不持有任何存放庫金鑰，也從不接收你的原始碼。';
+
+  @override
+  String get connectModeOwn => '使用我自己的應用程式';
+
+  @override
+  String get connectModeOwnHint =>
+      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在每個工作區的設定中連接它自己的 Slack 應用程式。「建立我的 GitHub 應用程式」可一步完成 GitHub 設定。';
+
+  @override
+  String get connectModeCustom => '使用自訂 Connect 伺服器';
+
+  @override
+  String get connectModeCustomHint =>
+      '你的組織自行營運 Connect 伺服器。登入會送往那裡，而不是 Control Center 的伺服器。';
+
+  @override
+  String get connectModeUnset => '尚未設定';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect 伺服器網址';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      '請輸入 HTTPS 位址，例如 https://connect.example.com。';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      '未加密的 HTTP 只能連到這台電腦上的 Connect。網路上的任何位址請使用 HTTPS。';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      '此版本尚未提供 Control Center 的代管應用程式。請使用你自己的應用程式或自訂 Connect 伺服器。';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect 的設定未通過簽章驗證。在重新驗證之前，經由 Connect 的登入已暫停。';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect 提供的設定比此伺服器已見過的更舊，因此遭到拒絕。經由 Connect 的登入已暫停。';
+
+  @override
+  String get connectErrorUnreachable =>
+      '此伺服器目前無法連上 Connect。在恢復之前，使用 Connect 的登入都會失敗。';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect 已封鎖此伺服器的安裝 ID。請聯絡你的 Connect 伺服器營運者。';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect 的應用程式已變更';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect 的回應方式此伺服器無法理解。請更新伺服器或檢查 Connect 網址。';
+
+  @override
+  String get connectErrorUnknown => 'Connect 回報了問題但未說明原因。執行測試以重試。';
+
+  @override
+  String get connectPinsConfirmHint =>
+      '你的 Connect 伺服器現在指向的 GitHub、Google、Linear 或 Slack 應用程式，與此伺服器首次使用時固定的不同。只有在其營運者事先告知你的情況下才信任它們。';
+
+  @override
+  String get connectConfirmPins => '信任新應用程式';
+
+  @override
+  String get connectStale => '目前使用的設定比預期更舊。執行測試以重新整理。';
+
+  @override
+  String get connectLaneSourceOwn => '自有應用程式';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => '關閉';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      '此伺服器在 GitHub、Google Calendar、Linear、Slack 和 GIF 搜尋中使用誰的應用程式。';
+
+  @override
+  String get connectFactMode => '登入應用程式';
+
+  @override
+  String get connectFactHealth => '狀態';
+
+  @override
+  String get connectFactEpoch => '設定版本';
+
+  @override
+  String get connectHealthOff => '未使用';
+
+  @override
+  String get connectHealthOk => '正常';
+
+  @override
+  String get connectHealthDown => '異常';
+
+  @override
+  String get connectLocked => '此項由伺服器環境中的 CC_CONNECT_URL 決定。請在那裡修改並重新啟動伺服器。';
+
+  @override
+  String get connectLanesTitle => '每種登入在哪裡進行';
+
+  @override
+  String get connectLanesDescription => '對於其提供者，自有應用程式一律優先於 Connect。';
+
+  @override
+  String get connectServerGroup => '此伺服器';
+
+  @override
+  String get connectInstallId => '安裝 ID';
+
+  @override
+  String get connectInstallIdHint =>
+      '向 Connect 識別此伺服器。若組織擁有者或 Connect 營運者索取，請提供給他們。';
+
+  @override
+  String get connectInstallIdEmpty => '此伺服器首次使用 Connect 時指派。';
+
+  @override
+  String get connectTestOk => 'Connect 運作正常。';
+
+  @override
+  String get connectRotateKey => '輪替金鑰';
+
+  @override
+  String get connectRotateKeyTitle => '要輪替此伺服器的 Connect 金鑰嗎？';
+
+  @override
+  String get connectRotateKeyBody =>
+      '此伺服器會取得新的金鑰和安裝 ID。所有經由 Connect 完成的登入都會失效，所有人都必須重新登入。透過你自己的應用程式完成的登入不受影響。';
+
+  @override
+  String get connectRotateKeyDone => '金鑰已輪替。所有透過 Connect 登入的人都必須重新登入。';
+
+  @override
+  String get connectCliLabel => '在終端機中';
+
+  @override
+  String get onboardingStepSignIn => '登入';
+
+  @override
+  String get onboardingConnectTitle => '選擇人們的登入方式';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center 透過在各提供者註冊的應用程式，與 GitHub、Google Calendar、Linear、Slack 和 GIF 搜尋協作。請選擇此伺服器使用誰的應用程式。你可以稍後在「設定 → 伺服器 → 單一登入」中變更。';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      '現在為此伺服器建立 GitHub 應用程式，或稍後在「設定 → 伺服器 → 單一登入」中新增你的應用程式。';
+
+  @override
+  String get providerServiceApiKey => '服務 API 金鑰';
+
+  @override
+  String get providerAppPartial => '設定未完成';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return '仍缺少：$fields。在所有欄位都設定好之前，此提供者的登入會遭拒，而不會改由 Connect 處理。';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      '用戶端 ID 用於成員登入。服務 API 金鑰讓此伺服器能自行在 Linear 中讀寫。';
+
+  @override
+  String get providerCallbackUrls => '回呼網址';
+
+  @override
+  String get providerCallbackUrlHint => '請依顯示內容原樣在提供者處註冊。';
+
+  @override
+  String get providerAppCreateGitHubTitle => '建立 GitHub 應用程式';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub 會註冊一個具備正確權限與回呼的應用程式，接著將其憑證交給此伺服器。不需要手動複製任何內容。';
+
+  @override
+  String get providerAppCreateGitHub => '建立我的 GitHub 應用程式';
+
+  @override
+  String get providerAppCreateGitHubOrg => '組織（選填）';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      '留空則在你自己的 GitHub 帳號下建立應用程式。要在組織下建立，需要該組織的擁有者。';
+
+  @override
+  String get providerAppSignInReady => '人們可以登入。';
+
+  @override
+  String get chatLinkWaiting => '正在等待你的私訊…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return '這是你的 $provider 帳戶嗎？';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return '此帳戶把你的代碼傳送給了機器人。只有在它屬於你時才確認：連結後，它在 $provider 中送出的內容會在此工作區中以你的身分執行。';
+  }
+
+  @override
+  String get chatLinkDecline => '拒絕';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return '沒有連結任何帳戶。如果你仍想連結你的 $provider 帳戶，請取得新代碼。';
+  }
+
+  @override
+  String get chatLinkNewCode => '取得新代碼';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return '將 Control Center 加入 $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return '已將 Control Center 加入 $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return '將共用的 Control Center 應用程式安裝到你的 $provider 工作區。無需建立應用程式，也無需貼上權杖。';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '加入 $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      '在共用的 Control Center 應用程式上執行，因此這裡沒有需要管理的權杖或機器人設定。';
+
+  @override
+  String get chatTicketDraftsTitle => '來自聊天的工單草稿';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      '草稿只有在你於此處建立後才會成為待辦工單。未處理的草稿會在一天後刪除。';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return '來自 $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => '建立工單';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '已建立 $key';
+  }
+
+  @override
+  String get workspaceProviderApps => '供應商應用程式';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      '工作區使用的 Google Calendar、Linear 和 Klipy 應用程式。預設會使用此伺服器的應用程式或 Control Center Connect。設定了自有應用程式的工作區不會退回使用它們。';
+
+  @override
+  String get workspaceProviderAppModeInherit => '使用此伺服器的應用程式';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      '登入與請求會使用此伺服器自己的應用程式，或 Control Center Connect。';
+
+  @override
+  String get workspaceProviderAppModeOwn => '使用此工作區自己的應用程式';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      '只會使用此工作區的應用程式。在設定完成前，此供應商在這裡會關閉，不會退回使用其他應用程式。';
+
+  @override
+  String get workspaceProviderAppStatusInherit => '伺服器應用程式';
+
+  @override
+  String get workspaceProviderAppStatusOwn => '自有應用程式';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return '仍缺少：$fields。在所有欄位都設定完成前，此工作區中的此供應商會關閉，不會退回使用此伺服器的應用程式。';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      '變更應用程式會讓此工作區中的所有人登出，他們需要用新的應用程式重新登入。';
+
+  @override
+  String get workspaceProviderAppKlipyKey => '應用程式金鑰';
+
+  @override
+  String get workspaceProviderAppKlipyHint => '此工作區的 GIF 搜尋會使用這個金鑰。';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '切換 $provider 應用程式？';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return '此工作區中透過此伺服器應用程式連線到 $provider 的所有人，都必須用工作區的應用程式重新登入。';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return '這會刪除工作區的 $provider 憑證。透過工作區應用程式連線的所有人都必須重新登入。';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => '切換應用程式';
 }

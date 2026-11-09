@@ -8,6 +8,8 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart'
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/evaluation_artifact_reader.dart';
+import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -900,7 +902,7 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
     );
     try {
       await tmp.writeAsString(patch.endsWith('\n') ? patch : '$patch\n');
-      final result = await Process.run('git', [
+      final result = await IsolatedGit.run([
         '-C',
         gitRoot,
         'apply',
@@ -1010,7 +1012,7 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
         skippedReason: 'noWrites needs a git workspace',
       );
     }
-    final result = await Process.run('git', [
+    final result = await IsolatedGit.run([
       '-C',
       gitRoot,
       'status',
@@ -1130,11 +1132,12 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
     required Duration timeout,
     required Map<String, String> extraEnv,
   }) async {
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       executable,
       args,
       workingDirectory: workingDirectory,
-      environment: {...Platform.environment, ...extraEnv},
+      environment: extraEnv,
+      toolchain: true,
     );
     final stdoutBuffer = StringBuffer();
     final stderrBuffer = StringBuffer();

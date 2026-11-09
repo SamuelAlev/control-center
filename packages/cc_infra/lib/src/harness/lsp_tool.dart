@@ -5,6 +5,8 @@ import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_client.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/lsp/lsp_symbol_position.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Gives the agent LSP diagnostics, navigation, symbol search, and code actions.
@@ -242,10 +244,11 @@ class LspTool extends HarnessTool {
         continue;
       }
       try {
-        final result = await Process.run(
+        final result = await ChildProcess.run(
           check.argv.first,
           check.argv.sublist(1),
           workingDirectory: root,
+          toolchain: true,
           runInShell: true,
         ).timeout(const Duration(minutes: 3));
         final output = '${result.stdout}\n${result.stderr}'.trim();

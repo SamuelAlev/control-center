@@ -2604,6 +2604,27 @@ class AppLocalizationsDe extends AppLocalizations {
       'Warten auf die Autorisierung im Browser…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Geben Sie den Code aus Ihrem Browser ein';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Das sieht nicht nach einem Anmeldecode aus. Codes bestehen aus 8 Buchstaben und Ziffern.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Dieser Code passt nicht zu dieser Anmeldung. Prüfen Sie ihn und versuchen Sie es erneut.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Die Anmeldung bei $provider ist auf diesem Server noch nicht eingerichtet.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Die Anmelde-Rückrufadresse dieses Servers ist vom Smartphone aus nicht sicher erreichbar. Melden Sie sich in der Desktop-App an oder bitten Sie den Serverbesitzer, eine öffentliche HTTPS-Adresse einzurichten.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Die Anmeldung ist abgelaufen. Starten Sie einen neuen Anmeldeversuch.';
 
@@ -2624,10 +2645,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Anmeldung abschließen';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Der Browser-Rückruf dieses Servers ist vom Smartphone aus nicht sicher erreichbar. Bitten Sie den Serverbesitzer, eine öffentliche HTTPS-Rückrufadresse einzurichten, oder fügen Sie stattdessen ein Token hinzu.';
 
   @override
   String get credentialsUpdateToken => 'Token aktualisieren';

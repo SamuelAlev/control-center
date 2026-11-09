@@ -346,4 +346,164 @@ void main() {
       );
     });
   });
+
+  group('GoogleCalendarApiClient.patchEventResponse notifies', () {
+    test('tells the organizer about the answer', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {}),
+      );
+      await client.patchEventResponse(
+        accountId: 'acct-1',
+        calendarId: 'primary',
+        eventId: 'evt-1',
+        attendees: const [],
+      );
+      expect(
+        httpRequestUri(fake.requests.single).queryParameters['sendUpdates'],
+        'all',
+      );
+    });
+  });
+
+  group('GoogleCalendarApiClient.patchEventTimes', () {
+    test('PATCHes only the times and tells the guests', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {
+          'id': 'evt-1',
+          'start': {'dateTime': '2026-11-17T18:45:00Z'},
+          'end': {'dateTime': '2026-11-17T19:45:00Z'},
+        }),
+      );
+
+      final event = await client.patchEventTimes(
+        accountId: 'acct-1',
+        calendarId: 'primary',
+        eventId: 'evt/1',
+        start: const {'dateTime': '2026-11-17T18:45:00.000Z'},
+        end: const {'dateTime': '2026-11-17T19:45:00.000Z'},
+      );
+
+      final request = fake.requests.single;
+      final uri = httpRequestUri(request);
+      expect(request.method.value, 'PATCH');
+      expect(uri.path, endsWith('/events/${Uri.encodeComponent('evt/1')}'));
+      expect(uri.queryParameters['sendUpdates'], 'all');
+      expect((request.body! as HttpBodyJson).json, {
+        'start': {'dateTime': '2026-11-17T18:45:00.000Z'},
+        'end': {'dateTime': '2026-11-17T19:45:00.000Z'},
+      });
+      expect(request.additionalData[googleAccountIdExtraKey], 'acct-1');
+      expect(event.start.resolved, DateTime.utc(2026, 11, 17, 18, 45));
+    });
+  });
+
+  group('GoogleCalendarApiClient.insertEvent', () {
+    test('POSTs the resource and parses what Google stored', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {
+          'id': 'evt-new',
+          'summary': 'Review',
+          'start': {'dateTime': '2026-11-10T14:00:00Z'},
+          'end': {'dateTime': '2026-11-10T15:00:00Z'},
+        }),
+      );
+
+      final event = await client.insertEvent(
+        accountId: 'acct-1',
+        calendarId: 'me@example.com',
+        event: const {'summary': 'Review'},
+      );
+
+      final request = fake.requests.single;
+      final uri = httpRequestUri(request);
+      expect(request.method.value, 'POST');
+      expect(uri.path, endsWith('/events'));
+      expect(uri.path, contains(Uri.encodeComponent('me@example.com')));
+      expect(uri.queryParameters['sendUpdates'], 'all');
+      expect(uri.queryParameters, isNot(contains('conferenceDataVersion')));
+      expect((request.body! as HttpBodyJson).json, {'summary': 'Review'});
+      expect(request.additionalData[googleAccountIdExtraKey], 'acct-1');
+      expect(event.id, 'evt-new');
+    });
+
+    test('asks for conference data only with a Meet request', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, {'id': 'evt-new'}),
+      );
+      await client.insertEvent(
+        accountId: 'acct-1',
+        calendarId: 'primary',
+        event: const {},
+        withConference: true,
+      );
+      expect(
+        httpRequestUri(
+          fake.requests.single,
+        ).queryParameters['conferenceDataVersion'],
+        '1',
+      );
+    });
+
+    test('maps a refusal to NetworkException', () async {
+      final client = _client(
+        (request) => httpTextResponse(request, 'forbidden', statusCode: 403),
+      );
+      await expectLater(
+        client.insertEvent(
+          accountId: 'acct-1',
+          calendarId: 'primary',
+          event: const {},
+        ),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+  });
+
+  group('GoogleCalendarApiClient.deleteEvent', () {
+    test('DELETEs the event and notifies guests', () async {
+      final (:client, :fake) = _clientWithFake(
+        (request) => httpTextResponse(request, '', statusCode: 204),
+      );
+      await client.deleteEvent(
+        accountId: 'acct-1',
+        calendarId: 'primary',
+        eventId: 'evt with space',
+      );
+      final request = fake.requests.single;
+      final uri = httpRequestUri(request);
+      expect(request.method.value, 'DELETE');
+      expect(uri.path, contains(Uri.encodeComponent('evt with space')));
+      expect(uri.queryParameters['sendUpdates'], 'all');
+    });
+
+    for (final status in [404, 410]) {
+      test(
+        'an event Google already forgot ($status) counts as deleted',
+        () async {
+          final client = _client(
+            (request) => httpTextResponse(request, 'gone', statusCode: status),
+          );
+          await client.deleteEvent(
+            accountId: 'acct-1',
+            calendarId: 'primary',
+            eventId: 'evt-1',
+          );
+        },
+      );
+    }
+
+    test('maps any other refusal to NetworkException', () async {
+      final client = _client(
+        (request) => httpTextResponse(request, 'forbidden', statusCode: 403),
+      );
+      await expectLater(
+        client.deleteEvent(
+          accountId: 'acct-1',
+          calendarId: 'primary',
+          eventId: 'evt-1',
+        ),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+  });
 }

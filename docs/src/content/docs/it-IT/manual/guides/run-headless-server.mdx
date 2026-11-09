@@ -1,9 +1,9 @@
 ---
 title: Esegui un server headless
 description: Esegui il binario headless cc_server o la sua immagine Docker, associa un client e configuralo con l'intera superficie di flag CLI e variabili d'ambiente.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: it-IT/manuale/guide/esegui-server-headless
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Esegui `cc_server` su una macchina sempre accesa, poi connettiti dal desktop, da
@@ -15,8 +15,10 @@ limitano a mostrare.
 ## Esegui in Docker (immagini precompilate)
 
 Ogni release pubblica uno stack self-hosted di quattro immagini GHCR — il
-backend, i due thin client statici e il relay di abbinamento opzionale — più una
-immagine separata `cc-server-demo` per l'host della demo pubblica. Un'installazione
+backend, i due thin client statici e il relay di abbinamento opzionale — più il
+servizio di accesso opzionale `cc-connect`
+([Esegui un server Connect](/it-IT/manuale/guide/esegui-server-connect/)) e
+un'immagine separata `cc-server-demo` per l'host della demo pubblica. Un'installazione
 self-hosted non richiede alcun checkout del sorgente. Fissa un tag di versione
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) oppure segui `latest`.
 
@@ -68,6 +70,12 @@ Cose che vale la pena sapere prima di esporre tutto questo oltre il loopback:
 - **`/data` è l'unico stato.** I database SQLite, i segreti dei dispositivi
   associati, i modelli scaricati e l'audio delle riunioni vivono tutti nel
   volume: fanne un backup e il container diventa usa e getta.
+- **I segreti dei provider vanno in un `.env` montato, mai in `-e`.** Il server
+  si rifiuta di avviarsi quando `GITHUB_APP_PRIVATE_KEY`,
+  `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` o un
+  `SLACK_*SECRET*` si trovano nell'ambiente del suo processo. Monta il file in
+  sola lettura su `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`),
+  oppure configura le app in Impostazioni.
 - **Associa un client dall'interno dell'immagine** prima della prima connessione,
   l'equivalente in container del [passaggio 3](#passaggio-3-associa-un-client-prima-del-primo-avvio):
 
@@ -280,22 +288,36 @@ dell'estensione dell'editor avviata dal server tramite un proxy pubblico. Le
 richieste HTTP pubbliche sensibili vengono rifiutate; le risorse richiedono una
 sessione cifrata autenticata.
 
-## Passaggio 6: collega un Google Calendar (opzionale)
+## Passaggio 6: scegli come accedono le persone
 
-Per sincronizzare il calendario di uno spazio di lavoro senza alcuna GUI
-collegata, usa il flusso con codice dispositivo:
+Il primo client che si connette come proprietario del server deve scegliere come
+questo server fa accedere le persone a GitHub, Google Calendar e Linear: **Usa
+le app di Control Center**, **Usa le mie app** oppure **Usa un server Connect
+personalizzato**. Dal terminale, la stessa scelta è:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Stampa un codice e un URL da approvare su un altro dispositivo, memorizza il
-refresh token lato server ed esce. Una build dal sorgente non include alcun
-client Google, quindi le variabili d'ambiente con id e secret sono obbligatorie:
-non esiste un flag `--google-client-id`. Vedi
-[Collega un Google Calendar](/it-IT/manuale/guide/collega-calendario/).
+`CC_CONNECT_URL` (`hosted`, `off` o un URL) nell'ambiente del server o nel suo
+`.env` fissa invece la scelta. Con **Usa le mie app**, registra ogni provider in
+**Impostazioni → Server → Accesso single sign-on → App del fornitore**; **Crea
+la mia app GitHub** configura GitHub in un solo passaggio. I segreti dei
+provider vanno nel file `.env` del server, mai nell'ambiente esportato. Vedi
+[Crea la GitHub App](/it-IT/manuale/guide/github-app/) e
+[Control Center Connect](/it-IT/manuale/riferimento/connect/).
+
+Gli accessi tramite Connect si concludono con un codice che mostra il browser,
+quindi per essi al server non serve alcun indirizzo pubblico. Gli accessi
+tramite le app del server riportano il browser all'URL pubblico del server,
+quindi imposta `--public-url` su un indirizzo che i browser delle persone
+possano raggiungere.
+
+Per ospitare Connect per altri server da questo, imposta
+`CC_SERVER_CONNECT_HOST=on`; vedi
+[Esegui un server Connect](/it-IT/manuale/guide/esegui-server-connect/#monta-connect-dentro-cc_server).
 
 ## Configurazione
 
@@ -354,6 +376,7 @@ fornisce la crittografia end-to-end del client associato né autorizza le risors
 - [Associa un dispositivo](/it-IT/manuale/guide/associa-dispositivo/)
 - [Esegui un worker della flotta](/it-IT/manuale/guide/esegui-worker-flotta/)
 - [Collega un Google Calendar](/it-IT/manuale/guide/collega-calendario/)
+- [Esegui un server Connect](/it-IT/manuale/guide/esegui-server-connect/)
 
 ## Concetti correlati
 

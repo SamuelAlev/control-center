@@ -1,215 +1,220 @@
 ---
 title: GitHub App létrehozása
-description: Regisztráljon egy GitHub Appot a szerveréhez, hogy a tagok be tudjanak jelentkezni, és hogy a háttérmunka személy helyett az appként fusson.
+description: Adjon a szerverének saját GitHub Appot egyetlen kattintással, telepítse oda, ahol a repói vannak, és engedélyezze a szervert egy szervezet telepítéséhez.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Ez az útmutató bemutatja, hogyan adhat a szerverének saját GitHub-identitást.
+Ez az útmutató bemutatja, hogyan adhat a szerverének saját GitHub Appot.
 Körülbelül két percet vesz igénybe, csak a szerver tulajdonosa végzi el, és
 szerverenként csak egyszer kell megtenni.
 
 :::note[Lehet, hogy nincs rá szüksége]
-A hivatalos build már tartalmaz egy GitHub **kliens-ID**-t, így a
-[Bejelentkezés ezzel: GitHub](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/) külön regisztráció nélkül, azonnal működik
-— az eszközfolyamat kizárólag a kliens-ID-val hitelesít, ezért biztonságos
-szállítani. Akkor regisztráljon saját appot, ha azt szeretné, hogy a SZERVER
-önmagaként cselekedjen (a webhookok, a PR-lekérdezés és a jegyszinkronizálás egy
-app-telepítésen fusson, nem egy személy hitelesítő adatain), vagy ha forrásból
-épít.
+Bekapcsolt Control Center Connect mellett az emberek a Control Center megosztott
+Appján vagy a szervezete Connectje által használt Appon keresztül jelentkeznek
+be a GitHubra. Akkor regisztráljon sajátot, ha a **Saját alkalmazások
+használata** lehetőséget választotta: a szerver saját Appja csak ebben az esetben érvényes. Lásd:
+[Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
 :::
 
-A saját fiókja későbbi összekapcsolásához lásd:
-[GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/).
+A saját fiókjába való későbbi bejelentkezésről lásd a
+[GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+oldalt.
 
-## Miért van szüksége a szerverének saját appra
+## Mit csinál az alkalmazás
 
-Egyetlen regisztrációból két különböző feladat származik, és az app az, ami
-mindkettőt becsületessé teszi:
+Egyetlen regisztráció két különböző feladatot lát el:
 
-| Feladat                   | Mi válaszol rá                                 | Miért számít                                                                                          |
-| ------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Egy személy bejelentkezik** | Az app kliens-ID-ja, az eszközfolyamaton keresztül | Olyan hitelesítő adatot kap, amely a sajátja, a szerveren, minden eszközén — nincs beilleszteni vagy cserélni való token |
-| **A szerver cselekszik**  | Az app ID-ja + privát kulcs → telepítési token | A webhookok, a PR-lekérdezés és a jegyszinkronizálás többé nem függ attól, hogy egyetlen ember tokenje még érvényes |
+| Feladat                      | Mi szolgálja ki                                 | Miért fontos                                                                                    |
+| ---------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Egy személy bejelentkezik** | Az alkalmazás kliens-ID-ja és kliens titka      | Mindenki saját GitHub-hitelesítő adatot kap, a szerveren, minden eszközén                       |
+| **A szerver cselekszik**     | Az alkalmazás azonosítója és privát kulcsa      | Az ügynökök, a pipeline-ok, a lekérdezők és a botválaszok egyszerre egyetlen repóra szóló tokeneket kapnak |
 
-Figyelje meg, mi **nincs** ebben a táblázatban: a kliens titok. A GitHub
-eszközfolyamata kizárólag a kliens-ID-val hitelesít — mind az eszközkód
-kérésénél, mind a token lekérdezésénél —, így a bejelentkezéshez nincs őrizendő
-titok.
+A második feladat soha nem kölcsönzi el egészben egy személy hitelesítő adatát.
+Minden token, amelyet a szerver kiállít, egyetlen repóra szól, és arra
+korlátozódik, amit egy felelős tag ott megtehet. Egy kapcsolt repó olvasásához
+elég az alkalmazás; bármihez, ami ír, olyan tag kell, aki pusholhat. Az
+automatizálás soha nem hagy jóvá pull requestet.
 
-Saját app nélkül az első továbbra is működik a builddel szállított
-kliens-ID-val; a második a szerver tulajdonosának hitelesítő adataira esik
-vissza, így a háttérmunka annak a személynek a hitelesítő adatain nyugszik, aki
-elsőként állította be a szervert.
-
-:::note[Nincs „A Control Center GitHub Appjának telepítése” gomb]
-Egy elosztott GitHub App egyetlen megosztott kliens titkot és egyetlen megosztott
-telepítést jelentene mindenki szerverén, így minden munkaterület tárolóelérése
-olyan hitelesítő adatokon keresztül folyna, amelyeket senki sem irányít abban a
-munkaterületben. Ezért minden szerver a saját appját birtokolja — ez az útmutató
-arról szól, milyen kevésbe kerül ez.
-:::
+A szerver saját alkalmazása csak a **Saját alkalmazások használata** esetén érvényes. A
+Control Center vagy egyéni Connect esetén a Connect kezeli az összes sávot, a GitHubot is,
+a szerver alkalmazása pedig mentve marad, de nincs használatban, amíg vissza nem vált. A
+munkaterület saját alkalmazása ([Másik alkalmazás egyetlen munkaterületnek](#másik-alkalmazás-egyetlen-munkaterületnek))
+minden módban érvényes. Az az alkalmazás, amelynek egyes mezői hiányoznak, hiba, nem
+tartalékra váltás: a GitHub-bejelentkezések elutasításra kerülnek, amíg minden mező be nincs állítva.
 
 ## Előfeltételek
 
-- Ön a **szerver tulajdonosa** — a `providerApps.*` műveletek hozzá vannak
-  korlátozva, és a kártya mindenki más számára láthatatlan
-- GitHub-fiók, vagy egy szervezet, amelyben appokat hozhat létre
-- Semmi nyilvánosan elérhető dolog: a bejelentkezés egy **eszközfolyamat**, így
-  a szervernek nem kell bejövő port, alagút, callback URL vagy domain
+- Ön a **szerver tulajdonosa**. A **Szolgáltatói alkalmazások** kártya mindenki
+  más számára láthatatlan
+- Egy GitHub-fiók. Az alkalmazás ez alatt jön létre
+- Egy szervercím, amelyet a böngészője elér. A szerver nyilvános URL-je (vagy
+  egy asztali gép saját szerverénél a loopback) az a hely, ahová a GitHub
+  visszaküldi Önt
 
-## Az app regisztrálása
+## Létrehozás egyetlen kattintással
 
-1. Nyissa meg a [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   oldalt (szervezet esetén: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — bármi; a `Control Center (yourname)` megfelel. Ez
-   jelenik meg azokon a commitokon és hozzászólásokon, amelyeket a szerver tesz
-3. **Homepage URL** — bármi, például `https://github.com/your-name`
-4. **Callback URL** — hagyja üresen. Az eszközfolyamatnak nincs ilyenje
-5. Jelölje be az **Enable Device Flow** lehetőséget. Ez az az egyetlen beállítás,
-   amely nélkül a bejelentkezés nem működik
-6. Vegye ki a pipát a **Webhook → Active** jelölőnégyzetből, kivéve, ha a
-   webhookokat külön köti be
-7. A **Repository permissions** alatt adjon meg legalább ennyit:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (kötelező)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, ha GitHub Issues-t használ jegyekhez, és a bot
-     PR-beszélgetésekben folytatott hozzászóláskereséséhez
-     (lásd: [Beszélgetés a Control Centerrel GitHub PR-ből](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek/))
-   - **Checks**: Read-only, a PR-oldali CI-állapothoz
-8. A **Where can this GitHub App be installed?** alatt válassza, ami illik —
-   személyes szerverhez az „Only on this account” a megfelelő
-9. Kattintson a **Create GitHub App** gombra
+1. Lépjen a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalra, és
+   görgessen a **Szolgáltatói alkalmazások** kártyához
+2. A **GitHub** blokkban a **Szervezet (nem kötelező)** mezőbe beírhatja azt a
+   GitHub-szervezetet, amelynek az alkalmazás tulajdonában kell lennie. Hagyja
+   üresen, ha a saját fiókja alatt szeretné létrehozni; egy szervezet alatti
+   létrehozáshoz a szervezet egyik tulajdonosa kell
+3. Kattintson a **Saját GitHub-alkalmazás létrehozása** elemre
+4. A böngészője megnyitja a GitHubot az előre kitöltött alkalmazással.
+   Kattintson a **Create GitHub App** gombra
+5. A GitHub visszaküldi Önt a szerverre, amely eltárolja az alkalmazás
+   azonosítóját, a privát kulcsot, a kliens-ID-t és a kliens titkot, majd
+   megnyitja az alkalmazás telepítési oldalát
 
-## A három érték begyűjtése
+Semmit nem kell kézzel másolni, és a konverziós kód közvetlenül a GitHubról jut
+a szerverére. A hivatkozás egyszer működik, és tíz perc után lejár; ha lejár,
+kattintson újra a **Saját GitHub-alkalmazás létrehozása** elemre.
 
-Az app oldalán, közvetlenül a létrehozás után:
+Az alkalmazás neve `Control Center <code>`, és pontosan azt kéri, amit a
+Control Center használ:
 
-| Érték           | Hol                                               |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | A **General** lapon, felül                        |
-| **Client ID**   | A **General** lapon, a „Client secrets” alatt     |
-| **Private key** | **Generate a private key** — egy `.pem` töltődik le |
+| Jogosultság                                | Hozzáférés        |
+| ------------------------------------------ | ----------------- |
+| Metadata                                   | Olvasás           |
+| Contents                                   | Olvasás és írás   |
+| Pull requests                              | Olvasás és írás   |
+| Issues                                     | Olvasás és írás   |
+| Checks, Actions, Commit statuses           | Olvasás           |
+| Organization members                       | Olvasás           |
 
-A privát kulcs fájlja egyszer töltődik le, és a GitHub soha többé nem mutatja
-meg. Őrizze meg addig, amíg be nem illesztette; bármikor létrehozhat újat.
+A webhookok ki vannak kapcsolva: a szerver lekérdez. Ha a saját fiókja alatt
+létrehozott alkalmazást később egy szervezethez szeretné áthelyezni, használja a
+**Transfer ownership** lehetőséget az alkalmazás speciális beállításaiban a
+GitHubon.
 
-A **kliens titok** nem kötelező, és pontosan egy dolgot ad: ha az „Expire user
-authorization tokens” be van kapcsolva, ez az, ami csendben megújítja valaki
-tokenjét, ahelyett hogy nyolcóránként újra bejelentkezésre kérné. Maga a
-bejelentkezés soha nem használja.
+Ellenőrzőpont: a GitHub blokk ezt írja: „A szerver tud magaként viselkedni, és
+az emberek bejelentkezhetnek.”
 
-Az egyszerűbb beállítás, ha ezt a lejáratot kikapcsolja, és akkor sehol nincs
-szükség titokra. Ha bekapcsolva hagyja, hozzon létre egy titkot, és illessze be a
-**Beállítások → Szerver → Egyszeri bejelentkezés** alatt (a **Szolgáltatói alkalmazások** kártyán) — ehhez nincs környezeti változó,
-és egyetlen buildbe sincs beépítve, így a szerverén marad.
+## Telepítse oda, ahol a repói vannak
 
-## Telepítés a fiókjára
+A regisztrált, de nem telepített alkalmazás be tudja jelentkeztetni az
+embereket, de semmit nem olvas.
 
-Egy regisztrált, de nem telepített app hitelesítheti az embereket, és semmit sem
-olvashat.
-
-1. Az app oldalán nyissa meg az **Install App** elemet
-2. Telepítse a fiókjára vagy a szervezetére
-3. Válassza az **All repositories** lehetőséget, vagy jelölje ki azokat,
+1. A GitHub által megnyitott telepítési oldalon válassza ki azt a fiókot vagy
+   szervezetet, amely a repói tulajdonosa
+2. Válassza az **All repositories** lehetőséget, vagy jelölje ki azokat,
    amelyeket ennek a szervernek látnia kell
 
-## Beillesztés a Control Centerbe
+Ha később egy másik fiókra szeretné telepíteni, egy munkaterület-adminisztrátor
+a **Beállítások → Munkaterület → Általános** oldalra lép, a GitHub-identitás
+kártyán megkeresi a **GitHub-alkalmazás telepítései** részt, és a
+**GitHub-alkalmazás telepítése** elemre kattint. A lista minden fiókot mutat,
+amelyre az alkalmazás telepítve van, és jelöli a felfüggesztett telepítést.
 
-1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** részt, és
-   görgessen a **Szolgáltatói alkalmazások** kártyához
-2. A **GitHub** blokkban állítsa be az egyes mezőket:
-   - **Alkalmazás-ID** — a numerikus App ID
-   - **Privát kulcs** — illessze be a teljes `.pem` fájlt, a `BEGIN` és `END` sorokkal együtt
-   - **Kliens-ID** — ugyanarról az oldalról
-   - **Kliens titok** — csak ha létrehozott egyet (a token megújításához)
-3. Kattintson a **Teszt** gombra
+## A szerver engedélyezése egy szervezet számára
 
-A kulcs a mentés pillanatában kerül feldolgozásra, így a csonka vagy rossz
-formátumú beillesztés azonnal elutasításra kerül, ahelyett hogy órákkal később
-egy háttérkérésben hiúsulna meg. A **Teszt** továbbmegy, és megkérdezi a
-GitHubot, mely fiókokon van telepítve az app — a „mentve” és a „működik” két
-különböző állítás, és csak a második jelenti azt, hogy egyáltalán futni fog
-valami.
+A Control Center megosztott Appjánál egy szervezet telepítése csak azokat a
+szervereket szolgálja ki, amelyeket az adminisztrátorai engedélyeztek. A
+**GitHub-alkalmazás telepítése** útján történő telepítés azt a szervert
+engedélyezi, amely elindította. Egy már létező telepítésnél:
 
-Ellenőrzőpont: a GitHub-blokk ezt írja: „A szerver tud magaként viselkedni, és az
-emberek bejelentkezhetnek.”, és a **GitHub** sor a **Beállítások → Munkaterület → Profil és identitás →
-Kódtárhely** alatt mostantól a **Bejelentkezés ezzel: GitHub** lehetőséget kínálja.
+1. A szervezet egyik adminisztrátora bejelentkezik a GitHubra ezen a szerveren
+2. Megnyitja a **Beállítások → Munkaterület → Általános → GitHub-alkalmazás
+   telepítései** részt
+3. A szervezet sora ezt mutatja: **Nincs engedélyezve**. A **A szerver
+   engedélyezése** elemre kattint
 
-## Helyette konfigurálja környezeti változókkal
+A sor ezután ezt mutatja: **Engedélyezve**. A saját alkalmazásnak erre nincs
+szüksége: minden telepítése az Ön szerveréhez tartozik.
 
-Headless vagy szkriptelt telepítésnél a szerver minden mezőt a környezetből tölt
-fel, amikor először nincs tárolt értéke:
+## Regisztrálás inkább kézzel
+
+A **Szolgáltatói alkalmazások** kártya az értékeket közvetlenül is elfogadja egy
+olyan alkalmazáshoz, amelyet saját maga regisztrált:
+
+| Csoport                          | Mezők                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **A szerverként viselkedés**     | **Alkalmazás-ID** és **Privát kulcs** (a teljes `.pem`, a `BEGIN` és `END` sorokkal együtt)      |
+| **Emberek bejelentkeztetése**    | **Kliens-ID** és **Kliens titok**. A **Visszahívási URL-ek** szó szerint mutatják a regisztrálandó URL-t |
+| **Pull request beszélgetések**   | **Bot bejelentkezési név**, a kapcsolat tesztelésekor feloldva                                  |
+
+Regisztrálja a `<server origin>/oauth/github/callback` visszahívási URL-t
+pontosan úgy, ahogy a kártya mutatja, hagyja bekapcsolva az **Expire user
+authorization tokens** beállítást, és adja meg a fenti táblázat jogosultságait.
+Kattintson a **Teszt** elemre: megkérdezi a GitHubot, mely fiókokra van
+telepítve az alkalmazás, így a „mentve” és a „működik” nem keveredik össze.
+
+## Beállítás a szerver `.env` fájljából
+
+Headless vagy szkriptelt telepítésnél a szerver minden mezőt a `.env` fájljából
+tölt fel, amikor először nincs rá tárolt értéke:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Ezekhez nincsenek parancssori kapcsolók — a parancssorban szereplő titkot a
-gazdagép minden folyamata elolvashatja a `ps` segítségével. A környezet az
-egyetlen hely, ahol beállíthatók, és elsőbbséget élvez mindennel szemben, amit a
-build szállít. A teljes listát a `.env.template` tartalmazza.
-
-Helyi fejlesztéshez a repó gyökerében lévő `.env` ugyanezeket az értékeket
-tartalmazza, és az asztali alkalmazás átadja őket az általa indított szervernek.
-A kulcsot ott **egyetlen sorba** írja: a `.env`-ben egy érték egy sor, és a
-kettős idézőjelek közötti `\n` újsorrá alakul.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-A `GITHUB_APP_ID` és a `GITHUB_APP_PRIVATE_KEY` ugyanazok a nevek, amelyeket a
-homokozó tokenbrókere már olvas, így az a gazdagép, amely beállította a
-finomszemcsés ügynöktokeneket, ingyen megkapja a bejelentkezési sávot. A
-feltöltés **mezőnként egyszer** történik — utána a tárolt érték győz, így a
-Beállításokban végzett szerkesztést a következő újraindítás nem írja felül.
+A kulcsot **egy sorba** írja: egy `.env`-érték egyetlen sor, és a dupla
+idézőjelek közötti `\n` sortörésként dekódolódik. A szerver nem indul el, ha a
+`GITHUB_APP_PRIVATE_KEY` vagy a `GITHUB_CLIENT_SECRET` a folyamata környezetébe
+van exportálva, ahol minden gyermekfolyamat kiolvashatná; tartsa őket a `.env`
+fájlban (Dockerben csatolja a `/app/bin/.env` helyre). A feltöltés **mezőnként
+egyszer** történik, így a Beállításokban végzett szerkesztést a következő
+újraindítás nem vonja vissza.
 
-## Ugyanezt tegye a Linear esetében
+## Másik alkalmazás egyetlen munkaterületnek
 
-A Linearnak nincs eszközfolyamata, ezért a bejelentkezése egy böngészőn keresztül
-zajló oda-vissza út, és szüksége van callback URL-re — a **Szolgáltatói alkalmazások** kártya megmutatja a
-pontos URL-t, amelyet regisztrálni kell.
+Egy munkaterület a szerverén helyett saját alkalmazást is használhat. Egy
+munkaterület-adminisztrátor a **Beállítások → Munkaterület → Általános** oldalra
+lép, a **GitHub-azonosító** kártyán a **Másik GitHub App használata**
+lehetőséget választja, és megadja annak az alkalmazásnak az azonosítóját, privát
+kulcsát, kliens-ID-ját és kliens titkát. A tagok ezután ehhez a munkaterülethez
+ebbe az alkalmazásba jelentkeznek be. A saját alkalmazáson futó munkaterület
+soha nem vált a szerver alkalmazására vagy a Connectre: amíg a mezői nem
+teljesek, a GitHub-munkája elutasításra kerül. Ez attól függetlenül érvényes, hogy a szerver
+hogyan jelentkezteti be az embereket, a Connectet is beleértve.
 
-1. Hozzon létre egy OAuth-alkalmazást a
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new) címen
-2. Állítsa a **Callback URL** értékét arra az URL-re, amelyet a kártya mutat,
-   szó szerint
-3. Illessze be a **Kliens-ID** és a **Kliens titok** értékét a Linear blokkba
-4. Opcionálisan adjon hozzá egy munkaterületi **API-kulcsot** — ez az a
-   hitelesítő adat, amelyet a szerver a jegyek szinkronizálásához használ,
-   amikor nem ember kérte
+A **Szolgáltatói alkalmazások** kártya ugyanezt elvégzi a Google Calendarra, a Linearra és a
+GIF-keresésre. Lásd: [Egy munkaterület saját Linear-alkalmazásának beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/#egy-munkaterület-saját-linear-alkalmazásának-beállítása)
+és [Egy munkaterület saját Google-kliensének beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/#egy-munkaterület-saját-google-kliensének-beállítása).
 
 ## Hibaelhárítás
 
-### A bejelentkezési párbeszédablak szerint a szolgáltató nem adott vissza eszközkódot
+### A Saját GitHub-alkalmazás létrehozása azt írja, hogy a szervernek nincs címe
 
-Az **Enable Device Flow** ki van kapcsolva az appon. Kapcsolja be a **General**
-alatt, és próbálja újra.
+A szervernek nincs olyan nyilvános URL-je, amelyre egy böngésző visszatérhetne.
+Állítsa be a `CC_SERVER_PUBLIC_URL` értékét (vagy a `--public-url` kapcsolót), és
+próbálja újra.
 
-### A teszt szerint a hitelesítő adatok működnek, de az app sehol sincs telepítve
+### A GitHub azt írja, hogy a hivatkozás lejárt
 
-A regisztráció és a telepítés külön lépések. Nyissa meg az **Install App**
-elemet az app oldalán, és telepítse.
+Az egyszer használatos oldalt már felhasználták, vagy eltelt tíz perc. Kezdje
+újra a Beállításokból.
+
+### A teszt szerint a hitelesítő adatok működnek, de az alkalmazás sehol nincs telepítve
+
+A regisztráció és a telepítés külön lépés. Nyissa meg az alkalmazás telepítési
+oldalát, vagy használja a **GitHub-alkalmazás telepítése** elemet a Munkaterület
+→ Általános helyen.
 
 ### A teszt szerint a privát kulcs nem olvasható
 
 Illessze be a teljes `.pem` fájlt, a `-----BEGIN` és `-----END` sorokkal együtt.
-`ed25519` vagy EC kulcs nem használható — a GitHub Appok RSA-val írnak alá.
+`ed25519` vagy EC kulcs nem használható: a GitHub Appok RSA-val írnak alá.
 
-### Egy tag bejelentkezett, de nem lát tárolókat
+### Egy tag bejelentkezett, de nem lát repókat
 
-Az app nincs telepítve arra a fiókra, amely ezeket birtokolja, vagy a telepítése
-más tárolókat választ ki. A tag saját bejelentkezése csak azt engedélyezi, amit
-az app láthat.
+Az alkalmazás nincs telepítve a repók tulajdonosának fiókján, vagy a telepítése
+más repókat jelöl ki. A bejelentkezés csak azt teszi elérhetővé, amit az
+alkalmazás láthat.
+
+### Az ügynökök azt írják, hogy a GitHub App telepítése fel van függesztve
+
+Valaki felfüggesztette a telepítést a GitHubon. Szüntesse meg a felfüggesztést
+az adott fiók **Settings → Applications → Installed GitHub Apps** oldalán.
 
 ## Kapcsolódó útmutatók
 
 - [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
 - [Beszélgetés a Control Centerrel GitHub PR-ből](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek/)
 - [Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
+- [Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/)
 - [API-kulcsok kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
-- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)

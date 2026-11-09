@@ -2,19 +2,19 @@
 title: Conversations de PR
 description: Comment un commentaire de PR GitHub devient un tour d’agent sans webhook, ce qui autorise son auteur, et à qui chaque partie de la conversation est attribuée.
 slug: fr-FR/manuel/concepts/conversations-de-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Une pull request est déjà le lieu où se tient la conversation sur le code. Les
 conversations de PR en font une surface d’un espace de travail Control Center,
 comme une [passerelle de chat](/fr-FR/manuel/concepts/passerelles-de-chat/) fait
-de Slack la sienne : mentionnez avec @ le bot GitHub App du serveur sur une PR,
-répondez dans ses fils de revue ou ajoutez l’étiquette `ai-review`, et le
-travail se déroule dans l’espace de revue de la PR — sous la même attribution et
-les mêmes garde-fous que tout ce qui est saisi dans l’application. Un
-commentaire est en outre soumis à l’appartenance ; l’étiquette ne l’est pas, car
-elle n’a pas d’auteur. Les réponses du bot reviennent sur GitHub, dans le fil où
-la question a été posée.
+de Slack la sienne : mentionnez `@usectrl` (ou le bot de la GitHub App de
+l’espace de travail) sur une PR, répondez dans ses fils de revue ou ajoutez
+l’étiquette `ai-review`, et le travail se déroule dans l’espace de revue de la
+PR — sous la même attribution et les mêmes garde-fous que tout ce qui est saisi
+dans l’application. Un commentaire et une étiquette sont contrôlés de la même
+manière : sur le membre qui l’a écrit ou ajoutée. Les réponses reviennent sur
+GitHub, dans le fil où la question a été posée.
 
 Trois décisions façonnent la fonctionnalité, et chacune est la même décision que
 la passerelle de chat a prise pour le chat, reformulée pour une forge : **dans
@@ -25,17 +25,21 @@ l’extérieur** et **à qui chaque partie est attribuée**.
 
 Le seul canal push de GitHub pour une application est le webhook, et un webhook
 a besoin d’une URL entrante — la seule chose que cette surface ne requiert
-délibérément jamais. La découverte se fait donc par balayage : environ toutes
-les minutes, une recherche aliasée par installation de l’application demande à
-GitHub les PR qui mentionnent le bot (ou son slug court) et les PR ouvertes qui
-portent l’étiquette de revue ; les PR qui ont déjà un espace de revue voient
-leurs fils de commentaires lus, et tout est comparé par identifiant de
-commentaire à ce qui a été vu au balayage précédent.
+délibérément jamais. La découverte se fait donc par balayage : une recherche
+aliasée par installation de l’application demande à GitHub les PR qui
+mentionnent le bot (ou son slug court) et les PR ouvertes qui portent
+l’étiquette de revue ; les PR qui ont déjà un espace de revue voient leurs fils
+de commentaires lus, et tout est comparé par identifiant de commentaire à ce qui
+a été vu au balayage précédent. Une application propre balaie toutes les minutes
+au plus 25 PR. Via Connect, les appels consomment le quota GitHub propre aux
+membres : le balayage a donc lieu toutes les deux minutes sur au plus 10 PR, et
+un espace de travail sous 15 % de son quota est ignoré jusqu’à ce qu’il se
+rétablisse. Connect lui-même ne voit jamais le contenu des PR.
 
 Les conséquences de conception méritent d’être nommées :
 
 - **La latence est un intervalle de balayage, pas un événement.** L’accusé de
-  réception 👀 arrive en une minute environ. Rien d’urgent n’en dépend.
+  réception 👀 arrive en l’espace d’un balayage. Rien d’urgent n’en dépend.
 - **Exactement une fois, par commentaire.** Les identifiants de commentaire sont
   uniques sur GitHub ; chacun est enregistré au moment où il est classé comme
   éligible, avant que quoi que ce soit n’agisse sur lui. Un plantage peut faire
@@ -52,56 +56,66 @@ Les conséquences de conception méritent d’être nommées :
   balayage ; une mention est la voie de relance.
 
 La recherche s’exécute une fois par compte d’installation, sur le client propre
-à ce propriétaire, car un jeton d’installation ne voit que les dépôts de sa
-propre installation — un identifiant unique à l’échelle du serveur manquerait
+à ce propriétaire, car un jeton ne voit que les dépôts de sa propre
+installation — un identifiant unique à l’échelle du serveur manquerait
 silencieusement toutes les PR relevant des autres installations de
 l’application.
 
 ## L’appartenance autorise, pas le commentaire
 
-Un commentaire de PR arrive avec guère plus que l’identifiant d’un auteur — une
-identité externe non authentifiée jusqu’à preuve du contraire. Le bot le résout
-au moyen d’un index inversé des membres de l’espace de travail et de leurs
-comptes GitHub connectés, reconstruit selon un TTL car les gens se connectent et
-sont invités pendant que le serveur tourne.
+Un commentaire de PR arrive avec un auteur — une identité externe non
+authentifiée jusqu’à preuve du contraire. Le serveur résout l’identifiant
+numérique immuable du compte GitHub de l’auteur (jamais l’identifiant de
+connexion, qui peut être renommé et réutilisé) au moyen des connexions GitHub des
+membres de l’espace de travail, reconstruites selon un TTL car les gens se
+connectent et sont invités pendant que le serveur tourne. Pour l’étiquette
+`ai-review`, la personne résolue est celle qui l’a ajoutée le plus récemment.
 
-Le refus par défaut prend la forme d’une échelle, et chaque barreau répond dans
-le fil où il a refusé :
+Trois contrôles, dans l’ordre, et l’échec de l’un d’eux est silencieux — rien
+n’est publié :
 
-- **Un identifiant inconnu** — non lié, ou lié par une personne qui n’est pas
-  membre de cet espace de travail — est invité à se connecter et à vérifier
-  qu’il en fait bien partie
-- **Un membre en lecture seule** (`viewer` ou `guest`) est informé que son rôle
-  ne permet pas de lancer du travail
+- **Un membre connecté.** Le compte doit appartenir à un membre de _cet_ espace
+  de travail qui s’est connecté à GitHub sur ce serveur
+- **Un rôle en écriture.** `viewer` et `guest` ne peuvent pas lancer de travail
+- **Un accès en push.** Les réponses utilisent un jeton `bot` limité à l’accès
+  de ce membre au dépôt. Si le serveur ne peut pas en émettre un, il ne poursuit
+  pas
 
-Les deux cas d’identifiant inconnu partagent une seule réponse : l’index inversé
-ne renvoie qu’un membre de _cet_ espace de travail, si bien qu’un compte non lié
-et un non-membre lié produisent le même échec. Aucun d’eux ne poursuit. Un
-commentaire n’est jamais attribué à quelqu’un qui ne l’a pas envoyé, et les
-propos d’un inconnu n’entrent jamais dans un espace de travail qu’il ne peut pas
-voir.
+Chaque contrôle s’exécute avant tout accusé de réception, si bien qu’un inconnu
+n’obtient ni réaction ni réponse. Un commentaire n’est jamais attribué à
+quelqu’un qui ne l’a pas envoyé, et les propos d’un inconnu n’entrent jamais
+dans un espace de travail qu’il ne peut pas voir.
 
-L’étiquette `ai-review` n’a aucun auteur à résoudre, elle ne gravit donc pas
-cette échelle. L’ajouter lance la revue dans l’espace de travail qui lie déjà le
-dépôt.
+### La revendication
+
+La dernière étape avant tout travail est une réaction 👀, ajoutée avec la
+connexion GitHub propre à l’auteur. GitHub répond `201` pour une nouvelle
+réaction et `200` pour une réaction qui existe déjà : la réaction sert donc
+aussi de verrou. Lorsque la même personne est connectée sur deux serveurs qui
+lient tous deux le dépôt, seul le premier à réagir fait le travail. Un
+commentaire que plusieurs espaces de travail d’un même serveur voient est
+proposé à chacun, et la même revendication tranche.
 
 ## Deux identités, à dessein
 
 Chaque partie de la conversation porte une identité différente, et cette
 différence est la fonctionnalité même :
 
-- **Sur GitHub, le bot est le serveur.** Chaque commentaire, réaction et réponse
-  publiés par la passerelle utilisent le jeton d’installation de l’application.
-  Personne n’a cliqué quoi que ce soit dans un client, donc rien n’emprunte le
-  compte d’une personne — la même règle qui tient les webhooks et le sondage à
-  l’écart des identifiants humains.
+- **Sur GitHub, la réponse est une automatisation agissant pour vous.** Chaque
+  réponse utilise un jeton `bot` limité à ce seul dépôt et à l’accès du membre
+  qui pose la question. Avec une application propre, l’auteur est le compte
+  `[bot]` de l’application. Via Connect, un jeton de l’App partagée est un jeton
+  utilisateur : la réponse est donc rédigée par le compte du membre qui pose la
+  question, agissant au travers de l’App. Dans les deux cas, chaque réponse
+  commence par `**Control Center** (for @login):`, qui indique qui a demandé et
+  sert aussi de protection anti-boucle.
 - **Dans l’espace, la question est la vôtre.** Le message est attribué au membre
   auquel l’auteur a été résolu, et l’exécution de l’agent se fait en son nom :
   les commits les désignent comme coauteurs, et le réglage d’autonomie et les
   garde-fous d’action de l’espace s’appliquent exactement comme à un message
   saisi dans l’application. Les écritures vers la forge issues de l’exécution
-  sortent toujours sous l’identité de l’application — même règle que le point
-  ci-dessus — et non avec le jeton personnel du membre.
+  utilisent des jetons limités à un dépôt et bornés par ce membre, jamais sa
+  connexion transmise telle quelle.
 
 Publier les constats de revue sur GitHub reste une décision humaine, prise dans
 Control Center. Une mention peut _lancer_ une revue ; seul un humain en publie
@@ -111,9 +125,11 @@ une.
 
 Tout ce qui est écrit par un compte de bot est écarté avant l’exécution du
 moindre contrôle — le nôtre en particulier, et tout suffixe `[bot]`, afin que le
-bot de revue d’une autre application ne puisse pas non plus réveiller le nôtre.
-Sans cela, les propres réponses du bot arriveraient comme de nouveaux
-commentaires et le redéclencheraient sans fin.
+bot de revue d’une autre application ne puisse pas non plus réveiller le nôtre —
+de même que tout commentaire qui commence par le préfixe
+`**Control Center** (for @`, puisqu’une réponse via Connect est rédigée par le
+compte d’une personne. Sans cela, les réponses arriveraient comme de nouveaux
+commentaires et redéclencheraient la passerelle sans fin.
 
 Le suffixe `[bot]` explique aussi pourquoi la forme courte existe. GitHub fixe
 l’identifiant de connexion d’un compte d’application à `<slug>[bot]`, n’offre
@@ -131,7 +147,10 @@ hypothétique.
 - **Aucune publication automatique.** Les constats arrivent dans l’espace de
   revue ; publier sur GitHub est une action humaine distincte
 - **Aucune identité approximative.** L’auteur se résout en exactement un membre
-  ou est refusé — il n’y a pas d’attribution devinée
+  ou est ignoré — il n’y a pas d’attribution devinée
+- **Aucune approbation automatisée.** L’automatisation peut commenter et
+  demander des modifications, mais une revue `APPROVE` est refusée avant d’être
+  envoyée. Approuver est un acte humain
 - **Aucun webhook de GitHub App.** Cette surface n’en enregistre jamais, il n’y
   a donc aucune URL entrante à exposer pour les commentaires de PR. Les autres
   webhooks du produit (pipelines, synchronisation des tickets) relèvent d’une
@@ -142,8 +161,8 @@ hypothétique.
 - [Parler à Control Center depuis une PR GitHub](/fr-FR/manuel/guides/conversations-pr-github/) : le guide pratique pour tout cela
 - [Passerelles de chat](/fr-FR/manuel/concepts/passerelles-de-chat/) : les mêmes
   trois décisions, prises pour le chat
-- [Créer la GitHub App](/fr-FR/manuel/guides/github-app/) : d’où vient
-  l’identité du bot
+- [Créer la GitHub App](/fr-FR/manuel/guides/github-app/) : d’où vient
+  l’identité de bot d’une application propre
 - [Multijoueur — identité, appartenance et présence](/fr-FR/manuel/concepts/multijoueur/) :
   les principaux et les rôles par lesquels un identifiant se résout
 - [Garde-fous](/fr-FR/manuel/concepts/garde-fous/) : ce que l’agent qui répond

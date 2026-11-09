@@ -2,7 +2,7 @@
 title: Gunakan semakan berkuasa AI
 description: Jalankan pipeline pr_review pada sesuatu PR, baca penemuan dan keputusannya, kemudian terbitkan semakan itu ke GitHub.
 slug: ms-MY/manual-pengguna/panduan-cara/semakan-ai
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Panduan ini menunjukkan cara membuat ejen penyemak menyemak sesuatu pull request
@@ -119,14 +119,14 @@ GitHub.
 Control Center menghantar **satu** semakan GitHub. Penemuan yang sudah
 diselesaikan atau ditutup dilangkau. Butang itu merangkumi setiap penemuan terbuka
 yang tinggal dan, pada **Ship**, menyerahkan `APPROVE`. (Alat MCP
-`publish_review_to_github` masih secara lalai hanya menggunakan penemuan yang
-disahkan rakan sebaya dan tidak meluluskan melainkan anda menghantar
-`approve_on_ship`.) Yang membawa sauh fail dan baris menjadi komen sebaris; semua
+`publish_review_to_github` secara lalai hanya menggunakan penemuan yang disahkan rakan sebaya dan tidak pernah
+meluluskan: ia menyiarkan sebagai automasi, jadi `approve_on_ship` tidak memberi kesan di sana.) Yang membawa sauh fail dan baris menjadi komen sebaris; semua
 yang lain dilipat ke dalam badan ringkasan, masing-masing dengan pengaki
 "— Control Center AI review" supaya sumbernya tidak kabur. Keputusan **Block**
 diserahkan sebagai `REQUEST_CHANGES`; **Hold** sebagai `COMMENT`; **Ship** sebagai
 `APPROVE` daripada butang ini. Toast kemudian memaparkan **Diterbitkan**. Semakan
-itu disiarkan di bawah identiti aplikasi pelayan.
+itu disiarkan atas nama anda, menggunakan log masuk GitHub anda sendiri: jika anda belum log masuk ke GitHub,
+penerbitan gagal dan meminta anda log masuk.
 
 Jika GitHub menolak sauh sebaris kerana baris itu bukan sebahagian daripada diff,
 seluruh semakan dihantar semula dengan setiap penemuan dilipat ke dalam badan,

@@ -1,0 +1,310 @@
+---
+title: Bir Connect sunucusu çalıştırma
+description: Kendi Control Center Connect’inizi cc-connect Docker imajından çalıştırın ya da cc_server içine yerleştirin; böylece sunucularınız kişileri sizin kaydettiğiniz sağlayıcı uygulamaları üzerinden oturum açtırır.
+slug: tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect, kendi uygulamalarını kaydetmemiş sunucular için sağlayıcı
+oturum açmalarını (GitHub, Google Calendar, Linear, Slack) yürütür. Bu kılavuz,
+kendi Connect’inizi nasıl çalıştıracağınızı gösterir; böylece sağlayıcı
+uygulamaları, onların gizli anahtarları ve onları kullanmasına izin verilen
+sunucuların listesi sizde kalır.
+
+Connect’in neyi görebildiği ve neyi göremediği
+[Connect referansında](/tr-TR/kilavuz/referans/connect/) yer alır. Bir tane
+çalıştırıp çalıştırmamaya karar veriyorsanız önce onu okuyun.
+
+:::note[Buna ihtiyacınız olmayabilir]
+Bir sunucu bunun yerine kendi uygulamalarını kaydedebilir: **Ayarlar → Sunucu →
+Tek oturum açma → Sağlayıcı uygulamaları**; orada **GitHub uygulamamı oluştur**
+GitHub’ı tek adımda kurar. Sunucunun kendi uygulamaları yalnızca **Kendi uygulamalarımı kullan** seçeneğinde kullanılır: Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, çalışma alanının kendi uygulaması ise her modda geçerli kalır. Birkaç sunucunun tek bir uygulama kümesini paylaşması gerektiğinde bir
+Connect çalıştırın.
+:::
+
+## Önkoşullar
+
+- Connect için TLS’i sonlandıran bir proxy arkasında, `https://connect.example.com`
+  gibi genel bir **HTTPS** adresi. Düz `http` yalnızca loopback’te kabul edilir
+- Docker ya da ek ortam değişkenleriyle yeniden başlatabileceğiniz bir `cc_server`
+- Hizmet vermek istediğiniz her sağlayıcıda uygulama kaydetme izni
+- Onu kullanacak sunucular ve sahiplerinin erişilebilir olması: her birinin,
+  Connect’in izin listesine eklediğiniz bir kurulum kimliği vardır
+
+## 1. Adım: Adresi seçin
+
+URL’yi şimdi seçin ve koruyun. `CONNECT_PUBLIC_URL`, Connect’in yaptığı her şeyin
+parçasıdır: istek imzaları, mühürlü kimlik bilgileri, sağlayıcı yönlendirme
+URL’leri ve her sunucunun kurulum kimliği ona bağlıdır. Onu daha sonra
+değiştirmek, yönlendirmeleri yeniden kaydetmek ve herkesin yeniden oturum açması
+demektir.
+
+## 2. Adım: Sağlayıcı uygulamalarını kaydedin
+
+Yalnızca hizmet vermek istediğiniz sağlayıcıları kaydedin. Değişkenleri eksik bir
+sağlayıcı Connect’in yapılandırmasının dışında bırakılır ve sunucular onu
+kullanılamaz olarak görür. Aşağıdaki `<base>`, sizin `CONNECT_PUBLIC_URL`
+değerinizdir.
+
+| Sağlayıcı      | Kaydedin                                                                                                                                                                                                                                                                                                  | Saklayın                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. **Redirect on update** açıkken Setup URL `<base>/oauth/github/setup`. **Request user authorization (OAuth) during installation**’ı kapalı bırakın: açıkken GitHub setup URL’yi yok sayar. **Expire user authorization tokens**’ı açık tutun                     | App id, slug, client id, client secret           |
+| **Google**     | Yönlendirme URI’si `<base>/oauth/google/callback` olan **Web application** türünde bir OAuth istemcisi ve etkinleştirilmiş Google Calendar API                                                                                                                                                              | Client id, client secret                         |
+| **Linear**     | Callback URL’leri `<base>/oauth/linear/callback` ve `<base>/oauth/linear_app/callback` olan bir OAuth uygulaması                                                                                                                                                                                            | Yalnızca client id                               |
+| **Slack**      | Redirect URL’leri `<base>/oauth/slack_oidc/callback` ve `<base>/oauth/slack/callback`. `<base>/v1/hooks/slack/events` adresinde Event Subscriptions (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). `<base>/v1/hooks/slack/commands` adresinde slash komutları. Token rotation açık | App id, client id, client secret, signing secret |
+
+GitHub App’e şu depo izinlerini verin: **Metadata** okuma, **Contents** okuma ve
+yazma, **Pull requests** okuma ve yazma, **Issues** okuma ve yazma, **Checks**,
+**Actions** ve **Commit statuses** okuma. Ekip inceleme istekleri için kuruluş
+**Members** okuma iznini ekleyin. Webhook’lar kapalı kalabilir: sunucular yoklama
+yapar.
+
+Connect’in GitHub App’in özel anahtarına asla ihtiyacı yoktur. Bunun yerine tek
+depoluk token’ları bir kişinin kendi oturum açmasından üretir. Linear’ın da gizli
+anahtara ihtiyacı yoktur: Connect kodu sunucuya geri verir, sunucu da değişimi
+kendisi tamamlar.
+
+## 3. Adım: Kurulum kimliklerini toplayın
+
+Connect yalnızca izin listesindeki sunuculara yanıt verir. Her sunucuda onu
+Connect’inize yönlendirin, ardından kurulum kimliğini okuyun:
+
+1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin, **Control Center
+   Connect** kartını açın ve **Özel bir Connect sunucusu kullan**’ı seçin
+2. URL’nizi girip kaydedin. Kart, sunucunun **Kurulum kimliği**’ni gösterir
+
+Sunucunun ana makinesindeki bir terminalden aynısı şöyledir:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` kurulum kimliğini yazdırır. 5. adım tamamlanana kadar `install_blocked`
+gösterir; bu beklenen bir durumdur.
+
+Bir kurulum kimliği Connect adresi başına türetilir; dolayısıyla aynı sunucunun
+konuştuğu her Connect için farklı bir kimliği vardır. Kimlik yalnızca sahibi
+anahtarı değiştirdiğinde değişir.
+
+## 4. Adım: Bir mühür anahtarı oluşturun
+
+Connect, geri verdiği her kimlik bilgisini bir mühür anahtarıyla şifreler. Bir
+tane oluşturun ve gizli bir dosya olarak saklayın:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Mühür anahtarını kaybetmek herkesin oturumunu kapatır: onsuz hiçbir mühür
+açılamaz.
+
+## 5. Adım: Kapsayıcıyı başlatın
+
+Her sürüm `ghcr.io/samuelalev/cc-connect` imajını derleme kaynağı bilgisiyle
+(build provenance) yayımlar. Üretimde bir sürüm etiketi sabitleyin.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Ters proxy’nizi `8790` portuna yönlendirin. İmaj ayrıcalıksız bir kullanıcı olarak
+çalışır, durumunu `/data` biriminde tutar ve yerleşik bir sağlık denetimine sahiptir
+(`/healthz` adresini yoklayan `cc-connect --healthcheck`).
+
+Yapılandırması açık, güvensiz ya da yarım olduğunda Connect başlamayı reddeder
+(çıkış kodu `78`) ve hangi değişkenin yanlış olduğunu yazdırır. Eksik bir izin
+listesi, loopback dışında bir `http` adresi, bozuk bir mühür anahtarı ya da hem
+`NAME` hem `NAME_FILE` ayarlanmış olması onu durdurur.
+
+Kontrol noktası: her sunucuda Connect kartı **Çalışıyor** yazar ve **Her oturum
+açmanın çalıştığı yer**, kaydettiğiniz her sağlayıcı için **Connect** gösterir.
+`cc_server connect status`, `Health: ok` ve aynı hatları yazdırır.
+
+## cc_server içinde Connect çalıştırma
+
+Bir sunucu ayrı bir kapsayıcı yerine Connect’i kendisi barındırabilir. Bağlanan
+hizmet, imajın çalıştırdığının aynısıdır.
+
+1. `CONNECT_*` değişkenlerini 5. adımdaki gibi sunucunun `.env` dosyasına (ya da
+   ortamına) koyun
+2. `CC_SERVER_CONNECT_HOST=on` ekleyin
+3. Sunucuyu yeniden başlatın. Günlüğü `embedded Connect at <url>` yazdırır
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect bundan sonra `<server>/connect` adresinde sunulur:
+
+- `CONNECT_PUBLIC_URL` varsayılan olarak sunucunun genel URL kökeni artı
+  `/connect` olur. Bir proxy arkasında onu açıkça ayarlayın. Yolu tam olarak
+  `/connect` olmalı ve loopback değilse HTTPS olmalıdır
+- Bağlanan hizmete yalnızca `CONNECT_*` değişkenleri ulaşır; bu yüzden sunucunun
+  kendi sağlayıcı uygulamalarını asla ödünç almaz
+- `CONNECT_ALLOWED_INSTALLS`, barındıran sunucunun kendisi de dahil olmak üzere
+  hâlâ zorunludur
+- Yanlış yapılandırılmış bir yerleştirme, açık bir aracı sunmak yerine sunucunun
+  açılmasını durdurur
+- Demo sunucusu onu asla bağlamaz
+
+Sağlayıcı yönlendirmelerini `https://<server>/connect` adresine göre kaydedin,
+ardından sunucuları (barındıran dahil) 3. adımdaki gibi o URL’ye yönlendirin.
+
+## Yapılandırma referansı
+
+Her ayar bir ortam değişkenidir. Herhangi bir gizli anahtar bunun yerine bağlanmış
+bir dosyadan gelebilir: `NAME` yerine `NAME_FILE` ayarlayın. Connect dosyayı en
+fazla 30 saniyede bir yeniden okur ve son geçerli değeri korur. **Çift** olarak
+işaretlenen gizli anahtarlar, bir değişiklik sırasında `NAME_PREVIOUS` (ya da
+`NAME_PREVIOUS_FILE`) de kabul eder.
+
+### Adres ve erişim
+
+| Değişken                        | Varsayılan        | Anlamı                                                                                                                                 |
+| ------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | zorunlu           | Kanonik genel URL. HTTPS ya da yalnızca loopback’te `http`. Bir yol, yerleştirme anlamına gelir. Sorgu ya da parça yok                  |
+| `CONNECT_ALLOWED_INSTALLS`      | zorunlu           | Virgülle ayrılmış kurulum kimlikleri. `*` yalnızca `CONNECT_SIGNED_CONFIG_FILE` ile birlikte kabul edilir                               |
+| `CONNECT_DENY_INSTALLS`         |                   | İzin verilmiş olsalar bile reddedilen kurulum kimlikleri                                                                               |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |                   | Sayısal GitHub sahip kimlikleri. Ayarlandığında depo token’ları yalnızca onlara ait depolar için üretilir                               |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bağlanma adresi ve port                                                                                                                |
+| `CONNECT_TRUST_PROXY`           | `0`               | `X-Forwarded-For` içindeki güvenilir proxy atlamaları (0 ile 8 arası). Yalnızca adres başına hız sınırı için kullanılır                 |
+
+### Sağlayıcı hatları
+
+| Değişken                                                                       | Varsayılan | Anlamı                                                                              |
+| ------------------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |            | GitHub App                                                                          |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                                 |            | Gizli anahtar, çift                                                                 |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                     |            | Google istemcisi. Gizli anahtar çifttir                                             |
+| `CONNECT_LINEAR_CLIENT_ID`                                                     |            | Linear uygulaması. Gizli anahtar yok                                                |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                              |            | Slack uygulaması                                                                    |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`                  |            | Gizli anahtarlar, çift                                                              |
+| `CONNECT_KLIPY_APP_KEY`                                                        |            | Klipy GIF arama anahtarı. Gizli anahtar, çift                                       |
+| `CONNECT_KLIPY_MODE`                                                           | `proxy`    | `proxy` anahtarı Connect’te tutar; `key` onu sunuculara verir                       |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                             | `1`        | GitHub, Google ve Slack: yeni mühürlere kaydedilen kuşak                            |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                           | `1`        | GitHub, Google ve Slack: daha eski mühürler yeniden oturum açmalıdır                |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                   | `true`     | Her hat: `false`, mevcut oturumlar yenilenmeye devam ederken yeni oturum açmaları durdurur |
+
+### Mühürler, durum ve depolama
+
+| Değişken                                                  | Varsayılan                      | Anlamı                                                                                                              |
+| --------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                         | `local` ya da `gcp-kms`                                                                                             |
+| `CONNECT_SEAL_KEYS`                                       |                                 | Gizli anahtar, `local` için zorunlu. En yenisi önce olmak üzere virgülle ayrılmış `kid:key` girdileri; eski girdiler şifre çözmeye devam eder |
+| `CONNECT_KMS_KEY`                                         |                                 | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, `gcp-kms` için zorunlu                                            |
+| `CONNECT_STATE`                                           | `memory`                        | Tek örnek için `memory`, birkaç örnek için `redis`                                                                  |
+| `CONNECT_REDIS_URL`                                       |                                 | Gizli anahtar. `redis://` ya da `rediss://`                                                                         |
+| `CONNECT_REDIS_CA_FILE`                                   |                                 | `rediss://` için CA paketi                                                                                          |
+| `CONNECT_BINDINGS`                                        | `file`                          | GitHub kurulum bağlamalarının durduğu yer: `file` ya da `firestore`                                                 |
+| `CONNECT_DATA_DIR`                                        | `data` (imajda `/data`)         | `bindings.json` dosyasını tutar                                                                                     |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` veritabanı          | `CONNECT_BINDINGS=firestore` için                                                                                   |
+
+### Yapılandırma, günlükler ve sınırlar
+
+| Değişken                                  | Varsayılan              | Anlamı                                                                                                                   |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `CONNECT_SIGNED_CONFIG_FILE`              |                         | Çevrimdışı imzalanmış, olduğu gibi sunulan bir yapılandırma. Control Center’ın barındırdığı Connect bunu kullanır        |
+| `CONNECT_CONFIG_PUBLIC_KEYS`              |                         | İmzalı yapılandırmanın doğrulanması gereken anahtarlar                                                                   |
+| `CONNECT_CONFIG_EPOCH`                    | `1`                     | Kendi barındırdığınız bir Connect’in ürettiği yapılandırmanın dönemi                                                     |
+| `CONNECT_LOG_HMAC_KEY`                    | süreç başına rastgele   | Gizli anahtar. Kurulum kimliklerinin yerini alan etiketlerin yeniden başlatmalar ve örnekler arasında sabit kalması için ayarlayın |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                         | `/v1/version` tarafından bildirilir                                                                                      |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`         | `600`                   | Kurulum başına istek                                                                                                     |
+| `CONNECT_RATE_IP_PER_MINUTE`              | `300`                   | Adres başına istek                                                                                                       |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`          | `500`                   | Tüm hizmet için istek                                                                                                    |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`      | `600`                   | Ekip başına Slack olayı                                                                                                  |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`           | `120`                   | Kurulum başına GIF araması                                                                                               |
+
+## Birden fazla örnek çalıştırma
+
+`CONNECT_STATE=memory` ile tek bir örnek çoğu kuruluş için yeterlidir. Tek bir
+adresin arkasındaki birkaç örnek, bir örnekte başlayan bir oturum açmanın başka
+birinde bitebilmesi için `CONNECT_STATE=redis` ile birlikte ya paylaşılan bir
+`CONNECT_DATA_DIR` ya da `CONNECT_BINDINGS=firestore` gerektirir.
+
+## Bir sağlayıcı gizli anahtarını değiştirme
+
+Kimsenin oturumu kapanmaz:
+
+1. Sağlayıcıda yeni gizli anahtarı oluşturun ve eskisini saklayın
+2. Eski değeri `NAME_PREVIOUS`’a taşıyın, yenisini `NAME`’e koyun ve
+   `CONNECT_<LANE>_SECRET_GENERATION` değerini artırın. Bağlanmış dosyalar 30
+   saniye içinde alınır
+3. Oturum açmaların yenilenmesini bekleyin, ardından sağlayıcıdaki eski gizli
+   anahtarı silin ve `NAME_PREVIOUS`’u kaldırın
+
+Bir mühür anahtarını değiştirmek için `CONNECT_SEAL_KEYS` içine en başa yeni bir
+`cc-connect-config seal-key` girdisi koyun ve eski girdiyi, onun mühürleri
+yenilenene kadar tutun.
+
+## Bir uygulamayı değiştirme
+
+Sunucular, Connect’inizi ilk kullandıklarında onun duyurduğu uygulama ve istemci
+kimliklerini hatırlar. Bir uygulamayı değiştirirseniz her sunucunun Connect kartı
+**Connect’in uygulamaları değişti** gösterir ve Connect üzerinden oturum açmalar,
+sunucunun sahibi **Yeni uygulamalara güven**’e basana kadar duraklar. Geçiş
+yapmadan önce sunucu sahiplerine haber verin; böylece istemin sizden geldiğini
+bilirler.
+
+## Bir sunucuyu engelleme
+
+Kurulum kimliğini `CONNECT_DENY_INSTALLS`’a ekleyin ve yeniden başlatın. Sahibi
+"Connect bu sunucunun kurulum kimliğini engelledi" mesajını görür ve oradaki her
+Connect oturum açması durur.
+
+## Sorun giderme
+
+### Bir sunucu Connect’in onu engellediğini söylüyor
+
+Kurulum kimliği `CONNECT_ALLOWED_INSTALLS` içinde değil ya da
+`CONNECT_DENY_INSTALLS` içinde. Kimlik, sahibi anahtarı değiştirdiğinde değişir;
+yenisini isteyin.
+
+### Bir sağlayıcı kullanılamaz görünüyor
+
+Değişkenlerinden biri eksik, bu yüzden Connect o hattı dışarıda bıraktı. Başlangıç
+günlüğünü ve yukarıdaki tabloları kontrol edin. GitHub için app id, slug, client
+id ve client secret’in dördü de gerekir; Google için hem client id hem de gizli
+anahtar gerekir.
+
+### Oturum açmalar bir yönlendirme uyuşmazlığıyla başarısız oluyor
+
+Sağlayıcıda kayıtlı yönlendirme `CONNECT_PUBLIC_URL` ile birebir eşleşmiyor.
+Şemayı, ana makineyi, portu ve yerleştirilmiş bir Connect için `/connect` yolunu
+karşılaştırın.
+
+### Herkes yeniden oturum açmak zorunda kaldı
+
+Mühür anahtarı değişti ya da kayboldu, bir sunucu anahtarını değiştirdi ya da bir
+sunucunun verileri başka bir makineye geri yüklendi. Mühürlü bir kimlik bilgisi
+yalnızca onu oluşturan kurulum ve Connect için açılır.
+
+## İlgili kılavuzlar
+
+- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+- [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+
+## İlgili referans
+
+- [Control Center Connect](/tr-TR/kilavuz/referans/connect/)
+- [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli/)

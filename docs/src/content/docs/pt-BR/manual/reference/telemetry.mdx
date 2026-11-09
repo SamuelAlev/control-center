@@ -2,7 +2,7 @@
 title: Análises de uso
 description: O que o Control Center registra quando as análises de uso estão ativadas, quem decide e o que nunca é enviado.
 slug: pt-BR/manual/referencia/analises-de-uso
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 O Control Center pode enviar **eventos de uso pseudônimos** para uma instância do [Umami](https://umami.is). As análises de uso ficam **desativadas até que o operador do servidor as ative**. A configuração pertence ao servidor e vale para todos os clientes conectados a ele: o aplicativo de desktop, o aplicativo web, o celular e o próprio servidor.
@@ -95,9 +95,12 @@ Registrados pelo aplicativo de desktop, pelo aplicativo web e pelo celular para 
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Uma execução com falha foi tentada de novo |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Uma execução foi cancelada pelo aplicativo |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Uma etapa em execução foi encerrada à força |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Uma tentativa de login no calendário terminou |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true quando o login passou pelo Control Center Connect, e não pelo cliente Google do próprio servidor), `duration_s` | Uma tentativa de login no calendário terminou |
 | `calendar_disconnected` | `workspace_id` | Uma conta de calendário foi desconectada |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Um convite foi respondido |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (quantidade), `conference` | Um evento foi criado no Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Um evento foi movido ou redimensionado na grade do calendário |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Um evento foi excluído do Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Uma gravação foi iniciada a partir de um evento do calendário |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | O link de uma reunião foi aberto (celular). Só o provedor é extraído do link |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | A central de notificações foi usada |

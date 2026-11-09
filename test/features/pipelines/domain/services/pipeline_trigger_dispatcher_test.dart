@@ -68,6 +68,7 @@ class _FakePipelineEngine implements PipelineEngine {
     String? dedupKey,
     String? parentPipelineRunId,
     String? parentStepId,
+    String? requestedByUserId,
     bool dryRun = false,
   }) async {
     calls.add(

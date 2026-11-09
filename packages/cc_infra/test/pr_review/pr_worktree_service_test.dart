@@ -40,7 +40,8 @@ class _FakeIsolation implements RepoIsolationPort {
       String destParentDir,
       String name,
       String branch,
-      String? authUrl,
+      String? fetchUrl,
+      String? fetchToken,
       String? headRef,
     })
   >
@@ -66,7 +67,8 @@ class _FakeIsolation implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
@@ -77,7 +79,8 @@ class _FakeIsolation implements RepoIsolationPort {
       destParentDir: destParentDir,
       name: name,
       branch: branch,
-      authUrl: authUrl,
+      fetchUrl: fetchUrl,
+      fetchToken: fetchToken,
       headRef: headRef,
     ));
     if (throwOnProvision != null) {
@@ -123,9 +126,8 @@ class _FakeRegistry implements IsolatedRepoRepository {
   ) async => byUnitKey['$workspaceId|$spaceId|$repoId'];
 
   @override
-  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(
-    String spaceId,
-  ) async => bySpace[spaceId] ?? const [];
+  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(String spaceId) async =>
+      bySpace[spaceId] ?? const [];
 
   @override
   Future<void> deleteById(String workspaceId, String id) async =>
@@ -155,12 +157,12 @@ PrWorktreeService _service({
   required _FakeIsolation isolation,
   required _FakeRegistry registry,
   _FakeFs? fs,
-  Future<String?> Function()? githubToken,
+  Future<String?> Function(String workspaceId, Repo repo)? githubToken,
 }) => PrWorktreeService(
   filesystem: fs ?? _FakeFs(),
   isolation: isolation,
   registry: registry,
-  githubToken: githubToken ?? (() async => 'tok'),
+  githubToken: githubToken ?? ((_, _) async => 'tok'),
 );
 
 void main() {
@@ -184,9 +186,10 @@ void main() {
       expect(isolation.provisions.single.branch, 'feature-branch');
       expect(isolation.provisions.single.headRef, 'refs/pull/42/head');
       expect(
-        isolation.provisions.single.authUrl,
-        contains('x-access-token:tok@github.com'),
+        isolation.provisions.single.fetchUrl,
+        'https://github.com/acme/widget.git',
       );
+      expect(isolation.provisions.single.fetchToken, 'tok');
       expect(
         isolation.provisions.single.destParentDir,
         p.join('/ws', 'pr_worktrees', 'acme__widget'),
@@ -309,7 +312,7 @@ void main() {
       final svc = _service(
         isolation: isolation,
         registry: registry,
-        githubToken: () async => null,
+        githubToken: (_, _) async => null,
       );
 
       expect(
@@ -329,7 +332,7 @@ void main() {
       final svc = _service(
         isolation: isolation,
         registry: registry,
-        githubToken: () async => '',
+        githubToken: (_, _) async => '',
       );
 
       expect(
@@ -361,7 +364,7 @@ void main() {
       );
     });
 
-    test('does not send authUrl when repo lacks GitHub remote', () async {
+    test('does not send a fetch URL when repo lacks GitHub remote', () async {
       final isolation = _FakeIsolation();
       final registry = _FakeRegistry();
       final svc = _service(isolation: isolation, registry: registry);
@@ -384,7 +387,7 @@ void main() {
       final svc = _service(
         isolation: isolation,
         registry: registry,
-        githubToken: () async => throw StateError('keychain locked'),
+        githubToken: (_, _) async => throw StateError('keychain locked'),
       );
 
       expect(

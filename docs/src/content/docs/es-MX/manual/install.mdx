@@ -2,7 +2,7 @@
 title: Instalar
 description: Usa Control Center en el navegador o instala la aplicación de escritorio, configura un backend de agentes y elige dónde se ejecuta su servidor.
 slug: es-MX/manual/instalar
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center se ejecuta de dos maneras: como **aplicación web** en
@@ -141,14 +141,9 @@ Las listas de modelos las sirve en vivo cada proveedor conectado; [models.dev](h
 
 Una credencial de GitHub es **tuya y vive en el servidor**, indexada por tu id de usuario, no en el llavero del sistema operativo del cliente. Todos los dispositivos desde los que inicies sesión usan la misma, y ningún otro miembro puede leerla.
 
-Si el servidor tiene una GitHub App registrada ([Crear la GitHub App](/es-MX/manual/guias/github-app/)), **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código** ofrece **Iniciar sesión con GitHub** (un flujo de dispositivo que ejecuta el servidor). Si no, pega un token de acceso personal:
+GitHub solo admite inicio de sesión: **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código** ofrece **Iniciar sesión en GitHub**, y no hay ningún token que pegar. El inicio de sesión pasa por la GitHub App propia del servidor ([Crear la GitHub App](/es-MX/manual/guias/github-app/)) o por Control Center Connect, según lo que haya elegido el propietario del servidor. Con la app propia del servidor, el navegador regresa al servidor por sí solo; a través de Connect, escribes el código de 8 caracteres que muestra el navegador, o dejas que abra Control Center. Consulta [Configurar la integración de GitHub](/es-MX/manual/guias/integracion-github/).
 
-- Clásico: `repo` y `read:org`
-- De grano fino: **Contents** y **Pull requests** (read and write), **Checks** y **Actions** (read)
-
-Crea uno en [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). El servidor sondea el token para obtener el nombre de la cuenta tal como se guarda, así que la fila puede decir «sesión iniciada como …»; una sonda fallida guarda el token de todos modos, y un error tipográfico o un permiso faltante se manifestará más adelante como una petición fallida.
-
-El primer paso de la incorporación inicial es esta conexión. Después, esa misma tarjeta es donde la reemplazas o la borras. GitLab y Bitbucket usan la misma tarjeta; consulta [Conectar un host de código](/es-MX/manual/guias/conectar-host-de-codigo/).
+La incorporación inicial te pide esta conexión. Después, esa misma tarjeta es donde vuelves a iniciar sesión o te desconectas. GitLab y Bitbucket usan la misma tarjeta con un token personal pegado; consulta [Conectar un host de código](/es-MX/manual/guias/conectar-host-de-codigo/).
 
 ## Elegir dónde se ejecuta el servidor
 

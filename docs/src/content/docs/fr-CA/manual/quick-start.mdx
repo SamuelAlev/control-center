@@ -2,7 +2,7 @@
 title: Démarrage express
 description: Installez Control Center, configurez un agent et regardez-le travailler sur votre dépôt.
 slug: fr-CA/manuel/demarrage-express
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 C’est le chemin complet le plus court pour passer de rien à un agent qui travaille sur votre propre code. Suivez-le dans l’ordre ; chaque étape dépend de la précédente.
@@ -25,13 +25,14 @@ configuration de serveur ; consultez [Installer](/fr-CA/manuel/installer/#use-it
 
 ## Étape 2 : Passer par l’intégration initiale
 
-L’intégration initiale compte cinq étapes qui s’exécutent dans l’ordre — aucune étape ne peut être sautée.
+Les étapes de l’intégration initiale s’exécutent dans l’ordre — aucune étape ne peut être sautée. La première n’apparaît que pour le propriétaire du serveur, c’est-à-dire vous sur un ordinateur de bureau qui exécute son propre serveur.
 
-1. **Connexion** : connectez-vous avec GitHub ou collez un jeton d’accès personnel disposant des portées `repo` et `read:org`. L’identifiant est conservé sur le serveur et rattaché à votre compte.
-2. **Espace de travail** : nommez votre premier espace de travail et, si vous le souhaitez, choisissez un logo. Sa création amorce cinq agents — un CEO ainsi que `qa`, `architect`, `engineer` et `librarian` — et les modèles de pipelines intégrés.
-3. **Bac à sable** : enregistre une préférence de bac à sable. L’un ou l’autre choix vous permet de continuer.
-4. **Adaptateur** : choisissez l’adaptateur et le modèle par défaut des agents. Choisissez **Control Center (built-in)**, puis utilisez le sélecteur de fournisseur qui apparaît pour vous connecter à un fournisseur de modèles — la liste de modèles reste vide tant qu’aucun n’est connecté. Terminer cette étape inscrit aussi l’adaptateur et le modèle sur l’agent CEO de l’espace de travail.
-5. **Voix (facultatif)** : installez un modèle de reconnaissance vocale sur l’appareil pour la dictée, ou passez cette étape.
+1. **Connexion** (propriétaire du serveur seulement) : choisissez comment ce serveur connecte les gens à GitHub, Google Calendar et Linear — **Utiliser les applications de Control Center**, **Utiliser mes propres applications** ou **Utiliser un serveur Connect personnalisé**. Avec vos propres apps, **Créer mon application GitHub** configure GitHub en une seule étape. Vous pourrez changer ce choix plus tard dans **Paramètres → Serveur → Authentification unique**.
+2. **Connexion** : connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket. L’identifiant est conservé sur le serveur et rattaché à votre compte.
+3. **Espace de travail** : nommez votre premier espace de travail et, si vous le souhaitez, choisissez un logo. Sa création amorce cinq agents — un CEO ainsi que `qa`, `architect`, `engineer` et `librarian` — et les modèles de pipelines intégrés.
+4. **Bac à sable** : enregistre une préférence de bac à sable. L’un ou l’autre choix vous permet de continuer.
+5. **Adaptateur** : choisissez l’adaptateur et le modèle par défaut des agents. Choisissez **Control Center (built-in)**, puis utilisez le sélecteur de fournisseur qui apparaît pour vous connecter à un fournisseur de modèles — la liste de modèles reste vide tant qu’aucun n’est connecté. Terminer cette étape inscrit aussi l’adaptateur et le modèle sur l’agent CEO de l’espace de travail.
+6. **Voix (facultatif)** : installez un modèle de reconnaissance vocale sur l’appareil pour la dictée, ou passez cette étape.
 
 Control Center ouvre ensuite la boîte de réception de votre espace de travail.
 

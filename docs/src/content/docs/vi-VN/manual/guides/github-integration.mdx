@@ -2,11 +2,11 @@
 title: Thiết lập tích hợp GitHub
 description: Đăng nhập GitHub để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Hướng dẫn này đề cập đến những phần dành riêng cho GitHub trong quá trình thiết
-lập. GitHub là một trong ba máy chủ mã được hỗ trợ — xem
+lập. GitHub là một trong ba máy chủ mã được hỗ trợ. Xem
 [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
 để kết nối GitLab hoặc Bitbucket, và để biết cách một không gian làm việc dùng
 chung cả ba.
@@ -14,83 +14,75 @@ chung cả ba.
 ## Trước khi bắt đầu
 
 - Một tài khoản GitHub có quyền truy cập vào những kho mã bạn muốn làm việc
-- Hoặc một GitHub App đã được đăng ký cho máy chủ của bạn (xem
-  [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) để bạn có thể **đăng nhập**,
-  **hoặc** một token truy cập cá nhân có `repo` và `read:org` để dán
+- Một máy chủ có thể đăng nhập người dùng vào GitHub: hoặc GitHub App riêng của
+  máy chủ (xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)), hoặc
+  Control Center Connect, do chủ máy chủ chọn trong **Cài đặt → Máy chủ → Đăng nhập một lần**
 
 :::note[Thông tin xác thực nằm trên máy chủ, gắn với bạn]
-Không có gì được lưu trên máy mà bạn đang gõ. Thông tin xác thực của bạn do
+Không có gì được lưu trên máy mà bạn đang gõ. Đăng nhập GitHub của bạn do
 `cc_server` giữ, được đánh khóa theo id người dùng của bạn, và mọi thiết bị bạn
-đăng nhập đều dùng nó — máy tính, web và điện thoại. Một thành viên khác của cùng
-máy chủ không thể đọc nó, và việc đăng nhập cho họ là việc họ tự làm.
+đăng nhập đều dùng nó: máy tính, web và điện thoại. Một thành viên khác của cùng
+máy chủ không thể dùng nó, và việc đăng nhập cho họ là việc họ tự làm.
 :::
 
-## Đăng nhập với GitHub
+## Đăng nhập vào GitHub
 
-Một **luồng thiết bị**: GitHub hiển thị cho bạn một mã ngắn, bạn phê duyệt nó
-trên github.com, và máy chủ nhận thông tin xác thực — không có URL callback,
-không có cổng, không có gì phải mở ra ngoài. Khả dụng bất cứ khi nào máy chủ có
-id client, thứ mà một bản dựng chính thức đã kèm sẵn.
+GitHub chỉ có đăng nhập: không có token nào để dán.
 
 1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** (hoặc bước đầu
    tiên của quá trình thiết lập ban đầu)
-2. Trên hàng **GitHub**, nhấn **Đăng nhập với GitHub**
-3. Một hộp thoại hiển thị mã gồm tám ký tự và mở
-   [github.com/login/device](https://github.com/login/device) trong trình duyệt
-   của bạn. Mã đã có sẵn trong clipboard của bạn
-4. Dán mã, phê duyệt ứng dụng, rồi quay lại. Hàng đó tự chuyển sang
-   “Đã đăng nhập với tên _your-username_”
+2. Trên hàng **GitHub**, nhấn **Đăng nhập vào GitHub**
+3. Trình duyệt của bạn mở GitHub. Hãy phê duyệt ứng dụng
 
-Bạn có thể đóng hộp thoại trong lúc hoàn tất thao tác trong trình duyệt — máy chủ
-vẫn thăm dò cho đến khi mã hết hạn (khoảng 15 phút), nên việc đăng nhập vẫn thành
-công.
+Cách hoàn tất đăng nhập phụ thuộc vào bên chạy nó:
 
-## Hoặc dán một token
+- **Ứng dụng riêng của máy chủ:** GitHub đưa trình duyệt quay lại máy chủ và hộp thoại
+  tự nhận biết. Bạn không cần gõ gì
+- **Control Center Connect:** trang trình duyệt hiển thị một mã gồm 8 ký tự. Hãy gõ mã
+  đó vào hộp thoại, hoặc để trình duyệt mở Control Center qua liên kết `control-center://`
+  và bỏ qua việc gõ mã
 
-Phương án dự phòng khi máy chủ không có ứng dụng, khi ứng dụng không được cài
-trên một tài khoản bạn cần, hoặc khi bạn đơn giản là muốn dùng PAT.
+Điểm kiểm tra: hàng **GitHub** ghi “Đã đăng nhập với tên _your-username_”.
 
-1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**
-2. Trên hàng **GitHub**, nhấn **Thêm token**
-3. Dán một token có `repo` và `read:org` (loại Classic) rồi lưu. Một token
-   **fine-grained** cần quyền kho mã **Contents** và **Pull requests** (đọc và
-   ghi), cùng **Checks** và **Actions** (đọc).
+Hộp thoại từ chối một mã hoặc liên kết mà nó không tự khởi tạo, với thông báo
+**Đăng nhập không bắt đầu từ đây**. Nếu ai đó gửi cho bạn một liên kết đăng nhập,
+đừng tiếp tục: hoàn tất nó sẽ kết nối tài khoản của bạn với máy chủ của họ.
 
-Token được kiểm tra ngay khi được lưu, nên hàng đó có thể nêu tên tài khoản mà nó
-thuộc về. Nhấn **Ngắt kết nối** để gỡ nó.
+Nhấn **Ngắt kết nối** để gỡ đăng nhập của bạn. Đăng xuất khỏi GitHub, hoặc bị gỡ khỏi
+một không gian làm việc, cũng hủy mọi token mà máy chủ đã cấp thay mặt bạn.
 
-Điểm kiểm tra: hàng **GitHub** ghi “Đã đăng nhập với tên _your-username_”. Một hậu
-tố nêu rõ nguồn khi thông tin xác thực đang trả lời không phải của bạn — “qua ứng
-dụng của máy chủ này” hoặc “từ môi trường”.
+## Đăng nhập của bạn đại diện cho ai
 
-:::note[Thứ tự ưu tiên là cố định]
-Một yêu cầu thực hiện thay mặt bạn chỉ dùng thông tin xác thực **của bạn**, và
-không dùng gì khác — môi trường là thông tin xác thực của máy chủ, không phải của
-bạn, nên nó không bao giờ đứng ra thay bạn. Công việc không có con người đứng sau
-(webhook, thăm dò PR, đồng bộ phiếu) dùng danh tính ứng dụng của máy chủ, rồi đến
-thông tin xác thực của chủ máy chủ, rồi đến môi trường.
-:::
+- **Mọi việc bạn làm** (mở trang PR, đăng đánh giá, phê duyệt, merge) chạy dưới đăng
+  nhập **của bạn** và không dưới gì khác. Nếu bạn chưa đăng nhập, ứng dụng sẽ báo và yêu
+  cầu bạn đăng nhập. Không có thông tin xác thực nào khác đứng thay bạn
+- **Công việc không có ai gõ** (lần chạy agent, pipeline, thăm dò PR, câu trả lời của bot,
+  clone) nhận một token cho đúng một kho mã, được cấp từ GitHub App của máy chủ hoặc qua
+  Connect. Token bị giới hạn trong những gì một thành viên chịu trách nhiệm được làm ở đó:
+  người đã yêu cầu, nếu không thì là chủ không gian làm việc. Một thành viên không thể push
+  sẽ giới hạn token ở mức chỉ đọc
+- **Tự động hóa không bao giờ phê duyệt** một pull request. Phê duyệt là hành động của một người
 
 ## Tích hợp này mang lại cho bạn những gì
 
-| Tính năng                   | Cách hoạt động                                                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Danh sách và chi tiết PR    | API REST của GitHub, từ máy chủ, dưới danh tính ứng dụng hoặc thông tin xác thực của chính bạn                       |
-| Các lượt chạy kiểm tra      | API GitHub Checks                                                                                                    |
-| Xuất bản đánh giá           | Một bước do người dùng xác nhận, đăng đánh giá của bạn lên PR                                                        |
-| Đăng ký kho mã              | Một bản checkout được chấp nhận nếu remote `origin` của nó trỏ tới github.com — hoặc tới gitlab.com / bitbucket.org  |
-| Quyền truy cập GitHub của agent | Trình môi giới thông tin xác thực chèn một token chỉ đọc dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`; push đi qua Control Center |
+| Tính năng                   | Cách hoạt động                                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Danh sách và chi tiết PR    | API REST của GitHub, từ máy chủ, dưới đăng nhập của chính bạn                                                    |
+| Các lượt chạy kiểm tra      | API GitHub Checks                                                                                                |
+| Xuất bản đánh giá           | Một bước do người dùng xác nhận, đăng đánh giá của bạn lên PR, dưới danh nghĩa bạn                               |
+| Đăng ký kho mã              | Một bản checkout được chấp nhận nếu remote `origin` của nó trỏ tới github.com, hoặc tới gitlab.com / bitbucket.org |
+| Quyền truy cập GitHub của agent | Một token cho đúng kho mã của lượt chạy dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`; push đi qua Control Center       |
 | Tín hiệu thông báo          | Một lượt thăm dò phía máy chủ vào hộp thư thông báo GitHub của bạn tạo ra “Được nhắc trong pull request” và “Đã yêu cầu review” |
-| Hồ sơ người dùng            | Thẻ hồ sơ khi rê chuột và lọc PR theo từng tác giả                                                                    |
+| Hồ sơ người dùng            | Thẻ hồ sơ khi rê chuột và lọc PR theo từng tác giả                                                               |
 
-Một số đường đi dùng API GraphQL thay vì REST khi rẻ hơn — hoạt động của nhánh
+Một số đường đi dùng API GraphQL thay vì REST khi rẻ hơn: hoạt động của nhánh
 cho trình chọn soạn PR và trạng thái đánh giá trực tiếp, thứ quyết định liệu một
 thông báo yêu cầu đánh giá còn đang chờ hay không.
 
 ## Theo dõi sự cố GitHub
 
 Thanh tiêu đề hiển thị một chip trạng thái khi một nhà cung cấp đang gặp sự cố,
-bao gồm GitHub, Claude, OpenAI và Kimi. **Nó bị ẩn khi mọi thứ đều bình thường** —
+bao gồm GitHub, Claude, OpenAI và Kimi. **Nó bị ẩn khi mọi thứ đều bình thường**:
 sự xuất hiện báo hiệu có trục trặc, chứ không phải sự vắng mặt của nó.
 
 Nhấn vào chip để mở một khung bật lên hiển thị trạng thái của từng nhà cung cấp
@@ -98,51 +90,45 @@ cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
 
 ## Cách agent hành động trên GitHub
 
-- Một agent làm việc trong worktree GitHub luôn nhận token GitHub chỉ đọc. Một
-  lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** rồi chuyển
-  tiếp nó bằng một token ghi mà agent không bao giờ nắm giữ. Xem
-  [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
+- Một agent làm việc trong worktree GitHub nhận một token cho đúng kho mã đó. Nó có thể
+  đọc mã và bình luận trên pull request khi thành viên chịu trách nhiệm có quyền push, và
+  chỉ đọc khi họ không có quyền đó. Một lần push đi qua Control Center, nơi hỏi quy tắc
+  **Push lên remote** rồi chuyển tiếp nó bằng một token ghi mà agent không bao giờ nắm
+  giữ. Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
 - Các commit của agent luôn dùng danh tính Git của người yêu cầu làm cả tác giả lẫn người thực hiện commit. Theo mặc định, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận GitHub `@usectrl` là đồng tác giả. Tại **Cài đặt → Bạn → Ghi công trong commit**, bạn có thể tắt việc ghi nhận đồng tác giả này mà không thay đổi danh tính của mình. Thiết lập không gian làm việc tại **Cài đặt → Không gian làm việc → Chung** được ưu tiên và khóa công tắc cá nhân. Việc ghi công riêng của Claude Code luôn bị tắt. Ký commit vẫn cần có cấu hình hợp lệ riêng
-- Khi đã cấu hình GitHub App, trình môi giới tạo ra các token cài đặt
-  fine-grained, giới hạn theo kho mã và kéo dài khoảng một giờ, cho mỗi lần chạy
-  thay vì đưa ra một token rộng. Bản cài đặt được phân giải từ **owner** kho mã
-  của lượt chạy, nên một ứng dụng cài trên nhiều tài khoản sẽ giới hạn đúng theo
-  tài khoản mà lượt chạy chạm tới. Không có ứng dụng, agent nhận token của môi
-  trường, thứ không thể thu hẹp thành chỉ đọc: khi đó quy tắc push ràng buộc
-  `git push`, nhưng không ràng buộc mã dùng trực tiếp token
-- Token luôn thuộc về trình môi giới, không bao giờ là token riêng của thành
-  viên yêu cầu. Token của máy chủ bị giữ lại khỏi một lượt chạy hành động thay
-  một thành viên không phải chủ sở hữu và chưa kết nối GitHub
+- Một terminal bạn mở trên một rig nhận đăng nhập của chính bạn, được thu hẹp vào đúng một kho mã, nên các lần push ở đó là của bạn
+- Khi không cấp được token (không có thành viên chịu trách nhiệm nào đăng nhập, app chưa được cài trên chủ sở hữu, hoặc cài đặt bị tạm ngưng), lượt chạy bắt đầu mà không có token và ghi chú của nó nói rõ lý do. Không có thông tin xác thực dự phòng nào
 
 ## Xử lý sự cố
 
 ### Danh sách PR trống và báo rằng GitHub chưa được kết nối
 
-Bạn không có thông tin xác thực GitHub nào trên máy chủ này. Hãy đăng nhập hoặc
-dán token trong **Lưu trữ mã**. Các kho mã trên những forge khác không bị ảnh
-hưởng — chỉ kho mã của GitHub không đóng góp gì.
+Bạn chưa đăng nhập GitHub trên máy chủ này. Hãy nhấn **Đăng nhập vào GitHub** trong
+**Lưu trữ mã**. Các kho mã trên những forge khác không bị ảnh hưởng.
 
-### Hàng đó chỉ có “Thêm token” mà không có “Đăng nhập với GitHub”
+### Hàng GitHub báo chưa thiết lập đăng nhập trên máy chủ này
 
-Máy chủ không có id client — đây là trạng thái bình thường đối với bản dựng từ mã
-nguồn, vì thông tin xác thực chỉ được nhúng vào các bản dựng chính thức. Xem
-[Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): việc này mất khoảng hai phút
-và chỉ chủ máy chủ phải làm, một lần.
+Máy chủ không có GitHub App riêng cũng không có Connect. Chủ máy chủ chọn một trong hai
+trong **Cài đặt → Máy chủ → Đăng nhập một lần**: **Tạo ứng dụng GitHub của tôi** mất khoảng
+hai phút. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
 
-### Hộp thoại đăng nhập báo nhà cung cấp không trả về mã thiết bị
+### Hộp thoại báo mã không khớp
 
-GitHub App tồn tại nhưng hộp kiểm **Device flow** của nó đang tắt. Hãy bật nó
-trong phần cài đặt của ứng dụng (General → Device flow) rồi thử lại.
+Hãy gõ đúng mã như trình duyệt hiển thị: 8 chữ cái và chữ số. Năm lần nhập sai sẽ kết
+thúc đăng nhập; hãy bắt đầu lại.
 
-### Hàng đó ghi “qua ứng dụng của máy chủ này” trong khi tôi mong đợi tài khoản của mình
+### Đăng nhập báo ứng dụng chưa được cài
 
-Bạn chưa đăng nhập; thứ bạn đang thấy là danh tính ứng dụng của máy chủ đang trả
-lời. Hãy nhấn **Đăng nhập với GitHub** trên hàng đó.
+GitHub App không có cài đặt nào trên tài khoản sở hữu kho mã. Một quản trị viên không gian
+làm việc cài nó từ **Cài đặt → Không gian làm việc → Chung → Các bản cài đặt ứng dụng GitHub**. Với một
+tổ chức dùng App dùng chung của Control Center, quản trị viên của tổ chức đó có thể cần
+nhấn **Ủy quyền máy chủ này**. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
 
-### Một PAT fine-grained không hiển thị nút merge hay trạng thái kiểm tra
+### Mọi người phải đăng nhập GitHub lại
 
-Token cần **Contents** và **Pull requests** (đọc và ghi), cùng **Checks** và
-**Actions** (đọc). Sau khi thay đổi nó, hãy dán lại trong **Lưu trữ mã**.
+Chủ máy chủ đã xoay khóa Connect của máy chủ, chuyển sang một máy chủ Connect khác, hoặc
+thư mục dữ liệu được khôi phục sang một máy khác. Đăng nhập qua Connect được ràng buộc với
+máy chủ đã tạo ra chúng.
 
 ### Việc thêm kho mã bị từ chối
 
@@ -167,4 +153,4 @@ lần với backoff lũy thừa, tôn trọng `retry-after`.
 - [Quản lý khóa API](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
 - [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
 - [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/)

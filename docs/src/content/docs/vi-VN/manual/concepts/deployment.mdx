@@ -2,7 +2,7 @@
 title: Triển khai và máy khách
 description: Cách kiến trúc máy khách mỏng của Control Center tách một máy chủ không giao diện khỏi các máy khách máy tính, web và di động.
 slug: vi-VN/so-tay/khai-niem/trien-khai
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center không phải là một chương trình duy nhất. Nó là một **kiến trúc máy
@@ -201,7 +201,7 @@ thi các công việc được thuê.
 | Thực thi agent                                 | chạy chúng (hoặc cho thuê ra ngoài) | thực thi các công việc được thuê | —            | —                                 |
 | Dựng giao diện                                 | —                          | —                                  | đầy đủ             | đầy đủ (web) / thiên về đọc (điện thoại) |
 | Ghi âm cuộc họp (mic + âm thanh cuộc họp)      | —                          | —                                  | ghi âm gốc         | chỉ trên web, qua âm thanh chia sẻ màn hình |
-| OAuth lịch (Google)                            | lưu token                  | —                                  | —                  | —                                 |
+| Đăng nhập nhà cung cấp (GitHub, Google, Linear) | chạy và lưu trữ chúng     | —                                  | —                  | —                                 |
 
 Hai tầng không sandbox giống nhau. `cc_server` bọc những lượt chạy mà nó tự thực
 thi trong sandbox của hệ điều hành máy chủ nhà khi có backend — Seatbelt trên
@@ -214,6 +214,13 @@ cấp. Vì vậy, cho thuê công việc ra ngoài sẽ đẩy việc thực thi
 cả trên một máy chủ nhà có sandbox. Xem
 [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết điều gì
 giới hạn một lượt chạy trong từng trường hợp.
+
+Các đăng nhập nhà cung cấp hoàn tất trên máy chủ, qua các ứng dụng riêng của nó
+hoặc qua [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/), một dịch vụ
+tùy chọn chạy OAuth của nhà cung cấp cho những máy chủ chưa có ứng dụng riêng.
+Connect trả về một thông tin xác thực mà chỉ máy chủ này dùng được và không bao
+giờ thấy nội dung kho mã. Máy khách chỉ mở trình duyệt và, với đăng nhập qua
+Connect, chuyển lại mã mà Connect hiển thị.
 
 Việc ghi âm cuộc họp diễn ra trên máy khách vì nó cần micro và âm thanh của cuộc
 họp — một máy chủ nằm trong tủ đựng chổi không thể ghi lại cuộc gọi của bạn. Bản

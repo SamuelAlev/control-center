@@ -2,7 +2,7 @@
 title: Livssyklus for agentutsending
 description: Hva som skjer fra en melding kommer inn til en kjøringslogg lukkes — sammensetting av prompten, worktrees, identitet, hva som begrenser en kjøring, og hvordan resultatet registreres ærlig.
 slug: nb-NO/handbok/konsepter/livssyklus-agentutsending
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Hva en utsending er
@@ -54,7 +54,7 @@ To identiteter løses per kjøring, før noen prosess startes.
 
 **Git-forfatterskap.** Agentens commits bruker alltid Git-identiteten som er løst for personen som ba om kjøringen i arbeidsområdet, både i `GIT_AUTHOR_*` og `GIT_COMMITTER_*`. Programmatiske kjøringer bruker servereierens identitet. Som standard krediterer `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub-kontoen `@usectrl` som medforfatter. Slå av agentkreditering under **Innstillinger → Deg → Kreditering av commits** for å utelate denne traileren. En administrator kan tvinge medforfatterkreditering på eller av under **Innstillinger → Arbeidsområde → Generelt**; overstyringen har forrang og deaktiverer den personlige bryteren uten å endre det lagrede valget. Endringer gjelder fra neste kjøring. Claude Codes egne commit- og PR-signaturer er alltid deaktivert. Miljøinnstillinger fra kalleren og adapteren kan ikke erstatte identiteten som er løst; manglende identitet eller feil ved løsningen stopper kjøringen. Forge-legitimasjon og konfigurasjonen for commit-signering påvirkes ikke; riktig identitet alene garanterer ikke en verifisert signatur.
 
-**Forge-identitet.** Kjøringens GitHub-legitimasjon er alltid bare meglerens — et App-installasjonstoken begrenset til repoet, eller dens PAT-reserveløsning fra miljøet — aldri det egne lagrede tokenet til medlemmet som ba om det. `actingUserId` begrenser PAT-reserveløsningen slik at et medlem som ikke er servereier, ikke arver serverens rekkevidde; den legger ikke et personlig token oppå agentmiljøet.
+**Forge-identitet.** Kjøringens GitHub-legitimasjon er alltid bare meglerens: et token for kjøringens ene repo, utstedt fra arbeidsområdets GitHub App, serverens egen app eller Control Center Connect. `actingUserId` navngir det ansvarlige mennesket (den som ba om kjøringen så lenge vedkommende fortsatt er medlem, ellers eieren av arbeidsområdet) og begrenser tokenet til det den personen kan gjøre i repoet. Det er aldri medlemmets egen pålogging overlevert i sin helhet, og det finnes ingen reserveløsning: en avvist utstedelse lar kjøringen stå uten token og forklarer hvorfor i notatene.
 
 **Legitimasjon for modelltilbydere** løses i en fast rekkefølge, og rekkefølgen betyr noe:
 

@@ -3,7 +3,7 @@ title: "Architettura"
 description: "Come è strutturato Control Center: un modello a client leggero con server, Clean Architecture feature-first e porte e adattatori."
 dateModified: 2026-09-19
 slug: it-IT/manuale/concetti/architettura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Panoramica
@@ -113,9 +113,9 @@ Entrambi i database sono di proprietà di `cc_persistence` e vengono aperti solo
 **go_router**, con un fatto che governa tutto il resto: **ogni destinazione all'interno dell'app ha il prefisso dello spazio di lavoro** nella forma `/workspaces/:workspaceId/…`. L'id dello spazio di lavoro nell'URL è l'unica fonte di verità per lo spazio di lavoro attivo — `activeWorkspaceIdProvider` è guidato dalla route, non il contrario — ed è per questo che leggere dati con ambito di spazio di lavoro fuori da una route con prefisso non ha da nessuna parte da cui ricavare il proprio id.
 
 - _Funzioni_ di costruzione delle route in `router/routes.dart`, ognuna con l'id dello spazio di lavoro come primo argomento, non costanti stringa
-- Quattro route precedenti al contesto non hanno prefisso: `/splash`, `/onboarding`, `/signed-out` e `/workspaces` (il selettore)
-- `ShellRoute` avvolge lo shell dell'app; quelle quattro superfici vengono mostrate a schermo intero al di fuori di esso
-- Guardia di autenticazione: una configurazione incompleta va a `/onboarding`; una configurazione completata la cui credenziale dell'host di codice è sparita va a `/signed-out`. Completa significa che per l'utente che ha effettuato l'accesso è collegato almeno un host di codice ed esiste almeno uno spazio di lavoro — non GitHub nello specifico — e la CLI `gh` non è un metodo di autenticazione
+- Tre route precedenti al contesto non hanno prefisso: `/splash`, `/onboarding` e `/workspaces` (il selettore)
+- `ShellRoute` avvolge lo shell dell'app; quelle tre superfici vengono mostrate a schermo intero al di fuori di esso
+- Guardia di autenticazione: una configurazione incompleta va a `/onboarding`; una configurazione completata la cui credenziale dell'host di codice è sparita resta nell'app, e lo shell dello spazio di lavoro mostra un avviso con un collegamento all'accesso. Completa significa che per l'utente che ha effettuato l'accesso è collegato almeno un host di codice ed esiste almeno uno spazio di lavoro — non GitHub nello specifico — e la CLI `gh` non è un metodo di autenticazione
 - Gate di onboarding in `features/auth/providers/`
 
 ## Rete (lato server)

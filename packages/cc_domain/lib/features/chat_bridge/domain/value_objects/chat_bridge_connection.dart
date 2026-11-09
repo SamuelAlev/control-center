@@ -1,5 +1,27 @@
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 
+/// Whose provider-side app a [ChatBridgeConnection] runs on.
+enum ChatConnectionMode {
+  /// The workspace's own app: an admin pasted its tokens (Slack Socket Mode
+  /// `xapp-` + `xoxb-`) and the server dials the provider directly.
+  own('own'),
+
+  /// The shared app behind Control Center Connect: the server holds only a
+  /// sealed refresh grant on disk, keeps the short-lived bot token in memory and
+  /// receives event references through the Connect relay.
+  connect('connect');
+
+  const ChatConnectionMode(this.wire);
+
+  /// The stable wire/storage string.
+  final String wire;
+
+  /// Parses a [ChatConnectionMode] from its [wire] string. A record that
+  /// names no mode was saved by the paste flow, which is [own].
+  static ChatConnectionMode fromWire(String? value) => ChatConnectionMode.values
+      .firstWhere((m) => m.wire == value, orElse: () => ChatConnectionMode.own);
+}
+
 /// One Control Center workspace's connection to one chat provider.
 ///
 /// A connection belongs to a workspace, not to the server: an admin installs the
@@ -9,7 +31,8 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provide
 /// without interfering — a mention addresses exactly one bot user.
 ///
 /// The secrets live in [credentials], keyed by the provider descriptor's field
-/// ids, in the workspace's own directory beside its database — so they are
+/// ids (or, for a [ChatConnectionMode.connect] connection, the sealed grant
+/// alone), in the workspace's own directory beside its database — so they are
 /// removed with the workspace and never ride inside a `workspace.db` export.
 class ChatBridgeConnection {
   /// Creates a [ChatBridgeConnection].
@@ -17,10 +40,12 @@ class ChatBridgeConnection {
     required this.provider,
     required this.workspaceId,
     required this.credentials,
+    this.mode = ChatConnectionMode.own,
     this.appId = '',
     this.teamId = '',
     this.teamName = '',
     this.botUserId = '',
+    this.botId = '',
     this.botName = '',
     this.enabled = true,
     required this.connectedAt,
@@ -51,10 +76,12 @@ class ChatBridgeConnection {
               in ((json['credentials'] as Map?) ?? const {}).entries)
             '${entry.key}': '${entry.value}',
         },
+        mode: ChatConnectionMode.fromWire(json['mode'] as String?),
         appId: json['appId'] as String? ?? '',
         teamId: json['teamId'] as String? ?? '',
         teamName: json['teamName'] as String? ?? '',
         botUserId: json['botUserId'] as String? ?? '',
+        botId: json['botId'] as String? ?? '',
         botName: json['botName'] as String? ?? '',
         enabled: json['enabled'] as bool? ?? true,
         connectedAt:
@@ -71,6 +98,9 @@ class ChatBridgeConnection {
   /// Provider-side secrets, keyed by the descriptor's credential field ids.
   final Map<String, String> credentials;
 
+  /// Whose app this connection runs on.
+  final ChatConnectionMode mode;
+
   /// Provider-side application id (Slack `A…`, Discord application id).
   final String appId;
 
@@ -80,8 +110,13 @@ class ChatBridgeConnection {
   /// Provider-side workspace/guild display name, for the settings surface.
   final String teamName;
 
-  /// The bot's own id on the provider, used to ignore its own messages.
+  /// The bot's own user id on the provider, used to ignore its own messages.
   final String botUserId;
+
+  /// The provider's id for the bot integration itself (Slack `B…`), distinct
+  /// from [botUserId]. Recorded when the token is saved and checked against
+  /// every later token so a swapped-in token for another app is refused.
+  final String botId;
 
   /// The bot's display name — what members type after `@`.
   final String botName;
@@ -109,6 +144,7 @@ class ChatBridgeConnection {
     String? teamId,
     String? teamName,
     String? botUserId,
+    String? botId,
     String? botName,
     Map<String, String>? credentials,
     bool? enabled,
@@ -116,10 +152,12 @@ class ChatBridgeConnection {
     provider: provider,
     workspaceId: workspaceId,
     credentials: {...this.credentials, ...?credentials},
+    mode: mode,
     appId: appId ?? this.appId,
     teamId: teamId ?? this.teamId,
     teamName: teamName ?? this.teamName,
     botUserId: botUserId ?? this.botUserId,
+    botId: botId ?? this.botId,
     botName: botName ?? this.botName,
     enabled: enabled ?? this.enabled,
     connectedAt: connectedAt,
@@ -131,10 +169,12 @@ class ChatBridgeConnection {
     'provider': provider.wire,
     'workspaceId': workspaceId,
     'credentials': credentials,
+    'mode': mode.wire,
     'appId': appId,
     'teamId': teamId,
     'teamName': teamName,
     'botUserId': botUserId,
+    'botId': botId,
     'botName': botName,
     'enabled': enabled,
     'connectedAt': connectedAt.toIso8601String(),
@@ -148,10 +188,12 @@ class ChatBridgeConnection {
           provider == other.provider &&
           workspaceId == other.workspaceId &&
           _sameCredentials(other.credentials) &&
+          mode == other.mode &&
           appId == other.appId &&
           teamId == other.teamId &&
           teamName == other.teamName &&
           botUserId == other.botUserId &&
+          botId == other.botId &&
           botName == other.botName &&
           enabled == other.enabled &&
           connectedAt == other.connectedAt;
@@ -175,10 +217,12 @@ class ChatBridgeConnection {
     Object.hashAllUnordered([
       for (final e in credentials.entries) Object.hash(e.key, e.value),
     ]),
+    mode,
     appId,
     teamId,
     teamName,
     botUserId,
+    botId,
     botName,
     enabled,
     connectedAt,
@@ -219,6 +263,7 @@ class ChatConnectionStatus {
   const ChatConnectionStatus({
     required this.provider,
     required this.state,
+    this.mode,
     this.teamId,
     this.teamName,
     this.appId,
@@ -236,6 +281,9 @@ class ChatConnectionStatus {
       ChatConnectionStatus(
         provider: ChatProvider.fromWire(json['provider'] as String?),
         state: ChatConnectionState.fromWire(json['state'] as String?),
+        mode: json['mode'] == null
+            ? null
+            : ChatConnectionMode.fromWire(json['mode'] as String?),
         teamId: json['teamId'] as String?,
         teamName: json['teamName'] as String?,
         appId: json['appId'] as String?,
@@ -260,6 +308,9 @@ class ChatConnectionStatus {
 
   /// Live transport state.
   final ChatConnectionState state;
+
+  /// Whose app the stored connection runs on, or null when nothing is stored.
+  final ChatConnectionMode? mode;
 
   /// Provider-side workspace/guild id, when connected.
   final String? teamId;
@@ -301,6 +352,7 @@ class ChatConnectionStatus {
   Map<String, dynamic> toJson() => {
     'provider': provider.wire,
     'state': state.wire,
+    if (mode != null) 'mode': mode!.wire,
     if (teamId != null) 'teamId': teamId,
     if (teamName != null) 'teamName': teamName,
     if (appId != null) 'appId': appId,
@@ -320,6 +372,7 @@ class ChatConnectionStatus {
           runtimeType == other.runtimeType &&
           provider == other.provider &&
           state == other.state &&
+          mode == other.mode &&
           teamId == other.teamId &&
           teamName == other.teamName &&
           appId == other.appId &&
@@ -335,6 +388,7 @@ class ChatConnectionStatus {
   int get hashCode => Object.hash(
     provider,
     state,
+    mode,
     teamId,
     teamName,
     appId,

@@ -2,7 +2,7 @@
 title: پائپ لائن قدم
 description: پائپ لائن قدم کی اقسام، قدم باڈی کلیدیں، اُن کی کنفیگریشن اور قدم کے نتائج کا حوالہ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 ایک پائپ لائن قدم کے دو آزاد محور ہوتے ہیں:
@@ -42,7 +42,7 @@ sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 | `script`     | چلانے کے لیے شیل کمانڈ (لازمی)                           |
 | `outputKey`  | وہ اسٹیٹ کلید جسے exit 0 پر ٹرِم شدہ stdout ملتا ہے      |
 
-یہ cwd `<cc_root>/pipelines/<pipelineRunId>/` (ایک رن کے تمام bash قدموں کے لیے مشترک) اور ماحول میں `GITHUB_TOKEN` کے ساتھ چلتا ہے۔ اسٹیٹ میں `<stepId>_runDir` بھی لکھتا ہے۔ غیر صفر exit قدم کو stderr کے آخری حصے کے ساتھ ناکام کر دیتا ہے۔
+Control Center کے OS sandbox کے اندر، `<cc_root>/pipelines/<pipelineRunId>/` کی cwd کے ساتھ چلتا ہے (ایک رن کے تمام bash steps کے لیے مشترک)؛ sandbox کے بغیر میزبان پر step ناکام ہو جاتا ہے۔ سرور کی data directory اور `.env` فائل ناقابلِ رسائی ہیں، git اور `gh` میزبان کی کوئی configuration نہیں دیکھتے، اور `GH_TOKEN` / `GITHUB_TOKEN` صرف اس وقت ایک ریپو تک محدود `read` ٹوکن رکھتے ہیں جب `repo_full_name` (state یا trigger payload میں) ورک اسپیس سے منسلک GitHub ریپو کا نام دے۔ اس step کے ساتھ ٹیمپلیٹ بنانے یا ترمیم کے لیے workspace admin درکار ہے۔ یہ `<stepId>_runDir` کو بھی state میں لکھتا ہے۔ غیر صفر exit کوڈ step کو stderr tail کے ساتھ ناکام کرتا ہے۔
 
 ### `conversation.promptAgent`
 

@@ -38,7 +38,7 @@ void main() {
       name: 'shop-ui',
       branch: 'space/one',
       baseRef: 'main',
-      authUrl: 'https://github.com/acme/shop-ui.git',
+      fetchUrl: 'https://github.com/acme/shop-ui.git',
       onOutput: lines.add,
     );
 
@@ -63,7 +63,7 @@ void main() {
       name: 'shop-ui',
       branch: 'space/one',
       baseRef: 'main',
-      authUrl: 'https://github.com/acme/shop-ui.git',
+      fetchUrl: 'https://github.com/acme/shop-ui.git',
       onOutput: lines.add,
     );
 
@@ -79,7 +79,7 @@ void main() {
       name: 'shop-ui',
       branch: 'space/one',
       baseRef: 'main',
-      authUrl: 'https://github.com/acme/shop-ui.git',
+      fetchUrl: 'https://github.com/acme/shop-ui.git',
     );
 
     expect(git.commandsOf('fetch').single, isNot(contains('--progress')));
@@ -126,7 +126,7 @@ void main() {
       name: 'copy',
       branch: 'space/one',
       baseRef: 'main',
-      authUrl: 'file://${origin.path}',
+      fetchUrl: 'file://${origin.path}',
       onOutput: (line) => log.write('ws', 'space', line),
     );
     await pumpEventQueue();

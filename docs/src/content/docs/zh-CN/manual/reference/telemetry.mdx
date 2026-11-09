@@ -2,7 +2,7 @@
 title: 使用情况分析
 description: 开启使用情况分析后 Control Center 会记录什么、由谁决定，以及哪些内容永远不会发送。
 slug: zh-CN/手册/参考/使用情况分析
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center 可以向一个 [Umami](https://umami.is) 实例发送**假名化的使用事件**。使用情况分析**默认关闭，直到服务器运营者将其开启**。该设置属于服务器，对连接到它的每个客户端都生效：桌面应用、Web 应用、手机以及服务器本身。
@@ -95,9 +95,12 @@ ID 会被发送，但只以假名形式出现。每个工作区、空间、会�
 | `pipeline_run_retried` | `workspace_id`、`pipeline_run_id` | 重试了一次失败的运行 |
 | `pipeline_run_cancel_requested` | `workspace_id`、`pipeline_run_id` | 从应用中取消了一次运行 |
 | `pipeline_step_killed` | `workspace_id`、`step_run_id` | 强制终止了一个正在运行的步骤 |
-| `calendar_connect_finished` | `outcome`（`connected`、`denied`、`expired`、`failed`、`cancelled`）、`builtin_client`、`duration_s` | 一次日历登录尝试结束 |
+| `calendar_connect_finished` | `outcome`（`connected`、`denied`、`expired`、`failed`、`cancelled`）、`builtin_client`（登录通过 Control Center Connect 而非服务器自己的 Google 客户端进行时为 true）、`duration_s` | 一次日历登录尝试结束 |
 | `calendar_disconnected` | `workspace_id` | 断开了一个日历账户 |
 | `calendar_rsvp_sent` | `calendar_event_id`、`response`、`previous_response`、`workspace_id` | 答复了一个邀请 |
+| `calendar_event_created` | `workspace_id`、`all_day`、`guests`（数量）、`conference` | 已在 Google Calendar 上创建事件 |
+| `calendar_event_moved` | `workspace_id`、`calendar_event_id`、`had_guests` | 事件已在日历网格上被移动或调整大小 |
+| `calendar_event_deleted` | `workspace_id`、`calendar_event_id`、`had_guests` | 已从 Google Calendar 删除事件 |
 | `calendar_event_recorded` | `workspace_id`、`calendar_event_id` | 从日历事件开始了一次录制 |
 | `calendar_meeting_joined` | `provider`（`meet`、`zoom`、`teams`、`webex`、`other`）、`workspace_id`、`calendar_event_id` | 打开了会议链接（手机）。只从链接中推断服务提供方 |
 | `notification_action` | `action`（`read`、`unread`、`dismiss`、`mark_all_read`、`clear_all`）、`workspace_id` | 使用了通知中心 |

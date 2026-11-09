@@ -2,12 +2,12 @@
 title: CLI cc_server
 description: Toate flag-urile, variabilele de mediu, subcomenzile și căile din directorul de date ale serverului headless.
 slug: ro-RO/manual/referinta/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Fiecare setare a procesului acceptă un flag de linie de comandă sau o variabilă de
-mediu; flagul are prioritate, apoi mediul, apoi valoarea implicită. Credențialele de
-la terți sunt excepția — vezi mai jos.
+mediu; flagul are prioritate, apoi mediul, apoi valoarea implicită. Credențialele
+providerilor sunt excepția — vezi [Aplicații provider și Connect](#aplicații-provider-și-connect).
 
 :::caution[Flag-urile necunoscute sunt ignorate în tăcere]
 Parserul de argumente este scris manual și sare peste orice nu recunoaște, așa că o
@@ -44,7 +44,7 @@ când un flag pare să nu aibă efect.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | nesetat                         | SHA-256 așteptat al acelui binar, verificat înainte de fiecare lansare                                                                                        |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | gol                             | Argumente suplimentare separate prin virgulă pentru invocarea tunelului                                                                                       |
 
-## Indexare și credențiale de la terți
+## Indexare și rulare
 
 | Flag                     | Variabilă                       | Implicit                              | Semnificație                                                                                                                                |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +54,45 @@ când un flag pare să nu aibă efect.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Dacă rulările harnessului trimit un set mic de instrumente rezidente plus un index de nume, încărcând restul la prima utilizare. Vezi mai jos |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Secunde cât o rulare rămâne în așteptare până când un om remediază un credențial care nu o poate deservi (limitat la 0–3600). Vezi mai jos   |
 
-O valoare goală pentru un credențial este citită ca nesetată, așa că soluția de rezervă
-integrată se aplică în continuare. O compilare din sursă nu conține deloc credențiale
-integrate.
+## Aplicații provider și Connect
 
-Google Calendar și selectorul de GIF-uri Klipy sunt **disponibile doar prin variabile
-de mediu** — nu există niciun flag `--google-client-id` / `--klipy-app-key` (flag-urile
-necunoscute sunt ignorate). Setează `GOOGLE_OAUTH_CLIENT_ID` +
-`GOOGLE_OAUTH_CLIENT_SECRET` și `KLIPY_APP_KEY` în mediu (sau într-un `.env` lângă
-server). O valoare goală dezactivează funcția respectivă, în loc să facă pornirea să
-eșueze.
+Nicio compilare nu conține credențiale de provider. Cu Control Center Connect pornit, Connect rulează fiecare provider, iar aceste
+aplicații proprii rămân salvate, dar nefolosite. Sub **Folosește aplicațiile mele**,
+fiecare provider rulează pe aplicația proprie a serverului când una este configurată
+complet, altfel nu este disponibil. O aplicație proprie a unui spațiu de lucru
+câștigă în ambele cazuri.
+Aplicațiile proprii se setează în **Setări → Server → Autentificare unică →
+Aplicații provider** sau se inițializează o singură dată din fișierul `.env` al
+serverului. Nu există flaguri pentru ele: un secret de pe linia de comandă poate
+fi citit prin `ps`.
+
+| Variabilă                      | Semnificație                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Id-ul GitHub App a serverului                                                                 |
+| `GITHUB_APP_PRIVATE_KEY`       | Cheia ei privată, pe un singur rând, cu escape-uri `\n`. **Doar `.env`**                       |
+| `GITHUB_CLIENT_ID`             | Client id-ul ei, pentru autentificarea oamenilor                                              |
+| `GITHUB_CLIENT_SECRET`         | Client secret-ul ei. **Doar `.env`**                                                          |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Clientul Google de tip Web application al serverului                                          |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Secretul lui. **Doar `.env`**                                                                 |
+| `LINEAR_CLIENT_ID`             | Aplicația Linear a serverului (PKCE, fără secret)                                             |
+| `LINEAR_API_KEY`               | O cheie de serviciu Linear pentru automatizare. **Doar `.env`**                               |
+| `KLIPY_APP_KEY`                | Cheia Klipy proprie a serverului pentru căutarea de GIF-uri, folosită doar sub **Folosește aplicațiile mele** |
+| `CC_CONNECT_URL`               | `hosted`, `off` sau un URL Connect. Blochează alegerea Connect; Setările nu o mai pot schimba |
+| `CC_SERVER_CONNECT_HOST`       | `on` montează Control Center Connect la `<server>/connect`, configurat prin variabilele `CONNECT_*`. Vezi [Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/#montează-connect-în-cc_server) |
+
+Fișierul `.env` este citit din directorul de lucru al serverului, de lângă
+executabil sau dintr-o copie a codului sursă aflată deasupra lui; în Docker,
+montează-l la `/app/bin/.env`. Serverul **refuză să pornească** (cod de ieșire
+`78`) atunci când `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` sau orice `SLACK_*SECRET*` este
+exportat în mediul procesului său, unde l-ar putea citi orice proces copil.
+Inițializarea din `.env` are loc o singură dată per câmp, așa că o editare
+ulterioară în Setări nu este anulată de o repornire. O valoare goală este citită
+ca nesetată.
+
+Munca de fundal GitLab și Bitbucket citește și `GITLAB_TOKEN` / `CI_JOB_TOKEN` și
+`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` cu `BITBUCKET_EMAIL`. GitHub nu are
+niciun credențial din mediu.
 
 ### `--sandbox`
 
@@ -117,7 +146,7 @@ așteptare, iar un credențial defect încheie turul exact ca înainte de a exis
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Rulează serverul până la `SIGINT`/`SIGTERM`                                                         |
 | `cc_server pair`                              | Provisionează un dispozitiv și afișează id-ul și cheia lui de asociere. Sigur față de un director de date pe care un server îl servește deja — serverul care rulează preia dispozitivul fără repornire |
-| `cc_server calendar connect --workspace <id>` | Conectează un cont Google la un spațiu de lucru prin fluxul cu cod de dispozitiv, apoi se încheie     |
+| `cc_server connect <command>`                 | Afișează sau schimbă ce Control Center Connect folosește acest server, fără să-l pornească         |
 | `cc_server update`                            | Verifică, descarcă și validează o versiune autonomă mai nouă                                         |
 | `cc_server --version`                         | Afișează versiunea compilării și SHA-ul git — aceeași identitate pe care o anunță `/healthz` și handshake-ul RPC |
 
@@ -144,6 +173,26 @@ serverului, id-ul dispozitivului și cheia în fragmentul URL). Telefonul se aso
 de conexiune al serverului plus o expirare. Cele două nu sunt interschimbabile — vezi
 [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
 :::
+
+### `connect`
+
+Citește și scrie aceleași setări ca și cardul **Control Center Connect** din
+**Setări → Server → Autentificare unică**, din directorul de date. Un server care
+rulează preia o modificare în cel mult 10 minute sau la repornire.
+
+| Comandă                         | Ce face                                                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Afișează modul, URL-ul, dacă `CC_CONNECT_URL` îl blochează, ID-ul de instalare, starea și sursa fiecărei benzi (`own`, `connect` sau `off`) |
+| `cc_server connect enable`      | Folosește Connect-ul găzduit al Control Center                                                                   |
+| `cc_server connect enable --url <url>` | Folosește un Connect propriu la acel URL (HTTPS sau `http` pe loopback)                                  |
+| `cc_server connect disable`     | Nu mai folosește Connect. Doar aplicațiile proprii ale serverului autentifică oamenii                            |
+| `cc_server connect rotate-key --yes` | Emite o nouă cheie de instalare și un nou ID de instalare. Toți cei care s-au autentificat prin Connect se autentifică din nou. Fără `--yes` doar avertizează și iese cu `2` |
+
+`status` este implicit când nu se dă nicio comandă. Fiecare comandă acceptă
+`--data-dir`. `CC_CONNECT_URL` are prioritate față de ce stochează acestea. O
+comandă necunoscută iese cu `64`. Vezi
+[Control Center Connect](/ro-RO/manual/referinta/connect/) pentru moduri,
+identitatea instalării și codurile de stare.
 
 ### `update`
 
@@ -189,7 +238,7 @@ aplicație.
 | `global.db`                       | Registrul spațiilor de lucru, utilizatorii, dispozitivele asociate, fluxul de știri și coada flotei |
 | `<workspaceId>/workspace.db`      | O bază de date per spațiu de lucru — agenți, spații, tichete, memorie, graful de cod |
 | `<workspaceId>/chat_credentials/` | Tokenuri de bot de chat, ca JSON simplu, ca să meargă împreună cu spațiul de lucru |
-| `secrets.json`                    | Chei de asociere, identitatea de aplicație a providerului, tokenuri per utilizator și Google, SSO (`0600`) |
+| `secrets.json`                    | Chei de asociere, cheia de instalare Connect, aplicațiile provider, autentificările oamenilor (sigilate când sunt făcute prin Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Un snapshot de instalare — `manifest.json`, `global.db` și o copie a fiecărui spațiu de lucru |
 | `backups/exports/`                | Exporturi ale unui singur spațiu de lucru, `<workspaceId>-<timestamp>.db`       |
 | `backups/transfer/`               | Zonă de tranzit pentru descărcările și încărcările de backup; curățată de ruta care o scrie |

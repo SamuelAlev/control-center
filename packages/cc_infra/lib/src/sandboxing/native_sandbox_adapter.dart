@@ -15,7 +15,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
@@ -173,27 +173,20 @@ class NativeSandboxAdapter implements SandboxPort {
       workingDirectory: workingDirectory,
     );
 
-    // Sanitize the parent environment (strip LD_*/DYLD_*/injection vars),
-    // then layer the proxy env (re-adds the safe GIT_SSH_COMMAND) + the
-    // dispatch env on top. includeParentEnvironment:false so the sanitized
-    // set is authoritative.
-    final sanitizedParent = const EnvSanitizer().hardenPlatform({});
-    final mergedEnv = <String, String>{
-      ...sanitizedParent,
-      ...wrap.environment,
-      ...?env,
-    };
+    // The allowlisted child environment (base + toolchain, provider secrets
+    // and injection vectors stripped), then the proxy env (re-adds the safe
+    // GIT_SSH_COMMAND), then the dispatch env on top.
+    final mergedEnv = <String, String>{...wrap.environment, ...?env};
 
     final launch = _supervised.contains(handle.sessionId)
         ? superviseProcessGroup(wrap.executable, wrap.argv)
         : (executable: wrap.executable, argv: wrap.argv);
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       launch.executable,
       launch.argv,
       workingDirectory: workingDirectory,
       environment: mergedEnv,
-      includeParentEnvironment: false,
-      runInShell: false,
+      toolchain: true,
     );
     // One live child per session. Overwriting the map entry used to strand the
     // previous process — unkillable by `destroy`, invisible to `dispose` —
@@ -362,7 +355,7 @@ class NativeSandboxAdapter implements SandboxPort {
 
   Future<bool> _hasOnPath(String binary) async {
     try {
-      final result = await Process.run('which', [binary]);
+      final result = await ChildProcess.run('which', [binary]);
       return result.exitCode == 0;
     } catch (_) {
       return false;

@@ -773,6 +773,45 @@ class GitHubPrClient {
     }
   }
 
+  /// Lists the issue events of a PR (`GET /repos/{o}/{r}/issues/{n}/events`),
+  /// oldest first, every page up to [maxPages] of 100.
+  ///
+  /// Unlike [listTimelineEvents] this is unfiltered and each event's actor
+  /// carries GitHub's numeric user id, which is what identifies who added a
+  /// label (`labeled`) — a login can be renamed and reused.
+  Future<List<GitHubTimelineEvent>> listIssueEvents(
+    String owner,
+    String repo,
+    int number, {
+    int maxPages = 10,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    final events = <GitHubTimelineEvent>[];
+    try {
+      for (var page = 1; page <= maxPages; page++) {
+        final response = await _httpClient.get(
+          '/repos/$owner/$repo/issues/$number/events',
+          query: {'per_page': '100', 'page': '$page'},
+          cancelToken: cancelToken,
+        );
+        events.addAll(
+          _decodeList(httpJsonBody(response), GitHubTimelineEvent.fromJson),
+        );
+        if (!_hasNextPage(response)) {
+          break;
+        }
+      }
+      return events;
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+
+      throw mapHttpException(e);
+    }
+  }
+
   /// Lists check runs for a commit SHA.
   Future<List<GitHubCheckRun>> listCheckRuns(
     String owner,
@@ -1351,37 +1390,21 @@ class GitHubPrClient {
     }
   }
 
-  /// Creates a reaction on a review comment.
-
+  /// Creates a reaction on a review comment. [GitHubReaction.created] tells
+  /// a new reaction (201) from one this user had already left (200).
   Future<GitHubReaction> createReviewCommentReaction(
     String owner,
     String repo, {
     required int commentId,
     required String content,
     CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.post(
-        '/repos/$owner/$repo/pulls/comments/$commentId/reactions',
-        body: HttpBody.json({'content': content}),
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-      final data = httpJsonBody(response);
-      if (data is Map<String, dynamic>) {
-        return GitHubReaction.fromJson(data);
-      }
-      throw const FormatException('Unexpected payload from reaction POST');
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
+  }) => _createReaction(
+    owner,
+    repo,
+    'pulls/comments/$commentId',
+    content,
+    cancelToken,
+  );
 
   /// Deletes a reaction from a review comment.
   Future<void> deleteReviewCommentReaction(
@@ -1390,23 +1413,12 @@ class GitHubPrClient {
     required int commentId,
     required int reactionId,
     CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      await _httpClient.delete(
-        '/repos/$owner/$repo/pulls/comments/$commentId/reactions/$reactionId',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
+  }) => _deleteReaction(
+    owner,
+    repo,
+    'pulls/comments/$commentId/reactions/$reactionId',
+    cancelToken,
+  );
 
   /// Lists reactions on a review comment.
   Future<List<GitHubReaction>> listReviewCommentReactions(
@@ -1414,46 +1426,106 @@ class GitHubPrClient {
     String repo, {
     required int commentId,
     CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/pulls/comments/$commentId/reactions',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubReaction.fromJson);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
+  }) => _listReactions(owner, repo, 'pulls/comments/$commentId', cancelToken);
 
-  /// Creates a reaction on an issue comment.
+  /// Creates a reaction on an issue comment. [GitHubReaction.created] tells
+  /// a new reaction (201) from one this user had already left (200).
   Future<GitHubReaction> createIssueCommentReaction(
     String owner,
     String repo, {
     required int commentId,
     required String content,
     CancelToken? cancelToken,
-  }) async {
+  }) => _createReaction(
+    owner,
+    repo,
+    'issues/comments/$commentId',
+    content,
+    cancelToken,
+  );
+
+  /// Deletes a reaction from an issue comment.
+  Future<void> deleteIssueCommentReaction(
+    String owner,
+    String repo, {
+    required int commentId,
+    required int reactionId,
+    CancelToken? cancelToken,
+  }) => _deleteReaction(
+    owner,
+    repo,
+    'issues/comments/$commentId/reactions/$reactionId',
+    cancelToken,
+  );
+
+  /// Lists reactions on an issue comment.
+  Future<List<GitHubReaction>> listIssueCommentReactions(
+    String owner,
+    String repo, {
+    required int commentId,
+    CancelToken? cancelToken,
+  }) => _listReactions(owner, repo, 'issues/comments/$commentId', cancelToken);
+
+  /// Creates a reaction on an issue or pull request itself (not a comment).
+  /// [GitHubReaction.created] tells a new reaction (201) from one this user
+  /// had already left (200).
+  Future<GitHubReaction> createIssueReaction(
+    String owner,
+    String repo, {
+    required int issueNumber,
+    required String content,
+    CancelToken? cancelToken,
+  }) =>
+      _createReaction(owner, repo, 'issues/$issueNumber', content, cancelToken);
+
+  /// Deletes a reaction from an issue.
+  Future<void> deleteIssueReaction(
+    String owner,
+    String repo, {
+    required int issueNumber,
+    required int reactionId,
+    CancelToken? cancelToken,
+  }) => _deleteReaction(
+    owner,
+    repo,
+    'issues/$issueNumber/reactions/$reactionId',
+    cancelToken,
+  );
+
+  /// Lists reactions on an issue.
+  Future<List<GitHubReaction>> listIssueReactions(
+    String owner,
+    String repo, {
+    required int issueNumber,
+    CancelToken? cancelToken,
+  }) => _listReactions(owner, repo, 'issues/$issueNumber', cancelToken);
+
+  static const _reactionHeaders = HttpHeaders.rawMap({
+    'Accept': 'application/vnd.github+json',
+  });
+
+  /// `POST /repos/{o}/{r}/{subject}/reactions`.
+  Future<GitHubReaction> _createReaction(
+    String owner,
+    String repo,
+    String subject,
+    String content,
+    CancelToken? cancelToken,
+  ) async {
     _requireOwnerRepo(owner, repo);
     try {
       final response = await _httpClient.post(
-        '/repos/$owner/$repo/issues/comments/$commentId/reactions',
+        '/repos/$owner/$repo/$subject/reactions',
         body: HttpBody.json({'content': content}),
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
+        headers: _reactionHeaders,
         cancelToken: cancelToken,
       );
       final data = httpJsonBody(response);
       if (data is Map<String, dynamic>) {
-        return GitHubReaction.fromJson(data);
+        return GitHubReaction.fromJson(
+          data,
+          created: response.statusCode == 201,
+        );
       }
       throw const FormatException('Unexpected payload from reaction POST');
     } on RhttpException catch (e) {
@@ -1464,21 +1536,18 @@ class GitHubPrClient {
     }
   }
 
-  /// Deletes a reaction from an issue comment.
-  Future<void> deleteIssueCommentReaction(
+  /// `DELETE /repos/{o}/{r}/{path}`.
+  Future<void> _deleteReaction(
     String owner,
-    String repo, {
-    required int commentId,
-    required int reactionId,
+    String repo,
+    String path,
     CancelToken? cancelToken,
-  }) async {
+  ) async {
     _requireOwnerRepo(owner, repo);
     try {
       await _httpClient.delete(
-        '/repos/$owner/$repo/issues/comments/$commentId/reactions/$reactionId',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
+        '/repos/$owner/$repo/$path',
+        headers: _reactionHeaders,
         cancelToken: cancelToken,
       );
     } on RhttpException catch (e) {
@@ -1489,103 +1558,18 @@ class GitHubPrClient {
     }
   }
 
-  /// Lists reactions on an issue comment.
-  Future<List<GitHubReaction>> listIssueCommentReactions(
+  /// `GET /repos/{o}/{r}/{subject}/reactions`.
+  Future<List<GitHubReaction>> _listReactions(
     String owner,
-    String repo, {
-    required int commentId,
+    String repo,
+    String subject,
     CancelToken? cancelToken,
-  }) async {
+  ) async {
     _requireOwnerRepo(owner, repo);
     try {
       final response = await _httpClient.get(
-        '/repos/$owner/$repo/issues/comments/$commentId/reactions',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-      return _decodeList(httpJsonBody(response), GitHubReaction.fromJson);
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
-
-  /// Creates a reaction on an issue (not a PR review comment).
-  Future<GitHubReaction> createIssueReaction(
-    String owner,
-    String repo, {
-    required int issueNumber,
-    required String content,
-    CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.post(
-        '/repos/$owner/$repo/issues/$issueNumber/reactions',
-        body: HttpBody.json({'content': content}),
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-      final data = httpJsonBody(response);
-      if (data is Map<String, dynamic>) {
-        return GitHubReaction.fromJson(data);
-      }
-      throw const FormatException(
-        'Unexpected payload from issue reaction POST',
-      );
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
-
-  /// Deletes a reaction from an issue.
-  Future<void> deleteIssueReaction(
-    String owner,
-    String repo, {
-    required int issueNumber,
-    required int reactionId,
-    CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      await _httpClient.delete(
-        '/repos/$owner/$repo/issues/$issueNumber/reactions/$reactionId',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
-        cancelToken: cancelToken,
-      );
-    } on RhttpException catch (e) {
-      if (e is RhttpCancelException) {
-        rethrow;
-      }
-      throw mapHttpException(e);
-    }
-  }
-
-  /// Lists reactions on an issue.
-  Future<List<GitHubReaction>> listIssueReactions(
-    String owner,
-    String repo, {
-    required int issueNumber,
-    CancelToken? cancelToken,
-  }) async {
-    _requireOwnerRepo(owner, repo);
-    try {
-      final response = await _httpClient.get(
-        '/repos/$owner/$repo/issues/$issueNumber/reactions',
-        headers: const HttpHeaders.rawMap({
-          'Accept': 'application/vnd.github+json',
-        }),
+        '/repos/$owner/$repo/$subject/reactions',
+        headers: _reactionHeaders,
         cancelToken: cancelToken,
       );
       return _decodeList(httpJsonBody(response), GitHubReaction.fromJson);

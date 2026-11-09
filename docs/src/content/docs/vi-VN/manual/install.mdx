@@ -2,7 +2,7 @@
 title: Cài đặt
 description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
@@ -134,14 +134,9 @@ Danh sách mô hình được phục vụ trực tiếp bởi từng nhà cung c
 
 Thông tin xác thực GitHub **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn — không nằm trong keychain của hệ điều hành máy khách. Mọi thiết bị bạn đăng nhập đều dùng cùng một thông tin xác thực, và không thành viên nào khác đọc được nó.
 
-Nếu máy chủ có đăng ký một GitHub App ([Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)), **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** có **Đăng nhập với GitHub** (một luồng thiết bị do máy chủ thực hiện). Nếu không, hãy dán một token truy cập cá nhân:
+GitHub chỉ có đăng nhập: thẻ **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** có **Đăng nhập vào GitHub**, và không có token nào để dán. Luồng đăng nhập chạy qua GitHub App của máy chủ ([Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) hoặc qua Control Center Connect, tùy theo chủ máy chủ đã chọn. Với app riêng của máy chủ, trình duyệt tự quay về máy chủ; qua Connect, bạn gõ mã 8 ký tự mà trình duyệt hiển thị, hoặc để nó mở Control Center. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
 
-- Loại Classic: `repo` và `read:org`
-- Loại Fine-grained: **Contents** và **Pull requests** (đọc và ghi), **Checks** và **Actions** (đọc)
-
-Tạo một token tại [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Máy chủ thăm dò token để lấy tên tài khoản ngay khi nó được lưu, nên hàng đó có thể ghi "đã đăng nhập với tên …"; một thăm dò thất bại vẫn lưu token, và một lỗi đánh máy hay thiếu quyền sẽ hiện ra dưới dạng một yêu cầu thất bại sau này.
-
-Bước đầu tiên của quá trình thiết lập ban đầu là kết nối này. Sau đó, chính thẻ đó là nơi bạn thay thế hoặc xóa nó. GitLab và Bitbucket dùng cùng thẻ đó; xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
+Quá trình thiết lập ban đầu yêu cầu kết nối này. Sau đó, chính thẻ đó là nơi bạn đăng nhập lại hoặc ngắt kết nối. GitLab và Bitbucket dùng cùng thẻ đó với một token cá nhân được dán vào; xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
 
 ## Chọn nơi máy chủ chạy
 

@@ -2,7 +2,7 @@
 title: Biletler ve devretme
 description: Bir biletin işi göndermeden nasıl izlediği, devretmenin nasıl korunduğu ve satıcı aynasının neye sahip olup neye sahip olmadığı.
 slug: tr-TR/kilavuz/kavramlar/biletler
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Bilet, Control Center’ın izlediği iş birimidir. Bilinçli olarak _aptal_ bir
@@ -140,9 +140,10 @@ bu yüzden sildiğiniz satıcı destekli bir bilet takip sisteminde silinmez ve 
 sonraki eşitlemede yeniden görünebilir. İşbirlikçiler ve alt biletler zincirleme
 silinir.
 
-Adaptör kimlik bilgileri sunucunun kimlik bilgisi depolarından çözülür (Ayarlar’a
-yapıştırılan bir Linear anahtarı ya da GitHub token’ı bir sonraki istekte alınır;
-ortam yalnızca bu depoları tohumlar).
+Adaptör kimlik bilgileri sunucuda her çağrıda çözülür: kişinin yaptıkları için
+kendi Linear ya da GitHub oturum açması, bilet senkronizasyonu için ise çalışma
+alanının Linear otomasyonu (ya da sunucunun Linear hizmet anahtarı) veya tek
+depoluk bir GitHub token’ı. Yeni bir oturum açma bir sonraki istekte alınır.
 
 ## Biletler ve pipeline’lar
 

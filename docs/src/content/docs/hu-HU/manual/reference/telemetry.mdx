@@ -2,7 +2,7 @@
 title: Használati statisztikák
 description: Mit rögzít a Control Center, amikor a használati statisztikák be vannak kapcsolva, ki dönt róluk, és mi nem kerül soha elküldésre.
 slug: hu-HU/kezikonyv/referencia/hasznalati-statisztikak
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 A Control Center **álnevesített használati eseményeket** küldhet egy [Umami](https://umami.is)-példánynak. A használati statisztikák **ki vannak kapcsolva, amíg a szerver üzemeltetője be nem kapcsolja őket**. A beállítás a szerverhez tartozik, és minden hozzá csatlakozó kliensre vonatkozik: az asztali alkalmazásra, a webalkalmazásra, a telefonra és magára a szerverre is.
@@ -95,9 +95,12 @@ Az asztali alkalmazás, a webalkalmazás és a telefon rögzíti őket, amikor v
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Egy sikertelen futtatás újrapróbálásra került |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Egy futtatást megszakítottak az alkalmazásból |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Egy futó lépést kényszerítve leállítottak |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Véget ért egy naptárbejelentkezési kísérlet |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (igaz, ha a bejelentkezés a Control Center Connecten keresztül futott, nem a szerver saját Google-kliensén), `duration_s` | Véget ért egy naptárbejelentkezési kísérlet |
 | `calendar_disconnected` | `workspace_id` | Leválasztottak egy naptárfiókot |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Valaki válaszolt egy meghívásra |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (darabszám), `conference` | Eseményt foglaltak a Google Calendarban |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Eseményt áthelyeztek vagy átméreteztek a naptárrácson |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Eseményt töröltek a Google Calendarból |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Felvétel indult egy naptáreseményből |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Megnyitottak egy megbeszélés-hivatkozást (telefon). A hivatkozásból csak a szolgáltató kerül meghatározásra |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Használták az értesítési központot |

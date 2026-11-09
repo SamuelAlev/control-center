@@ -2,7 +2,7 @@
 title: Slack hesabınızı bağlama
 description: Bir Slack kimliğinin size ait olduğunu kanıtlayın; böylece ajanlar iletileriniz üzerine iş yapar ve emeğiniz size atfedilir.
 slug: tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Bu kılavuz, sohbet kimliğinizi Control Center kullanıcınıza nasıl bağlayacağınızı ve bir bağlantıyı nasıl kaldıracağınızı gösterir.
@@ -17,30 +17,39 @@ Bağlantısı olmayan bir üye botu etiketlerse, o Slack dizisinde bağlanmanın
 
 ## Kodla bağlama
 
+Bağlama iki tarafı da gerektirir: Slack’ten bir kod göndermek Slack hesabını kanıtlar, onu Control Center’da onaylamak ise o hesabın size ait olduğunu kanıtlar.
+
 1. **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne gidin ve **Bağlı sohbet
    hesapları** kartına ilerleyin
-2. Slack bloğunda **Slack hesabımı bağla**'ya tıklayın
-3. Gösterdiği komutu kopyalayın, örneğin:
+2. Slack bloğunda **Slack hesabımı bağla**'ya tıklayın. İletişim kutusu tek kullanımlık bir kod gösterir, örneğin:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Slack'te bu komutu bota gönderin — en kolay yer bir DM'dir
-5. Bot, artık bağlı olduğunuz Control Center kullanıcısıyla bunu doğrular ve açık bıraktığınız iletişim kutusu aynı anda bunu gösterecek biçimde güncellenir — kapatıp bakmanız gerekmez
+3. Slack'te bu kodu bota bir **doğrudan mesajla** gönderin: yalnızca kod, başka bir şey değil
+4. Bot "Got it. Confirm this Slack account in Control Center to finish linking." diye yanıt verir ve açık bıraktığınız iletişim kutusu kodu gönderen Slack profilini gösterir: adını ve Slack üye kimliğini
+5. Hesap sizinse **Onayla**'ya tıklayın. Bağlantı kurulur, iletişim kutusu bunu söyler ve bot aynı doğrudan mesajda bunu doğrular
+6. Sizin değilse **Reddet**'e tıklayın. Hiçbir şey bağlanmaz ve kod çalışmayı durdurur; yeniden denemek için **Yeni kod al**'a tıklayın
+
+İletişim kutusunu kapatmak bir talebi kaybettirmez. Daha sonra gelen bir kod, profil sayfanızdaki **Slack hesabımı bağla** satırında aynı **Onayla** ve **Reddet** seçenekleriyle bekler.
+
+Onay adımı neden var: omzunuzun üzerinden okunup başka birinin Slack hesabından gönderilen bir kod, aksi halde o hesabın sizin adınıza hareket etmesini sağlardı. Yalnızca siz onaylayabilirsiniz ve yalnızca kodu gönderen profilin ta kendisini.
 
 Kod:
 
 - Tek kullanımlıktır ve üretilmesinden **15 dakika** sonra süresi dolar
 - Her zaman _sizin_ için üretilir, asla bir ekip arkadaşınız için değil
+- Yalnızca bota gönderilen bir doğrudan mesajda çalışır. Bir kanalda yalnızca bir iletidir
+- Yalnızca botun kurulu olduğu Slack çalışma alanının tam üyesi tarafından talep edilebilir; bir misafir ya da başka bir kuruluştan biri tarafından değil
 - Elinizde bulunan kodu değiştirir; bu yüzden düğmeye yeniden basmak öncekini geçersiz kılar
 - Yalnızca bellekte tutulur; bu yüzden sunucunun yeniden başlatılması bekleyen kodları geçersiz kılar — düğmeye yeniden basın
 
-Bilinmeyen, süresi dolmuş veya farklı bir çalışma alanı için üretilmiş bir kod her seferinde aynı, ayırt edilemez biçimde başarısız olur: "that code is not valid (or has expired)".
+Bilinmeyen, süresi dolmuş, reddedilmiş veya farklı bir çalışma alanı için üretilmiş bir kod her seferinde aynı, ayırt edilemez biçimde başarısız olur: "That code is not valid (or has expired)."
 
 ## E-postayla otomatik bağlama
 
-Slack profilinizde **bu çalışma alanının zaten üyesi olan** bir Control Center kullanıcısıyla eşleşen doğrulanmış bir e-posta varsa, köprü botla ilk konuştuğunuzda sizi bağlar. Kod gerekmez.
+Slack profilinizde **bu çalışma alanının zaten üyesi olan** bir Control Center kullanıcısının doğrulanmış e-postasıyla eşleşen onaylanmış bir e-posta varsa, köprü botla ilk konuştuğunuzda sizi bağlar. Kod gerekmez.
 
 İki yarı da önemlidir: e-posta eşleşmesi kimliği kanıtlar, ama erişimi yalnızca üyelik verir; bu yüzden e-postası tesadüfen sunucuda bulunan bir yabancı hiçbir şeye bağlanmaz. Liste, her bağlantının nasıl kurulduğunu gösterir ("e-postayla eşleşti" veya "kodla bağlandı").
 
@@ -57,9 +66,9 @@ Kendi durumunuz profil sayfanızdadır: **Slack hesabımı bağla** satırı,
 bağlandığınızda "_your-slack-id_ olarak bağlı" yazar; bağlı değilseniz
 bağlanmanızı söyler.
 
-Liste canlı bir aboneliktir; çünkü değişiklik diğer tarafta gerçekleşir —
-kodu Slack'te siz yazarsınız, dolayısıyla uygulamadan gelen hiçbir istek yanıtı geri
-taşıyamaz.
+Liste ve talep canlı aboneliklerdir; çünkü değişiklik diğer tarafta gerçekleşir:
+kodu Slack'te siz gönderirsiniz, dolayısıyla uygulamadan gelen hiçbir istek yanıtı
+geri taşıyamaz.
 
 ## Bağlantıyı kaldırma
 
@@ -81,9 +90,13 @@ Slack hesabınız bir Control Center kullanıcısına bağlı, ancak o kullanıc
 
 `viewer` ve `guest` rolleri iş başlatamaz. Bir yöneticinin rolünüzü `member` veya üstüne yükseltmesi gerekir.
 
-### Slash komutu tanınmıyor
+### Bot kodun geçerli olmadığını söylüyor
 
-Slash komutunun Slack'te var olduğunu ve ayarlar iletişim kutusunun size gösterdiği komutu gönderdiğinizi kontrol edin — bir yönetici onu yeniden adlandırmış olabilir; bu durumda iletişim kutusu güncel adı gösterir.
+Kodun süresi dolmuş, kod zaten kullanılmış, reddedilmiş ya da daha yeni bir kodla değiştirilmiş. **Slack hesabımı bağla**'ya yeniden tıklayın ve yeni kodu gönderin.
+
+### Bot kodumu bir istek olarak ele alıyor
+
+Kodu bir kanalda gönderdiniz ya da Slack hesabınız zaten bağlı. Kodlar yalnızca doğrudan mesajda kabul edilir ve bağlı bir hesaptan gelen kod biçimindeki bir ileti sıradan bir istektir.
 
 ## İlgili kılavuzlar
 

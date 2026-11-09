@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Quy trình', 'Một quy trình công việc dựa trên DAG, nối các bước (điều phối agent, script, điều kiện) lại với nhau. Được định nghĩa bằng mẫu; được thực thi dưới dạng các lượt chạy.'],
 ['Cuộc họp', 'Một phiên họp được ghi và phiên âm cục bộ. Thu micrô và âm thanh hệ thống, phiên âm ngay trên thiết bị bằng một mô hình ASR có thể chọn (mặc định là Parakeet TDT v3; Parakeet TDT v2, Whisper large-v3-turbo và Whisper base.en là các lựa chọn thay thế), phân tách người nói và tóm tắt thành ghi chú, việc cần làm và quyết định. Mô hình ASR đã chọn được cài đặt cưỡng bức lúc khởi động và các thao tác ghi sẽ hoạt động sau một lần khởi động lại. Có phạm vi theo không gian làm việc.'],
 ['CalendarEvent', 'Một mục Google Calendar đã đồng bộ, có phạm vi theo một không gian làm việc và tài khoản đã kết nối. Khác với Cuộc họp: một sự kiện là cam kết đã lên lịch, một Cuộc họp là phiên được ghi.'],
-['CalendarAccount', 'Một tài khoản Google đã kết nối, theo không gian làm việc và email. Token làm mới OAuth được lưu phía máy chủ dưới các khóa google_* trong tệp secrets.json thuộc thư mục dữ liệu và không bao giờ tới máy khách; cờ authExpiredAt điều khiển biểu ngữ kết nối lại.'],
+['CalendarAccount', 'Một tài khoản Google đã kết nối, theo không gian làm việc, thành viên và email. Thông tin xác thực của nó được lưu phía máy chủ dưới một khóa google_* trong tệp secrets.json thuộc thư mục dữ liệu và không bao giờ tới máy khách; đăng nhập qua Connect chỉ lưu một niêm phong thông tin xác thực. Cờ authExpiredAt điều khiển biểu ngữ kết nối lại.'],
 ['AgentRole', 'Vai trò được liệt kê (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Quyết định persona, quyền truy cập bộ nhớ và phân cấp.'],
 ['AgentSkills', 'Tập hợp không phân biệt chữ hoa chữ thường các mã định danh kỹ năng, giúp tiêm ngữ cảnh liên quan vào prompt lúc điều phối.'],
 ['Nguồn kỹ năng', 'Một kho mã GitHub được đăng ký theo từng không gian làm việc làm danh mục kỹ năng. Không đáng tin theo cấu trúc: siêu dữ liệu của kho mã chỉ để hiển thị và mọi lần cài đặt đều đi qua cổng quét fail-closed trước khi có nội dung nào chạm tới đĩa hay prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo cent) cho một lượt chạy agent.'],
 ['WakeReason', 'Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.'],
 ['SandboxPort', 'Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox (chỉ đọc cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ), rồi thu hồi chúng khi dỡ bỏ.'],
+['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox (một token cho đúng một kho mã cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ), rồi giải phóng chúng khi dỡ bỏ.'],
 ['GitRepoInspectorPort', 'Trích xuất siêu dữ liệu (chủ sở hữu, kho mã, nhánh) từ một đường dẫn kho mã Git cục bộ.'],
 ['EmbeddingPort', 'Tạo các vector embedding văn bản chuẩn hóa đơn vị cho tìm kiếm ngữ nghĩa.'],
 ['NotificationPort', 'Hiển thị thông báo desktop gốc, tôn trọng việc chi phối theo danh mục/tuyến.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Kết luận đánh giá', 'ship, hold hoặc block. Bất kỳ phát hiện P0 nào có độ tin cậy >= 0.7 đều block; bất kỳ P0 khác hoặc bất kỳ P1 nào thì hold; còn lại là ship. Một trục có cổng bị lỗi buộc phải block và không thể bị các phát hiện ghi đè.'],
 ['SessionRecording', 'Một luồng sự kiện cùng các cassette HTTP/LLM và I/O công cụ được ghi lại cho một lượt chạy, đi kèm một AgentConfigHash.'],
 ['Phiên golden', 'Một SessionRecording đã được phê duyệt, được ghim theo từng agent hoặc playbook.'],
+['Control Center Connect', 'Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google, Linear) cho các máy chủ chưa có ứng dụng riêng. Do Control Center lưu trữ, tự lưu trữ, hoặc tắt. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã.'],
+['Niêm phong thông tin xác thực', 'Một thông tin xác thực đã mã hóa mà chỉ Connect đã tạo ra nó mới mở được, ràng buộc với nhà cung cấp, địa chỉ Connect, id cài đặt, không gian làm việc, tài khoản, ứng dụng và thế hệ secret. Máy chủ lưu niêm phong; access token chỉ nằm trong bộ nhớ.'],
+['Id cài đặt', 'Danh tính của một máy chủ đối với một địa chỉ Connect, được suy ra từ khóa cài đặt của nó. Connect cho phép máy chủ theo id cài đặt; xoay khóa sẽ đổi id và đăng xuất mọi người khỏi các làn Connect.'],
+['Ràng buộc cài đặt', 'Bản ghi của Connect về những máy chủ nào được dùng một cài đặt GitHub của App dùng chung. Một cài đặt của tổ chức cần quản trị viên cấp quyền cho từng máy chủ.'],
+['Làn đăng nhập', 'Đăng nhập trình duyệt của một nhà cung cấp: `github`, `google`, `linear`, `linear_app` hoặc `slack`. Mỗi làn chạy trên ứng dụng riêng của máy chủ khi ứng dụng đó đầy đủ, nếu không thì qua Connect, và nếu không nữa thì không khả dụng.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox — chỉ đọc cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ — rồi thu hồi chúng khi dỡ bỏ.
+**CredentialBrokerPort**: Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox — một token cho đúng một kho mã cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ — rồi giải phóng chúng khi dỡ bỏ.
 
 **GitRepoInspectorPort**: Trích xuất siêu dữ liệu (chủ sở hữu, kho mã, nhánh) từ một đường dẫn kho mã Git cục bộ.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Một mục Google Calendar đã đồng bộ, có phạm vi theo một không gian làm việc và tài khoản đã kết nối. Khác với Cuộc họp: một sự kiện là cam kết đã lên lịch; một Cuộc họp là phiên được ghi. Được liên kết một-một qua một `MeetingCalendarLink`.
 
-**CalendarAccount**: Một tài khoản Google đã kết nối, theo không gian làm việc và email. Token làm mới OAuth được lưu phía máy chủ dưới các khóa `google_*` trong `<dataDir>/secrets.json` và không bao giờ tới máy khách; luồng mã thiết bị hoàn tất trên máy chủ. Cờ `authExpiredAt` điều khiển biểu ngữ kết nối lại.
+**CalendarAccount**: Một tài khoản Google đã kết nối, theo không gian làm việc, thành viên và email (`google:<workspaceId>:<userId>:<email>`). Thông tin xác thực của nó được lưu phía máy chủ dưới một khóa `google_*` trong `<dataDir>/secrets.json` và không bao giờ tới máy khách; đăng nhập trình duyệt hoàn tất trên máy chủ. Đăng nhập qua Connect chỉ lưu một niêm phong thông tin xác thực. Cờ `authExpiredAt` điều khiển biểu ngữ kết nối lại.
 
 ## Thuật ngữ kiến trúc
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Máy khách mỏng trên điện thoại — một PWA web Flutter điều khiển từ xa toàn đội máy qua relay được môi giới, với chính sách công cụ từ chối theo mặc định.
 
 **cc_signaling_server**: Một broker relay WebSocket không trạng thái, chứa các phòng có cổng mời — một relay ngốc nghếch chỉ chuyển tiếp các khung được niêm phong đầu-cuối, không giữ dữ liệu ứng dụng nào và không bao giờ thấy PSK ghép nối.
+
+**Control Center Connect**: Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google Calendar, Linear) cho các máy chủ chưa đăng ký ứng dụng riêng: bản do Control Center lưu trữ, bản do một tổ chức tự vận hành (`cc-connect`, hoặc được gắn trong `cc_server` tại `/connect`), hoặc không có. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
+
+**Niêm phong thông tin xác thực** (`credential_seal`): Một thông tin xác thực đã mã hóa mà chỉ Connect đã tạo ra nó mới mở được, ràng buộc với nhà cung cấp, địa chỉ Connect, id cài đặt, không gian làm việc, tài khoản, ứng dụng và thế hệ secret. Máy chủ lưu niêm phong và id cài đặt mà nó được tạo cho; access token nằm trong bộ nhớ. Một niêm phong có id cài đặt không còn khớp sẽ bị loại bỏ và chủ của nó đăng nhập lại.
+
+**Id cài đặt** (`install_id`): Danh tính của một máy chủ đối với một địa chỉ Connect, được suy ra từ khóa cài đặt trong tệp secret của nó. Connect cho phép máy chủ theo id cài đặt. Xoay khóa sẽ tạo ra id mới và đăng xuất mọi người khỏi các làn Connect.
+
+**Ràng buộc cài đặt** (`install_binding`): Bản ghi của Connect về những máy chủ nào được dùng một cài đặt GitHub của App dùng chung. Cài đặt qua một máy chủ sẽ ràng buộc nó; **Ủy quyền máy chủ này** của quản trị viên tổ chức sẽ ràng buộc một máy chủ khác.
+
+**Làn đăng nhập**: Đăng nhập trình duyệt của một nhà cung cấp — `github`, `google`, `linear`, `linear_app` hoặc `slack`. Một làn chạy trên ứng dụng riêng của máy chủ khi ứng dụng đó đã đầy đủ, nếu không thì qua Connect, và nếu không nữa thì không khả dụng. Một ứng dụng riêng cấu hình dở dang là một lỗi, không bao giờ rơi về Connect.
 
 ## Xem thêm
 

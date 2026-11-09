@@ -59,7 +59,7 @@ class ChatProviderCapabilities {
   /// Whether a thread can be titled after the conversation it drives.
   final bool threadTitle;
 
-  /// Whether the provider delivers slash commands (`/cc link …`).
+  /// Whether the provider delivers slash commands (`/cc ticket …`).
   final bool slashCommands;
 
   /// Whether the provider can render a structured card for a unit of work — a

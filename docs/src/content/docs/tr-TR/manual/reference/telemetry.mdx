@@ -2,7 +2,7 @@
 title: Kullanım analizleri
 description: Kullanım analizleri açıkken Control Center'ın neyi kaydettiği, buna kimin karar verdiği ve neyin asla gönderilmediği.
 slug: tr-TR/kilavuz/referans/kullanim-analizleri
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center, bir [Umami](https://umami.is) örneğine **takma adlı kullanım olayları** gönderebilir. Kullanım analizleri **sunucu operatörü açana kadar kapalıdır**. Ayar sunucuya aittir ve ona bağlı her istemci için geçerlidir: masaüstü uygulaması, web uygulaması, telefon ve sunucunun kendisi.
@@ -95,9 +95,12 @@ Masaüstü uygulaması, web uygulaması ve telefon tarafından, bir kişinin yap
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Başarısız bir çalıştırma yeniden denendiğinde |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Bir çalıştırma uygulamadan iptal edildiğinde |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Çalışan bir adım zorla sonlandırıldığında |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Bir takvim oturum açma denemesi sona erdiğinde |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (oturum açma sunucunun kendi Google istemcisi yerine Control Center Connect üzerinden yürütüldüğünde true), `duration_s` | Bir takvim oturum açma denemesi sona erdiğinde |
 | `calendar_disconnected` | `workspace_id` | Bir takvim hesabının bağlantısı kesildiğinde |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Bir davet yanıtlandığında |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (sayı), `conference` | Google Calendar’da bir etkinlik ayırtıldı |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Bir etkinlik takvim ızgarasında taşındı veya boyutu değiştirildi |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Bir etkinlik Google Calendar’dan silindi |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Bir takvim etkinliğinden kayıt başlatıldığında |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Bir toplantı bağlantısı açıldığında (telefon). Bağlantıdan yalnızca sağlayıcı çıkarılır |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Bildirim merkezi kullanıldığında |

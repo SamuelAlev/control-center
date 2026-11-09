@@ -2,7 +2,7 @@
 title: Configurar políticas de sandbox
 description: Qué limita la ejecución de un agente, cómo saber si el sandbox del sistema operativo la envuelve y cómo deciden las reglas de acciones lo que un agente puede enviar o alcanzar.
 slug: es-MX/manual/guias/politicas-de-sandbox
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Que la ejecución de un agente esté dentro de un sandbox se decide en el servidor,
@@ -76,9 +76,10 @@ primero** recibes una aprobación que indica el repositorio y las refs; con
 
 Cómo llega cada regla a la ejecución:
 
-- **El push** se aplica por lo que tiene la ejecución. Su token de GitHub es un
-  token de instalación de GitHub App de solo lectura, que puede leer contenido y
-  trabajar con pull requests. Su configuración de git envía cada push a GitHub
+- **El push** se aplica por lo que tiene la ejecución. Su token de GitHub cubre
+  el único repositorio de la ejecución y no puede hacer push: puede leer
+  contenido y, cuando el miembro responsable puede hacer push, comentar en pull
+  requests. Su configuración de git envía cada push a GitHub
   a una pasarela de loopback en `cc_server`, que pregunta a la regla y solo
   entonces reenvía el push con un token de escritura que el agente nunca ve. La
   pasarela solo reenvía al repositorio propio del worktree o a un repositorio
@@ -99,18 +100,13 @@ Cómo llega cada regla a la ejecución:
   Mientras la red está activada, GitHub siempre está en la lista de permitidos
   de salida.
 
-:::caution[Sin GitHub App, la regla de push es solo orientativa]
-Si no hay ninguna GitHub App configurada, la ejecución recibe el token de acceso
-personal alternativo, que no se puede restringir a solo lectura. `git push`
-sigue pasando por la pasarela y la regla, pero el código que use directamente
-el token puede hacer push saltándosela. Configura la GitHub App para que la
-regla sea vinculante.
-
-La credencial de GitHub de la ejecución es siempre la del broker —un token de
-instalación de la GitHub App con alcance de repositorio, o el PAT alternativo—,
-nunca el token propio almacenado de la persona solicitante. El PAT del servidor
-se retiene a una ejecución que actúa por una persona que no es la propietaria y
-no ha conectado GitHub.
+:::note[De dónde viene el token de GitHub de la ejecución]
+El token se emite para la ejecución desde la GitHub App del espacio de trabajo,
+la app propia del servidor o Control Center Connect, y se limita a lo que el
+miembro responsable (quien lo pidió o, si no, el propietario del espacio de
+trabajo) puede hacer en ese repositorio. Nunca es el propio inicio de sesión de
+un miembro entregado completo, y no hay ningún token alternativo: cuando no se
+puede emitir ninguno, la ejecución inicia sin él y sus notas explican por qué.
 :::
 
 ## Comprobar si tus ejecuciones de agentes están dentro de un sandbox

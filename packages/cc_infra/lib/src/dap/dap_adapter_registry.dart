@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// How to launch one debug adapter, and when it applies.
@@ -141,7 +142,7 @@ String? resolveAdapterBinary(
   }
   final which = Platform.isWindows ? 'where' : 'which';
   try {
-    final result = Process.runSync(which, [command]);
+    final result = ChildProcess.runSync(which, [command]);
     if (result.exitCode == 0) {
       final first = '${result.stdout}'.split('\n').first.trim();
       if (first.isNotEmpty) {

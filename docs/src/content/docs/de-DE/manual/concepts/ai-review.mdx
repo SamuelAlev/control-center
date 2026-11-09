@@ -2,7 +2,7 @@
 title: KI-Review
 description: Wie ein Pull Request zu einem geprüften wird. Review-Bereiche, Review-Knoten und Peer-Konsens, Kohorten und Achsen, das Verdikt Ship/Hold/Block, und warum das Veröffentlichen ein Schritt bleibt, den du selbst machst.
 slug: de-DE/handbuch/konzepte/ki-review
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Aufbau eines Reviews
@@ -212,11 +212,14 @@ veröffentlichen** drückst:
   Befund in den Text genommen, damit nichts stillschweigend verloren geht.
 - Ein Verdikt **Block** wird als `REQUEST_CHANGES` eingereicht, **Hold** als
   `COMMENT` und **Ship** als `APPROVE` von der Schaltfläche
-  (`approve_on_ship: true`). Das MCP-Tool lässt Ship bei `COMMENT`, solange du
-  nicht `approve_on_ship` übergibst.
-- Das Review wird unter der App-Identität des Servers gepostet. Wer **Auf
-  GitHub veröffentlichen** gedrückt hat, wird für das Rollen-Gate und das
-  Audit-Log festgehalten. Autor auf GitHub ist das nicht.
+  (`approve_on_ship: true`). Das MCP-Tool veröffentlicht als Automatisierung
+  und lässt Ship immer bei `COMMENT`.
+- Die Schaltfläche **Auf GitHub veröffentlichen** postet das Review als die
+  Person, die sie gedrückt hat, über deren eigene GitHub-Anmeldung: Das
+  Release-Gate gehört ihr, also auch das Review. Eine Veröffentlichung ohne
+  Person dahinter ist Automatisierung, und die genehmigt nie: Ship geht dann als
+  `COMMENT` hinaus, und auf Control Center Connect wird der Beitrag mit dem
+  Präfix `**Control Center** (for @login):` gekennzeichnet.
 
 Das Veröffentlichen deklariert die Aktionsklasse `prPublish`. Der Engpass der
 Schutzregeln behandelt es deshalb wie jede verändernde Aktion. Standard ist

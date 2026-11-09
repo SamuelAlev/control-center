@@ -2,7 +2,7 @@
 title: Sandbox und Sicherheit
 description: Was einen Agenten in Control Center heute tatsächlich begrenzt, wie weit die Betriebssystem-Sandbox reicht und welche Grenzen auf einem Host ohne Backend halten.
 slug: de-DE/handbuch/konzepte/sandbox-und-sicherheit
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Wo die Betriebssystem-Sandbox reicht und wo nicht]
@@ -142,10 +142,11 @@ welcher Adapter den Agenten ausführt.
 
 Ein Push ist die Aktion, die auch gegen einen Agenten halten muss, der eine
 Regel umgehen will. Deshalb wird er über das durchgesetzt, was der Agent
-besitzt, nicht über das, was er ausführt. Ist eine GitHub App konfiguriert,
-bekommt ein Lauf in einem GitHub-Worktree ein auf das Repo begrenztes
-Installationstoken, das Inhalte lesen und mit Pull Requests arbeiten, aber
-nicht pushen kann. Die Git-Konfiguration des Laufs schreibt jede GitHub-Push-URL
+besitzt, nicht über das, was er ausführt. Ein Lauf in einem GitHub-Worktree
+bekommt ein Token für dieses eine Repository, ausgestellt über die GitHub App
+des Arbeitsbereichs, die eigene App des Servers oder Control Center Connect. Es
+kann Inhalte lesen und, wenn das verantwortliche Mitglied pushen darf, Pull
+Requests kommentieren, aber es kann nicht pushen. Die Git-Konfiguration des Laufs schreibt jede GitHub-Push-URL
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) auf das
 **Gateway für Agentenläufe** um, einen Loopback-Endpunkt auf `cc_server`. Das
 Gateway liest, welche Refs der Push aktualisiert, fragt die Regel **Zu einem
@@ -175,12 +176,11 @@ erkennt die übliche Schreibweise einer Aktion, und ein Agent, der eine
 verstecken will (`eval`, eine Skriptdatei, ein direkter API-Aufruf), schafft
 das. Pushes hängen nicht davon ab.
 
-:::caution[Ohne GitHub App ist die Push-Regel nur ein Hinweis]
-Ist keine GitHub App konfiguriert, greift der Broker auf ein Personal Access
-Token zurück, das sich nicht auf Lesen beschränken lässt. Für `git push` gilt
-die Regel weiterhin, weil git den Push an das Gateway schickt, aber Code, der
-das Token aus der Umgebung direkt nutzt, kann an ihr vorbei pushen.
-:::
+Jedes GitHub-Token, das ein Lauf erhält, ist doppelt begrenzt: auf ein
+Repository und auf das, was das verantwortliche Mitglied (die Person, die
+gefragt hat, sonst der Besitzer des Arbeitsbereichs) dort tun darf. Es gibt
+keine Ersatz-Zugangsdaten. Lässt sich kein Token ausstellen, startet der Lauf
+ohne, und seine Notizen nennen den Grund.
 
 In eine Sandbox wird kein Ticketing-API-Schlüssel gelegt. Agenten schreiben
 Tickets über die MCP-Werkzeuge von Control Center, die **In einen externen
@@ -189,10 +189,12 @@ Tracker schreiben** fragen.
 Die Regel **Auf das Netzwerk zugreifen** wird einmal gelesen, wenn der Lauf
 startet. Das Netzwerk einer Sandbox ist entweder an oder aus, also schaltet
 Verweigern es ab, während Zulassen und Zuerst fragen es anlassen; `web_fetch`
-und `web_search` des Harness fragen weiterhin bei jedem Aufruf. Zugangsdaten
-werden widerrufen, wenn der Lauf abgebaut wird, zusammen mit jedem
-Schreib-Token, das das Gateway ausgestellt hat. Ein Handle überdauert also den
-Lauf nicht.
+und `web_search` des Harness fragen weiterhin bei jedem Aufruf. Die Handles
+für die Zugangsdaten des Laufs werden freigegeben, wenn er abgebaut wird. Die
+Tokens dahinter werden je Mitglied und Repository geteilt und laufen nach etwa
+einer Stunde ab; meldet sich ein Mitglied bei GitHub ab oder verlässt es den
+Arbeitsbereich, fallen alle in seinem Namen ausgestellten Tokens auf einmal
+weg.
 
 ## Was die Sandbox hinzufügt und wo sie aufhört
 

@@ -2,7 +2,7 @@
 title: Installazione
 description: Usa Control Center nel browser oppure installa l'app desktop, configura un backend per gli agenti e scegli dove viene eseguito il suo server.
 slug: it-IT/manuale/installazione
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center funziona in due modi: come **app web** su
@@ -135,14 +135,9 @@ Gli elenchi dei modelli sono serviti in tempo reale da ogni fornitore collegato;
 
 Una credenziale GitHub è **tua e risiede sul server**, indicizzata per il tuo ID utente — non nel portachiavi del sistema operativo del client. Ogni dispositivo da cui accedi usa la stessa, e nessun altro membro può leggerla.
 
-Se sul server è registrata una GitHub App ([Crea la GitHub App](/it-IT/manuale/guide/github-app/)), **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice** offre **Accedi con GitHub** (un device flow eseguito dal server). Altrimenti incolla un personal access token:
+GitHub prevede solo l'accesso: **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice** offre **Accedi a GitHub**, e non c'è alcun token da incollare. L'accesso passa dalla GitHub App del server ([Crea la GitHub App](/it-IT/manuale/guide/github-app/)) o da Control Center Connect, a seconda di cosa ha scelto il proprietario del server. Con l'app del server, il browser torna da solo al server; tramite Connect, digiti il codice di 8 caratteri che mostra il browser, oppure lasci che apra Control Center. Vedi [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/).
 
-- Classico: `repo` e `read:org`
-- A granularità fine: **Contents** e **Pull requests** (lettura e scrittura), **Checks** e **Actions** (lettura)
-
-Creane uno su [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Il server sonda il token per ricavare il nome dell'account nel momento in cui viene salvato, quindi la riga può mostrare «hai eseguito l'accesso come …»; una sonda fallita salva comunque il token, e un refuso o uno scope mancante si manifesta più tardi come una richiesta fallita.
-
-Il primo passo dell'onboarding è questa connessione. Dopodiché la stessa scheda è dove la sostituisci o la cancelli. GitLab e Bitbucket usano la stessa scheda; vedi [Collega un host di codice](/it-IT/manuale/guide/collega-host-di-codice/).
+L'onboarding chiede questa connessione. Dopodiché la stessa scheda è dove accedi di nuovo o ti disconnetti. GitLab e Bitbucket usano la stessa scheda con un token personale incollato; vedi [Collega un host di codice](/it-IT/manuale/guide/collega-host-di-codice/).
 
 ## Scegli dove viene eseguito il server
 

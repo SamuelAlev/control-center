@@ -74,15 +74,25 @@ class GitHubReactionSummary {
 /// A single reaction on a comment, issue, or PR.
 class GitHubReaction {
   /// Creates a [GitHubReaction].
-  const GitHubReaction({required this.id, required this.content, this.user});
+  const GitHubReaction({
+    required this.id,
+    required this.content,
+    this.user,
+    this.created = false,
+  });
 
-  /// Creates a [GitHubReaction] from JSON.
-  factory GitHubReaction.fromJson(Map<String, dynamic> json) {
+  /// Creates a [GitHubReaction] from JSON. [created] is the create call's
+  /// HTTP status (201), which the body does not carry.
+  factory GitHubReaction.fromJson(
+    Map<String, dynamic> json, {
+    bool created = false,
+  }) {
     final user = json['user'];
     return GitHubReaction(
       id: (json['id'] as num?)?.toInt() ?? 0,
       content: json['content'] as String? ?? '',
       user: user is Map<String, dynamic> ? GitHubUser.fromJson(user) : null,
+      created: created,
     );
   }
 
@@ -94,4 +104,10 @@ class GitHubReaction {
 
   /// The user who created the reaction.
   final GitHubUser? user;
+
+  /// Whether the create call made this reaction (HTTP 201). GitHub answers
+  /// 200 with the existing reaction when the same user already left the same
+  /// one, which makes a reaction an atomic per-user claim. Always false on a
+  /// listed reaction.
+  final bool created;
 }

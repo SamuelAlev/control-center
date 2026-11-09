@@ -2,7 +2,7 @@
 title: Skapa en pipelinemall
 description: Författa en DAG-arbetsflödesmall i pipelineredigeraren — lägg till noder, koppla ihop dem, deklarera indata och gör den körbar.
 slug: sv-SE/handbok/how-to-guider/skapa-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipelinemallar skapas i arbetsytans inställningar. Posten **Pipelines** i
@@ -126,10 +126,21 @@ Lägger till **Bash-skript**. Det finns inga fält för arbetskatalog eller milj
 eftersom inget av dem går att konfigurera:
 
 - Varje bash-steg i en körning delar cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` injiceras från lagret för autentiseringsuppgifter, så `gh` och
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` fungerar utan konfiguration.
+- Skriptet körs i värdens OS-sandlåda, precis som en agents kommandon. En värd
+  utan sandlåda (Windows, eller Linux utan `bwrap`) låter steget misslyckas i
+  stället för att köra det obegränsat. Serverns datakatalog och `.env`-fil går
+  inte att läsa inifrån.
+- Git och `gh` ser ingen värdkonfiguration: ingen sparad inloggning, ingen
+  credential helper och inga globala hooks.
+- När pipelinen namnger ett GitHub-repo som är länkat till arbetsytan
+  (`repo_full_name` i tillståndet eller i utlösarens nyttolast) innehåller
+  `GH_TOKEN` och `GITHUB_TOKEN` en token som bara kan läsa just det repot, så `gh`
+  och `git clone` mot det fungerar utan konfiguration. Annars finns ingen
+  GitHub-token.
+- Bara en administratör i arbetsytan kan skapa eller redigera en pipeline med ett
+  bash-steg.
 - Skriptet startas som den bokstavliga körbara filen `bash`, så `bash` måste
-  finnas i `PATH` på servervärden. Det är något att tänka på i Windows.
+  finnas i `PATH` på servervärden.
 
 ### Router
 

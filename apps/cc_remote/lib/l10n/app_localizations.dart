@@ -4601,6 +4601,36 @@ abstract class AppLocalizations {
   /// **'Waiting for authorization in your browser…'**
   String get credentialsWaitingForLogin;
 
+  /// Label of the field where a person types the confirmation code Control Center Connect's page showed after they approved a sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code shown in your browser'**
+  String get credentialsConnectCodePrompt;
+
+  /// Shown when the typed sign-in confirmation code is not 8 letters and digits
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like a sign-in code. Codes have 8 letters and digits.'**
+  String get credentialsConnectCodeMalformed;
+
+  /// Shown when the server refuses a typed sign-in confirmation code
+  ///
+  /// In en, this message translates to:
+  /// **'That code doesn\'t match this sign-in. Check it and try again.'**
+  String get credentialsSignInInvalidCode;
+
+  /// Shown on a GitHub or Linear card when the server has neither its own app nor Connect for that sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in isn\'t set up on this server yet.'**
+  String credentialsSignInUnavailable(String provider);
+
+  /// Shown when the server's own-app sign-in callback is localhost or private, so a phone cannot finish the sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'This server\'s sign-in callback isn\'t reachable securely from a phone. Sign in from the desktop app, or ask the server owner to set up a public HTTPS address.'**
+  String get credentialsSignInPhoneUnreachable;
+
   /// No description provided for @credentialsLoginTimedOut.
   ///
   /// In en, this message translates to:
@@ -4636,12 +4666,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete sign-in'**
   String get credentialsCompleteLogin;
-
-  /// No description provided for @credentialsRedirectUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'This server\'s browser callback is not reachable securely from a phone. Ask the server owner to configure a public HTTPS callback, or add a token instead.'**
-  String get credentialsRedirectUnavailable;
 
   /// No description provided for @credentialsUpdateToken.
   ///

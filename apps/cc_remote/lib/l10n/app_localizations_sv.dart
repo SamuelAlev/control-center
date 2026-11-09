@@ -2582,6 +2582,27 @@ class AppLocalizationsSv extends AppLocalizations {
       'Väntar på godkännande i din webbläsare…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Ange koden som visas i webbläsaren';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Det ser inte ut som en inloggningskod. Koder har 8 bokstäver och siffror.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Koden hör inte till den här inloggningen. Kontrollera den och försök igen.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Inloggning på $provider är inte konfigurerad på den här servern än.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Serverns återanropsadress för inloggning går inte att nå säkert från en telefon. Logga in från skrivbordsappen eller be serverns ägare att konfigurera en offentlig HTTPS-adress.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Inloggningsförsöket har gått ut. Starta ett nytt försök.';
 
@@ -2602,10 +2623,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Slutför inloggningen';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Serverns webbläsaråteranrop kan inte nås säkert från en telefon. Be serverägaren konfigurera ett publikt HTTPS-återanrop eller lägg till en token i stället.';
 
   @override
   String get credentialsUpdateToken => 'Uppdatera token';

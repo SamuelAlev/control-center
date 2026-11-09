@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Kết nối Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Máy chủ và triển khai",
   "docs.sidebar.guidesRunHeadlessServer": "Chạy máy chủ không giao diện",
+  "docs.sidebar.guidesRunConnect": "Chạy máy chủ Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Kết nối máy chủ từ xa",
   "docs.sidebar.guidesRunFleetWorker": "Chạy một worker đội máy",
   "docs.sidebar.guidesBackUpAndRestore": "Sao lưu và khôi phục",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Phím tắt",
   "docs.sidebar.referenceRouteMap": "Bản đồ tuyến",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Sao lưu, xuất và nhập",
   "docs.sidebar.referenceTelemetry": "Phân tích sử dụng",
   "docs.sidebar.referenceGlossary": "Thuật ngữ"

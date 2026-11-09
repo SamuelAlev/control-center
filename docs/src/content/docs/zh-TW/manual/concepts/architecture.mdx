@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端伺服器模型、以功能為先的整潔架構，以及埠與配接器來組織。
 dateModified: 2026-09-19
 slug: zh-TW/手冊/概念/架構
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## 概述
@@ -113,9 +113,9 @@ Control Center 是多人使用的：人類與代理是地位對等的行為者�
 **go_router**，而有一項事實主導其餘一切：**應用程式內的每個目的地都帶有工作區前置路徑**，形式為 `/workspaces/:workspaceId/…`。URL 中的工作區 id 是使用中工作區的唯一真實來源——`activeWorkspaceIdProvider` 是由路由驅動，而不是反過來——這也是為什麼在前置路徑之外讀取以工作區為範圍的資料時，無從取得其 id。
 
 - 路由建構_函式_位於 `router/routes.dart`，每個都以工作區 id 作為第一個引數，而不是字串常數
-- 四個情境之前的路由不帶前置路徑：`/splash`、`/onboarding`、`/signed-out` 與 `/workspaces`（選擇器）
-- `ShellRoute` 包住應用程式外殼；那四個介面則在其外部以全螢幕呈現
-- 驗證守衛：未完成設定的會被導向 `/onboarding`；設定已完成、但程式碼代管憑證已消失的，則會被導向 `/signed-out`。完成是指已登入的使用者至少連接了一個程式碼代管服務，且至少存在一個工作區——不特定是 GitHub，而且 `gh` CLI 不是一種驗證方式
+- 三個情境之前的路由不帶前置路徑：`/splash`、`/onboarding` 與 `/workspaces`（選擇器）
+- `ShellRoute` 包住應用程式外殼；那三個介面則在其外部以全螢幕呈現
+- 驗證守衛：未完成設定的會被導向 `/onboarding`。設定已完成、但程式碼代管憑證已消失的，會留在應用程式內，工作區外殼會顯示一則附有登入連結的警告。完成是指已登入的使用者至少連接了一個程式碼代管服務，且至少存在一個工作區——不特定是 GitHub，而且 `gh` CLI 不是一種驗證方式
 - 入門引導的閘門位於 `features/auth/providers/`
 
 ## 網路（伺服器端）

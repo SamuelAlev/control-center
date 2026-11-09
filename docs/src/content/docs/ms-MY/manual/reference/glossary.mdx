@@ -2,7 +2,7 @@
 title: Glosari
 description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Aliran kerja berasaskan DAG yang merantai langkah (penghantaran ejen, skrip, bersyarat) bersama. Ditakrifkan oleh templat; dilaksanakan sebagai larian.'],
 ['Mesyuarat', 'Sesi mesyuarat yang dirakam dan ditranskripsikan secara setempat. Menangkap mikrofon dan audio sistem, mentranskripsi pada peranti dengan model ASR yang boleh dipilih (Parakeet TDT v3 secara lalai; Parakeet TDT v2, Whisper large-v3-turbo dan Whisper base.en ialah alternatif), memisahkan penutur dan meringkaskan kepada nota, item tindakan dan keputusan. Model ASR yang dipilih dipasang secara paksa semasa but dan operasi rakaman menyala selepas satu permulaan semula. Berskop ruang kerja.'],
 ['CalendarEvent', 'Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual, Mesyuarat ialah sesi yang dirakam.'],
-['CalendarAccount', 'Akaun Google yang bersambung, bagi setiap ruang kerja dan e-mel. Token penyegaran OAuth disimpan di pihak pelayan sebagai kunci google_* dalam fail secrets.json di bawah direktori data dan tidak pernah sampai ke klien; bendera authExpiredAt memacu sepanduk sambung semula.'],
+['CalendarAccount', 'Akaun Google yang bersambung, bagi setiap ruang kerja, ahli dan e-mel. Kelayakannya disimpan di sisi pelayan sebagai kunci google_* dalam fail secrets.json di bawah direktori data dan tidak sekali-kali sampai ke klien; log masuk melalui Connect hanya menyimpan pemeteraian kelayakan (credential seal). Bendera authExpiredAt memacu sepanduk sambung semula.'],
 ['AgentRole', 'Peranan tersenarai (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Menentukan persona, akses memori dan hierarki.'],
 ['AgentSkills', 'Set pengenal kemahiran yang tidak sensitif huruf besar-kecil yang menyuntik konteks berkaitan ke dalam prompt semasa penghantaran.'],
 ['Sumber kemahiran', 'Repositori GitHub yang didaftarkan bagi setiap ruang kerja sebagai katalog kemahiran. Tidak dipercayai secara binaan: metadata repositori itu hanya untuk paparan dan setiap pemasangan melalui pintu imbasan gagal-tertutup sebelum sebarang kandungan sampai ke cakera atau prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.'],
 ['WakeReason', 'Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.'],
 ['SandboxPort', 'Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Menempa kelayakan berskop untuk pelancaran kotak pasir (baca sahaja untuk persekitaran ejen, tulis hanya untuk laluan push di pihak pelayan) dan mencabutnya semasa pembongkaran.'],
+['CredentialBrokerPort', 'Menempa kelayakan berskop untuk pelancaran kotak pasir (satu token bagi satu repo untuk persekitaran ejen, tulis hanya untuk laluan push di sebelah pelayan), kemudian melepaskannya apabila dimusnahkan.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.'],
 ['EmbeddingPort', 'Menghasilkan vektor embedding teks bernorma unit untuk carian semantik.'],
 ['NotificationPort', 'Menunjukkan pemberitahuan desktop natif dengan menghormati gerbang kategori/laluan.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Keputusan semakan', 'ship, hold atau block. Mana-mana penemuan P0 dengan keyakinan >= 0.7 menyekat; mana-mana P0 lain atau mana-mana P1 menahan; sebaliknya ship. Paksi gagal berpintu memaksa block dan tidak boleh dikalahkan oleh penemuan.'],
 ['SessionRecording', 'Strim acara serta kaset HTTP/LLM dan I/O alat yang ditangkap bagi satu larian, dipasangkan dengan AgentConfigHash.'],
 ['Sesi golden', 'SessionRecording yang telah disahkan dan dipinkan bagi setiap ejen atau playbook.'],
+['Control Center Connect', 'Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google, Linear) untuk pelayan tanpa apl sendiri. Dihoskan oleh Control Center, dihoskan sendiri, atau dimatikan. Ia memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo.'],
+['Pemeteraian kelayakan', 'Kelayakan tersulit yang hanya boleh dibuka oleh Connect yang menciptanya, terikat kepada pembekal, alamat Connect, id pemasangan, ruang kerja, akaun, apl dan generasi secret. Pelayan menyimpan pemeteraian; token akses kekal dalam memori.'],
+['Id pemasangan', 'Identiti pelayan terhadap satu alamat Connect, diperoleh daripada kunci pemasangannya. Connect membenarkan pelayan mengikut id pemasangan; memutar kunci menukarnya dan mengeluarkan semua orang daripada lorong Connect.'],
+['Ikatan pemasangan', 'Rekod Connect tentang pelayan mana yang boleh menggunakan pemasangan GitHub bagi App kongsi. Pemasangan organisasi memerlukan pentadbir untuk membenarkan setiap pelayan.'],
+['Lorong log masuk', 'Log masuk pelayar bagi satu pembekal: `github`, `google`, `linear`, `linear_app` atau `slack`. Setiap lorong berjalan pada apl pelayan apabila ia lengkap, jika tidak melalui Connect, dan jika tidak, tidak tersedia.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Menempa kelayakan berskop untuk pelancaran kotak pasir — baca sahaja untuk persekitaran ejen, tulis hanya untuk laluan push di pihak pelayan — dan mencabutnya semasa pembongkaran.
+**CredentialBrokerPort**: Menempa kelayakan berskop untuk pelancaran kotak pasir — satu token bagi satu repo untuk persekitaran ejen, tulis hanya untuk laluan push di sebelah pelayan — kemudian melepaskannya apabila dimusnahkan.
 
 **GitRepoInspectorPort**: Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual; Mesyuarat ialah sesi yang dirakam. Dipautkan satu-ke-satu melalui `MeetingCalendarLink`.
 
-**CalendarAccount**: Akaun Google yang bersambung, bagi setiap ruang kerja dan e-mel. Token penyegaran OAuth disimpan di pihak pelayan sebagai kunci `google_*` dalam `<dataDir>/secrets.json` dan tidak pernah sampai ke klien; aliran kod peranti selesai pada pelayan. Bendera `authExpiredAt` memacu sepanduk sambung semula.
+**CalendarAccount**: Akaun Google yang bersambung, bagi setiap ruang kerja, ahli dan e-mel (`google:<workspaceId>:<userId>:<email>`). Kelayakannya disimpan di sisi pelayan sebagai kunci `google_*` dalam `<dataDir>/secrets.json` dan tidak sekali-kali sampai ke klien; log masuk melalui Connect hanya menyimpan pemeteraian kelayakan. Bendera `authExpiredAt` memacu sepanduk sambung semula.
 
 ## Istilah seni bina
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Klien nipis telefon — PWA web Flutter yang mengawal armada dari jauh melalui geganti berperantara dengan polisi alat tolak-secara-lalai.
 
 **cc_signaling_server**: Broker geganti WebSocket tanpa keadaan yang menghoskan bilik bergerbang jemputan — geganti bodoh yang hanya memajukan bingkai tersegel hujung-ke-hujung, tidak memegang data apl dan tidak pernah melihat PSK penggandingan.
+
+**Control Center Connect**: Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google Calendar, Linear) untuk pelayan yang belum mendaftarkan apl sendiri: versi yang dihoskan oleh Control Center, versi yang dijalankan oleh sebuah organisasi (`cc-connect`, atau dipasang dalam `cc_server` pada `/connect`), atau tiada. Connect memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo. Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
+
+**Pemeteraian kelayakan** (`credential_seal`): Kelayakan tersulit yang hanya boleh dibuka oleh Connect yang menciptanya, terikat kepada pembekal, alamat Connect, id pemasangan, ruang kerja, akaun, apl dan generasi secret. Pelayan menyimpan pemeteraian dan id pemasangan ia dibuat untuknya; token akses kekal dalam memori. Pemeteraian yang id pemasangannya tidak lagi sepadan akan dibuang dan pemiliknya log masuk semula.
+
+**Id pemasangan** (`install_id`): Identiti pelayan terhadap satu alamat Connect, diperoleh daripada kunci pemasangan dalam fail rahsianya. Connect membenarkan pelayan mengikut id pemasangan. Memutar kunci menghasilkan id baharu dan mengeluarkan semua orang daripada lorong Connect.
+
+**Ikatan pemasangan** (`install_binding`): Rekod Connect tentang pelayan mana yang boleh menggunakan pemasangan GitHub bagi App kongsi. Memasang melalui sesebuah pelayan akan mengikatnya; **Benarkan pelayan ini** oleh pentadbir organisasi akan mengikat pelayan lain.
+
+**Lorong log masuk**: Log masuk pelayar bagi satu pembekal — `github`, `google`, `linear`, `linear_app` atau `slack`. Sesebuah lorong berjalan pada apl pelayan apabila apl itu lengkap, jika tidak melalui Connect, dan jika tidak, tidak tersedia. Apl sendiri yang dikonfigurasikan separa ialah ralat, tidak sekali-kali jatuh kembali kepada Connect.
 
 ## Lihat juga
 

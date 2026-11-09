@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端的伺服器模型、功能優先的整潔架構，以及埠與配接器組成。
 dateModified: 2026-09-19
 slug: zh-HK/手冊/概念/架構
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## 概覽
@@ -113,9 +113,9 @@ Control Center 是多使用者系統：人類與代理是由 `Principal` 統一�
 **go_router**，而有一件事主導其餘一切：**應用程式內每個目的地都帶有工作區前綴**，形式為 `/workspaces/:workspaceId/…`。URL 中的工作區 id 是作用中工作區的唯一真實來源——`activeWorkspaceIdProvider` 由路由驅動，而不是反過來——所以在前綴路由之外讀取以工作區為範圍的資料，根本無從取得它的 id。
 
 - 路由建構器_函式_放在 `router/routes.dart`，每個都以工作區 id 作為第一個引數，而不是字串常數
-- 四條前置情境路由不帶前綴：`/splash`、`/onboarding`、`/signed-out` 與 `/workspaces`（選擇器）
-- `ShellRoute` 包住應用程式外殼；那四個介面在外殼之外全螢幕呈現
-- 驗證守衛：設定未完成的會前往 `/onboarding`；設定已完成但程式碼託管憑證已失效的會前往 `/signed-out`。「完成」是指已登入使用者至少連接了一個程式碼託管平台，而且至少存在一個工作區——不特定是 GitHub，而 `gh` CLI 也不是一種驗證方式
+- 三條前置情境路由不帶前綴：`/splash`、`/onboarding` 與 `/workspaces`（選擇器）
+- `ShellRoute` 包住應用程式外殼；那三個介面在外殼之外全螢幕呈現
+- 驗證守衛：設定未完成的會前往 `/onboarding`。設定已完成但程式碼託管憑證已失效的，會留在應用程式內，工作區外殼會顯示附連結指向登入的警告。「完成」是指已登入使用者至少連接了一個程式碼託管平台，而且至少存在一個工作區——不特定是 GitHub，而 `gh` CLI 也不是一種驗證方式
 - 新手導引閘門位於 `features/auth/providers/`
 
 ## 網絡（伺服器端）

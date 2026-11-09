@@ -1,11 +1,11 @@
 ---
 title: Nastavte integraci Slack
-description: Připoj aplikaci Slack k pracovnímu prostoru Control Center, aby z něj členové mohli řídit agenty.
+description: Připoj Slack k pracovnímu prostoru Control Center, přes sdílenou aplikaci Control Center nebo přes vlastní, aby ze Slacku členové mohli řídit agenty.
 slug: cs-CZ/prirucka/navody/integrace-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Tenhle návod ukazuje, jak Slack připojit k pracovnímu prostoru Control Center: buď aplikaci necháš vytvořit Control Center, nebo ji postavíš sám.
+Tenhle návod ukazuje, jak Slack připojit k pracovnímu prostoru Control Center: přidáním sdílené aplikace Control Center, nebo vlastní aplikací, kterou ti vytvoří Control Center nebo kterou postavíš sám.
 
 Pro první průchod s průvodcem viz [Propojte Slack s pracovním prostorem](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/).
 
@@ -19,9 +19,37 @@ Implementace Discordu, Telegramu, Teams ani Matrixu není.
 
 - Role `owner` nebo `admin` v pracovním prostoru Control Center — připojení chatové aplikace je změna nastavení pracovního prostoru
 - Oprávnění vytvářet a instalovat aplikace v pracovním prostoru Slacku
-- Nic veřejně dosažitelného: spojení je odchozí (Socket Mode), takže server nepotřebuje příchozí port, tunel ani doménu
+- Nic veřejně dosažitelného: vlastní aplikace se připojuje ven přes Socket Mode a události sdílené aplikace se k serveru dostanou dlouhým dotazováním (long poll) na Control Center Connect, takže server nepotřebuje příchozí port, tunel ani doménu
 
-## Tři cesty k aplikaci
+## Sdílená aplikace, nebo vlastní
+
+Pracovní prostor běží vždy právě na jedné z nich.
+
+| Režim | Co potřebuje | Co dostaneš |
+| --- | --- | --- |
+| **Sdílená aplikace Control Center** | Server používá Control Center Connect (**Nastavení → Server → Jednotné přihlášení**) a Connect obsluhuje Slack | Jedno kliknutí a přihlášení přes Slack. Žádnou aplikaci nevytváříš, žádný token nevkládáš, nic neobměňuješ |
+| **Vlastní aplikace** | Aplikace Slack ve tvém pracovním prostoru Slacku, vytvořená jednou ze tří cest níže | Vlastní jméno bota, popisy a slash příkaz, upravitelné z Control Center |
+
+### Přidej sdílenou aplikaci Control Center
+
+1. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+2. V bloku Slack najdi řádek **Přidat Control Center do Slack** a klikni na **Přidat do Slack**
+3. Prohlížeč otevře Slack. Přihlas se přes Slack, vyber pracovní prostor Slacku a instalaci schval
+4. Když prohlížeč ukáže kód, zadej ho do dialogu, který nechal Control Center otevřený. Když tě prohlížeč do aplikace vrátí sám, není co opisovat
+5. Toast pojmenuje pracovní prostor Slacku, do kterého se aplikace přidala, a blok Slack ukáže, že spojení běží na sdílené aplikaci Control Center
+
+Aplikaci smí přidat jen admin pracovního prostoru. Řádek řekne, proč nejde spustit, když server používá vlastní aplikace místo Connect, když tvůj Connect nemá aplikaci Slack, nebo když má tenhle pracovní prostor už připojenou vlastní aplikaci Slack.
+
+Čím se liší od vlastní aplikace:
+
+- Slack posílá události sdílené aplikace na Connect. Connect si nechá jen odkaz (tým, kanál a id zprávy) a text zprávy zahodí; server se Connect dlouhým dotazováním ptá na odkazy a každou zprávu si přečte ze Slacku sám. Text slash příkazu přes Connect projde, a proto [`/cc ticket`](#návrhy-ticketů-ze-slacku) jen připraví návrh
+- Token bota je zapečetěný pro tento server a obnovuje se přes Connect, takže není co vkládat ani obměňovat
+- Jméno bota, popisy a slash příkaz patří sdílené aplikaci. Řádek Slacku řekne, že spojení běží na sdílené aplikaci, a **Přizpůsobit bota** nenabídne
+- Pracovní prostor Slacku je v jednu chvíli vázaný na jeden server Control Center. Když aplikaci přidáš z jiného serveru, přesune se tam a spojení tohoto serveru skončí
+
+Chceš-li přepnout režim, odpoj se a připoj se druhým způsobem.
+
+### Vlastní aplikace: tři cesty, jak ji získat
 
 | Cesta | Co dodáš | Co udělá Control Center |
 | --- | --- | --- |
@@ -31,7 +59,7 @@ Implementace Discordu, Telegramu, Teams ani Matrixu není.
 
 Cesta s průvodcem je jediná, která aplikaci nechá z Control Center i _spravovat_, a právě to zapne [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/). Aplikaci z **Vytvořit v Slack** lze později povýšit na spravovanou: do dialogu připojení vložíš token konfigurace.
 
-Tlačítko na instalaci sdílené aplikace Slack od Control Center schválně chybí. Instalace distribuované aplikace Slack potřebuje sdílené client secret (Slack nemá PKCE) a Socket Mode rozesílá události aplikace náhodně mezi její spojení, takže jedna sdílená aplikace by zprávy tvého pracovního prostoru doručovala na cizí servery. Každý pracovní prostor proto vlastní svou aplikaci a tyhle tři cesty jsou o tom, jak málo práce tě to stojí.
+Události vlastní aplikace přes Connect nikdy nejdou: Socket Mode je doručuje rovnou tomuto serveru.
 
 ## Varianta A: aplikaci vytvoří Control Center
 
@@ -102,6 +130,8 @@ message.im
 
 ## Připojení
 
+Takhle se tokeny vlastní aplikace dostanou do Control Center. Sdílená aplikace nic z toho nepotřebuje.
+
 1. Jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
 2. V bloku Slack klikni na **Připojit Slack**
 3. Vyplň pole:
@@ -123,8 +153,8 @@ Bez volitelného tokenu konfigurace aplikace spojení funguje. Bota z Control Ce
 
 ## Co připojení udělá
 
-- Uloží přihlašovací údaje do vlastního adresáře pracovního prostoru, vedle jeho databáze, čitelné jen pro vlastníka. Ke klientovi se nikdy nevracejí
-- Otevře jedno spojení Socket Mode pro tenhle pracovní prostor a začne přijímat zmínky, odpovědi ve vláknech Slacku, přímé zprávy a slash příkazy
+- Uloží přihlašovací údaje do vlastního adresáře pracovního prostoru, vedle jeho databáze, čitelné jen pro vlastníka. Ke klientovi se nikdy nevracejí. U sdílené aplikace je to zapečetěný grant; krátkodobý token bota, na který se obnovuje, zůstává v paměti
+- Začne přijímat zmínky, odpovědi ve vláknech Slacku, přímé zprávy a slash příkazy: u vlastní aplikace přes jedno spojení Socket Mode, u sdílené aplikace přes jediné dlouhé dotazování serveru na Connect
 - Znovu aktivuje každé vlákno Slacku, které už bylo přemostěné, takže opětovné připojení pokračuje v existujících konverzacích a nenechá je viset
 - Pracovní prostory bez chatové aplikace nic nestojí: žádný socket, žádné časovače, žádný provoz
 
@@ -139,8 +169,8 @@ prostoru jinde znamená Slack tam připojit znovu.
 
 Přístup k mostu je **členství** v pracovním prostoru, ne držení tokenu. Účet
 Slacku musí být propojený s uživatelem Control Center, který je člen s rolí
-s právem zápisu. Připojení, odpojení, nastavení s průvodcem, odkaz na založení
-aplikace i úprava bota jsou jen pro adminy.
+s právem zápisu. Připojení, odpojení, instalace sdílené aplikace, nastavení
+s průvodcem, odkaz na založení aplikace i úprava bota jsou jen pro adminy.
 :::
 
 ## Ověření
@@ -163,7 +193,25 @@ Uvažování ve formě zdi textu a výstup nástroje Control Center neopouštěj
 
 Když se po kliknutí nic nestane, server, který zprávu poslal, není z počítače, na kterém jsi klikl, dosažitelný (třeba server jen na loopback, na který klikneš z telefonu), nebo tam Control Center neběží. Server bez dosažitelné adresy pošle kartu bez tlačítka, ne kartu, která nikam nevede.
 
+## Návrhy ticketů ze Slacku
+
+Každý propojený člen s rolí s právem zápisu může ze Slacku navrhnout ticket:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Text před `|` je název, text za ním popis. Bot odpoví, že ticket připravil jako návrh. Zatím se nic nevytvoří a žádná automatizace ticketů se nespustí: návrh na tebe čeká v **Nastavení → Pracovní prostor → Profil a identita → Návrhy ticketů z chatu**, kde můžeš opravit název a popis a pak kliknout na **Vytvořit ticket** nebo **Zahodit**.
+
+- Návrh vidí jen člen, který příkaz spustil
+- Návrh, který necháš ležet, se po dni zahodí. Návrhy žijí v paměti, takže je zahodí i restart serveru
+- Karta se ukazuje, jen když nějaké návrhy máš
+
+Text příkazu nejde ze Slacku znovu přečíst a u sdílené aplikace prošel přes Connect. Vytvořením ticketu v Control Center se z něj stane tvůj ticket.
+
 ## Rotace tokenu
+
+Tohle platí pro vlastní aplikaci. Sdílená aplikace nemá token k obměně.
 
 Novou hodnotu vlož znovu do dialogu připojení a klikni na **Připojit**. Připojení nahradí spojení, které pro tenhle pracovní prostor běželo, takže se socket naváže znovu s novými přihlašovacími údaji.
 
@@ -171,7 +219,7 @@ Při každém připojení musí být oba povinné tokeny vyplněné. Volitelný 
 
 ## Odpojení
 
-Na řádku Slacku klikni na **Odpojit** (jen admini). Socket se zavře a přihlašovací údaje se zapomenou.
+Na řádku Slacku klikni na **Odpojit** (jen admini). Spojení se zavře a přihlašovací údaje se zapomenou. U sdílené aplikace Control Center navíc odinstaluje bota z pracovního prostoru Slacku a uvolní jeho vazbu na tento server.
 
 Vazby prostorů a uživatelů schválně zůstanou: opětovné připojení stejné aplikace obnoví každé přemostěné vlákno Slacku. Jsou to řádky vázané na pracovní prostor, takže smazání pracovního prostoru je stejně odstraní.
 
@@ -208,7 +256,7 @@ Karty úkolů ve Slacku patří ke stejné nové ploše Agents & AI Apps jako st
 
 ### „Control Center k úpravě bota potřebuje token konfigurace aplikace“
 
-Řádek **Přizpůsobit bota** je neaktivní, protože spojení nemá token konfigurace aplikace. Čeká se to u aplikace postavené ručně nebo přes **Vytvořit v Slack**, protože Slack neohlásí, kterou aplikaci vytvořil. Na api.slack.com/apps vygeneruj pár tokenů konfigurace aplikace a připoj se znovu s vyplněným refresh tokenem.
+Řádek **Přizpůsobit bota** je neaktivní, protože spojení nemá token konfigurace aplikace. (U sdílené aplikace řádek **Přizpůsobit bota** vůbec není: bot patří sdílené aplikaci.) Čeká se to u aplikace postavené ručně nebo přes **Vytvořit v Slack**, protože Slack neohlásí, kterou aplikaci vytvořil. Na api.slack.com/apps vygeneruj pár tokenů konfigurace aplikace a připoj se znovu s vyplněným refresh tokenem.
 
 ### Dlouhá odpověď je useknutá
 

@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
@@ -14,6 +15,7 @@ import 'package:cc_domain/features/guardrails/domain/value_objects/action_decisi
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
+import 'package:cc_infra/src/dispatch/pushed_commit_inspector.dart';
 import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
 import 'package:test/test.dart';
 
@@ -63,6 +65,7 @@ class _Broker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async {
     scopes.add(scope);
     _n++;
@@ -114,6 +117,17 @@ class _Upstream {
         auth: request.headers.value(HttpHeaders.authorizationHeader),
         body: body,
       ));
+      if (request.method == 'GET') {
+        request.response
+          ..statusCode = 200
+          ..headers.set(
+            HttpHeaders.contentTypeHeader,
+            'application/x-git-receive-pack-advertisement',
+          )
+          ..write(advertisement);
+        await request.response.close();
+        return;
+      }
       request.response
         ..statusCode = 200
         ..headers.set(
@@ -130,6 +144,18 @@ class _Upstream {
     ({String method, String path, String query, String? auth, List<int> body})
   >
   seen = [];
+
+  /// GitHub's receive-pack ref advertisement, as smart HTTP serves it.
+  static final String advertisement = [
+    _pkt('# service=git-receive-pack\n'),
+    '0000',
+    _pkt(
+      '${'2' * 40} refs/heads/main\u0000report-status side-band-64k '
+      'ofs-delta agent=github/test\n',
+    ),
+    _pkt('${'3' * 40} refs/heads/dev\n'),
+    '0000',
+  ].join();
 }
 
 String _pkt(String line) =>
@@ -162,6 +188,7 @@ void main() {
   late HttpClient client;
   late List<GuardAudit> audits;
   late _Signer signer;
+  late List<PushedGitObject> inspected;
   var owner = true;
   var linked = <String>{};
   String? hookReply;
@@ -174,6 +201,7 @@ void main() {
     linked = {};
     audits = [];
     signer = _Signer();
+    inspected = [];
     owner = true;
     hookReply = null;
     hookRequests = 0;
@@ -193,6 +221,7 @@ void main() {
       githubBase: Uri.parse('http://127.0.0.1:${upstream.server.port}'),
       signer: signer,
       mayUseHostSigner: (_) async => owner,
+      inspectPack: (_) async => inspected,
     );
     host.listen((request) async {
       if (request.uri.path == '/agent/hooks/pre-tool-use') {
@@ -207,14 +236,17 @@ void main() {
       await gateway.handle(request);
     });
     lease = (await gateway.open(
-      const AgentRunGrant(
+      AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
         agentId: 'a1',
         spaceId: 's1',
         repoOwner: 'acme',
         repoName: 'widgets',
-        committerEmail: 'Ada@Example.com',
+        identity: AgentCommitIdentity.owner(
+          name: 'Ada',
+          email: 'Ada@Example.com',
+        ),
       ),
     ))!;
     client = HttpClient();
@@ -490,6 +522,91 @@ void main() {
       expect(upstream.seen.single.query, 'service=git-receive-pack');
     });
 
+    test('discovery asks git for a self-contained (no-thin) pack', () async {
+      final r = await send('GET', advertPath);
+      expect(r.status, 200);
+      expect(
+        r.body,
+        contains(
+          '\u0000report-status side-band-64k ofs-delta agent=github/test '
+          'no-thin\n',
+        ),
+      );
+      // Every pkt-line length still matches its payload.
+      expect(
+        AgentRunGateway.withNoThin(utf8.encode(r.body)),
+        utf8.encode(r.body),
+      );
+      expect(r.body, contains('refs/heads/dev\n'));
+    });
+
+    test('an advertisement that is not one is not forwarded', () {
+      expect(AgentRunGateway.withNoThin(utf8.encode('upstream-ok')), isNull);
+      expect(AgentRunGateway.withNoThin(utf8.encode('0000')), isNull);
+    });
+
+    test('pushed commits must carry the run\'s identity', () async {
+      rule(ActionClass.gitPush, ActionDecision.allow);
+      inspected = [
+        const PushedGitObject(
+          kind: 'commit',
+          oid: 'abcdef0123456789',
+          authorEmail: 'mallory@example.com',
+          committerEmail: 'ada@example.com',
+          signed: false,
+          signedOff: false,
+        ),
+      ];
+      final r = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/feature/x']),
+      );
+      expect(r.status, 200);
+      expect(r.body, contains('ng refs/heads/feature/x'));
+      expect(r.body, contains('authored by mallory@example.com'));
+      expect(upstream.seen, isEmpty);
+    });
+
+    test('a Signed-off-by trailer is refused on any run', () async {
+      rule(ActionClass.gitPush, ActionDecision.allow);
+      inspected = [
+        const PushedGitObject(
+          kind: 'commit',
+          oid: 'abcdef0123456789',
+          authorEmail: 'ada@example.com',
+          committerEmail: 'ada@example.com',
+          signed: false,
+          signedOff: true,
+        ),
+      ];
+      final r = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/feature/x']),
+      );
+      expect(r.body, contains('Signed-off-by'));
+      expect(upstream.seen, isEmpty);
+    });
+
+    test('the owner\'s own matching commits are forwarded', () async {
+      rule(ActionClass.gitPush, ActionDecision.allow);
+      inspected = [
+        const PushedGitObject(
+          kind: 'commit',
+          oid: 'abcdef0123456789',
+          authorEmail: 'Ada@Example.com',
+          committerEmail: 'ada@example.com',
+          signed: true,
+          signedOff: false,
+        ),
+      ];
+      final body = _push(['refs/heads/feature/x']);
+      final r = await send('POST', pushPath, body: body);
+      expect(r.body, 'upstream-ok');
+      expect(upstream.seen.single.body, body);
+    });
+
     test('a repo the workspace does not link is refused', () async {
       rule(ActionClass.gitPush, ActionDecision.allow);
       final r = await send(
@@ -655,6 +772,28 @@ void main() {
       expect(signer.signed, isEmpty);
     });
 
+    test('a run whose identity may not use the key is refused', () async {
+      final member = (await gateway.open(
+        AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c4',
+          actingUserId: 'u2',
+          identity: AgentCommitIdentity.member(
+            name: 'Ada',
+            email: 'ada@example.com',
+          ),
+        ),
+      ))!;
+      final r = await send(
+        'POST',
+        AgentRunLease.signPath,
+        body: commit,
+        secret: member.secret,
+      );
+      expect(r.status, HttpStatus.forbidden);
+      expect(signer.signed, isEmpty);
+    });
+
     test('a gateway with no owner check signs for nobody', () async {
       final closed = AgentRunGateway(
         guard: ActionGuardService(repository: rules, confirmationPort: confirm),
@@ -665,10 +804,13 @@ void main() {
       final other = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       other.listen(closed.handle);
       final grant = (await closed.open(
-        const AgentRunGrant(
+        AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c3',
-          committerEmail: 'ada@example.com',
+          identity: AgentCommitIdentity.owner(
+            name: 'Ada',
+            email: 'ada@example.com',
+          ),
         ),
       ))!;
       try {
@@ -738,6 +880,42 @@ void main() {
       final env = lease.environment(const {});
       expect(env[AgentRunLease.gatewayEnvKey], '${lease.base}');
       expect(env[AgentRunLease.tokenEnvKey], lease.secret);
+    });
+
+    Map<String, String> configOf(Map<String, String> env) => {
+      for (var i = 0; i < int.parse(env['GIT_CONFIG_COUNT']!); i++)
+        env['GIT_CONFIG_KEY_$i']!: env['GIT_CONFIG_VALUE_$i']!,
+    };
+
+    test('an owner run keeps its signing config', () {
+      final config = configOf(lease.environment(const {}));
+      expect(config, isNot(contains('commit.gpgsign')));
+      expect(config, isNot(contains('gpg.ssh.program')));
+    });
+
+    test('a member or unrequested run commits unsigned with every signer '
+        'stripped', () async {
+      for (final identity in [
+        AgentCommitIdentity.member(name: 'Bo', email: 'bo@example.com'),
+        AgentCommitIdentity.unrequested(),
+        null,
+      ]) {
+        final run = (await gateway.open(
+          AgentRunGrant(
+            workspaceId: 'w1',
+            conversationId: 'c-${identity.hashCode}',
+            identity: identity,
+          ),
+        ))!;
+        final config = configOf(run.environment(const {}));
+        expect(config['commit.gpgsign'], 'false', reason: '$identity');
+        expect(config['tag.gpgsign'], 'false');
+        expect(config['push.gpgsign'], 'false');
+        expect(config['gpg.program'], 'false');
+        expect(config['gpg.ssh.program'], 'false');
+        expect(config['gpg.x509.program'], 'false');
+        await gateway.close(run);
+      }
     });
 
     test('the sandbox shim speaks the gateway\'s contract', () {

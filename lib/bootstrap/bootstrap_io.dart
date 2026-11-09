@@ -52,6 +52,8 @@ import 'package:control_center/core/utils/cc_infra_logging.dart';
 import 'package:control_center/di/agent_wait_reminder_provider.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
+import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/features/desktop_app/providers/desktop_app_preferences.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
@@ -935,14 +937,12 @@ Future<void> _bindActiveWorkspace(
   });
 }
 
-/// Scheme prefix Google reserves for an iOS-type OAuth client's redirect
-/// (`com.googleusercontent.apps.<client>://…`). Matched by prefix because the
-/// `<client>` portion varies per deployment.
 /// Dispatches an inbound custom-scheme URL through the app's deep-link router.
 ///
-/// Google OAuth redirects are NOT handled here any more: the host runs the
-/// device-code grant and owns the refresh token, so no client-side redirect
-/// ever arrives (see `features/calendar/README.md`).
+/// No provider OAuth redirect ever lands here: the server (or Connect) runs
+/// every authorization-code exchange. The only sign-in link is Connect's
+/// `control-center://oauth-done` confirmation, which carries a code for an
+/// attempt this client started (see `_completeSignIn`).
 Future<void> _handleIncomingUrl(
   ProviderContainer container,
   String rawUrl,
@@ -983,8 +983,32 @@ Future<void> _handleDeepLink(ProviderContainer container, String rawUrl) async {
         workspaceId,
         ticketDetailRoute(workspaceId, ticketId),
       );
+    case OauthDoneDeepLink(:final loginId, :final code):
+      await _completeSignIn(container, loginId: loginId, code: code);
     case null:
       return;
+  }
+}
+
+/// Hands an `oauth-done` code to the sign-in this app started, or warns.
+///
+/// A login id this client never started came from somebody else's server:
+/// completing it would sign the reader's account in THERE. The controller
+/// sends nothing for it, and the reader is told why.
+Future<void> _completeSignIn(
+  ProviderContainer container, {
+  required String loginId,
+  required String code,
+}) async {
+  final known = await container
+      .read(providerSignInControllerProvider.notifier)
+      .completeFromDeepLink(loginId, code);
+  if (known) {
+    return;
+  }
+  final context = rootNavigatorKey.currentContext;
+  if (context != null && context.mounted) {
+    await showSignInPhishingWarning(context);
   }
 }
 

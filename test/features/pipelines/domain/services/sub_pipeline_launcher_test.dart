@@ -30,6 +30,7 @@ class FakePipelineEnginePort implements PipelineEnginePort {
     String? parentPipelineRunId,
     String? parentStepId,
     bool dryRun = false,
+    String? requestedByUserId,
   }) async {
     capturedTemplateId = templateId;
     capturedWorkspaceId = workspaceId;

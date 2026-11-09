@@ -153,6 +153,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 # demo'"'"'s teardown reaps every live visitor there). All config comes from the
 # CC_SERVER_* env above, overridable with `docker run -e …`.
 #
+# Provider SECRETS are the exception. The server refuses to boot when
+# GITHUB_APP_PRIVATE_KEY, GITHUB_CLIENT_SECRET, GOOGLE_OAUTH_CLIENT_SECRET,
+# LINEAR_API_KEY or a SLACK_*SECRET* is exported (`-e`, `--env-file`), since
+# every process the server starts would inherit it. Mount a `.env` beside the
+# executable instead — `-v /secure/cc.env:/app/bin/.env:ro` — or use Settings.
+#
 # Demo deployments additionally set, all optional (defaults in parentheses):
 #   CC_SERVER_DEMO_TTL_MINUTES    (45)    workspace lifetime per visitor
 #   CC_SERVER_DEMO_MAX_VISITORS   (60)    live visitors before redemption 503s

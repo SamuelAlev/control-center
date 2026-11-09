@@ -1,35 +1,38 @@
 ---
 title: Prata med Control Center från en GitHub-PR
-description: Be serverns GitHub App-bot om en granskning eller ställ en fråga direkt från PR-samtalet – utan webhook eller offentlig URL.
+description: Be Control Center om en granskning eller ställ en fråga direkt från PR-samtalet – utan webhook eller offentlig URL.
 slug: sv-SE/handbok/how-to-guider/github-pr-samtal
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Den här guiden visar hur du arbetar med Control Center utan att lämna GitHub:
 begär en AI-granskning från PR-sidan, ställ en fråga till boten i en kommentar och
 fortsätt samtalet i dess granskningstrådar.
 
-Boten är serverns egen [GitHub App](/sv-SE/handbok/how-to-guider/github-app/) – samma
-app som redan loggar in personer och kör bakgrundsarbete. Inget nytt registreras,
+Svaren kommer genom arbetsytans GitHub-spår: serverns egen
+[GitHub-app](/sv-SE/handbok/how-to-guider/github-app/), eller Control Centers delade
+app via Connect. Inget nytt registreras,
 och inget behöver kunna nås från internet: servern upptäcker vad som sagts på
 GitHub genom pollning, så en bärbar dator bakom NAT beter sig precis som en
 offentlig driftsättning.
 
 ## Förutsättningar
 
-- Servern har sin GitHub App [registrerad och
-  installerad](/sv-SE/handbok/how-to-guider/github-app/), med **Pull requests: read and write**
-  (för kommentarer, trådar och reaktioner) och **Issues: read** (för
-  kommentarsökningen). Båda finns redan med i den guidens behörighetslista
+- Arbetsytan har ett GitHub-spår: serverns egen GitHub-app eller Connect, med
+  appen [installerad](/sv-SE/handbok/how-to-guider/github-app/#installera-den-där-dina-repos-finns)
+  på kontot som äger repot. En egen app behöver **Pull requests** och **Issues**
+  med läs- och skrivåtkomst, vilket **Skapa min GitHub-app** redan beviljar
 - Repot är länkat till en arbetsyta i Control Center
+- Du är [inloggad på GitHub](/sv-SE/handbok/how-to-guider/github-integration/) på
+  den här servern, och du kan pusha till repot
 - Ingen webhook-URL, ingen tunnel, ingen callback – det finns inget att
   konfigurera på nätverkssidan
 
 ## Hitta botens namn
 
-Nämn `@usectrl`, Control Centers särskilda GitHub-konto. Det är standardutlösaren; serverns konfigurerade GitHub App hanterar fortfarande begäran och publicerar svar. Du behöver inga inloggningsuppgifter till kontot `usectrl`.
+Nämn `@usectrl`, Control Centers särskilda GitHub-konto. Det är standardutlösaren; arbetsytans GitHub-spår hanterar fortfarande begäran och publicerar svar. Du behöver inga inloggningsuppgifter till kontot `usectrl`.
 
-Appens egen inloggning, `<appslug>[bot]`, och kortformen `@appslug` fungerar också. Så hittar du detta valfria alias:
+Appens egen inloggning, `<appslug>[bot]`, och kortformen `@appslug` fungerar också. Så hittar du detta valfria alias på din egen app:
 
 1. Gå till **Inställningar → Server → Enkel inloggning** och rulla ned till
    kortet **Leverantörsappar**
@@ -53,11 +56,11 @@ Två sätt, som båda startar samma medföljande `pr_review`-pipeline som knappe
 
 - **Lägg till etiketten `ai-review`** på PR:en. Det här är det närmaste GitHub
   kommer att tilldela boten som granskare – appkonton kan inte hålla den
-  inbyggda platsen för begärda granskare. Det finns ingen kommentar att reagera
-  på, så inget publiceras på GitHub; granskningen startar i Control Center
-- **Kommentera `@usectrl review`** (eller bara `@usectrl`) i PR-samtalet. Boten
-  reagerar med 👀 och svarar sedan när granskningen har startat (eller att en
-  redan körs)
+  inbyggda platsen för begärda granskare. Ditt konto reagerar på PR:en med 👀
+  och granskningen startar i Control Center; ingen kommentar publiceras
+- **Kommentera `@usectrl review`** (eller bara `@usectrl`) i PR-samtalet. En 👀
+  dyker upp på din kommentar, och sedan säger ett svar att granskningen har
+  startat (eller att en redan körs)
 
 Granskarna arbetar i PR:ens granskningsyta; läs och publicera fynden som i
 [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/). Att publicera
@@ -78,11 +81,12 @@ Kommentera i PR-samtalet:
 
 Vad som händer, i ordning:
 
-1. Boten reagerar med 👀 så att du vet att kommentaren sågs
+1. En 👀 dyker upp på din kommentar, från ditt eget konto, så att du vet att
+   kommentaren sågs
 2. Frågan publiceras i PR:ens granskningsyta **som du** – samma tillskrivning som
    om du hade skrivit den i Control Center
-3. En agent svarar i ytan, och svaret publiceras tillbaka på PR:en som en
-   kommentar som @-nämner dig
+3. En agent svarar i ytan, och svaret publiceras tillbaka på PR:en. Varje svar
+   börjar med `**Control Center** (for @your-login):`
 
 En fråga på en PR utan någon granskning än väcker arbetsytans CEO-agent; när en
 granskning har körts svarar den agent som talade sist, så uppföljningar hamnar
@@ -108,34 +112,45 @@ den behöver fortfarande en @-nämning.
 
 ## Vem boten pratar med
 
-En GitHub-kommentar kommer in som föga mer än en inloggning, så boten löser upp
-avsändaren innan den gör något:
+Servern löser upp avsändaren av en kommentar, eller den som lade till etiketten
+`ai-review`, innan den gör något:
 
-- **Ditt GitHub-konto måste vara länkat till din identitet** i Control Center –
-  [logga in med GitHub](/sv-SE/handbok/how-to-guider/github-integration/), eller klistra in en
-  token, från **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**
-- **Du måste vara medlem med en skrivroll** (`member`, `admin` eller `owner`)
-  i den arbetsyta som länkar repot
+- **GitHub-kontot måste vara inloggat** på den här servern. Matchningen sker på
+  GitHubs numeriska konto-id, aldrig på inloggningsnamnet. Logga in från
+  **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**
+- **Personen måste vara medlem med en skrivroll** (`member`, `admin` eller
+  `owner`) i den arbetsyta som länkar repot
+- **Personen måste kunna pusha** till repot på GitHub. Svar använder en token som
+  är begränsad till den personens åtkomst, så den som bara kan läsa får inget
+  svar
 
-Alla andra får ett artigt svar som förklarar vad som saknas – en okänd inloggning
-(olänkad, eller länkad men inte medlem här) och en skrivskyddad roll är de två
-fallen – och deras ord kommer aldrig in i arbetsytan. Etiketten `ai-review`
-grindas inte på det här sättet: den har ingen avsändare, så den startar
-granskningen i den arbetsyta som redan länkar repot.
+Alla andra ignoreras tyst: inget publiceras, och deras ord kommer aldrig in i
+arbetsytan. Kommentarer från botar, och Control Centers egna svar, behandlas
+aldrig som frågor.
+
+### Två servrar, en PR
+
+👀 är också hur servrarna kommer överens om vem som svarar. Den läggs till med
+avsändarens egen inloggning, och GitHub talar om för servern om reaktionen är
+ny. Om du är inloggad på två Control Center-servrar som båda länkar repot svarar
+den första som reagerar, och den andra förblir tyst. Detsamma gäller etiketten.
 
 ## Vad du kan förvänta dig
 
 | Sak                    | Beteende                                                                 |
 | ---------------------- | ------------------------------------------------------------------------ |
-| Bekräftelse            | 👀 på en kommentar inom ungefär en minut – svepintervallet. Etiketten `ai-review` har ingen kommentar att reagera på |
-| Svar                   | Publiceras som boten (appen), i samma spår som frågan ställdes i          |
+| Bekräftelse            | 👀 från ditt konto på kommentaren (eller på PR:en, för etiketten), inom ett svep |
+| Svar                   | Publiceras i samma spår som frågan ställdes i och börjar med `**Control Center** (for @your-login):`. Med en egen app är författaren appens bot; via Connect är det ditt konto, som agerar genom den delade appen |
 | Tillskrivning i ytan   | Frågan är din; agenten körs på dina vägnar, under ytans autonomi-inställning |
 | Granskningar           | Fynden landar i granskningsytan; publicering till GitHub är manuell       |
 
-Latensen på ungefär en minut är priset för att inte behöva någon inkommande
-nätverksåtkomst alls. Inget med svepet är brådskande, och inget går förlorat
-medan servern är offline – en kommentar som kommer in under nedtid fångas upp
-vid nästa svep.
+Ett svep körs varje minut med en egen app och kontrollerar upp till 25 pull
+requests; via Connect körs det varannan minut och kontrollerar upp till 10,
+eftersom de anropen delar varje medlems egen GitHub-kvot. En arbetsyta vars
+GitHub-kvot ligger under 15 % hoppas över tills den har återhämtat sig. Latensen
+är priset för att inte behöva någon inkommande nätverksåtkomst alls. Inget går
+förlorat medan servern är offline – en kommentar som kommer in under nedtid
+fångas upp vid nästa svep.
 
 ## Felsökning
 
@@ -144,18 +159,22 @@ vid nästa svep.
 - Är appen **installerad** på kontot som äger repot, och repot **länkat** till en
   arbetsyta? Ett olänkat repo hoppas över innan något registreras, så att länka
   det senare levererar fortfarande
-- Är ditt GitHub-konto länkat, och är du medlem med en skrivroll? Leta på PR:en
-  efter botens avvisningssvar – det säger vilket
+- Är du inloggad på GitHub på den här servern, medlem med en skrivroll och kan
+  du pusha till repot? Servern ignorerar alla andra utan att svara
+- På Control Centers delade app: är organisationens installation auktoriserad
+  för den här servern? Se
+  [Auktorisera den här servern för en organisation](/sv-SE/handbok/how-to-guider/github-app/#auktorisera-den-här-servern-för-en-organisation)
 - Fortfarande inget? Serverloggen namnger svepet och PR:en när något misslyckas;
   leta efter `pr_conversation:` (pollaren) och
   `github_pr_conversation:` (bryggan)
 
 **Etiketten startar ingen granskning.**
 
-Den utlöses en gång per PR. Om en granskning redan har körts, eller etiketten
+Den utlöses en gång per PR, och personen som lade till den går igenom samma
+kontroller som avsändaren av en kommentar. Om en granskning redan har körts, eller etiketten
 lades till innan servern någonsin såg PR:en (det första svepet registrerar
 eftersläpet tyst i stället för att vräka igenom det), nämn boten i stället –
-`@myapp review` startar alltid en om inte en granskning redan är i gång.
+`@usectrl review` startar alltid en om inte en granskning redan är i gång.
 
 **Botens svar kom aldrig fram till GitHub.**
 

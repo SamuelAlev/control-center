@@ -1146,6 +1146,98 @@ class AppLocalizationsNb extends AppLocalizations {
   String get calendarRsvpFailed => 'Kunne ikke oppdatere svaret ditt';
 
   @override
+  String get calendarNewEvent => 'Ny hendelse';
+
+  @override
+  String get calendarComposerTitleHint => 'Legg til en tittel';
+
+  @override
+  String get calendarComposerStarts => 'Starter';
+
+  @override
+  String get calendarComposerEnds => 'Slutter';
+
+  @override
+  String get calendarComposerDate => 'Dato';
+
+  @override
+  String get calendarComposerEndDate => 'Siste dag';
+
+  @override
+  String get calendarComposerGuestsHint => 'Legg til gjester med e-post';
+
+  @override
+  String get calendarComposerMeet => 'Legg til en Google Meet-lenke';
+
+  @override
+  String get calendarComposerLocationHint => 'Legg til et sted';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Legg til en beskrivelse';
+
+  @override
+  String get calendarComposerCalendar => 'Kalender';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Legg til en tittel for å lagre hendelsen';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'En av e-postadressene til gjestene er ugyldig';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Hendelsen må slutte etter at den starter';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Kunne ikke opprette hendelsen. Prøv igjen.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Gjester får en e-postinvitasjon fra Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Slett hendelse';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Slette «$title»?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Den fjernes fra Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Den fjernes fra Google Calendar, og alle gjester får beskjed om at den er avlyst.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Den fjernes bare fra kalenderen din. Arrangøren og de andre gjestene beholder den.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Bare denne forekomsten slettes; resten av serien beholdes.';
+
+  @override
+  String get calendarDeleteFailed => 'Kunne ikke slette hendelsen. Prøv igjen.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Kunne ikke flytte hendelsen. Den er tilbake der den var.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Opprettet en kalenderhendelse';
+
+  @override
+  String get activityMovedCalendarEvent => 'Flyttet en kalenderhendelse';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Slettet en kalenderhendelse';
+
+  @override
   String get calendarAddAccount => 'Legg til kalenderkonto';
 
   @override
@@ -1156,9 +1248,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Koble en Google-konto for å synkronisere hendelser inn i dette arbeidsområdet. Disse kalenderne er dine her.';
 
   @override
-  String get calendarConnecting => 'Kobler til…';
-
-  @override
   String get calendarSyncNow => 'Synkroniser nå';
 
   @override
@@ -1166,33 +1255,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Kunne ikke koble til Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Skriv inn Google OAuth device-code client ID og secret for prosjektet ditt. Serveren kjører tilkoblingen og synkroniseringen — nettleseren din holder aldri tokenene.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Åpne bekreftelsessiden på en hvilken som helst enhet, logg inn og skriv inn denne koden:';
-
-  @override
-  String get calendarConnectOpenPage => 'Åpne bekreftelsesside';
-
-  @override
-  String get calendarConnectWaiting => 'Venter på godkjenning…';
-
-  @override
-  String get calendarConnectDenied =>
-      'Autorisasjonen ble avslått. Prøv på nytt.';
-
-  @override
-  String get calendarConnectExpired => 'Koden utløp. Prøv på nytt.';
 
   @override
   String get notificationMeetingStartsSoon => 'Møte starter snart';
@@ -2413,9 +2475,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Endret et medlems arkivtilgang';
 
   @override
-  String get activityUpdatedGitHubToken => 'Oppdaterte GitHub-tokenet';
-
-  @override
   String get activityRefreshedWeather => 'Oppfrisket værmeldingen';
 
   @override
@@ -2450,9 +2509,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'Svarte på hendelsesinvitasjonen';
-
-  @override
-  String get activityStartedCalendarConnect => 'Startet kalendertilkoblingen';
 
   @override
   String get activityDisconnectedCalendar => 'Koblet fra kalenderen';
@@ -4747,7 +4803,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get searchGifs => 'Søk i GIF-er';
 
   @override
-  String get searchGifsHint => 'Søk i GIF-er…';
+  String get searchGifsHint => 'Søk i KLIPY';
 
   @override
   String get searchInDiffHint => 'Søk i diff…';
@@ -5228,9 +5284,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Navnløs agent';
-
-  @override
-  String get updateKey => 'Oppdater nøkkel';
 
   @override
   String get updateLabel => 'Oppdater';
@@ -6288,7 +6341,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Kjører med bash -c. GITHUB_TOKEN er satt. Plassholdere erstattes før kjøring.';
+      'Kjører med bash -c i operativsystemets sandkasse. GH_TOKEN og GITHUB_TOKEN inneholder et skrivebeskyttet token for det koblede repositoriet. Plassholdere settes i anførselstegn og erstattes før kjøring.';
 
   @override
   String get nodeConfigRouteKeys => 'Rutenøkler';
@@ -6955,7 +7008,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Logg inn på GitHub eller legg til et token i Innstillinger → Arbeidsområde → Profil og identitet → Kodevert';
+      'Logg inn på GitHub i Innstillinger → Arbeidsområde → Profil og identitet → Kodevert';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -11912,7 +11965,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Nevn boten i $provider for å sette en agent på noe, eller opprett saker med $command.';
+    return 'Nevn boten i $provider for å sette en agent på noe, eller lag sakutkast med $command.';
   }
 
   @override
@@ -11999,7 +12052,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Send denne kommandoen til boten i $provider. Den virker én gang og utløper om 15 minutter.';
+    return 'Send denne koden til $provider-boten i en direktemelding. Den virker én gang og utløper om 15 minutter.';
   }
 
   @override
@@ -12166,20 +12219,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → kopier bot user OAuth-tokenet.';
-
-  @override
-  String get calendarUseBuiltinApp => 'Bruk Control Centers Google-app';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Godkjenn med Google-kontoen din. Ingenting å sette opp i Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Bruk min egen Google Cloud-klient';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Skriv inn en OAuth-klient fra ditt eget Google Cloud-prosjekt.';
 
   @override
   String get aboutTitle => 'Om';
@@ -12875,18 +12914,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInAgain => 'Logg inn på nytt';
 
   @override
-  String get signInNotFinished =>
-      'Innloggingen har ikke kommet tilbake ennå. Fullfør den i nettleseren, og sjekk deretter på nytt.';
+  String get forgeSignInBannerTitle =>
+      'Kodehosting er ikke koblet til i dette arbeidsområdet';
 
   @override
-  String get signedOutTitle => 'Du er logget ut';
+  String get forgeSignInBannerBody =>
+      'En pålogging er utløpt eller tilbakekalt, eller dette arbeidsområdet bruker sin egen GitHub-app. Pull requests, gjennomganger og synkronisering av repositorier er satt på pause til du logger på.';
 
   @override
-  String get signedOutSubtitle =>
-      'Kodehosting-tilkoblingen din er ikke lenger gyldig — et token utløp, eller tilgangen ble tilbakekalt. Ingenting annet er endret: logg inn igjen, så er alt der du lot det.';
-
-  @override
-  String get viaServerApp => 'via denne serverens app';
+  String get forgeSignInBannerAction => 'Logg på';
 
   @override
   String get ticketing => 'Saker';
@@ -12904,14 +12940,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ticketProviderLocal => 'Lokal';
 
   @override
-  String get addKey => 'Legg til nøkkel';
-
-  @override
   String get providerApps => 'Leverandørapper';
 
   @override
   String get providerAppsDescription =>
-      'Arbeidsområder arver denne GitHub-appen med mindre de velger en annen app eller et personlig tilgangstoken. Bakgrunnsarbeid — webhooks, polling, synk — kjører på appen, aldri på noens token.';
+      'Apper denne serveren selv har registrert hos hver leverandør. Folk logger på gjennom dem, og bakgrunnsarbeid som webhooks, polling og synkronisering kjører på dem, aldri på en persons pålogging.';
 
   @override
   String get providerAppId => 'App-id';
@@ -12924,9 +12957,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Client secret';
-
-  @override
-  String get providerApiKey => 'API-nøkkel';
 
   @override
   String get providerCallbackUrl => 'Callback-URL';
@@ -12947,17 +12977,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Påloggingsinformasjonen virker. Installert på: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Skriv inn denne koden på $provider-siden som nettopp åpnet. Den er kopiert til utklippstavlen.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Venter på at du fullfører i nettleseren…';
-
-  @override
-  String get copyCodeAndOpen => 'Kopier kode og åpne';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13303,7 +13322,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'For arbeidsområder som arver GitHub-appen til denne installasjonen. Et arbeidsområde med egen app eller PAT settes opp under Arbeidsområde → Generelt.';
+      'Brukes av arbeidsområder som arver GitHub-appen til denne installasjonen. Et arbeidsområde med egen app setter den opp under Arbeidsområde → Generelt.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request-samtaler';
@@ -14856,7 +14875,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Hvordan bakgrunnsarbeid mot GitHub autentiserer i dette arbeidsområdet. Arv installasjonens App, bruk en annen App, eller bare et personlig tilgangstoken.';
+      'Hvordan GitHub-arbeid i bakgrunnen i dette arbeidsområdet autentiseres: med appen til denne installasjonen eller med arbeidsområdets egen app.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -14866,28 +14885,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Bruk en annen GitHub-app';
 
   @override
-  String get workspaceGitHubModePat => 'Bare personlig tilgangstoken';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Bruker GitHub-appen under Server → Leverandørapper.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Bot- og polling-identitet for dette arbeidsområdet. Medlemmer logger inn under Deg via denne appen.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Bakgrunnstoken';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Til polling og agenter i dette arbeidsområdet. Ikke et medlems profiltoken.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Et bakgrunnstoken er lagret.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Ingen bakgrunnstoken er lagret.';
 
   @override
   String get profileOverlayHint =>
@@ -16750,4 +16753,537 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Bytt arbeidsområde';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Logg inn på $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Koble til Linear for automatisering';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Åpner $provider i nettleseren…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Godkjenn forespørselen på siden til $provider i nettleseren. Vinduet merker selv når du er ferdig.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Venter på $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Påloggingen ble ikke fullført';
+
+  @override
+  String get signInReopenPage => 'Åpne påloggingssiden igjen';
+
+  @override
+  String get signInCodePrompt => 'Skriv inn koden som vises i nettleseren';
+
+  @override
+  String get signInCodeMalformed =>
+      'Det ser ikke ut som en påloggingskode. Koder har 8 bokstaver og sifre.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Hvis nettleseren tilbyr å åpne Control Center, tillat det, så slipper du å skrive koden.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Logget inn på $provider som $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Logget inn på $provider';
+  }
+
+  @override
+  String get signInErrorExpired => 'Påloggingen er utløpt. Start på nytt.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Påloggingen på $provider ble avbrutt eller avslått.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider ga færre tillatelser enn Control Center trenger. Logg inn igjen og godkjenn alle tillatelsene.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Koden hører ikke til denne påloggingen. Sjekk den og prøv igjen.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider svarer ikke akkurat nå. Prøv igjen om noen minutter.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider godtok påloggingen, men serveren klarte ikke å fullføre den. Prøv igjen.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return '$provider-appen til denne serveren er feilkonfigurert. Be servereieren sjekke Innstillinger → Server → Enkel pålogging.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Påloggingen din på $provider er utløpt. Logg inn igjen for å fortsette å jobbe som deg selv.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider-appen er ikke installert der den trengs. Installer den og prøv igjen.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Denne installasjonen av GitHub-appen er allerede autorisert for en annen Control Center-server.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Dette Linear-arbeidsområdet er allerede koblet til en annen Control Center-server.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Bare en administrator eller eier av Slack-arbeidsområdet kan koble det til Control Center første gang. Be en av dem om å legge til appen.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider-appen er suspendert. Opphev suspensjonen på $provider og prøv igjen.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect har blokkert denne serveren. Kontakt den som driver Connect-serveren din.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Påloggingen mislyktes av en grunn serveren ikke oppga. Prøv igjen.';
+
+  @override
+  String get signInPhishingTitle => 'Påloggingen ble ikke startet her';
+
+  @override
+  String get signInPhishingBody =>
+      'Denne påloggingen ble ikke startet fra denne appen. Hvis noen sendte deg denne lenken, ikke fortsett.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Ingenting ble sendt. Å fullføre en pålogging noen andre startet, ville koblet kontoen din til serveren deres.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Pålogging på $provider kreves';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Dette kjøres i ditt navn på $provider, og du er ikke logget inn. Logg inn og prøv igjen.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Du er ikke logget inn på $provider. Alt du gjør her kjøres i ditt navn, så logg inn først.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Pålogging på $provider er ikke satt opp på denne serveren ennå.';
+  }
+
+  @override
+  String get githubInstallations => 'Installasjoner av GitHub-appen';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Hvor GitHub-appen er installert, blant kontoene som arbeidsområdets repositorier tilhører. En organisasjons installasjon fungerer bare på servere som administratorene der autoriserer.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'GitHub-appen er ikke installert på noen konto som arbeidsområdets repositorier tilhører.';
+
+  @override
+  String get githubInstallApp => 'Installer GitHub-appen';
+
+  @override
+  String get githubAuthorizeServer => 'Autoriser denne serveren';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Denne serveren kan nå bruke installasjonen på $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Suspendert';
+
+  @override
+  String get githubInstallationAuthorized => 'Autorisert';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Ikke autorisert';
+
+  @override
+  String get linearAutomationTitle => 'Linear-automatisering';
+
+  @override
+  String get linearAutomationHint =>
+      'Lar agentene og pipelinene i dette arbeidsområdet handle i Linear som en app i stedet for som en person. Administratorer i arbeidsområdet kobler den til.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Koblet til $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Bruk appene til Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Pålogginger går gjennom Control Center Connect. Connect forsegler hver pålogging slik at bare denne serveren kan åpne den, utsteder GitHub-tokener begrenset til ett repository, har ingen repository-nøkkel og mottar aldri kildekoden din.';
+
+  @override
+  String get connectModeOwn => 'Bruk mine egne apper';
+
+  @override
+  String get connectModeOwnHint =>
+      'Registrer GitHub-, Google- og Linear-apper selv under Innstillinger → Server → Enkel pålogging, og koble til hvert arbeidsområdes egen Slack-app i innstillingene for det. «Opprett min GitHub-app» setter opp GitHub i ett steg.';
+
+  @override
+  String get connectModeCustom => 'Bruk en egen Connect-server';
+
+  @override
+  String get connectModeCustomHint =>
+      'Organisasjonen din driver sin egen Connect-server. Pålogginger går dit i stedet for til den fra Control Center.';
+
+  @override
+  String get connectModeUnset => 'Ikke satt opp ennå';
+
+  @override
+  String get connectCustomUrlLabel => 'URL til Connect-serveren';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Skriv inn en HTTPS-adresse, for eksempel https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'Vanlig HTTP når bare en Connect på denne maskinen. Bruk HTTPS for alt på et nettverk.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'De vertsbaserte appene til Control Center er ikke tilgjengelige i denne versjonen ennå. Bruk egne apper eller en egen Connect-server.';
+
+  @override
+  String get connectErrorSignature =>
+      'Konfigurasjonen fra Connect besto ikke signaturkontrollen. Pålogginger via Connect er satt på pause til den er verifisert igjen.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect leverte en eldre konfigurasjon enn denne serveren allerede har sett, så den ble avvist. Pålogginger via Connect er satt på pause.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Denne serveren når ikke Connect akkurat nå. Pålogginger som bruker Connect, mislykkes til det er tilbake.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect har blokkert installasjons-ID-en til denne serveren. Kontakt den som driver Connect-serveren din.';
+
+  @override
+  String get connectErrorPinsChanged => 'Appene til Connect er endret';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect svarte på en måte denne serveren ikke forstår. Oppdater serveren eller sjekk Connect-URL-en.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect rapporterte et problem uten å forklare det. Kjør en test for å prøve igjen.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Connect-serveren din oppgir nå andre GitHub-, Google-, Linear- eller Slack-apper enn dem denne serveren festet ved første bruk. Stol på dem bare hvis operatøren har sagt fra om dette.';
+
+  @override
+  String get connectConfirmPins => 'Stol på nye apper';
+
+  @override
+  String get connectStale =>
+      'Konfigurasjonen som brukes, er eldre enn forventet. Kjør en test for å oppdatere den.';
+
+  @override
+  String get connectLaneSourceOwn => 'Egen app';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Av';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Hvem sine apper denne serveren bruker for GitHub, Google Calendar, Linear, Slack og GIF-søk.';
+
+  @override
+  String get connectFactMode => 'Påloggingsapper';
+
+  @override
+  String get connectFactHealth => 'Status';
+
+  @override
+  String get connectFactEpoch => 'Konfigurasjonsversjon';
+
+  @override
+  String get connectHealthOff => 'Ikke i bruk';
+
+  @override
+  String get connectHealthOk => 'Fungerer';
+
+  @override
+  String get connectHealthDown => 'Fungerer ikke';
+
+  @override
+  String get connectLocked =>
+      'CC_CONNECT_URL i miljøet til denne serveren bestemmer dette. Endre det der og start serveren på nytt.';
+
+  @override
+  String get connectLanesTitle => 'Hvor hver pålogging kjøres';
+
+  @override
+  String get connectLanesDescription =>
+      'En egen app går alltid foran Connect for sin leverandør.';
+
+  @override
+  String get connectServerGroup => 'Denne serveren';
+
+  @override
+  String get connectInstallId => 'Installasjons-ID';
+
+  @override
+  String get connectInstallIdHint =>
+      'Identifiserer denne serveren overfor Connect. Gi den til en organisasjonseier eller Connect-operatør som ber om den.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Tildeles første gang denne serveren bruker Connect.';
+
+  @override
+  String get connectTestOk => 'Connect fungerer.';
+
+  @override
+  String get connectRotateKey => 'Bytt nøkkel';
+
+  @override
+  String get connectRotateKeyTitle =>
+      'Bytte Connect-nøkkelen til denne serveren?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Serveren får en ny nøkkel og en ny installasjons-ID. Alle pålogginger via Connect slutter å virke, og alle må logge inn igjen. Pålogginger via dine egne apper påvirkes ikke.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Nøkkelen er byttet. Alle som logget inn via Connect, må logge inn igjen.';
+
+  @override
+  String get connectCliLabel => 'Fra en terminal';
+
+  @override
+  String get onboardingStepSignIn => 'Pålogging';
+
+  @override
+  String get onboardingConnectTitle => 'Velg hvordan personer logger inn';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center jobber med GitHub, Google Calendar, Linear, Slack og GIF-søk gjennom apper registrert hos hver leverandør. Velg hvem sine apper denne serveren bruker. Du kan endre det senere under Innstillinger → Server → Enkel pålogging.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Opprett en GitHub-app for denne serveren nå, eller legg til appene dine senere under Innstillinger → Server → Enkel pålogging.';
+
+  @override
+  String get providerServiceApiKey => 'Tjeneste-API-nøkkel';
+
+  @override
+  String get providerAppPartial => 'Oppsettet er ikke ferdig';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Mangler fortsatt: $fields. Til alle feltene er fylt ut, avvises pålogginger for denne leverandøren i stedet for å gå via Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'Klient-ID-en logger inn medlemmer. Tjeneste-API-nøkkelen lar serveren selv lese og skrive i Linear.';
+
+  @override
+  String get providerCallbackUrls => 'Callback-URL-er';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Registrer den hos leverandøren nøyaktig slik den vises.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Opprett en GitHub-app';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub registrerer en app med riktige tillatelser og callback, og gir deretter påloggingsinformasjonen til denne serveren. Ingenting å kopiere for hånd.';
+
+  @override
+  String get providerAppCreateGitHub => 'Opprett min GitHub-app';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Organisasjon (valgfritt)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'La feltet stå tomt for å opprette appen under din egen GitHub-konto. Bare en eier av organisasjonen kan opprette den under en organisasjon.';
+
+  @override
+  String get providerAppSignInReady => 'Personer kan logge inn.';
+
+  @override
+  String get chatLinkWaiting => 'Venter på direktemeldingen din…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Er dette $provider-kontoen din?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Denne kontoen sendte koden din til boten. Bekreft bare hvis den er din: Når den er knyttet, handler det den sender i $provider, som deg i dette arbeidsområdet.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Avslå';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Ingenting ble knyttet. Hent en ny kode hvis du fortsatt vil knytte $provider-kontoen din.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Hent en ny kode';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Legg til Control Center i $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center ble lagt til i $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Installerer den delte Control Center-appen i $provider-arbeidsområdet ditt. Du trenger ikke å lage noen app eller lime inn noe token.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Legg til i $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Kjører på den delte Control Center-appen, så det er ingen tokener eller botinnstillinger å administrere her.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Sakutkast fra chat';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Et utkast blir en sak i backloggen først når du oppretter den her. Utkast du lar ligge, forkastes etter et døgn.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Fra $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Opprett sak';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return 'Opprettet $key';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Leverandørapper';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Hvilke Google Calendar-, Linear- og Klipy-apper dette arbeidsområdet bruker. Som standard brukes appene til denne serveren eller Control Center Connect. Et arbeidsområde med egen app faller aldri tilbake til dem.';
+
+  @override
+  String get workspaceProviderAppModeInherit => 'Bruk appen til denne serveren';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Pålogginger og forespørsler bruker appen til denne serveren eller Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn => 'Bruk arbeidsområdets egen app';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Bare arbeidsområdets app brukes. Så lenge den er ufullstendig, er leverandøren av her i stedet for å falle tilbake til en annen app.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Serverens app';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Egen app';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Mangler fortsatt: $fields. Til alle feltene er fylt ut, er leverandøren av i dette arbeidsområdet. Den faller ikke tilbake til appen til denne serveren.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Hvis du endrer appen, logges alle i dette arbeidsområdet av. De må logge inn igjen med den nye.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Appnøkkel';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'GIF-søk i dette arbeidsområdet bruker denne nøkkelen.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Bytte $provider-appen?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Alle som er koblet til $provider i dette arbeidsområdet via appen til denne serveren, må logge inn på nytt med arbeidsområdets app.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Dette sletter arbeidsområdets $provider-legitimasjon. Alle som er koblet til via arbeidsområdets app, må logge inn på nytt.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Bytt app';
 }

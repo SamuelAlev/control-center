@@ -2,11 +2,11 @@
 title: Sediakan integrasi GitHub
 description: Log masuk ke GitHub supaya permukaan PR, pendaftaran repo dan larian ejen berfungsi.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Panduan ini merangkumi bahagian persediaan yang khusus untuk GitHub. GitHub
-ialah salah satu daripada tiga hos kod yang disokong — lihat
+ialah salah satu daripada tiga hos kod yang disokong. Lihat
 [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/)
 untuk menyambung GitLab atau Bitbucket, dan untuk cara sesuatu ruang kerja
 menggabungkan ketiganya.
@@ -14,84 +14,75 @@ menggabungkan ketiganya.
 ## Prasyarat
 
 - Akaun GitHub dengan akses ke repo yang anda mahu kerjakan
-- Sama ada GitHub App yang didaftarkan untuk pelayan anda (lihat
-  [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)) supaya anda boleh **log masuk**,
-  **atau** personal access token dengan `repo` dan `read:org` untuk ditampal
+- Pelayan yang boleh mendaftar masuk orang ke GitHub: sama ada GitHub App milik pelayan anda (lihat
+  [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)) atau Control Center Connect,
+  dipilih oleh pemilik pelayan dalam **Tetapan → Pelayan → Daftar masuk tunggal**
 
 :::note[Kelayakan tersimpan di pelayan, terikat pada anda]
-Tiada apa-apa disimpan pada mesin yang anda sedang taip ini. Kelayakan anda
+Tiada apa-apa disimpan pada mesin yang anda sedang taip ini. Log masuk GitHub anda
 dipegang oleh `cc_server` anda, dikunci berdasarkan id pengguna anda, dan setiap
 peranti tempat anda log masuk memakainya — desktop, web dan telefon. Ahli lain
-pada pelayan yang sama tidak boleh membacanya, dan melog masuk mereka ialah
+pada pelayan yang sama tidak boleh menggunakannya, dan melog masuk mereka ialah
 sesuatu yang mereka lakukan sendiri.
 :::
 
-## Log masuk dengan GitHub
+## Log masuk ke GitHub
 
-**Aliran peranti**: GitHub menunjukkan kod pendek kepada anda, anda
-meluluskannya di github.com, dan pelayan menerima kelayakan itu — tiada URL
-panggil balik, tiada port, tiada apa-apa untuk didedahkan. Tersedia apabila
-pelayan mempunyai client id, yang sudah disertakan dalam binaan rasmi.
+GitHub hanya menggunakan log masuk: tiada token untuk ditampal.
 
 1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti → Hos kod** (atau langkah pertama
    onboarding)
-2. Pada baris **GitHub**, klik **Log masuk dengan GitHub**
-3. Dialog menunjukkan kod lapan aksara dan membuka
-   [github.com/login/device](https://github.com/login/device) dalam pelayar anda.
-   Kod itu sudah ada pada papan klip anda
-4. Tampalkannya, luluskan apl itu, dan kembali. Baris itu bertukar sendiri
-   kepada "Log masuk sebagai _your-username_"
+2. Pada baris **GitHub**, klik **Log masuk ke GitHub**
+3. Pelayar anda membuka GitHub. Luluskan apl itu
 
-Dialog itu boleh ditutup semasa anda menyelesaikannya dalam pelayar — pelayan
-terus mengundi sehingga kod itu tamat tempoh (kira-kira 15 minit), jadi log
-masuk itu tetap berjaya.
+Cara log masuk selesai bergantung pada pihak yang menjalankannya:
 
-## Atau tampal token
-
-Pilihan sandaran apabila pelayan tiada apl, apabila apl itu tidak dipasang pada
-akaun yang anda perlukan, atau apabila anda lebih suka menggunakan PAT.
-
-1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti → Hos kod**
-2. Pada baris **GitHub**, klik **Tambah token**
-3. Tampal token dengan `repo` dan `read:org` (classic) kemudian simpan. Token
-   **berbutir halus** memerlukan **Contents** dan **Pull requests** repositori
-   (baca dan tulis), serta **Checks** dan **Actions** (baca).
-
-Token itu diperiksa semasa ia disimpan, jadi baris itu boleh menamakan akaun
-pemiliknya. Klik **Putuskan** untuk membuangnya.
+- **Apl pelayan itu sendiri:** GitHub menghantar pelayar anda kembali ke pelayan dan dialog itu
+  mengesannya sendiri. Anda tidak perlu menaip apa-apa
+- **Control Center Connect:** halaman pelayar memaparkan kod 8 aksara. Taip kod itu ke dalam
+  dialog, atau biarkan pelayar membuka Control Center melalui pautan `control-center://` dan
+  langkau menaip kod
 
 Titik pemeriksaan: baris **GitHub** berbunyi "Log masuk sebagai _your-username_".
-Satu akhiran menamakan sumbernya apabila kelayakan yang menjawab bukan milik
-anda — "melalui apl pelayan ini" atau "daripada persekitaran".
 
-:::note[Keutamaan adalah tetap]
-Permintaan yang dibuat bagi pihak anda menggunakan kelayakan **anda**, dan tiada
-yang lain — persekitaran ialah kelayakan pelayan, bukan milik anda, jadi ia
-tidak pernah menggantikan anda. Kerja yang tiada manusia di belakangnya
-(webhook, pengundian PR, penyegerakan tiket) menggunakan identiti apl pelayan,
-kemudian kelayakan pemilik pelayan, kemudian persekitaran.
-:::
+Dialog itu menolak kod atau pautan yang ia tidak mulakan sendiri, dengan **Log masuk tidak dimulakan di sini**.
+Jika seseorang menghantar anda pautan log masuk, jangan teruskan: menyelesaikannya akan menyambungkan
+akaun anda kepada pelayan mereka.
+
+Klik **Nyahsambung** untuk membuang log masuk anda. Log keluar daripada GitHub, atau dikeluarkan daripada
+sesuatu ruang kerja, juga membatalkan setiap token yang dicetak oleh pelayan bagi pihak anda.
+
+## Siapa yang diwakili kelayakan anda
+
+- **Apa sahaja yang anda lakukan** (membuka halaman PR, menyiarkan semakan, meluluskan, mencantum) berjalan
+  di bawah log masuk **anda** dan tiada yang lain. Jika anda belum log masuk, apl itu akan memaklumkan dan
+  meminta anda log masuk. Tiada kelayakan lain yang menggantikan anda
+- **Kerja tanpa sesiapa menaip** (larian ejen, pipeline, pengundian PR, balasan bot, clone) menerima token
+  untuk satu repositori, dicetak daripada GitHub App pelayan atau melalui Connect. Token itu dihadkan kepada
+  apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana: yang meminta, atau jika tidak, pemilik
+  ruang kerja. Ahli yang tidak boleh push akan menghadkan token kepada baca sahaja
+- **Automasi tidak pernah meluluskan** pull request. Kelulusan ialah tindakan seseorang
 
 ## Apa yang integrasi ini berikan kepada anda
 
 | Ciri                  | Cara                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Senarai dan butiran PR | API REST GitHub, dari pelayan, dengan identiti apl atau kelayakan anda sendiri                               |
+| Senarai dan butiran PR | API REST GitHub, dari pelayan, dengan log masuk anda sendiri                                                 |
 | Larian semakan        | API Checks GitHub                                                                                             |
-| Penerbitan semakan    | Langkah berpagar pengguna yang menyiarkan semakan anda ke PR                                                  |
+| Penerbitan semakan    | Langkah berpagar pengguna yang menyiarkan semakan anda ke PR, atas nama anda                                  |
 | Pendaftaran repo      | Checkout diterima jika remote `origin`-nya menunjuk ke github.com — atau ke gitlab.com / bitbucket.org        |
-| Akses GitHub ejen     | Broker kelayakan menyuntik token baca sahaja sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melalui Control Center |
+| Akses GitHub ejen     | Token untuk satu repositori larian sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melalui Control Center           |
 | Ping pemberitahuan    | Pengundian di sisi pelayan bagi peti masuk pemberitahuan GitHub anda memunculkan "disebut dalam pull request" dan "semakan diminta" |
 | Profil pengguna       | Kad hover profil dan penapisan PR mengikut pengarang                                                          |
 
-Sesetengah laluan menggunakan API GraphQL dan bukan REST apabila ia lebih murah —
+Sesetengah laluan menggunakan API GraphQL dan bukan REST apabila ia lebih murah:
 aktiviti cabang untuk pemilih compose-PR dan keadaan semakan langsung yang
 menentukan sama ada pemberitahuan permintaan semakan masih tergantung.
 
 ## Perhatikan gangguan GitHub
 
 Bar tajuk menunjukkan cip status apabila sesuatu penyedia terganggu, merangkumi
-GitHub, Claude, OpenAI dan Kimi. **Ia tersembunyi selagi semuanya sihat** —
+GitHub, Claude, OpenAI dan Kimi. **Ia tersembunyi selagi semuanya sihat**:
 kehadirannya melaporkan masalah, bukan ketiadaannya.
 
 Klik cip itu untuk membuka panel timbul dengan keadaan setiap penyedia dan
@@ -99,54 +90,44 @@ butang muat semula. Status itu dimuat semula sendiri setiap dua minit.
 
 ## Fahami cara ejen bertindak di GitHub
 
-- Ejen yang bekerja dalam worktree GitHub sentiasa mendapat token GitHub baca
-  sahaja. Push melalui Control Center, yang bertanya kepada peraturan **Push ke
-  remote** dan kemudian memajukannya dengan token tulis yang tidak pernah
-  dipegang ejen. Lihat
+- Ejen yang bekerja dalam worktree GitHub mendapat token untuk repositori itu. Ia boleh membaca kod dan
+  mengulas pada pull request apabila ahli yang bertanggungjawab boleh push, dan hanya membaca apabila tidak.
+  Push melalui Control Center, yang bertanya kepada peraturan **Push ke remote** dan kemudian memajukannya
+  dengan token tulis yang tidak pernah dipegang ejen. Lihat
   [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/)
 - Komit ejen sentiasa menggunakan identiti Git peminta sebagai pengarang dan pelaku komit. Secara lalai, treler `Co-Authored-By: Control Center <hi@usectrl.dev>` mengiktiraf GitHub `@usectrl` sebagai penulis bersama. **Tetapan → Anda → Atribusi komit** boleh mematikan kredit penulis bersama ini tanpa menukar identiti anda. Tetapan ruang kerja dalam **Tetapan → Ruang kerja → Umum** mengatasi pilihan peribadi dan mengunci suis itu. Atribusi Claude Code sendiri sentiasa dinyahaktifkan. Penandatanganan komit tetap memerlukan konfigurasi sahnya sendiri
-- Dengan GitHub App dikonfigurasikan, broker menjana token pemasangan berbutir
-  halus, berskop repo, berdurasi kira-kira satu jam bagi setiap pelancaran, dan
-  bukan menyerahkan token yang luas. Pemasangan itu diselesaikan daripada
-  **pemilik** repo larian tersebut, jadi satu apl yang dipasang pada beberapa
-  akaun berskop dengan betul kepada mana-mana akaun yang disentuh oleh larian
-  itu. Tanpa apl, ejen menerima token persekitaran, yang tidak boleh
-  disempitkan kepada baca sahaja: peraturan push kemudian mengikat `git push`,
-  tetapi tidak kod yang menggunakan token secara terus
-- Token itu sentiasa milik broker, tidak pernah milik ahli yang meminta. Token
-  pelayan ditahan daripada larian yang bertindak bagi ahli yang bukan pemilik
-  dan belum menyambungkan GitHub
+- Terminal yang anda buka pada rig menerima log masuk anda sendiri, dihadkan kepada satu repositori, jadi push di sana adalah milik anda
+- Apabila tiada token dapat dicetak (tiada ahli yang bertanggungjawab sedang log masuk, apl tidak dipasang pada pemilik, atau pemasangan digantung), larian bermula tanpa token dan notanya menerangkan sebabnya. Tiada kelayakan sandaran
 
 ## Penyelesaian masalah
 
 ### Senarai PR kosong dan menyatakan GitHub tidak disambungkan
 
-Anda tiada kelayakan GitHub pada pelayan ini. Log masuk atau tampal token di
-bawah **Hos kod**. Repo pada hos kod lain tidak terjejas — hanya repo GitHub
-yang tidak menyumbang apa-apa.
+Anda tidak log masuk ke GitHub pada pelayan ini. Klik **Log masuk ke GitHub** di bawah **Hos kod**.
+Repo pada hos kod lain tidak terjejas.
 
-### Baris menawarkan "Tambah token" tetapi tiada "Log masuk dengan GitHub"
+### Baris GitHub menyatakan log masuk belum disediakan pada pelayan ini
 
-Pelayan tiada client id — keadaan biasa bagi binaan daripada sumber, kerana
-kelayakan hanya ditanam dalam binaan rasmi. Lihat
-[Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/): ia mengambil masa kira-kira dua minit
-dan hanya pemilik pelayan perlu melakukannya, sekali sahaja.
+Pelayan tiada GitHub App sendiri mahupun Connect. Pemilik pelayan memilih salah satu dalam **Tetapan → Pelayan →
+Daftar masuk tunggal**: **Cipta aplikasi GitHub saya** mengambil masa kira-kira dua minit. Lihat
+[Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
 
-### Dialog log masuk menyatakan penyedia tidak mengembalikan kod peranti
+### Dialog memaklumkan kod tidak sepadan
 
-GitHub App itu wujud tetapi kotak centang **Device flow**-nya dimatikan.
-Hidupkannya dalam tetapan apl itu (General → Device flow) kemudian cuba lagi.
+Taip kod tepat seperti yang dipaparkan pelayar: 8 huruf dan digit. Lima kali salah memasukkan kod akan menamatkan
+log masuk; mulakan semula.
 
-### Baris menyatakan "melalui apl pelayan ini" sedangkan saya menjangkakan akaun saya sendiri
+### Log masuk memaklumkan apl belum dipasang
 
-Anda belum log masuk; apa yang anda lihat ialah identiti apl pelayan yang
-menjawab. Klik **Log masuk dengan GitHub** pada baris itu.
+GitHub App tidak mempunyai sebarang pemasangan pada akaun yang memiliki repositori. Seorang pentadbir ruang kerja
+memasangnya dari **Tetapan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**. Untuk organisasi yang menggunakan
+App kongsi Control Center, pentadbir organisasi itu mungkin perlu klik **Benarkan pelayan ini**. Lihat
+[Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
 
-### PAT berbutir halus tidak menunjukkan butang cantum atau status semakan
+### Semua orang perlu log masuk ke GitHub semula
 
-Token itu memerlukan **Contents** dan **Pull requests** (baca dan tulis), serta
-**Checks** dan **Actions** (baca). Selepas mengubahnya, tampalnya semula di
-bawah Hos kod.
+Pemilik pelayan memutar kunci Connect pelayan, bertukar kepada pelayan Connect lain, atau direktori data
+dipulihkan ke mesin lain. Log masuk melalui Connect terikat kepada pelayan yang menciptanya.
 
 ### Penambahan repo ditolak
 
@@ -171,4 +152,4 @@ backoff eksponen, sambil menghormati `retry-after`.
 - [Urus kunci API](/ms-MY/manual-pengguna/panduan-cara/kunci-api/)
 - [Tambah repositori ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)
 - [Semak dan cantumkan PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
-- [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
+- [Bercakap dengan Control Center dari PR GitHub](/ms-MY/manual-pengguna/panduan-cara/perbualan-pr-github/)

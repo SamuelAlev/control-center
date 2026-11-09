@@ -1,34 +1,34 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
 
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, canonicalConnectBaseUrl;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
+import 'package:cc_domain/features/calendar/domain/entities/calendar_event_draft.dart';
+import 'package:cc_domain/features/calendar/domain/entities/calendar_event_reschedule.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
-import 'package:cc_persistence/cc_persistence.dart';
-import 'package:cc_server_core/src/cc_server_config.dart';
+import 'package:cc_server_core/src/connect/connect_client.dart';
+import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/identity/provider_app_settings.dart';
+import 'package:cc_server_core/src/identity/provider_token.dart';
+import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:rhttp/rhttp.dart';
+import 'package:uuid/uuid.dart';
 
-/// Builds the deterministic account id for a workspace + Google account email.
-/// Mirrors the client's `googleAccountId` so a row connected here is keyed the
-/// same way the rest of the system expects.
-/// Builds the deterministic account id for a workspace + Google account email.
-/// Embedding [userId] keeps two members who connect the same Google email
-/// on distinct rows and distinct secrets. Legacy ids omit the user (empty
-/// [userId]) and stay three-part so existing rows keep loading.
+/// The deterministic account id for one member's Google account in one
+/// workspace. Embedding [userId] keeps two members who connect the same
+/// Google email on distinct rows and distinct credentials.
 String serverGoogleAccountId(
   String workspaceId,
   String email, {
-  String userId = '',
-}) => userId.isEmpty
-    ? 'google:$workspaceId:$email'
-    : 'google:$workspaceId:$userId:$email';
+  required String userId,
+}) => 'google:$workspaceId:$userId:$email';
 
 /// Recovers the workspace id embedded in a [serverGoogleAccountId], or null if
 /// malformed. Workspace ids are UUIDs and emails contain no `:`, so the
@@ -41,143 +41,148 @@ String? _workspaceIdFromAccountId(String accountId) {
   return parts[1];
 }
 
-/// The Google OAuth client the SERVER itself is configured with — the one
-/// behind the "use Control Center's Google app" option.
-///
-/// Resolved once at boot (flag > environment > the credential baked into a
-/// release build), so a self-hoster who configures their own Google Cloud client
-/// gets *theirs* behind that option. It never crosses the RPC boundary: an
-/// account connected with it stores a marker
-/// ([GoogleServerCredentials.usesBuiltinClient]) and the pair is re-resolved
-/// from here on every refresh.
-class GoogleOAuthClient {
-  /// Creates a [GoogleOAuthClient].
-  const GoogleOAuthClient({required this.clientId, required this.clientSecret});
-
-  /// The absence of a server-configured client — every connect must then bring
-  /// its own.
-  const GoogleOAuthClient.none() : clientId = '', clientSecret = '';
-
-  /// Reads the pair out of [config].
-  factory GoogleOAuthClient.fromConfig(CcServerConfig config) =>
-      GoogleOAuthClient(
-        clientId: config.googleClientId,
-        clientSecret: config.googleClientSecret,
-      );
-
-  /// The device-code client id.
-  final String clientId;
-
-  /// The secret paired with [clientId].
-  final String clientSecret;
-
-  /// Whether this server has a usable client of its own. Both halves are
-  /// required: Google's device-code token exchange refuses a client id without
-  /// its secret, so a half-configured pair is not an offer we can make.
-  bool get isConfigured => clientId.isNotEmpty && clientSecret.isNotEmpty;
+/// The email embedded in a [serverGoogleAccountId] (its last segment), or
+/// empty.
+String _emailFromAccountId(String accountId) {
+  final parts = accountId.split(':');
+  return parts.length < 4 ? '' : parts.last;
 }
 
-/// Google OAuth credentials for the headless server, keyed `google_<accountId>`
-/// in the server's [FileSecretsStore].
+/// Google Calendar credentials, keyed `google_<accountId>` in the server's
+/// [FileSecretsStore], each a [ProviderToken] JSON.
 ///
-/// This is the ONLY place the long-lived refresh token lives — never on a
-/// client device. It used to own a `google_credentials.json` of its own, whose
-/// load/flush/chmod were a line-for-line copy of the secrets store's; it now
-/// holds the typed codec and the key namespace and nothing else, the same shape
-/// `UserCredentialsStore` uses for per-user provider tokens.
+/// An own-app credential holds its access and refresh tokens. A Connect
+/// credential holds only its seal: [ProviderToken.encode] never writes the
+/// access token of a sealed credential, which lives in the
+/// [ServerGoogleTokenManager]'s memory instead.
 class FileGoogleCredentialsStore {
-  /// Creates a store over the data dir's secrets file.
-  ///
-  /// Prefer [FileGoogleCredentialsStore.withSecrets] wherever the server's
-  /// shared store is in scope: separate instances each cache the on-disk map,
-  /// and while a write no longer clobbers (the store merges on flush), a read
-  /// served from a stale cache is a needless round trip through disk.
-  FileGoogleCredentialsStore({required String dataDir})
-    : this.withSecrets(FileSecretsStore(dataDir: dataDir));
-
-  /// Creates a store over an existing [secrets] instance.
-  FileGoogleCredentialsStore.withSecrets(FileSecretsStore secrets)
-    : _secrets = secrets;
+  /// Creates a store over the server's shared secrets file.
+  FileGoogleCredentialsStore(this._secrets);
 
   final FileSecretsStore _secrets;
 
   /// Namespaced so a credential can never collide with a device id.
   static String _key(String accountId) => 'google_$accountId';
 
-  /// Loads the credentials for [accountId], or null when none are stored.
-  Future<GoogleServerCredentials?> load(String accountId) async {
-    // `readFresh`, because the `calendar connect` CLI writes this file from a
-    // SEPARATE process: a long-running server that cached the map (often
-    // empty) at boot would see the account's DB row (SQLite is cross-process)
-    // but never its token.
-    final raw = await _secrets.readFresh(_key(accountId));
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) {
-        return null;
-      }
-      return GoogleServerCredentials.fromJson(decoded.cast<String, dynamic>());
-    } on Object {
-      return null;
-    }
+  /// The stored value for [accountId], parsed or not; null when none is
+  /// stored.
+  Future<String?> raw(String accountId) => _secrets.readPsk(_key(accountId));
+
+  /// The credential for [accountId], or null when none is stored or the
+  /// stored value is not a [ProviderToken].
+  Future<ProviderToken?> load(String accountId) async =>
+      ProviderToken.tryParse(await raw(accountId));
+
+  /// Persists [token] for [accountId].
+  Future<void> save(String accountId, ProviderToken token) async {
+    await _secrets.writePsk(_key(accountId), token.encode());
   }
 
-  /// Persists [creds] for [accountId].
-  Future<void> save(String accountId, GoogleServerCredentials creds) async {
-    await _secrets.writePsk(_key(accountId), jsonEncode(creds.toJson()));
-  }
-
-  /// Removes [accountId]'s credentials (disconnect).
+  /// Removes [accountId]'s credential.
   Future<void> clear(String accountId) => _secrets.deletePsk(_key(accountId));
+
+  /// Every account id holding a credential in [workspaceId].
+  Future<List<String>> accountIdsIn(String workspaceId) async {
+    final prefix = _key('google:$workspaceId:');
+    return [
+      for (final key in await _secrets.keysMatching(
+        (key) => key.startsWith(prefix),
+      ))
+        key.substring('google_'.length),
+    ];
+  }
+
+  /// True when [key] is a calendar credential of [workspaceId].
+  static bool isWorkspaceSecret(String key, String workspaceId) =>
+      key.startsWith(_key('google:$workspaceId:'));
 }
 
-/// Loads + refreshes the server's Google access tokens, single-flighting the
-/// refresh per account so concurrent Calendar requests share one network call.
-/// On a terminal `invalid_grant` it invokes the `onInvalidGrant` callback
-/// (wired to flag the account for re-connect) — transient failures are simply
-/// retried next tick.
+/// Renews an expired Google credential for an account in a workspace.
+typedef GoogleTokenRefresh =
+    Future<RefreshOutcome> Function(ProviderToken expired, String workspaceId);
+
+/// Loads, validates and refreshes the server's Google access tokens.
+///
+/// Access tokens live in memory; a sealed (Connect) credential has nothing
+/// else to offer on disk. Refreshes are single-flighted per account so
+/// concurrent Calendar requests share one network call — Connect seals are
+/// single-use. Only [RefreshRejected] clears a credential (and calls
+/// `onInvalidGrant`); [RefreshUnavailable] keeps everything and answers null
+/// for this call, because an expired access token must never be sent.
 class ServerGoogleTokenManager {
   /// Creates a [ServerGoogleTokenManager].
+  ///
+  /// `installId` is this server's current install id towards the given
+  /// Connect base URL (empty when Connect is off or uses another one);
+  /// `ownClientId` the own Google client id a plain grant in a workspace must
+  /// carry: the workspace's own client when it has one, else the server's,
+  /// null when none is configured (it may throw [OwnAppIncomplete] for a
+  /// half-configured server client); `allowsConnect` false for a workspace
+  /// on its own client, whose Connect seals are then dropped.
   ServerGoogleTokenManager({
     required this._store,
-    this._serverClient = const GoogleOAuthClient.none(),
+    required this._refresh,
+    required this._installId,
+    required this._ownClientId,
+    required this._allowsConnect,
     this._onInvalidGrant,
-    this._httpClientFactory,
   });
 
   final FileGoogleCredentialsStore _store;
-  final GoogleOAuthClient _serverClient;
+  final GoogleTokenRefresh _refresh;
+  final Future<String> Function(String connectOrigin) _installId;
+  final Future<String?> Function(String workspaceId) _ownClientId;
+  final Future<bool> Function(String workspaceId) _allowsConnect;
   final Future<void> Function(String accountId)? _onInvalidGrant;
 
-  /// Supplies the [RhttpClient] the refresh rides on; null means the default
-  /// one [GoogleDeviceAuthClient] builds. A seam so a test can assert which
-  /// client credentials a refresh actually sends, which is the whole point of
-  /// the built-in marker.
-  final RhttpClient Function()? _httpClientFactory;
+  final Map<String, ProviderToken> _live = {};
+  final Map<String, Future<ProviderToken?>> _inFlight = {};
 
-  final Map<String, Future<GoogleServerCredentials?>> _inFlight = {};
-
-  /// A valid access token for [accountId], refreshing first if expired. Null
-  /// when the account has no usable credentials.
-  Future<String?> accessTokenFor(String accountId) async {
-    var creds = await _store.load(accountId);
-    if (creds == null) {
-      return null;
+  /// Keeps a freshly minted [token] for [accountId] in memory (a sealed
+  /// sign-in carries its first access token only here).
+  void remember(String accountId, ProviderToken token) {
+    if (token.accessToken.isNotEmpty) {
+      _live[accountId] = token;
     }
-    if (creds.isExpired()) {
-      creds = await _refresh(accountId) ?? creds;
-    }
-    return creds.accessToken.isEmpty ? null : creds.accessToken;
   }
 
-  /// Forces a refresh (used after a 401) and returns the new access token.
-  Future<String?> forceRefresh(String accountId) async =>
-      (await _refresh(accountId))?.accessToken;
+  /// Drops [accountId]'s in-memory token.
+  void forget(String accountId) => _live.remove(accountId);
 
-  Future<GoogleServerCredentials?> _refresh(String accountId) {
+  /// A valid access token for [accountId], refreshing first if expired. Null
+  /// when the account has no usable credential or the refresh could not run
+  /// right now.
+  Future<String?> accessTokenFor(String accountId) async {
+    final stored = await _usable(accountId);
+    if (stored == null) {
+      return null;
+    }
+    final live = _live[accountId];
+    if (live != null && !live.isExpired) {
+      return live.accessToken;
+    }
+    if (!stored.isSealed && !stored.isExpired) {
+      return stored.accessToken;
+    }
+    return (await _refreshOnce(accountId))?.accessToken;
+  }
+
+  /// Checks every credential in [workspaceId] against the app it uses now,
+  /// dropping (and flagging for reconnect) the ones another app issued. Runs
+  /// when the workspace changes its Google client.
+  Future<void> revalidateWorkspace(String workspaceId) async {
+    for (final accountId in await _store.accountIdsIn(workspaceId)) {
+      await _usable(accountId);
+    }
+  }
+
+  /// Forces a refresh (after a 401) and returns the new access token.
+  Future<String?> forceRefresh(String accountId) async {
+    _live.remove(accountId);
+    return (await _refreshOnce(accountId))?.accessToken;
+  }
+
+  Future<ProviderToken?> _refreshOnce(String accountId) {
     // Block body (not an arrow): `Map.remove` returns the stored future, so an
     // arrow whenComplete would make the refresh await itself — a deadlock.
     return _inFlight[accountId] ??= _doRefresh(accountId).whenComplete(() {
@@ -185,55 +190,97 @@ class ServerGoogleTokenManager {
     });
   }
 
-  Future<GoogleServerCredentials?> _doRefresh(String accountId) async {
-    final current = await _store.load(accountId);
-    if (current == null || current.refreshToken.isEmpty) {
+  Future<ProviderToken?> _doRefresh(String accountId) async {
+    final current = await _usable(accountId);
+    final workspaceId = _workspaceIdFromAccountId(accountId);
+    if (current == null || workspaceId == null) {
       return null;
     }
-    // Refresh with the client the account was connected under (a workspace may
-    // hold accounts connected via different Google projects). A built-in
-    // connection stored a marker instead of the pair, so resolve it from the
-    // server's CURRENT configuration — that is what lets the built-in secret be
-    // rotated by shipping a new build.
-    final client = current.usesBuiltinClient
-        ? _serverClient
-        : GoogleOAuthClient(
-            clientId: current.clientId,
-            clientSecret: current.clientSecret,
-          );
-    if (client.clientId.isEmpty) {
-      CcHostLog.warning(
-        current.usesBuiltinClient
-            ? 'calendar: $accountId was connected with this server\'s own '
-                  'OAuth client, which is no longer configured; cannot refresh '
-                  '(configure GOOGLE_OAUTH_CLIENT_ID or reconnect the '
-                  'account)'
-            : 'calendar: $accountId has no stored OAuth client id; cannot '
-                  'refresh (reconnect the account)',
-      );
-      return null;
-    }
+    RefreshOutcome outcome;
     try {
-      final auth = GoogleDeviceAuthClient(
-        clientId: client.clientId,
-        clientSecret: client.clientSecret,
-        httpClient: _httpClientFactory?.call(),
-      );
-      final refreshed = await auth.refresh(current);
-      await _store.save(accountId, refreshed);
-      return refreshed;
-    } on GoogleOAuthException catch (e) {
-      CcHostLog.warning(
-        'calendar: token refresh failed for $accountId: ${e.message}',
-      );
-      if (e.kind == GoogleOAuthFailureKind.invalidGrant) {
-        try {
-          await _onInvalidGrant?.call(accountId);
-        } on Object catch (e, st) {
-          CcHostLog.error('calendar: onInvalidGrant handler failed', e, st);
-        }
-      }
+      outcome = await _refresh(current, workspaceId);
+    } on Object catch (e) {
+      CcHostLog.warning('calendar: refresh unavailable for $accountId ($e)');
+      outcome = const RefreshUnavailable();
+    }
+    switch (outcome) {
+      case Refreshed(:final token):
+        await _store.save(accountId, token);
+        remember(accountId, token);
+        return token;
+      case RefreshRejected():
+        CcHostLog.warning(
+          'calendar: Google refused the grant for $accountId; it must be '
+          'connected again',
+        );
+        await _drop(accountId);
+        return null;
+      case RefreshUnavailable():
+        // Keep the credential; the next call tries again. Nobody is signed out
+        // by an outage, and no expired token goes out meanwhile.
+        _live.remove(accountId);
+        return null;
+    }
+  }
+
+  /// The stored credential when it is still this server's to use; otherwise
+  /// clears it (and flags the account) and returns null.
+  Future<ProviderToken?> _usable(String accountId) async {
+    final raw = await _store.raw(accountId);
+    if (raw == null || raw.isEmpty) {
+      _live.remove(accountId);
       return null;
+    }
+    final token = ProviderToken.tryParse(raw);
+    final workspaceId = _workspaceIdFromAccountId(accountId);
+    if (token == null || workspaceId == null) {
+      // An older build's shape: nothing here can renew it.
+      await _drop(accountId);
+      return null;
+    }
+    if (token.isSealed) {
+      if (!await _allowsConnect(workspaceId)) {
+        // The workspace signs people in to its own client now.
+        await _drop(accountId);
+        return null;
+      }
+      // A seal is bound to the install id it was minted for. A restored
+      // backup or a rotated key can never open it; Connect being off or
+      // pointed elsewhere only makes it unusable for now.
+      final current = await _installId(token.connectOrigin);
+      if (current.isEmpty) {
+        _live.remove(accountId);
+        return null;
+      }
+      if (token.sealInstallId != current) {
+        await _drop(accountId);
+        return null;
+      }
+      return token;
+    }
+    final String? ownClientId;
+    try {
+      ownClientId = await _ownClientId(workspaceId);
+    } on OwnAppIncomplete {
+      // A half-edited own app is a setup error the operator is fixing, not a
+      // reason to sign anyone out.
+      return token;
+    }
+    if (ownClientId == null || ownClientId != token.appId) {
+      // The own app that issued this grant is gone or was replaced.
+      await _drop(accountId);
+      return null;
+    }
+    return token;
+  }
+
+  Future<void> _drop(String accountId) async {
+    _live.remove(accountId);
+    await _store.clear(accountId);
+    try {
+      await _onInvalidGrant?.call(accountId);
+    } on Object catch (e, st) {
+      CcHostLog.error('calendar: onInvalidGrant handler failed', e, st);
     }
   }
 }
@@ -389,7 +436,7 @@ class ServerCalendarSync {
     }
   }
 
-  /// Syncs a single [workspaceId] now — e.g. right after a GUI connect, so the
+  /// Syncs a single [workspaceId] now — e.g. right after a sign-in, so the
   /// new account's events appear without waiting for the next sweep. Skips if a
   /// full sweep is already running (which will include it).
   Future<void> syncWorkspace(String workspaceId) async {
@@ -426,337 +473,63 @@ class ServerCalendarSync {
   }
 }
 
-/// Runs the headless **device-code** OAuth flow to connect a Google account to
-/// [workspaceId], storing the refresh token server-side and upserting the
-/// `CalendarAccount` row the sync + RPC reads use.
+/// Connects and disconnects a workspace's Google Calendar accounts.
 ///
-/// Prints the user code + verification URL via [log] (the caller wires it to
-/// stdout) and blocks until the user approves on another device or the code
-/// expires. Throws [GoogleOAuthException] on denial/timeout/missing config.
-Future<void> connectGoogleCalendar({
-  required CcServerConfig config,
-  required String workspaceId,
-  required void Function(String line) log,
-}) async {
-  if (!config.googleCalendarConfigured) {
-    throw const GoogleOAuthException(
-      'Google client id is not configured. Set GOOGLE_OAUTH_CLIENT_ID (and '
-      'GOOGLE_OAUTH_CLIENT_SECRET) before connecting a calendar.',
-      kind: GoogleOAuthFailureKind.missingClientId,
-    );
-  }
+/// Connecting is the tail of a browser sign-in (`oauth.begin {lane:
+/// google}`, see `GoogleSignInLane`): this stores the credential and upserts
+/// the `CalendarAccount` row the sync and the `calendar.*` reads use.
+class CalendarAccountService {
+  /// Creates a [CalendarAccountService]. [_onConnected] (optional) fires after
+  /// a successful connect so the caller can kick an immediate sync.
+  CalendarAccountService({
+    required this._store,
+    required this._tokens,
+    required this._calendarRepository,
+    this._onConnected,
+  });
 
-  final globalDb = GlobalDatabase(
-    openGlobalDatabase(dataDir: config.dataDir),
-    onWarn: (tag, message) => CcHostLog.warning('$tag: $message'),
-    onError: (tag, message) => CcHostLog.error('$tag: $message'),
-  );
-  final workspaceDbs = WorkspaceDatabaseManager(
-    dataDir: config.dataDir,
-    global: globalDb,
-    onWarn: (tag, message) => CcHostLog.warning('$tag: $message'),
-    onError: (tag, message) => CcHostLog.error('$tag: $message'),
-  );
-  await workspaceDbs.loadInstallId();
-  try {
-    // Validate the target workspace exists so we never strand an account on a
-    // bogus id; list the real ones to help if it doesn't.
-    final workspaceRepository = DaoWorkspaceRepository(
-      globalDb.workspaceRegistryDao,
-      workspaceDbs,
-    );
-    final workspaces = await workspaceRepository.getAll();
-    if (!workspaces.any((w) => w.id == workspaceId)) {
-      final listing = workspaces.isEmpty
-          ? '(none — create one first)'
-          : workspaces.map((w) => '  ${w.id}  ${w.name}').join('\n');
-      throw ArgumentError(
-        'No workspace "$workspaceId" in ${config.dataDir}. Available:\n$listing',
+  final FileGoogleCredentialsStore _store;
+  final ServerGoogleTokenManager _tokens;
+  final CalendarRepository _calendarRepository;
+  final Future<void> Function(String workspaceId)? _onConnected;
+
+  /// Stores [token] as [userId]'s Google account [email] in [workspaceId] and
+  /// returns the account id. Reconnecting the same account replaces its
+  /// credential and clears a "needs reauth" flag.
+  Future<String> connect({
+    required String workspaceId,
+    required String userId,
+    required String email,
+    required ProviderToken token,
+  }) async {
+    if (workspaceId.isEmpty || userId.isEmpty || email.isEmpty) {
+      throw const AuthException(
+        'A calendar account needs a workspace, a member and an email.',
       );
     }
-
-    final auth = GoogleDeviceAuthClient(
-      clientId: config.googleClientId,
-      clientSecret: config.googleClientSecret,
-    );
-    final code = await auth.requestDeviceCode();
-    log('');
-    log('To connect Google Calendar:');
-    log('  1. On any device, open: ${code.verificationUrl}');
-    log('  2. Enter this code:     ${code.userCode}');
-    log('');
-    log('Waiting for approval (the code expires shortly)…');
-
-    final creds = await auth.pollForToken(code);
-    final email = creds.accountEmail;
-    if (email.isEmpty) {
-      throw const GoogleOAuthException(
-        'Could not determine the connected account email (no id_token).',
-        code: 'no_account_email',
-      );
-    }
-
-    final accountId = serverGoogleAccountId(workspaceId, email);
-    // This path only ever authorizes with the server's own configured client, so
-    // it stores the marker rather than copying the pair into the credential file.
-    await FileGoogleCredentialsStore(
-      dataDir: config.dataDir,
-    ).save(accountId, creds.asBuiltinClient());
-    await DaoCalendarRepository(workspaceDbs).upsertAccount(
+    final accountId = serverGoogleAccountId(workspaceId, email, userId: userId);
+    await _store.save(accountId, token);
+    _tokens.remember(accountId, token);
+    await _calendarRepository.upsertAccount(
       CalendarAccount(
         id: accountId,
         workspaceId: workspaceId,
+        userId: userId,
         providerId: 'google',
         accountEmail: email,
       ),
     );
-    log('');
-    log('Connected $email to workspace $workspaceId.');
-    log('The server will sync this calendar on its next sweep.');
-  } finally {
-    await workspaceDbs.closeAll();
-    await globalDb.close();
-  }
-}
-
-/// The pending device-authorization a GUI connect is waiting on.
-class _PendingConnect {
-  _PendingConnect({
-    required this.workspaceId,
-    required this.userId,
-    required this.auth,
-    required this.code,
-    this.usesBuiltinClient = false,
-  });
-
-  final String workspaceId;
-  final String userId;
-  final GoogleDeviceAuthClient auth;
-  final GoogleDeviceCode code;
-
-  /// Whether the server's own OAuth client began this flow, which decides
-  /// whether the credentials are stored as a marker or as a literal pair.
-  final bool usesBuiltinClient;
-}
-
-/// What `calendar.beginConnect` hands back to the GUI: the user code + URL to
-/// display, plus an opaque [handle] the GUI polls with.
-class CalendarConnectBegin {
-  /// Creates a [CalendarConnectBegin].
-  const CalendarConnectBegin({
-    required this.handle,
-    required this.userCode,
-    required this.verificationUrl,
-    required this.intervalSeconds,
-    required this.expiresInSeconds,
-  });
-
-  /// Opaque handle for the pending flow (passed back to `calendar.pollConnect`).
-  final String handle;
-
-  /// The short code the user enters at [verificationUrl].
-  final String userCode;
-
-  /// Where the user approves the request.
-  final String verificationUrl;
-
-  /// Minimum seconds the GUI should wait between polls.
-  final int intervalSeconds;
-
-  /// Seconds until the device code expires.
-  final int expiresInSeconds;
-}
-
-/// The status of a GUI connect poll.
-enum CalendarConnectStatus {
-  /// Not yet approved — keep polling.
-  pending,
-
-  /// Approved + stored; [CalendarConnectPoll.accountEmail] is set.
-  connected,
-
-  /// The user denied the request.
-  denied,
-
-  /// The device code expired before approval — restart the flow.
-  expired,
-
-  /// The handle is unknown (expired/cleared/never existed).
-  unknown,
-}
-
-/// What `calendar.pollConnect` hands back.
-class CalendarConnectPoll {
-  /// Creates a [CalendarConnectPoll].
-  const CalendarConnectPoll(this.status, {this.accountEmail});
-
-  /// The poll status.
-  final CalendarConnectStatus status;
-
-  /// The connected account email, set iff [status] is
-  /// [CalendarConnectStatus.connected].
-  final String? accountEmail;
-}
-
-/// Drives the GUI device-code connect over RPC: [begin] (returns a code + URL),
-/// [poll] (one Google poll per call), [disconnect]. The client id + secret are
-/// supplied by the caller (the connect form) and stored per account so the sync
-/// can refresh later. Pending flows live in memory keyed by an opaque handle — a
-/// short-lived connect is fine to lose on a server restart (just re-initiate).
-class CalendarConnectService {
-  /// Creates a [CalendarConnectService]. [_onConnected] (optional) fires after a
-  /// successful connect so the caller can kick an immediate sync.
-  CalendarConnectService({
-    required this._store,
-    required this._calendarRepository,
-    this._serverClient = const GoogleOAuthClient.none(),
-    this._onConnected,
-    this._httpClientFactory,
-  });
-
-  final FileGoogleCredentialsStore _store;
-  final CalendarRepository _calendarRepository;
-  final GoogleOAuthClient _serverClient;
-  final Future<void> Function(String workspaceId)? _onConnected;
-
-  /// Supplies the [RhttpClient] the device-code exchange rides on; null means
-  /// the default one [GoogleDeviceAuthClient] builds. A seam so a test can
-  /// assert what a built-in connect writes to the credential store without
-  /// dialing Google.
-  final RhttpClient Function()? _httpClientFactory;
-  final Map<String, _PendingConnect> _pending = {};
-  final Random _random = Random.secure();
-
-  /// Whether this server can offer "use Control Center's Google app" — i.e.
-  /// whether it holds an OAuth client of its own. The client id is deliberately
-  /// NOT exposed alongside this; the answer a UI needs is only yes/no.
-  bool get builtinAvailable => _serverClient.isConfigured;
-
-  /// Starts a device-code flow for [workspaceId].
-  ///
-  /// With [useBuiltin] the server's own OAuth client authorizes the account and
-  /// the caller supplies nothing; otherwise [clientId]/[clientSecret] are the
-  /// user's own Google Cloud client. Either way the secret used here is never
-  /// echoed back to the caller.
-  Future<CalendarConnectBegin> begin({
-    required String workspaceId,
-    String userId = '',
-    bool useBuiltin = false,
-    String clientId = '',
-    String clientSecret = '',
-  }) async {
-    if (useBuiltin && !_serverClient.isConfigured) {
-      throw const GoogleOAuthException(
-        'This server has no Google app of its own. Connect with your own '
-        'Google Cloud client id and secret instead.',
-        kind: GoogleOAuthFailureKind.missingClientId,
-      );
+    // Kick an immediate sync (don't block the sign-in on the network
+    // round-trip) so the new account's events appear right away.
+    final onConnected = _onConnected;
+    if (onConnected != null) {
+      unawaited(onConnected(workspaceId));
     }
-    final client = useBuiltin
-        ? _serverClient
-        : GoogleOAuthClient(clientId: clientId, clientSecret: clientSecret);
-    if (!client.isConfigured) {
-      throw const GoogleOAuthException(
-        'A Google client id and secret are required to connect.',
-        kind: GoogleOAuthFailureKind.missingClientId,
-      );
-    }
-    final auth = GoogleDeviceAuthClient(
-      clientId: client.clientId,
-      clientSecret: client.clientSecret,
-      httpClient: _httpClientFactory?.call(),
-    );
-    final code = await auth.requestDeviceCode();
-    final handle = _newHandle();
-    _pending[handle] = _PendingConnect(
-      workspaceId: workspaceId,
-      userId: userId,
-      auth: auth,
-      code: code,
-      usesBuiltinClient: useBuiltin,
-    );
-    return CalendarConnectBegin(
-      handle: handle,
-      userCode: code.userCode,
-      verificationUrl: code.verificationUrl,
-      intervalSeconds: code.interval.inSeconds,
-      expiresInSeconds: code.expiresAt.difference(DateTime.now()).inSeconds,
-    );
-  }
-
-  /// Polls the pending flow [handle] once. On success stores the tokens + the
-  /// `CalendarAccount` row and clears the pending entry.
-  Future<CalendarConnectPoll> poll({
-    required String workspaceId,
-    required String handle,
-  }) async {
-    final pending = _pending[handle];
-    if (pending == null) {
-      return const CalendarConnectPoll(CalendarConnectStatus.unknown);
-    }
-    // Isolation: a handle belongs only to the workspace that began it.
-    if (pending.workspaceId != workspaceId) {
-      throw const WorkspaceMismatchException(
-        'This calendar connect attempt belongs to a different workspace.',
-      );
-    }
-    final outcome = await pending.auth.pollOnce(pending.code);
-    switch (outcome.status) {
-      case GoogleDevicePollStatus.pending:
-      case GoogleDevicePollStatus.slowDown:
-        return const CalendarConnectPoll(CalendarConnectStatus.pending);
-      case GoogleDevicePollStatus.denied:
-        _pending.remove(handle);
-        return const CalendarConnectPoll(CalendarConnectStatus.denied);
-      case GoogleDevicePollStatus.expired:
-        _pending.remove(handle);
-        return const CalendarConnectPoll(CalendarConnectStatus.expired);
-      case GoogleDevicePollStatus.connected:
-        _pending.remove(handle);
-        final creds = outcome.credentials!;
-        final email = creds.accountEmail;
-        if (email.isEmpty) {
-          throw const GoogleOAuthException(
-            'Could not determine the connected account email (no id_token).',
-            code: 'no_account_email',
-          );
-        }
-        final accountId = serverGoogleAccountId(
-          workspaceId,
-          email,
-          userId: pending.userId,
-        );
-        // A built-in connect stores the marker, not the pair: the server's own
-        // secret must not be duplicated into the credential file and the
-        // refresh path re-resolves it so a rotated client keeps working.
-        await _store.save(
-          accountId,
-          pending.usesBuiltinClient ? creds.asBuiltinClient() : creds,
-        );
-        await _calendarRepository.upsertAccount(
-          CalendarAccount(
-            id: accountId,
-            workspaceId: workspaceId,
-            userId: pending.userId,
-            providerId: 'google',
-            accountEmail: email,
-          ),
-        );
-        // Kick an immediate sync (don't block the poll response on the network
-        // round-trip) so the new account's events appear right away.
-        final onConnected = _onConnected;
-        if (onConnected != null) {
-          unawaited(onConnected(workspaceId));
-        }
-        return CalendarConnectPoll(
-          CalendarConnectStatus.connected,
-          accountEmail: email,
-        );
-    }
+    return accountId;
   }
 
   /// Disconnects [accountId] from [workspaceId]: deletes the account row (which
-  /// cascades its events) and clears the stored tokens.
+  /// cascades its events) and clears the stored credential.
   Future<void> disconnect({
     required String workspaceId,
     required String accountId,
@@ -782,41 +555,93 @@ class CalendarConnectService {
     }
     await _calendarRepository.deleteAccount(workspaceId, accountId);
     await _store.clear(accountId);
+    _tokens.forget(accountId);
   }
 
-  String _newHandle() {
-    final bytes = List<int>.generate(18, (_) => _random.nextInt(256));
-    return base64Url.encode(bytes).replaceAll('=', '');
+  /// Drops what earlier builds left behind, once at boot.
+  ///
+  /// Accounts with no member (the old CLI's workspace-pool rows) are deleted:
+  /// a sign-in always lands in a member's own row, so nothing can renew
+  /// them. A member's account whose credential is missing or in an older
+  /// shape (the device-code flow's) loses the credential and is flagged for
+  /// reconnect.
+  Future<void> dropLegacy(Iterable<String> workspaceIds) async {
+    final now = DateTime.now();
+    for (final workspaceId in workspaceIds) {
+      try {
+        for (final account in await _calendarRepository.getAccounts(
+          workspaceId,
+        )) {
+          if (account.providerId != 'google') {
+            continue;
+          }
+          if (account.userId.isEmpty) {
+            await _calendarRepository.deleteAccount(workspaceId, account.id);
+            await _store.clear(account.id);
+            continue;
+          }
+          final raw = await _store.raw(account.id);
+          if (raw != null && ProviderToken.tryParse(raw) != null) {
+            continue;
+          }
+          if (raw != null) {
+            await _store.clear(account.id);
+          }
+          await _calendarRepository.markNeedsReauth(
+            workspaceId,
+            account.id,
+            now,
+          );
+        }
+      } on Object catch (e) {
+        CcHostLog.warning(
+          'calendar: could not check workspace $workspaceId for older '
+          'calendar connections: $e',
+        );
+      }
+    }
   }
 }
 
-/// Server-side RSVP: writes the connected user's response to a Google Calendar
-/// invitation on the host's OAuth token (the thin client holds none), then
-/// optimistically upserts the local event so the choice shows before the next
-/// sync. The thin client drives this over the `calendar.rsvp` op.
-class ServerCalendarRsvp {
-  /// Creates a [ServerCalendarRsvp].
-  ServerCalendarRsvp({
+/// The person's own Google Calendar writes: answering an invitation,
+/// creating an event and deleting one.
+///
+/// Every write runs on the host's OAuth token for one connected account (the
+/// thin client holds none) and is refused unless that account is the
+/// caller's own sign-in in this workspace: a member never answers, books or
+/// cancels on a colleague's calendar. Each write then updates the local copy
+/// so the change shows before the next sync.
+class ServerCalendarWrites {
+  /// Creates a [ServerCalendarWrites].
+  ServerCalendarWrites({
     required CalendarRepository calendarRepository,
     required this._apiClient,
-  }) : _repository = calendarRepository;
+    Uuid? uuid,
+    DateTime Function()? clock,
+  }) : _repository = calendarRepository,
+       _uuid = uuid ?? const Uuid(),
+       _clock = clock ?? DateTime.now;
 
   final CalendarRepository _repository;
   final GoogleCalendarApiClient _apiClient;
+  final Uuid _uuid;
+  final DateTime Function() _clock;
+
+  /// The answers Google accepts for `responseStatus`.
+  static const Set<String> responses = {'accepted', 'declined', 'tentative'};
 
   /// Sends [responseStatus] (`accepted` / `declined` / `tentative`) for the
-  /// local event [eventId] in [workspaceId]. Throws [NotFoundException] if the
-  /// event is unknown to the workspace (also the cross-workspace guard: the
-  /// lookup is workspace-scoped, so a foreign id is simply not found).
+  /// local event [eventId] in [workspaceId].
   Future<void> respond({
     required String workspaceId,
+    required String userId,
     required String eventId,
     required String responseStatus,
   }) async {
-    final event = await _repository.watchEventById(workspaceId, eventId).first;
-    if (event == null) {
-      throw const NotFoundException('Calendar event not found');
+    if (!responses.contains(responseStatus)) {
+      throw ValidationException('Unknown RSVP answer: $responseStatus');
     }
+    final event = await _ownEvent(workspaceId, userId, eventId);
     // PATCH replaces the attendees array, so send the full list with only the
     // self attendee's status changed.
     final attendees = <Map<String, dynamic>>[
@@ -850,54 +675,296 @@ class ServerCalendarRsvp {
     ];
     await _repository.upsertEvents([event.copyWith(attendees: updated)]);
   }
+
+  /// Creates [draft] on its calendar and returns the stored event's local id.
+  ///
+  /// The calendar must be one the account may write to. Guests are emailed
+  /// their invitation by Google.
+  Future<String> create({
+    required String workspaceId,
+    required String userId,
+    required CalendarEventDraft draft,
+  }) async {
+    await _ownAccount(workspaceId, userId, draft.accountId);
+    await _writableCalendar(workspaceId, draft.accountId, draft.calendarId);
+    final created = await _apiClient.insertEvent(
+      accountId: draft.accountId,
+      calendarId: draft.calendarId,
+      event: googleEventResource(draft, requestId: _uuid.v4()),
+      withConference: draft.addConference,
+    );
+    if (created.id.isEmpty) {
+      throw const ValidationException('Google did not return the new event.');
+    }
+    await _repository.upsertEvents([
+      calendarEventFromGoogle(
+        created,
+        id: _uuid.v4(),
+        workspaceId: workspaceId,
+        accountId: draft.accountId,
+        calendarId: draft.calendarId,
+        now: _clock(),
+      ),
+    ]);
+    // The upsert keeps the id of a row a concurrent sync stored first, so
+    // read the id back rather than trusting the one just minted.
+    final stored = await _repository
+        .watchEventsInRange(
+          workspaceId,
+          created.start.resolved,
+          created.end.resolved.add(const Duration(seconds: 1)),
+        )
+        .first;
+    for (final event in stored) {
+      if (event.accountId == draft.accountId &&
+          event.externalEventId == created.id) {
+        return event.id;
+      }
+    }
+    throw const NotFoundException('The new calendar event was not stored.');
+  }
+
+  /// Moves the local event to [move]'s times on Google, then stores what
+  /// Google kept under the same local id. Only an event of the caller's own
+  /// with no guests, or one they organize, may move
+  /// ([CalendarEventReschedule.allowedFor]); guests are told of the new time.
+  Future<void> move({
+    required String workspaceId,
+    required String userId,
+    required CalendarEventReschedule move,
+  }) async {
+    final event = await _ownEvent(workspaceId, userId, move.eventId);
+    await _writableCalendar(workspaceId, event.accountId, event.calendarId);
+    if (!CalendarEventReschedule.allowedFor(event)) {
+      throw const ValidationException(
+        'Only the organizer can move an event with guests.',
+      );
+    }
+    Map<String, String> when(DateTime value) => move.isAllDay
+        ? {'date': CalendarEventDraft.dateOnly(value)}
+        : {'dateTime': value.toUtc().toIso8601String()};
+    final moved = await _apiClient.patchEventTimes(
+      accountId: event.accountId,
+      calendarId: event.calendarId,
+      eventId: event.externalEventId,
+      start: when(move.start),
+      end: when(move.end),
+    );
+    await _repository.upsertEvents([
+      calendarEventFromGoogle(
+        moved,
+        id: event.id,
+        workspaceId: workspaceId,
+        accountId: event.accountId,
+        calendarId: event.calendarId,
+        now: _clock(),
+      ),
+    ]);
+  }
+
+  /// Deletes the local event [eventId] on Google, then locally. An
+  /// organizer's delete cancels it for every guest; a guest's delete takes it
+  /// off their own calendar. A recurring event loses only this occurrence.
+  Future<void> delete({
+    required String workspaceId,
+    required String userId,
+    required String eventId,
+  }) async {
+    final event = await _ownEvent(workspaceId, userId, eventId);
+    await _writableCalendar(workspaceId, event.accountId, event.calendarId);
+    await _apiClient.deleteEvent(
+      accountId: event.accountId,
+      calendarId: event.calendarId,
+      eventId: event.externalEventId,
+    );
+    await _repository.deleteEventsByExternalIds(
+      workspaceId: workspaceId,
+      accountId: event.accountId,
+      calendarId: event.calendarId,
+      externalIds: {event.externalEventId},
+    );
+  }
+
+  /// The local event [eventId], refused unless its account is [userId]'s.
+  /// The lookup is workspace-scoped, so a foreign id is simply not found.
+  Future<CalendarEvent> _ownEvent(
+    String workspaceId,
+    String userId,
+    String eventId,
+  ) async {
+    final event = await _repository.watchEventById(workspaceId, eventId).first;
+    if (event == null) {
+      throw const NotFoundException('Calendar event not found');
+    }
+    await _ownAccount(workspaceId, userId, event.accountId);
+    return event;
+  }
+
+  /// Refuses [accountId] unless it is [userId]'s connected account in
+  /// [workspaceId].
+  Future<void> _ownAccount(
+    String workspaceId,
+    String userId,
+    String accountId,
+  ) async {
+    if (_workspaceIdFromAccountId(accountId) != workspaceId) {
+      throw const WorkspaceMismatchException(
+        'That calendar account belongs to a different workspace.',
+      );
+    }
+    final accounts = await _repository.getAccounts(workspaceId);
+    for (final account in accounts) {
+      if (account.id != accountId) {
+        continue;
+      }
+      if (userId.isEmpty || account.userId != userId) {
+        throw const AuthException(
+          'That calendar account belongs to a different user.',
+        );
+      }
+      return;
+    }
+    throw const NotFoundException('Calendar account not found');
+  }
+
+  /// Refuses a calendar the account may only read (a subscribed or shared
+  /// calendar), before Google is asked.
+  Future<void> _writableCalendar(
+    String workspaceId,
+    String accountId,
+    String calendarId,
+  ) async {
+    final sources = await _repository
+        .watchSources(workspaceId, accountId)
+        .first;
+    for (final source in sources) {
+      if (source.id == calendarId) {
+        if (source.writable) {
+          return;
+        }
+        break;
+      }
+    }
+    throw const ValidationException(
+      'That calendar does not accept new or deleted events.',
+    );
+  }
 }
 
-/// The server-side calendar wiring: the periodic [sync] sweep, the GUI
-/// [connect] service and the [rsvp] writer, sharing ONE credential store (so a
-/// freshly-connected account is immediately visible to the sync's token
-/// manager — separate store instances cache the on-disk map independently and
-/// would diverge).
+/// The Google event resource for [draft]. [requestId] makes the Meet request
+/// idempotent when [CalendarEventDraft.addConference] asks for one.
+Map<String, dynamic> googleEventResource(
+  CalendarEventDraft draft, {
+  required String requestId,
+}) {
+  Map<String, String> when(DateTime value) => draft.isAllDay
+      ? {'date': CalendarEventDraft.dateOnly(value)}
+      : {'dateTime': value.toUtc().toIso8601String()};
+  return {
+    'summary': draft.title,
+    'start': when(draft.start),
+    'end': when(draft.end),
+    'location': ?draft.location,
+    'description': ?draft.description,
+    if (draft.attendeeEmails.isNotEmpty)
+      'attendees': [
+        for (final email in draft.attendeeEmails) {'email': email},
+      ],
+    if (draft.addConference)
+      'conferenceData': {
+        'createRequest': {
+          'requestId': requestId,
+          'conferenceSolutionKey': {'type': 'hangoutsMeet'},
+        },
+      },
+  };
+}
+
+/// The server-side calendar wiring: the periodic [sync] sweep, the
+/// [accounts] connect/disconnect service and the person's [writes], sharing ONE
+/// token manager (so a freshly connected account's in-memory access token is
+/// what the sync uses).
 class ServerCalendar {
   /// Creates a [ServerCalendar].
   ServerCalendar({
+    required this.tokens,
     required this.sync,
-    required this.connect,
-    required this.rsvp,
+    required this.accounts,
+    required this.writes,
+    required this._workspaceRepository,
   });
+
+  /// The shared token manager.
+  final ServerGoogleTokenManager tokens;
 
   /// The periodic per-workspace sync sweep.
   final ServerCalendarSync sync;
 
-  /// The GUI device-code connect service (backs the `calendar.*Connect` ops).
-  final CalendarConnectService connect;
+  /// Account connect (from the Google sign-in lane) and disconnect (the
+  /// `calendar.disconnect` op).
+  final CalendarAccountService accounts;
 
-  /// The RSVP writer (backs the `calendar.rsvp` op).
-  final ServerCalendarRsvp rsvp;
+  /// RSVP, create and delete (back the `calendar.rsvp`, `calendar.createEvent`
+  /// and `calendar.deleteEvent` ops).
+  final ServerCalendarWrites writes;
+
+  final WorkspaceRepository _workspaceRepository;
+
+  /// Drops older builds' connections, then starts the sync sweep.
+  Future<void> start() async {
+    try {
+      final workspaces = await _workspaceRepository.watchAll().first;
+      await accounts.dropLegacy([for (final w in workspaces) w.id]);
+    } on Object catch (e) {
+      CcHostLog.warning('calendar: legacy connection check failed: $e');
+    }
+    sync.start();
+  }
 }
 
-/// Builds the server-side calendar [ServerCalendar.sync] + [ServerCalendar.connect]
-/// over a shared credential store under [dataDir]. The token manager flags an
-/// account for re-connect on a dead refresh token. The sync runs unconditionally
-/// (it no-ops until an account is connected) — connecting is a runtime action
-/// (GUI or CLI), not build-time config.
+/// Builds the server-side calendar over the shared [secrets] store.
+///
+/// Refreshes go through [signIn] (own app against Google, or the Connect that
+/// sealed the grant); [connect] supplies the install id a seal must match and
+/// [apps] the own Google client a plain grant must belong to. A refused grant
+/// flags the account for reconnect. A workspace on its own Google client
+/// ([workspaceApps]) accepts only grants that client issued. The sync runs
+/// unconditionally (it no-ops until an account is connected).
 ServerCalendar buildServerCalendar({
   required CalendarRepository calendarRepository,
   required WorkspaceRepository workspaceRepository,
   required DomainEventBus eventBus,
-  required String dataDir,
-  GoogleOAuthClient serverClient = const GoogleOAuthClient.none(),
-  FileSecretsStore? secrets,
+  required FileSecretsStore secrets,
+  required ProviderSignInService signIn,
+  required ConnectClient connect,
+  required ProviderAppSettings apps,
+  required WorkspaceProviderAppSettings workspaceApps,
 }) {
-  // Share the server's own secrets store when the caller has one, so calendar
-  // reads hit the same cache every other tenant of the file does.
-  final store = secrets != null
-      ? FileGoogleCredentialsStore.withSecrets(secrets)
-      : FileGoogleCredentialsStore(dataDir: dataDir);
+  final store = FileGoogleCredentialsStore(secrets);
   final tokens = ServerGoogleTokenManager(
     store: store,
-    // Both halves need the pair: connect authorizes with it, refresh resolves
-    // the stored marker back to it (which is what makes rotation work).
-    serverClient: serverClient,
+    refresh: (token, workspaceId) => signIn.refresh(
+      ConnectOAuthLane.google,
+      token,
+      slot: workspaceId,
+      workspaceId: workspaceId,
+    ),
+    installId: (origin) async {
+      final choice = await connect.settings.choice();
+      if (!choice.enabled ||
+          canonicalConnectBaseUrl(choice.baseUrl) != origin) {
+        return '';
+      }
+      return (await connect.identity())?.installId ?? '';
+    },
+    ownClientId: (workspaceId) async =>
+        await workspaceApps.ownClientId(
+          workspaceId,
+          WorkspaceAppProvider.google,
+        ) ??
+        (await apps.oauthCredentials(ProviderApp.google))?.clientId,
+    allowsConnect: (workspaceId) async =>
+        !await workspaceApps.ownsApp(workspaceId, WorkspaceAppProvider.google),
     onInvalidGrant: (accountId) async {
       final workspaceId = _workspaceIdFromAccountId(accountId);
       if (workspaceId == null) {
@@ -905,14 +972,20 @@ ServerCalendar buildServerCalendar({
       }
       try {
         final now = DateTime.now();
-        await calendarRepository.markNeedsReauth(workspaceId, accountId, now);
-        eventBus.publish(
-          CalendarAuthExpired(
-            workspaceId: workspaceId,
-            accountEmail: '',
-            occurredAt: now,
-          ),
-        );
+        // Publish once per expiry, not on every sweep that finds it.
+        if (await calendarRepository.markNeedsReauth(
+          workspaceId,
+          accountId,
+          now,
+        )) {
+          eventBus.publish(
+            CalendarAuthExpired(
+              workspaceId: workspaceId,
+              accountEmail: _emailFromAccountId(accountId),
+              occurredAt: now,
+            ),
+          );
+        }
       } on Object catch (e) {
         CcHostLog.warning('calendar: could not flag $accountId for reauth: $e');
       }
@@ -925,18 +998,19 @@ ServerCalendar buildServerCalendar({
     workspaceRepository: workspaceRepository,
   );
   return ServerCalendar(
+    tokens: tokens,
     sync: sync,
-    connect: CalendarConnectService(
+    accounts: CalendarAccountService(
       store: store,
+      tokens: tokens,
       calendarRepository: calendarRepository,
-      serverClient: serverClient,
-      // After a GUI connect, sync that workspace immediately (same process, so
-      // the shared store already has the new token).
+      // After a sign-in, sync that workspace immediately.
       onConnected: sync.syncWorkspace,
     ),
-    rsvp: ServerCalendarRsvp(
+    writes: ServerCalendarWrites(
       calendarRepository: calendarRepository,
       apiClient: apiClient,
     ),
+    workspaceRepository: workspaceRepository,
   );
 }

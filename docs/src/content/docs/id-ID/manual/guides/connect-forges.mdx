@@ -2,7 +2,7 @@
 title: Hubungkan host kode
 description: Hubungkan GitHub, GitLab, atau Bitbucket agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi — satu ruang kerja dapat memakai ketiganya.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center bekerja dengan tiga host kode, yang disebut **forge** di seluruh aplikasi: **GitHub**, **GitLab**, dan **Bitbucket Cloud**. Tidak ada yang menjadi default. Hubungkan satu dan semuanya berfungsi; hubungkan beberapa dan satu ruang kerja dapat memuat repo dari semuanya sekaligus.
@@ -13,9 +13,9 @@ Forge adalah properti setiap **repo**, dibaca dari remote `origin`-nya saat Anda
 
 1. Buka **Pengaturan → Ruang kerja → Profil & identitas** (`/settings/workspace/profile`).
 2. Temukan kartu **Hosting kode**. Setiap forge yang didukung tercantum, terhubung atau tidak.
-3. Tekan **Masuk dengan …** jika barisnya menyediakannya, atau **Tambah token** lalu tempelkan salah satu.
+3. Pada **GitHub**, tekan **Masuk ke GitHub**. Pada **GitLab** atau **Bitbucket**, tekan **Tambah token** lalu tempelkan salah satu.
 
-**Masuk** muncul untuk forge yang aplikasinya sudah terdaftar di server Anda — saat ini yaitu GitHub, melalui device flow (lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)). Selebihnya adalah token yang ditempel, yaitu pilihan yang jujur alih-alih tombol yang tidak dapat menyelesaikan prosesnya.
+**GitHub hanya memakai proses masuk.** Proses masuk berjalan melalui GitHub App milik server atau melalui Control Center Connect, tergantung pengaturan pemilik server (lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)); tidak ada token GitHub untuk ditempel. GitLab dan Bitbucket masih menerima token pribadi.
 
 Apa pun caranya, kredensial itu **milik Anda dan berada di server**, dikunci berdasarkan id pengguna Anda: tidak ada token yang disimpan di mesin tempat Anda mengetiknya, setiap perangkat tempat Anda masuk memakai token yang sama, dan anggota lain tidak dapat membacanya. Kredensial berlaku pada **permintaan berikutnya** — tidak ada yang perlu dimulai ulang, dan memutuskan koneksi langsung menghentikan pengirimannya.
 
@@ -24,27 +24,34 @@ Setiap baris memberi tahu dari mana kredensialnya berasal, karena itulah perbeda
 | Subjudul                         | Arti                                                               |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `Masuk sebagai octocat`          | Kredensial Anda sendiri yang dipakai                               |
-| `Masuk sebagai octocat · lewat aplikasi server ini` | Identitas aplikasi server yang menjawab — Anda belum masuk |
-| `Masuk sebagai octocat · dari environment` | Variabel environment server yang menjawab, bukan kredensial Anda |
+| `Masuk sebagai octocat · dari environment` | Hanya GitLab atau Bitbucket: variabel environment server yang menjawab, bukan token Anda |
 | `Tidak terhubung`                | Anda tidak punya kredensial untuk forge ini                        |
+| `Proses masuk GitHub belum disiapkan di server ini.` | Server tidak memiliki GitHub App sendiri maupun Connect; pemilik server menyiapkan salah satunya |
 
 ### Token apa yang dibutuhkan setiap forge
 
 | Forge         | Token                                                     | Tempat membuatnya                                         |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Token akses pribadi dengan `api`                          | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Token API Atlassian, plus email akun Anda                 | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket mengautentikasi dengan **email akun sebagai nama pengguna** dan token sebagai kata sandi. Setel `BITBUCKET_EMAIL` di environment server agar ia tahu email mana yang dipasangkan dengan token itu.
 
-### Atau gunakan environment
+### Pekerjaan latar belakang
 
-Untuk instalasi headless atau CI, server membaca ini:
+Pekerjaan tanpa manusia di baliknya (eksekusi agen, pipeline, polling PR) juga memerlukan
+kredensial, dan setiap forge menjawabnya dengan cara berbeda:
 
-- **GitHub** — `GITHUB_TOKEN`, lalu `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, lalu `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, lalu `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
+- **GitHub** — satu token untuk satu repositori dalam satu waktu, dicetak dari GitHub App server
+  atau melalui Connect dan dibatasi pada apa yang dapat dilakukan anggota yang bertanggung jawab
+  di sana. Itu tidak pernah proses masuk seseorang yang diserahkan utuh, dan tidak ada variabel
+  environment atau token tempelan yang menggantikannya. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/#siapa-yang-diwakili-kredensial-anda)
+- **GitLab** — token yang ditempel pemilik server, lalu `GITLAB_TOKEN`, lalu `CI_JOB_TOKEN`
+- **Bitbucket** — token yang ditempel pemilik server, lalu `BITBUCKET_API_TOKEN`, lalu `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
+
+Variabel environment GitLab dan Bitbucket adalah kredensial **server**, bukan milik Anda: permintaan
+yang dibuat atas nama Anda hanya memakai token Anda, sehingga environment tidak pernah diam-diam
+menggantikan Anda.
 
 Ini adalah kredensial **server**, bukan milik Anda, dan perbedaannya krusial: permintaan yang dibuat atas nama Anda memakai kredensial Anda dan tidak yang lain, sehingga environment tidak pernah diam-diam menggantikan Anda. Pekerjaan tanpa manusia di baliknya — webhook, polling PR, sinkronisasi tiket — menyelesaikan identitas aplikasi server terlebih dahulu, lalu kredensial pemilik server, lalu environment. Urutannya tetap sehingga "saya sudah masuk dan tidak ada yang berubah" tidak pernah menjadi hasil yang didukung.
 
@@ -94,11 +101,11 @@ GitLab menyebut pull request sebagai **merge request**. Control Center menyebut 
 
 ### Daftar PR kosong dan menyatakan sebuah forge tidak terhubung
 
-Anda tidak punya kredensial untuk forge itu. Masuk atau tempelkan token di **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**. Repo di forge lain tidak terpengaruh.
+Anda tidak punya kredensial untuk forge itu. Masuk ke GitHub, atau tempelkan token GitLab atau Bitbucket, di **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**. Repo di forge lain tidak terpengaruh.
 
 ### Saya menghubungkan sebuah forge tetapi repo-nya masih tidak menampilkan apa pun
 
-Periksa subjudul barisnya. Jika tertulis "lewat aplikasi server ini" atau "dari environment", kredensial yang menjawab berbeda dari yang Anda harapkan — kredensial Anda sendiri yang menang untuk apa pun yang Anda minta, jadi jika tertulis sebaliknya, milik Anda tidak tersimpan.
+Periksa subjudul barisnya. Jika baris GitLab atau Bitbucket tertulis "dari environment", kredensial yang menjawab berbeda dari yang Anda harapkan — token Anda sendiri yang menang untuk apa pun yang Anda minta, jadi jika tertulis sebaliknya, milik Anda tidak tersimpan. Di GitHub, pastikan GitHub App telah dipasang di akun pemilik repo-repo tersebut.
 
 ### Repo tidak dapat didaftarkan
 

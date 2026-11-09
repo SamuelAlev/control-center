@@ -2,7 +2,7 @@
 title: 建立管線範本
 description: 在管線編輯器中編寫 DAG 工作流程範本——新增節點、把它們連接起來、宣告輸入，並讓它可以執行。
 slug: zh-HK/手冊/操作指南/建立管線
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 管線範本是在工作區設定中編寫的。工作區側邊欄中的 **管線** 入口是_執行佇列_，
@@ -110,10 +110,17 @@ sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 會新增 **指令碼**。沒有工作目錄或環境變數欄位，因為兩者都不可設定：
 
 - 一次執行中的每個 bash 步驟都共用 cwd `<cc_root>/pipelines/<runId>/`。
-- `GITHUB_TOKEN` 會從憑證存放區注入，因此 `gh` 與
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` 無需設定即可運作。
+- 指令碼會像代理的命令一樣，在主機的作業系統沙箱中執行。沒有沙箱的主機
+  （Windows，或沒有 `bwrap` 的 Linux）會令該步驟失敗，而不是在不受限制的情況下
+  執行它。從沙箱內無法讀取伺服器的資料目錄和 `.env` 檔案。
+- Git 與 `gh` 看不到任何主機設定：沒有已儲存的登入、憑證輔助程式或全域鉤子。
+- 當管線指明一個與工作區連結的 GitHub 程式庫（狀態或觸發器負載中的
+  `repo_full_name`）時，`GH_TOKEN` 和 `GITHUB_TOKEN` 會持有一個只能讀取那一個
+  程式庫的權杖，因此對它執行 `gh` 與 `git clone` 無需設定即可運作。否則便沒有
+  GitHub 權杖。
+- 只有工作區管理員能建立或編輯含有 bash 步驟的管線。
 - 指令碼會以字面可執行檔 `bash` 啟動，因此伺服器主機的 `PATH` 中必須有
-  `bash`。這是 Windows 上的一項考量。
+  `bash`。
 
 ### 路由器
 

@@ -43,7 +43,7 @@ class WorkspacesTable extends Table {
       boolean().withDefault(const Constant(false))();
 
   /// How this workspace authenticates to GitHub for background work
-  /// (`inherit` / `app` / `pat`). Typed because the server reads it on the
+  /// (`inherit` / `app`). Typed because the server reads it on the
   /// credential path — not an opaque `workspace_settings` string.
   TextColumn get githubAuthMode =>
       text().withDefault(const Constant('inherit'))();

@@ -14,7 +14,7 @@ void main() {
       ChatCredentialField(
         id: 'botToken',
         label: 'Bot token',
-        expectedPrefix: 'xoxb-',
+        acceptedPrefixes: ['xoxb-', 'xoxe.xoxb-'],
         prefixError: 'A bot token starts with `xoxb-`.',
       ),
       ChatCredentialField(id: 'appToken', label: 'App token'),
@@ -105,6 +105,39 @@ void main() {
       );
     });
 
+    test('a rotating bot token passes the prefix rule', () {
+      // Slack hands out `xoxe.xoxb-` once token rotation is on; refusing it
+      // would lock out every app that opted into rotation.
+      expect(
+        descriptor.validate({'botToken': 'xoxe.xoxb-1-abc', 'appToken': 'x'}),
+        containsPair('botToken', 'xoxe.xoxb-1-abc'),
+      );
+    });
+
+    test('without a custom sentence the error lists every prefix', () {
+      const plain = ChatProviderDescriptor(
+        provider: ChatProvider.slack,
+        credentialFields: [
+          ChatCredentialField(
+            id: 'botToken',
+            label: 'Bot token',
+            acceptedPrefixes: ['xoxb-', 'xoxe.xoxb-'],
+          ),
+        ],
+      );
+
+      expect(
+        () => plain.validate({'botToken': 'xoxp-1'}),
+        throwsA(
+          isA<ValidationException>().having(
+            (e) => e.message,
+            'message',
+            'Bot token must start with `xoxb-` or `xoxe.xoxb-`.',
+          ),
+        ),
+      );
+    });
+
     test('a field with no prefix rule accepts anything non-empty', () {
       expect(
         descriptor.validate({'botToken': 'xoxb-1', 'appToken': 'whatever'}),
@@ -130,10 +163,6 @@ void main() {
       );
 
       expect(bare.managementField, isNull);
-    });
-
-    test('spells the link command the provider’s way', () {
-      expect(descriptor.linkCommand('AB12CD'), '/cc link AB12CD');
     });
 
     test('a provider offers no setup path it has not declared', () {
@@ -177,6 +206,10 @@ void main() {
         () => wire.validate({'botToken': 'oops', 'appToken': 'x'}),
         throwsA(isA<ValidationException>()),
       );
+      expect(wire.credentialFields.first.acceptedPrefixes, [
+        'xoxb-',
+        'xoxe.xoxb-',
+      ]);
     });
   });
 }

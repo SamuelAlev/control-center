@@ -2,7 +2,7 @@
 title: Pași de pipeline
 description: Referință pentru tipurile de pași de pipeline, cheile de corp ale pașilor, configurația lor și rezultatele pașilor.
 slug: ro-RO/manual/referinta/pasi-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Un pas de pipeline are două axe independente:
@@ -42,7 +42,7 @@ Pas shell fără agent (`bash -c`). Marcajele `{{key}}` din script sunt substitu
 | `script`            | Comandă shell de executat (obligatoriu)                            |
 | `outputKey`         | Cheia de stare care primește stdout-ul curățat la ieșirea cu cod 0 |
 
-Rulează cu cwd `<cc_root>/pipelines/<pipelineRunId>/` (partajat de toți pașii bash dintr-o rulare) și cu `GITHUB_TOKEN` în mediu. Scrie de asemenea `<stepId>_runDir` în stare. O ieșire cu cod diferit de zero face pasul să eșueze, cu finalul din stderr.
+Rulează în sandboxul sistemului de operare al hostului, cu cwd `<cc_root>/pipelines/<pipelineRunId>/` (partajat de toți pașii bash dintr-o rulare); pe un host fără sandbox pasul eșuează. Directorul de date al serverului și fișierul `.env` nu pot fi citite, git și `gh` nu văd nicio configurație a hostului, iar `GH_TOKEN` / `GITHUB_TOKEN` conțin un token `read` pentru un singur depozit doar când `repo_full_name` (din stare sau din payloadul declanșatorului) numește un depozit GitHub legat de spațiul de lucru. Crearea sau editarea unui șablon cu acest pas necesită un administrator al spațiului de lucru. Scrie de asemenea `<stepId>_runDir` în stare. O ieșire cu cod diferit de zero face pasul să eșueze, cu finalul din stderr.
 
 ### `conversation.promptAgent`
 

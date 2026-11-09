@@ -16,92 +16,20 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
+import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 
 export 'package:cc_server_core/src/pr_review/github_open_pr_fetch_adapter.dart';
 export 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 
-/// One repo's access bookkeeping: consecutive access-denied probe failures
-/// and the parked ("inaccessible") state they escalate into.
-class _RepoAccessState {
-  _RepoAccessState({required this.repoFullName});
-
-  /// The repo's `owner/name` at the last observation, for the wire entry.
-  String repoFullName;
-
-  /// Consecutive access-denied probe failures. Reset by any successful probe.
-  int consecutiveFailures = 0;
-
-  /// Whether the repo is parked: probed on the slow retry cadence only and
-  /// excluded from fetches, because its denial is deterministic until a human
-  /// installs the app there or fixes the token.
-  bool parked = false;
-
-  /// The `NetworkException.code` that parked it (`not_found` /
-  /// `auth_error` / `installation_suspended`).
-  String reason = '';
-
-  /// When the repo was parked.
-  DateTime? since;
-
-  /// Last slow-cadence retry, so parked repos are probed sparsely.
-  DateTime? lastRetryAt;
-
-  bool isRetryDue(DateTime now, Duration interval) =>
-      lastRetryAt == null || now.difference(lastRetryAt!) >= interval;
-}
-
-/// Per-workspace poller state.
-class _WorkspacePollState {
-  /// Active `pr.watchOpenForWorkspace` subscriptions (fast cadence when > 0).
-  int interest = 0;
-
-  /// Last conditional-request ETag per repo id.
-  final Map<String, String> etagByRepoId = {};
-
-  /// Access bookkeeping per repo id. A repo is present here once a probe has
-  /// been denied; it leaves the map the moment a probe succeeds again.
-  final Map<String, _RepoAccessState> accessByRepoId = {};
-
-  /// The current snapshot in wire form (`{'authenticated', 'repos'}`), or null
-  /// before the first successful sweep.
-  Map<String, dynamic>? snapshot;
-
-  /// Whether the persisted snapshot was already loaded from the cache table.
-  bool snapshotLoaded = false;
-
-  /// The sweep currently running for this workspace, or null when idle.
-  /// Non-forced callers coalesce into it; forced callers chain behind it.
-  Future<void>? inflight;
-
-  /// A forced sweep already queued behind [inflight]. Concurrent forced
-  /// refreshes share this one future instead of piling up sweeps.
-  Future<void>? queuedForced;
-
-  /// Broadcast of sweep in-flight transitions (`true` on start, `false` on
-  /// completion). `watchOpenForWorkspace` merges these into its stream so a
-  /// client's refresh affordance can reflect the sweep that a subscribe (or a
-  /// background tick) kicked — otherwise the slow GitHub fetch is invisible
-  /// behind the instantly-pushed persisted snapshot.
-  // Closed in OpenPrPollingService.dispose.
-  // ignore: close_sinks
-  final StreamController<bool> sweepingChanges =
-      StreamController<bool>.broadcast();
-
-  /// Sweeps tick the space branch feed even when the open-list ETag is
-  /// unchanged: a PR can be opened and merged between two open-list probes.
-  // Closed in OpenPrPollingService.dispose.
-  // ignore: close_sinks
-  final StreamController<void> historyRefresh =
-      StreamController<void>.broadcast();
-
-  DateTime? lastSweepAt;
-}
+part 'open_pr_poll_state.dart';
 
 /// Polls open PRs per workspace (no webhook dependency) and pushes live updates.
 ///
 /// Conditional list probes ([GitHubPrClient.probeOpenPullRequests]); fetch+diff+persist+events only on change.
 /// Active watchers use [fastInterval] (+ checks every [checksEvery]); idle workspaces use [idleInterval].
+/// While a workspace's GitHub [rateBudget] is low, the loop skips its GitHub
+/// repositories (an explicit [refreshNow] still sweeps them).
 class OpenPrPollingService {
   /// Creates an [OpenPrPollingService].
   OpenPrPollingService({
@@ -118,6 +46,7 @@ class OpenPrPollingService {
     this.checksEvery = 2,
     this.accessFailureThreshold = 3,
     this.inaccessibleRetryInterval = const Duration(minutes: 10),
+    this.rateBudget,
     DateTime Function()? now,
   }) : _port = fetchPort,
        _workspaces = workspaceRepository,
@@ -212,10 +141,13 @@ class OpenPrPollingService {
   final int accessFailureThreshold;
 
   /// How often a parked repo is re-probed. Its denial only clears when a human
-  /// acts (installs the app, fixes a token), so the fast cadence would burn a
+  /// acts (installs the app, fixes access), so the fast cadence would burn a
   /// failing request per minute and spam the log for nothing. An explicit
   /// refresh always retries immediately.
   final Duration inaccessibleRetryInterval;
+
+  /// GitHub rate-limit readings per workspace (see the class doc).
+  final GitHubRateBudget? rateBudget;
 
   final Map<String, _WorkspacePollState> _states = {};
 
@@ -689,9 +621,19 @@ class OpenPrPollingService {
       final linked = await _workspaces
           .watchReposForWorkspace(workspaceId)
           .first;
+      // A low GitHub quota pauses only this workspace's GitHub repositories
+      // (an explicit refresh still runs); GitLab and Bitbucket have their own
+      // limits. Paused repos are left out of the probe and the fetch, so —
+      // like any unresolved repo — they keep their previous snapshot entries
+      // and publish no events.
+      final githubPaused =
+          !force &&
+          (rateBudget?.backsOff(workspaceId, poller: 'open_pr_poll') ?? false);
       final repos = [
         for (final r in linked)
-          if (r.hasForgeRemote) r,
+          if (r.hasForgeRemote &&
+              !(githubPaused && r.forge == ForgeHost.github))
+            r,
       ];
       if (repos.isEmpty) {
         return;
@@ -715,7 +657,7 @@ class OpenPrPollingService {
         final access = st.accessByRepoId[repo.id];
         // Parked repos are re-probed on the slow cadence only (or on an
         // explicit refresh): their denial is deterministic until a human
-        // installs the app or fixes the token, and probing every tick burns a
+        // installs the app or fixes the access, and probing every tick burns a
         // failing request per minute and a log line with it.
         if (access != null && access.parked) {
           if (!force && !access.isRetryDue(_now(), inaccessibleRetryInterval)) {
@@ -877,9 +819,10 @@ class OpenPrPollingService {
     CcHostLog.warning(
       'open_pr_poll: parking ${repo.fullName} — not accessible ($reason) '
       'after ${access.consecutiveFailures} consecutive probes; retrying every '
-      '${inaccessibleRetryInterval.inMinutes}m. If the GitHub App installation '
-      'is suspended, resume it or connect a token; otherwise install the app '
-      'on the org or use a token that can see the repo.',
+      '${inaccessibleRetryInterval.inMinutes}m. On GitHub, resume a suspended '
+      'App installation, install the App on the owner, or make sure the '
+      'workspace\'s accountable person can see the repo; on GitLab or '
+      'Bitbucket, use a token that can.',
     );
     return true;
   }

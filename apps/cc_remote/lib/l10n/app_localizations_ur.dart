@@ -2565,6 +2565,27 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کے براؤزر میں اجازت کا انتظار ہے…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'براؤزر میں دکھایا گیا کوڈ درج کریں';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'یہ سائن اِن کوڈ نہیں لگتا۔ کوڈز میں 8 حروف اور ہندسے ہوتے ہیں۔';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '$provider سائن اِن ابھی اس سرور پر ترتیب نہیں دیا گیا۔';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'اس سرور کا سائن اِن کال بیک پتا فون سے محفوظ طریقے سے قابلِ رسائی نہیں ہے۔ ڈیسک ٹاپ ایپ سے سائن اِن کریں، یا سرور کے مالک سے عوامی HTTPS پتا ترتیب دینے کو کہیں۔';
+
+  @override
   String get credentialsLoginTimedOut =>
       'لاگ اِن کی میعاد ختم ہو گئی۔ دوبارہ سائن اِن شروع کریں۔';
 
@@ -2584,10 +2605,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'سائن اِن مکمل کریں';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'اس سرور کے براؤزر کال بیک تک فون سے محفوظ رسائی ممکن نہیں۔ سرور کے مالک سے عوامی HTTPS کال بیک ترتیب دینے کو کہیں، یا اس کی جگہ ٹوکن شامل کریں۔';
 
   @override
   String get credentialsUpdateToken => 'ٹوکن اپ ڈیٹ کریں';

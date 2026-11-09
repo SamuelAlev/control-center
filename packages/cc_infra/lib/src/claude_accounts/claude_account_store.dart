@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -87,13 +88,7 @@ class ClaudeAccountStore {
     String executable,
     List<String> arguments, {
     Map<String, String>? environment,
-  }) => Process.run(
-    executable,
-    arguments,
-    environment: environment,
-    includeParentEnvironment: true,
-    runInShell: false,
-  );
+  }) => ChildProcess.run(executable, arguments, environment: environment);
 
   /// How long a `claude auth status` probe may take. The CLI is a ~280MB
   /// single-file binary and a cold start is slow, but an unbounded probe would
@@ -1105,7 +1100,7 @@ class ClaudeAccountStore {
       return;
     }
     try {
-      await Process.run('chmod', [mode, path]);
+      await ChildProcess.run('chmod', [mode, path]);
     } on Object catch (e) {
       CcInfraLog.warning('ClaudeAccountStore: chmod $mode $path failed: $e');
     }

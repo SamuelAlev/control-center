@@ -271,6 +271,10 @@ class GuestCredentialService {
         // an enclosure whose spec asks for a write scope.
         actingUserId: grant.actingUserId,
         workspaceId: grant.workspaceId,
+        // Only a person's terminal opens a write rig, and what they push from
+        // their own shell is theirs: their sign-in narrowed to the one repo,
+        // never an App or installation token.
+        personal: grant.scope == ForgeTokenScope.write,
       );
     } on Object catch (e) {
       CcInfraLog.warning('rig/credentials: mint failed for rig $rigId: $e');

@@ -29,6 +29,8 @@ class GitHubInstallation {
   const GitHubInstallation({
     required this.id,
     required this.account,
+    this.accountId = 0,
+    this.targetType = '',
     this.repositorySelection = '',
     this.suspendedAt,
   });
@@ -39,6 +41,12 @@ class GitHubInstallation {
   /// The login of the account that installed the app.
   final String account;
 
+  /// The numeric id of that account (stable across renames), or 0.
+  final int accountId;
+
+  /// `User` or `Organization`.
+  final String targetType;
+
   /// `all` or `selected` — which of the account's repositories are covered.
   final String repositorySelection;
 
@@ -46,22 +54,24 @@ class GitHubInstallation {
   final DateTime? suspendedAt;
 
   /// Whether GitHub has suspended this installation. Minting a token cannot
-  /// succeed until a human resumes it (or the caller uses a PAT instead).
+  /// succeed until a human resumes it.
   bool get isSuspended => suspendedAt != null;
 
   /// The wire shape the settings screen renders.
   Map<String, Object?> toJson() => {
     'id': id,
     'account': account,
+    'account_id': accountId,
+    'target_type': targetType,
     'repository_selection': repositorySelection,
     if (suspendedAt != null) 'suspended_at': suspendedAt!.toIso8601String(),
   };
 }
 
-/// The server's GitHub App identity for background work (webhooks, polling,
-/// sync). Not a person's PAT. Sits on [GitHubAppTokenMinter] plus installation
-/// discovery and token caching. Failures resolve to null so the next credential
-/// lane can run.
+/// A GitHub App's identity for background work (polling, sync, bot replies):
+/// installation discovery plus single-repository installation tokens on
+/// [GitHubAppTokenMinter]. Failures resolve to null; the caller refuses the
+/// work rather than reaching for a broader credential.
 class GitHubAppClient {
   /// Creates a [GitHubAppClient].
   ///
@@ -116,7 +126,6 @@ class GitHubAppClient {
   final RhttpClient _httpClient;
   final DateTime Function() _now;
 
-  final Map<int, ({String token, DateTime expiresAt})> _tokens = {};
   final Map<String, int> _installationByOwner = {};
   final Set<int> _suspendedIds = {};
   final Set<String> _suspendedOwners = {};
@@ -211,6 +220,9 @@ class GitHubAppClient {
           GitHubInstallation(
             id: (entry['id'] as num?)?.toInt() ?? 0,
             account: (entry['account'] as Map?)?['login'] as String? ?? '',
+            accountId:
+                ((entry['account'] as Map?)?['id'] as num?)?.toInt() ?? 0,
+            targetType: entry['target_type'] as String? ?? '',
             repositorySelection: entry['repository_selection'] as String? ?? '',
             suspendedAt: DateTime.tryParse(
               entry['suspended_at'] as String? ?? '',
@@ -258,55 +270,6 @@ class GitHubAppClient {
     return Set.unmodifiable(_suspendedOwners);
   }
 
-  /// An installation token covering [owner] (an org or user login), or null
-  /// when the app is not installed there.
-  ///
-  /// Resolution is by ACCOUNT, not by repository: `/repos/{o}/{r}/installation`
-  /// answers the same question one repo at a time, and the server asks about
-  /// many repos under a handful of owners.
-  Future<String?> tokenForOwner(String owner) async {
-    if (owner.isEmpty) {
-      return null;
-    }
-    final id = await _installationIdFor(owner);
-    return id == null ? null : tokenForInstallation(id);
-  }
-
-  /// An installation token for [installationId], minted or served from cache.
-  ///
-  /// GitHub issues these for an hour; the cache is honoured until five minutes
-  /// before expiry so a token cannot die mid-request.
-  Future<String?> tokenForInstallation(int installationId) async {
-    if (_suspendedIds.contains(installationId)) {
-      await installations();
-      if (_suspendedIds.contains(installationId)) {
-        return null;
-      }
-    }
-    final cached = _tokens[installationId];
-    if (cached != null &&
-        cached.expiresAt.isAfter(_now().add(const Duration(minutes: 5)))) {
-      return cached.token;
-    }
-    try {
-      final minted = await _minterFor(installationId).mint();
-      _tokens[installationId] = (
-        token: minted.token,
-        expiresAt:
-            minted.expiresAt?.toUtc() ??
-            _now().add(const Duration(minutes: 55)),
-      );
-      return minted.token;
-    } on Object catch (e) {
-      if (isGitHubInstallationSuspendedError(e)) {
-        _markSuspended(installationId);
-      }
-      // A revoked app, a suspended installation, GitHub being down: all mean
-      // "no app credential right now", and the caller has other lanes.
-      return null;
-    }
-  }
-
   /// A token scoped to [repositories] under [owner], with [permissions].
   ///
   /// The installation is resolved FROM THE OWNER, per call. A server-wide
@@ -315,11 +278,11 @@ class GitHubAppClient {
   /// worked for a single-org host and silently minted for the wrong account
   /// (or nothing at all) everywhere else.
   ///
-  /// Null when the app is not installed on [owner], or the mint fails; the
-  /// caller falls back to a broader credential rather than failing the run.
+  /// Null when the app is not installed on [owner], or the mint fails. There
+  /// is deliberately no owner-wide token: every token names its repositories.
   Future<MintedToken?> mintScopedForOwner(
     String owner, {
-    List<String> repositories = const [],
+    required List<String> repositories,
     Map<String, String> permissions = const {},
   }) async {
     final installation = await _installationIdFor(owner);
@@ -371,24 +334,10 @@ class GitHubAppClient {
     return _installationByOwner[key];
   }
 
-  /// A token for whichever installation answers first, for work that is not
-  /// about one owner (fetching a private asset, probing that the credentials
-  /// work at all). Null when the app has no installations.
-  Future<String?> anyInstallationToken() async {
-    for (final installation in await installations()) {
-      final token = await tokenForInstallation(installation.id);
-      if (token != null) {
-        return token;
-      }
-    }
-    return null;
-  }
-
   /// Drops every cached token and installation. Called when the operator
   /// changes the app credentials — a token minted by the previous app is not
   /// merely stale, it belongs to a different identity.
   void invalidate() {
-    _tokens.clear();
     _installationByOwner.clear();
     _suspendedIds.clear();
     _suspendedOwners.clear();
@@ -419,7 +368,6 @@ class GitHubAppClient {
 
   void _markSuspended(int installationId) {
     _suspendedIds.add(installationId);
-    _tokens.remove(installationId);
     final list = _installations;
     if (list != null) {
       for (final installation in list) {

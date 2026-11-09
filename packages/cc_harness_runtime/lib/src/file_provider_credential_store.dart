@@ -112,7 +112,13 @@ class FileProviderCredentialStore
       return;
     }
     try {
-      await Process.run('chmod', ['600', f.path]);
+      // System utility, absolute path, empty environment.
+      await Process.run(
+        '/bin/chmod',
+        ['600', f.path],
+        environment: const {},
+        includeParentEnvironment: false,
+      );
     } catch (_) {
       // Best-effort — the secret is still written; the host umask applies.
     }

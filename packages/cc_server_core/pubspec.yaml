@@ -16,6 +16,9 @@ dependencies:
   # Packs a backup snapshot DIRECTORY into the one body an HTTP download can
   # carry (`GET /backup/snapshot`). Already in the workspace lock via cc_infra.
   archive: ^4.5.1
+  # Install identity, signed requests and wire types shared with Connect.
+  cc_connect_core:
+    path: ../cc_connect_core
   cc_domain:
     path: ../cc_domain
   cc_harness:

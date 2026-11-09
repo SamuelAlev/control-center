@@ -2,16 +2,16 @@
 title: Routkarta
 description: Varje rutt som Control Center registrerar, med sin skärm och sina query-parametrar.
 slug: sv-SE/handbok/referens/routkarta
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Appskalet
 
-Appskalet (`ControlCenterLayout`) omsluter varje rutt i arbetsytan via en `ShellRoute`. **Varje destination innanför skalet har arbetsyteprefix — `/workspaces/:workspaceId/…` — och arbetsytans id i URL:en är den enda källan till sanning för den aktiva arbetsytan.** Bara ytorna före kontexten saknar prefix: `/splash`, `/onboarding`, `/signed-out` och den prefixlösa `/workspaces`-väljaren, alla i fullskärm och utanför skalet.
+Appskalet (`ControlCenterLayout`) omsluter varje rutt i arbetsytan via en `ShellRoute`. **Varje destination innanför skalet har arbetsyteprefix — `/workspaces/:workspaceId/…` — och arbetsytans id i URL:en är den enda källan till sanning för den aktiva arbetsytan.** Bara ytorna före kontexten saknar prefix: `/splash`, `/onboarding` och den prefixlösa `/workspaces`-väljaren, alla i fullskärm och utanför skalet.
 
 Grinden är uppfylld när minst en kodvärd är ansluten **för den inloggade användaren** och minst en arbetsyta finns.
 
-En saknad inloggningsuppgift och en saknad konfiguration är olika skärmar, och det som skiljer dem är `users.onboarding_finished_at`, hämtat från anroparens egen `identity.me` — aldrig ”det finns arbetsytor”, vilket är fel i samma stund någon bjuds in till en arbetsyta de aldrig själva skapade. Om ingen kodvärd är ansluten går ett konto som har slutfört introduktionen till `/signed-out` för att autentisera sig på nytt; ett konto som inte har gjort det går till `/onboarding`. Så länge flaggan är okänd håller vakten kvar startskärmen i stället för att gissa, eftersom den aldrig omdirigerar tillbaka ut ur introduktionen.
+En saknad inloggningsuppgift och en saknad konfiguration hanteras olika, och det som skiljer dem är `users.onboarding_finished_at`, hämtat från anroparens egen `identity.me` — aldrig ”det finns arbetsytor”, vilket är fel i samma stund någon bjuds in till en arbetsyta de aldrig själva skapade. Om ingen kodvärd är ansluten stannar ett konto som har slutfört introduktionen kvar i appen: arbetsytans skal visar en varning med en länk till **Inställningar → Arbetsyta → Profil och identitet**, där inloggningen finns. Ett konto som inte har slutfört introduktionen går till `/onboarding`. Så länge flaggan är okänd håller vakten kvar startskärmen i stället för att gissa, eftersom den aldrig omdirigerar tillbaka ut ur introduktionen.
 
 ## Rutter utan prefix
 
@@ -19,7 +19,6 @@ En saknad inloggningsuppgift och en saknad konfiguration är olika skärmar, och
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/splash`                  | Startskärmen vid uppstart som löser upp introduktionsgrinden                                                                                                                                       |
 | `/onboarding`              | Anslut en kodvärd, skapa eller gå med i en arbetsyta, sandlåda, standardadapter och till sist röst. Arbetsytesteget hoppas över när kontot redan tillhör en arbetsyta                                 |
-| `/signed-out`              | Autentisera på nytt: samma kort för kodvärdsanslutningar som Inställningar visar, utan stegindikator och utan fortsättningsknapp — routern lämnar av sig själv så snart en kodvärd svarar            |
 | `/workspaces`              | Arbetsytelista och väljare                                                                                                                                                                        |
 | `/workspaces/:workspaceId` | Omdirigerar till `/workspaces/:workspaceId/inbox`                                                                                                                                                  |
 

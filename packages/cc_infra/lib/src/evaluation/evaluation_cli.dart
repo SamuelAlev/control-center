@@ -21,6 +21,8 @@ import 'package:cc_infra/src/evaluation/evaluation_engine.dart';
 import 'package:cc_infra/src/evaluation/evaluation_verifier_runner.dart';
 import 'package:cc_infra/src/model_routing/file_models_dev_source.dart';
 import 'package:cc_infra/src/model_routing/model_catalog_service.dart';
+import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
 
 /// The `cc_eval` command: a runnable, auditable paired-evaluation CLI.
@@ -520,7 +522,7 @@ Future<EvaluationManifest> _buildManifest(
 
 Future<String?> _gitHead(String repository) async {
   try {
-    final result = await Process.run('git', [
+    final result = await IsolatedGit.run([
       '-C',
       repository,
       'rev-parse',
@@ -538,9 +540,9 @@ Future<String?> _gitHead(String repository) async {
 
 Future<String?> _cliVersion(_Options options) async {
   try {
-    final result = await Process.run(options.claudePath ?? 'claude', [
+    final result = await ChildProcess.run(options.claudePath ?? 'claude', [
       '--version',
-    ]);
+    ], toolchain: true);
     if (result.exitCode != 0) {
       return null;
     }

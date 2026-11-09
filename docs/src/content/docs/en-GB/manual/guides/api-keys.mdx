@@ -2,7 +2,7 @@
 title: Manage API keys
 description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
 slug: en-GB/manual/guides/api-keys
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 This guide shows you where each credential Control Center uses is stored and how
@@ -14,25 +14,30 @@ human behind it.
 
 | Credential                           | Stored                                                    | Who uses it                                                     |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
+| Your forge / ticketing sign-in       | The server's 0600 secrets file, keyed by your user id      | Anything you do: the PR surface, reviews, merges, your Linear actions |
+| The server's provider apps           | The same file, plus `server_settings` for the non-secrets  | Signing people in, and one-repository tokens for agents, pipelines and polling |
+| The Connect install key              | The same file (`connect_install_key`)                      | Identifying this server to Control Center Connect                |
 | Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
+| Slack bot credentials                | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace: your own app's tokens, or the shared app's sealed grant |
 | External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
 
-## Two GitHub credentials, and they answer different questions
+## GitHub: your sign-in, and one-repository tokens
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Yours**, from **Sign in to GitHub**. It is what every request made *on your
+  behalf* uses, so a review posted for you carries your name. Another member
+  cannot use it, and they sign in themselves. There is no GitHub token to paste
+- **Work with no one typing** (agents, pipelines, polling, bot replies) gets a
+  token for one repository at a time, minted from the server's GitHub App or
+  through Control Center Connect, and limited to what an accountable member can
+  do there. It is never your sign-in handed over whole
 
 Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
+identity**; the server's app in **Provider apps** at **Settings → Server → Single
 sign-on**. See [Set up GitHub integration](/en-GB/manual/guides/github-integration/)
 and [Create the GitHub App](/en-GB/manual/guides/github-app/).
+
+GitLab and Bitbucket still take a pasted personal token, stored the same way.
+See [Connect a code host](/en-GB/manual/guides/connect-forges/).
 
 :::note[There is also a URL-only screen]
 `/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
@@ -68,45 +73,54 @@ its own copy and nothing bridges the two. See
 ## Connect a ticketing vendor
 
 The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+tickets live in, and who Control Center is when it talks to it. Choosing
+**Local** hides the Linear rows — local tickets live in this server's own
+database and have nothing to authenticate to.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. No ticketing key is injected into an
-agent's sandbox; agents write tickets through Control Center's tools, which ask
-the **Write to an external tracker** rule. See
+Linear has two sign-ins and no pasted key: **Linear** is yours, for what you do,
+and **Linear automation** is the workspace's Control Center app, connected by an
+admin, for ticket sync, pipelines and agents. The server may also hold a
+**Service API key** (**Provider apps**) for workspaces without automation
+connected. No ticketing credential is injected into an agent's sandbox; agents
+write tickets through Control Center's tools, which ask the **Write to an
+external tracker** rule. See
 [Set up Linear integration](/en-GB/manual/guides/linear-integration/).
 
 ## Rotate or revoke
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
+- **Your GitHub sign-in**: press **Disconnect**, then **Sign in to GitHub**
+  again. Disconnecting also drops every token the server minted on your behalf
+- **A GitLab or Bitbucket token**: press **Update token** and paste the new one,
+  then revoke the old one on the forge
 - **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
+  provider page, paste it in **Provider apps** and press **Test**
+- **The Connect install key**: **Rotate key** on the **Control Center Connect**
+  card, or `cc_server connect rotate-key --yes`. Everybody who signed in through
+  Connect signs in again. See [Control Center Connect](/en-GB/manual/reference/connect/)
 - **A model provider**: on its row, sign out (OAuth) or remove the key, then
   connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/en-GB/manual/guides/slack-integration/)
+- **Slack**: for your own app, re-paste the tokens in the connect dialog. The
+  shared Control Center app has no token to rotate: its bot token is renewed
+  through Connect, and **Disconnect** revokes it and uninstalls the bot from
+  Slack. See [Set up Slack integration](/en-GB/manual/guides/slack-integration/)
 
 ## Troubleshooting
 
-### The PR list is empty but my token works in `curl`
+### A GitLab or Bitbucket token works in `curl` but not here
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Check the **Code hosting** row's subtitle. If it reads "from the environment",
+the credential answering is the server's, not yours — yours was not saved.
 
-### The token is accepted but later requests fail
+### A GitLab or Bitbucket token is accepted but later requests fail
 
 The token is probed as it is stored, so the row names the account behind it —
 but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+then fails individual requests. Check its scopes and expiry on the forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### A provider says sign-in isn't set up on this server
+
+The server has neither its own app for that provider nor Control Center Connect.
+The server owner picks one in **Settings → Server → Single sign-on**.
 
 ## Related guides
 

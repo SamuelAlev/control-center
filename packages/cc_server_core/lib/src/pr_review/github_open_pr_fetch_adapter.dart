@@ -5,30 +5,29 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 
-/// Production [OpenPrFetchPort] over the server's gh-authenticated
-/// [GitHubApiClient]. The group fetch mirrors what `pr.listOpenForWorkspace`
+/// Production [OpenPrFetchPort] over the workspace's automation
+/// [GitHubApiClient]s. The group fetch mirrors what `pr.listOpenForWorkspace`
 /// serves: the batched GraphQL list query plus a best-effort checks overlay.
 ///
-/// The client is resolved **per repo owner**, not held once. The server's
-/// no-caller GitHub credential is a token for whichever app installation
-/// answered first, and GitHub answers such a token with 404 for every repo
-/// under an owner the app is not installed on — so a workspace mixing owners
-/// must ask about each owner's repos with a credential that covers *that*
-/// owner. Batch calls are grouped by owner accordingly, and one owner's
-/// failure is isolated to its own repos (they resolve nothing and keep their
-/// previous snapshot entries) rather than emptying the sweep.
+/// The client is resolved **per (workspace, repo owner)**: each REST request
+/// carries a token for its one repository and GraphQL rides the workspace's
+/// accountable human, so a workspace never reads with another's credentials.
+/// Batch calls are grouped by owner, and one owner's failure is isolated to
+/// its own repos (they resolve nothing and keep their previous snapshot
+/// entries) rather than emptying the sweep.
 class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   /// Creates a [GitHubOpenPrFetchAdapter] resolving a client per repo owner.
   ///
-  /// [_app] is the server's GitHub App identity. When an installation covering
-  /// the repo's owner is suspended, a failed probe is remapped to
+  /// [_ownerSuspended] reports whether the workspace's App installation on
+  /// an owner is suspended; a failed probe there is remapped to
   /// [kGitHubInstallationSuspendedCode] so the poller parks immediately with
-  /// the resume-or-token notice instead of treating it as a generic 404.
-  GitHubOpenPrFetchAdapter(this._clientForOwner, {this._app});
+  /// the resume notice instead of treating it as a generic 404.
+  GitHubOpenPrFetchAdapter(this._clientForOwner, {this._isOwnerSuspended});
 
   final GitHubApiClient Function(String workspaceId, String owner)
   _clientForOwner;
-  final Future<GitHubAppClient?> Function({String? workspaceId})? _app;
+  final Future<bool> Function(String workspaceId, String owner)?
+  _isOwnerSuspended;
 
   GitHubApiClient _client(Repo repo, {String? workspaceId}) =>
       _clientForOwner(workspaceId ?? '', repo.remoteOwner);
@@ -47,10 +46,10 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     return grouped;
   }
 
-  Future<bool> _ownerSuspended(String owner, {String? workspaceId}) async {
-    final app = await _app?.call(workspaceId: workspaceId);
-    return app != null && await app.isOwnerSuspended(owner);
-  }
+  Future<bool> _ownerSuspended(String owner, {String? workspaceId}) async =>
+      workspaceId != null &&
+      workspaceId.isNotEmpty &&
+      (await _isOwnerSuspended?.call(workspaceId, owner) ?? false);
 
   @override
   Future<({bool changed, String? etag})> probeRepo(

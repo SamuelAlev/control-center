@@ -2,7 +2,7 @@
 title: Implantação e clientes
 description: Como a arquitetura de cliente leve do Control Center separa um servidor headless de seus clientes de desktop, web e celular.
 slug: pt-BR/manual/conceitos/implantacao
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 O Control Center não é um único programa. É uma **arquitetura de cliente leve**: um servidor headless que detém seus dados e um conjunto de clientes que renderizam uma interface por meio de uma única conexão RPC com ele. Entender essa divisão explica por que algumas coisas rodam onde rodam e o que cada cliente consegue ou não alcançar.
@@ -86,9 +86,11 @@ Um desktop sozinho não percebe nada disso, porque o despacho comum não passa p
 | Execução de agentes | executa (ou repassa em lease) | executa tarefas em lease | — | — |
 | Renderização da interface | — | — | completa | completa (web) / predominantemente leitura (celular) |
 | Captura de reunião (microfone + áudio da reunião) | — | — | captura nativa | somente web, via áudio de compartilhamento de tela |
-| OAuth do calendário (Google) | armazena os tokens | — | — | — |
+| Logins de provedores (GitHub, Google, Linear) | executa e armazena | — | — | — |
 
 Os dois níveis não aplicam sandbox da mesma forma. O `cc_server` envolve as execuções que ele mesmo realiza no sandbox do sistema operacional do host onde existe um backend — Seatbelt no macOS, bubblewrap no Linux e no WSL2 — e recorre às outras fronteiras no Windows ou sem `bwrap` e `socat`. **O `cc_worker` não aplica sandbox nenhum.** Ele anuncia uma capacidade `sandbox` para que o servidor possa posicionar tarefas por plataforma, mas nada no worker aplica uma: uma tarefa em lease é iniciada diretamente, limitada pelo ambiente do lease e pela worktree que recebeu. Repassar trabalho em lease, portanto, move a execução para fora do sandbox mesmo em um host que tenha um. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/) para saber o que limita uma execução em cada caso.
+
+Os logins de provedores são concluídos no servidor, pelos apps próprios dele ou pelo [Control Center Connect](/pt-BR/manual/referencia/connect/), um serviço opcional que executa o OAuth do provedor para servidores sem apps próprios. O Connect devolve uma credencial que só este servidor consegue usar e nunca vê o conteúdo dos repositórios. Os clientes só abrem o navegador e, em um login pelo Connect, devolvem o código que ele mostra.
 
 A captura de reunião acontece em um cliente porque precisa de um microfone e do áudio da reunião — um servidor dentro de um armário não consegue gravar a sua chamada. A gravação é então resumida pelo pipeline do servidor, e as notas são armazenadas onde todo cliente possa lê-las.
 

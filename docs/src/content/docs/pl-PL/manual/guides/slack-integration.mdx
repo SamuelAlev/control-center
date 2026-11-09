@@ -1,11 +1,11 @@
 ---
 title: Skonfiguruj integrację Slack
-description: Połącz aplikację Slack z obszarem roboczym Control Center, aby członkowie mogli kierować agentami ze Slacka.
+description: Połącz Slacka z obszarem roboczym Control Center, przez współdzieloną aplikację Control Center albo własną, aby członkowie mogli kierować agentami ze Slacka.
 slug: pl-PL/podrecznik/poradniki/integracja-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Ten poradnik pokazuje, jak połączyć Slacka z obszarem roboczym Control Center — albo pozwalając Control Center utworzyć aplikację, albo budując ją samodzielnie.
+Ten poradnik pokazuje, jak połączyć Slacka z obszarem roboczym Control Center: dodając współdzieloną aplikację Control Center albo własną aplikacją, którą Control Center utworzy za Ciebie lub którą zbudujesz samodzielnie.
 
 Aby przejść przez pierwsze uruchomienie z przewodnikiem, zobacz [Połącz Slack z obszarem roboczym](/pl-PL/podrecznik/samouczki/pierwszy-most-czatu/).
 
@@ -19,9 +19,37 @@ jaki istnieje. Nie ma implementacji dla Discorda, Telegrama, Teamsa ani Matrixa.
 
 - Rola `owner` lub `admin` w obszarze roboczym Control Center — połączenie aplikacji czatu zmienia ustawienia obszaru roboczego
 - Uprawnienie do tworzenia i instalowania aplikacji w obszarze roboczym Slack
-- Nic nie musi być publicznie osiągalne: połączenie jest wychodzące (Socket Mode), więc serwer nie potrzebuje portu przychodzącego, tunelu ani domeny
+- Nic nie musi być publicznie osiągalne: własna aplikacja łączy się na zewnątrz przez Socket Mode, a zdarzenia współdzielonej aplikacji docierają do serwera przez długie odpytywanie (long poll) Control Center Connect, więc serwer nie potrzebuje portu przychodzącego, tunelu ani domeny
 
-## Trzy sposoby na uzyskanie aplikacji
+## Aplikacja współdzielona czy własna
+
+Obszar roboczy działa naraz dokładnie na jednej z nich.
+
+| Tryb                          | Wymaga                                                                                                   | Co dostajesz                                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Współdzielona aplikacja Control Center** | Serwer używa Control Center Connect (**Ustawienia → Serwer → Logowanie jednokrotne**), a Connect obsługuje Slacka | Jedno kliknięcie i logowanie przez Slacka. Bez aplikacji do tworzenia, tokenu do wklejania i niczego do wymiany |
+| **Własna aplikacja**          | Aplikacja Slack w Twoim obszarze roboczym Slack, utworzona jednym z trzech sposobów poniżej             | Własna nazwa bota, opisy i polecenie z ukośnikiem, edytowalne z Control Center       |
+
+### Dodaj współdzieloną aplikację Control Center
+
+1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+2. W bloku Slack znajdź wiersz **Dodaj Control Center do Slack** i kliknij **Dodaj do Slack**
+3. Przeglądarka otwiera Slacka. Zaloguj się przez Slacka, wybierz obszar roboczy Slack i zatwierdź instalację
+4. Gdy przeglądarka pokaże kod, wpisz go w oknie dialogowym, które Control Center zostawiło otwarte. Jeśli przeglądarka sama przekaże Cię z powrotem do aplikacji, nie trzeba nic wpisywać
+5. Powiadomienie podaje nazwę obszaru roboczego Slack, do którego dodano aplikację, a blok Slack pokazuje, że połączenie działa na współdzielonej aplikacji Control Center
+
+Tylko administrator obszaru roboczego może dodać aplikację. Wiersz wyjaśnia, dlaczego nie da się zacząć, gdy serwer używa własnych aplikacji zamiast Connect, gdy Twój Connect nie ma aplikacji Slack albo gdy ten obszar roboczy ma już połączoną własną aplikację Slack.
+
+Czym różni się od własnej aplikacji:
+
+- Slack wysyła zdarzenia współdzielonej aplikacji do Connect. Connect zachowuje tylko odnośnik (zespół, kanał i identyfikator wiadomości) i odrzuca tekst wiadomości; serwer długo odpytuje Connect o odnośniki i każdą wiadomość odczytuje ze Slacka sam. Tekst polecenia z ukośnikiem przechodzi przez Connect, dlatego [`/cc ticket`](#szkice-zgłoszeń-ze-slacka) tworzy tylko szkic
+- Token bota jest zapieczętowany dla tego serwera i odnawiany przez Connect, więc nie ma tokenu do wklejania ani wymiany
+- Nazwa bota, opisy i polecenie z ukośnikiem należą do współdzielonej aplikacji. Wiersz Slack informuje, że połączenie działa na współdzielonej aplikacji, i nie oferuje **Dostosuj bota**
+- Obszar roboczy Slack jest naraz powiązany z jednym serwerem Control Center. Dodanie aplikacji z innego serwera przenosi go tam, a połączenie tego serwera się kończy
+
+Aby przełączyć tryb, rozłącz się i połącz w drugi sposób.
+
+### Własna aplikacja: trzy sposoby jej uzyskania
 
 | Ścieżka            | Co dostarczasz                        | Co robi Control Center                                                                                                    |
 | ------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ jaki istnieje. Nie ma implementacji dla Discorda, Telegrama, Teamsa ani Matrixa.
 
 Tylko ścieżka z przewodnikiem pozostawia dodatkowo aplikację _zarządzalną_ z poziomu Control Center, i to ona umożliwia [Dostosuj bota czatu](/pl-PL/podrecznik/poradniki/dostosowanie-bota-czatu/). Aplikację utworzoną przez **Utwórz w Slack** można później awansować do zarządzanej, wklejając token konfiguracji w oknie połączenia.
 
-Celowo nie ma przycisku „zainstaluj aplikację Slack Control Center”. Zainstalowanie rozproszonej aplikacji Slack wymaga współdzielonego sekretu klienta (Slack nie ma PKCE), a Socket Mode rozdziela zdarzenia aplikacji losowo między jej połączenia — jedna wspólna aplikacja dostarczałaby więc wiadomości z Twojego obszaru roboczego na serwery innych osób. Każdy obszar roboczy ma zatem własną aplikację, a te trzy ścieżki dotyczą tego, jak niewiele pracy Cię to kosztuje.
+Zdarzenia Twojej własnej aplikacji nigdy nie przechodzą przez Connect: Socket Mode dostarcza je prosto do tego serwera.
 
 ## Opcja A: pozwól Control Center utworzyć aplikację
 
@@ -102,6 +130,8 @@ message.im
 
 ## Połącz
 
+Tak tokeny Twojej własnej aplikacji docierają do Control Center. Współdzielona aplikacja niczego z tego nie potrzebuje.
+
 1. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
 2. W bloku Slack kliknij **Połącz Slack**
 3. Wypełnij pola:
@@ -124,8 +154,8 @@ Bez opcjonalnego tokenu konfiguracji aplikacji połączenie działa dobrze — p
 
 ## Co daje połączenie
 
-- Zapisuje dane uwierzytelniające w katalogu samego obszaru roboczego, obok jego bazy danych, czytelne tylko dla właściciela. Nigdy nie wracają do klienta
-- Otwiera jedno połączenie Socket Mode dla tego obszaru roboczego i zaczyna odbierać wzmianki, odpowiedzi w wątkach Slacka, wiadomości prywatne i polecenia z ukośnikiem
+- Zapisuje dane uwierzytelniające w katalogu samego obszaru roboczego, obok jego bazy danych, czytelne tylko dla właściciela. Nigdy nie wracają do klienta. W przypadku współdzielonej aplikacji jest to zapieczętowany grant; krótkotrwały token bota, na który jest odnawiany, zostaje w pamięci
+- Zaczyna odbierać wzmianki, odpowiedzi w wątkach Slacka, wiadomości prywatne i polecenia z ukośnikiem: przez jedno połączenie Socket Mode dla własnej aplikacji albo przez jedno długie odpytywanie Connect przez serwer dla współdzielonej aplikacji
 - Ponownie uzbraja każdy wątek Slacka podłączony wcześniej, więc ponowne połączenie kontynuuje istniejące rozmowy, zamiast je porzucać
 - Nie kosztuje nic w obszarach roboczych bez aplikacji czatu: żadnego socketu, żadnych timerów, żadnego ruchu
 
@@ -141,9 +171,9 @@ połączenie tam Slacka.
 
 Dostęp do mostu daje **członkostwo** w obszarze roboczym, nigdy posiadanie
 tokenu. Konto Slack musi być połączone z użytkownikiem Control Center, który
-jest członkiem z rolą z prawem zapisu. Łączenie, rozłączanie, konfiguracja
-z przewodnikiem, link konfiguracyjny i dostosowywanie bota wymagają uprawnień
-administratora.
+jest członkiem z rolą z prawem zapisu. Łączenie, rozłączanie, instalacja
+współdzielonej aplikacji, konfiguracja z przewodnikiem, link konfiguracyjny
+i dostosowywanie bota wymagają uprawnień administratora.
 :::
 
 ## Sprawdź
@@ -166,7 +196,25 @@ Rozumowanie pod postacią ściany tekstu i dane wyjściowe narzędzi nigdy nie o
 
 Jeśli po kliknięciu nic się nie dzieje, serwer, który wysłał wiadomość, jest nieosiągalny z maszyny, na której kliknąłeś (na przykład serwer działający tylko na loopbacku, kliknięty z telefonu), albo Control Center nie działa na tej maszynie. Serwer bez osiągalnego adresu wysyła kartę bez przycisku, a nie taką, która prowadzi donikąd.
 
+## Szkice zgłoszeń ze Slacka
+
+Każdy połączony członek z rolą z prawem zapisu może zaproponować zgłoszenie ze Slacka:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Tekst przed `|` to tytuł, tekst po nim to opis. Bot odpowiada, że przygotował szkic zgłoszenia. Nic jeszcze nie powstaje i nie uruchamia się żadna automatyzacja zgłoszeń: szkic czeka na Ciebie w **Ustawienia → Obszar roboczy → Profil i tożsamość → Szkice zgłoszeń z czatu**, gdzie możesz poprawić tytuł i opis, a następnie kliknąć **Utwórz zgłoszenie** albo **Odrzuć**.
+
+- Szkic widzi tylko członek, który uruchomił polecenie
+- Pozostawiony szkic jest usuwany po dniu. Szkice żyją w pamięci, więc usuwa je też restart serwera
+- Karta pojawia się tylko wtedy, gdy masz szkice
+
+Tekstu polecenia nie da się ponownie odczytać ze Slacka, a w przypadku współdzielonej aplikacji przeszedł przez Connect. Dopiero utworzenie zgłoszenia w Control Center sprawia, że staje się ono Twoje.
+
 ## Rotacja tokenu
+
+Dotyczy to własnej aplikacji. Współdzielona aplikacja nie ma tokenu do wymiany.
 
 Wklej ponownie nową wartość w oknie połączenia i kliknij **Połącz**. Połączenie zastępuje to, które działało dla tego obszaru roboczego, więc socket jest wybierany ponownie z nowymi danymi uwierzytelniającymi.
 
@@ -174,7 +222,7 @@ Te dwa wymagane tokeny muszą być obecne przy każdym połączeniu. Opcjonalny 
 
 ## Rozłącz
 
-Kliknij **Rozłącz** w wierszu Slack (tylko administratorzy). Socket zostaje zamknięty, a dane uwierzytelniające zapomniane.
+Kliknij **Rozłącz** w wierszu Slack (tylko administratorzy). Połączenie zostaje zamknięte, a dane uwierzytelniające zapomniane. W przypadku współdzielonej aplikacji Control Center dodatkowo odinstalowuje bota z obszaru roboczego Slack i zwalnia jego powiązanie z tym serwerem.
 
 Powiązania przestrzeni i użytkowników celowo przetrwają: ponowne połączenie tej samej aplikacji przywraca każdy podłączony wątek Slacka. To wiersze przypisane do obszaru roboczego, więc usunięcie obszaru roboczego i tak je usuwa.
 
@@ -211,7 +259,7 @@ Karty zadań Slacka są częścią tej samej nowej powierzchni Agents & AI Apps 
 
 ### „Do edycji bota Control Center potrzebuje tokenu konfiguracji aplikacji”
 
-Wiersz **Dostosuj bota** jest wyłączony, bo połączenie nie ma tokenu konfiguracji aplikacji. To oczekiwane w przypadku aplikacji zrobionej ręcznie albo przez **Utwórz w Slack** — Slack nigdy nie powiedział Control Center, którą aplikacją jest. Wygeneruj parę tokenów na api.slack.com/apps i połącz się ponownie z wypełnionym tokenem odświeżania.
+Wiersz **Dostosuj bota** jest wyłączony, bo połączenie nie ma tokenu konfiguracji aplikacji. (We współdzielonej aplikacji wiersza **Dostosuj bota** w ogóle nie ma: bot należy do współdzielonej aplikacji.) To oczekiwane w przypadku aplikacji zrobionej ręcznie albo przez **Utwórz w Slack** — Slack nigdy nie powiedział Control Center, którą aplikacją jest. Wygeneruj parę tokenów na api.slack.com/apps i połącz się ponownie z wypełnionym tokenem odświeżania.
 
 ### Długa odpowiedź jest ucięta
 

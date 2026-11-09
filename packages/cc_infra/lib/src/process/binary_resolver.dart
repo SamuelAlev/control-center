@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Resolves the absolute path to [binary] by probing common install locations.
 ///
 /// Bundled macOS `.app` and Linux `.desktop` launches inherit a minimal PATH
@@ -26,7 +28,7 @@ Future<String?> resolveBinaryPath(String binary) async {
   }
 
   try {
-    final result = await Process.run(binary, ['--version']);
+    final result = await ChildProcess.run(binary, ['--version']);
     if (result.exitCode == 0) {
       return binary;
     }

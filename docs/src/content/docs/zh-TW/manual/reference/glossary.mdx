@@ -2,7 +2,7 @@
 title: 詞彙表
 description: Control Center 全站關鍵術語的定義。
 slug: zh-TW/手冊/參考/詞彙表
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['管線', '以 DAG 為基礎的工作流程，把各步驟（代理派送、指令碼、條件）串接起來。由範本定義；以執行的形式執行。'],
 ['會議', '在本機錄製並轉錄的會議工作階段。擷取麥克風與系統音訊，使用可選的 ASR 模型在裝置上轉錄（預設為 Parakeet TDT v3；Parakeet TDT v2、Whisper large-v3-turbo 與 Whisper base.en 為替代選項），進行語者分離，並摘要成筆記、行動項目與決策。選定的 ASR 模型會在開機時強制安裝，錄製相關操作在重新啟動一次後即可使用。以工作區為作用域。'],
 ['CalendarEvent', '同步的 Google Calendar 項目，以某個工作區與已連線帳號為作用域。與會議不同：活動是已排定的承諾，會議則是已錄製的工作階段。'],
-['CalendarAccount', '已連線的 Google 帳號，依工作區與電子郵件區分。OAuth 重新整理權杖會以 google_* 金鑰的形式，儲存在資料目錄下 secrets.json 檔案的伺服器端，絕不會送到用戶端；authExpiredAt 旗標會驅動重新連線橫幅。'],
+['CalendarAccount', '已連線的 Google 帳號，依工作區、成員與電子郵件區分。它的憑證會以 google_* 金鑰的形式，儲存在資料目錄下 secrets.json 檔案的伺服器端，絕不會送到用戶端；透過 Connect 的登入只會儲存一份憑證封存。authExpiredAt 旗標會驅動重新連線橫幅。'],
 ['AgentRole', '列舉角色（CEO、coder、reviewer、QA、designer、security、devops、PM、general）。決定人格、記憶存取與階層。'],
 ['AgentSkills', '不區分大小寫的技能識別碼集合，會在派送時把相關情境注入提示詞。'],
 ['技能來源', '依工作區註冊為技能目錄的 GitHub 儲存庫。依構造即不可信：該儲存庫的中繼資料僅供顯示，且每次安裝都必須先通過失敗即關閉的掃描關卡，之後任何內容才能落到磁碟或進入提示詞。'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '單次代理執行的 token／成本統計（輸入 token、輸出 token、以分為單位的預估成本）。'],
 ['喚醒原因', '代理被派送的原因。共六個值：使用者訊息、工單指派、失敗後的復原重新派送、子工單完成、排定的後續心跳，以及管線步驟。'],
 ['SandboxPort', '管理沙箱生命週期（探測、啟動、事件、exec、銷毀）。'],
-['CredentialBrokerPort', '為沙箱啟動鑄造受作用域限定的憑證（代理環境中為唯讀，寫入權限僅用於伺服器端的推送路徑），並在拆除時撤銷它們。'],
+['CredentialBrokerPort', '為沙箱啟動鑄造受作用域限定的憑證（代理環境中為只適用於單一儲存庫的權杖，寫入權限僅用於伺服器端的推送路徑），並在拆除時釋放它們。'],
 ['GitRepoInspectorPort', '從本機 Git 儲存庫路徑擷取中繼資料（owner、repo、branch）。'],
 ['EmbeddingPort', '產生用於語意搜尋的單位範數文字嵌入向量。'],
 ['NotificationPort', '顯示原生桌面通知，並遵守類別／路由閘控。'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['審查判定', 'ship、hold 或 block。任何信心 >= 0.7 的 P0 發現項目都會阻擋；任何其他 P0 或任何 P1 則擱置；否則就是 ship。受閘門控管且失敗的軸會強制阻擋，且無法被發現項目投票推翻。'],
 ['SessionRecording', '為單次執行擷取的事件串流，加上 HTTP/LLM cassette 與工具 I/O，並搭配一個 AgentConfigHash。'],
 ['黃金工作階段', '每個代理或 playbook 固定下來的受認可 SessionRecording。'],
+['Control Center Connect', '一項選用服務，為沒有自己應用程式的伺服器執行供應商登入（GitHub、Google、Linear）。可由 Control Center 代管、自行代管或關閉。它回傳憑證封存與只適用於單一儲存庫的 GitHub 權杖，而且永遠看不到儲存庫內容。'],
+['憑證封存', '一份加密的憑證，只有建立它的 Connect 能開啟，並綁定到供應商、Connect 位址、安裝 ID、工作區、帳號、應用程式與密鑰世代。伺服器儲存這份封存；存取權杖只留在記憶體中。'],
+['安裝 ID', '伺服器面對某個 Connect 位址時的身分，由其安裝金鑰衍生。Connect 依安裝 ID 建立伺服器允許清單；輪替金鑰會改變它，並讓所有人從 Connect 通道登出。'],
+['安裝綁定', 'Connect 對哪些伺服器可以使用共用 App 的某個 GitHub 安裝所做的紀錄。組織的安裝需要一位管理員為每台伺服器授權。'],
+['登入通道', '單一供應商的瀏覽器登入：github、google、linear、linear_app 或 slack。每條通道在伺服器自己的應用程式完整時使用它，否則透過 Connect，否則就無法使用。'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**：管理沙箱生命週期（探測、啟動、事件、exec、銷毀）。
 
-**CredentialBrokerPort**：為沙箱啟動鑄造受作用域限定的憑證——代理環境中為唯讀，寫入權限僅用於伺服器端的推送路徑——並在拆除時撤銷它們。
+**CredentialBrokerPort**：為沙箱啟動鑄造受作用域限定的憑證——代理環境中為只適用於單一儲存庫的權杖，寫入權限僅用於伺服器端的推送路徑——並在拆除時釋放它們。
 
 **GitRepoInspectorPort**：從本機 Git 儲存庫路徑擷取中繼資料（owner、repo、branch）。
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**：同步的 Google Calendar 項目，以某個工作區與已連線帳號為作用域。與會議不同：活動是已排定的承諾；會議則是已錄製的工作階段。透過 `MeetingCalendarLink` 一對一連結。
 
-**CalendarAccount**：已連線的 Google 帳號，依工作區與電子郵件區分。OAuth 重新整理權杖會以 `google_*` 金鑰的形式儲存在 `<dataDir>/secrets.json` 的伺服器端，絕不會送到用戶端；裝置碼流程在伺服器上完成。`authExpiredAt` 旗標會驅動重新連線橫幅。
+**CalendarAccount**：已連線的 Google 帳號，依工作區、成員與電子郵件區分（`google:<workspaceId>:<userId>:<email>`）。它的憑證會以 `google_*` 金鑰的形式儲存在 `<dataDir>/secrets.json` 的伺服器端，絕不會送到用戶端；瀏覽器登入在伺服器上完成。透過 Connect 的登入只會儲存一份憑證封存。`authExpiredAt` 旗標會驅動重新連線橫幅。
 
 ## 架構術語
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**：手機精簡用戶端——一個 Flutter 網頁 PWA，透過代理中繼遠端控制機群，並採用預設拒絕的工具原則。
 
 **cc_signaling_server**：無狀態的 WebSocket 中繼仲介，託管需邀請才能加入的房間——一個笨拙的中繼：它只轉送端對端密封的訊框，不持有任何應用程式資料，也永遠看不到配對 PSK。
+
+**Control Center Connect**：一項選用服務，為尚未註冊自己應用程式的伺服器執行供應商登入（GitHub、Google Calendar、Linear）：可以是 Control Center 代管的那一個、組織自行執行的那一個（`cc-connect`，或掛載在 `cc_server` 的 `/connect`），或者都不使用。它回傳憑證封存與只適用於單一儲存庫的 GitHub 權杖，而且永遠看不到儲存庫內容。參見 [Control Center Connect](/zh-TW/手冊/參考/connect/)。
+
+**憑證封存**：一份加密的憑證（`credential_seal`），只有建立它的 Connect 能開啟，並綁定到供應商、Connect 位址、安裝 ID、工作區、帳號、應用程式與密鑰世代。伺服器儲存這份封存以及它所對應的安裝 ID；存取權杖只留在記憶體中。安裝 ID 不再相符的封存會被丟棄，其擁有者需要重新登入。
+
+**安裝 ID**：伺服器面對某個 Connect 位址時的身分（`install_id`），由其機密檔案中的安裝金鑰衍生。Connect 依安裝 ID 建立伺服器允許清單。輪替金鑰會產生新的安裝 ID，並讓所有人從 Connect 通道登出。
+
+**安裝綁定**：Connect 對哪些伺服器可以使用共用 App 的某個 GitHub 安裝所做的紀錄（`install_binding`）。透過某台伺服器進行安裝會綁定那台伺服器；組織管理員的**授權此伺服器**則會綁定另一台。
+
+**登入通道**：單一供應商的瀏覽器登入——`github`、`google`、`linear`、`linear_app` 或 `slack`。通道在伺服器自己的應用程式完整時使用它，否則透過 Connect，否則就無法使用；設定不完整的自有應用程式是一項錯誤，絕不會退回其他方案。
 
 ## 相關內容
 

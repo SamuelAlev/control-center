@@ -7,6 +7,8 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/git_global_config.dart';
 import 'package:cc_infra/src/sandboxing/http_proxy.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
@@ -110,7 +112,7 @@ class SandboxManager {
     }
     if (!Platform.isWindows) {
       try {
-        await Process.run('chmod', ['700', profilesDir.path]);
+        await ChildProcess.run('chmod', ['700', profilesDir.path]);
       } on Object catch (e) {
         CcInfraLog.warning('sandbox: could not tighten profiles dir: $e');
       }
@@ -376,7 +378,7 @@ class _SessionState {
       return dir;
     }
     final dir = Directory('/private/tmp').createTempSync('cc-');
-    Process.runSync('/bin/chmod', ['700', dir.path]);
+    ChildProcess.runSync('/bin/chmod', ['700', dir.path]);
     return _tmpDir = dir.path;
   }
 

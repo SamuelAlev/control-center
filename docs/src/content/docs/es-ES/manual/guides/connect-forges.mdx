@@ -2,7 +2,7 @@
 title: "Conectar un host de código"
 description: "Conecta GitHub, GitLab o Bitbucket para que funcionen la superficie de PR, el registro de repos y las ejecuciones de agentes: un mismo espacio de trabajo puede usar los tres."
 slug: es-ES/manual/guias/conectar-host-de-codigo
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center funciona con tres hosts de código, a los que la aplicación llama **forges** en todo momento: **GitHub**, **GitLab** y **Bitbucket Cloud**. Ninguno de ellos es el predeterminado. Conecta uno y todo funciona; conecta varios y un mismo espacio de trabajo puede contener repos de los tres a la vez.
@@ -13,9 +13,9 @@ El host de código es una propiedad de cada **repo**, que se lee de su remoto `o
 
 1. Abre **Ajustes → Espacio de trabajo → Perfil e identidad** (`/settings/workspace/profile`).
 2. Busca la tarjeta **Alojamiento de código**. En ella se listan todos los hosts de código compatibles, conectados o no.
-3. Pulsa **Iniciar sesión con …** si la fila lo ofrece, o **Añadir token** y pega uno.
+3. En **GitHub**, pulsa **Iniciar sesión en GitHub**. En **GitLab** o **Bitbucket**, pulsa **Añadir token** y pega uno.
 
-**Iniciar sesión** aparece en los hosts de código para los que tu servidor tiene una app registrada —hoy es el caso de GitHub, mediante un flujo de dispositivo (consulta [Crear la GitHub App](/es-ES/manual/guias/github-app/))—. Todo lo demás es un token pegado, que es el recurso honesto en lugar de un botón que no puede llegar a completarse.
+**GitHub solo admite inicio de sesión.** El inicio de sesión pasa por la GitHub App propia del servidor o por Control Center Connect, según lo que haya configurado el propietario del servidor (consulta [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/)); no hay ningún token de GitHub que pegar. GitLab y Bitbucket siguen usando un token personal.
 
 En cualquier caso, la credencial es **tuya y vive en el servidor**, indexada por tu id de usuario: no se guarda ningún token en la máquina donde lo escribiste, todos los dispositivos desde los que inicias sesión usan la misma, y ningún otro miembro puede leerla. Surte efecto en la **siguiente petición** — no hay nada que reiniciar, y desconectarla hace que deje de enviarse de inmediato.
 
@@ -24,29 +24,28 @@ Cada fila te dice de dónde procede su credencial, porque esa es la diferencia e
 | Subtítulo                                       | Significado                                                     |
 | ----------------------------------------------- | --------------------------------------------------------------- |
 | `Signed in as octocat`                          | Se está usando tu propia credencial                             |
-| `Signed in as octocat · via this server's app`  | Está respondiendo la identidad de la app del servidor — no has iniciado sesión |
-| `Signed in as octocat · from the environment`   | Está respondiendo una variable de entorno del servidor, no tu credencial |
+| `Signed in as octocat · from the environment`   | Solo GitLab o Bitbucket: está respondiendo una variable de entorno del servidor, no tu token |
 | `Not connected`                                 | No tienes ninguna credencial para este host de código           |
+| `El inicio de sesión en GitHub aún no está configurado en este servidor.` | El servidor no tiene ni su propia GitHub App ni Connect; el propietario del servidor configura una de las dos |
 
 ### Qué token quiere cada host de código
 
 | Host de código | Token                                                     | Dónde crearlo                                             |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Clásico: `repo` y `read:org`. De grano fino: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Un token de acceso personal con `api`                     | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Un token de API de Atlassian, más el correo de tu cuenta  | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket se autentica con tu **correo de cuenta como nombre de usuario** y el token como contraseña. Define `BITBUCKET_EMAIL` en el entorno del servidor para que sepa con qué correo emparejar el token.
 
-### O usa el entorno
+### Trabajo en segundo plano
 
-En una instalación sin interfaz o de CI, el servidor lee estas:
+El trabajo que no tiene a nadie detrás (ejecuciones de agentes, pipelines, sondeo de PR) también necesita una credencial, y cada host de código lo resuelve de forma distinta:
 
-- **GitHub** — `GITHUB_TOKEN` y después `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN` y después `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN` y después `BITBUCKET_TOKEN` (junto con `BITBUCKET_EMAIL`)
+- **GitHub** — un token para un solo repositorio cada vez, emitido desde la GitHub App del servidor o a través de Connect y limitado a lo que un miembro responsable puede hacer en él. Nunca es el inicio de sesión de una persona entregado por completo, y ninguna variable de entorno ni token pegado lo sustituye. Consulta [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/#para-quién-habla-tu-credencial)
+- **GitLab** — el token pegado del propietario del servidor, después `GITLAB_TOKEN` y por último `CI_JOB_TOKEN`
+- **Bitbucket** — el token pegado del propietario del servidor, después `BITBUCKET_API_TOKEN` y por último `BITBUCKET_TOKEN` (junto con `BITBUCKET_EMAIL`)
 
-Estas son la credencial **del servidor**, no la tuya, y la distinción es fundamental: una petición hecha en tu nombre usa tu credencial y nada más, así que el entorno nunca te suplanta en silencio. El trabajo que no tiene a nadie detrás —webhooks, sondeo de PR, sincronización de tickets— resuelve primero la identidad de la app del servidor, después la credencial del propietario del servidor y por último el entorno. El orden es fijo, de modo que «he iniciado sesión y no ha cambiado nada» nunca es un resultado posible.
+Las variables de entorno de GitLab y Bitbucket son la credencial **del servidor**, no la tuya: una petición hecha en tu nombre usa tu token y nada más, así que el entorno nunca te suplanta en silencio.
 
 ## Eres una persona distinta en cada host de código
 
@@ -94,11 +93,11 @@ GitLab llama a una pull request **merge request**. Control Center dice «pull re
 
 ### La lista de PR está vacía y dice que un host de código no está conectado
 
-No tienes ninguna credencial para ese host de código. Inicia sesión o pega un token en **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código**. Los repos de los demás hosts de código no se ven afectados.
+No tienes ninguna credencial para ese host de código. Inicia sesión en GitHub, o pega un token de GitLab o Bitbucket, en **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código**. Los repos de los demás hosts de código no se ven afectados.
 
 ### He conectado un host de código, pero sus repos siguen sin mostrar nada
 
-Comprueba el subtítulo de la fila. Si dice «mediante la app de este servidor» o «desde el entorno», está respondiendo una credencial distinta de la que esperabas — tu propia credencial gana para todo lo que pidas, así que si dice otra cosa, la tuya no se guardó.
+Comprueba el subtítulo de la fila. Si una fila de GitLab o Bitbucket dice «desde el entorno», está respondiendo una credencial distinta de la que esperabas — tu propio token gana para todo lo que pidas, así que si dice otra cosa, el tuyo no se guardó. En GitHub, comprueba que la GitHub App esté instalada en la cuenta propietaria de los repos.
 
 ### Un repo no se registra
 

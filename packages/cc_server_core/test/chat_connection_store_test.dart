@@ -78,10 +78,9 @@ void main() {
   test('the file it was read from out-votes its own claims', () async {
     await store.save(_connection());
     final file = credentialsFile('w-1');
-    final json =
-        jsonDecode(file.readAsStringSync()) as Map<String, dynamic>
-          ..['workspaceId'] = 'w-999'
-          ..['provider'] = 'discord';
+    final json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>
+      ..['workspaceId'] = 'w-999'
+      ..['provider'] = 'discord';
     file.writeAsStringSync(jsonEncode(json));
 
     // A hand-edited or copied file must not smuggle another workspace's id — or
@@ -91,17 +90,23 @@ void main() {
     expect(loaded?.provider, slack);
   });
 
-  test('a corrupt file reads as “not connected” rather than throwing', () async {
-    final file = credentialsFile('w-1')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync('{ this is not json');
+  test(
+    'a corrupt file reads as “not connected” rather than throwing',
+    () async {
+      final file = credentialsFile('w-1')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('{ this is not json');
 
-    expect(await store.load('w-1', slack), isNull);
-    // And it is replaceable: a bad file must not wedge the workspace.
-    await store.save(_connection());
-    expect((await store.load('w-1', slack))?.credential('botToken'), 'xoxb-1');
-    expect(file.existsSync(), isTrue);
-  });
+      expect(await store.load('w-1', slack), isNull);
+      // And it is replaceable: a bad file must not wedge the workspace.
+      await store.save(_connection());
+      expect(
+        (await store.load('w-1', slack))?.credential('botToken'),
+        'xoxb-1',
+      );
+      expect(file.existsSync(), isTrue);
+    },
+  );
 
   test('clear() forgets the credentials', () async {
     await store.save(_connection());
@@ -114,60 +119,47 @@ void main() {
     await store.clear('w-1', slack);
   });
 
-  group('legacy Slack file', () {
-    /// The pre-generalization layout, as a developer machine still has it.
-    void writeLegacy(String workspaceId) =>
-        File(p.join(dataDir.path, workspaceId, 'slack_credentials.json'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync(
-            jsonEncode({
-              'workspaceId': workspaceId,
-              'appId': 'A1',
-              'teamId': 'T1',
-              'teamName': 'Acme',
-              'botUserId': 'UBOT',
-              'botName': 'controlcenter',
-              'botToken': 'xoxb-legacy',
-              'appToken': 'xapp-legacy',
-              'configRefreshToken': 'xoxe-legacy',
-              'enabled': true,
-              'connectedAt': '2026-01-01T00:00:00.000Z',
-            }),
-          );
+  test('a shared-app connection round-trips its mode and bot id', () async {
+    await store.save(
+      ChatBridgeConnection(
+        provider: slack,
+        workspaceId: 'w-1',
+        credentials: const {'grant': '{"seal":"s-1"}'},
+        mode: ChatConnectionMode.connect,
+        appId: 'A1',
+        teamId: 'T1',
+        teamName: 'Acme',
+        botUserId: 'UBOT',
+        botId: 'B1',
+        botName: 'controlcenter',
+        connectedAt: DateTime.utc(2026),
+      ),
+    );
 
-    test('is migrated in place on first load, tokens intact', () async {
-      writeLegacy('w-1');
+    final loaded = await store.load('w-1', slack);
+    expect(loaded?.mode, ChatConnectionMode.connect);
+    expect(loaded?.botId, 'B1');
+    expect(loaded?.credential('grant'), '{"seal":"s-1"}');
+  });
 
-      // The probe has to see it too, or boot would skip a working connection.
-      expect(store.has('w-1', slack), isTrue);
-      final loaded = await store.load('w-1', slack);
-      expect(loaded?.credential('botToken'), 'xoxb-legacy');
-      expect(loaded?.credential('appToken'), 'xapp-legacy');
-      expect(loaded?.credential('configRefreshToken'), 'xoxe-legacy');
-      expect(loaded?.teamName, 'Acme');
-      expect(loaded?.provider, slack);
-
-      // Migrated, not copied: the old file is gone and the new one is canonical.
-      expect(credentialsFile('w-1').existsSync(), isTrue);
-      expect(
-        File(p.join(dataDir.path, 'w-1', 'slack_credentials.json')).existsSync(),
-        isFalse,
+  test('the pre-generalization files are not read', () async {
+    // No migration: the old single-provider layout is simply not a connection.
+    File(p.join(dataDir.path, 'w-1', 'slack_credentials.json'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(
+        jsonEncode({
+          'workspaceId': 'w-1',
+          'botToken': 'xoxb-legacy',
+          'appToken': 'xapp-legacy',
+        }),
       );
-      expect((await store.load('w-1', slack))?.credential('botToken'),
-          'xoxb-legacy');
-    });
+    File(
+      p.join(dataDir.path, 'w-1', 'slack_app_setup.json'),
+    ).writeAsStringSync(jsonEncode({'configRefreshToken': 'xoxe-2'}));
 
-    test('a legacy setup file is still readable across the rename', () async {
-      File(p.join(dataDir.path, 'w-1', 'slack_app_setup.json'))
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(
-          jsonEncode({'configRefreshToken': 'xoxe-2', 'appId': 'A1'}),
-        );
-
-      final setup = await store.loadSetup('w-1', slack);
-      expect(setup?.managementCredential, 'xoxe-2');
-      expect(setup?.appId, 'A1');
-    });
+    expect(store.has('w-1', slack), isFalse);
+    expect(await store.load('w-1', slack), isNull);
+    expect(await store.loadSetup('w-1', slack), isNull);
   });
 
   group('guided create hand-off', () {
@@ -188,30 +180,35 @@ void main() {
       expect(setup?.installUrl, contains('oauth'));
     });
 
-    test('a setup without a credential is worthless and reads as absent',
-        () async {
-      await store.saveSetup(
-        'w-1',
-        slack,
-        const ChatAppSetup(managementCredential: '', appId: 'A1'),
-      );
+    test(
+      'a setup without a credential is worthless and reads as absent',
+      () async {
+        await store.saveSetup(
+          'w-1',
+          slack,
+          const ChatAppSetup(managementCredential: '', appId: 'A1'),
+        );
 
-      expect(await store.loadSetup('w-1', slack), isNull);
-    });
+        expect(await store.loadSetup('w-1', slack), isNull);
+      },
+    );
 
-    test('the setup is separate from the connection and cleared alone', () async {
-      await store.save(_connection());
-      await store.saveSetup(
-        'w-1',
-        slack,
-        const ChatAppSetup(managementCredential: 'x'),
-      );
+    test(
+      'the setup is separate from the connection and cleared alone',
+      () async {
+        await store.save(_connection());
+        await store.saveSetup(
+          'w-1',
+          slack,
+          const ChatAppSetup(managementCredential: 'x'),
+        );
 
-      await store.clearSetup('w-1', slack);
+        await store.clearSetup('w-1', slack);
 
-      expect(await store.loadSetup('w-1', slack), isNull);
-      expect(await store.load('w-1', slack), isNotNull);
-    });
+        expect(await store.loadSetup('w-1', slack), isNull);
+        expect(await store.load('w-1', slack), isNotNull);
+      },
+    );
   });
 }
 

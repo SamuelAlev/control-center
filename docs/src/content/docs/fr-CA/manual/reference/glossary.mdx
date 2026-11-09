@@ -2,7 +2,7 @@
 title: Glossaire
 description: Définitions des termes clés employés dans tout Control Center.
 slug: fr-CA/manuel/reference/glossaire
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Un flux de travail fondé sur un DAG qui enchaîne des étapes (lancement d’agent, scripts, conditions). Défini par des modèles ; exécuté sous forme d’exécutions.'],
 ['Réunion', 'Une séance de réunion enregistrée et transcrite localement. Capture le micro et l’audio du système, transcrit sur l’appareil avec un modèle ASR au choix (Parakeet TDT v3 par défaut ; Parakeet TDT v2, Whisper large-v3-turbo et Whisper base.en sont des solutions de rechange), sépare les locuteurs et résume le tout en notes, tâches et décisions. Le modèle ASR choisi est installé de force au démarrage, et les opérations d’enregistrement s’allument après un redémarrage. Propre à l’espace de travail.'],
 ['CalendarEvent', 'Une entrée Google Calendar synchronisée, propre à un espace de travail et à un compte connecté. À distinguer d’une réunion : un événement est un engagement planifié, une réunion est une séance enregistrée.'],
-['CalendarAccount', 'Un compte Google connecté, par espace de travail et par courriel. Les jetons de rafraîchissement OAuth sont conservés côté serveur sous les clés google_* du fichier secrets.json, dans le répertoire de données, et n’atteignent jamais un client ; un indicateur authExpiredAt pilote la bannière de reconnexion.'],
+['CalendarAccount', 'Un compte Google connecté, par espace de travail, par membre et par courriel. Son identifiant est conservé côté serveur sous une clé google_* du fichier secrets.json, dans le répertoire de données, et n’atteint jamais un client ; une connexion par Connect ne stocke qu’un scellé d’identifiant. Un indicateur authExpiredAt pilote la bannière de reconnexion.'],
 ['AgentRole', 'Rôle énuméré (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Détermine la personnalité, l’accès à la mémoire et la hiérarchie.'],
 ['AgentSkills', 'Ensemble insensible à la casse de noms de skills qui injectent le contexte pertinent dans les prompts au moment du lancement.'],
 ['Source de skills', 'Un dépôt GitHub enregistré par espace de travail comme catalogue de skills. Non fiable par construction : les métadonnées du dépôt servent uniquement à l’affichage, et chaque installation passe la barrière d’analyse à refus par défaut avant qu’un contenu n’atteigne le disque ou un prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Décompte des jetons et des coûts (jetons d’entrée, jetons de sortie, coût estimé en cents) pour une seule exécution d’agent.'],
 ['WakeReason', 'Pourquoi un agent a été lancé. Six valeurs : message d’un utilisateur, attribution d’un ticket, relance de récupération après un échec, ticket enfant terminé, battement de suivi planifié et étape de pipeline.'],
 ['SandboxPort', 'Gère le cycle de vie du bac à sable (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Émet des justificatifs à portée limitée pour le lancement du bac à sable (en lecture seule pour l’environnement d’un agent, en écriture uniquement pour le chemin de poussée côté serveur) et les révoque au démontage.'],
+['CredentialBrokerPort', 'Émet des justificatifs à portée limitée pour le lancement du bac à sable (un jeton limité à un seul dépôt pour l’environnement d’un agent, en écriture uniquement pour le chemin de poussée côté serveur) et les libère au démontage.'],
 ['GitRepoInspectorPort', 'Extrait les métadonnées (propriétaire, dépôt, branche) d’un chemin de dépôt Git local.'],
 ['EmbeddingPort', 'Produit des vecteurs d’embedding de texte à norme unitaire pour la recherche sémantique.'],
 ['NotificationPort', 'Affiche des notifications de bureau natives en respectant le filtrage par catégorie et par route.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Verdict de révision', 'ship, hold ou block. Tout constat P0 dont la confiance est >= 0,7 donne block ; tout autre P0 ou tout P1 donne hold ; sinon, ship. Un axe verrouillé qui échoue force block et ne peut pas être mis en minorité par les constats.'],
 ['SessionRecording', 'Un flux d’événements accompagné des cassettes HTTP/LLM et des entrées-sorties d’outils capturés pour une exécution, jumelé à un AgentConfigHash.'],
 ['Session golden', 'Une SessionRecording approuvée et épinglée par agent ou par playbook.'],
+['Control Center Connect', 'Un service facultatif qui exécute les connexions aux fournisseurs (GitHub, Google, Linear) pour les serveurs qui n’ont pas leurs propres apps. Hébergé par Control Center, auto-hébergé ou désactivé. Il renvoie des scellés d’identifiants et des jetons GitHub limités à un seul dépôt, et ne voit jamais le contenu des dépôts.'],
+['Scellé d’identifiant', 'Un identifiant chiffré que seul le Connect qui l’a créé peut ouvrir, lié au fournisseur, à l’adresse de Connect, à l’identifiant d’installation, à l’espace de travail, au compte, à l’app et à la génération du secret. Le serveur stocke le scellé ; les jetons d’accès restent en mémoire.'],
+['Identifiant d’installation', 'L’identité d’un serveur auprès d’une adresse Connect donnée, dérivée de sa clé d’installation. Connect autorise les serveurs par identifiant d’installation ; renouveler la clé le change et déconnecte tout le monde des voies Connect.'],
+['Liaison d’installation', 'L’enregistrement, tenu par Connect, des serveurs autorisés à utiliser une installation GitHub de l’App partagée. Une installation d’organisation exige qu’un administrateur autorise chaque serveur.'],
+['Voie de connexion', 'La connexion dans le navigateur d’un fournisseur : github, google, linear, linear_app ou slack. Chaque voie s’exécute avec l’app propre au serveur lorsqu’elle est complète, sinon par Connect, sinon elle est indisponible.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort** : Gère le cycle de vie du bac à sable (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort** : Émet des justificatifs à portée limitée pour le lancement du bac à sable — en lecture seule pour l’environnement d’un agent, en écriture uniquement pour le chemin de poussée côté serveur — et les révoque au démontage.
+**CredentialBrokerPort** : Émet des justificatifs à portée limitée pour le lancement du bac à sable — un jeton limité à un seul dépôt pour l’environnement d’un agent, en écriture uniquement pour le chemin de poussée côté serveur — et les libère au démontage.
 
 **GitRepoInspectorPort** : Extrait les métadonnées (propriétaire, dépôt, branche) d’un chemin de dépôt Git local.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent** : Une entrée Google Calendar synchronisée, propre à un espace de travail et à un compte connecté. À distinguer d’une réunion : un événement est un engagement planifié ; une réunion est une séance enregistrée. Liée de façon biunivoque par un `MeetingCalendarLink`.
 
-**CalendarAccount** : Un compte Google connecté, par espace de travail et par courriel. Les jetons de rafraîchissement OAuth sont conservés côté serveur sous les clés `google_*` dans `<dataDir>/secrets.json` et n’atteignent jamais un client ; le flux d’authentification par code d’appareil se termine sur le serveur. Un indicateur `authExpiredAt` pilote la bannière de reconnexion.
+**CalendarAccount** : Un compte Google connecté, par espace de travail, par membre et par courriel (`google:<workspaceId>:<userId>:<email>`). Son identifiant est conservé côté serveur sous une clé `google_*` dans `<dataDir>/secrets.json` et n’atteint jamais un client ; la connexion dans le navigateur se termine sur le serveur. Une connexion par Connect ne stocke qu’un scellé d’identifiant. Un indicateur `authExpiredAt` pilote la bannière de reconnexion.
 
 ## Termes d’architecture
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote** : Le client léger pour téléphone — une PWA web Flutter qui pilote la flotte à distance par le relais à courtier, avec une politique d’outils qui refuse par défaut.
 
 **cc_signaling_server** : Un courtier relais WebSocket sans état qui héberge des salles à accès sur invitation — un relais simple qui ne transmet que des trames scellées de bout en bout, ne détient aucune donnée d’application et ne voit jamais le secret d’appairage.
+
+**Control Center Connect** : Un service facultatif qui exécute les connexions aux fournisseurs (GitHub, Google Calendar, Linear) pour les serveurs qui n’ont pas enregistré leurs propres apps : celui qu’héberge Control Center, celui qu’exploite une organisation (`cc-connect`, ou monté dans `cc_server` sur `/connect`), ou aucun. Il renvoie des scellés d’identifiants et des jetons GitHub limités à un seul dépôt, et ne voit jamais le contenu des dépôts. Voir [Control Center Connect](/fr-CA/manuel/reference/connect/).
+
+**Scellé d’identifiant** : Un identifiant chiffré (`credential_seal`) que seul le Connect qui l’a créé peut ouvrir, lié au fournisseur, à l’adresse de Connect, à l’identifiant d’installation, à l’espace de travail, au compte, à l’app et à la génération du secret. Le serveur stocke le scellé et l’identifiant d’installation pour lequel il a été créé ; les jetons d’accès restent en mémoire. Un scellé dont l’identifiant d’installation ne correspond plus est supprimé et son propriétaire se reconnecte.
+
+**Identifiant d’installation** : L’identité d’un serveur auprès d’une adresse Connect donnée (`install_id`), dérivée de la clé d’installation de son fichier de secrets. Connect autorise les serveurs par identifiant d’installation. Renouveler la clé en donne un nouveau et déconnecte tout le monde des voies Connect.
+
+**Liaison d’installation** : L’enregistrement, tenu par Connect (`install_binding`), des serveurs autorisés à utiliser une installation GitHub de l’App partagée. Installer à partir d’un serveur lie ce serveur ; **Autoriser ce serveur**, actionné par un administrateur de l’organisation, en lie un autre.
+
+**Voie de connexion** : La connexion dans le navigateur d’un fournisseur — `github`, `google`, `linear`, `linear_app` ou `slack`. Une voie s’exécute avec l’app propre au serveur lorsque celle-ci est complète, sinon par Connect, sinon elle est indisponible ; une app propre partiellement configurée est une erreur, jamais un repli.
 
 ## Voir aussi
 

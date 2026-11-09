@@ -2,7 +2,7 @@
 title: Verklarende woordenlijst
 description: Definities van de kernbegrippen die in Control Center worden gebruikt.
 slug: nl-NL/handleiding/referentie/woordenlijst
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Een workflow op basis van een DAG die stappen aan elkaar rijgt (agentdispatch, scripts, voorwaarden). Gedefinieerd door sjablonen; uitgevoerd als runs.'],
 ['Vergadering', 'Een lokaal opgenomen, getranscribeerde vergaderingssessie. Legt microfoon- en systeemaudio vast, transcribeert op het toestel met een kiesbaar ASR-model (standaard Parakeet TDT v3; Parakeet TDT v2, Whisper large-v3-turbo en Whisper base.en zijn alternatieven), scheidt de sprekers en vat samen in notities, actiepunten en beslissingen. Het gekozen ASR-model wordt bij het opstarten geforceerd geïnstalleerd en opnamefuncties lichten op na één herstart. Werkruimtegebonden.'],
 ['CalendarEvent', 'Een gesynchroniseerde vermelding uit Google Calendar, gebonden aan een werkruimte en een verbonden account. Verschilt van een vergadering: een item is een geplande verplichting, een vergadering is een opgenomen sessie.'],
-['CalendarAccount', 'Een verbonden Google-account, per werkruimte en e-mailadres. OAuth-refreshtokens worden server-side opgeslagen als google_*-sleutels in het bestand secrets.json onder de gegevensmap en bereiken nooit een client; een markering authExpiredAt stuurt de banner om opnieuw te verbinden.'],
+['CalendarAccount', 'Een verbonden Google-account, per werkruimte, lid en e-mailadres. De inloggegevens ervan worden server-side opgeslagen als een google_*-sleutel in het bestand secrets.json onder de gegevensmap en bereiken nooit een client; een aanmelding via Connect bewaart alleen een inloggegevenszegel. Een markering authExpiredAt stuurt de banner om opnieuw te verbinden.'],
 ['AgentRole', 'Opgesomde rol (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Bepaalt persona, geheugentoegang en hiërarchie.'],
 ['AgentSkills', 'Hoofdletterongevoelige set van skill-id\'s die op het moment van dispatch relevante context in prompts injecteert.'],
 ['Skillbron', 'Een GitHub-repository die per werkruimte als skillcatalogus is geregistreerd. Wantrouwig van opzet: de metadata van de repository is alleen ter weergave en elke installatie passeert de fail-closed scanpoort voordat er inhoud op schijf of in een prompt belandt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in centen) voor één agentrun.'],
 ['WakeReason', 'Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.'],
 ['SandboxPort', 'Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Geeft begrensde inloggegevens uit voor het starten van een sandbox (alleen leesrechten voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server) en trekt ze bij het opruimen weer in.'],
+['CredentialBrokerPort', 'Geeft begrensde inloggegevens uit voor het starten van een sandbox (een token voor één repository voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server) en geeft ze bij het opruimen weer vrij.'],
 ['GitRepoInspectorPort', 'Haalt metadata (owner, repo, branch) op uit een lokaal Git-repopad.'],
 ['EmbeddingPort', 'Produceert tekstembeddings met eenheidsnorm voor semantisch zoeken.'],
 ['NotificationPort', 'Toont native desktopmeldingen en respecteert de filtering op categorie en route.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Review-oordeel', 'ship, hold of block. Elke P0-bevinding met een betrouwbaarheid >= 0,7 blokkeert; elk ander P0 of elk P1 houdt tegen; anders ship. Een as met een poort die faalt, dwingt block af en kan niet door bevindingen worden overstemd.'],
 ['SessionRecording', 'Een gebeurtenisstroom plus HTTP/LLM-cassettes en tool-I/O die voor één run zijn vastgelegd, gekoppeld aan een AgentConfigHash.'],
 ['Golden session', 'Een goedgekeurde SessionRecording die per agent of playbook is vastgezet.'],
+['Control Center Connect', 'Een optionele dienst die provider-aanmeldingen (GitHub, Google, Linear) uitvoert voor servers zonder eigen apps. Gehost door Control Center, zelf gehost, of uit. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository\'s.'],
+['Inloggegevenszegel', 'Versleutelde inloggegevens die alleen de Connect die ze maakte kan openen, gebonden aan de provider, het Connect-adres, het installatie-ID, de werkruimte, het account, de app en de secretgeneratie. De server bewaart het zegel; accesstokens blijven in het geheugen.'],
+['Installatie-ID', 'De identiteit van een server tegenover één Connect-adres, afgeleid van zijn installatiesleutel. Connect laat servers toe op installatie-ID; het vervangen van de sleutel wijzigt het en meldt iedereen af bij de Connect-routes.'],
+['Installatiebinding', 'Het register van Connect van welke servers een GitHub-installatie van de gedeelde App mogen gebruiken. De installatie van een organisatie vraagt een beheerder om elke server te autoriseren.'],
+['Aanmeldroute', 'De browseraanmelding van één provider: github, google, linear, linear_app of slack. Elke route draait op de eigen app van de server als die compleet is, anders via Connect, en anders is hij niet beschikbaar.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Geeft begrensde inloggegevens uit voor het starten van een sandbox — alleen leesrechten voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server — en trekt ze bij het opruimen weer in.
+**CredentialBrokerPort**: Geeft begrensde inloggegevens uit voor het starten van een sandbox — een token voor één repository voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server — en geeft ze bij het opruimen weer vrij.
 
 **GitRepoInspectorPort**: Haalt metadata (owner, repo, branch) op uit een lokaal Git-repopad.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Een gesynchroniseerde vermelding uit Google Calendar, gebonden aan een werkruimte en een verbonden account. Verschilt van een vergadering: een item is een geplande verplichting; een vergadering is een opgenomen sessie. Een-op-een gekoppeld via een `MeetingCalendarLink`.
 
-**CalendarAccount**: Een verbonden Google-account, per werkruimte en e-mailadres. OAuth-refreshtokens worden server-side opgeslagen als `google_*`-sleutels in `<dataDir>/secrets.json` en bereiken nooit een client; de device-codeflow rondt af op de server. Een `authExpiredAt`-markering stuurt de banner om opnieuw te verbinden.
+**CalendarAccount**: Een verbonden Google-account, per werkruimte, lid en e-mailadres (`google:<workspaceId>:<userId>:<email>`). De inloggegevens ervan worden server-side opgeslagen als een `google_*`-sleutel in `<dataDir>/secrets.json` en bereiken nooit een client; de aanmelding in de browser rondt af op de server. Een aanmelding via Connect bewaart alleen een inloggegevenszegel. Een `authExpiredAt`-markering stuurt de banner om opnieuw te verbinden.
 
 ## Architectuurbegrippen
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: De thin client voor de telefoon — een Flutter-web-PWA die de fleet op afstand bestuurt via de bemiddelde relay, met een toolbeleid dat standaard weigert.
 
 **cc_signaling_server**: Een staatloze WebSocket-relaybroker die uitnodigingsgebonden ruimtes host — een domme relay die alleen end-to-end verzegelde frames doorstuurt, geen appgegevens vasthoudt en de koppelings-PSK nooit ziet.
+
+**Control Center Connect**: Een optionele dienst die provider-aanmeldingen (GitHub, Google Calendar, Linear) uitvoert voor servers die geen eigen apps hebben geregistreerd: de gehoste van Control Center, een die een organisatie draait (`cc-connect`, of ingebouwd in `cc_server` op `/connect`), of geen. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository's. Zie [Control Center Connect](/nl-NL/handleiding/referentie/connect/).
+
+**Inloggegevenszegel**: Versleutelde inloggegevens (`credential_seal`) die alleen de Connect die ze maakte kan openen, gebonden aan de provider, het Connect-adres, het installatie-ID, de werkruimte, het account, de app en de secretgeneratie. De server bewaart het zegel en het installatie-ID waarvoor het is gemaakt; accesstokens blijven in het geheugen. Een zegel waarvan het installatie-ID niet meer klopt, wordt verwijderd en de eigenaar meldt zich opnieuw aan.
+
+**Installatie-ID**: De identiteit van een server tegenover één Connect-adres (`install_id`), afgeleid van de installatiesleutel in zijn geheimenbestand. Connect laat servers toe op installatie-ID. Het vervangen van de sleutel geeft een nieuw ID en meldt iedereen af bij de Connect-routes.
+
+**Installatiebinding**: Het register van Connect (`install_binding`) van welke servers een GitHub-installatie van de gedeelde App mogen gebruiken. Installeren via een server bindt die server; **Deze server autoriseren** door een beheerder van de organisatie bindt een andere.
+
+**Aanmeldroute**: De browseraanmelding van één provider — `github`, `google`, `linear`, `linear_app` of `slack`. Een route draait op de eigen app van de server als die app compleet is, anders via Connect, en anders is hij niet beschikbaar; een gedeeltelijk geconfigureerde eigen app is een fout, nooit een terugval.
 
 ## Zie ook
 

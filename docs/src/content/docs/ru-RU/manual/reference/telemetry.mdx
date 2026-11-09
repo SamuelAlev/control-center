@@ -2,7 +2,7 @@
 title: Статистика использования
 description: Что Control Center записывает при включённой статистике использования, кто это решает и что никогда не отправляется.
 slug: ru-RU/руководство/справка/статистика-использования
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center может отправлять **псевдонимизированные события использования** в экземпляр [Umami](https://umami.is). Статистика использования **выключена, пока её не включит оператор сервера**. Этот параметр принадлежит серверу и действует для каждого подключённого к нему клиента: приложения для компьютера, веб-приложения, телефона и самого сервера.
@@ -95,9 +95,12 @@ ID отправляются, но только в виде псевдонимо�
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Неудачный запуск повторён |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Запуск отменён из приложения |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Выполняющийся шаг принудительно остановлен |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Попытка входа в календарь завершена |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true, когда вход прошёл через Control Center Connect, а не через собственный клиент Google сервера), `duration_s` | Попытка входа в календарь завершена |
 | `calendar_disconnected` | `workspace_id` | Аккаунт календаря отключён |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Дан ответ на приглашение |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (количество), `conference` | Событие создано в Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Событие перенесено или изменено по длительности на сетке календаря |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Событие удалено из Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Запись начата из события календаря |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Открыта ссылка на встречу (телефон). Из ссылки определяется только провайдер |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Использован центр уведомлений |

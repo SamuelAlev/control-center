@@ -13,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
@@ -121,6 +122,7 @@ class _NoopBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override
@@ -284,8 +286,11 @@ void main() {
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: null,
-      resolveGitIdentity: (_, {workspaceId}) async =>
-          (name: 'Test User', email: 'test@example.test'),
+      resolveCommitIdentity: (_, {workspaceId}) async =>
+          AgentCommitIdentity.owner(
+            name: 'Test User',
+            email: 'test@example.test',
+          ),
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
       mcpServersResolver:
           ({workspaceId, agentId, conversationId, spaceId, runToken}) async =>

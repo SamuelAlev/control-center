@@ -39,7 +39,7 @@ void main() {
       name: 'shop-ui',
       branch: 'pr/42',
       headRef: 'refs/pull/42/head',
-      authUrl: 'https://github.com/acme/shop-ui.git',
+      fetchUrl: 'https://github.com/acme/shop-ui.git',
     );
 
     expect(
@@ -67,7 +67,7 @@ void main() {
         name: 'shop-ui',
         branch: 'pr/42',
         headRef: 'refs/pull/42/head',
-        authUrl: 'https://github.com/acme/shop-ui.git',
+        fetchUrl: 'https://github.com/acme/shop-ui.git',
       ),
       throwsA(
         isA<RiftException>().having((e) => e.code, 'code', 'already_exists'),

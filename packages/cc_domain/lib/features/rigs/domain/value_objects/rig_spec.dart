@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
@@ -626,25 +624,12 @@ class RigSpec {
   }
 }
 
-/// Reads [RigSpec.forgeTokenScope], accepting the `capabilities` blob specs
-/// were written with before the scope existed: a spec that could push keeps
-/// [ForgeTokenScope.write] across the upgrade.
+/// Reads [RigSpec.forgeTokenScope]; anything unrecognised grants read.
 ForgeTokenScope _forgeTokenScopeFromJson(Map<String, dynamic> json) {
   final wire = json['forgeTokenScope'];
   for (final scope in ForgeTokenScope.values) {
     if (scope.name == wire) {
       return scope;
-    }
-  }
-  final legacy = json['capabilities'];
-  if (legacy is String) {
-    try {
-      final decoded = jsonDecode(legacy);
-      if (decoded is Map && decoded['canPushToRepo'] == true) {
-        return ForgeTokenScope.write;
-      }
-    } on FormatException {
-      // A corrupt legacy blob grants nothing beyond the default.
     }
   }
   return ForgeTokenScope.read;

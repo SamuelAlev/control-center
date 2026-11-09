@@ -571,6 +571,10 @@ export default defineConfig({
                   slug: "manual/guides/run-headless-server",
                 },
                 {
+                  label: "docs.sidebar.guidesRunConnect",
+                  slug: "manual/guides/run-connect",
+                },
+                {
                   label: "docs.sidebar.guidesConnectRemoteServer",
                   slug: "manual/guides/connect-remote-server",
                 },
@@ -709,6 +713,10 @@ export default defineConfig({
             {
               label: "docs.sidebar.referenceCcServerCli",
               slug: "manual/reference/cc-server-cli",
+            },
+            {
+              label: "docs.sidebar.referenceConnect",
+              slug: "manual/reference/connect",
             },
             {
               label: "docs.sidebar.referenceBackup",

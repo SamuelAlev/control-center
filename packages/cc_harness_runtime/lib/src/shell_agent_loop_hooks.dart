@@ -12,6 +12,7 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
   /// Creates a [ShellAgentLoopHooks].
   ShellAgentLoopHooks({
     required this.cwd,
+    required this.environment,
     this.sessionStartScript,
     this.preToolScript,
     this.postToolScript,
@@ -20,6 +21,11 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
 
   /// Working directory the scripts run in.
   final String cwd;
+
+  /// The scripts' complete environment. Nothing from this process's own
+  /// environment is added: the caller builds it (the server passes its
+  /// allowlisted child environment).
+  final Map<String, String> environment;
 
   /// Script run once at session start (optional).
   final String? sessionStartScript;
@@ -89,6 +95,8 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
         script,
         const [],
         workingDirectory: cwd,
+        environment: environment,
+        includeParentEnvironment: false,
         runInShell: true,
       );
     } on Object {

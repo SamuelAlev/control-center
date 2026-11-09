@@ -1,202 +1,181 @@
 ---
 title: GitHub App oluşturma
-description: Üyelerin oturum açabilmesi ve arka plan işlerinin bir kişi yerine uygulama olarak çalışması için sunucunuz adına bir GitHub App kaydedin.
+description: Sunucunuza tek tıklamayla kendi GitHub App’ini verin, onu depolarınızın bulunduğu yere kurun ve sunucuyu bir kuruluşun kurulumu için yetkilendirin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Bu kılavuz, sunucunuza kendi GitHub kimliğini nasıl kazandıracağınızı gösterir.
-Yaklaşık iki dakika sürer, bunu yalnızca sunucu sahibi yapar ve sunucu başına
-yalnızca bir kez yapılması gerekir.
+Bu kılavuz, sunucunuza kendi GitHub App’ini nasıl vereceğinizi gösterir. Yaklaşık
+iki dakika sürer, yalnızca sunucu sahibi yapar ve sunucu başına yalnızca bir kez
+yapılması gerekir.
 
 :::note[Buna ihtiyacınız olmayabilir]
-Resmî bir derleme zaten bir GitHub **istemci id**'siyle gelir, bu nedenle
-[GitHub ile oturum açma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/) hiçbir şey
-kaydetmeden kutudan çıktığı gibi çalışır — bir cihaz akışı yalnızca istemci id ile
-kimlik doğrular, dolayısıyla dağıtılması güvenlidir. Kendi uygulamanızı, SUNUCUnun
-kendisi olarak hareket etmesini istediğinizde (webhook'lar, PR yoklaması ve bilet
-eşitlemesi bir kişinin kimlik bilgisi yerine bir uygulama kurulumu üzerinde
-çalışır) ya da kaynaktan derleme yaptığınızda kaydedin.
+Control Center Connect açıkken kişiler GitHub’a Control Center’ın paylaşılan
+App’i ya da kuruluşunuzun Connect’inin kullandığı App üzerinden oturum açar.
+**Kendi uygulamalarımı kullan** seçeneğini seçtiğinizde kendi uygulamanızı kaydedin: sunucunun kendi uygulaması yalnızca o durumda kullanılır. Bkz.
+[Control Center Connect](/tr-TR/kilavuz/referans/connect/).
 :::
 
-Kendi hesabınızı sonradan bağlamak için
-[GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-sayfasına bakın.
+Ardından kendi hesabınızla oturum açmak için bkz.
+[GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/).
 
-## Sunucunuzun neden kendi uygulamasına ihtiyacı var
+## Uygulamanın yaptıkları
 
-Tek bir kayıttan iki farklı iş çıkar ve ikisini de dürüst kılan şey uygulamadır:
+Tek bir kayıt iki farklı işi karşılar:
 
-| İş                     | Bunu ne yanıtlar                                | Neden önemli                                                                                          |
-| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **Bir kişi oturum açıyor** | Uygulamanın istemci id'si, cihaz akışı üzerinden | Sunucuda, her cihazda size ait bir kimlik bilgisi edinirsiniz — yapıştıracak ya da döndürecek belirteç yok |
-| **Sunucu hareket ediyor** | Uygulamanın id'si + özel anahtar → kurulum belirteci | Webhook'lar, PR yoklaması ve bilet eşitlemesi artık bir insanın belirtecinin hâlâ geçerli olmasına bağlı kalmaz |
+| İş                         | Onu ne karşılar                                    | Neden önemli                                                                                         |
+| -------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Bir kişi oturum açar**   | Uygulamanın istemci id’si ve istemci gizli anahtarı | Herkes sunucuda, her cihazda kendine ait bir GitHub kimlik bilgisi edinir                            |
+| **Sunucu hareket eder**    | Uygulamanın id’si ve özel anahtarı                  | Ajanlar, pipeline’lar, yoklayıcılar ve bot yanıtları her seferinde tek bir depo için token alır      |
 
-Bu tabloda **olmayan** şeye dikkat edin: bir istemci gizli anahtarı. GitHub'ın
-cihaz akışı — hem cihaz kodu isteği hem de belirteç yoklaması — yalnızca istemci
-id ile kimlik doğrular, dolayısıyla oturum açmak için saklanacak bir gizli
-anahtar yoktur.
+İkinci iş, bir kişinin kimlik bilgisini asla bütünüyle ödünç almaz. Sunucunun
+ürettiği her token tek bir depoyu kapsar ve hesap verebilir bir üyenin orada
+yapabilecekleriyle sınırlıdır. Bağlı bir depoyu okumak için yalnızca uygulama
+yeterlidir; yazan her şey push edebilen bir üye gerektirir. Otomasyon bir pull
+request’i asla onaylamaz.
 
-Kendi uygulamanız olmadan da birincisi, derlemenin getirdiği istemci id
-üzerinden çalışır; ikincisi sunucu sahibinin kimlik bilgisine geri düşer,
-böylece arka plan işi ilk kurulumu yapan kişinin üzerine biner.
-
-:::note["Control Center'ın GitHub App'ini kur" diye bir düğme yok]
-Dağıtılmış bir GitHub App, herkesin sunucusu genelinde paylaşılan tek bir istemci
-gizli anahtarı ve tek bir kurulum anlamına gelirdi; böylece her çalışma alanının
-depo erişimi, o çalışma alanındaki hiç kimsenin denetlemediği kimlik
-bilgilerinden geçerdi. Bu nedenle her sunucu kendi uygulamasına sahiptir — bu
-kılavuz, bunun ne kadar az maliyetli olduğuyla ilgilidir.
-:::
+Sunucunun kendi uygulaması yalnızca **Kendi uygulamalarımı kullan** seçeneğinde kullanılır. Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, GitHub dahil; sunucunun uygulaması kayıtlı kalır ama seçimi geri alana kadar kullanılmaz. Çalışma alanının kendi uygulaması ([Bir çalışma alanına farklı bir uygulama verme](#bir-çalışma-alanına-farklı-bir-uygulama-verme)) her modda geçerlidir. Bazı alanları eksik bir uygulama bir hatadır, geri dönüş değildir: her alan ayarlanana kadar GitHub oturum açmaları reddedilir.
 
 ## Önkoşullar
 
-- Siz **sunucu sahibisiniz** — `providerApps.*` işlemleri ona kapılıdır ve kart
-  herkese görünmez
-- Bir GitHub hesabı ya da uygulama oluşturabileceğiniz bir organizasyon
-- Genel erişime açık hiçbir şey: oturum açma bir **cihaz akışıdır**, dolayısıyla
-  sunucunun gelen bağlantı noktasına, tünele, geri çağırma URL'sine veya alan
-  adına ihtiyacı yok
+- **Sunucu sahibisiniz**. **Sağlayıcı uygulamaları** kartı diğer herkese
+  görünmezdir
+- Bir GitHub hesabı. Uygulama onun altında oluşturulur
+- Tarayıcınızın ulaşabildiği bir sunucu adresi. GitHub sizi sunucunun genel
+  URL’sine (ya da bir masaüstünün kendi sunucusu için loopback’e) geri gönderir
 
-## Uygulamayı kaydetme
-
-1. [github.com/settings/apps/new](https://github.com/settings/apps/new) adresine
-   gidin (bir organizasyon için: **Settings → Developer settings → GitHub Apps →
-   New GitHub App**)
-2. **GitHub App name** — herhangi bir şey; `Control Center (yourname)` olur.
-   Sunucunun yaptığı commit'lerde ve yorumlarda görünür
-3. **Homepage URL** — herhangi bir şey, örneğin `https://github.com/your-name`
-4. **Callback URL** — boş bırakın. Cihaz akışında yoktur
-5. **Enable Device Flow**'u işaretleyin. Oturum açmanın onsuz çalışamayacağı tek
-   ayar budur
-6. Webhook'ları ayrıca bağlamıyorsanız **Webhook → Active** işaretini kaldırın
-7. **Repository permissions** altında en az şunları verin:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (zorunlu)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write — biletler için GitHub Issues kullanıyorsanız ve
-     botun PR konuşması yorum araması için
-     (bkz. [Bir GitHub PR'dan Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/))
-   - **Checks**: Read-only — PR sayfasındaki CI durumu için
-8. **Where can this GitHub App be installed?** altında uygun olanı seçin —
-   kişisel bir sunucu için "Only on this account" doğrudur
-9. **Create GitHub App**'e tıklayın
-
-## Üç değeri toplama
-
-Uygulamanın sayfasında, oluşturduktan hemen sonra:
-
-| Değer           | Yeri                                              |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | **General** sekmesi, üst tarafta                  |
-| **Client ID**   | **General** sekmesi, "Client secrets" altında     |
-| **Private key** | **Generate a private key** — bir `.pem` indirilir |
-
-Özel anahtar dosyası bir kez indirilir ve GitHub onu bir daha göstermez.
-Yapıştırana kadar saklayın; her zaman yenisini oluşturabilirsiniz.
-
-Bir **istemci gizli anahtarı** isteğe bağlıdır ve tam olarak tek bir şey sağlar:
-"Expire user authorization tokens" ayarını AÇIK bırakırsanız, her sekiz saatte
-bir yeniden oturum açmasını istemek yerine birinin belirtecini sessizce
-yenileyen şey odur. Oturum açmanın kendisi onu hiç kullanmaz.
-
-Daha basit kurulum, bu süre sonunu KAPALI bırakmaktır; o zaman hiçbir yerde
-gizli anahtar gerekmez. Açık bırakırsanız bir gizli anahtar oluşturun ve
-**Ayarlar → Sunucu → Tek oturum açma** (**Sağlayıcı uygulamaları** kartı)
-bölümüne yapıştırın — bunun için bir ortam değişkeni yoktur ve hiçbiri derlemeye
-gömülmez, böylece sunucunuzda kalır.
-
-## Hesabınıza kurma
-
-Kayıtlı olup kurulmamış bir uygulama kişilerin kimliğini doğrulayabilir ama
-hiçbir şey okuyamaz.
-
-1. Uygulamanın sayfasında **Install App**'i açın
-2. Hesabınıza ya da organizasyonunuza kurun
-3. **All repositories**'i seçin ya da bu sunucunun görmesi gereken depoları
-   seçin
-
-## Control Center'a yapıştırma
+## Tek tıklamayla oluşturma
 
 1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve **Sağlayıcı
    uygulamaları** kartına kaydırın
-2. **GitHub** bloğunda her alanı ayarlayın:
-   - **Uygulama id** — sayısal App ID
-   - **Özel anahtar** — `.pem` dosyasının tamamını, `BEGIN` ve `END` satırları
-     dahil yapıştırın
-   - **İstemci id** — aynı sayfadan
-   - **İstemci gizli anahtarı** — yalnızca bir tane oluşturduysanız (belirteç
-     yenileme için)
-3. **Test**'e tıklayın
+2. **GitHub** bloğunda, isterseniz uygulamanın sahibi olacak GitHub kuruluşunu
+   **Kuruluş (isteğe bağlı)** alanına yazın. Uygulamayı kendi hesabınız altında
+   oluşturmak için boş bırakın; bir kuruluş altında oluşturmak o kuruluşun bir
+   sahibini gerektirir
+3. **GitHub uygulamamı oluştur**’a tıklayın
+4. Tarayıcınız GitHub’ı, uygulama önceden doldurulmuş olarak açar. **Create
+   GitHub App**’e tıklayın
+5. GitHub sizi sunucuya geri gönderir; sunucu uygulama id’sini, özel anahtarı,
+   istemci id’sini ve istemci gizli anahtarını saklar, ardından uygulamanın kurulum
+   sayfasını açar
 
-Anahtar kaydedilirken ayrıştırılır, böylece kesilmiş ya da yanlış biçimde bir
-yapıştırma, saatler sonra arka plandaki bir istekte başarısız olmak yerine
-oracıkta reddedilir. **Test** daha ileri gider ve GitHub'a uygulamanın hangi
-hesaplara kurulu olduğunu sorar — "kaydedildi" ile "çalışıyor" farklı
-iddialardır ve yalnızca ikincisi bir şeyin çalışacağı anlamına gelir.
+Hiçbir şey elle kopyalanmaz ve dönüştürme kodu doğrudan GitHub’dan sunucunuza
+gider. Bağlantı bir kez çalışır ve on dakika sonra sona erer; süresi dolarsa
+**GitHub uygulamamı oluştur**’a yeniden tıklayın.
+
+Uygulamanın adı `Control Center <code>` olur ve tam olarak Control Center’ın
+kullandıklarını ister:
+
+| İzin                                       | Erişim           |
+| ------------------------------------------ | ---------------- |
+| Metadata                                   | Okuma            |
+| Contents                                   | Okuma ve yazma   |
+| Pull requests                              | Okuma ve yazma   |
+| Issues                                     | Okuma ve yazma   |
+| Checks, Actions, Commit statuses           | Okuma            |
+| Organization members                       | Okuma            |
+
+Webhook’lar kapalıdır: sunucu yoklama yapar. Kendi hesabınız altında
+oluşturduğunuz bir uygulamayı daha sonra bir kuruluşa taşımak için GitHub’daki
+uygulamanın gelişmiş ayarlarında **Transfer ownership**’i kullanın.
 
 Kontrol noktası: GitHub bloğu "Sunucu kendisi olarak hareket edebilir ve kişiler
-oturum açabilir." yazar ve **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod
-barındırma** altındaki **GitHub** satırı artık **GitHub ile oturum aç**
-seçeneğini sunar.
+oturum açabilir" yazar.
 
-## Bunun yerine ortam değişkenleriyle yapılandırma
+## Depolarınızın bulunduğu yere kurma
 
-Headless ya da betikli bir kurulumda sunucu, kayıtlı bir değeri olmadığı ilk
-seferde her alanı ortamdan tohumlar:
+Kayıtlı ama kurulu olmayan bir uygulama kişileri oturum açtırabilir ama hiçbir
+şeyi okuyamaz.
+
+1. GitHub’ın açtığı kurulum sayfasında depolarınızın sahibi olan hesabı ya da
+   kuruluşu seçin
+2. **All repositories**’i seçin ya da bu sunucunun görmesi gerekenleri işaretleyin
+
+Daha sonra başka bir hesaba kurmak için bir çalışma alanı yöneticisi **Ayarlar →
+Çalışma alanı → Genel** bölümüne gider, GitHub kimliği kartında **GitHub
+uygulaması kurulumları**’nı bulur ve **GitHub uygulamasını yükle**’ye tıklar. Liste,
+uygulamanın kurulu olduğu her hesabı gösterir ve askıya alınmış bir kurulumu
+işaretler.
+
+## Bu sunucuyu bir kuruluş için yetkilendirme
+
+Control Center’ın paylaşılan App’inde bir kuruluşun kurulumu yalnızca
+yöneticilerinin yetkilendirdiği sunuculara hizmet eder. **GitHub uygulamasını
+yükle** üzerinden kurmak, kurulumu başlatan sunucuyu yetkilendirir. Zaten var olan
+bir kurulum için:
+
+1. O kuruluşun bir yöneticisi bu sunucuda GitHub’a oturum açar
+2. **Ayarlar → Çalışma alanı → Genel → GitHub uygulaması kurulumları**’nı açar
+3. Kuruluşun satırında **Yetkisiz** yazar. **Bu sunucuyu yetkilendir**’e tıklar
+
+Satır bundan sonra **Yetkili** yazar. Kendi uygulamanızın bunların hiçbirine
+ihtiyacı yoktur: onun her kurulumu sunucunuza aittir.
+
+## Bunun yerine elle kaydetme
+
+**Sağlayıcı uygulamaları** kartı, kendiniz kaydettiğiniz bir uygulama için
+değerleri doğrudan da alır:
+
+| Grup                             | Alanlar                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Sunucu olarak hareket etme**   | **Uygulama id** ve **Özel anahtar** (`BEGIN` ve `END` satırları dahil `.pem` dosyasının tamamı)                |
+| **Kişileri oturum açtırma**      | **İstemci id** ve **İstemci gizli anahtarı**. **Geri çağırma URL’leri** kaydedilecek URL’yi birebir gösterir   |
+| **Pull request konuşmaları**     | Bağlantıyı test ettiğinizde çözümlenen **Bot girişi**                                                          |
+
+Geri çağırma URL’si `<server origin>/oauth/github/callback`’i tam olarak kartın
+gösterdiği gibi kaydedin, **Expire user authorization tokens**’ı açık bırakın ve
+yukarıdaki tablodaki izinleri verin. **Test**’e tıklayın: GitHub’a uygulamanın
+hangi hesaplara kurulu olduğunu sorar; böylece "kaydedildi" ile "çalışıyor"
+birbirine karıştırılmaz.
+
+## Sunucunun `.env` dosyasından yapılandırma
+
+Headless ya da betikli bir kurulumda sunucu, saklanmış bir değeri olmayan her
+alanı ilk seferde `.env` dosyasından tohumlar:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Bunlar için komut satırı bayrağı yoktur — komut satırındaki bir gizli anahtar,
-ana makinedeki her süreç tarafından `ps` ile okunabilir. Bunları
-yapılandırmanın tek yeri ortamdır ve ortam, derlemenin getirdiği her şeyden
-üstündür. `.env.template` tam listedir.
-
-Yerel geliştirme için depo kökündeki `.env` aynı değerleri taşır ve masaüstü
-uygulaması bunları başlattığı sunucuya aktarır. Anahtarı orada **tek satıra**
-koyun: bir `.env` değeri tek satırdır ve çift tırnak içindeki `\n`, yeni satıra
-çözülür.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` ve `GITHUB_APP_PRIVATE_KEY`, sandbox belirteç aracısının zaten
-okuduğu adların aynısıdır; bu nedenle ince taneli ajan belirteçleri
-yapılandırmış bir ana makine oturum açma şeridini bedavaya alır. Tohumlama
-**alan başına bir kez** olur — ondan sonra kayıtlı değer kazanır, böylece
-Ayarlar'da yapılan düzenlemeler sonraki yeniden başlatmada geri alınmaz.
+Anahtarı **tek satıra** yazın: bir `.env` değeri tek satırdır ve çift tırnak
+içindeki `\n` bir satır sonuna çözülür. `GITHUB_APP_PRIVATE_KEY` ya da
+`GITHUB_CLIENT_SECRET` süreç ortamına dışa aktarıldığında, yani her alt sürecin
+okuyabileceği bir yerdeyken, sunucu başlamayı reddeder; bunları `.env` dosyasında
+tutun (Docker’da dosyayı `/app/bin/.env` yoluna bağlayın). Tohumlama **alan başına
+bir kez** yapılır; böylece Ayarlar’da yapılan bir düzenleme bir sonraki yeniden
+başlatmada geri alınmaz.
 
-## Aynısını Linear için yapma
+## Bir çalışma alanına farklı bir uygulama verme
 
-Linear'da cihaz akışı yoktur, dolayısıyla oturum açması tarayıcıda gidiş
-dönüştür ve bir geri çağırma URL'sine ihtiyaç duyar — **Sağlayıcı uygulamaları**
-kartı, kaydetmeniz gereken tam URL'yi gösterir.
+Bir çalışma alanı, sunucununki yerine kendi uygulamasını kullanabilir. Bir
+çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümüne gider,
+**GitHub kimliği** kartında **Farklı bir GitHub App kullan**’ı seçer ve o
+uygulamanın id’sini, özel anahtarını, istemci id’sini ve istemci gizli anahtarını
+girer. Üyeler bundan sonra bu çalışma alanı için o uygulamaya oturum açar. Kendi
+uygulamasını kullanan bir çalışma alanı asla sunucunun uygulamasına ya da
+Connect’e geri dönmez: alanları tamamlanana kadar GitHub işleri reddedilir. Bu, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak, Connect dahil geçerlidir.
 
-1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-   adresinde bir OAuth uygulaması oluşturun
-2. **Callback URL**'yi kartın gösterdiği URL'nin aynısı olarak ayarlayın
-3. **İstemci id** ve **İstemci gizli anahtarı** değerlerini Linear bloğuna
-   yapıştırın
-4. İsteğe bağlı olarak bir çalışma alanı **API anahtarı** ekleyin — hiçbir insan
-   istemediğinde sunucunun biletleri eşitlemek için kullandığı kimlik bilgisi
-   budur
+Aynı sayfadaki **Sağlayıcı uygulamaları** kartı Google Calendar, Linear ve GIF araması için aynısını yapar. Bkz. [Bir çalışma alanına kendi Linear uygulamasını verme](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/#bir-çalışma-alanına-kendi-linear-uygulamasını-verme) ve [Bir çalışma alanına kendi Google istemcisini verme](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/#bir-çalışma-alanına-kendi-google-istemcisini-verme).
 
 ## Sorun giderme
 
-### Oturum açma iletişim kutusu sağlayıcının cihaz kodu döndürmediğini söylüyor
+### GitHub uygulamamı oluştur, sunucunun adresi olmadığını söylüyor
 
-Uygulamada **Enable Device Flow** kapalı. **General** altında açın ve yeniden
-deneyin.
+Sunucunun, bir tarayıcının geri dönebileceği bir genel URL’si yok.
+`CC_SERVER_PUBLIC_URL`’yi (ya da `--public-url`’yi) ayarlayıp yeniden deneyin.
+
+### GitHub bağlantının süresinin dolduğunu söylüyor
+
+Tek kullanımlık sayfa zaten kullanılmış ya da on dakika geçmiş. Ayarlar’dan
+yeniden başlayın.
 
 ### Test, kimlik bilgilerinin çalıştığını ama uygulamanın hiçbir yere kurulmadığını söylüyor
 
-Kayıt ve kurulum ayrı adımlardır. Uygulamanın sayfasında **Install App**'i açın
-ve kurun.
+Kayıt ve kurulum ayrı adımlardır. Uygulamanın kurulum sayfasını açın ya da
+Çalışma alanı → Genel’deki **GitHub uygulamasını yükle**’yi kullanın.
 
 ### Test, özel anahtarın okunamadığını söylüyor
 
@@ -207,13 +186,18 @@ imzalar.
 ### Bir üye oturum açtı ama hiçbir depo göremiyor
 
 Uygulama, bu depoları sahiplenen hesaba kurulu değildir ya da kurulumu farklı
-depoları seçer. Üyenin kendi oturum açması yalnızca uygulamanın görmesine izin
-verilen kadarını sağlar.
+depoları seçer. Bir oturum açma yalnızca uygulamanın görmesine izin verilen
+kadarını sağlar.
+
+### Ajanlar GitHub App kurulumunun askıya alındığını söylüyor
+
+Biri kurulumu GitHub’da askıya aldı. Hesabın **Settings → Applications →
+Installed GitHub Apps** bölümünden askıyı kaldırın.
 
 ## İlgili kılavuzlar
 
 - [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
 - [Bir GitHub PR'dan Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/)
 - [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
+- [Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/)
 - [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
-- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)

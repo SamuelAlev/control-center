@@ -2,7 +2,7 @@
 title: Pipeline-lépésfajták
 description: Referencia a pipeline-lépések fajtáihoz, a lépéstörzsek kulcsaihoz, azok konfigurációjához és a lépéseredményekhez.
 slug: hu-HU/kezikonyv/referencia/pipeline-lepesek
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Egy pipeline-lépésnek két egymástól független tengelye van:
@@ -42,7 +42,7 @@ A kötelező `trigger` csomópont semmittevő törzse — azonnal befejeződik, 
 | `script`           | Végrehajtandó shell-parancs (kötelező)           |
 | `outputKey`        | Állapotkulcs, amely 0-s kilépésnél a levágott stdoutot kapja |
 
-A cwd a `<cc_root>/pipelines/<pipelineRunId>/` (ezt egy futtatás összes bash-lépése megosztja), a környezetben pedig ott van a `GITHUB_TOKEN`. Emellett a `<stepId>_runDir` értéket is az állapotba írja. A nem nulla kilépés a stderr utolsó soraival megbuktatja a lépést.
+A gazdagép operációsrendszer-homokozójában fut, a cwd a `<cc_root>/pipelines/<pipelineRunId>/` (ezt egy futtatás összes bash-lépése megosztja); homokozó nélküli gazdagépen a lépés meghiúsul. A szerver adatkönyvtára és `.env` fájlja nem olvasható, a git és a `gh` nem lát gazdagép-konfigurációt, a `GH_TOKEN` / `GITHUB_TOKEN` pedig csak akkor tartalmaz egyetlen repóra szóló `read` tokent, ha a `repo_full_name` (az állapotban vagy az eseményindító adataiban) a munkaterülethez kapcsolt GitHub-repót nevez meg. Az ezt a lépést tartalmazó sablon létrehozásához vagy szerkesztéséhez munkaterület-adminisztrátor kell. Emellett a `<stepId>_runDir` értéket is az állapotba írja. A nem nulla kilépés a stderr utolsó soraival megbuktatja a lépést.
 
 ### `conversation.promptAgent`
 

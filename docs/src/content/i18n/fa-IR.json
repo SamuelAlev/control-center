@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "اتصال Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "سرور و استقرار",
   "docs.sidebar.guidesRunHeadlessServer": "اجرای سرور بدون رابط",
+  "docs.sidebar.guidesRunConnect": "اجرای سرور Connect",
   "docs.sidebar.guidesConnectRemoteServer": "اتصال به سرور راه دور",
   "docs.sidebar.guidesRunFleetWorker": "اجرای یک کارگر ناوگان",
   "docs.sidebar.guidesBackUpAndRestore": "پشتیبان‌گیری و بازیابی",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "میانبرهای صفحه‌کلید",
   "docs.sidebar.referenceRouteMap": "نقشهٔ مسیرها",
   "docs.sidebar.referenceCcServerCli": "CLI مربوط به cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "پشتیبان‌گیری، برون‌بری و درون‌بری",
   "docs.sidebar.referenceTelemetry": "تحلیل‌های استفاده",
   "docs.sidebar.referenceGlossary": "واژه‌نامه"

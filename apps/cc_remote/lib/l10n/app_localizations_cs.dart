@@ -2588,6 +2588,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get credentialsWaitingForLogin => 'Čekání na autorizaci v prohlížeči…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Zadejte kód zobrazený v prohlížeči';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'To nevypadá jako přihlašovací kód. Kódy mají 8 písmen a číslic.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Přihlášení k $provider zatím na tomto serveru není nastavené.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Zpětná adresa přihlášení tohoto serveru není z telefonu bezpečně dostupná. Přihlaste se v desktopové aplikaci, nebo požádejte vlastníka serveru o nastavení veřejné adresy HTTPS.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Platnost přihlášení vypršela. Začněte nové přihlášení.';
 
@@ -2608,10 +2629,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Dokončit přihlášení';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Z telefonu není možné bezpečně dosáhnout zpětné adresy prohlížeče tohoto serveru. Požádejte vlastníka serveru o nastavení veřejné zpětné adresy HTTPS nebo místo toho přidejte token.';
 
   @override
   String get credentialsUpdateToken => 'Aktualizovat token';

@@ -1,34 +1,55 @@
 ---
 title: Připojte Google Calendar
-description: Připoj Google Calendar k pracovnímu prostoru, spravuj víc účtů a účet znovu připoj, když token vyprší.
+description: Připoj Google Calendar k pracovnímu prostoru, spravuj víc účtů a účet znovu připoj, když přihlášení vyprší.
 slug: cs-CZ/prirucka/navody/pripojeni-kalendare
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Tenhle návod ukáže, jak připojit Google Calendar k pracovnímu prostoru. Váže se
-na pracovní prostor: události toho prostoru se do Control Center synchronizují
-jen ke čtení. Jak to funguje celé, popisuje
+na pracovní prostor i na člena: tvoje události v tom prostoru se do Control
+Center, kde můžeš také odpovídat na pozvánky, rezervovat, přesouvat a mazat události. Jak to funguje celé, popisuje
 [Kalendář a plánování](/cs-CZ/prirucka/koncepty/kalendar/).
+
+## Předpoklady
+
+- Server umí přihlašovat lidi ke Googlu: buď přes Control Center Connect, nebo
+  vlastním klientem Google serveru
+  ([Vlastní klient Google](#vlastní-klient-google)). Volí vlastník serveru
+  v **Nastavení → Server → Jednotné přihlášení**
+- Otevřený pracovní prostor: účet kalendáře vždy patří k jednomu
 
 ## Připoj účet
 
 1. V postranním panelu otevři **Kalendář**.
 2. V postranním panelu kalendáře klikni na **Přidat účet kalendáře**. (Stejná sekce je v **Nastavení → Pracovní prostor → Profil a identita**, pod **Google Calendar**.)
-3. Zvol způsob autorizace:
-   - **Použít Google aplikaci Control Center** — nic nenastavuješ. To je výchozí volba, když sestavení klienta obsahuje.
-   - **Použít vlastní klienta Google Cloud** — vlož client id a secret z vlastního projektu (viz [Vlastní klient Google](#vlastní-klient-google-forky-a-self-hosting)).
-4. Klikni na **Připojit Google Calendar**. Dialog ukáže krátký kód a odkaz na stránku Google pro kód zařízení.
-5. Tu stránku otevři na libovolném zařízení, zadej kód a schval požadovaný přístup. Dialog se zavře sám a události se začnou synchronizovat.
+3. Klikni na **Připojit Google Calendar**. Prohlížeč otevře stránku souhlasu Google.
+4. Vyber účet a schval přístup k událostem a seznamu svých kalendářů.
 
-Výměnu provede server a výsledný refresh token si nechá. Proto kód schvaluješ
-na „libovolném zařízení“, ne přímo v téhle aplikaci.
+Jak se to dokončí, záleží na tom, kdo přihlášení provádí:
 
-Účet je připojený **jen k aktivnímu pracovnímu prostoru**. Přepni pracovní
-prostor a uvidíš kalendáře toho, do kterého jsi přešel.
+- **Vlastní klient Google serveru:** Google pošle prohlížeč zpět na server
+  a dialog se zavře sám
+- **Control Center Connect:** stránka v prohlížeči ukáže 8místný kód. Opiš ho
+  do dialogu, nebo nech prohlížeč otevřít Control Center přes odkaz
+  `control-center://` a opisování přeskoč
 
-Připojení žádá `calendar.readonly` a tvůj e-mail. Stejné scopes platí pro
-vestavěnou aplikaci i pro klienta, kterého vložíš. Control Center události čte.
-Nevytváří je, neupravuje, nemaže ani na pozvánky na Google neodpovídá.
+Události se začnou synchronizovat hned. Výměnu dokončí server, ne tvoje
+zařízení, a pověření si nechá.
+
+Účet je připojený **jen k aktivnímu pracovnímu prostoru** a je tvůj: dva
+členové, kteří připojí stejnou adresu Google, dostanou samostatné účty. Přepni
+pracovní prostor a uvidíš kalendáře toho, do kterého jsi přešel.
+
+Připojení žádá `calendar.events` a `calendar.calendarlist.readonly` a `openid email`, ať ho provádí kterýkoli klient. Účet připojený dřív, než mohl Control Center zapisovat do Google, má jen scope pro čtení: vyzve tě, abys ho znovu připojil, a nové přihlášení udělí zbytek.
+
+## Rezervace, přesouvání, odpovědi a mazání událostí
+
+- **Rezervace události:** v zobrazení týdne nebo dne táhni po časové mřížce a vymez rozsah (v zobrazení měsíce táhni přes dny u celodenní události). Vedle něj se otevře karta s názvem, časy, hosty, odkazem Google Meet, místem, popisem a kalendářem, do kterého se rezervuje. **Uložit** rezervuje událost na Google a otevře ji. Tlačítko **+** v záhlaví kalendáře otevře stejnou kartu pro nejbližší volnou čtvrthodinu. Klávesou Escape ji zavřeš bez uložení
+- **Přesunutí události:** přetáhni ji na jiný čas nebo den, nebo přetáhni její spodní okraj a změň konec. Otevře se, až Google bude mít nový čas; pokud ji Google odmítne, vrátí se na své místo. Přesouvat můžeš jen vlastní události a ty, které organizuješ; pozvánka zůstává tam, kam ji umístil organizátor
+- **Odpověď na pozvánku:** otevři událost a vyber **Ano**, **Možná** nebo **Ne**
+- **Smazání události:** otevři ji a klikni na ikonu koše. Potvrzení ukáže, kdo je dotčen: hosté se dozví, že událost, kterou organizuješ, se ruší, zatímco smazání pozvánky ji odebere jen z tvého kalendáře. Smazání jednoho výskytu opakované události nechá zbytek série být
+
+Hosté dostanou vlastní e-mailovou pozvánku, aktualizaci nebo zrušení od Google. Přesunutí jednoho výskytu opakované události nechá zbytek série být. Rezervovat můžeš jen v kalendářích, do kterých smí tvůj účet zapisovat, a jen se svými účty: připojený kalendář jiného člena se nikdy nenabízí.
 
 ## Jak synchronizace funguje
 
@@ -42,9 +63,11 @@ token předloží a dostanou jen to, co se změnilo, proto dvouminutový interva
 vyjde levně. Okno se znovu ukotví plnou synchronizací každých 24 hodin a
 kdykoli Google token zneplatní.
 
-Refresh tokeny leží na serveru v `secrets.json` v datovém adresáři serveru,
-zapsané s právy jen pro vlastníka (`0600`). Nejsou v klíčence operačního
-systému a nikdy na zařízení klienta.
+Pověření leží na serveru v `secrets.json` v datovém adresáři serveru,
+zapsaná s právy jen pro vlastníka (`0600`). Nejsou v klíčence operačního
+systému a nikdy na zařízení klienta. Přihlášení přes Connect uloží jen
+zapečetěné pověření, které Connect otevře výhradně pro tento server; jeho
+přístupový token zůstává v paměti serveru.
 
 ## Připoj víc účtů
 
@@ -55,69 +78,70 @@ každý jde odpojit zvlášť.
 
 ## Znovu připoj prošlý účet
 
-Když Google token účtu trvale zneplatní (zrušená nebo dlouho prošlá relace),
+Když Google přihlášení účtu trvale zneplatní (zrušená nebo dlouho prošlá relace),
 synchronizace se zastaví. Control Center na kalendáři ukáže banner **Znovu
-připojit** a pošle oznámení na plochu. Klikni na **Znovu připojit** a schval
-nový kód. Banner zmizí při další úspěšné synchronizaci.
+připojit** a pošle oznámení na plochu. Klikni na **Znovu připojit** a přihlas
+se znovu. Banner zmizí při další úspěšné synchronizaci.
+
+Stejný banner se ukáže, když přihlášení tento server už použít nemůže: vlastník
+serveru přešel na jiný server Connect nebo vyměnil klíč Connect, změnil se
+vlastní klient Google serveru, nebo se datový adresář obnovil na jiný stroj.
 
 ## Odpoj účet
 
 V postranním panelu kalendáře (nebo v **Nastavení → Pracovní prostor → Profil a
 identita**) klikni u účtu na **Odpojit**. Smaže synchronizované události toho
-účtu a na serveru vymaže uložené tokeny.
+účtu a na serveru vymaže uložené pověření.
 
-## Připoj z bezhlavého serveru
+## Vlastní klient Google
 
-Server bez připojeného grafického rozhraní připojí stejný účet z vlastního
-terminálu:
+Vlastního klienta Google si přines, když jsi zvolil **Použít vlastní aplikace**. Klient serveru platí jen v tomto případě: s Control Center nebo vlastním Connect běží přes Connect každá dráha, včetně Google, a klient serveru zůstává uložený, ale nepoužitý. Aby obrazovka souhlasu nesla jméno tvého projektu, zatímco server používá Connect, dej pracovnímu prostoru vlastního klienta ([níže](#dej-pracovnímu-prostoru-vlastního-klienta-google)); platí to v každém režimu.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. V [Google Cloud Console](https://console.cloud.google.com/apis/credentials) zapni **Google Calendar API** a nastav **obrazovku souhlasu OAuth**. Přidej scopes `calendar.events`, `calendar.calendarlist.readonly`, `openid` a `email`. Dokud aplikace není ověřená, přidej se jako **testovací uživatel**.
+2. Vytvoř **OAuth client ID** typu aplikace **Web application**.
+3. Přidej autorizovanou URI přesměrování `<server origin>/oauth/google/callback`. **Nastavení → Server → Jednotné přihlášení → Aplikace poskytovatelů → Google** ukazuje přesnou URL pod **Adresy URL zpětného volání**; zkopíruj ji doslova.
+4. Vlož **Client id** a **Client secret** do téhož bloku Google, nebo je dej do souboru `.env` serveru jako `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Vypíše kód a URL, počká na schválení, uloží tokeny a synchronizuje při dalším
-průchodu.
+Server odmítne nastartovat, když je `GOOGLE_OAUTH_CLIENT_SECRET` exportovaný
+v prostředí jeho procesu; drž ho v souboru `.env` (v Dockeru ho připoj na
+`/app/bin/.env`). Secret server neopustí: žádná odpověď RPC ho nenese. Client
+ID bez secretu je nedokončené nastavení a přihlášení ke Googlu se odmítají,
+dokud nejsou nastavené obě hodnoty.
 
-Sestavení ze zdrojů **žádného** klienta Google neobsahuje, takže id a secret
-jsou povinné. Nastav `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET`.
-Příznak `--google-client-id` neexistuje (neznámé příznaky se ignorují). Bez
-dvojice v prostředí příkaz skončí chybou chybějícího klienta.
+Přechod na jiného klienta odhlásí z Google Calendar všechny: přihlášení patří
+klientovi, který ho vydal.
 
-## Vlastní klient Google (forky a self-hosting)
+## Dej pracovnímu prostoru vlastního klienta Google
 
-Vydaná sestavení klienta Google obsahují, takže většina lidí sem nesáhne.
-Vlastního si přines, když sestavuješ ze zdrojů, provozuješ vlastní server, nebo
-chceš, aby obrazovka souhlasu nesla jméno tvého projektu.
+Pracovní prostor může připojit Google Calendar přes vlastního klienta místo klienta serveru. Nastavit to může jen správce nebo vlastník pracovního prostoru.
 
-1. V [Google Cloud Console](https://console.cloud.google.com/apis/credentials) zapni **Google Calendar API** a nastav **obrazovku souhlasu OAuth**. Přidej scopes `calendar.readonly`, `openid` a `email`. Dokud aplikace není ověřená, přidej se jako **testovací uživatel**. Přidání `calendar.events` na obrazovku souhlasu RSVP nezapne. Control Center ten scope nikdy nežádá.
-2. Vytvoř **OAuth client ID** typu aplikace **TVs and limited input devices** a zkopíruj client id i client secret.
-3. Zadej je buď u jednoho připojení (v dialogu zvol **Použít vlastní klienta Google Cloud**), nebo pro celý server přes `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Vytvoř klienta Google typu **Web application** stejně jako v krocích 1 a 2 výše
+2. Otevři **Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů** a otevři **Google Calendar**
+3. Zvol **Použít vlastní aplikaci pracovního prostoru**
+4. Přidej klientovi přesmyčku URI, kterou řádek ukazuje pod **Callback URL**, beze změn
+5. Vlož **Client id** a **Client secret**
 
-Dvojice pro celý server nahradí vestavěnou všude, i za volbou „Použít Google
-aplikaci Control Center“. Na vlastním serveru je ta volba tvoje aplikace.
+Kalendářové účty připojené v tomto pracovním prostoru pak jdou přes tohoto klienta, ať server přihlašuje lidi jakkoli. Nikdy nepřejde na klienta serveru ani na Connect: dokud nejsou obě pole vyplněna, je Google Calendar v tomto pracovním prostoru vypnutý a řádek říká, co chybí. Tajný klíč nikdy neopustí server.
 
-Secret klienta server neopustí: žádná odpověď RPC ho nenese a účet připojený
-přes vlastního klienta serveru uloží značku, ne kopii dvojice. Rotace je
-restart s novou hodnotou.
+Přepnutí mezi klientem serveru a klientem pracovního prostoru nebo změna id klienta pracovního prostoru označí všechny účty Google v tomto pracovním prostoru k novému připojení. **Použít aplikaci tohoto serveru** smaže uložená pole pracovního prostoru. Ostatní pracovní prostory na serveru nejsou dotčené.
 
-### Řešení problémů
+## Řešení problémů
 
-| Projev                                              | Pravděpodobná příčina                                                                                                                                    |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialog nenabízí vestavěnou volbu                    | Tohle sestavení žádného klienta Google neobsahuje (sestavení ze zdrojů), nebo server nastartoval jen s polovinou dvojice. ID i secret jsou povinné       |
-| `invalid_scope` při startu postupu                  | Calendar pro klienta s device code v tomhle projektu Cloud povolený není. Použij místo toho projekt s loopback nebo webovým klientem                      |
-| `invalid_client` od Google                          | Klient není typu **TVs and limited input devices**, nebo id a secret patří různým klientům                                                               |
-| Schválení projde, ale synchronizace je prázdná      | Účet není **testovací uživatel** na obrazovce souhlasu, nebo nebyl udělen `calendar.readonly`                                                             |
-| Kód vyprší dřív, než ho schválíš                    | Kódy zařízení platí krátce. Připojení spusť znovu, ať máš čerstvý                                                                                         |
-| „Odpověď se nepodařilo aktualizovat“ u RSVP        | Očekávané: postup připojení scope `calendar.events` nikdy nežádá                                                                                          |
-| Synchronizace se zastaví a log hlásí varování o obnově | Účet byl připojený klientem, který už není nastavený. Účet znovu připoj, nebo vrať to client id a secret                                               |
+| Projev                                              | Pravděpodobná příčina                                                                                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Připojit Google Calendar** hlásí, že přihlášení není nastavené | Server nemá vlastního klienta Google ani Connect. Jedno z nich vybere vlastník serveru v **Nastavení → Server → Jednotné přihlášení** |
+| Google ukáže `redirect_uri_mismatch`                | Přesměrování zaregistrované u klienta přesně neodpovídá hodnotě **Adresy URL zpětného volání**, nebo se změnila veřejná URL serveru      |
+| `invalid_client` od Google                          | ID a secret patří různým klientům, nebo byl klient smazán                                                                                    |
+| Schválení projde, ale synchronizace je prázdná      | Účet není **testovací uživatel** na obrazovce souhlasu, nebo nebyl udělen některý z požadovaných scopes                                                |
+| Dialog hlásí, že kód nesedí                         | Opiš 8 znaků přesně tak, jak je ukazuje prohlížeč. Pět chybných kódů přihlášení ukončí; začni znovu                                          |
+| „Odpověď se nepodařilo aktualizovat“, nebo rezervace, přesun či mazání selže        | Účet byl připojen se starým scope jen ke čtení. Připoj ho znovu; kalendář, který ti byl sdílen jen ke čtení, zápisy také odmítá                                                                              |
+| Všichni se musí znovu připojit                      | Změnil se klient Google serveru nebo pracovního prostoru, nebo volba či klíč Connect serveru. Viz [Znovu připoj prošlý účet](#znovu-připoj-prošlý-účet)                   |
 
 ## Související návody
 
 - [Nahrajte a shrňte schůzku](/cs-CZ/prirucka/navody/nahravani-schuzky/): z události uděláš nahrávku
-- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): kde leží tokeny a plán synchronizace
-- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): kde leží pověření a plán synchronizace
+- [Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)
 
 ## Související koncepty
 

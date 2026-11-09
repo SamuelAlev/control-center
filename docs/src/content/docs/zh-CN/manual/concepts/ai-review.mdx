@@ -2,7 +2,7 @@
 title: AI 审查
 description: 一个 pull request 如何变成经审查过的 pull request —— 审查空间、审查节点与同行共识、队列与轴、Ship/Hold/Block 判定，以及为什么发布始终是你要亲自执行的一步。
 slug: zh-CN/手册/概念/ai-审查
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## 一次审查的形态
@@ -165,10 +165,12 @@ Hold。
   可能留下的最破坏信任的做法；如果 GitHub 仍然拒绝某个行内锚点，整条审查会重新发送，
   并把每一个发现项都归入正文，这样就不会有任何东西被悄悄丢弃。
 - **Block** 判定会以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 则由
-  按钮以 `APPROVE` 提交（`approve_on_ship: true`）。除非你传入 `approve_on_ship`，
-  否则 MCP 工具会把 Ship 保留为 `COMMENT`。
-- 审查以服务器应用的标识发布。是谁按下的发布按钮会被记录下来，用于角色门禁和审计
-  日志；发布者并不是 GitHub 上的作者。
+  按钮以 `APPROVE` 提交（`approve_on_ship: true`）。MCP 工具以自动化身份发布，并且始终
+  将 Ship 保留为 `COMMENT`。
+- **发布到 GitHub** 按钮会以按下它的那个人的身份发布审查，使用其自己的 GitHub 登录：
+  发布的把关权属于他们，因此审查也归他们名下。没有人在背后的发布属于自动化，自动化从不
+  批准：Ship 会以 `COMMENT` 发出，而在 Control Center Connect 上，发布内容会带上
+  `**Control Center** (for @login):` 前缀以标明归属。
 
 发布会声明 `prPublish` 动作类别，因此护栏卡点会像对待任何变更类操作一样对它施加
 门禁 —— 它默认会弹出确认提示，并且在未连接任何审批人时以失败关闭的方式处理。

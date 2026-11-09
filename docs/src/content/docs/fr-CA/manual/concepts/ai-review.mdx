@@ -2,7 +2,7 @@
 title: Révision par IA
 description: Comment une demande de tirage en vient à être révisée — espaces de révision, nœuds de révision et consensus des pairs, cohortes et axes, le verdict Ship/Hold/Block, et pourquoi la publication reste une étape que vous franchissez vous-même.
 slug: fr-CA/manuel/concepts/revision-par-ia
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## La forme d'une révision
@@ -218,11 +218,14 @@ Quand vous appuyez sur **Publier sur GitHub** :
   dans le corps, de sorte que rien n'est abandonné en silence.
 - Un verdict **Block** est soumis comme `REQUEST_CHANGES` ; **Hold** comme
   `COMMENT` ; **Ship** comme `APPROVE` à partir du bouton
-  (`approve_on_ship: true`). L'outil MCP laisse Ship en `COMMENT` à moins que
-  vous ne passiez `approve_on_ship`.
-- La révision est publiée sous l'identité d'application du serveur. La personne
-  qui a appuyé sur Publier est consignée pour le verrou de rôle et le journal
-  d'audit ; ce n'est pas l'auteur GitHub.
+  (`approve_on_ship: true`). L'outil MCP publie en tant qu'automatisation et
+  laisse toujours Ship en `COMMENT`.
+- Le bouton **Publier sur GitHub** publie la révision au nom de la personne qui
+  a appuyé dessus, avec sa propre connexion GitHub : le verrou de mise en
+  production lui appartient, la révision aussi. Une publication sans personne
+  derrière relève de l'automatisation, qui n'approuve jamais : Ship part alors en
+  `COMMENT` et, sur Control Center Connect, la publication est attribuée avec le
+  préfixe `**Control Center** (for @login):`.
 
 La publication déclare la classe d'action `prPublish`, de sorte que le point de
 contrôle des garde-fous la soumet à un verrou comme toute action mutante — elle

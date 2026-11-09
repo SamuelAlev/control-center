@@ -1,11 +1,11 @@
 ---
 title: Slack entegrasyonunu kurma
-description: Üyelerin ajanları Slack'ten yönlendirebilmesi için bir Slack uygulamasını Control Center çalışma alanına bağlayın.
+description: Üyelerin ajanları Slack'ten yönlendirebilmesi için Slack'i paylaşılan Control Center uygulaması ya da kendi uygulamalarınızdan biri üzerinden bir Control Center çalışma alanına bağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Bu kılavuz, Slack'i bir Control Center çalışma alanına nasıl bağlayacağınızı gösterir: uygulamayı Control Center'ın oluşturmasına izin vererek ya da uygulamayı kendiniz oluşturarak.
+Bu kılavuz, Slack'i bir Control Center çalışma alanına nasıl bağlayacağınızı gösterir: paylaşılan Control Center uygulamasını ekleyerek ya da Control Center'ın sizin için oluşturduğu veya kendiniz oluşturduğunuz kendi uygulamanızla.
 
 Rehberli bir ilk deneme için bkz. [Slack'i çalışma alanınıza bağlayın](/tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu/).
 
@@ -19,9 +19,37 @@ Slack'tir. Discord, Telegram, Teams veya Matrix uygulaması yoktur.
 
 - Control Center çalışma alanında `owner` veya `admin` rolü — bir sohbet uygulaması bağlamak, çalışma alanı ayarlarında bir değişikliktir
 - Slack çalışma alanında uygulama oluşturma ve yükleme izni
-- Genel erişime açık hiçbir şey gerekmez: bağlantı dışa doğrudur (Socket Mode), bu yüzden sunucunun gelen bağlantı noktasına, tünele veya alan adına ihtiyacı yoktur
+- Genel erişime açık hiçbir şey gerekmez: kendi uygulamanız Socket Mode üzerinden dışa doğru bağlanır, paylaşılan uygulamanın olayları ise Control Center Connect'e yapılan uzun bir yoklamayla sunucuya ulaşır; bu yüzden sunucunun gelen bağlantı noktasına, tünele veya alan adına ihtiyacı yoktur
 
-## Uygulamayı edinmenin üç yolu
+## Paylaşılan uygulama ya da kendi uygulamanız
+
+Bir çalışma alanı aynı anda bunlardan yalnızca biriyle çalışır.
+
+| Mod                                       | Gerekenler                                                                                                                     | Elde ettikleriniz                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Paylaşılan Control Center uygulaması**  | Sunucu Control Center Connect kullanır (**Ayarlar → Sunucu → Tek oturum açma**) ve Connect Slack'e hizmet verir                 | Tek tıklama ve bir Slack oturum açması. Oluşturulacak uygulama, yapıştırılacak token, değiştirilecek bir şey yok |
+| **Kendi uygulamanız**                     | Slack çalışma alanınızda, aşağıdaki üç yoldan biriyle yapılmış bir Slack uygulaması                                             | Control Center'dan düzenlenebilen kendi bot adınız, açıklamalarınız ve slash komutunuz                  |
+
+### Paylaşılan Control Center uygulamasını ekleme
+
+1. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+2. Slack bloğunda **Control Center’ı Slack çalışma alanına ekle** satırını bulun ve **Slack çalışma alanına ekle**'ye tıklayın
+3. Tarayıcınız Slack'i açar. Slack ile oturum açın, Slack çalışma alanını seçin ve kurulumu onaylayın
+4. Tarayıcı bir kod gösterdiğinde, onu Control Center'ın açık bıraktığı iletişim kutusuna girin. Tarayıcı sizi uygulamaya kendiliğinden geri gönderirse yazacak bir şey yoktur
+5. Bir bildirim, uygulamanın eklendiği Slack çalışma alanını belirtir ve Slack bloğu bağlantının paylaşılan Control Center uygulamasında çalıştığını gösterir
+
+Uygulamayı yalnızca bir çalışma alanı yöneticisi ekleyebilir. Sunucu Connect yerine kendi uygulamalarını kullandığında, Connect'inizin Slack uygulaması olmadığında ya da bu çalışma alanında zaten kendi Slack uygulaması bağlı olduğunda satır neden başlayamadığını söyler.
+
+Kendi uygulamanızdan farkları:
+
+- Slack, paylaşılan uygulamanın olaylarını Connect'e gönderir. Connect yalnızca bir başvuru (ekip, kanal ve ileti kimliği) tutar ve ileti metnini atar; sunucu başvurular için Connect'i uzun yoklamayla sorgular ve her iletiyi Slack'ten kendisi okur. Bir slash komutunun metni Connect'ten geçer; [`/cc ticket`](#slackten-bilet-taslağı-oluşturma) komutunun yalnızca taslak oluşturmasının nedeni budur
+- Bot token'ı bu sunucu için mühürlenir ve Connect üzerinden yenilenir; bu yüzden yapıştırılacak ya da değiştirilecek bir token yoktur
+- Botun adı, açıklamaları ve slash komutu paylaşılan uygulamanındır. Slack satırı bağlantının paylaşılan uygulamada çalıştığını söyler ve **Botu özelleştir** sunmaz
+- Bir Slack çalışma alanı aynı anda tek bir Control Center sunucusuna bağlıdır. Uygulamayı başka bir sunucudan eklemek onu oraya taşır ve bu sunucunun bağlantısı durur
+
+Modlar arasında geçiş yapmak için bağlantıyı kesin ve diğer yoldan bağlanın.
+
+### Kendi uygulamanız: edinmenin üç yolu
 
 | Yol                 | Sizin sağladığınız                      | Control Center'ın yaptığı                                                                                                        |
 | ------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ Slack'tir. Discord, Telegram, Teams veya Matrix uygulaması yoktur.
 
 Rehberli yol, uygulamayı Control Center'dan _yönetilebilir_ bırakan tek yoldur; [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/) bağlantısını mümkün kılan da budur. **Slack içinde oluştur** ile yapılmış bir uygulama, bağlantı iletişim kutusuna bir yapılandırma jetonu yapıştırılarak daha sonra yönetilen bir uygulamaya yükseltilebilir.
 
-Bilinçli olarak "Control Center'ın Slack uygulamasını yükle" diye bir düğme yoktur. Dağıtılmış bir Slack uygulamasını yüklemek paylaşılan bir istemci sırrı gerektirir (Slack'te PKCE yoktur) ve Socket Mode, bir uygulamanın olaylarını bağlantıları arasında rastgele dağıtır — yani tek bir paylaşılan uygulama, çalışma alanınızın iletilerini başka kişilerin sunucularına iletirdi. Bu yüzden her çalışma alanı kendi uygulamasına sahiptir ve bu üç yol, bunun size ne kadar az iş çıkardığıyla ilgilidir.
+Kendi uygulamanızın olayları asla Connect'ten geçmez: Socket Mode onları doğrudan bu sunucuya iletir.
 
 ## Seçenek A: uygulamayı Control Center oluştursun
 
@@ -102,6 +130,8 @@ message.im
 
 ## Bağlan
 
+Kendi uygulamanızın token'ları Control Center'a bu şekilde ulaşır. Paylaşılan uygulamanın bunların hiçbirine ihtiyacı yoktur.
+
 1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
 2. Slack bloğunda **Slack bağla**'ya tıklayın
 3. Alanları doldurun:
@@ -124,8 +154,8 @@ Control Center, bot token'ını herhangi bir şey saklamadan _önce_ Slack'in `a
 
 ## Bağlanmanın yaptıkları
 
-- Kimlik bilgilerini çalışma alanının kendi dizininde, veritabanının yanında, yalnızca sahibinin okuyabileceği şekilde saklar. Bunlar hiçbir zaman bir istemciye geri gitmez
-- Bu çalışma alanı için tek bir Socket Mode bağlantısı açar ve etiketlemeleri, Slack dizi yanıtlarını, DM'leri ve slash komutlarını almaya başlar
+- Kimlik bilgilerini çalışma alanının kendi dizininde, veritabanının yanında, yalnızca sahibinin okuyabileceği şekilde saklar. Bunlar hiçbir zaman bir istemciye geri gitmez. Paylaşılan uygulama için bu, mühürlü izindir; onun yenilendiği kısa ömürlü bot token'ı bellekte kalır
+- Etiketlemeleri, Slack dizi yanıtlarını, DM'leri ve slash komutlarını almaya başlar: kendi uygulamanız için tek bir Socket Mode bağlantısı üzerinden, paylaşılan uygulama için ise sunucunun tek Connect uzun yoklaması üzerinden
 - Daha önce köprülenmiş her Slack dizisini yeniden etkinleştirir, böylece yeniden bağlanma var olan konuşmaları ortada bırakmak yerine sürdürür
 - Sohbet uygulaması olmayan çalışma alanları için hiçbir maliyeti yoktur: soket yok, zamanlayıcı yok, trafik yok
 
@@ -141,8 +171,9 @@ yüklemenin orada Slack'i yeniden bağlamak anlamına gelmesidir.
 
 Köprüye erişim bir token'a sahip olmak değil, çalışma alanı **üyeliğidir**. Bir
 Slack hesabı, yazma yetkisi olan bir rolü bulunan bir üye olan bir Control Center
-kullanıcısına bağlanmalıdır. Bağlanma, bağlantıyı kesme, rehberli kurulum,
-kurulum bağlantısı ve bot özelleştirmesi yönetici kısıtlamasına tabidir.
+kullanıcısına bağlanmalıdır. Bağlanma, bağlantıyı kesme, paylaşılan uygulamanın kurulumu,
+rehberli kurulum, kurulum bağlantısı ve bot özelleştirmesi yönetici
+kısıtlamasına tabidir.
 :::
 
 ## Doğrulama
@@ -165,7 +196,25 @@ Akıl yürütme, bir metin duvarı ve araç çıktısı olarak asla Control Cent
 
 Tıkladığınızda hiçbir şey olmuyorsa, iletiyi gönderen sunucuya tıkladığınız makineden erişilemiyordur (örneğin yalnızca loopback'te çalışan bir sunucuya telefondan tıklamak) ya da orada Control Center çalışmıyordur. Erişilebilir adresi olmayan bir sunucu, hiçbir yere çıkmayan bir düğme yerine düğmesiz bir kart gönderir.
 
+## Slack’ten bilet taslağı oluşturma
+
+Yazma rolüne sahip bağlı herhangi bir üye Slack'ten bir bilet önerebilir:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+`|` işaretinden önceki metin başlık, sonraki metin açıklamadır. Bot, bileti taslak olarak oluşturduğunu yanıtlar. Henüz hiçbir şey oluşturulmaz ve hiçbir bilet otomasyonu tetiklenmez: taslak sizi **Ayarlar → Çalışma alanı → Profil ve kimlik → Sohbetten bilet taslakları** bölümünde bekler; orada başlığı ve açıklamayı düzeltebilir, ardından **Bilet oluştur**'a ya da **At**'a tıklayabilirsiniz.
+
+- Taslağı yalnızca komutu çalıştıran üye görür
+- Bıraktığınız bir taslak bir gün sonra atılır. Taslaklar bellekte tutulur; bu yüzden sunucunun yeniden başlatılması da onları atar
+- Kart yalnızca taslaklarınız varken görünür
+
+Bir komutun metni Slack'ten yeniden okunamaz ve paylaşılan uygulamada Connect'ten geçmiştir. Bileti Control Center'da oluşturmak onu sizin yapan şeydir.
+
 ## Token rotasyonu
+
+Bu, kendi uygulamanız için geçerlidir. Paylaşılan uygulamada değiştirilecek bir token yoktur.
 
 Yeni değeri bağlantı iletişim kutusuna yeniden yapıştırın ve **Bağlan**'a tıklayın. Bağlanmak, bu çalışma alanı için çalışmakta olan bağlantıyı ne olursa olsun değiştirir, böylece soket yeni kimlik bilgileriyle yeniden kurulur.
 
@@ -173,7 +222,7 @@ Yeni değeri bağlantı iletişim kutusuna yeniden yapıştırın ve **Bağlan**
 
 ## Bağlantıyı kesme
 
-Slack satırındaki **Bağlantıyı kes**'e tıklayın (yalnızca yöneticiler). Soket kapanır ve kimlik bilgileri unutulur.
+Slack satırındaki **Bağlantıyı kes**'e tıklayın (yalnızca yöneticiler). Bağlantı kapanır ve kimlik bilgileri unutulur. Paylaşılan uygulama için Control Center ayrıca botu Slack çalışma alanından kaldırır ve onun bu sunucuya bağlamasını serbest bırakır.
 
 Alan ve kullanıcı bağlantıları bilinçli olarak korunur: aynı uygulamayı yeniden bağlamak, köprülenmiş her Slack dizisini geri getirir. Bunlar çalışma alanı kapsamlı satırlardır, bu yüzden çalışma alanını silmek onları zaten kaldırır.
 
@@ -210,7 +259,7 @@ Slack'in görev kartları, akışla aynı yeni Agents & AI Apps yüzeyinin parç
 
 ### "Control Center'ın botu düzenlemesi için bir uygulama yapılandırma jetonu gerekir"
 
-**Botu özelleştir** satırı devre dışıdır çünkü bağlantının uygulama yapılandırma jetonu yoktur. Elle veya **Slack içinde oluştur** yoluyla yapılmış bir uygulama için bu beklenen bir durumdur — Slack, Control Center'a hangi uygulama olduğunu hiçbir zaman bildirmedi. api.slack.com/apps üzerinde bir jeton çifti oluşturun ve yenileme jetonunu doldurarak yeniden bağlanın.
+**Botu özelleştir** satırı devre dışıdır çünkü bağlantının uygulama yapılandırma jetonu yoktur. (Paylaşılan uygulamada **Botu özelleştir** satırı hiç yoktur: bot paylaşılan uygulamanındır.) Elle veya **Slack içinde oluştur** yoluyla yapılmış bir uygulama için bu beklenen bir durumdur — Slack, Control Center'a hangi uygulama olduğunu hiçbir zaman bildirmedi. api.slack.com/apps üzerinde bir jeton çifti oluşturun ve yenileme jetonunu doldurarak yeniden bağlanın.
 
 ### Uzun bir yanıt kesiliyor
 

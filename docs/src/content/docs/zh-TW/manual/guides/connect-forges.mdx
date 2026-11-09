@@ -2,7 +2,7 @@
 title: 連接程式碼託管
 description: 連接 GitHub、GitLab 或 Bitbucket，讓 PR 介面、儲存庫註冊與代理執行都能運作——同一個工作區可以同時使用這三者。
 slug: zh-TW/手冊/操作指南/連接程式碼託管
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center 支援三種程式碼託管服務，在應用程式中一律稱為**託管平台**：**GitHub**、**GitLab** 與 **Bitbucket Cloud**。它們沒有任何一個是預設值。連接一個，一切就能運作；連接多個，同一個工作區就能同時容納來自這三者的儲存庫。
@@ -13,9 +13,9 @@ Control Center 支援三種程式碼託管服務，在應用程式中一律稱�
 
 1. 開啟**設定 → 工作區 → 個人資料與身分**（`/settings/workspace/profile`）。
 2. 找到**程式碼託管**卡片。所有支援的託管平台都會列出，無論是否已連接。
-3. 如果該列提供**以 … 登入**，就按下它；否則按**新增權杖**並貼上一組。
+3. 在 **GitHub** 上按**登入 GitHub**。在 **GitLab** 或 **Bitbucket** 上按**新增權杖**並貼上一組。
 
-**登入**只會出現在伺服器已註冊應用程式的託管平台上——目前是 GitHub，採裝置流程（請見[建立 GitHub App](/zh-TW/手冊/操作指南/github-app/)）。其餘全都是貼上權杖，這是誠實的互動方式，而不是給一個按了也無法完成的按鈕。
+**GitHub 只能登入。** 登入會透過伺服器自己的 GitHub App 或 Control Center Connect 進行，視伺服器擁有者設定了哪一個而定（請見[設定 GitHub 整合](/zh-TW/手冊/操作指南/github-整合/)）；沒有可貼上的 GitHub 權杖。GitLab 與 Bitbucket 仍然使用個人權杖。
 
 無論是哪一種，這份憑證都是**你的，而且存放在伺服器上**，以你的使用者 id 為鍵：你輸入權杖的那台機器不會儲存任何權杖，你登入的每一部裝置都用同一份憑證，其他成員也讀不到它。它會在**下一次請求**時生效——不需要重啟任何東西，而中斷連接會立刻讓它不再被送出。
 
@@ -24,29 +24,28 @@ Control Center 支援三種程式碼託管服務，在應用程式中一律稱�
 | 副標題                                           | 意義                                             |
 | ------------------------------------------------ | ------------------------------------------------ |
 | `Signed in as octocat`                           | 正在使用你自己的憑證                             |
-| `Signed in as octocat · via this server's app`   | 由伺服器的應用程式身分回應——你尚未登入           |
-| `Signed in as octocat · from the environment`    | 由伺服器的環境變數回應，而不是你的憑證           |
+| `Signed in as octocat · from the environment`    | 僅限 GitLab 或 Bitbucket：由伺服器的環境變數回應，而不是你的權杖 |
 | `Not connected`                                  | 你沒有這個託管平台的憑證                         |
+| `GitHub sign-in isn't set up on this server yet.` | 伺服器既沒有自己的 GitHub App，也沒有 Connect；由伺服器擁有者設定其中之一 |
 
 ### 各託管平台需要什麼權杖
 
 | 託管平台      | 權杖                                                                                                    | 建立位置                                                  |
 | ------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic：`repo` 與 `read:org`。Fine-grained：Contents + Pull requests（讀取／寫入）、Checks + Actions（讀取） | github.com → Settings → Developer settings → Tokens       |
 | **GitLab**    | 具備 `api` 範圍的個人存取權杖                                                                             | gitlab.com → User settings → Access tokens                |
 | **Bitbucket** | Atlassian API 權杖，外加你的帳號電子郵件                                                                  | id.atlassian.com → Security → API tokens                  |
 
 Bitbucket 會以你的**帳號電子郵件作為使用者名稱**、權杖作為密碼來驗證。請在伺服器環境中設定 `BITBUCKET_EMAIL`，讓它知道該用哪個電子郵件與權杖配對。
 
-### 或者改用環境變數
+### 背景工作
 
-若是無介面或 CI 安裝，伺服器會讀取下列變數：
+背後沒有真人操作的工作（代理執行、管線、PR 輪詢）同樣需要憑證，而每個託管平台的處理方式各不相同：
 
-- **GitHub** —— `GITHUB_TOKEN`，然後是 `GH_TOKEN`
-- **GitLab** —— `GITLAB_TOKEN`，然後是 `CI_JOB_TOKEN`
-- **Bitbucket** —— `BITBUCKET_API_TOKEN`，然後是 `BITBUCKET_TOKEN`（搭配 `BITBUCKET_EMAIL`）
+- **GitHub** —— 每次一個只適用於單一儲存庫的權杖，由伺服器的 GitHub App 或透過 Connect 簽發，並限制在某位負責成員在那裡能做的事。它絕不是把某個人的登入整個交出去，也沒有任何環境變數或貼上的權杖能替代它。請見[設定 GitHub 整合](/zh-TW/手冊/操作指南/github-整合/#你的憑證代表誰)
+- **GitLab** —— 伺服器擁有者貼上的權杖，然後是 `GITLAB_TOKEN`，再來是 `CI_JOB_TOKEN`
+- **Bitbucket** —— 伺服器擁有者貼上的權杖，然後是 `BITBUCKET_API_TOKEN`，再來是 `BITBUCKET_TOKEN`（搭配 `BITBUCKET_EMAIL`）
 
-這些是**伺服器的**憑證，不是你的，而這個區別至關重要：代表你提出的請求只會使用你的憑證，不會用到其他任何東西，因此環境變數永遠不會悄悄替代你。背後沒有真人操作的工作——webhook、PR 輪詢、工單同步——會先解析伺服器的應用程式身分，再來是伺服器擁有者的憑證，最後才是環境變數。順序是固定的，因此「我明明登入了，卻什麼都沒變」永遠不會是一個成立的結果。
+GitLab 與 Bitbucket 的環境變數是**伺服器的**憑證，不是你的：代表你提出的請求只會使用你的權杖，不會用到其他任何東西，因此環境變數永遠不會悄悄替代你。
 
 ## 你在每個託管平台上是不同的人
 
@@ -94,11 +93,11 @@ GitLab 把 pull request 稱為 **merge request**。Control Center 在自己的�
 
 ### PR 清單是空的，並顯示某個託管平台未連接
 
-你沒有那個託管平台的憑證。請在**設定 → 工作區 → 個人資料與身分 → 程式碼託管**中登入或貼上權杖。其他託管平台的儲存庫不受影響。
+你沒有那個託管平台的憑證。請在**設定 → 工作區 → 個人資料與身分 → 程式碼託管**中登入 GitHub，或貼上 GitLab 或 Bitbucket 權杖。其他託管平台的儲存庫不受影響。
 
 ### 我連接了託管平台，但它的儲存庫仍然什麼都沒顯示
 
-檢查該列的副標題。如果它顯示「透過此伺服器的應用程式」或「來自環境變數」，就代表回應的不是你預期的那份憑證——凡是代表你提出的請求，都以你自己的憑證為優先，因此若顯示的不是這樣，就表示你的憑證沒有儲存成功。
+檢查該列的副標題。如果 GitLab 或 Bitbucket 的列顯示「來自環境變數」，就代表回應的不是你預期的那份憑證——凡是代表你提出的請求，都以你自己的權杖為優先，因此若顯示的不是這樣，就表示你的權杖沒有儲存成功。若是 GitHub，請確認 GitHub App 已安裝在擁有這些儲存庫的帳號上。
 
 ### 儲存庫無法註冊
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart' show ConnectModeSetting;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
@@ -65,7 +66,9 @@ void main() {
     // them via [extraOverrides] and the REAL derivation answers
     // hasAnyForgeConnectedProvider.
     bool deriveAuth = false,
+    bool serverOwner = false,
     List<Override> extraOverrides = const [],
+    void Function(String op, Map<String, dynamic> args)? onCall,
   }) async {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -74,15 +77,20 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    final rpc = (FakeRpcHost()..onCall = (_, _) => {'status': 'installed'})
-        .client();
+    final rpc =
+        (FakeRpcHost()
+              ..onCall = (op, args) {
+                onCall?.call(op, args);
+                return {'status': 'installed'};
+              })
+            .client();
     addTearDown(rpc.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
           rpcClientProvider.overrideWithValue(rpc),
-          isServerOwnerProvider.overrideWithValue(false),
+          isServerOwnerProvider.overrideWithValue(serverOwner),
           voiceModelCatalogProvider.overrideWith((ref) async => null),
           if (!deriveAuth) ...[
             // The gate is "at least one forge connected", so the fixture is a
@@ -185,6 +193,63 @@ void main() {
     expect(tester.getRect(activity).bottom, lessThanOrEqualTo(360));
     expect(next.hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('the server owner', () {
+    testWidgets('starts by choosing how people sign in', (tester) async {
+      await pumpOnboarding(tester, serverOwner: true);
+      expect(find.text('Choose how people sign in'), findsOneWidget);
+      expect(find.text("Let's plug in your tools."), findsNothing);
+    });
+
+    testWidgets('nothing is preselected, so Continue waits for a choice', (
+      tester,
+    ) async {
+      await pumpOnboarding(tester, serverOwner: true);
+      final next = tester.widget<CcButton>(
+        find.widgetWithText(CcButton, 'Continue'),
+      );
+      expect(next.onPressed, isNull);
+      for (final radio in tester.widgetList<CcRadio<ConnectModeSetting>>(
+        find.byType(CcRadio<ConnectModeSetting>),
+      )) {
+        expect(radio.groupValue, isNull);
+      }
+    });
+
+    testWidgets('saves the choice, then moves on to the tools step', (
+      tester,
+    ) async {
+      final configured = <Map<String, dynamic>>[];
+      await pumpOnboarding(
+        tester,
+        serverOwner: true,
+        onCall: (op, args) {
+          if (op == 'connect.configure') {
+            configured.add(args);
+          }
+        },
+      );
+      await tester.tap(find.text("Use Control Center's apps"));
+      await tester.pump();
+      final next = find.widgetWithText(CcButton, 'Continue');
+      await tester.ensureVisible(next);
+      await tester.tap(next);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(configured, [
+        {'mode': 'hosted'},
+      ]);
+      expect(find.text("Let's plug in your tools."), findsOneWidget);
+    });
+  });
+
+  testWidgets('a member who does not own the server never sees the choice', (
+    tester,
+  ) async {
+    await pumpOnboarding(tester);
+    expect(find.text('Choose how people sign in'), findsNothing);
   });
 
   testWidgets('renders app title in app bar', (tester) async {

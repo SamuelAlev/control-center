@@ -1,0 +1,271 @@
+---
+title: Jalankan pelayan Connect
+description: Jalankan Control Center Connect anda sendiri daripada imej Docker cc-connect, atau pasang dalam cc_server, supaya pelayan anda mendaftar masuk orang melalui apl pembekal yang anda daftarkan.
+slug: ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect menjalankan log masuk pembekal (GitHub, Google Calendar, Linear, Slack) untuk pelayan yang belum
+mendaftarkan apl mereka sendiri. Panduan ini menunjukkan cara menjalankan Connect anda sendiri, supaya apl pembekal, rahsianya
+dan senarai pelayan yang dibenarkan menggunakannya kekal di tangan anda.
+
+Apa yang Connect lihat dan tidak lihat diterangkan dalam [rujukan Connect](/ms-MY/manual-pengguna/rujukan/connect/). Bacalah
+dahulu jika anda sedang menimbang untuk menjalankan satu.
+
+:::note[Anda mungkin tidak memerlukannya]
+Sebuah pelayan boleh mendaftarkan apl sendiri sebaliknya: **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia**, di
+mana **Cipta aplikasi GitHub saya** menyediakan GitHub dalam satu langkah. Apl pelayan hanya terpakai di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect Control Center atau Connect tersuai, Connect mengendalikan setiap pembekal, manakala apl ruang kerja kekal terpakai. Jalankan Connect apabila beberapa pelayan sepatutnya berkongsi satu set apl.
+:::
+
+## Prasyarat
+
+- Alamat **HTTPS** awam untuk Connect, contohnya `https://connect.example.com`, di belakang proksi yang menamatkan TLS. HTTP
+  biasa hanya diterima pada loopback
+- Docker, atau `cc_server` yang boleh anda mulakan semula dengan pemboleh ubah persekitaran tambahan
+- Kebenaran untuk mendaftarkan apl dengan setiap pembekal yang ingin anda layani
+- Pelayan yang akan menggunakannya, dengan pemiliknya berhampiran: setiap pelayan mempunyai ID pemasangan yang anda tambah
+  ke senarai benar Connect
+
+## Langkah 1: Pilih alamatnya
+
+Pilih URL sekarang dan simpannya. `CONNECT_PUBLIC_URL` terlibat dalam setiap perkara yang Connect lakukan: tandatangan
+permintaan, pemeteraian kelayakan, URL ubah hala pembekal dan ID pemasangan setiap pelayan semuanya terikat kepadanya.
+Menukarnya kemudian bermakna mendaftar semula ubah hala dan setiap orang log masuk semula.
+
+## Langkah 2: Daftarkan apl pembekal
+
+Daftarkan hanya pembekal yang ingin anda layani. Pembekal yang pemboleh ubahnya belum lengkap akan dikeluarkan daripada
+konfigurasi Connect, dan pelayan melihatnya sebagai tidak tersedia. `<base>` di bawah ialah `CONNECT_PUBLIC_URL` anda.
+
+| Pembekal       | Daftar                                                                                                                                                                                                                                                               | Simpan                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` dengan **Redirect on update** dihidupkan. Biarkan **Request user authorization (OAuth) during installation** dimatikan: jika dihidupkan, GitHub mengabaikan setup URL. Biarkan **Expire user authorization tokens** dihidupkan | ID app, slug, ID klien, rahsia klien |
+| **Google**     | Klien OAuth jenis **Web application** dengan URI ubah hala `<base>/oauth/google/callback`, dan Google Calendar API didayakan                                                                                                                                       | ID klien, rahsia klien                  |
+| **Linear**     | Aplikasi OAuth dengan callback URL `<base>/oauth/linear/callback` dan `<base>/oauth/linear_app/callback`                                                                                                                                                              | Hanya ID klien                          |
+| **Slack**      | Redirect URL `<base>/oauth/slack_oidc/callback` dan `<base>/oauth/slack/callback`. Event Subscriptions di `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash command di `<base>/v1/hooks/slack/commands`. Hidupkan token rotation | ID app, ID klien, rahsia klien, signing secret |
+
+Berikan GitHub App kebenaran repo berikut: **Metadata** baca sahaja, **Contents** baca dan tulis, **Pull requests** baca dan
+tulis, **Issues** baca dan tulis, **Checks**, **Actions** dan **Commit statuses** baca sahaja. Tambah kebenaran organisasi
+**Members** baca sahaja untuk permintaan semakan pasukan. Webhook boleh dimatikan: pelayan membuat pengundian.
+
+Connect tidak pernah memerlukan kunci peribadi GitHub App. Sebaliknya ia mencetak token satu-repo daripada log masuk
+seseorang sendiri. Linear juga tidak memerlukan rahsia: Connect memulangkan kod kepada pelayan, dan pelayan menyelesaikan
+pertukaran itu sendiri.
+
+## Langkah 3: Kumpulkan ID pemasangan
+
+Connect hanya menjawab pelayan dalam senarai benarnya. Pada setiap pelayan, tunjuk ia kepada Connect anda, kemudian baca ID
+pemasangannya:
+
+1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal**, buka kad **Control Center Connect** dan pilih **Gunakan pelayan Connect tersuai**
+2. Masukkan URL anda dan simpan. Kad memaparkan **ID pemasangan** pelayan
+
+Daripada terminal pada hos pelayan, perkara yang sama ialah:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` mencetak ID pemasangan. Ia memaparkan `install_blocked` sehingga Langkah 5 selesai, dan itu dijangka.
+
+ID pemasangan diperoleh bagi setiap alamat Connect, jadi pelayan yang sama mempunyai ID berbeza untuk setiap Connect yang
+dihubunginya. Ia hanya berubah apabila pemiliknya memutar kunci.
+
+## Langkah 4: Cipta kunci pemeteraian
+
+Connect menyulitkan setiap kelayakan yang dipulangkannya dengan kunci pemeteraian. Cipta satu dan simpan sebagai fail rahsia:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Kehilangan kunci pemeteraian akan mengeluarkan semua orang: tiada pemeteraian boleh dibuka tanpanya.
+
+## Langkah 5: Mulakan kontena
+
+Setiap keluaran menerbitkan `ghcr.io/samuelalev/cc-connect` dengan provenans binaan. Dalam pengeluaran, pinkan tag versi.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Tunjukkan reverse proxy anda kepada port `8790`. Imej berjalan sebagai pengguna tanpa keistimewaan, menyimpan keadaan dalam
+volum `/data` dan mempunyai pemeriksaan kesihatan terbina dalam (`cc-connect --healthcheck`, yang menyemak `/healthz`).
+
+Connect enggan bermula (kod keluar `78`) apabila konfigurasinya terbuka, tidak selamat atau separuh siap, dan mencetak
+pemboleh ubah mana yang salah. Senarai benar yang hilang, alamat `http` yang bukan loopback, kunci pemeteraian yang format
+salah, atau kedua-dua `NAME` dan `NAME_FILE` ditetapkan semuanya akan menghentikannya.
+
+Titik semak: pada setiap pelayan, kad Connect memaparkan **Berfungsi**, dan **Tempat setiap log masuk berjalan** menamakan
+**Connect** untuk setiap pembekal yang anda daftarkan. `cc_server connect status` mencetak `Health: ok` bersama lorong yang sama.
+
+## Pasang Connect dalam cc_server
+
+Sebuah pelayan boleh menjalankan Connect sendiri dan bukannya kontena berasingan. Perkhidmatan yang dipasang ialah perkhidmatan
+yang sama yang dijalankan oleh imej.
+
+1. Letakkan pemboleh ubah `CONNECT_*` dalam fail `.env` pelayan (atau persekitarannya), seperti dalam Langkah 5
+2. Tambah `CC_SERVER_CONNECT_HOST=on`
+3. Mulakan semula pelayan. Lognya mencetak `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect kemudian dilayani di `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` secara lalai ialah origin URL awam pelayan ditambah `/connect`. Tetapkannya secara eksplisit di belakang
+  proksi. Laluannya mesti tepat `/connect`, dan mesti HTTPS kecuali loopback
+- Hanya pemboleh ubah `CONNECT_*` sampai kepada perkhidmatan yang dipasang, jadi ia tidak sekali-kali meminjam apl pembekal
+  milik pelayan itu sendiri
+- `CONNECT_ALLOWED_INSTALLS` masih diperlukan, termasuk untuk pelayan hos itu sendiri
+- Pemasangan yang salah konfigurasi menghalang pelayan daripada bermula, daripada melayani broker terbuka
+- Pelayan demo tidak sekali-kali memasangnya
+
+Daftarkan ubah hala pembekal terhadap `https://<server>/connect`, kemudian tunjukkan pelayan (termasuk pelayan hos) kepada URL itu
+seperti dalam Langkah 3.
+
+## Rujukan konfigurasi
+
+Setiap tetapan ialah pemboleh ubah persekitaran. Mana-mana rahsia boleh diambil daripada fail yang dilekapkan: tetapkan
+`NAME_FILE` sebagai ganti `NAME`. Connect membaca semula fail paling kerap setiap 30 saat dan mengekalkan nilai baik terakhir.
+Rahsia yang ditanda **dual** juga menerima `NAME_PREVIOUS` (atau `NAME_PREVIOUS_FILE`) semasa putaran.
+
+### Alamat dan akses
+
+| Pemboleh ubah                   | Lalai     | Maksud                                                                                                                           |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | diperlukan | URL awam kanonik. HTTPS, atau `http` hanya pada loopback. Laluan bermakna dipasang. Tiada query atau fragment                    |
+| `CONNECT_ALLOWED_INSTALLS`      | diperlukan | ID pemasangan dipisahkan koma. `*` hanya diterima bersama `CONNECT_SIGNED_CONFIG_FILE`                                            |
+| `CONNECT_DENY_INSTALLS`         |           | ID pemasangan yang ditolak walaupun dibenarkan                                                                                   |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | ID pemilik GitHub berangka. Apabila ditetapkan, token repo hanya dicetak untuk repo yang mereka miliki                            |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Alamat ikat dan port                                                                                                     |
+| `CONNECT_TRUST_PROXY`           | `0`       | Lompatan proksi dipercayai dalam `X-Forwarded-For` (0 hingga 8). Digunakan hanya untuk had kadar setiap alamat                  |
+
+### Lorong pembekal
+
+| Pemboleh ubah                                                               | Lalai | Maksud                                                                      |
+| --------------------------------------------------------------------------- | ----- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |       | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |       | Rahsia, dual                                                                |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |       | Klien Google. Rahsianya dual                                                |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |       | Apl Linear. Tiada rahsia                                                    |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |       | Apl Slack                                                                   |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |       | Rahsia, dual                                                                |
+| `CONNECT_KLIPY_APP_KEY`                                                     |       | Kunci carian GIF Klipy. Rahsia, dual                                        |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` menyimpan kunci dalam Connect; `key` menyerahkannya kepada pelayan |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`   | GitHub, Google dan Slack: generasi yang direkodkan dalam pemeteraian baharu |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`   | GitHub, Google dan Slack: pemeteraian yang lebih lama mesti log masuk semula |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true` | Setiap lorong: `false` menghentikan log masuk baharu manakala yang sedia ada terus disegarkan |
+
+### Pemeteraian, keadaan dan storan
+
+| Pemboleh ubah                                             | Lalai                      | Maksud                                                                                                     |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` atau `gcp-kms`                                                                                     |
+| `CONNECT_SEAL_KEYS`                                       |                            | Rahsia, diperlukan untuk `local`. Entri `kid:key` dipisahkan koma, terbaharu dahulu; entri lama masih boleh menyahsulit |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, diperlukan untuk `gcp-kms`                              |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` untuk satu instance, `redis` untuk berbilang instance                                             |
+| `CONNECT_REDIS_URL`                                       |                            | Rahsia. `redis://` atau `rediss://`                                                                        |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | Bundle CA untuk `rediss://`                                                                                |
+| `CONNECT_BINDINGS`                                        | `file`                     | Tempat ikatan pemasangan GitHub disimpan: `file` atau `firestore`                                          |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` dalam imej) | Menyimpan `bindings.json`                                                                                  |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | pangkalan data `(default)` | Untuk `CONNECT_BINDINGS=firestore`                                                                         |
+
+### Konfigurasi, log dan had
+
+| Pemboleh ubah                           | Lalai              | Maksud                                                                                              |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Konfigurasi yang ditandatangani secara luar talian, dihidangkan seadanya. Digunakan oleh Connect hosted Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Kunci yang mesti disahkan oleh konfigurasi yang ditandatangani                                       |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoch konfigurasi yang dijana oleh Connect yang dihoskan sendiri                                    |
+| `CONNECT_LOG_HMAC_KEY`                  | rawak setiap proses | Rahsia. Tetapkannya supaya tag yang menggantikan ID pemasangan dalam log kekal stabil merentas mula semula dan instance |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Dilaporkan oleh `/v1/version`                                                                       |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Permintaan setiap pemasangan                                                                        |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Permintaan setiap alamat                                                                            |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Permintaan untuk keseluruhan perkhidmatan                                                           |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Peristiwa Slack setiap pasukan                                                                      |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Carian GIF setiap pemasangan                                                                        |
+
+## Jalankan lebih daripada satu instance
+
+Satu instance dengan `CONNECT_STATE=memory` sudah memadai untuk kebanyakan organisasi. Berbilang instance di sebalik satu alamat
+memerlukan `CONNECT_STATE=redis`, dan sama ada `CONNECT_DATA_DIR` dikongsi atau `CONNECT_BINDINGS=firestore`, supaya log masuk yang
+dimulakan pada satu instance boleh diselesaikan pada instance lain.
+
+## Putar rahsia pembekal
+
+Tiada siapa yang dilog keluar:
+
+1. Cipta rahsia baharu di pembekal dan simpan yang lama
+2. Pindahkan nilai lama ke `NAME_PREVIOUS`, letakkan yang baharu dalam `NAME`, dan naikkan `CONNECT_<LANE>_SECRET_GENERATION`.
+   Fail yang dilekapkan diambil dalam masa 30 saat
+3. Tunggu log masuk menyegarkan diri, kemudian padam rahsia lama di pembekal dan buang `NAME_PREVIOUS`
+
+Untuk memutar kunci pemeteraian, letakkan entri `cc-connect-config seal-key` baharu di hadapan `CONNECT_SEAL_KEYS` dan simpan
+entri lama sehingga pemeteraiannya telah disegarkan.
+
+## Tukar apl
+
+Pelayan mengingati ID apl dan ID klien yang Connect anda umumkan kali pertama mereka menggunakannya. Jika anda menggantikan
+apl, kad Connect setiap pelayan akan memaparkan **Apl Connect telah berubah**, dan log masuk melalui Connect dijeda sehingga
+pemiliknya menekan **Percayai aplikasi baharu**. Beritahu pemilik pelayan sebelum anda bertukar, supaya mereka tahu
+bahawa gesaan itu daripada anda.
+
+## Sekat pelayan
+
+Tambah ID pemasangannya ke `CONNECT_DENY_INSTALLS` dan mulakan semula. Pemiliknya akan melihat "Connect telah menyekat ID
+pemasangan pelayan ini" dan setiap log masuk melalui Connect di sana akan berhenti.
+
+## Penyelesaian masalah
+
+### Sebuah pelayan memaklumkan Connect telah menyekatnya
+
+ID pemasangannya tiada dalam `CONNECT_ALLOWED_INSTALLS`, atau ia ada dalam `CONNECT_DENY_INSTALLS`. ID berubah apabila pemilik
+pelayan memutar kunci; minta ID yang baharu.
+
+### Sebuah pembekal kelihatan tidak tersedia
+
+Salah satu pemboleh ubahnya hilang, jadi Connect mengeluarkan lorong itu. Semak log permulaan dan jadual di atas. GitHub memerlukan
+keempat-empatnya: ID apl, slug, ID klien dan rahsia klien; Google memerlukan ID klien dan rahsia klien.
+
+### Log masuk gagal dengan ralat ketidakpadanan ubah hala
+
+Ubah hala yang didaftarkan dengan pembekal tidak sepadan tepat dengan `CONNECT_PUBLIC_URL`. Bandingkan skema, hos, port dan
+laluan `/connect` untuk Connect yang dipasang.
+
+### Semua orang perlu log masuk semula
+
+Kunci pemeteraian berubah atau hilang, sebuah pelayan memutar kuncinya, atau data pelayan dipulihkan ke mesin lain. Kelayakan
+yang dimeterai hanya boleh dibuka untuk pemasangan dan Connect yang mencipta.
+
+## Panduan berkaitan
+
+- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)
+- [Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/)
+
+## Rujukan berkaitan
+
+- [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/)
+- [Arahan `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server/)

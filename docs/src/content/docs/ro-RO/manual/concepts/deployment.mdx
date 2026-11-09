@@ -2,7 +2,7 @@
 title: Implementare și clienți
 description: Cum separă arhitectura thin-client a Control Center un server headless de clienții săi desktop, web și mobil.
 slug: ro-RO/manual/concepte/implementare
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center nu este un singur program. Este o **arhitectură thin-client**: un
@@ -205,7 +205,7 @@ execută joburi concesionate.
 | Execuția agenților                                      | o rulează (sau o concesionează) | execută joburi concesionate  | —              | —                                                                |
 | Randarea interfeței                                     | —                          | —                                | completă       | completă (web) / preponderent citire (telefon)                   |
 | Captura întâlnirilor (microfon + audio din întâlnire)   | —                          | —                                | captură nativă | doar web, prin audio de partajare a ecranului                    |
-| Calendar OAuth (Google)                                 | stochează tokenuri         | —                                | —              | —                                                                |
+| Autentificări la provideri (GitHub, Google, Linear)     | le rulează și le stochează | —                                | —              | —                                                                |
 
 Cele două niveluri nu izolează la fel. `cc_server` înfășoară rulările pe care le
 execută el însuși în sandbox-ul de sistem de operare al gazdei, acolo unde există
@@ -218,6 +218,14 @@ worktree-ul care i-a fost dat. Externalizarea muncii prin concesionare mută ast
 execuția în afara sandbox-ului, chiar și pe o gazdă care are unul. Vezi
 [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru ce
 delimitează o rulare în fiecare caz.
+
+Autentificările la provideri se încheie pe server, prin aplicațiile lui proprii
+sau prin [Control Center Connect](/ro-RO/manual/referinta/connect/), un serviciu
+opțional care rulează OAuth-ul providerului pentru serverele fără aplicații
+proprii. Connect returnează o acreditare pe care doar acest server o poate folosi
+și nu vede niciodată conținutul depozitelor. Clienții doar deschid browserul și,
+pentru o autentificare prin Connect, transmit înapoi codul pe care acesta îl
+afișează.
 
 Captura întâlnirilor are loc pe un client, pentru că are nevoie de un microfon și
 de audio-ul întâlnirii — un server într-un dulap nu poate înregistra apelul tău.

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 typedef _PythonRuntime = ({
@@ -68,7 +69,7 @@ class ControlledEvaluationProcess implements HarnessCommandRunner {
 
   static _PythonRuntime? _discoverPythonRuntime() {
     try {
-      final result = Process.runSync(
+      final result = ChildProcess.runSync(
         '/usr/bin/python3',
         [
           '-I',
@@ -77,7 +78,7 @@ class ControlledEvaluationProcess implements HarnessCommandRunner {
           'import json,os,sys; print(json.dumps([os.path.realpath(sys.executable),os.path.realpath(sys.base_prefix)]))',
         ],
         environment: const {'PATH': '/usr/bin:/bin'},
-        includeParentEnvironment: false,
+        inheritBase: false,
       );
       if (result.exitCode != 0) {
         return null;
@@ -315,7 +316,7 @@ sys.exit(1 if failures else 0)
       );
       await profile.writeAsString(_profile(base));
       // Restrict profile permissions; the guest cannot read its parent.
-      await Process.run('/bin/chmod', ['600', profile.path]);
+      await ChildProcess.run('/bin/chmod', ['600', profile.path]);
       sandbox = '/usr/bin/sandbox-exec';
       sandboxArgs = ['-f', profile.path, guestExecutable, ...arguments];
     } else {
@@ -324,7 +325,7 @@ sys.exit(1 if failures else 0)
     }
     final Process process;
     try {
-      process = await Process.start(
+      process = await ChildProcess.start(
         python.executable,
         [
           '-I',
@@ -344,8 +345,7 @@ sys.exit(1 if failures else 0)
           'PYTHONDONTWRITEBYTECODE': '1',
           'PYTHONNOUSERSITE': '1',
         },
-        includeParentEnvironment: false,
-        runInShell: false,
+        inheritBase: false,
       );
     } on Object {
       if (Platform.isMacOS) {

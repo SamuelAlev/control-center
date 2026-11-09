@@ -37,7 +37,13 @@ class AddRepoFromPathUseCase {
   ///
   /// The [RepoAdded] event is scoped to [workspaceId] so the trigger
   /// dispatcher only starts the indexing pipeline in that workspace.
-  Future<Repo> execute(String path, {required String workspaceId}) async {
+  ///
+  /// [verify] runs before a new repo is persisted and refuses it by throwing.
+  Future<Repo> execute(
+    String path, {
+    required String workspaceId,
+    Future<void> Function(Repo repo)? verify,
+  }) async {
     final info = await _inspector.inspect(path);
     final existing = await _repository.findByPath(workspaceId, info.path);
     if (existing != null) {
@@ -54,6 +60,7 @@ class AddRepoFromPathUseCase {
       createdAt: now,
       updatedAt: now,
     );
+    await verify?.call(repo);
     await _repository.upsert(workspaceId, repo);
     _eventBus?.publish(
       RepoAdded(

@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Sambungkan Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Pelayan dan penerapan",
   "docs.sidebar.guidesRunHeadlessServer": "Jalankan pelayan tanpa kepala",
+  "docs.sidebar.guidesRunConnect": "Jalankan pelayan Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Sambung ke pelayan jauh",
   "docs.sidebar.guidesRunFleetWorker": "Jalankan pekerja armada",
   "docs.sidebar.guidesBackUpAndRestore": "Sandarkan dan pulihkan",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Pintasan papan kekunci",
   "docs.sidebar.referenceRouteMap": "Peta laluan",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Sandaran, eksport dan import",
   "docs.sidebar.referenceTelemetry": "Analitik penggunaan",
   "docs.sidebar.referenceGlossary": "Glosari"

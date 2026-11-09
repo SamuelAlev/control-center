@@ -2,7 +2,7 @@
 title: 용어집
 description: Control Center 전반에서 사용되는 주요 용어의 정의.
 slug: ko-KR/매뉴얼/레퍼런스/용어집
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['파이프라인', '단계(에이전트 디스패치, 스크립트, 조건)를 연결하는 DAG 기반 워크플로. 템플릿으로 정의하고 실행으로 실행합니다.'],
 ['회의', '로컬에서 녹음하고 전사한 회의 세션. 마이크와 시스템 오디오를 캡처하고, 선택 가능한 ASR 모델(기본값은 Parakeet TDT v3이며 Parakeet TDT v2, Whisper large-v3-turbo, Whisper base.en이 대안)로 기기 내에서 전사하고, 화자를 분리한 뒤 노트, 실행 항목, 결정 사항으로 요약합니다. 선택한 ASR 모델은 부팅 시 강제 설치되며 녹음 기능은 한 번 재시작한 뒤 활성화됩니다. 워크스페이스 범위입니다.'],
 ['CalendarEvent', '워크스페이스와 연결된 계정 범위의 동기화된 Google Calendar 항목. 회의와 다릅니다. 이벤트는 예정된 약속이고, 회의는 녹음된 세션입니다.'],
-['CalendarAccount', '워크스페이스와 이메일마다 하나씩 연결된 Google 계정. OAuth 리프레시 토큰은 데이터 디렉터리 아래 secrets.json 파일에 google_* 키로 서버 측에 저장되며 클라이언트에는 결코 도달하지 않습니다. authExpiredAt 플래그가 재연결 배너를 구동합니다.'],
+['CalendarAccount', '워크스페이스, 멤버, 이메일마다 하나씩 연결된 Google 계정. 자격 증명은 데이터 디렉터리 아래 secrets.json 파일에 google_* 키로 서버 측에 저장되며 클라이언트에는 결코 도달하지 않습니다. Connect를 통한 로그인은 자격 증명 봉인만 저장합니다. authExpiredAt 플래그가 재연결 배너를 구동합니다.'],
 ['AgentRole', '열거형 역할(CEO, coder, reviewer, QA, designer, security, devops, PM, general). 페르소나, 메모리 접근, 계층을 결정합니다.'],
 ['AgentSkills', '디스패치 시점에 관련 컨텍스트를 프롬프트에 주입하는, 대소문자를 구분하지 않는 스킬 식별자 집합.'],
 ['스킬 소스', '스킬 카탈로그로 워크스페이스마다 등록하는 GitHub 저장소. 구조적으로 신뢰하지 않습니다. 저장소의 메타데이터는 표시 전용이며, 모든 설치가 내용이 디스크나 프롬프트에 도달하기 전에 실패 시 차단(fail-closed) 스캔 게이트를 통과합니다.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '단일 에이전트 실행의 토큰/비용 집계(입력 토큰, 출력 토큰, 센트 단위 예상 비용).'],
 ['WakeReason', '에이전트가 디스패치된 이유. 여섯 가지 값: 사용자 메시지, 티켓 할당, 실패 후 복구 재디스패치, 하위 티켓 완료, 예약된 팔로업 하트비트, 파이프라인 단계.'],
 ['SandboxPort', '샌드박스 수명주기(탐지, 실행, 이벤트, exec, 파기)를 관리합니다.'],
-['CredentialBrokerPort', '샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고(에이전트 환경에는 읽기 전용, 쓰기는 서버 측 푸시 경로 전용) 해제 시 폐기합니다.'],
+['CredentialBrokerPort', '샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고(에이전트 환경에는 저장소 하나에 대한 토큰, 쓰기는 서버 측 푸시 경로 전용) 해제 시 반납합니다.'],
 ['GitRepoInspectorPort', '로컬 Git 저장소 경로에서 메타데이터(owner, repo, branch)를 추출합니다.'],
 ['EmbeddingPort', '시맨틱 검색을 위한 단위 노름 텍스트 임베딩 벡터를 생성합니다.'],
 ['NotificationPort', '카테고리/라우트 게이팅을 존중하여 네이티브 데스크톱 알림을 표시합니다.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['리뷰 판정', 'ship, hold 또는 block. 신뢰도 >= 0.7인 P0 발견 사항은 block이고, 그 밖의 P0나 모든 P1은 hold이며, 그 외에는 ship입니다. 게이트된 축이 실패하면 block이 강제되며 발견 사항으로 뒤집을 수 없습니다.'],
 ['SessionRecording', '한 실행을 위해 캡처한 이벤트 스트림과 HTTP/LLM 카세트 및 도구 I/O로, AgentConfigHash와 짝을 이룹니다.'],
 ['골든 세션', '에이전트나 플레이북마다 고정되는, 승인된 SessionRecording.'],
+['Control Center Connect', '자체 앱이 없는 서버를 위해 프로바이더 로그인(GitHub, Google, Linear)을 실행하는 선택적 서비스. Control Center가 호스팅하거나, 자체 호스팅하거나, 끕니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다.'],
+['자격 증명 봉인', '그것을 만든 Connect만 열 수 있는 암호화된 자격 증명. 프로바이더, Connect 주소, 설치 ID, 워크스페이스, 계정, 앱, 시크릿 세대에 묶입니다. 서버는 봉인을 저장하고 액세스 토큰은 메모리에만 머뭅니다.'],
+['설치 ID', '하나의 Connect 주소에 대한 서버의 신원으로, 설치 키에서 파생됩니다. Connect는 설치 ID로 서버를 허용 목록에 올립니다. 키를 교체하면 ID가 바뀌고 모두가 Connect 레인에서 로그아웃됩니다.'],
+['설치 바인딩', '공유 App의 GitHub 설치를 어떤 서버가 사용할 수 있는지에 대한 Connect의 기록. 조직 설치는 서버마다 관리자의 승인이 필요합니다.'],
+['로그인 레인', '한 프로바이더의 브라우저 로그인: github, google, linear, linear_app 또는 slack. 각 레인은 서버 자체 앱이 완전하면 그것으로, 아니면 Connect를 통해 실행되며, 둘 다 없으면 사용할 수 없습니다.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: 샌드박스 수명주기(탐지, 실행, 이벤트, exec, 파기)를 관리합니다.
 
-**CredentialBrokerPort**: 샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고 — 에이전트 환경에는 읽기 전용, 쓰기는 서버 측 푸시 경로 전용 — 해제 시 폐기합니다.
+**CredentialBrokerPort**: 샌드박스 실행을 위한 범위 지정 자격 증명을 발급하고 — 에이전트 환경에는 저장소 하나에 대한 토큰, 쓰기는 서버 측 푸시 경로 전용 — 해제 시 반납합니다.
 
 **GitRepoInspectorPort**: 로컬 Git 저장소 경로에서 메타데이터(owner, repo, branch)를 추출합니다.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: 워크스페이스와 연결된 계정 범위의 동기화된 Google Calendar 항목입니다. 회의와 다릅니다. 이벤트는 예정된 약속이고, 회의는 녹음된 세션입니다. `MeetingCalendarLink`로 일대일로 연결됩니다.
 
-**CalendarAccount**: 워크스페이스와 이메일마다 하나씩 연결된 Google 계정입니다. OAuth 리프레시 토큰은 `<dataDir>/secrets.json`에 `google_*` 키로 서버 측에 저장되며 클라이언트에는 결코 도달하지 않습니다. 기기 코드 흐름은 서버에서 완료됩니다. `authExpiredAt` 플래그가 재연결 배너를 구동합니다.
+**CalendarAccount**: 워크스페이스, 멤버, 이메일마다 하나씩 연결된 Google 계정입니다(`google:<workspaceId>:<userId>:<email>`). 자격 증명은 `<dataDir>/secrets.json`에 `google_*` 키로 서버 측에 저장되며 클라이언트에는 결코 도달하지 않습니다. 브라우저 로그인은 서버에서 완료됩니다. Connect를 통한 로그인은 자격 증명 봉인만 저장합니다. `authExpiredAt` 플래그가 재연결 배너를 구동합니다.
 
 ## 아키텍처 용어
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: 휴대폰 씬 클라이언트입니다. 기본 거부 도구 정책으로 중계 릴레이를 통해 플릿을 원격 제어하는 Flutter 웹 PWA입니다.
 
 **cc_signaling_server**: 초대 게이트된 방을 호스팅하는 무상태 WebSocket 릴레이 브로커입니다. 종단 간 봉인된 프레임만 전달하고, 앱 데이터를 보관하지 않으며, 페어링 PSK를 결코 보지 못하는 단순 중계기입니다.
+
+**Control Center Connect**: 자체 앱을 등록하지 않은 서버를 위해 프로바이더 로그인(GitHub, Google Calendar, Linear)을 실행하는 선택적 서비스입니다. Control Center가 호스팅하는 것, 조직이 운영하는 것(`cc-connect`, 또는 `cc_server`의 `/connect`에 마운트한 것), 또는 없음 중 하나입니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다. [Control Center Connect](/ko-KR/매뉴얼/레퍼런스/connect/)를 참고하세요.
+
+**자격 증명 봉인**: 그것을 만든 Connect만 열 수 있는 암호화된 자격 증명(`credential_seal`)으로, 프로바이더, Connect 주소, 설치 ID, 워크스페이스, 계정, 앱, 시크릿 세대에 묶입니다. 서버는 봉인과 그것이 만들어진 대상 설치 ID를 저장하며, 액세스 토큰은 메모리에만 머뭅니다. 설치 ID가 더 이상 일치하지 않는 봉인은 폐기되고 그 소유자는 다시 로그인합니다.
+
+**설치 ID**: 하나의 Connect 주소에 대한 서버의 신원(`install_id`)으로, 시크릿 파일의 설치 키에서 파생됩니다. Connect는 설치 ID로 서버를 허용 목록에 올립니다. 키를 교체하면 새 ID가 생기고 모두가 Connect 레인에서 로그아웃됩니다.
+
+**설치 바인딩**: 공유 App의 GitHub 설치를 어떤 서버가 사용할 수 있는지에 대한 Connect의 기록(`install_binding`)입니다. 서버를 통해 설치하면 그 서버가 바인딩되고, 조직 관리자의 **이 서버 승인**으로 다른 서버가 바인딩됩니다.
+
+**로그인 레인**: 한 프로바이더의 브라우저 로그인입니다 — `github`, `google`, `linear`, `linear_app` 또는 `slack`. 레인은 서버 자체 앱이 완전하면 그것으로, 아니면 Connect를 통해 실행되며, 둘 다 없으면 사용할 수 없습니다. 일부만 구성된 자체 앱은 오류이며 결코 폴백하지 않습니다.
 
 ## 관련 항목
 

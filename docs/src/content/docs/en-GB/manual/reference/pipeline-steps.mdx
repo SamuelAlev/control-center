@@ -2,7 +2,7 @@
 title: Pipeline steps
 description: Reference for pipeline step kinds, step body keys, their configuration and step results.
 slug: en-GB/manual/reference/pipeline-steps
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 A pipeline step has two independent axes:
@@ -42,7 +42,7 @@ Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are subst
 | `script`     | Shell command to execute (required)              |
 | `outputKey`  | State key that receives trimmed stdout on exit 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Runs inside the host's OS sandbox with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run); a host with no sandbox fails the step. The server's data directory and `.env` file are unreadable, git and `gh` see no host configuration, and `GH_TOKEN` / `GITHUB_TOKEN` hold a one-repository `read` token only when `repo_full_name` (state or trigger payload) names a GitHub repo linked to the workspace. Creating or editing a template with this step needs a workspace admin. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
 
 ### `conversation.promptAgent`
 

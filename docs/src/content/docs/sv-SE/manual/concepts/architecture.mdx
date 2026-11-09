@@ -3,7 +3,7 @@ title: Arkitektur
 description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Översikt
@@ -113,9 +113,9 @@ Båda databaserna ägs av `cc_persistence` och öppnas bara av `cc_server`; inge
 **go_router**, med ett faktum som styr resten: **varje destination i appen har arbetsyteprefix** i form av `/workspaces/:workspaceId/…`. Arbetsytans id i URL:en är den enda källan till sanning för den aktiva arbetsytan — `activeWorkspaceIdProvider` drivs från routen, inte tvärtom — vilket är anledningen till att läsning av arbetsytespecifika data utanför en prefixad route inte har någonstans att hämta sitt id ifrån.
 
 - Routebyggar-_funktioner_ i `router/routes.dart`, som var och en tar arbetsytans id som sitt första argument, inte strängkonstanter
-- Fyra routes före kontexten saknar prefix: `/splash`, `/onboarding`, `/signed-out` och `/workspaces` (väljaren)
-- `ShellRoute` omsluter appskalet; de fyra ytorna återges i fullskärm utanför det
-- Autentiseringsvakt: ofullständig konfiguration går till `/onboarding`; en slutförd konfiguration vars kodvärdsuppgifter har försvunnit går till `/signed-out`. Slutförd betyder att minst en kodvärd är ansluten för den inloggade användaren och att minst en arbetsyta finns — inte GitHub specifikt, och `gh`-CLI:t är inte en autentiseringsmetod
+- Tre routes före kontexten saknar prefix: `/splash`, `/onboarding` och `/workspaces` (väljaren)
+- `ShellRoute` omsluter appskalet; de tre ytorna återges i fullskärm utanför det
+- Autentiseringsvakt: ofullständig konfiguration går till `/onboarding`. En slutförd konfiguration vars kodvärdsuppgifter har försvunnit stannar i appen, och arbetsytans skal visar en varning som länkar till inloggningen. Slutförd betyder att minst en kodvärd är ansluten för den inloggade användaren och att minst en arbetsyta finns — inte GitHub specifikt, och `gh`-CLI:t är inte en autentiseringsmetod
 - Onboardinggrind i `features/auth/providers/`
 
 ## Nätverk (serversidan)

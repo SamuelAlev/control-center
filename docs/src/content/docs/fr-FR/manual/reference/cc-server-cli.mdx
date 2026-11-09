@@ -2,12 +2,13 @@
 title: CLI cc_server
 description: Chaque drapeau, variable d’environnement, sous-commande et chemin du répertoire de données du serveur sans interface.
 slug: fr-FR/manuel/reference/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Chaque réglage du processus accepte un drapeau de ligne de commande ou une variable
 d’environnement ; le drapeau l’emporte, puis la variable d’environnement, puis la
-valeur par défaut. Les identifiants tiers font exception — voir ci-dessous.
+valeur par défaut. Les identifiants des fournisseurs font exception — voir
+[Applications fournisseur et Connect](#applications-fournisseur-et-connect).
 
 :::caution[Les drapeaux inconnus sont ignorés en silence]
 L’analyseur d’arguments est écrit à la main et ignore tout ce qu’il ne reconnaît pas :
@@ -44,7 +45,7 @@ démarrage lorsqu’un drapeau semble sans effet.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | non défini                    | SHA-256 attendu de ce binaire, vérifié avant chaque lancement                                                                                                                                          |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | vide                          | Arguments supplémentaires séparés par des virgules pour l’invocation du tunnel                                                                                                                         |
 
-## Indexation et identifiants tiers
+## Indexation et exécution
 
 | Drapeau              | Variable                     | Défaut | Signification                                                                                                                                                                                |
 | -------------------- | ---------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +55,45 @@ démarrage lorsqu’un drapeau semble sans effet.
 | `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`    | `on`   | Si les exécutions du harnais envoient un petit ensemble résident d’outils plus un index de noms, le reste étant chargé à la première utilisation. Voir ci-dessous                            |
 | `--credential-gate`  | `CC_SERVER_CREDENTIAL_GATE`  | `900`  | Secondes pendant lesquelles une exécution est mise en attente qu’un humain corrige un identifiant qui ne peut pas la servir (bornée à 0–3600). Voir ci-dessous                               |
 
-Une valeur vide pour un identifiant équivaut à une absence de définition : le repli
-intégré s’applique donc toujours. Une compilation à partir du code source ne comporte
-aucun identifiant intégré.
+## Applications fournisseur et Connect
 
-Google Calendar et le sélecteur de GIF Klipy sont **accessibles uniquement par
-l’environnement** — il n’existe aucun drapeau `--google-client-id` / `--klipy-app-key`
-(les drapeaux inconnus sont ignorés). Définissez `GOOGLE_OAUTH_CLIENT_ID` +
-`GOOGLE_OAUTH_CLIENT_SECRET`, ainsi que `KLIPY_APP_KEY`, dans l’environnement (ou dans
-un `.env` à côté du serveur). Une valeur vide désactive cette fonctionnalité plutôt que
-de faire échouer le démarrage.
+Aucune version n’embarque d’identifiants de fournisseur. Avec Control Center Connect
+activé, Connect exécute chaque fournisseur, et ces applications propres restent
+enregistrées mais inutilisées. Sous **Utiliser mes propres applications**, chaque
+fournisseur s’exécute avec l’application propre au serveur lorsqu’elle est
+entièrement configurée, sinon il est indisponible. Une application propre à
+l’espace de travail s’applique dans les deux cas. Les applications propres se définissent dans **Paramètres →
+Serveur → Authentification unique → Applications fournisseur**, ou sont amorcées
+une seule fois depuis le fichier `.env` du serveur. Il n’existe aucun drapeau
+pour elles : un secret passé sur la ligne de commande est lisible par `ps`.
+
+| Variable                       | Signification                                                                                  |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | L’identifiant de la GitHub App du serveur                                                      |
+| `GITHUB_APP_PRIVATE_KEY`       | Sa clé privée, sur une seule ligne avec des échappements `\n`. **`.env` uniquement**           |
+| `GITHUB_CLIENT_ID`             | Son identifiant client, pour connecter les personnes                                           |
+| `GITHUB_CLIENT_SECRET`         | Son secret client. **`.env` uniquement**                                                       |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Le client Google de type Web application du serveur                                            |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Son secret. **`.env` uniquement**                                                              |
+| `LINEAR_CLIENT_ID`             | L’application Linear du serveur (PKCE, sans secret)                                            |
+| `LINEAR_API_KEY`               | Une clé de service Linear pour l’automatisation. **`.env` uniquement**                         |
+| `KLIPY_APP_KEY`                | La clé Klipy propre au serveur pour la recherche de GIF, utilisée seulement sous **Utiliser mes propres applications** |
+| `CC_CONNECT_URL`               | `hosted`, `off` ou une URL Connect. Verrouille le choix de Connect ; Paramètres ne peut alors plus le modifier |
+| `CC_SERVER_CONNECT_HOST`       | `on` monte Control Center Connect sur `<server>/connect`, configuré par les variables `CONNECT_*`. Voir [Exécuter un serveur Connect](/fr-FR/manuel/guides/executer-serveur-connect/#monter-connect-dans-cc_server) |
+
+Le fichier `.env` est lu depuis le répertoire de travail du serveur, à côté de
+l’exécutable, ou depuis une copie du code source située au-dessus ; sous Docker,
+montez-le sur `/app/bin/.env`. Le serveur **refuse de démarrer** (code de sortie
+`78`) lorsque `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` ou un `SLACK_*SECRET*` quelconque
+est exporté dans l’environnement de son processus, où chaque processus enfant
+pourrait le lire. L’amorçage depuis `.env` n’a lieu qu’une fois par champ, si
+bien qu’une modification ultérieure dans Paramètres n’est pas annulée par un
+redémarrage. Une valeur vide équivaut à une absence de définition.
+
+Le travail en arrière-plan de GitLab et de Bitbucket lit aussi `GITLAB_TOKEN` /
+`CI_JOB_TOKEN` et `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` avec
+`BITBUCKET_EMAIL`. GitHub n’a aucun identifiant d’environnement.
 
 ### `--sandbox`
 
@@ -120,7 +150,7 @@ barrière.
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Exécute le serveur jusqu’à `SIGINT`/`SIGTERM`                                                                                                                                                                                    |
 | `cc_server pair`                              | Provisionne un appareil et affiche son identifiant et sa clé d’appairage. Sans risque vis-à-vis d’un répertoire de données qu’un serveur sert déjà — le serveur en cours d’exécution prend l’appareil en compte sans redémarrage |
-| `cc_server calendar connect --workspace <id>` | Connecte un compte Google à un espace de travail via le flux à code d’appareil, puis se termine                                                                                                                                  |
+| `cc_server connect <command>`                 | Affiche ou modifie le Control Center Connect qu’utilise ce serveur, sans le démarrer                                                                                                                                             |
 | `cc_server update`                            | Recherche, télécharge et vérifie une version publiée autonome plus récente                                                                                                                                                       |
 | `cc_server --version`                         | Affiche la version de compilation et le SHA git — la même identité que celle qu’annoncent `/healthz` et la poignée de main RPC                                                                                                   |
 
@@ -147,6 +177,27 @@ charge utile différente, émise depuis le panneau d’appairage de l’applicat
 descripteur de connexion complet du serveur, plus une expiration. Les deux ne sont pas
 interchangeables — voir [Associer un appareil](/fr-FR/manuel/guides/associer-appareil/).
 :::
+
+### `connect`
+
+Lit et écrit les mêmes réglages que la carte **Control Center Connect** dans
+**Paramètres → Serveur → Authentification unique**, depuis le répertoire de
+données. Un serveur en cours d’exécution prend en compte une modification dans
+les 10 minutes ou au redémarrage.
+
+| Commande                        | Ce qu’elle fait                                                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Affiche le mode, l’URL, si `CC_CONNECT_URL` le verrouille, l’identifiant d’installation, l’état de santé et la source de chaque voie (`own`, `connect` ou `off`) |
+| `cc_server connect enable`      | Utilise le Connect hébergé de Control Center                                                                      |
+| `cc_server connect enable --url <url>` | Utilise un Connect personnalisé à cette URL (HTTPS, ou `http` sur la boucle locale)                        |
+| `cc_server connect disable`     | Cesse d’utiliser Connect. Seules les applications propres au serveur connectent les personnes                     |
+| `cc_server connect rotate-key --yes` | Émet une nouvelle clé d’installation et un nouvel identifiant d’installation. Toutes les personnes connectées via Connect doivent se reconnecter. Sans `--yes`, se contente d’avertir et se termine avec `2` |
+
+`status` sans commande est le comportement par défaut. Chaque commande accepte
+`--data-dir`. `CC_CONNECT_URL` l’emporte sur ce qu’elles enregistrent. Une
+commande inconnue se termine avec `64`. Voir
+[Control Center Connect](/fr-FR/manuel/reference/connect/) pour les modes,
+l’identité d’installation et les codes d’état.
 
 ### `update`
 
@@ -192,7 +243,7 @@ peut être résolu.
 | `global.db`                       | Le registre des espaces de travail, les utilisateurs, les appareils appairés, le fil d’actualités et la file de la flotte |
 | `<workspaceId>/workspace.db`      | Une base de données par espace de travail — agents, espaces, tickets, mémoire, graphe de code                             |
 | `<workspaceId>/chat_credentials/` | Jetons de bot de chat, en JSON brut, pour qu’ils suivent l’espace de travail                                              |
-| `secrets.json`                    | Clés d’appairage, identité applicative du fournisseur, jetons par utilisateur et jetons Google, SSO (`0600`)              |
+| `secrets.json`                    | Clés d’appairage, clé d’installation Connect, applications fournisseur, connexions des personnes (scellées lorsqu’elles passent par Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Un instantané d’installation — `manifest.json`, `global.db` et une copie de chaque espace de travail                      |
 | `backups/exports/`                | Exports d’un seul espace de travail, `<workspaceId>-<timestamp>.db`                                                       |
 | `backups/transfer/`               | Zone de transit pour les téléchargements et les envois de sauvegarde ; balayée par la route qui l’écrit                   |

@@ -32,7 +32,7 @@ import 'package:cc_mcp/cc_mcp.dart'
         EnvironmentStopAppTool,
         EnvironmentUpTool;
 import 'package:cc_natives/cc_natives.dart'
-    show RigWorktreeGuard, RigWorktreeTampered;
+    show IsolatedGit, RigWorktreeGuard, RigWorktreeTampered;
 import 'package:cc_persistence/cc_persistence.dart'
     show
         DaoEnvironmentDefinitionRepository,
@@ -246,8 +246,7 @@ class ServerEnvironmentDirectory implements EnvironmentSpaceDirectory {
   /// with: a head nobody can read is a head no approval covers.
   static Future<String?> _headOf(String path) async {
     try {
-      final result = await Process.run(
-        'git',
+      final result = await IsolatedGit.run(
         RigWorktreeGuard.gitArgs(['-C', path, 'rev-parse', 'HEAD']),
       );
       return result.exitCode == 0 ? '${result.stdout}'.trim() : null;
@@ -257,8 +256,7 @@ class ServerEnvironmentDirectory implements EnvironmentSpaceDirectory {
   }
 
   static Future<String> _defaultBranch(String path) async {
-    final result = await Process.run(
-      'git',
+    final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs([
         '-C',
         path,
@@ -355,11 +353,16 @@ Future<AgentEnvironmentResult> runAgentHostCommand(
       stderr: '$binary is not installed',
     );
   }
-  final result = await Process.run(
+  // A pass-through tool runs as the operator, like an environment task, with
+  // the same allowlisted host environment (never a GitHub or provider secret).
+  final result = await ChildProcess.run(
     executable,
     arguments,
     workingDirectory: workingDirectory,
     environment: environment,
+    toolchain: true,
+    inherit: environmentOperatorKeys,
+    inheritPrefixes: environmentOperatorPrefixes,
   ).timeout(const Duration(minutes: 30));
   return AgentEnvironmentResult(
     exitCode: result.exitCode,
@@ -509,8 +512,7 @@ Future<List<String>?> syncEnvironmentWorktrees({
     if (before == null || after == null || before == after) {
       continue;
     }
-    final diff = await Process.run(
-      'git',
+    final diff = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs([
         '-C',
         row.path,

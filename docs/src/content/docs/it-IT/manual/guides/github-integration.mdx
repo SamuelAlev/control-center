@@ -2,90 +2,83 @@
 title: Configura l'integrazione GitHub
 description: Accedi a GitHub perché la superficie delle PR, la registrazione dei repo e le esecuzioni degli agenti funzionino.
 slug: it-IT/manuale/guide/integrazione-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Questa guida copre le parti della configurazione specifiche di GitHub. GitHub è
-uno dei tre host di codice supportati — vedi
+uno dei tre host di codice supportati. Vedi
 [Collega un host di codice](/it-IT/manuale/guide/collega-host-di-codice/) per
 collegare GitLab o Bitbucket e per capire come uno spazio di lavoro li combina.
 
 ## Prerequisiti
 
 - Un account GitHub con accesso ai repo su cui vuoi lavorare
-- Una GitHub App registrata per il tuo server (vedi
-  [Crea la GitHub App](/it-IT/manuale/guide/github-app/)) così puoi
-  **accedere**, **oppure** un personal access token con `repo` e `read:org` da
-  incollare
+- Un server che può far accedere le persone a GitHub: con una propria GitHub App
+  (vedi [Crea la GitHub App](/it-IT/manuale/guide/github-app/)) oppure tramite
+  Control Center Connect, a scelta del proprietario del server in
+  **Impostazioni → Server → Accesso single sign-on**
 
 :::note[Le credenziali risiedono sul server, collegate a te]
-Niente viene memorizzato sulla macchina su cui stai digitando. La tua
-credenziale è conservata dal tuo `cc_server`, indicizzata per il tuo id utente, e
-ogni dispositivo da cui accedi la usa — desktop, web e telefono. Un altro membro
-dello stesso server non può leggerla, e far accedere lui è una cosa che fa da sé.
+Niente viene memorizzato sulla macchina su cui stai digitando. Il tuo accesso a
+GitHub è conservato dal tuo `cc_server`, indicizzato per il tuo id utente, e
+ogni dispositivo da cui accedi lo usa: desktop, web e telefono. Un altro membro
+dello stesso server non può usarlo, e l'accesso è una cosa che fa da sé.
 :::
 
-## Accedi con GitHub
+## Accedi a GitHub
 
-Un **device flow**: GitHub ti mostra un codice breve, tu lo approvi su
-github.com e il server riceve la credenziale — nessun URL di callback, nessuna
-porta, niente da esporre. Disponibile ogni volta che il server ha un client id,
-che una build ufficiale fornisce già.
+GitHub prevede solo l'accesso: non c'è alcun token da incollare.
 
 1. Vai su **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del
    codice** (o al primo passaggio dell'onboarding)
-2. Sulla riga **GitHub**, clicca su **Accedi con GitHub**
-3. Una finestra di dialogo mostra un codice di otto caratteri e apre
-   [github.com/login/device](https://github.com/login/device) nel tuo browser.
-   Il codice è già negli appunti
-4. Incollalo, approva l'app e torna qui. La riga diventa da sola
-   «Autenticato come _tuo-nome-utente_»
+2. Sulla riga **GitHub**, clicca su **Accedi a GitHub**
+3. Il browser apre GitHub. Approva l'app
 
-Puoi chiudere la finestra di dialogo mentre completi nel browser — il server
-continua a eseguire il polling finché il codice non scade (circa 15 minuti),
-quindi l'accesso va comunque a buon fine.
+Il modo in cui l'accesso si conclude dipende da chi lo esegue:
 
-## Oppure incolla un token
+- **L'app del server:** GitHub rimanda il browser al server e la finestra di
+  dialogo se ne accorge da sola. Non c'è nulla da digitare
+- **Control Center Connect:** la pagina del browser mostra un codice di
+  8 caratteri. Digitalo nella finestra di dialogo, oppure lascia che il browser
+  apra Control Center tramite il link `control-center://` ed evita di digitarlo
 
-La soluzione di ripiego quando il server non ha un'app, quando l'app non è
-installata su un account che ti serve, o quando preferisci semplicemente usare un
-PAT.
+Verifica: la riga **GitHub** mostra «Autenticato come _tuo-nome-utente_».
 
-1. Vai su **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del
-   codice**
-2. Sulla riga **GitHub**, clicca su **Aggiungi token**
-3. Incolla un token con `repo` e `read:org` (classico) e salva. Un token
-   **fine-grained** richiede **Contents** e **Pull requests** del repository (in
-   lettura e scrittura), più **Checks** e **Actions** (in lettura).
+La finestra di dialogo rifiuta un codice o un link che non ha avviato lei, con
+**Accesso non avviato qui**. Se qualcuno ti manda un link di accesso, non
+proseguire: completarlo collegherebbe il tuo account al suo server.
 
-Il token viene verificato mentre viene salvato, così la riga può indicare
-l'account a cui appartiene. Clicca su **Disconnetti** per rimuoverlo.
+Clicca su **Disconnetti** per rimuovere il tuo accesso. Disconnetterti da
+GitHub, o essere rimosso da uno spazio di lavoro, invalida anche ogni token che
+il server ha emesso a tuo nome.
 
-Verifica: la riga **GitHub** mostra «Autenticato come _tuo-nome-utente_». Un
-suffisso indica l'origine quando la credenziale che risponde non è la tua —
-«tramite l'app di questo server» o «dall'ambiente».
+## Per chi parla la tua credenziale
 
-:::note[La precedenza è fissa]
-Una richiesta fatta a tuo nome usa **la tua** credenziale e nient'altro —
-l'ambiente è la credenziale del server, non la tua, quindi non ti sostituisce
-mai. Il lavoro senza un umano dietro (webhook, polling delle PR,
-sincronizzazione dei ticket) usa l'identità applicativa del server, poi la
-credenziale del proprietario del server, infine l'ambiente.
-:::
+- **Tutto ciò che fai** (aprire la pagina della PR, pubblicare una revisione,
+  approvare, unire) usa il **tuo** accesso e nient'altro. Se non hai effettuato
+  l'accesso, l'app te lo dice e ti chiede di accedere. Nessun'altra credenziale
+  ti sostituisce
+- **Il lavoro che nessuno digita** (esecuzioni degli agenti, pipeline, polling
+  delle PR, risposte del bot, clonazioni) riceve un token per un solo
+  repository, emesso dalla GitHub App del server o tramite Connect. È limitato a
+  ciò che un membro responsabile può fare lì: il membro che ha fatto la
+  richiesta, altrimenti il proprietario dello spazio di lavoro. Un membro che non
+  può eseguire push limita il token alla lettura
+- **L'automazione non approva mai** una pull request. Approvare è un atto umano
 
 ## Cosa ti offre l'integrazione
 
 | Funzionalità            | Come                                                                                                           |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Elenco e dettaglio delle PR | L'API REST di GitHub, dal server, sull'identità applicativa o sulla tua credenziale                       |
+| Elenco e dettaglio delle PR | L'API REST di GitHub, dal server, con il tuo accesso                                                       |
 | Esecuzioni dei controlli | L'API Checks di GitHub                                                                                        |
-| Pubblicazione delle revisioni | Un passaggio attivato dall'utente che pubblica la tua revisione sulla PR                                 |
-| Registrazione dei repo  | Un checkout viene accettato se il suo remote `origin` punta a github.com — o a gitlab.com / bitbucket.org      |
-| Accesso GitHub degli agenti | Il broker delle credenziali inietta un token di sola lettura come `GH_TOKEN` / `GITHUB_TOKEN`; i push passano da Control Center |
+| Pubblicazione delle revisioni | Un passaggio attivato dall'utente che pubblica la tua revisione sulla PR, a tuo nome                     |
+| Registrazione dei repo  | Un checkout viene accettato se il suo remote `origin` punta a github.com, o a gitlab.com / bitbucket.org       |
+| Accesso GitHub degli agenti | Un token per l'unico repository dell'esecuzione come `GH_TOKEN` / `GITHUB_TOKEN`; i push passano da Control Center |
 | Ping delle notifiche    | Un polling lato server della tua casella delle notifiche GitHub genera «menzionato in una pull request» e «revisione richiesta» |
 | Profili utente          | Schede del profilo al passaggio del mouse e filtro delle PR per autore                                         |
 
-Alcuni percorsi usano l'API GraphQL invece di REST dove costa meno — l'attività
+Alcuni percorsi usano l'API GraphQL invece di REST dove costa meno: l'attività
 dei branch per il selettore di composizione delle PR e lo stato di revisione in
 tempo reale che decide se una notifica di revisione richiesta è ancora in
 sospeso.
@@ -93,7 +86,7 @@ sospeso.
 ## Tieni d'occhio i guasti di GitHub
 
 La barra del titolo mostra un chip di stato quando un provider è degradato, e
-copre GitHub, Claude, OpenAI e Kimi. **È nascosto finché tutto è sano** — la
+copre GitHub, Claude, OpenAI e Kimi. **È nascosto finché tutto è sano**: la
 presenza segnala un problema, non la sua assenza.
 
 Clicca sul chip per aprire un flyout con lo stato di ogni provider e un pulsante
@@ -101,54 +94,54 @@ di aggiornamento. Gli stati si aggiornano da soli ogni due minuti.
 
 ## Sapere come agiscono gli agenti su GitHub
 
-- Un agente che lavora in un worktree GitHub riceve sempre un token GitHub di
-  sola lettura. Un push passa da Control Center, che interroga la regola
-  **Eseguire il push a un remoto** e poi lo inoltra con un token di scrittura che
-  l'agente non possiede mai. Vedi
+- Un agente che lavora in un worktree GitHub riceve un token per quell'unico
+  repository. Può leggere il codice e commentare le pull request quando il
+  membro responsabile può eseguire push, e solo leggere quando non può. Un push
+  passa da Control Center, che interroga la regola **Eseguire il push a un
+  remoto** e poi lo inoltra con un token di scrittura che l'agente non possiede
+  mai. Vedi
   [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/)
 - I commit degli agenti usano sempre l'identità Git del richiedente sia come autore sia come committer. Per impostazione predefinita, il trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` accredita l'account GitHub `@usectrl` come coautore. In **Impostazioni → Tu → Attribuzione dei commit** puoi disattivare questo credito senza cambiare la tua identità. La scelta in **Impostazioni → Spazio di lavoro → Generale** ha la precedenza e blocca l'interruttore personale. L'attribuzione autonoma di Claude Code è sempre disabilitata. La firma dei commit richiede comunque una configurazione valida dedicata
-- Con una GitHub App configurata, il broker conia token di installazione
-  fine-grained, limitati al repo e di circa un'ora per ogni avvio, invece di
-  consegnare un token ampio. L'installazione viene risolta dal **proprietario**
-  del repo dell'esecuzione, quindi un'unica app installata su più account si
-  limita correttamente a quello che l'esecuzione tocca. Senza un'app, gli agenti
-  ricevono il token dell'ambiente, che non può essere limitato alla sola
-  lettura: la regola di push vincola allora `git push`, ma non il codice che usa
-  direttamente il token
-- Il token è sempre quello del broker, mai quello del membro richiedente. Il
-  token del server viene trattenuto a un'esecuzione che agisce per un membro che
-  non è il proprietario e non ha collegato GitHub
+- Un terminale che apri su un rig riceve il tuo accesso, ristretto a quell'unico
+  repository, quindi i push da lì sono tuoi
+- Quando non è possibile emettere alcun token (nessun responsabile ha effettuato
+  l'accesso, l'app non è installata presso il proprietario, o l'installazione è
+  sospesa), l'esecuzione parte senza token e le sue note spiegano perché. Non
+  esiste alcuna credenziale di fallback
 
 ## Risoluzione dei problemi
 
 ### L'elenco delle PR è vuoto e dice che GitHub non è collegato
 
-Non hai alcuna credenziale GitHub su questo server. Accedi o incolla un token in
-**Hosting del codice**. I repo su altri forge non sono interessati — solo quelli
-di GitHub non contribuiscono nulla.
+Non hai effettuato l'accesso a GitHub su questo server. Clicca su **Accedi a
+GitHub** in **Hosting del codice**. I repo su altri forge non sono interessati.
 
-### La riga offre «Aggiungi token» ma non «Accedi con GitHub»
+### La riga GitHub dice che l'accesso non è configurato su questo server
 
-Il server non ha un client id — che è lo stato normale per una build dal codice
-sorgente, dato che le credenziali vengono incorporate solo nelle build ufficiali.
-Vedi [Crea la GitHub App](/it-IT/manuale/guide/github-app/): richiede circa due
-minuti e solo il proprietario del server deve farlo, una volta sola.
+Il server non ha né una propria GitHub App né Connect. Il proprietario del server
+ne sceglie uno in **Impostazioni → Server → Accesso single sign-on**: **Crea la
+mia app GitHub** richiede circa due minuti. Vedi
+[Crea la GitHub App](/it-IT/manuale/guide/github-app/).
 
-### La finestra di accesso dice che il provider non ha restituito alcun device code
+### La finestra di dialogo dice che il codice non corrisponde
 
-La GitHub App esiste, ma la sua casella **Device flow** è disattivata. Attivala
-nelle impostazioni dell'app (General → Device flow) e riprova.
+Digita il codice esattamente come lo mostra il browser: 8 lettere e cifre.
+Cinque codici errati interrompono l'accesso; ricomincialo.
 
-### La riga dice «tramite l'app di questo server» quando mi aspettavo il mio account
+### L'accesso dice che l'app non è installata
 
-Non hai effettuato l'accesso; quello che vedi è l'identità applicativa del server
-che risponde. Clicca su **Accedi con GitHub** su quella riga.
+La GitHub App non ha alcuna installazione sull'account proprietario del
+repository. Un amministratore dello spazio di lavoro la installa da
+**Impostazioni → Spazio di lavoro → Generale → Installazioni dell'app GitHub**.
+Per un'organizzazione sull'App condivisa di Control Center, un amministratore di
+quell'organizzazione potrebbe dover cliccare su **Autorizza questo server**. Vedi
+[Crea la GitHub App](/it-IT/manuale/guide/github-app/#autorizza-questo-server-per-unorganizzazione).
 
-### Un PAT fine-grained non mostra il pulsante di unione né lo stato dei controlli
+### Tutti devono accedere di nuovo a GitHub
 
-Il token richiede **Contents** e **Pull requests** (in lettura e scrittura), più
-**Checks** e **Actions** (in lettura). Dopo averlo modificato, incollalo di nuovo
-in Hosting del codice.
+Il proprietario del server ha ruotato la chiave Connect del server, ha cambiato
+server Connect, oppure la directory dati è stata ripristinata su un'altra
+macchina. Gli accessi tramite Connect sono legati al server che li ha creati.
 
 ### L'aggiunta di un repo viene rifiutata
 
@@ -173,4 +166,4 @@ volte con backoff esponenziale, rispettando `retry-after`.
 - [Gestisci le chiavi API](/it-IT/manuale/guide/chiavi-api/)
 - [Aggiungi repo a uno spazio di lavoro](/it-IT/manuale/guide/aggiungi-repo/)
 - [Revisiona e unisci una PR](/it-IT/manuale/guide/revisiona-e-unisci-pr/)
-- [Configura l'integrazione Slack](/it-IT/manuale/guide/integrazione-slack/)
+- [Parla con Control Center da una PR GitHub](/it-IT/manuale/guide/conversazioni-pr-github/)

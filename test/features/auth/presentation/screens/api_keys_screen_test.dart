@@ -1,11 +1,11 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart' show ProviderConnection, SignInLaneInfo;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
-import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/api_keys_screen.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
-import 'package:control_center/features/ticketing/providers/ticketing_connection_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,11 +24,12 @@ void main() {
       forgeConnectionsProvider.overrideWith(
         (ref) async => const <ForgeConnection>[],
       ),
-      signInProvidersProvider.overrideWith(
-        (ref) async => const <String, SignInProvider>{},
+      oauthLanesProvider.overrideWith(
+        (ref, workspaceId) async => const <ConnectOAuthLane, SignInLaneInfo>{},
       ),
-      ticketingConnectionsProvider.overrideWith(
-        (ref) async => const <TicketProvider, TicketingConnection>{},
+      oauthConnectionsProvider.overrideWith(
+        (ref, workspaceId) async =>
+            const <ConnectOAuthLane, ProviderConnection>{},
       ),
     ],
     child: MaterialApp(

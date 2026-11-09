@@ -2,7 +2,7 @@
 title: 管線步驟
 description: 管線步驟種類、步驟主體鍵、其設定與步驟結果的參考。
 slug: zh-TW/手冊/參考/管線步驟
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 一個管線步驟有兩條彼此獨立的軸：
@@ -42,7 +42,7 @@ sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 | `script`    | 要執行的 shell 命令（必填）                      |
 | `outputKey` | 在結束碼為 0 時接收去除前後空白 stdout 的狀態鍵  |
 
-執行時的 cwd 為 `<cc_root>/pipelines/<pipelineRunId>/`（同一次執行中的所有 bash 步驟共用），且環境中帶有 `GITHUB_TOKEN`。也會把 `<stepId>_runDir` 寫入狀態。非零的結束碼會讓該步驟失敗，並附上 stderr 的尾端內容。
+在主機的作業系統沙箱中執行，cwd 為 `<cc_root>/pipelines/<pipelineRunId>/`（同一次執行中的所有 bash 步驟共用）；沒有沙箱的主機會讓該步驟失敗。伺服器的資料目錄與 `.env` 檔案無法讀取，git 與 `gh` 看不到任何主機設定，而且只有當 `repo_full_name`（狀態或觸發器酬載）指名一個與工作區連結的 GitHub 儲存庫時，`GH_TOKEN` / `GITHUB_TOKEN` 才會持有一個只適用於該儲存庫的 `read` 權杖。建立或編輯含有此步驟的範本需要工作區管理員。也會把 `<stepId>_runDir` 寫入狀態。非零的結束碼會讓該步驟失敗，並附上 stderr 的尾端內容。
 
 ### `conversation.promptAgent`
 

@@ -2603,6 +2603,27 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esperando autorización en tu navegador…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Introduce el código que se muestra en tu navegador';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Eso no parece un código de inicio de sesión. Los códigos tienen 8 letras y dígitos.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Ese código no coincide con este inicio de sesión. Revísalo e inténtalo de nuevo.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'El inicio de sesión en $provider aún no está configurado en este servidor.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'La dirección de retorno del inicio de sesión de este servidor no es accesible de forma segura desde un teléfono. Inicia sesión desde la aplicación de escritorio o pide al propietario del servidor que configure una dirección HTTPS pública.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'El inicio de sesión ha caducado. Vuelve a iniciarlo.';
 
@@ -2623,10 +2644,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Completar inicio de sesión';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'No se puede acceder de forma segura a la devolución de llamada del navegador de este servidor desde un teléfono. Pide al propietario que configure una devolución de llamada HTTPS pública o añade un token.';
 
   @override
   String get credentialsUpdateToken => 'Actualizar token';

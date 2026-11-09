@@ -9,9 +9,17 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bot_pro
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_link_method.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
+import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
+import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_infra/cc_infra.dart' show ChatLinkCode, ChatLinkCodeStore;
+import 'package:cc_infra/cc_infra.dart'
+    show
+        ChatLinkClaim,
+        ChatLinkCode,
+        ChatLinkCodeStore,
+        ChatTicketDraft,
+        ChatTicketDraftStore;
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -70,6 +78,40 @@ void main() {
       expect(op('chat.providers').minRole, isNot(WorkspaceRole.admin));
       expect(op('chat.status').minRole, isNot(WorkspaceRole.admin));
       expect(op('chat.beginUserLink').minRole, isNot(WorkspaceRole.admin));
+    });
+
+    test('linking is open to every member, drafting to writers', () {
+      for (final name in [
+        'chat.beginUserLink',
+        'chat.pendingUserLink',
+        'chat.confirmUserLink',
+        'chat.declineUserLink',
+      ]) {
+        expect(op(name).minRole, WorkspaceRole.viewer, reason: name);
+      }
+      for (final name in [
+        'chat.ticketDrafts',
+        'chat.confirmTicketDraft',
+        'chat.discardTicketDraft',
+      ]) {
+        expect(op(name).minRole, WorkspaceRole.member, reason: name);
+      }
+      final watches = {
+        for (final q in buildChatWatchQueries(
+          connector: connector,
+          users: _FakeUsers(),
+        ))
+          q.name: q,
+      };
+      expect(
+        watches['chat.watchPendingUserLink']?.minRole,
+        WorkspaceRole.viewer,
+      );
+      expect(watches['chat.watchTicketDrafts']?.minRole, WorkspaceRole.member);
+    });
+
+    test('there is no link command any more', () {
+      expect(ops.map((o) => o.name), isNot(contains('chat.redeemLinkCode')));
     });
 
     test('every op that touches secrets or the network declares it', () {
@@ -134,7 +176,9 @@ void main() {
           'appToken',
           'configRefreshToken',
         ]);
-        expect(fields.first['expectedPrefix'], 'xoxb-');
+        // Both bot token kinds: a pasted token may be a rotating one.
+        expect(fields.first['acceptedPrefixes'], ['xoxb-', 'xoxe.xoxb-']);
+        expect(fields.last['acceptedPrefixes'], ['xoxe-']);
         expect(fields.last['required'], isFalse);
         // Capabilities travel with it, so the client can hide what a provider
         // cannot do instead of offering a button that fails.
@@ -308,6 +352,152 @@ void main() {
       expect(row['method'], 'code');
       // Unnamed provider means the whole roster here too.
       expect(connector.rosterProviders, [null]);
+    });
+  });
+
+  group('confirming a link', () {
+    ChatLinkCode claimed({String userId = 'user-1'}) {
+      final code = connector.linkCodes.mint(
+        workspaceId: 'ws-1',
+        provider: slack,
+        userId: userId,
+      );
+      return connector.linkCodes.claim(
+        'ws-1',
+        code.code,
+        provider: slack,
+        claim: ChatLinkClaim(
+          externalTeamId: 'T1',
+          externalUserId: 'U9',
+          label: 'Alex',
+          conversationId: 'D9',
+          claimedAt: DateTime.utc(2026),
+        ),
+      )!;
+    }
+
+    test('the pending code carries the profile that sent it', () async {
+      claimed();
+
+      final pending =
+          (await call('chat.pendingUserLink', const {}))['pending']
+              as Map<String, dynamic>;
+
+      expect(pending['provider'], slack.wire);
+      final claim = pending['claim'] as Map<String, dynamic>;
+      expect(claim['externalUserId'], 'U9');
+      expect(claim['label'], 'Alex');
+      // The DM it arrived in is the server's business, not the client's.
+      expect(claim, isNot(contains('conversationId')));
+    });
+
+    test('a teammate’s code is never shown to the caller', () async {
+      claimed(userId: 'user-2');
+
+      expect((await call('chat.pendingUserLink', const {}))['pending'], isNull);
+    });
+
+    test('confirm is for the caller and the profile they saw', () async {
+      claimed();
+
+      final result = await call('chat.confirmUserLink', {
+        'external_user_id': ' U9 ',
+        'user_id': 'somebody-else',
+      });
+
+      expect(connector.confirmed, [('ws-1', 'user-1', slack, 'U9')]);
+      final link = result['link'] as Map<String, dynamic>;
+      expect(link['externalUserId'], 'U9');
+      expect(link['userDisplayName'], 'Alex Doe');
+    });
+
+    test('confirming without naming a profile is refused', () async {
+      await expectLater(
+        call('chat.confirmUserLink', {'external_user_id': '  '}),
+        throwsA(isA<ValidationException>()),
+      );
+      expect(connector.confirmed, isEmpty);
+    });
+
+    test('declining burns only the caller’s own code', () async {
+      claimed();
+
+      expect(await call('chat.declineUserLink', {'user_id': 'user-2'}), {
+        'ok': true,
+      });
+
+      expect(connector.declined, [('ws-1', 'user-1', slack)]);
+    });
+
+    test('the pending code is watchable', () async {
+      claimed();
+      final query = buildChatWatchQueries(
+        connector: connector,
+        users: _FakeUsers(),
+      ).singleWhere((q) => q.name == 'chat.watchPendingUserLink');
+
+      final snapshot = await query
+          .handler(
+            WatchQueryContext(
+              args: {'provider': slack.wire},
+              workspaceId: 'ws-1',
+              deviceId: 'device-1',
+              userId: 'user-1',
+            ),
+          )
+          .first;
+
+      final pending = snapshot['pending'] as Map<String, dynamic>;
+      expect((pending['claim'] as Map)['externalUserId'], 'U9');
+    });
+  });
+
+  group('ticket drafts', () {
+    ChatTicketDraft draft({String userId = 'user-1'}) =>
+        connector.ticketDrafts.add(
+          workspaceId: 'ws-1',
+          provider: slack,
+          reporterUserId: userId,
+          title: 'Fix the flaky login test',
+        );
+
+    test('lists only the caller’s drafts', () async {
+      final mine = draft();
+      draft(userId: 'user-2');
+
+      final drafts =
+          (await call('chat.ticketDrafts', const {}))['drafts'] as List;
+
+      expect(drafts.map((d) => (d as Map)['id']), [mine.id]);
+    });
+
+    test('confirm creates the caller’s ticket with their edits', () async {
+      final d = draft();
+
+      final result = await call('chat.confirmTicketDraft', {
+        'draft_id': d.id,
+        'title': 'Fix the login test',
+        'description': 'Fails on CI.',
+      });
+
+      expect(connector.confirmedDrafts, [
+        ('ws-1', 'user-1', d.id, 'Fix the login test', 'Fails on CI.'),
+      ]);
+      final ticket = result['ticket'] as Map<String, dynamic>;
+      expect(ticket['id'], 't-1');
+      expect(ticket['title'], 'Fix the login test');
+      expect(ticket['key'], isNotEmpty);
+    });
+
+    test('discard reports whether there was a draft', () async {
+      final d = draft();
+
+      expect(await call('chat.discardTicketDraft', {'draft_id': d.id}), {
+        'ok': true,
+      });
+      expect(await call('chat.discardTicketDraft', {'draft_id': d.id}), {
+        'ok': false,
+      });
     });
   });
 
@@ -498,6 +688,81 @@ class _FakeConnector implements ChatConnector {
 
   @override
   final ChatLinkCodeStore linkCodes = ChatLinkCodeStore();
+
+  @override
+  final ChatTicketDraftStore ticketDrafts = ChatTicketDraftStore();
+
+  final List<(String, String, ChatProvider, String)> confirmed = [];
+  final List<(String, String, ChatProvider)> declined = [];
+  final List<(String, String, String, String?, String?)> confirmedDrafts = [];
+
+  @override
+  ChatLinkCode? pendingUserLink(
+    String workspaceId,
+    String userId, {
+    required ChatProvider provider,
+  }) => linkCodes.pendingFor(workspaceId, userId, provider: provider);
+
+  @override
+  Stream<ChatLinkCode?> watchPendingUserLink(
+    String workspaceId,
+    String userId, {
+    required ChatProvider provider,
+  }) => Stream.value(pendingUserLink(workspaceId, userId, provider: provider));
+
+  @override
+  Future<ChatUserLink> confirmUserLink({
+    required String workspaceId,
+    required String userId,
+    required ChatProvider provider,
+    required String externalUserId,
+  }) async {
+    confirmed.add((workspaceId, userId, provider, externalUserId));
+    return ChatUserLink(
+      id: 'ul-1',
+      workspaceId: workspaceId,
+      provider: provider,
+      externalTeamId: 'T1',
+      externalUserId: externalUserId,
+      userId: userId,
+      method: ChatLinkMethod.code,
+      linkedAt: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  void declineUserLink(
+    String workspaceId,
+    String userId, {
+    required ChatProvider provider,
+  }) => declined.add((workspaceId, userId, provider));
+
+  @override
+  List<ChatTicketDraft> ticketDraftsFor(String workspaceId, String userId) =>
+      ticketDrafts.forUser(workspaceId, userId);
+
+  @override
+  Future<Ticket> confirmTicketDraft({
+    required String workspaceId,
+    required String userId,
+    required String draftId,
+    String? title,
+    String? description,
+  }) async {
+    confirmedDrafts.add((workspaceId, userId, draftId, title, description));
+    return Ticket(
+      id: 't-1',
+      workspaceId: workspaceId,
+      title: title ?? 'Untitled',
+      status: TicketStatus.backlog,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  bool discardTicketDraft(String workspaceId, String userId, String draftId) =>
+      ticketDrafts.take(workspaceId, userId, draftId) != null;
 
   @override
   final ChatProviderRegistry registry;

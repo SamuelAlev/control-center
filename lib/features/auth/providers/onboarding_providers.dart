@@ -135,9 +135,9 @@ final onboardingGateProvider = Provider<OnboardingGate>((ref) {
   // entirely, so there is no way to connect one. Left to run, the gate reads
   // "no forge" plus a visitor whose onboarding flag is set (redemption hands
   // them a furnished workspace, so they have not onboarded and must not be
-  // sent to onboarding either) and resolves to [OnboardingGate.signedOut] —
-  // offering a sign-in screen for a credential that cannot exist, in front of
-  // a workspace that is already furnished.
+  // sent to onboarding either) and resolves to [OnboardingGate.incomplete] —
+  // offering a setup flow for a credential that cannot exist, in front of a
+  // workspace that is already furnished.
   //
   // Answering `complete` is the honest verdict rather than a bypass: the
   // visitor's setup genuinely IS done, it was just done for them.
@@ -186,8 +186,7 @@ final onboardingGateProvider = Provider<OnboardingGate>((ref) {
   // been set up before. That is what [onboardingFinishedProvider] records, and
   // it is deliberately not inferred from "workspaces exist": an invited member
   // has a workspace they never created and has never onboarded, so the
-  // inference would send a brand-new account to the re-authentication screen
-  // and it would never offer them the rest of the setup.
+  // inference would skip the rest of the setup for a brand-new account.
   final finished = ref.watch(onboardingFinishedProvider);
   final OnboardingGate gate;
   if (result.isComplete) {
@@ -198,7 +197,16 @@ final onboardingGateProvider = Provider<OnboardingGate>((ref) {
     // guard will not let us take back, so hold the splash instead.
     return cachedGate();
   } else if (!hasForge && finished!) {
-    gate = OnboardingGate.signedOut;
+    // A lapsed credential gates nothing for someone already set up: the
+    // workspace shell warns in place (`ForgeSignInBanner`), and a workspace
+    // on its own GitHub App can lack a sign-in its neighbours have. Only a
+    // missing workspace still sends them to onboarding.
+    gate =
+        const CheckOnboardingCompleteUseCase()
+            .execute(hasForgeConnection: true, workspaces: workspaces)
+            .isComplete
+        ? OnboardingGate.complete
+        : OnboardingGate.incomplete;
   } else {
     gate = OnboardingGate.incomplete;
   }

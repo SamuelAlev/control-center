@@ -1,31 +1,146 @@
 ---
 title: Configurar a integração com o Linear
-description: Armazene uma chave de API do Linear no servidor para que os agentes possam chamar o Linear e escolha o Linear como o provedor de tickets para novos tickets.
+description: Entre no Linear, conecte a automação do Linear de um espaço de trabalho e escolha o Linear como o provedor de tickets para novos tickets.
 slug: pt-BR/manual/guias/integracao-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Cole uma chave de API do Linear no servidor vinculada ao seu usuário, do mesmo
-modo que você conecta um forge. Tickets, projetos, vínculos, colaboradores,
-delegação e atribuição funcionam com o banco de dados do próprio Control Center,
-sem exigir nenhum serviço externo — consulte
+O Linear tem duas identidades no Control Center, e as duas são logins no
+navegador: a sua, para o que você faz, e o app do Control Center do espaço de
+trabalho, para o que os agentes e os pipelines fazem. Tickets, projetos,
+vínculos, colaboradores, delegação e atribuição funcionam com o banco de dados
+do próprio Control Center, sem exigir nenhum serviço externo — consulte
 [Criar e gerenciar tickets](/pt-BR/manual/guias/gerenciar-tickets/).
 
-## Armazenar sua chave do Linear
+## Pré-requisitos
 
-A **Chave de API de tickets** fica em **Configurações → Espaço de trabalho →
-Geral**, no cartão **Tickets**. Ela armazena a chave no servidor vinculada ao seu
-id de usuário. A própria chave do servidor para trabalho que nenhuma pessoa
-pediu vem da variável `LINEAR_API_KEY` ou do cartão **Apps do fornecedor**.
-Nenhuma chave de tickets é colocada no sandbox de um agente: os agentes escrevem
-tickets pelas próprias ferramentas do Control Center, que perguntam primeiro à
-regra **Escrever em um rastreador externo**.
+- O servidor consegue fazer o login das pessoas no Linear: pelo Control Center
+  Connect ou com o aplicativo do Linear do próprio servidor
+  ([Registrar o seu próprio aplicativo do Linear](#registrar-o-seu-próprio-aplicativo-do-linear)).
+  O proprietário do servidor escolhe em
+  **Configurações → Servidor → Início de sessão único**
+- Um administrador do espaço de trabalho, para escolher o Linear como provedor
+  de tickets e conectar a automação do Linear
 
-## Marcar novos tickets como Linear
+## Escolher o Linear para o espaço de trabalho
 
-O **Provedor de tickets** (primeiro passo do onboarding e
-`/workspaces/<workspaceId>/api-keys`) oferece `local` e `linear`. Escolher
-`linear` grava `provider: linear` nos tickets que você criar a partir daí.
+1. Acesse **Configurações → Espaço de trabalho → Geral** e encontre o cartão
+   **Tickets**
+2. Defina **Provedor de tickets** como **Linear**
+
+Os tickets que você criar a partir daí recebem `provider: linear`. **Local**
+mantém os tickets no banco de dados do próprio servidor e oculta as linhas do
+Linear: não há nada a autenticar.
+
+## Entrar no Linear
+
+No mesmo cartão, a linha **Linear** é a sua:
+
+1. Clique em **Entrar no Linear**
+2. Aprove no navegador
+3. Com o aplicativo do próprio servidor, a caixa de diálogo percebe isso
+   sozinha. Pelo Connect, digite o código de 8 caracteres que o navegador
+   mostra, ou deixe que ele abra o Control Center pelo link `control-center://`
+
+Tudo o que você faz no Linear a partir do Control Center roda com esse login e
+nada mais. Se você não tiver entrado, o app pede que você entre em vez de agir
+como outra pessoa.
+
+## Conectar a automação do Linear
+
+A linha **Automação do Linear** é o app do Control Center do espaço de trabalho
+no Linear. A sincronização de tickets, os pipelines e os agentes escrevem com
+ela, então as issues e os comentários automatizados aparecem como o Control
+Center, e não como uma pessoa.
+
+1. Um administrador do espaço de trabalho clica em **Conectar o Linear para
+   automação**
+2. Ele aprova o app para o espaço de trabalho do Linear no navegador, como
+   acima
+
+A linha passa então a dizer "Conectado a _seu espaço de trabalho do Linear_".
+Só os administradores do espaço de trabalho podem conectá-la ou desconectá-la.
+
+Nenhuma credencial do Linear é colocada no sandbox de um agente: os agentes
+escrevem tickets pelas próprias ferramentas do Control Center, que perguntam
+primeiro à regra **Escrever em um rastreador externo**.
+
+## Registrar o seu próprio aplicativo do Linear
+
+Use o seu próprio aplicativo quando tiver escolhido **Usar meus próprios
+apps**. O aplicativo do próprio servidor só se aplica nesse caso: com os apps do
+Control Center ou um Connect próprio, o Connect executa todas as faixas, inclusive a do
+Linear, e o aplicativo do servidor e a chave de API de serviço continuam salvos, mas sem
+uso. O aplicativo de um espaço de trabalho
+([abaixo](#dê-ao-espaço-de-trabalho-o-seu-próprio-aplicativo-do-linear)) continua valendo
+em todos os modos.
+
+1. Crie um aplicativo OAuth em
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Adicione as duas callback URLs que **Configurações → Servidor → Início de
+   sessão único → Apps do fornecedor → Linear** mostra em **URLs de callback**,
+   tal como aparecem: `<server origin>/oauth/linear/callback` e
+   `<server origin>/oauth/linear_app/callback`
+3. Cole o **Id de cliente** no bloco do Linear
+
+Não há segredo de cliente: o servidor faz o login com PKCE. Os tokens de
+atualização do Linear expiram depois de 30 dias sem uso, então o servidor
+renova uma vez por dia todo login no Linear com mais de 20 dias.
+
+O mesmo bloco aceita uma **Chave de API de serviço** opcional. É a credencial
+do Linear do próprio servidor para a automação nos espaços de trabalho que não
+conectaram a automação do Linear. Guarde-a em **Configurações** ou no arquivo
+`.env` do servidor como `LINEAR_API_KEY`: o servidor se recusa a iniciar quando
+`LINEAR_API_KEY` é exportada no ambiente do processo dele.
+
+## Dê ao espaço de trabalho o seu próprio aplicativo do Linear
+
+Um espaço de trabalho pode entrar no Linear por um aplicativo próprio em vez do
+aplicativo do servidor. Só um administrador ou proprietário do espaço de trabalho pode
+configurar isso.
+
+1. Crie um aplicativo OAuth do Linear como nos passos acima
+2. Acesse **Configurações → Espaço de trabalho → Geral** e abra **Aplicativos de provedores**, depois **Linear**
+3. Escolha **Usar o aplicativo próprio deste espaço de trabalho**
+4. Adicione ao aplicativo do Linear as duas URLs de callback que a linha mostra em **URLs de callback**, tal como aparecem
+5. Cole o **Id de cliente** e, opcionalmente, uma **Chave de API de serviço** para a automação deste espaço de trabalho
+
+O aplicativo do espaço de trabalho passa então a responder a todo login no Linear e a
+todo pedido de automação neste espaço de trabalho, qualquer que seja a forma como o
+servidor faz o login das pessoas. Ele nunca recorre ao aplicativo do servidor nem ao
+Connect: enquanto um id de cliente não estiver definido, o Linear fica desativado neste
+espaço de trabalho, e a linha informa o que falta. A chave de API de serviço dele é usada
+somente aqui; sem ela, a sincronização exige **Conectar o Linear para automação**.
+
+Trocar entre o aplicativo do servidor e o do espaço de trabalho, ou alterar o id de
+cliente do espaço de trabalho, desconecta todo mundo deste espaço de trabalho do Linear e
+encerra a automação dele. As pessoas entram de novo pelo novo aplicativo. **Usar o
+aplicativo deste servidor** apaga os campos salvos do espaço de trabalho. Os segredos são
+somente de gravação: a linha mostra apenas se um deles está salvo. Os outros espaços de
+trabalho do servidor não são afetados.
+
+## Solução de problemas
+
+### A linha do Linear diz que o login não está configurado
+
+O servidor não tem nem um aplicativo do Linear próprio nem o Connect. O
+proprietário do servidor escolhe um dos dois em **Configurações → Servidor →
+Início de sessão único**. Quando o espaço de trabalho usa o próprio aplicativo, a linha
+diz em vez disso que a configuração dele não foi concluída: um administrador do espaço
+de trabalho adiciona o id de cliente em **Configurações → Espaço de trabalho → Geral →
+Aplicativos de provedores**.
+
+### A sincronização de tickets falha com um erro de autenticação
+
+O espaço de trabalho não tem a automação do Linear conectada e o servidor não
+tem uma chave de API de serviço, então a sincronização não tem credencial. Um
+administrador do espaço de trabalho clica em **Conectar o Linear para
+automação**.
+
+### Conectar a automação diz que o espaço de trabalho do Linear está conectado em outro lugar
+
+O app do Control Center desse espaço de trabalho do Linear já está conectado a
+outro servidor do Control Center.
 
 ## Guias relacionados
 

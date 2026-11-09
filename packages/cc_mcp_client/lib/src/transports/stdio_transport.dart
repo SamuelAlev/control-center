@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 import 'package:cc_mcp_client/src/config/mcp_server_config.dart';
 import 'package:cc_mcp_client/src/process/terminate_process_tree.dart';
 import 'package:cc_mcp_client/src/transports/bounded_lines.dart';
@@ -56,13 +57,22 @@ class StdioTransport implements McpTransport {
     if (command == null || command.trim().isEmpty) {
       throw const McpTransportException('stdio server has no command');
     }
-    final environment = <String, String>{...config.env};
+    // The server's allowlisted child environment (toolchain trees so `npx`,
+    // `uvx` and friends resolve), with the config's own env on top. Nothing
+    // else from the host — no provider token, no git or gh credential —
+    // reaches a third-party MCP server.
+    final environment = ChildEnvironment.build(
+      Platform.environment,
+      toolchain: true,
+      overrides: config.env,
+    );
     try {
       _process = await Process.start(
         command,
         config.args,
         workingDirectory: config.cwd,
-        environment: environment.isEmpty ? null : environment,
+        environment: environment,
+        includeParentEnvironment: false,
         // POSIX: own process group so a tree-kill reaches grandchildren.
         // Windows: Dart kills the job object, so no flag is needed.
         runInShell: false,

@@ -2,7 +2,7 @@
 title: Sandbox dan keamanan
 description: Apa yang sebenarnya membatasi agen di Control Center saat ini, sejauh mana sandbox OS menjangkau, dan batas mana yang tetap berlaku di host tanpa backend.
 slug: id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Sejauh mana sandbox OS menjangkau dan tidak menjangkau]
@@ -92,7 +92,7 @@ tidak pernah menjadi ya. Lihat
 [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) untuk model
 penyelesaiannya.
 
-**Kredensial dari broker dan lingkungan yang disanitasi.** Kredensial dibuat per peluncuran dan dicabut saat eksekusi berakhir, dan token GitHub yang dipegang eksekusi dapat membaca tetapi tidak dapat push — lihat "Push melewati Control Center" di bawah. ACP, `bash` harness, dan Claude Code di
+**Kredensial dari broker dan lingkungan yang disanitasi.** Kredensial dibuat per peluncuran dan dilepas saat eksekusi berakhir, dan token GitHub yang dipegang eksekusi dapat membaca tetapi tidak dapat push — lihat "Push melewati Control Center" di bawah. ACP, `bash` harness, dan Claude Code di
 bawah pembungkus native mendapat lingkungan yang dibersihkan dari vektor
 injeksi dynamic-linker dan interpreter (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
 `NODE_OPTIONS`, `GIT_SSH_COMMAND`, dan sejenisnya) sebelum proses dimulai.
@@ -138,10 +138,11 @@ tolak — dan aturan yang sama berlaku adapter mana pun yang menjalankan agen.
 
 Push adalah aksi yang harus tetap bertahan bahkan terhadap agen yang mencoba
 mengakali aturan, jadi push ditegakkan lewat apa yang dipegang agen, bukan lewat
-apa yang dijalankannya. Dengan GitHub App yang terkonfigurasi, eksekusi di
-worktree GitHub mendapat token instalasi bercakupan repo yang dapat membaca
-konten dan bekerja dengan pull request, tetapi tidak dapat push. Konfigurasi git
-eksekusi menulis ulang setiap URL push GitHub (`https://github.com/`,
+apa yang dijalankannya. Eksekusi di worktree GitHub mendapat token untuk satu
+repositori tersebut, dicetak dari App GitHub ruang kerja, App milik server, atau
+Control Center Connect. Token itu dapat membaca konten dan, ketika anggota yang
+bertanggung jawab memiliki hak push, berkomentar di pull request, tetapi tidak dapat
+push. Konfigurasi git eksekusi menulis ulang setiap URL push GitHub (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) ke **gateway run agen**, sebuah
 endpoint loopback di `cc_server`. Gateway membaca ref mana yang diperbarui oleh
 push, menanyakan aturan **Push ke remote** — sehingga aturan yang dibatasi ke
@@ -170,12 +171,10 @@ eksternal**; instalasi paket adalah **Instal paket**; `curl` dan `wget` adalah
 bertekad menyembunyikannya (`eval`, berkas skrip, panggilan API langsung) bisa
 melakukannya. Push tidak bergantung pada hal ini.
 
-:::caution[Tanpa GitHub App, aturan push hanya bersifat anjuran]
-Tanpa GitHub App yang terkonfigurasi, broker kembali ke personal access token,
-yang tidak dapat dipersempit menjadi hanya-baca. Aturan itu tetap berlaku untuk
-`git push`, karena git mengirim push ke gateway, tetapi kode yang memakai token
-di lingkungan secara langsung dapat push dengan melewatinya.
-:::
+Setiap token GitHub yang diterima eksekusi dibatasi dua kali: ke satu repositori, dan ke
+apa yang dapat dilakukan anggota yang bertanggung jawab (yang meminta, jika tidak pemilik
+ruang kerja) di repositori itu. Tidak ada kredensial cadangan. Ketika tidak ada token yang
+dapat dicetak, eksekusi dimulai tanpa token dan catatannya menjelaskan alasannya.
 
 Tidak ada kunci API tiket yang ditaruh di sandbox. Agen menulis tiket melalui
 alat MCP Control Center, yang menanyakan **Tulis ke pelacak eksternal**.
@@ -183,9 +182,10 @@ alat MCP Control Center, yang menanyakan **Tulis ke pelacak eksternal**.
 Aturan **Akses jaringan** dibaca sekali, saat eksekusi dimulai. Jaringan sandbox
 hanya bisa menyala atau mati, jadi tolak mematikannya sementara izinkan dan
 tanyakan dulu membiarkannya menyala; alat `web_fetch` dan `web_search` milik
-harness tetap bertanya di setiap panggilan. Kredensial dicabut saat eksekusi
-dibongkar, bersama setiap token tulis yang dibuat gateway, jadi handle tidak
-hidup lebih lama daripada eksekusi.
+harness tetap bertanya di setiap panggilan. Handle kredensial eksekusi dilepas
+saat eksekusi dibongkar. Token di baliknya dibagikan per anggota dan repositori serta
+kedaluwarsa dalam sekitar satu jam; anggota yang keluar dari GitHub atau meninggalkan
+ruang kerja langsung membatalkan setiap token yang dicetak atas nama mereka.
 
 ## Apa yang ditambahkan sandbox dan di mana batasnya
 

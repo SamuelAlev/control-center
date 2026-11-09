@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
@@ -91,7 +92,7 @@ class SandboxDispatchDeps {
     this.modelResolver,
     this.harnessProviderFactory = const HarnessProviderFactory(),
     this.agentLoop = const AgentLoopRunner(),
-    this.resolveGitIdentity,
+    this.resolveCommitIdentity,
     this.resolveAgentAttribution,
     this.repoInspector,
     this.autonomyResolver,
@@ -407,13 +408,14 @@ class SandboxDispatchDeps {
   /// The harness agent loop implementation.
   final AgentLoop agentLoop;
 
-  /// Resolves the requesting human's Git identity (null user → server owner).
-  /// Used for both author and committer, regardless of agent attribution.
-  final Future<({String name, String email})?> Function(
+  /// Resolves a run's commit identity from the member who requested it (null:
+  /// nobody did): author, committer and whether the host key may sign.
+  /// Independent of agent attribution.
+  final Future<AgentCommitIdentity?> Function(
     String? userId, {
     String? workspaceId,
   })?
-  resolveGitIdentity;
+  resolveCommitIdentity;
 
   /// Whether this run credits Control Center as a co-author. Workspace policy
   /// overrides the user's preference; absent wiring defaults on. Resolution

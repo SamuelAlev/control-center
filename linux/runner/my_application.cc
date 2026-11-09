@@ -200,13 +200,11 @@ static gboolean has_argument(gchar** arguments, const gchar* flag) {
   return FALSE;
 }
 
-// Returns the first argument that looks like one of our custom-scheme deep
-// links (the `control-center://` app scheme or the reversed-client-id Google
-// OAuth redirect `com.googleusercontent.apps.<client>:/…`), or nullptr.
+// Returns the first argument that is a `control-center://` deep link, or
+// nullptr.
 static const gchar* find_deep_link_url(gchar** arguments) {
   for (gchar** a = arguments; a != nullptr && *a != nullptr; a++) {
-    if (g_str_has_prefix(*a, "control-center://") ||
-        g_str_has_prefix(*a, "com.googleusercontent.apps.")) {
+    if (g_str_has_prefix(*a, "control-center://")) {
       return *a;
     }
   }

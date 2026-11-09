@@ -2,7 +2,7 @@
 title: 安裝
 description: 在瀏覽器使用 Control Center，或安裝桌面應用程式、設定代理後端，並選擇伺服器的執行位置。
 slug: zh-HK/手冊/安裝
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center 有兩種用法：在 [app.usectrl.dev](https://app.usectrl.dev) 以**網頁應用程式**
@@ -127,14 +127,9 @@ Control Center 透過**配接器**派發代理。配接器只有兩個，清單�
 
 GitHub 憑證**屬於你本人，並存放在伺服器上**，以你的使用者 id 為鍵——而不是在用戶端的作業系統鑰匙圈中。你登入的每部裝置都使用同一份憑證，其他成員都無法讀取它。
 
-如果伺服器已註冊 GitHub App（[建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)），**設定 → 工作區 → 個人資料與身分 → 程式碼託管** 會提供**使用 GitHub 登入**（由伺服器執行的裝置流程）。否則請貼上個人存取權杖：
+GitHub 只能登入：**設定 → 工作區 → 個人資料與身分 → 程式碼託管** 會提供**登入 GitHub**，而且沒有可貼上的權杖。登入會經由伺服器自己的 GitHub App（[建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)）或 Control Center Connect 進行，視乎伺服器擁有者的選擇。使用伺服器自己的應用程式時，瀏覽器會自行回到伺服器；經由 Connect 時，你要輸入瀏覽器顯示的 8 個字元代碼，或讓它開啟 Control Center。參見[設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)。
 
-- 經典：`repo` 與 `read:org`
-- 精細權限：**Contents** 與 **Pull requests**（讀取及寫入）、**Checks** 與 **Actions**（讀取）
-
-請在 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) 建立一個。伺服器會在權杖儲存時探查其帳戶名稱，因此該列可以顯示「已以 … 身分登入」；探查失敗仍會儲存權杖，而拼寫錯誤或缺漏的權限範圍會在之後以請求失敗的形式顯現。
-
-新手導引的第一步就是這項連接。之後，同一張卡片就是你替換或清除它的地方。GitLab 與 Bitbucket 使用同一張卡片；參見[連接程式碼託管](/zh-HK/手冊/操作指南/連接程式碼託管/)。
+新手導引會要求這項連接。之後，同一張卡片就是你重新登入或中斷連接的地方。GitLab 與 Bitbucket 使用同一張卡片，配合貼上的個人權杖；參見[連接程式碼託管](/zh-HK/手冊/操作指南/連接程式碼託管/)。
 
 ## 選擇伺服器的執行位置
 

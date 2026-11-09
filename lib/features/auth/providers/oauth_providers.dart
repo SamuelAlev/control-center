@@ -1,7 +1,8 @@
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
-import 'package:control_center/core/providers/rpc_client_provider.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/shared/utils/open_url.dart';
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
+import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Pins an unscoped forge/oauth op to the current workspace overlay.
@@ -10,205 +11,84 @@ Map<String, dynamic> overlayWorkspaceArgs(String? workspaceId) =>
     ? const <String, dynamic>{}
     : <String, dynamic>{'workspace_id': workspaceId};
 
-/// How a provider signs a user in.
-enum SignInFlow {
-  /// A short code the human types on the provider's own page while the SERVER
-  /// polls for the result. Needs no callback URL registered anywhere, which is
-  /// what makes it work for a server on `127.0.0.1`, behind NAT, or driven
-  /// from a phone.
-  device,
-
-  /// A browser round-trip back to the server's `/oauth/<provider>/callback`.
-  redirect,
-}
-
-/// One provider this server can run a sign-in for.
-class SignInProvider {
-  /// Creates a [SignInProvider].
-  const SignInProvider({
-    required this.id,
-    required this.flow,
-    this.redirectUri = '',
-  });
-
-  /// The wire id (`github`, `linear`).
-  final String id;
-
-  /// Which flow it uses.
-  final SignInFlow flow;
-
-  /// The callback URL the operator registered, for the redirect flow. Empty
-  /// for a device flow, which has none.
-  final String redirectUri;
-}
-
-/// The providers this SERVER can run a browser sign-in for, keyed by wire id.
+/// Who runs each lane's sign-in in a scope (`null` = server-wide), as
+/// `oauth.lanes` reports it.
 ///
-/// A provider in this map offers "sign in with …"; one outside it offers
-/// "paste a token", which is the honest affordance for a server whose operator
-/// has registered no app. Never completes with an error — an unreachable
-/// server resolves to paste-only rather than to a broken card.
-final signInProvidersProvider = FutureProvider<Map<String, SignInProvider>>((
-  ref,
-) async {
-  // PAT-only workspaces omit GitHub sign-in; inherit/app workspaces offer it
-  // through that workspace's App. Watch the workspace so the button set
-  // follows the overlay rather than the first workspace we opened.
-  final workspaceId = ref.watch(activeWorkspaceIdProvider);
-  try {
-    final data = await ref
-        .watch(rpcClientProvider)
-        .call('oauth.providers', overlayWorkspaceArgs(workspaceId));
-    final raw = data['providers'];
-    if (raw is! List) {
-      return const {};
-    }
-    final parsed = <String, SignInProvider>{};
-    for (final entry in raw.whereType<Map<String, dynamic>>()) {
-      final id = entry['provider'] as String? ?? '';
-      if (id.isEmpty) {
-        continue;
+/// Never completes with an error: an unreachable server resolves to an empty
+/// map, which every row renders as "sign-in unavailable" rather than as a
+/// broken card.
+final oauthLanesProvider =
+    FutureProvider.family<Map<ConnectOAuthLane, SignInLaneInfo>, String?>((
+      ref,
+      workspaceId,
+    ) async {
+      try {
+        final lanes = await ref
+            .watch(providerSignInRepositoryProvider)
+            .lanes(workspaceId: workspaceId);
+        return {for (final lane in lanes) lane.lane: lane};
+      } on Object {
+        return const {};
       }
-      parsed[id] = SignInProvider(
-        id: id,
-        flow: entry['flow'] == 'device'
-            ? SignInFlow.device
-            : SignInFlow.redirect,
-        redirectUri: entry['redirect_uri'] as String? ?? '',
-      );
-    }
-    return parsed;
-  } on Object {
-    return const {};
-  }
-});
-
-/// What a started sign-in needs from the human next.
-sealed class SignInStarted {
-  const SignInStarted();
-}
-
-/// A device flow: show [userCode] and send them to [verificationUri].
-class SignInDeviceCode extends SignInStarted {
-  /// Creates a [SignInDeviceCode].
-  const SignInDeviceCode({
-    required this.userCode,
-    required this.verificationUri,
-    required this.expiresIn,
-    required this.completion,
-  });
-
-  /// The code the human types on the provider's page.
-  final String userCode;
-
-  /// Where they type it.
-  final String verificationUri;
-
-  /// How long the code stays valid.
-  final Duration expiresIn;
-
-  /// Completes for this attempt, even if its dialog has been dismissed.
-  final Future<bool> completion;
-}
-
-/// A redirect flow: the browser has been opened at the provider.
-class SignInBrowserOpened extends SignInStarted {
-  /// Creates a [SignInBrowserOpened].
-  const SignInBrowserOpened({required this.opened});
-
-  /// False when no browser could be opened at all.
-  final bool opened;
-}
-
-/// Starts [provider]'s sign-in.
-///
-/// The credential never comes back through the app: for a device flow the
-/// SERVER polls and stores it; for a redirect flow the browser talks to the
-/// server's own callback. Device completion is watched independently of its
-/// dialog, so dismissing the code does not leave the connection list stale.
-Future<SignInStarted> startProviderSignIn(
-  WidgetRef ref,
-  String provider, {
-  required void Function() onConnected,
-}) async {
-  final workspaceId = ref.read(activeWorkspaceIdProvider);
-  final rpc = ref.read(rpcClientProvider);
-  final data = await rpc.call('oauth.begin', {
-    'provider': provider,
-    'workspace_id': workspaceId,
-  });
-  if (data['mode'] == 'device') {
-    final code = data['user_code'] as String? ?? '';
-    final uri = data['verification_uri'] as String? ?? '';
-    final expiresIn = Duration(
-      seconds: (data['expires_in'] as num?)?.toInt() ?? 900,
-    );
-    // The dialog opens the page once the code is on screen. Opening it here,
-    // before that route exists, steals focus first — the click that brings
-    // the window back then lands on the scrim and dismisses the code.
-    return SignInDeviceCode(
-      userCode: code,
-      verificationUri: uri,
-      expiresIn: expiresIn,
-      completion: _awaitDeviceSignIn(
-        rpc,
-        loginId: data['login_id'] as String,
-        workspaceId: workspaceId,
-        expiresIn: expiresIn,
-        onConnected: onConnected,
-      ),
-    );
-  }
-  final url = data['url'] as String? ?? '';
-  return SignInBrowserOpened(opened: url.isNotEmpty && openExternalUrl(url));
-}
-
-Future<bool> _awaitDeviceSignIn(
-  RemoteRpcClient rpc, {
-  required String loginId,
-  required String? workspaceId,
-  required Duration expiresIn,
-  required void Function() onConnected,
-}) async {
-  final deadline = DateTime.now().add(expiresIn);
-  do {
-    await Future<void>.delayed(const Duration(seconds: 2));
-    final data = await rpc.call('oauth.status', {
-      'login_id': loginId,
-      // Explicit null also prevents the RPC client's active workspace from
-      // retargeting a login started during onboarding.
-      'workspace_id': workspaceId,
     });
-    switch (data['status']) {
-      case 'succeeded':
-        onConnected();
-        return true;
-      case 'pending':
-        continue;
-      default:
-        return false;
-    }
-  } while (DateTime.now().isBefore(deadline));
-  return false;
+
+/// The caller's own grants (GitHub, Linear) in a scope, plus that
+/// workspace's grants (the Linear app actor, Slack) when it is a workspace.
+///
+/// Re-reads whenever any sign-in in this app succeeds, so a grant that lands
+/// after its dialog was closed still shows up. Never completes with an error.
+final oauthConnectionsProvider =
+    FutureProvider.family<Map<ConnectOAuthLane, ProviderConnection>, String?>((
+      ref,
+      workspaceId,
+    ) async {
+      ref.watch(
+        providerSignInControllerProvider.select(
+          (s) => s.successes.values.fold(0, (a, b) => a + b),
+        ),
+      );
+      try {
+        final list = await ref
+            .watch(providerSignInRepositoryProvider)
+            .connections(workspaceId: workspaceId);
+        return {for (final c in list) c.lane: c};
+      } on Object {
+        return const {};
+      }
+    });
+
+/// Revokes [lane]'s grant in [workspaceId]'s scope and refreshes the
+/// connection list.
+Future<void> disconnectProviderLane(
+  WidgetRef ref,
+  ConnectOAuthLane lane, {
+  String? workspaceId,
+}) async {
+  await ref
+      .read(providerSignInRepositoryProvider)
+      .disconnect(lane, workspaceId: workspaceId);
+  ref.invalidate(oauthConnectionsProvider);
 }
 
-/// How long a redirect sign-in is waited on before the UI stops watching. The
-/// login itself stays valid server-side for its own window; this is only about
-/// how long a spinner is allowed to spin.
-const Duration kSignInTimeout = Duration(minutes: 10);
+/// The `data.kind` an interactive action's RPC error carries when the acting
+/// person has no usable grant of their own for the provider.
+const String kNeedsSignInKind = 'needs_sign_in';
 
-/// Polls [isConnected] every two seconds until it answers true or
-/// [kSignInTimeout] elapses.
+/// The lane an interactive action needs a sign-in for, when [error] is the
+/// server refusing it with `needs_sign_in`; null for every other failure.
 ///
-/// Polling — rather than a push — because the sign-in finishes on the SERVER,
-/// and the page the human is looking at is not the app.
-Future<bool> awaitSignIn(Future<bool> Function() isConnected) async {
-  final deadline = DateTime.now().add(kSignInTimeout);
-  while (DateTime.now().isBefore(deadline)) {
-    await Future<void>.delayed(const Duration(seconds: 2));
-    if (await isConnected()) {
-      return true;
-    }
+/// The refusal arrives as [RpcErrorCodes.unauthorized] with
+/// `data: {kind: 'needs_sign_in', lane: '<lane>'}`. A refusal that names no
+/// lane falls back to [fallback] — the provider the action was about — so a
+/// GitHub merge still offers "Sign in to GitHub".
+ConnectOAuthLane? needsSignInLane(Object? error, {ConnectOAuthLane? fallback}) {
+  if (error is! RemoteRpcException ||
+      error.code != RpcErrorCodes.unauthorized) {
+    return null;
   }
-  return false;
+  final data = error.data;
+  if (data is! Map || data['kind'] != kNeedsSignInKind) {
+    return null;
+  }
+  return ConnectOAuthLane.fromWire(data['lane'] as String?) ?? fallback;
 }

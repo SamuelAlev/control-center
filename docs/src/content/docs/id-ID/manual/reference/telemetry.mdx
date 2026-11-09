@@ -2,7 +2,7 @@
 title: Analitik penggunaan
 description: Apa yang dicatat Control Center saat analitik penggunaan aktif, siapa yang memutuskan, dan apa yang tidak pernah dikirim.
 slug: id-ID/panduan-pengguna/referensi/analitik-penggunaan
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center dapat mengirim **event penggunaan berpseudonim** ke instans [Umami](https://umami.is). Analitik penggunaan **nonaktif sampai operator server mengaktifkannya**. Pengaturan ini milik server dan berlaku untuk setiap klien yang terhubung ke server tersebut: aplikasi desktop, aplikasi web, ponsel, dan server itu sendiri.
@@ -95,9 +95,12 @@ Dicatat oleh aplikasi desktop, aplikasi web, dan ponsel untuk tindakan yang dila
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Run yang gagal dicoba lagi |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Sebuah run dibatalkan dari aplikasi |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Langkah yang sedang berjalan dihentikan paksa |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Upaya masuk ke kalender berakhir |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (bernilai benar ketika proses masuk berjalan melalui Control Center Connect, bukan klien Google milik server itu sendiri), `duration_s` | Upaya masuk ke kalender berakhir |
 | `calendar_disconnected` | `workspace_id` | Akun kalender diputuskan |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Sebuah undangan dijawab |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (jumlah), `conference` | Sebuah acara dipesan di Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Sebuah acara dipindahkan atau diubah ukurannya di kisi kalender |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Sebuah acara dihapus dari Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Perekaman dimulai dari acara kalender |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Tautan rapat dibuka (ponsel). Hanya penyedianya yang diambil dari tautan |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Pusat notifikasi digunakan |

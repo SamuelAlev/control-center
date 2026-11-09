@@ -1,9 +1,9 @@
 ---
 title: Headless szerver futtatása
 description: Futtassa a cc_server headless binárisát vagy annak Docker-image-ét, párosítson hozzá egy klienst, és konfigurálja a teljes CLI-kapcsoló- és környezetiváltozó-felülettel.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Futtassa a `cc_server`-t egy folyamatosan bekapcsolt gépen, majd csatlakozzon
@@ -16,7 +16,9 @@ módon fut macOS-en, Linuxon és Windowson. Övé az adatbázis, ő futtatja az
 
 Minden kiadás közzétesz egy saját üzemeltetésű stacket négy GHCR-image-ből — a
 háttérszolgáltatást, a két statikus vékonyklienst és az opcionális párosítási
-relét —, valamint egy külön `cc-server-demo` image-et a nyilvános demóhoszthoz.
+relét —, valamint az opcionális `cc-connect` bejelentkezési szolgáltatást
+([Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/))
+és egy külön `cc-server-demo` image-et a nyilvános demóhoszthoz.
 A saját üzemeltetésű telepítéshez nem kell kicheckolni a forráskódot. Rögzítsen
 egy verziócímkét (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`), vagy használja a
 `latest` címkét.
@@ -70,6 +72,13 @@ Néhány dolog, amit érdemes tudni, mielőtt mindezt a loopbacken túlra nyitn�
 - **A `/data` az egyetlen állapot.** Az SQLite-adatbázisok, a párosított eszközök
   titkai, a letöltött modellek és a megbeszélések hanganyaga mind a kötetben élnek
   — készítsen róla biztonsági mentést, és a konténer eldobhatóvá válik.
+- **A szolgáltatói titkok egy csatolt `.env` fájlba kerülnek, soha nem `-e`
+  kapcsolóba.** A szerver nem indul el, ha a `GITHUB_APP_PRIVATE_KEY`, a
+  `GITHUB_CLIENT_SECRET`, a `GOOGLE_OAUTH_CLIENT_SECRET`, a `LINEAR_API_KEY`
+  vagy egy `SLACK_*SECRET*` szerepel a folyamata környezetében. Csatolja a fájlt
+  csak olvashatóan a `/app/bin/.env` helyre
+  (`-v /secure/cc.env:/app/bin/.env:ro`), vagy állítsa be az alkalmazásokat a
+  Beállításokban.
 - **Párosítson egy klienst az image-en belülről** az első csatlakozás előtt; ez a
   konténeres megfelelője a [3. lépésnek](#3-lépés-kliens-párosítása-az-első-indítás-előtt):
 
@@ -284,21 +293,38 @@ loopback-jelentés-/parancsátjáróját nyilvános proxyn keresztül. Az érzé
 nyilvános HTTP-kéréseket elutasítja a rendszer; az erőforrásokhoz hitelesített
 titkosított munkamenet szükséges.
 
-## 6. lépés: Google Calendar csatlakoztatása (opcionális)
+## 6. lépés: Válassza ki, hogyan jelentkezzenek be az emberek
 
-Ha egy munkaterület naptárát grafikus felület nélkül szeretné szinkronizálni,
-használja az eszközkódos folyamatot:
+Az első kliens, amely a szerver tulajdonosaként csatlakozik, választást kap arról,
+hogyan jelentkeztesse be ez a szerver az embereket a GitHubra, a Google
+Calendarba és a Linearbe: **A Control Center alkalmazásainak használata**,
+**Saját alkalmazások használata** vagy **Egyéni Connect-szerver használata**. A
+terminálból ugyanez a választás:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Kiír egy kódot és egy URL-t, amelyet egy másik eszközön hagyhat jóvá, a refresh
-tokent szerveroldalon tárolja, majd kilép. Egy forrásból készült build nem
-tartalmaz Google-klienst, ezért az id és a secret környezeti változó kötelező —
-nincs `--google-client-id` kapcsoló. Lásd: [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
+A szerver környezetében vagy `.env` fájljában megadott `CC_CONNECT_URL`
+(`hosted`, `off` vagy egy URL) ehelyett rögzíti a választást. A **Saját
+alkalmazások használata** esetén minden szolgáltatót a **Beállítások → Szerver →
+Egyszeri bejelentkezés → Szolgáltatói alkalmazások** helyen regisztráljon; a
+**Saját GitHub-alkalmazás létrehozása** egy lépésben beállítja a GitHubot. A
+szolgáltatói titkok a szerver `.env` fájljába tartoznak, soha nem az exportált
+környezetbe. Lásd: [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)
+és [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
+
+A Connecten keresztüli bejelentkezések a böngésző által mutatott kóddal
+fejeződnek be, így a szervernek nincs szüksége hozzájuk nyilvános címre. A
+szerver saját alkalmazásain keresztüli bejelentkezések a böngészőt a szerver
+nyilvános URL-jére küldik vissza, ezért a `--public-url` értékét olyan címre
+állítsa, amelyet az emberek böngészői elérnek.
+
+Ha erről a szerverről más szervereknek is Connectet szeretne üzemeltetni,
+állítsa be a `CC_SERVER_CONNECT_HOST=on` értéket; lásd:
+[Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/#connect-csatolása-a-cc_server-be).
 
 ## Konfiguráció
 
@@ -358,6 +384,7 @@ titkosítását, és nem engedélyez erőforrásokat):
 - [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
 - [Flotta-worker futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa/)
 - [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
+- [Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/)
 
 ## Kapcsolódó fogalmak
 

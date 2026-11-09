@@ -3,7 +3,7 @@ title: "Kiến trúc"
 description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Tổng quan
@@ -113,9 +113,9 @@ Cả hai cơ sở dữ liệu đều thuộc sở hữu của `cc_persistence` v
 **go_router**, với một sự thật chi phối tất cả phần còn lại: **mọi đích đến trong ứng dụng đều có tiền tố không gian làm việc** dưới dạng `/workspaces/:workspaceId/…`. Id không gian làm việc trong URL là nguồn chân lý duy nhất cho không gian làm việc đang hoạt động — `activeWorkspaceIdProvider` được điều khiển từ tuyến, chứ không phải theo chiều ngược lại — đó là lý do vì sao việc đọc dữ liệu theo phạm vi không gian làm việc bên ngoài một tuyến có tiền tố không có chỗ nào để lấy id của nó.
 
 - Các _hàm_ dựng tuyến trong `router/routes.dart`, mỗi hàm nhận id không gian làm việc làm tham số đầu tiên, chứ không dùng hằng chuỗi
-- Bốn tuyến nằm ngoài ngữ cảnh không gian làm việc nên không mang tiền tố: `/splash`, `/onboarding`, `/signed-out` và `/workspaces` (trình chọn)
-- `ShellRoute` bao quanh vỏ ứng dụng; bốn bề mặt đó hiển thị toàn màn hình bên ngoài nó
-- Chốt chặn xác thực: phần thiết lập chưa hoàn tất sẽ chuyển đến `/onboarding`; phần thiết lập đã hoàn tất nhưng thông tin xác thực máy chủ mã đã mất sẽ chuyển đến `/signed-out`. Hoàn tất nghĩa là có ít nhất một máy chủ mã được kết nối cho người dùng đã đăng nhập và có ít nhất một không gian làm việc tồn tại — không nhất thiết là GitHub, và CLI `gh` không phải một phương thức xác thực
+- Ba tuyến nằm ngoài ngữ cảnh không gian làm việc nên không mang tiền tố: `/splash`, `/onboarding` và `/workspaces` (trình chọn)
+- `ShellRoute` bao quanh vỏ ứng dụng; ba bề mặt đó hiển thị toàn màn hình bên ngoài nó
+- Chốt chặn xác thực: phần thiết lập chưa hoàn tất sẽ chuyển đến `/onboarding`. Phần thiết lập đã hoàn tất nhưng thông tin xác thực máy chủ mã đã mất sẽ vẫn ở trong ứng dụng, và khung không gian làm việc hiển thị cảnh báo có liên kết đến chỗ đăng nhập. Hoàn tất nghĩa là có ít nhất một máy chủ mã được kết nối cho người dùng đã đăng nhập và có ít nhất một không gian làm việc tồn tại — không nhất thiết là GitHub, và CLI `gh` không phải một phương thức xác thực
 - Cổng onboarding nằm trong `features/auth/providers/`
 
 ## Mạng (phía máy chủ)

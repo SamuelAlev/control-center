@@ -2,7 +2,7 @@
 title: "Ciclo de vida del despacho de agentes"
 description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-ES/manual/conceptos/ciclo-de-vida-del-despacho
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Qué es un despacho
@@ -54,7 +54,7 @@ Se resuelven dos identidades por ejecución, antes de que se lance ningún proce
 
 **Autoría de Git.** Los commits del agente siempre usan la identidad de Git de la persona solicitante, determinada en el espacio de trabajo, tanto en `GIT_AUTHOR_*` como en `GIT_COMMITTER_*`. Las ejecuciones iniciadas mediante programación usan la identidad del propietario del servidor. Por defecto, el trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` acredita como coautora a la cuenta de GitHub `@usectrl`. Desactiva la atribución al agente en **Ajustes → Tú → Atribución de commits** para omitir ese trailer. Un administrador puede imponer o desactivar la coautoría en **Ajustes → Espacio de trabajo → General**; esta opción prevalece y deshabilita el interruptor personal sin cambiar la preferencia guardada. Los cambios se aplican en la siguiente ejecución. Las atribuciones propias de Claude Code en commits y pull requests siempre están desactivadas. Ni el entorno del solicitante ni el del adaptador pueden sustituir la identidad determinada; si falta la identidad o falla su resolución, la ejecución se detiene. Las credenciales del host de código y la configuración de firma de commits no cambian; la identidad correcta por sí sola no garantiza una firma verificada.
 
-**Identidad ante el host de código.** La credencial de GitHub de la ejecución es siempre la del bróker (un token de instalación de la App con alcance de repositorio, o su alternativa PAT del entorno), nunca el token propio almacenado de la persona solicitante. `actingUserId` delimita la alternativa PAT para que una persona que no sea la propietaria del servidor no herede su alcance; no superpone un token personal al entorno del agente.
+**Identidad ante el host de código.** La credencial de GitHub de la ejecución es siempre la del bróker: un token para el único repositorio de la ejecución, emitido desde la GitHub App del espacio de trabajo, la app propia del servidor o Control Center Connect. `actingUserId` nombra a la persona responsable (quien lo solicitó mientras siga siendo miembro o, si no, el propietario del espacio de trabajo) y limita el token a lo que esa persona puede hacer en el repositorio. Nunca es el inicio de sesión propio del miembro entregado por completo, y no hay alternativa: una emisión rechazada deja la ejecución sin token y sus notas explican por qué.
 
 **Las credenciales de los proveedores de modelos** se resuelven en un orden fijo, y el orden importa:
 

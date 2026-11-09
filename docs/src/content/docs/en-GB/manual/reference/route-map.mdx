@@ -2,16 +2,16 @@
 title: Route map
 description: Every route Control Center registers, with its screen and query parameters.
 slug: en-GB/manual/reference/route-map
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## App shell
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding` and the bare `/workspaces` picker, all full-screen and outside the shell.
 
 The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+A missing credential and a missing setup are treated differently, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded stays in the app: the workspace shell shows a warning with a link to Settings → Workspace → Profile & identity, where the sign-in lives. One that has not onboarded goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
 
 ## Unprefixed routes
 
@@ -19,7 +19,6 @@ A missing credential and a missing setup are different screens, and the discrimi
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Startup splash that resolves the onboarding gate |
 | `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
 | `/workspaces`              | Workspace list and picker                        |
 | `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
 

@@ -2,7 +2,7 @@
 title: Kurulum
 description: Control Center'ı tarayıcıda kullanın ya da masaüstü uygulamasını kurun, bir ajan arka ucunu ayarlayın ve sunucusunun nerede çalışacağını seçin.
 slug: tr-TR/kilavuz/kurulum
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center iki şekilde çalışır: [app.usectrl.dev](https://app.usectrl.dev)
@@ -196,26 +196,19 @@ kimliğinize göre anahtarlanır — istemci işletim sisteminin anahtarlığın
 değil. Oturum açtığınız her cihaz aynı kimlik bilgisini kullanır ve başka
 hiçbir üye onu okuyamaz.
 
-Sunucuda kayıtlı bir GitHub App varsa
-([GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)),
-**Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** size **GitHub
-ile oturum aç** seçeneğini sunar (sunucunun yürüttüğü bir cihaz akışı). Aksi
-halde kişisel bir erişim token'ı yapıştırın:
+GitHub yalnızca oturum açmayla çalışır: **Ayarlar → Çalışma alanı → Profil ve
+kimlik → Kod barındırma** size **GitHub hesabıyla oturum aç** seçeneğini sunar ve
+yapıştırılacak bir token yoktur. Oturum açma, sunucu sahibinin seçimine göre
+sunucunun kendi GitHub App'i
+([GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)) ya da Control
+Center Connect üzerinden yürür. Sunucunun kendi uygulamasıyla tarayıcı sunucuya
+kendiliğinden geri döner; Connect üzerinden ise tarayıcının gösterdiği 8
+karakterlik kodu yazarsınız ya da Control Center'ı açmasına izin verirsiniz. Bkz.
+[GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/).
 
-- Classic: `repo` ve `read:org`
-- Fine-grained: **Contents** ve **Pull requests** (okuma ve yazma), **Checks**
-  ile **Actions** (okuma)
-
-Bir tane
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
-adresinde oluşturun. Sunucu, token'ı saklandığı hâliyle hesap adı için yoklar,
-böylece satır "… olarak oturum açıldı" diyebilir; başarısız bir yoklama token'ı
-yine de kaydeder ve bir yazım hatası ya da eksik kapsam sonradan başarısız bir
-istek olarak ortaya çıkar.
-
-Onboarding'in ilk adımı bu bağlantıdır. Sonrasında aynı kart, onu
-değiştirdiğiniz ya da temizlediğiniz yerdir. GitLab ve Bitbucket aynı kartı
-kullanır; bkz.
+İlk kurulum bu bağlantıyı ister. Sonrasında aynı kart, yeniden oturum açtığınız
+ya da bağlantıyı kestiğiniz yerdir. GitLab ve Bitbucket aynı kartı yapıştırılan
+kişisel bir token ile kullanır; bkz.
 [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
 
 ## Sunucunun nerede çalışacağını seçin

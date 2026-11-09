@@ -2,7 +2,7 @@
 title: 安装
 description: 在浏览器中使用 Control Center，或安装桌面应用，设置智能体后端，并选择服务器的运行位置。
 slug: zh-CN/手册/安装
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center 有两种运行方式：一种是位于
@@ -129,14 +129,9 @@ Control Center 通过**适配器**派发智能体。适配器只有两个，列�
 
 GitHub 凭据**属于你本人，并保存在服务器上**，以你的用户 id 为键——而不在客户端的操作系统钥匙串中。你登录的每台设备都使用同一个凭据，其他成员都无法读取它。
 
-如果服务器注册了 GitHub App（[创建 GitHub App](/zh-CN/手册/操作指南/github-app/)），**设置 → 工作区 → 个人资料与身份 → 代码托管** 会提供**使用 GitHub 登录**（由服务器执行的设备流程）。否则请粘贴个人访问令牌：
+GitHub 只支持登录：**设置 → 工作区 → 个人资料与身份 → 代码托管** 会提供**登录 GitHub**，没有需要粘贴的令牌。登录通过服务器自己的 GitHub App（[创建 GitHub App](/zh-CN/手册/操作指南/github-app/)）或 Control Center Connect 完成，取决于服务器所有者的选择。使用服务器自己的应用时，浏览器会自行把你带回服务器；通过 Connect 时，你需要输入浏览器显示的 8 位代码，或让它打开 Control Center。参见[设置 GitHub 集成](/zh-CN/手册/操作指南/github-集成/)。
 
-- 经典：`repo` 和 `read:org`
-- 细粒度：**Contents** 和 **Pull requests**（读写）、**Checks** 和 **Actions**（读取）
-
-在 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) 创建。服务器会在令牌存储时探测其账号名称，因此该行可以显示“已以 … 身份登录”；探测失败仍会保存令牌，而拼写错误或缺少权限范围会在之后表现为请求失败。
-
-引导流程的第一步就是建立此连接。之后，同一张卡片就是替换或清除它的地方。GitLab 和 Bitbucket 使用同一张卡片；参见[连接代码托管](/zh-CN/手册/操作指南/连接代码托管/)。
+引导流程会请你完成此连接。之后，同一张卡片就是重新登录或断开连接的地方。GitLab 和 Bitbucket 在同一张卡片上使用粘贴的个人令牌；参见[连接代码托管](/zh-CN/手册/操作指南/连接代码托管/)。
 
 ## 选择服务器的运行位置
 

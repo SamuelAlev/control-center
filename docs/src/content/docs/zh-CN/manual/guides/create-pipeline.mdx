@@ -2,7 +2,7 @@
 title: 创建流水线模板
 description: 在流水线编辑器中编写 DAG 工作流模板——添加节点、连接它们、声明输入，并让它可运行。
 slug: zh-CN/手册/操作指南/创建流水线
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 流水线模板在工作区设置中编写。工作区侧边栏中的 **流水线** 入口是_运行队列_，
@@ -109,8 +109,14 @@ sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 会添加 **Bash 脚本**。没有工作目录字段或环境字段，因为两者都不可配置：
 
 - 一次运行中的每个 bash 步骤都共享 cwd `<cc_root>/pipelines/<runId>/`。
-- `GITHUB_TOKEN` 从凭据存储中注入，因此 `gh` 和
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` 无需配置即可使用。
+- 脚本在主机的操作系统沙盒中运行，与智能体的命令相同。没有沙盒的主机（Windows，或缺少
+  `bwrap` 的 Linux）会让该步骤失败，而不是在无约束的环境中运行它。服务器的数据目录和
+  `.env` 文件在沙盒内不可读。
+- Git 与 `gh` 看不到主机的任何配置：没有已保存的登录、凭据助手或全局钩子。
+- 当流水线指明了与工作区关联的 GitHub 仓库（状态或触发载荷中的 `repo_full_name`）时，
+  `GH_TOKEN` 与 `GITHUB_TOKEN` 会持有一个只能读取该仓库的令牌，因此针对它的 `gh` 和
+  `git clone` 无需配置即可使用。否则不存在 GitHub 令牌。
+- 只有工作区管理员才能创建或编辑包含 bash 步骤的流水线。
 - 脚本以字面可执行文件 `bash` 启动，因此服务器主机的 `PATH` 中必须有 `bash`。
   这是 Windows 上的一个考虑事项。
 

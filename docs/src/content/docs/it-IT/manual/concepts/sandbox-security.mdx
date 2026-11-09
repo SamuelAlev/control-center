@@ -2,7 +2,7 @@
 title: Sandbox e sicurezza
 description: Cosa vincola davvero un agente in Control Center oggi, fin dove arriva il sandbox del sistema operativo e quali confini tengono su un host privo di backend.
 slug: it-IT/manuale/concetti/sandbox-e-sicurezza
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Dove arriva e dove non arriva il sandbox del sistema operativo]
@@ -134,9 +134,11 @@ l'agente.
 
 Il push è l'azione che deve reggere anche contro un agente che prova ad aggirare
 una regola, quindi viene applicato in base a ciò che l'agente possiede, non a
-ciò che esegue. Con una GitHub App configurata, un'esecuzione in un worktree
-GitHub riceve un token di installazione limitato al repo che può leggere i
-contenuti e lavorare con le pull request ma non eseguire push. La
+ciò che esegue. Un'esecuzione in un worktree GitHub riceve un token per
+quell'unico repository, emesso dalla GitHub App dello spazio di lavoro, dall'app
+del server o da Control Center Connect. Può leggere i contenuti e, quando il
+membro responsabile può eseguire push, commentare le pull request, ma non può
+eseguire push. La
 configurazione git dell'esecuzione riscrive ogni URL di push GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) verso il
 **gateway delle esecuzioni degli agenti**, un endpoint di loopback su
@@ -167,12 +169,11 @@ convenzionale di scrivere un'azione, e un agente deciso a nasconderne una
 (`eval`, un file di script, una chiamata API diretta) ci riesce. I push non
 dipendono da questo.
 
-:::caution[Senza GitHub App la regola di push è solo indicativa]
-Senza una GitHub App configurata, il broker ripiega su un personal access
-token, che non può essere limitato alla sola lettura. La regola vale ancora per
-`git push`, perché git invia il push al gateway, ma il codice che usa
-direttamente il token dell'ambiente può eseguire push aggirandola.
-:::
+Ogni token GitHub che un'esecuzione riceve è delimitato due volte: a un solo
+repository, e a ciò che il membro responsabile (chi ha fatto la richiesta,
+altrimenti il proprietario dello spazio di lavoro) può fare lì. Non esiste alcuna
+credenziale di fallback. Quando non è possibile emettere alcun token,
+l'esecuzione parte senza e le sue note spiegano perché.
 
 In un sandbox non viene messa alcuna chiave API di ticketing. Gli agenti
 scrivono i ticket tramite gli strumenti MCP di Control Center, che interrogano
@@ -182,9 +183,10 @@ La regola **Accedere alla rete** viene letta una sola volta, all'avvio
 dell'esecuzione. La rete di un sandbox è attiva o disattivata, quindi nega la
 disattiva, mentre consenti e chiedi prima la lasciano attiva; gli strumenti
 `web_fetch` e `web_search` dell'harness continuano a chiedere a ogni chiamata.
-Le credenziali vengono revocate quando l'esecuzione viene smantellata, insieme a
-ogni token di scrittura coniato dal gateway, quindi un handle non sopravvive
-all'esecuzione.
+Gli handle delle credenziali dell'esecuzione vengono rilasciati quando viene
+smantellata. I token dietro di essi sono condivisi per membro e repository e
+scadono entro circa un'ora; un membro che si disconnette da GitHub o lascia lo
+spazio di lavoro fa cadere in un colpo solo ogni token emesso per suo conto.
 
 ## Cosa aggiunge il sandbox e dove si ferma
 

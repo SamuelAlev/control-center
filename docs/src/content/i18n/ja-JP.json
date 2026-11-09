@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Google Calendar を接続",
   "docs.sidebar.guidesServerAndDeployment": "サーバーとデプロイメント",
   "docs.sidebar.guidesRunHeadlessServer": "ヘッドレスサーバーを実行",
+  "docs.sidebar.guidesRunConnect": "Connect サーバーを実行",
   "docs.sidebar.guidesConnectRemoteServer": "リモートサーバーに接続",
   "docs.sidebar.guidesRunFleetWorker": "フリートワーカーを実行",
   "docs.sidebar.guidesBackUpAndRestore": "バックアップと復元",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "キーボードショートカット",
   "docs.sidebar.referenceRouteMap": "ルートマップ",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "バックアップ、エクスポート、インポート",
   "docs.sidebar.referenceTelemetry": "利用状況の分析",
   "docs.sidebar.referenceGlossary": "用語集"

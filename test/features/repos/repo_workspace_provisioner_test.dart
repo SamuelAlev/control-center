@@ -35,7 +35,8 @@ class _FakeIsolation implements RepoIsolationPort {
     required String destParentDir,
     required String name,
     required String branch,
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String baseRef = '',
     String? headRef,
     CancellationToken? cancel,
@@ -47,7 +48,8 @@ class _FakeIsolation implements RepoIsolationPort {
         destParentDir: destParentDir,
         name: name,
         branch: branch,
-        authUrl: authUrl,
+        fetchUrl: fetchUrl,
+        fetchToken: fetchToken,
       ),
     );
     // The clone is under way when the hook fires; a cancellation that lands
@@ -130,13 +132,15 @@ class _ProvisionCall {
     required this.destParentDir,
     required this.name,
     required this.branch,
-    this.authUrl,
+    this.fetchUrl,
+    this.fetchToken,
   });
   final String sourcePath;
   final String destParentDir;
   final String name;
   final String branch;
-  final String? authUrl;
+  final String? fetchUrl;
+  final String? fetchToken;
 }
 
 class _FakeRegistry implements IsolatedRepoRepository {
@@ -270,7 +274,7 @@ RepoWorkspaceProvisioner _build({
   required RepoIsolationPort isolation,
   List<Repo> repos = const [],
   FakeFilesystemPort? filesystem,
-  Future<String?> Function()? githubToken,
+  Future<String?> Function(String workspaceId, Repo repo)? githubToken,
   // Workspace-scoped and async, mirroring the port: the template is workspace
   // POLICY read from that workspace's settings store, not a device-local
   // preference.
@@ -283,7 +287,7 @@ RepoWorkspaceProvisioner _build({
   isolation: isolation,
   registry: registry,
   workspaces: _FakeWorkspaces(repos),
-  githubToken: githubToken ?? (() async => ''),
+  githubToken: githubToken ?? ((_, _) async => ''),
   branchTemplate: branchTemplate ?? ((_) async => '{type}/{ticket-key}-{slug}'),
   spaceCheckoutScope: spaceCheckoutScope,
   stacks: stacks,
@@ -906,7 +910,7 @@ void main() {
     });
 
     test(
-      'passes authUrl when repo has GitHub remote and token is available',
+      'passes the fetch URL and token separately when repo has a GitHub remote',
       () async {
         final tempDir = Directory.systemTemp.createTempSync(
           'provisioner_test_auth_',
@@ -922,7 +926,7 @@ void main() {
             isolation: isolation,
             repos: [repo],
             filesystem: fs,
-            githubToken: () async => 'ghp_token',
+            githubToken: (_, _) async => 'ghu_token',
           );
 
           await p.ensureSpaceWorkspace(
@@ -932,17 +936,17 @@ void main() {
             fallbackDir: '/fallback',
           );
 
-          expect(
-            isolation.provisions.first.authUrl,
-            'https://x-access-token:ghp_token@github.com/alice/widgets.git',
-          );
+          final call = isolation.provisions.first;
+          expect(call.fetchUrl, 'https://github.com/alice/widgets.git');
+          expect(call.fetchToken, 'ghu_token');
+          expect(call.fetchUrl, isNot(contains('ghu_token')));
         } finally {
           tempDir.deleteSync(recursive: true);
         }
       },
     );
 
-    test('does not pass authUrl when token is empty', () async {
+    test('does not pass a fetch token when token is empty', () async {
       final tempDir = Directory.systemTemp.createTempSync(
         'provisioner_test_no_auth_',
       );
@@ -957,7 +961,7 @@ void main() {
           isolation: isolation,
           repos: [repo],
           filesystem: fs,
-          githubToken: () async => '',
+          githubToken: (_, _) async => '',
         );
 
         await p.ensureSpaceWorkspace(
@@ -967,7 +971,7 @@ void main() {
           fallbackDir: '/fallback',
         );
 
-        expect(isolation.provisions.first.authUrl, isNull);
+        expect(isolation.provisions.first.fetchToken, isNull);
       } finally {
         tempDir.deleteSync(recursive: true);
       }
@@ -988,7 +992,7 @@ void main() {
           isolation: isolation,
           repos: [repo],
           filesystem: fs,
-          githubToken: () async => throw Exception('auth failed'),
+          githubToken: (_, _) async => throw Exception('auth failed'),
         );
 
         final dir = await p.ensureSpaceWorkspace(
@@ -998,9 +1002,9 @@ void main() {
           fallbackDir: '/fallback',
         );
 
-        // Should not crash; authUrl will be null since token is null
+        // Should not crash; no token is passed when the lookup throws.
         expect(dir, isNot('/fallback'));
-        expect(isolation.provisions.first.authUrl, isNull);
+        expect(isolation.provisions.first.fetchToken, isNull);
       } finally {
         tempDir.deleteSync(recursive: true);
       }
@@ -1193,7 +1197,7 @@ void main() {
           isolation: _FakeIsolation(),
           registry: _FakeRegistry(),
           workspaces: thrower,
-          githubToken: () async => '',
+          githubToken: (_, _) async => '',
           branchTemplate: (_) async => '{type}/{ticket-key}-{slug}',
         );
 
@@ -1970,7 +1974,8 @@ class _ThrowingIsolation implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     CancellationToken? cancel,
     void Function(String line)? onOutput,
@@ -1981,7 +1986,8 @@ class _ThrowingIsolation implements RepoIsolationPort {
         destParentDir: destParentDir,
         name: name,
         branch: branch,
-        authUrl: authUrl,
+        fetchUrl: fetchUrl,
+        fetchToken: fetchToken,
       ),
     );
     return RepoIsolationResult(

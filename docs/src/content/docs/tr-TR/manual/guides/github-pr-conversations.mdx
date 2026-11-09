@@ -1,36 +1,39 @@
 ---
 title: Bir GitHub PR'dan Control Center ile konuşma
-description: Sunucunuzun GitHub App botundan, webhook ya da genel URL olmadan, doğrudan PR konuşmasından bir inceleme veya yanıt isteyin.
+description: Control Center’dan, webhook ya da genel URL olmadan, doğrudan PR konuşmasından bir inceleme veya yanıt isteyin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Bu kılavuz, GitHub'dan ayrılmadan Control Center ile nasıl çalışacağınızı
 gösterir: PR sayfasından bir YZ incelemesi isteyin, bir yorumda bota soru sorun
 ve konuşmayı botun inceleme konularında sürdürün.
 
-Bot, sunucunuzun kendi [GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)
-uygulamasıdır — insanları zaten oturum açtıran ve arka plan işlerini yürüten
-aynı uygulama. Yeni hiçbir şey kaydedilmez ve hiçbir şeyin internetten
+Yanıtlar çalışma alanının GitHub hattı üzerinden gelir: sunucunuzun kendi
+[GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/) uygulaması ya da Connect üzerinden Control
+Center’ın paylaşılan App’i. Yeni hiçbir şey kaydedilmez ve hiçbir şeyin internetten
 erişilebilir olması gerekmez: sunucu, GitHub'da söylenenleri yoklayarak
 keşfeder; böylece NAT arkasındaki bir dizüstü bilgisayar, genel bir dağıtımla
 tamamen aynı davranır.
 
 ## Ön koşullar
 
-- Sunucunun GitHub App'i [kayıtlı ve
-  kurulu](/tr-TR/kilavuz/nasil-yapilir/github-app/) olmalı; **Pull requests: read and write**
-  (yorumlar, konular ve tepkiler için) ve **Issues: read** (yorum araması
-  için) izinleriyle. Her ikisi de o kılavuzun izin listesinde zaten var
+- Çalışma alanının bir GitHub hattı olmalı: sunucunun kendi GitHub App’i ya da
+  Connect; uygulama, depoya sahip olan hesaba
+  [kurulu](/tr-TR/kilavuz/nasil-yapilir/github-app/#depolarınızın-bulunduğu-yere-kurma) olmalı. Kendi
+  uygulamanın **Pull requests** ve **Issues** için okuma ve yazma iznine ihtiyacı
+  vardır; **GitHub uygulamamı oluştur** bunları zaten verir
 - Depo, Control Center'da bir çalışma alanına bağlı
+- Bu sunucuda [GitHub’a oturum açmışsınız](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/) ve depoya
+  push edebiliyorsunuz
 - Webhook URL'si yok, tünel yok, geri çağırma yok — ağ tarafında
   yapılandırılacak hiçbir şey yok
 
 ## Botunuzun adını bulun
 
-Control Center'ın özel GitHub hesabı `@usectrl` adresini anın. Varsayılan tetikleyici budur; sunucunuzda yapılandırılmış GitHub App isteği işlemeye ve yanıtları yayımlamaya devam eder. `usectrl` hesabının kimlik bilgilerine ihtiyacınız yoktur.
+Control Center'ın özel GitHub hesabı `@usectrl` adresini anın. Varsayılan tetikleyici budur; çalışma alanınızın GitHub hattı isteği işlemeye ve yanıtları yayımlamaya devam eder. `usectrl` hesabının kimlik bilgilerine ihtiyacınız yoktur.
 
-App'in kendi giriş adı `<appslug>[bot]` ve kısa `@appslug` biçimi de çalışır. İsteğe bağlı bu diğer adı bulmak için:
+App'in kendi giriş adı `<appslug>[bot]` ve kısa `@appslug` biçimi de çalışır. Kendi uygulamanızda isteğe bağlı bu diğer adı bulmak için:
 
 1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve
    **Sağlayıcı uygulamaları** kartına kaydırın
@@ -54,11 +57,11 @@ Tam `@myapp[bot]` biçimi ise her zaman nettir.
 
 - PR'a **`ai-review` etiketini ekleyin**. Bu, GitHub'ın botu inceleyici olarak
   atamaya sunduğu en yakın şeydir — uygulama hesapları, yerel olarak istenen
-  inceleyici yerini dolduramaz. Tepki verilecek bir yorum yoktur, dolayısıyla
-  GitHub'da hiçbir şey yayımlanmaz; inceleme Control Center'da başlar
-- PR konuşmasına **`@usectrl review` yazın** (ya da yalnızca `@usectrl`). Bot 👀
-  ile tepki verir, ardından inceleme başladığında (ya da zaten bir incelemenin
-  çalıştığını) yanıtlar
+  inceleyici yerini dolduramaz. Hesabınız PR’a 👀 ile tepki verir ve inceleme
+  Control Center'da başlar; hiçbir yorum gönderilmez
+- PR konuşmasına **`@usectrl review` yazın** (ya da yalnızca `@usectrl`).
+  Yorumunuzda bir 👀 görünür, ardından bir yanıt incelemenin başladığını (ya da
+  zaten bir incelemenin çalıştığını) söyler
 
 İnceleyiciler PR'ın inceleme alanında çalışır; bulguları
 [YZ destekli inceleme kullanma](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/)
@@ -80,11 +83,12 @@ PR konuşmasına yorum yapın:
 
 Sırasıyla olanlar:
 
-1. Bot 👀 ile tepki verir, böylece yorumun görüldüğünü anlarsınız
+1. Yorumunuzda kendi hesabınızdan bir 👀 görünür, böylece yorumun görüldüğünü
+   anlarsınız
 2. Soru, PR'ın inceleme alanına **siz olarak** gönderilir — Control Center'da
    kendiniz yazmışsınız gibi aynı atıfla
-3. Bir ajan alanda yanıtlar ve yanıt, PR'a sizden @ ile söz eden bir yorum
-   olarak geri gönderilir
+3. Bir ajan alanda yanıtlar ve yanıt PR’a geri gönderilir. Her yanıt
+   `**Control Center** (for @your-login):` ile başlar
 
 Henüz incelemesi olmayan bir PR'daki soru, çalışma alanının CEO ajanını
 uyandırır; bir inceleme çalıştıktan sonra ise son konuşan ajan yanıtlar,
@@ -110,34 +114,44 @@ yorumdur, dolayısıyla yine bir @ ile anma gerektirir.
 
 ## Bot kiminle konuşur
 
-Bir GitHub yorumu, bir giriş adından biraz fazlası olarak gelir; dolayısıyla
-bot, herhangi bir şey yapmadan önce yazarı çözümler:
+Sunucu, herhangi bir şey yapmadan önce bir yorumun yazarını ya da `ai-review`
+etiketini ekleyen kişiyi çözümler:
 
-- **GitHub hesabınız, Control Center'da kimliğinize bağlı olmalıdır** —
-  **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** altından
-  [GitHub ile oturum açın](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-  ya da bir token yapıştırın
-- Depoyu bağlayan çalışma alanında **yazma rolüne sahip bir üye olmalısınız**
+- **GitHub hesabı bu sunucuda oturum açmış olmalıdır.** Eşleştirme, giriş adına
+  göre değil, GitHub’ın sayısal hesap kimliğine göre yapılır. **Ayarlar → Çalışma
+  alanı → Profil ve kimlik → Kod barındırma** altından oturum açın
+- Depoyu bağlayan çalışma alanında **yazma rolüne sahip bir üye olmalıdır**
   (`member`, `admin` veya `owner`)
+- GitHub’da depoya **push edebilmelidir**. Yanıtlar o kişinin erişimiyle sınırlı
+  bir token kullanır; bu yüzden yalnızca okuyabilen biri yanıt almaz
 
-Başka herkes, neyin eksik olduğunu açıklayan tek bir kibar yanıt alır ve
-sözleri çalışma alanına asla girmez; bilinmeyen bir giriş adı (bağlı değil ya
-da bağlı ama burada üye değil) ile salt okunur bir rol, söz konusu iki
-durumdur. `ai-review` etiketi bu şekilde kısıtlanmaz: yazarı yoktur, dolayısıyla
-incelemeyi depoyu zaten bağlayan çalışma alanında başlatır.
+Başka herkes sessizce yok sayılır: hiçbir şey gönderilmez ve sözleri çalışma
+alanına asla girmez. Botların yorumları ve Control Center’ın kendi yanıtları asla
+soru olarak ele alınmaz.
+
+### İki sunucu, tek PR
+
+👀 aynı zamanda sunucuların kimin yanıtlayacağı konusunda anlaşma yoludur.
+Tepki yazarın kendi oturum açmasıyla eklenir ve GitHub sunucuya bu tepkinin yeni
+olup olmadığını söyler. Depoyu bağlamış iki Control Center sunucusunda oturum
+açmışsanız, ilk tepki veren yanıtlar, diğeri sessiz kalır. Aynısı etiket için de
+geçerlidir.
 
 ## Neler beklemeli
 
 | Şey                      | Davranış                                                                 |
 | ------------------------ | ------------------------------------------------------------------------ |
-| Alındı bildirimi         | Bir yorumda yaklaşık bir dakika içinde 👀 — tarama aralığı. `ai-review` etiketinin tepki verilecek bir yorumu yoktur |
-| Yanıtlar                 | Bot (uygulama) olarak, sorunun sorulduğu kanalda gönderilir               |
+| Alındı bildirimi         | Tek bir tarama içinde yorumda (etiket için PR’da) hesabınızdan 👀          |
+| Yanıtlar                 | Sorunun sorulduğu kanalda, `**Control Center** (for @your-login):` ile başlayarak gönderilir. Kendi uygulamada yazar uygulamanın botudur; Connect üzerinden ise paylaşılan App aracılığıyla hareket eden hesabınızdır |
 | Alan içi atıf            | Soru size aittir; ajan, alanın özerklik ayarları altında sizin adınıza çalışır |
 | İncelemeler              | Bulgular inceleme alanına düşer; GitHub'a yayımlamak elle yapılır         |
 
-Yaklaşık bir dakikalık gecikme, hiç gelen ağ erişimi gerektirmemenin
-bedelidir. Taramayla ilgili acil hiçbir şey yoktur ve sunucu çevrimdışıyken
-hiçbir şey kaybolmaz — kesinti sırasında gelen bir yorum, bir sonraki taramada
+Kendi uygulamada tarama her dakika çalışır ve en fazla 25 pull request’i
+denetler; Connect üzerinden iki dakikada bir çalışır ve en fazla 10’unu denetler,
+çünkü bu çağrılar her üyenin kendi GitHub kotasını paylaşır. GitHub kotası %15’in
+altında olan bir çalışma alanı, kota toparlanana kadar atlanır. Gecikme, hiç
+gelen ağ erişimi gerektirmemenin bedelidir. Sunucu çevrimdışıyken hiçbir şey
+kaybolmaz — kesinti sırasında gelen bir yorum, bir sonraki taramada
 yakalanır.
 
 ## Sorun giderme
@@ -147,18 +161,22 @@ yakalanır.
 - Uygulama, depoya sahip hesapta **kurulu** mu ve depo bir çalışma alanına
   **bağlı** mı? Bağlı olmayan bir depo, hiçbir şey kaydedilmeden önce atlanır;
   dolayısıyla sonradan bağlamak yine de teslim eder
-- GitHub hesabınız bağlı mı ve yazma rolüne sahip bir üye misiniz? PR'da botun
-  ret yanıtına bakın — hangisi olduğunu söyler
+- Bu sunucuda GitHub’a oturum açtınız mı, yazma rolüne sahip bir üye misiniz ve
+  depoya push edebiliyor musunuz? Sunucu diğer herkesi yanıt vermeden yok sayar
+- Control Center’ın paylaşılan App’inde: kuruluşun kurulumu bu sunucu için
+  yetkilendirildi mi? Bkz.
+  [Bu sunucuyu bir kuruluş için yetkilendirme](/tr-TR/kilavuz/nasil-yapilir/github-app/#bu-sunucuyu-bir-kuruluş-için-yetkilendirme)
 - Hâlâ hiçbir şey yok mu? Bir şey başarısız olduğunda sunucu günlüğü taramayı
   ve PR'ı adlandırır; `pr_conversation:` (yoklayıcı) ve
   `github_pr_conversation:` (köprü) aramalarına bakın
 
 **Etiket bir inceleme başlatmıyor.**
 
-PR başına bir kez tetiklenir. Bir inceleme zaten çalıştıysa ya da etiket,
+PR başına bir kez tetiklenir ve onu ekleyen kişi bir yorum yazarıyla aynı
+denetimlerden geçer. Bir inceleme zaten çalıştıysa ya da etiket,
 sunucu PR'ı hiç görmeden önce eklendiyse (ilk tarama, birikmiş işleri üzerine
 salmak yerine sessizce kaydeder), bunun yerine botu anın — bir inceleme zaten
-yürürlükte değilse `@myapp review` her zaman bir tane başlatır.
+yürürlükte değilse `@usectrl review` her zaman bir tane başlatır.
 
 **Botun yanıtı GitHub'a hiç ulaşmadı.**
 

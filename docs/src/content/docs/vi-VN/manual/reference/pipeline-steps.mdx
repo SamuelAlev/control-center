@@ -2,7 +2,7 @@
 title: Các bước quy trình
 description: Tài liệu tham chiếu về các loại bước quy trình, khóa body của bước, cấu hình và kết quả của bước.
 slug: vi-VN/so-tay/tham-chieu/buoc-quy-trinh
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Một bước quy trình có hai trục độc lập:
@@ -42,7 +42,7 @@ Bước shell không cần agent (`bash -c`). Các placeholder `{{key}}` trong s
 | `script`        | Lệnh shell cần thực thi (bắt buộc)                       |
 | `outputKey`     | Khóa trạng thái nhận stdout đã cắt khoảng trắng khi thoát với mã 0 |
 
-Chạy với cwd `<cc_root>/pipelines/<pipelineRunId>/` (dùng chung cho mọi bước bash trong một lần chạy) và `GITHUB_TOKEN` trong môi trường. Cũng ghi `<stepId>_runDir` vào trạng thái. Thoát với mã khác 0 làm bước thất bại kèm phần đuôi stderr.
+Chạy bên trong sandbox hệ điều hành của máy chủ, với cwd `<cc_root>/pipelines/<pipelineRunId>/` (dùng chung cho mọi bước bash trong một lần chạy); một máy chủ không có sandbox sẽ làm bước thất bại. Thư mục dữ liệu và tệp `.env` của máy chủ không đọc được, git và `gh` không thấy cấu hình của máy chủ, và `GH_TOKEN` / `GITHUB_TOKEN` chỉ giữ một token `read` cho đúng một kho mã khi `repo_full_name` (trong trạng thái hoặc payload kích hoạt) nêu một kho GitHub đã liên kết với không gian làm việc. Tạo hoặc sửa một mẫu có bước này cần quản trị viên không gian làm việc. Cũng ghi `<stepId>_runDir` vào trạng thái. Thoát với mã khác 0 làm bước thất bại kèm phần đuôi stderr.
 
 ### `conversation.promptAgent`
 

@@ -2,7 +2,7 @@
 title: AI review
 description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
 slug: en-GB/manual/concepts/ai-review
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## The shape of a review
@@ -195,9 +195,12 @@ a review can never double-publish. When you press **Publish to GitHub**:
   the body so nothing is silently dropped.
 - A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
   `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+  The MCP tool publishes as automation and always leaves Ship as `COMMENT`.
+- The **Publish to GitHub** button posts the review as the person who pressed
+  it, on their own GitHub sign-in: the release gate is theirs, so the review is
+  too. A publish with no person behind it is automation, which never approves:
+  Ship then goes out as `COMMENT`, and on Control Center Connect the post is
+  attributed with the `**Control Center** (for @login):` prefix.
 
 Publishing declares the `prPublish` action class, so the guardrail chokepoint
 gates it like any mutating action — it prompts by default and fails closed

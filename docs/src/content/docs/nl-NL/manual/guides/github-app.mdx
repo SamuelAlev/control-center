@@ -1,214 +1,209 @@
 ---
 title: De GitHub App maken
-description: Registreer een GitHub App voor je server, zodat leden kunnen inloggen en achtergrondwerk als de app draait in plaats van als een persoon.
+description: Geef je server met één klik een eigen GitHub App, installeer hem waar je repository's staan en autoriseer de server voor de installatie van een organisatie.
 slug: nl-NL/handleiding/gidsen/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Deze gids laat zien hoe je je server een eigen GitHub-identiteit geeft. Het kost
+Deze gids laat zien hoe je je server een eigen GitHub App geeft. Het kost
 ongeveer twee minuten, alleen de servereigenaar doet het, en het hoeft maar
 één keer per server te gebeuren.
 
 :::note[Misschien heb je het niet nodig]
-Een officiële build wordt al geleverd met een GitHub-**client-id**, dus
-[Inloggen met GitHub](/nl-NL/handleiding/gidsen/github-integratie/) werkt direct
-zonder dat er iets geregistreerd is — een device flow authenticeert alleen met de
-client-id, dus het is veilig om mee te leveren. Registreer je eigen app wanneer
-je wilt dat de SERVER als zichzelf optreedt (webhooks, PR-polling en
-ticketsynchronisatie die op een app-installatie draaien in plaats van op de
-inloggegevens van een persoon), of wanneer je vanaf de bron bouwt.
+Met Control Center Connect ingeschakeld melden mensen zich bij GitHub aan via
+de gedeelde App van Control Center, of via de App die de Connect van je
+organisatie gebruikt. Registreer je eigen app als je **Mijn eigen apps
+gebruiken** hebt gekozen: de app van de server geldt alleen in dat geval. Zie
+[Control Center Connect](/nl-NL/handleiding/referentie/connect/).
 :::
 
-Voor het daarna koppelen van je eigen account, zie
+Voor het daarna aanmelden bij je eigen account, zie
 [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/).
 
-## Waarom je server een eigen app nodig heeft
+## Wat de app doet
 
-Uit één registratie komen twee verschillende taken voort, en de app is wat beide
-eerlijk maakt:
+Eén registratie beantwoordt twee verschillende taken:
 
-| Taak                   | Wat het beantwoordt                            | Waarom het ertoe doet                                                                                |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Een persoon logt in** | De client-id van de app, via de device flow   | Je krijgt inloggegevens die van jou zijn, op de server, op elk apparaat — zonder token om te plakken of te roteren |
-| **De server handelt**  | Het id van de app + privésleutel → installatietoken | Webhooks, PR-polling en ticketsynchronisatie hangen niet langer af van of het token van één mens nog geldig is |
+| Taak                    | Wat het beantwoordt                                     | Waarom het ertoe doet                                                                           |
+| ----------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Een persoon logt in** | De client-id en het client-secret van de app            | Iedereen krijgt eigen GitHub-inloggegevens, op de server, op elk apparaat                       |
+| **De server handelt**   | Het id en de privésleutel van de app                    | Agenten, pipelines, pollers en botantwoorden krijgen tokens voor telkens één repository         |
 
-Let op wat **niet** in die tabel staat: een client secret. De device flow van
-GitHub authenticeert alleen met de client-id — zowel het verzoek om de
-apparaatcode als de tokenpoll — dus er is geen geheim te bewaren voor het
-inloggen.
+De tweede taak leent nooit de inloggegevens van een persoon in hun geheel. Elk
+token dat de server uitgeeft, dekt één repository en is beperkt tot wat een
+verantwoordelijk lid daar mag doen. Een gekoppelde repository lezen vraagt alleen
+de app; alles wat schrijft, vraagt een lid dat mag pushen. Automatisering keurt
+nooit een pull request goed.
 
-Zonder een eigen app werkt het eerste nog steeds via de client-id die de build
-meelevert; het tweede valt terug op de inloggegevens van de servereigenaar, dus
-achtergrondwerk lift mee op wie zich het eerst heeft aangemeld.
-
-:::note[Er is geen knop om de GitHub App van Control Center te installeren]
-Een gedistribueerde GitHub App zou één gedeeld client secret en één gedeelde
-installatie over ieders servers betekenen, waardoor de repositorytoegang van elke
-werkruimte zou lopen via inloggegevens waar niemand in die werkruimte controle
-over heeft. Elke server heeft daarom zijn eigen app — deze gids gaat erover hoe
-weinig dat kost.
-:::
+De app van de server geldt alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect GitHub, en de app van de server blijft opgeslagen maar ongebruikt tot je terugschakelt. De app van de werkruimte ([Eén werkruimte een andere app geven](#eén-werkruimte-een-andere-app-geven)) geldt in alle modi. Een app waarvan
+velden ontbreken, is een fout en geen terugval: GitHub-aanmeldingen worden
+geweigerd tot elk veld is ingesteld.
 
 ## Vereisten
 
-- Je bent de **servereigenaar** — de `providerApps.*`-bewerkingen zijn daartoe
-  beperkt, en de kaart is onzichtbaar voor alle anderen
-- Een GitHub-account, of een organisatie waarin je apps kunt aanmaken
-- Niets dat publiek bereikbaar is: het inloggen is een **device flow**, dus de
-  server heeft geen inkomende poort, tunnel, callback-URL of domein nodig
+- Je bent de **servereigenaar**. De kaart **Provider-apps** is voor iedereen
+  anders onzichtbaar
+- Een GitHub-account. De app wordt daaronder aangemaakt
+- Een serveradres dat je browser kan bereiken. De openbare URL van de server (of
+  loopback, voor de eigen server van een desktop) is waar GitHub je naar
+  terugstuurt
 
-## De app registreren
-
-1. Ga naar [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (voor een organisatie: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — maakt niet uit; `Control Center (yourname)` is prima. Het
-   verschijnt bij commits en reacties die de server plaatst
-3. **Homepage URL** — maakt niet uit, bijvoorbeeld `https://github.com/your-name`
-4. **Callback URL** — laat dit leeg. De device flow heeft er geen
-5. Vink **Enable Device Flow** aan. Dit is de enige instelling zonder welke het
-   inloggen niet kan werken
-6. Vink **Webhook → Active** uit, tenzij je webhooks apart aansluit
-7. Ken onder **Repository permissions** minstens het volgende toe:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (verplicht)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, als je GitHub Issues voor tickets gebruikt, en
-     voor het zoeken in PR-gesprekken door de bot
-     (zie [Met Control Center praten vanuit een GitHub-PR](/nl-NL/handleiding/gidsen/github-pr-gesprekken/))
-   - **Checks**: Read-only, voor de CI-status op de PR-pagina
-8. Kies onder **Where can this GitHub App be installed?** wat past —
-   "Only on this account" is goed voor een persoonlijke server
-9. Klik op **Create GitHub App**
-
-## De drie waarden verzamelen
-
-Op de pagina van de app, direct na het aanmaken:
-
-| Waarde          | Waar                                              |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | Het tabblad **General**, bovenaan                 |
-| **Client ID**   | Het tabblad **General**, onder "Client secrets"   |
-| **Private key** | **Generate a private key** — er wordt een `.pem` gedownload |
-
-Het privésleutelbestand wordt één keer gedownload en GitHub toont het daarna
-nooit meer. Bewaar het tot je het hebt geplakt; je kunt altijd een nieuwe
-genereren.
-
-Een **client secret** is optioneel en levert precies één ding op: als je
-"Expire user authorization tokens" AAN laat staan, is dat wat iemands token stil
-vernieuwt in plaats van hen elke acht uur opnieuw te laten inloggen. Het inloggen
-zelf gebruikt het nooit.
-
-De eenvoudiger opzet is die vervaldatum UIT te zetten; dan is er nergens een
-geheim nodig. Laat je hem aan, genereer dan een secret en plak die in
-**Instellingen → Server → Single sign-on** (de kaart **Provider-apps**) — er
-bestaat geen omgevingsvariabele voor, en er is er ook geen in een build
-ingebakken, dus hij blijft op je server.
-
-## Installeer hem op je account
-
-Een app die is geregistreerd maar niet geïnstalleerd, kan mensen authenticeren en
-niets lezen.
-
-1. Open op de pagina van de app **Install App**
-2. Installeer hem op je account of organisatie
-3. Kies **All repositories**, of selecteer de repos die deze server mag zien
-
-## Plak hem in Control Center
+## Met één klik aanmaken
 
 1. Ga naar **Instellingen → Server → Single sign-on** en scroll naar de kaart
    **Provider-apps**
-2. Stel in het blok **GitHub** elk veld in:
-   - **App-id** — het numerieke App ID
-   - **Privésleutel** — plak het hele `.pem`-bestand, inclusief de regels `BEGIN` en `END`
-   - **Client-id** — van dezelfde pagina
-   - **Client-secret** — alleen als je er een hebt gegenereerd (voor tokenvernieuwing)
-3. Klik op **Testen**
+2. Vul in het blok **GitHub** eventueel bij **Organisatie (optioneel)** de
+   GitHub-organisatie in die eigenaar van de app moet worden. Laat het leeg om de
+   app onder je eigen account te maken; voor een organisatie is een owner van die
+   organisatie nodig
+3. Klik op **Mijn GitHub-app maken**
+4. Je browser opent GitHub met de app al ingevuld. Klik op
+   **Create GitHub App**
+5. GitHub stuurt je terug naar de server, die het app-id, de privésleutel, de
+   client-id en het client-secret opslaat en daarna de installatiepagina van de
+   app opent
 
-De sleutel wordt geparseerd op het moment dat hij wordt opgeslagen, dus een
-afgekapte of verkeerd opgemaakte plak wordt daar en dan geweigerd in plaats van
-uren later te falen bij een achtergrondverzoek. **Testen** gaat verder en vraagt
-GitHub op welke accounts de app is geïnstalleerd — "opgeslagen" en "werkt" zijn
-verschillende beweringen, en alleen de tweede betekent dat er iets gaat draaien.
+Er wordt niets met de hand gekopieerd, en de conversiecode gaat rechtstreeks van
+GitHub naar je server. De link werkt één keer en verloopt na tien minuten; is hij
+verlopen, klik dan opnieuw op **Mijn GitHub-app maken**.
+
+De app heet `Control Center <code>` en vraagt precies wat Control Center
+gebruikt:
+
+| Machtiging                                 | Toegang             |
+| ------------------------------------------ | ------------------- |
+| Metadata                                   | Lezen               |
+| Contents                                   | Lezen en schrijven  |
+| Pull requests                              | Lezen en schrijven  |
+| Issues                                     | Lezen en schrijven  |
+| Checks, Actions, Commit statuses           | Lezen               |
+| Organization members                       | Lezen               |
+
+Webhooks staan uit: de server pollt. Gebruik **Transfer ownership** in de
+geavanceerde instellingen van de app op GitHub om een app die je onder je eigen
+account hebt gemaakt later naar een organisatie te verplaatsen.
 
 Checkpoint: bij het GitHub-blok staat "De server kan namens zichzelf handelen en
-mensen kunnen inloggen", en de rij **GitHub** onder
-**Instellingen → Werkruimte → Profiel en identiteit → Codehosting** biedt nu
-**Inloggen met GitHub** aan.
+mensen kunnen inloggen."
 
-## Configureer hem in plaats daarvan met omgevingsvariabelen
+## Installeren waar je repository's staan
 
-Voor een headless of gescripte installatie vult de server elk veld vanuit de
-omgeving de eerste keer dat er nog geen opgeslagen waarde is:
+Een app die is geregistreerd maar niet geïnstalleerd, kan mensen aanmelden en
+niets lezen.
+
+1. Kies op de installatiepagina die GitHub opende het account of de organisatie
+   die eigenaar is van je repository's
+2. Kies **All repositories**, of selecteer de repo's die deze server mag zien
+
+Om hem later op een ander account te installeren, gaat een beheerder van de
+werkruimte naar **Instellingen → Werkruimte → Algemeen**, zoekt **Installaties
+van de GitHub-app** op de kaart GitHub-identiteit en klikt op **GitHub-app
+installeren**. De lijst toont elk account waarop de app is geïnstalleerd en
+markeert een opgeschorte installatie.
+
+## Deze server autoriseren voor een organisatie
+
+Op de gedeelde App van Control Center bedient de installatie van een organisatie
+alleen de servers die haar beheerders hebben geautoriseerd. Installeren via
+**GitHub-app installeren** autoriseert de server die het startte. Voor een
+installatie die al bestaat:
+
+1. Een beheerder van die organisatie meldt zich op deze server aan bij GitHub
+2. Die opent **Instellingen → Werkruimte → Algemeen → Installaties van de
+   GitHub-app**
+3. De rij van de organisatie zegt **Niet geautoriseerd**. Die klikt op **Deze
+   server autoriseren**
+
+De rij toont daarna **Geautoriseerd**. Je eigen app heeft dit allemaal niet
+nodig: elke installatie ervan hoort bij jouw server.
+
+## In plaats daarvan met de hand registreren
+
+De kaart **Provider-apps** neemt de waarden ook direct aan, voor een app die je
+zelf hebt geregistreerd:
+
+| Groep                        | Velden                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Handelen als de server**   | **App-id** en **Privésleutel** (het hele `.pem`-bestand, inclusief de regels `BEGIN` en `END`)  |
+| **Mensen aanmelden**         | **Client-id** en **Client-secret**. **Callback-URL’s** toont de URL die je letterlijk registreert |
+| **Pullrequest-gesprekken**   | **Bot-login**, bepaald wanneer je de verbinding test                                            |
+
+Registreer de callback-URL `<server origin>/oauth/github/callback` precies zoals
+de kaart die toont, laat **Expire user authorization tokens** aan staan en ken de
+machtigingen uit de tabel hierboven toe. Klik op **Testen**: het vraagt GitHub op
+welke accounts de app is geïnstalleerd, zodat "opgeslagen" en "werkt" niet
+worden verward.
+
+## Configureren vanuit de `.env` van de server
+
+Voor een headless of gescripte installatie vult de server elk veld vanuit zijn
+`.env`-bestand de eerste keer dat er nog geen opgeslagen waarde is:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Er zijn geen command-lineflags voor deze waarden — een secret op een commandoregel
-is via `ps` leesbaar door elk proces op de host. De omgeving is de enige plek om
-ze te configureren, en die gaat vóór wat de build ook meelevert. `.env.template`
-is de volledige lijst.
-
-Voor lokale ontwikkeling bevat de `.env` in de hoofdmap van de repo dezelfde
-waarden, en de desktop geeft ze door aan de server die hij start. Zet de sleutel
-daar op **één regel**: een waarde in `.env` is één regel, en `\n` tussen dubbele
-aanhalingstekens wordt gedecodeerd naar een nieuwe regel.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` en `GITHUB_APP_PRIVATE_KEY` zijn dezelfde namen die de tokenbroker
-van de sandbox al leest, dus een host die fijnmazige agenttokens heeft
-geconfigureerd krijgt de inlogroute er gratis bij. Het vullen gebeurt **één keer
-per veld** — daarna wint de opgeslagen waarde, dus een bewerking in Instellingen
-wordt niet ongedaan gemaakt door de volgende herstart.
+Zet de sleutel op **één regel**: een waarde in `.env` is één regel, en `\n`
+tussen dubbele aanhalingstekens wordt gedecodeerd naar een nieuwe regel. De
+server weigert te starten wanneer `GITHUB_APP_PRIVATE_KEY` of
+`GITHUB_CLIENT_SECRET` in zijn procesomgeving is geëxporteerd, waar elk
+kindproces het kan lezen; bewaar ze in het `.env`-bestand (koppel het in Docker
+aan `/app/bin/.env`). Het vullen gebeurt **één keer per veld**, dus een
+bewerking in Instellingen wordt niet ongedaan gemaakt door de volgende herstart.
 
-## Doe hetzelfde voor Linear
+## Eén werkruimte een andere app geven
 
-Linear heeft geen device flow, dus het inloggen verloopt via een rondje door de
-browser en heeft wél een callback-URL nodig — de kaart **Provider-apps** toont je
-precies welke je moet registreren.
+Een werkruimte kan een eigen app gebruiken in plaats van die van de server. Een
+beheerder van de werkruimte gaat naar **Instellingen → Werkruimte → Algemeen**,
+kiest **Een andere GitHub App gebruiken** op de kaart **GitHub-identiteit** en
+voert het id, de privésleutel, de client-id en het client-secret van die app in.
+Leden melden zich dan voor deze werkruimte bij die app aan. Een werkruimte met een
+eigen app valt nooit terug op de app van de server of op Connect: zolang de velden
+niet compleet zijn, wordt het GitHub-werk ervan geweigerd. Dit geldt ongeacht hoe de server mensen aanmeldt, ook via Connect.
 
-1. Maak een OAuth-applicatie aan op
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Stel de **Callback URL** in op de URL die de kaart toont, letterlijk
-3. Plak de **Client ID** en **Client secret** in het blok Linear
-4. Voeg optioneel een **API-sleutel** voor de werkruimte toe — dat zijn de
-   inloggegevens waarmee de server tickets synchroniseert wanneer geen mens erom
-   heeft gevraagd
+Het kaartje **Provider-apps** op dezelfde pagina doet hetzelfde voor Google Agenda, Linear en GIF-zoeken. Zie [Geef één werkruimte een eigen Linear-app](/nl-NL/handleiding/gidsen/linear-integratie/#geef-één-werkruimte-een-eigen-linear-app) en [Geef één werkruimte een eigen Google-client](/nl-NL/handleiding/gidsen/agenda-verbinden/#geef-één-werkruimte-een-eigen-google-client).
 
 ## Probleemoplossing
 
-### Het inlogvenster zegt dat de provider geen apparaatcode heeft teruggegeven
+### Mijn GitHub-app maken zegt dat de server geen adres heeft
 
-**Enable Device Flow** staat uit bij de app. Zet het aan onder **General** en
-probeer het opnieuw.
+De server heeft geen openbare URL waar een browser naar terug kan keren. Stel
+`CC_SERVER_PUBLIC_URL` (of `--public-url`) in en probeer het opnieuw.
+
+### GitHub zegt dat de link is verlopen
+
+De eenmalige pagina is al gebruikt, of er zijn tien minuten verstreken. Begin
+opnieuw vanuit Instellingen.
 
 ### Testen zegt dat de inloggegevens werken, maar de app is nergens geïnstalleerd
 
-Registratie en installatie zijn aparte stappen. Open **Install App** op de pagina
-van de app en installeer hem.
+Registratie en installatie zijn aparte stappen. Open de installatiepagina van de
+app, of gebruik **GitHub-app installeren** in Werkruimte → Algemeen.
 
 ### Testen zegt dat de privésleutel niet kon worden gelezen
 
 Plak het hele `.pem`-bestand, inclusief de regels `-----BEGIN` en `-----END`. Een
-`ed25519`- of EC-sleutel kan niet worden gebruikt — GitHub Apps ondertekenen met
+`ed25519`- of EC-sleutel kan niet worden gebruikt: GitHub Apps ondertekenen met
 RSA.
 
 ### Een lid is ingelogd maar ziet geen repositories
 
 De app is niet geïnstalleerd op het account dat eigenaar is van die repositories,
-of de installatie ervan selecteert andere repositories. Hun eigen login geeft
+of de installatie ervan selecteert andere repositories. Een aanmelding geeft
 alleen toegang tot wat de app mag zien.
+
+### Agenten zeggen dat de installatie van de GitHub App is opgeschort
+
+Iemand heeft de installatie op GitHub opgeschort. Hef de opschorting op in
+**Settings → Applications → Installed GitHub Apps** van het account.
 
 ## Gerelateerde gidsen
 
 - [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)
 - [Met Control Center praten vanuit een GitHub-PR](/nl-NL/handleiding/gidsen/github-pr-gesprekken/)
 - [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/)
+- [Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)
 - [API-sleutels beheren](/nl-NL/handleiding/gidsen/api-sleutels/)
-- [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)

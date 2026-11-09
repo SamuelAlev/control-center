@@ -2,7 +2,7 @@
 title: Propojte účet Slack
 description: Dokaž, že identita ve Slacku patří tobě, aby agenti podle tvých zpráv jednali a práce se připisovala tobě.
 slug: cs-CZ/prirucka/navody/propojeni-chatoveho-uctu
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Tenhle návod ukazuje, jak propojit chatovou identitu s uživatelem Control Center a jak ji odpojit.
@@ -17,29 +17,38 @@ Nepropojený člen, který bota zmíní, dostane v tom vlákně Slacku odpověď
 
 ## Propojení kódem
 
+Propojení potřebuje obě strany: odeslání kódu ze Slacku dokazuje účet Slack a potvrzení v Control Center dokazuje, že ten účet je tvůj.
+
 1. Jdi do **Nastavení → Pracovní prostor → Profil a identita** a sjeď ke kartě **Propojené účty chatu**
-2. V bloku Slack klikni na **Propojit můj účet Slack**
-3. Zkopíruj příkaz, který ukáže, například:
+2. V bloku Slack klikni na **Propojit můj účet Slack**. Dialog ukáže jednorázový kód, například:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Ve Slacku ten příkaz pošli botovi — nejjednodušší je přímá zpráva
-5. Bot potvrdí uživatele Control Center, se kterým jsi teď propojený, a dialog, který máš pořád otevřený, se ve stejnou chvíli aktualizuje — nemusíš ho zavírat a jít se podívat
+3. Ve Slacku ten kód pošli botovi v **přímé zprávě**: jen kód, nic jiného
+4. Bot odpoví „Got it. Confirm this Slack account in Control Center to finish linking.“ a dialog, který máš otevřený, ukáže profil Slacku, který kód poslal: jeho jméno a ID člena Slacku
+5. Když je to tvůj účet, klikni na **Potvrdit**. Propojení vznikne, dialog to oznámí a bot to potvrdí ve stejné přímé zprávě
+6. Když tvůj není, klikni na **Odmítnout**. Nic se nepropojí a kód přestane fungovat; pro nový pokus klikni na **Získat nový kód**
+
+Zavřením dialogu nárok neztratíš. Kód, který dorazí později, čeká na řádku **Propojit můj účet Slack** na stránce tvého profilu, se stejnými tlačítky **Potvrdit** a **Odmítnout**.
+
+Proč krok potvrzení: kód, který ti někdo přečte přes rameno a pošle z cizího účtu Slack, by jinak ten účet nechal jednat za tebe. Potvrdit můžeš jen ty a jen přesně ten profil, který kód poslal.
 
 Kód:
 
 - Je jednorázový a vyprší **15 minut** po vystavení
 - Vystavuje se vždy pro _tebe_, nikdy pro kolegu
+- Funguje jen v přímé zprávě botovi. V kanálu je to obyčejná zpráva
+- Může ho uplatnit jen plnohodnotný člen pracovního prostoru Slack, ve kterém je bot nainstalovaný, ne host ani někdo z jiné organizace
 - Nahradí kód, který už držíš, takže další stisk tlačítka ten předchozí zneplatní
 - Zůstává jen v paměti, takže restart serveru zneplatní nevyužité kódy — stiskni tlačítko znovu
 
-Kód, který je neznámý, prošlý nebo vystavený pro jiný pracovní prostor, selže pokaždé stejně a příčina se nedá rozlišit: „that code is not valid (or has expired)“.
+Kód, který je neznámý, prošlý, odmítnutý nebo vystavený pro jiný pracovní prostor, selže pokaždé stejně a příčina se nedá rozlišit: „That code is not valid (or has expired).“
 
 ## Automatické propojení podle e-mailu
 
-Když tvůj profil ve Slacku nese ověřený e-mail shodný s uživatelem Control Center, který je **už členem tohoto pracovního prostoru**, most tě propojí, jakmile s ním poprvé promluvíš. Kód není potřeba.
+Když tvůj profil ve Slacku nese potvrzený e-mail shodný s ověřeným e-mailem uživatele Control Center, který je **už členem tohoto pracovního prostoru**, most tě propojí, jakmile s ním poprvé promluvíš. Kód není potřeba.
 
 Obě poloviny jsou důležité: shoda e-mailu dokazuje identitu, přístup ale dává jen členství, takže cizí člověk, jehož e-mail na serveru náhodou existuje, se nepropojí s ničím. Seznam ukazuje, jak každé propojení vzniklo („spárováno podle e-mailu“ nebo „propojeno kódem“).
 
@@ -56,8 +65,9 @@ Vlastní stav máš na stránce profilu: řádek **Propojit můj účet Slack** 
 propojení hlásí „Propojeno s _your-slack-id_“ a dokud propojení nemáš, vyzve
 tě, ať se propojíš.
 
-Seznam je živý odběr, protože změna nastane na druhé straně — kód píšeš ve
-Slacku, takže žádný požadavek z aplikace nemůže odpověď přinést zpátky.
+Seznam i nárok jsou živé odběry, protože změna nastane na druhé straně: kód
+posíláš ve Slacku, takže žádný požadavek z aplikace nemůže odpověď přinést
+zpátky.
 
 ## Odpojení
 
@@ -79,9 +89,13 @@ Tvůj účet Slack je propojený s uživatelem Control Center, ten uživatel ale
 
 Role `viewer` a `guest` nemůžou začít práci. Admin ti musí roli zvýšit na `member` nebo výš.
 
-### Slash příkaz se nerozpoznal
+### Bot říká, že kód není platný
 
-Zkontroluj, že slash příkaz ve Slacku existuje a že posíláš příkaz, který ukázal dialog v nastavení — admin ho mohl přejmenovat a dialog pak ukazuje aktuální název.
+Kód vypršel, už se použil, byl odmítnut, nebo ho nahradil novější. Klikni znovu na **Propojit můj účet Slack** a pošli nový kód.
+
+### Bot bere můj kód jako požadavek
+
+Poslal jsi ho v kanálu, nebo je tvůj účet Slack už propojený. Kódy se přijímají jen v přímé zprávě a zpráva ve tvaru kódu od propojeného účtu je obyčejný požadavek.
 
 ## Související návody
 

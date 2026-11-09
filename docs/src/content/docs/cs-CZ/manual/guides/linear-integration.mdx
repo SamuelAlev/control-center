@@ -1,30 +1,119 @@
 ---
 title: Nastavte integraci Linear
-description: Ulož na server API klíč Linear, aby agenti mohli volat Linear, a zvol Linear jako poskytovatele ticketingu pro nové tickety.
+description: Přihlas se k Linear, připoj automatizaci Linear pracovního prostoru a zvol Linear jako poskytovatele ticketingu pro nové tickety.
 slug: cs-CZ/prirucka/navody/integrace-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Vlož na server API klíč Linear ke svému uživateli, stejně jako připojuješ
-forge. Tickety, projekty, vazby, spolupracovníci, delegování a přiřazení
-fungují nad vlastní databází Control Center a žádnou externí službu
-nepotřebují. Viz
+Linear má v Control Center dvě identity a obě jsou přihlášení v prohlížeči:
+tvoje, pro to, co děláš ty, a aplikace Control Center pracovního prostoru, pro
+to, co dělají agenti a pipelines. Tickety, projekty, vazby, spolupracovníci,
+delegování a přiřazení fungují nad vlastní databází Control Center a žádnou
+externí službu nepotřebují. Viz
 [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/).
 
-## Ulož klíč Linear
+## Předpoklady
 
-**API klíč ticketingu** je v **Nastavení → Pracovní prostor → Obecné**, na
-kartě **Ticketing**. Klíč se uloží na server k tvému id uživatele. Vlastní
-klíč serveru pro práci, o kterou nikdo nepožádal, bere `LINEAR_API_KEY` nebo
-kartu **Aplikace poskytovatelů**. Do sandboxu agenta se žádný klíč ticketingu
-nevkládá: agenti zapisují tickety přes vlastní nástroje Control Center, které
-se nejdřív zeptají pravidla **Zápis do externího trackeru**.
+- Server umí přihlašovat lidi k Linear: přes Control Center Connect, nebo
+  vlastní aplikací Linear serveru
+  ([Zaregistruj vlastní aplikaci Linear](#zaregistruj-vlastní-aplikaci-linear)).
+  Volí vlastník serveru v **Nastavení → Server → Jednotné přihlášení**
+- Admin pracovního prostoru, který zvolí Linear jako poskytovatele ticketingu
+  a připojí automatizaci Linear
 
-## Označ nové tickety jako Linear
+## Zvol Linear pro pracovní prostor
 
-**Poskytovatel ticketingu** (první krok onboardingu a
-`/workspaces/<workspaceId>/api-keys`) nabízí `local` a `linear`. Když zvolíš
-`linear`, na tickety, které od té chvíle vytvoříš, se zapíše `provider: linear`.
+1. Jdi do **Nastavení → Pracovní prostor → Obecné** a najdi kartu **Ticketing**
+2. Nastav **Poskytovatel ticketingu** na **Linear**
+
+Na tickety, které od té chvíle vytvoříš, se zapíše `provider: linear`.
+**Místní** drží tickety ve vlastní databázi tohoto serveru a řádky Linear
+skryje: není k čemu se ověřovat.
+
+## Přihlas se k Linear
+
+Na stejné kartě je řádek **Linear** tvůj:
+
+1. Klikni na **Přihlásit se k Linear**
+2. Schval to v prohlížeči
+3. S vlastní aplikací serveru si toho dialog všimne sám. Přes Connect opiš
+   8místný kód, který prohlížeč ukáže, nebo ho nech otevřít Control Center přes
+   odkaz `control-center://`
+
+Všechno, co v Linear z Control Center děláš, běží na tomhle přihlášení a na
+ničem jiném. Když přihlášený nejsi, aplikace tě vyzve k přihlášení, místo aby
+jednala jako někdo jiný.
+
+## Připoj automatizaci Linear
+
+Řádek **Automatizace Linear** je aplikace Control Center pracovního prostoru
+v Linear. Synchronizace ticketů, pipelines a agenti zapisují přes ni, takže
+automatické issues a komentáře se ukážou jako Control Center, ne jako člověk.
+
+1. Admin pracovního prostoru klikne na **Připojit Linear pro automatizaci**
+2. V prohlížeči schválí aplikaci pro pracovní prostor Linear, stejně jako výše
+
+Řádek pak hlásí „Připojeno k _tvému pracovnímu prostoru Linear_“. Připojit ho
+nebo odpojit smějí jen admini pracovního prostoru.
+
+Do sandboxu agenta se žádné pověření Linear nevkládá: agenti zapisují tickety
+přes vlastní nástroje Control Center, které se nejdřív zeptají pravidla
+**Zápis do externího trackeru**.
+
+## Zaregistruj vlastní aplikaci Linear
+
+Vlastní aplikaci použij, když jsi zvolil **Použít vlastní aplikace**. Aplikace serveru platí jen v tomto případě: s Control Center nebo vlastním Connect běží přes Connect každá dráha, včetně Linear, a aplikace serveru i její servisní klíč API zůstávají uložené, ale nepoužité. Vlastní aplikace pracovního prostoru ([níže](#dej-pracovnímu-prostoru-vlastní-aplikaci-linear)) platí vždy, v každém režimu.
+
+1. Vytvoř aplikaci OAuth na
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Přidej obě URL zpětného volání, které **Nastavení → Server → Jednotné
+   přihlášení → Aplikace poskytovatelů → Linear** ukazuje pod **Adresy URL
+   zpětného volání**, doslova:
+   `<server origin>/oauth/linear/callback` a
+   `<server origin>/oauth/linear_app/callback`
+3. Vlož **Client id** do bloku Linear
+
+Client secret není: server se přihlašuje přes PKCE. Obnovovací tokeny Linear
+vyprší po 30 dnech nepoužívání, takže server jednou denně obnoví každé
+přihlášení k Linear starší než 20 dní.
+
+Stejný blok bere volitelný **Servisní klíč API**. Je to vlastní pověření
+serveru k Linear pro automatizaci v pracovních prostorech, které automatizaci
+Linear nepřipojily. Drž ho v **Nastavení** nebo v souboru `.env` serveru jako
+`LINEAR_API_KEY`: server odmítne nastartovat, když je `LINEAR_API_KEY`
+exportovaný v prostředí jeho procesu.
+
+## Dej pracovnímu prostoru vlastní aplikaci Linear
+
+Pracovní prostor se může přihlašovat k Linear přes vlastní aplikaci místo aplikace serveru. Nastavit to může jen správce nebo vlastník pracovního prostoru.
+
+1. Vytvoř OAuth aplikaci Linear jako v krocích výše
+2. Otevři **Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů** a otevři **Linear**
+3. Zvol **Použít vlastní aplikaci pracovního prostoru**
+4. Přidej do aplikace Linear beze změn obě URL zpětného volání, které řádek ukazuje pod **Callback URLs**
+5. Vlož její **Client id** a volitelně **Servisní klíč API** pro automatizaci tohoto pracovního prostoru
+
+Vlastní aplikace pracovního prostoru pak odpovídá na každé přihlášení a požadavek automatizace Linear v tomto pracovním prostoru, ať server přihlašuje lidi jakkoli. Nikdy nepřejde na aplikaci serveru ani na Connect: dokud není nastavené client id, je Linear v tomto pracovním prostoru vypnutý a řádek říká, co chybí. Její servisní klíč API se používá jen tady; bez něj synchronizace potřebuje **Připojit Linear pro automatizaci**.
+
+Přepnutí mezi aplikací serveru a aplikací pracovního prostoru nebo změna client id pracovního prostoru odhlásí všechny v tomto pracovním prostoru z Linear a odpojí jejich automatizaci. Znovu se přihlásí přes novou aplikaci. **Použít aplikaci tohoto serveru** smaže uložená pole pracovního prostoru. Tajné hodnoty se jen zapisují: řádek ukáže jen to, zda je některá uložená. Ostatní pracovní prostory na serveru nejsou dotčené.
+
+## Řešení problémů
+
+### Řádek Linear hlásí, že přihlášení není nastavené
+
+Server nemá vlastní aplikaci Linear ani Connect. Jedno z nich vybere vlastník
+serveru v **Nastavení → Server → Jednotné přihlášení**. Když pracovní prostor používá vlastní aplikaci, řádek místo toho ukáže, že jeho nastavení není dokončené: správce pracovního prostoru doplní client id v **Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů**.
+
+### Synchronizace ticketů selže na chybě ověření
+
+Pracovní prostor nemá připojenou automatizaci Linear a server nemá servisní
+klíč API, takže synchronizace nemá žádné pověření. Admin pracovního prostoru
+klikne na **Připojit Linear pro automatizaci**.
+
+### Připojení automatizace hlásí, že pracovní prostor Linear je připojený jinde
+
+Aplikace Control Center toho pracovního prostoru Linear je už připojená
+k jinému serveru Control Center.
 
 ## Související návody
 

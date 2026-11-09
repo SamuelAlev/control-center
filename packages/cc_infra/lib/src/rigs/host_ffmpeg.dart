@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// A running child process, narrowed to what a rig lane needs of it.
 ///
 /// The narrowing is what makes the transcoder testable: a fake can be twenty
@@ -32,11 +34,15 @@ abstract interface class HostProcess {
 typedef HostProcessSpawn =
     Future<HostProcess> Function(String executable, List<String> args);
 
-/// The real spawn: `Process.start`, wrapped in [HostProcess].
+/// The real spawn: `ChildProcess.start`, wrapped in [HostProcess]. Android's
+/// SDK tools find their SDK, keys and JDK through toolchain variables
+/// (`ANDROID_HOME`, `JAVA_HOME`), so those pass through.
 Future<HostProcess> spawnHostProcess(
   String executable,
   List<String> args,
-) async => _RealHostProcess(await Process.start(executable, args));
+) async => _RealHostProcess(
+  await ChildProcess.start(executable, args, toolchain: true),
+);
 
 class _RealHostProcess implements HostProcess {
   _RealHostProcess(this._process);
@@ -74,10 +80,7 @@ class _RealHostProcess implements HostProcess {
 /// broken rig.
 class HostFfmpeg {
   /// Creates a [HostFfmpeg] over an already-resolved binary.
-  const HostFfmpeg({
-    required this.path,
-    this._spawn = spawnHostProcess,
-  });
+  const HostFfmpeg({required this.path, this._spawn = spawnHostProcess});
 
   /// Absolute path to the `ffmpeg` binary.
   final String path;
@@ -98,22 +101,11 @@ class HostFfmpeg {
   /// per frame. ffmpeg does not get installed halfway through a session.
   static Future<HostFfmpeg?> locate() => _located ??= _locate();
 
+  // No `which`/`where` on this host, or one that could not run, is the same
+  // answer as "not installed", and the caller says so out loud.
   static Future<HostFfmpeg?> _locate() async {
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        'ffmpeg',
-      ]);
-      if (result.exitCode == 0) {
-        final found = '${result.stdout}'.split('\n').first.trim();
-        if (found.isNotEmpty) {
-          return HostFfmpeg(path: found);
-        }
-      }
-    } on Object {
-      // No `which`/`where` on this host, or it could not be run: the same
-      // answer as "not installed", and the caller says so out loud.
-    }
-    return null;
+    final found = await ChildProcess.which('ffmpeg');
+    return found == null ? null : HostFfmpeg(path: found);
   }
 
   /// Forgets the cached probe. Tests only — a real host does not gain an

@@ -2,7 +2,7 @@
 title: 使用 AI 审查
 description: 对 PR 运行 pr_review 流水线，阅读发现项和判定，然后把审查发布到 GitHub。
 slug: zh-CN/手册/操作指南/ai-审查
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 本指南介绍如何让审查智能体审查一个 pull request，以及如何把结果发布到 GitHub。
@@ -96,11 +96,12 @@ diff——在服务器端计算，但应用中没有对应的界面；这一遍�
 
 Control Center 只发送**一条** GitHub 审查。已经解决或已驳回的发现项会被跳过。该按钮会
 包含所有仍然未解决的发现项，并且在 **Ship** 时提交 `APPROVE`。（MCP 工具
-`publish_review_to_github` 的默认行为仍然是只提交经同行确认的发现项，并且除非你传入
-`approve_on_ship`，否则不会批准。）锚定到文件和行号的发现项会变成行内评论；其余的一切
+`publish_review_to_github` 默认只提交经同行确认的发现项，并且从不批准：它以自动化身份
+发布，因此 `approve_on_ship` 在那里不起作用。）锚定到文件和行号的发现项会变成行内评论；其余的一切
 都归入摘要正文，每一项都带有“— Control Center AI review”页脚，以便来源清楚明确。
 **Block** 判定会以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 则由
-该按钮以 `APPROVE` 提交。随后提示会显示**已发布**。审查会以服务器应用的标识发布。
+该按钮以 `APPROVE` 提交。随后提示会显示**已发布**。审查会以你本人的身份发布，使用你自己的
+GitHub 登录：如果你没有登录 GitHub，发布会失败并要求你先登录。
 
 如果 GitHub 因为某一行不属于 diff 而拒绝一个行内锚点，整条审查会重新发送，并把每一个
 发现项都归入正文，这样就不会有任何东西被悄悄丢弃。

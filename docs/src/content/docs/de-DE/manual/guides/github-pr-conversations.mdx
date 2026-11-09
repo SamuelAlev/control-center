@@ -1,36 +1,39 @@
 ---
 title: Aus einem GitHub-PR mit Control Center sprechen
-description: Bitte den Bot der GitHub App deines Servers aus der PR-Unterhaltung selbst um ein Review oder eine Frage, ohne Webhook und ohne öffentliche URL.
+description: Bitte Control Center aus der PR-Unterhaltung selbst um ein Review oder eine Frage, ohne Webhook und ohne öffentliche URL.
 slug: de-DE/handbuch/anleitungen/github-pr-unterhaltungen
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Diese Anleitung zeigt, wie du mit Control Center arbeitest, ohne GitHub zu
 verlassen: ein KI-Review von der PR-Seite anfordern, dem Bot in einem Kommentar
 eine Frage stellen und die Unterhaltung in seinen Review-Threads weiterführen.
 
-Der Bot ist die eigene [GitHub App](/de-DE/handbuch/anleitungen/github-app/)
-deines Servers, dieselbe, die Personen schon anmeldet und Hintergrundarbeit
-ausführt. Neu registriert wird nichts, und nichts muss aus dem Internet
+Antworten kommen über die GitHub-Spur des Arbeitsbereichs: die eigene
+[GitHub App](/de-DE/handbuch/anleitungen/github-app/) deines Servers oder die
+gemeinsame App von Control Center über Connect. Neu registriert wird nichts, und nichts muss aus dem Internet
 erreichbar sein: der Server erfährt durch Polling, was auf GitHub gesagt wurde,
 ein Laptop hinter NAT verhält sich also genau wie eine öffentliche
 Bereitstellung.
 
 ## Voraussetzungen
 
-- Der Server hat seine GitHub App [registriert und
-  installiert](/de-DE/handbuch/anleitungen/github-app/), mit **Pull requests: read and write**
-  (für Kommentare, Threads und Reaktionen) und **Issues: read** (für die
-  Kommentarsuche). Beides steht schon in der Berechtigungsliste dieser Anleitung
+- Der Arbeitsbereich hat eine GitHub-Spur: die eigene GitHub App des Servers
+  oder Connect, mit der App [installiert](/de-DE/handbuch/anleitungen/github-app/#dort-installieren-wo-deine-repositories-liegen)
+  auf dem Konto, dem das Repository gehört. Eine eigene App braucht
+  **Pull requests** und **Issues** mit Lesen und Schreiben, was **Meine
+  GitHub-App erstellen** schon vergibt
 - Das Repository ist in Control Center mit einem Arbeitsbereich verknüpft
+- Du bist auf diesem Server [bei GitHub angemeldet](/de-DE/handbuch/anleitungen/github-integration/)
+  und darfst in das Repository pushen
 - Keine Webhook-URL, kein Tunnel, kein Callback — auf der Netzwerkseite ist
   nichts zu konfigurieren
 
 ## Den Namen deines Bots finden
 
-Erwähne `@usectrl`, das eigene GitHub-Konto von Control Center. Dies ist der Standardauslöser; die konfigurierte GitHub App deines Servers bearbeitet die Anfrage weiterhin und veröffentlicht die Antworten. Zugangsdaten für das Konto `usectrl` brauchst du nicht.
+Erwähne `@usectrl`, das eigene GitHub-Konto von Control Center. Dies ist der Standardauslöser; die GitHub-Spur deines Arbeitsbereichs bearbeitet die Anfrage weiterhin und veröffentlicht die Antworten. Zugangsdaten für das Konto `usectrl` brauchst du nicht.
 
-Auch der eigene App-Login `<appslug>[bot]` und die Kurzform `@appslug` funktionieren. So findest du diesen optionalen Alias:
+Auch der eigene App-Login `<appslug>[bot]` und die Kurzform `@appslug` funktionieren. So findest du diesen optionalen Alias bei deiner eigenen App:
 
 1. Geh zu **Einstellungen → Server → Single sign-on** und scrolle zur Karte
    **Anbieter-Apps**
@@ -54,12 +57,12 @@ auch die Schaltfläche **Ask AI** startet:
 
 - **Setze das Label `ai-review`** auf dem PR. Das ist das Nächste, was GitHub
   dazu anbietet, den Bot als Reviewer zuzuweisen: App-Konten können den nativen
-  Platz eines angeforderten Reviewers nicht belegen. Es gibt keinen Kommentar,
-  auf den zu reagieren wäre, also wird auf GitHub nichts gepostet; das Review
-  startet in Control Center
+  Platz eines angeforderten Reviewers nicht belegen. Dein Konto reagiert auf den
+  PR mit 👀, und das Review startet in Control Center; es wird kein Kommentar
+  gepostet
 - **Kommentiere `@usectrl review`** (oder nur `@usectrl`) in der PR-Unterhaltung.
-  Der Bot reagiert mit 👀 und antwortet, sobald das Review gestartet ist (oder
-  dass bereits eines läuft)
+  Auf deinem Kommentar erscheint 👀, dann meldet eine Antwort, dass das Review
+  gestartet ist (oder dass bereits eines läuft)
 
 Die Reviewer arbeiten im Review-Bereich des PR; lies und veröffentliche die
 Befunde wie in
@@ -82,11 +85,12 @@ Kommentiere in der PR-Unterhaltung:
 
 Was dann passiert, der Reihe nach:
 
-1. Der Bot reagiert mit 👀, damit du siehst, dass der Kommentar angekommen ist
+1. Auf deinem Kommentar erscheint 👀, von deinem eigenen Konto, damit du
+   siehst, dass der Kommentar angekommen ist
 2. Die Frage wird im Review-Bereich des PR **als du** gepostet, mit derselben
    Zuschreibung, als hättest du sie in Control Center getippt
-3. Ein Agent antwortet im Bereich, und die Antwort kommt auf dem PR als
-   Kommentar zurück, der dich mit @ erwähnt
+3. Ein Agent antwortet im Bereich, und die Antwort kommt auf dem PR zurück.
+   Jede Antwort beginnt mit `**Control Center** (for @your-login):`
 
 Eine Frage auf einem PR ohne bisheriges Review weckt den CEO-Agenten des
 Arbeitsbereichs; sobald ein Review gelaufen ist, antwortet der Agent, der
@@ -114,35 +118,45 @@ auf oberster Ebene und braucht deshalb weiterhin eine @-Erwähnung.
 
 ## Mit wem der Bot spricht
 
-Ein GitHub-Kommentar kommt mit kaum mehr an als einem Login, der Bot löst den
-Autor also auf, bevor er irgendetwas tut:
+Der Server löst den Autor eines Kommentars, oder die Person, die das Label
+`ai-review` gesetzt hat, auf, bevor er irgendetwas tut:
 
-- **Dein GitHub-Konto muss mit deiner Identität verknüpft sein** in Control
-  Center: [mit GitHub anmelden](/de-DE/handbuch/anleitungen/github-integration/)
-  oder ein Token einfügen, unter **Einstellungen → Arbeitsbereich → Profil und
-  Identität → Code-Hosting**
-- **Du musst Mitglied mit einer Schreibrolle sein** (`member`, `admin` oder
-  `owner`) in dem Arbeitsbereich, der das Repository verknüpft
+- **Das GitHub-Konto muss auf diesem Server angemeldet sein.** Abgeglichen wird
+  die numerische Konto-ID von GitHub, nie der Login. Melde dich unter
+  **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** an
+- **Die Person muss Mitglied mit einer Schreibrolle sein** (`member`, `admin`
+  oder `owner`) in dem Arbeitsbereich, der das Repository verknüpft
+- **Die Person muss auf GitHub in das Repository pushen dürfen.** Antworten
+  nutzen ein Token, das auf den Zugriff dieser Person begrenzt ist, wer nur
+  lesen darf, bekommt also keine Antwort
 
-Alle anderen bekommen eine höfliche Antwort, die erklärt, was fehlt. Ein
-unbekannter Login (nicht verknüpft, oder verknüpft, aber hier kein Mitglied)
-und eine Nur-Lese-Rolle sind die beiden Fälle, und ihre Worte gelangen nie in
-den Arbeitsbereich. Das Label `ai-review` unterliegt dieser Prüfung nicht: es
-hat keinen Autor, also startet es das Review in dem Arbeitsbereich, der das
-Repo bereits verknüpft.
+Alle anderen werden still ignoriert: Es wird nichts gepostet, und ihre Worte
+gelangen nie in den Arbeitsbereich. Kommentare von Bots und die eigenen
+Antworten von Control Center werden nie als Fragen behandelt.
+
+### Zwei Server, ein PR
+
+Über das 👀 einigen sich Server auch darauf, wer antwortet. Es wird mit der
+eigenen Anmeldung des Autors gesetzt, und GitHub teilt dem Server mit, ob die
+Reaktion neu ist. Bist du auf zwei Servern von Control Center angemeldet, die
+beide das Repository verknüpfen, antwortet der erste, der reagiert, und der
+andere bleibt still. Dasselbe gilt für das Label.
 
 ## Was du erwarten kannst
 
 | Was                      | Verhalten                                                                                                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- |
-| Bestätigung              | 👀 auf einem Kommentar innerhalb von etwa einer Minute, dem Durchlaufintervall. Das Label `ai-review` hat keinen Kommentar, auf den zu reagieren wäre |
-| Antworten                | Gepostet als der Bot (die App), in der Spur, in der die Frage gestellt wurde                             |
+| Bestätigung              | 👀 von deinem Konto auf dem Kommentar (oder beim Label auf dem PR), innerhalb eines Durchlaufs           |
+| Antworten                | Gepostet in der Spur, in der die Frage gestellt wurde, beginnend mit `**Control Center** (for @your-login):`. Bei einer eigenen App ist der Autor der Bot der App; über Connect ist es dein Konto, das über die gemeinsame App handelt |
 | Zuschreibung im Bereich  | Die Frage gehört dir; der Agent läuft in deinem Auftrag, unter den Autonomieeinstellungen des Bereichs   |
 | Reviews                  | Befunde landen im Review-Bereich; das Veröffentlichen auf GitHub ist manuell                             |
 
-Die Latenz von etwa einer Minute ist der Preis dafür, dass gar kein eingehender
-Netzzugriff nötig ist. Am Durchlauf hängt nichts Dringendes, und solange der
-Server offline ist, geht nichts verloren: ein Kommentar, der während der
+Bei einer eigenen App läuft jede Minute ein Durchlauf und prüft bis zu 25 Pull
+Requests; über Connect läuft er alle zwei Minuten und prüft bis zu 10, weil sich
+diese Aufrufe das eigene GitHub-Kontingent jedes Mitglieds teilen. Ein
+Arbeitsbereich, dessen GitHub-Kontingent unter 15 % liegt, wird übersprungen, bis
+es sich erholt hat. Die Latenz ist der Preis dafür, dass gar kein eingehender
+Netzzugriff nötig ist. Solange der Server offline ist, geht nichts verloren: ein Kommentar, der während der
 Ausfallzeit ankommt, wird beim nächsten Durchlauf erfasst.
 
 ## Fehlerbehebung
@@ -153,19 +167,23 @@ Ausfallzeit ankommt, wird beim nächsten Durchlauf erfasst.
   mit einem Arbeitsbereich **verknüpft**? Ein unverknüpftes Repo wird
   übersprungen, bevor irgendetwas festgehalten wird, das spätere Verknüpfen
   liefert also trotzdem
-- Ist dein GitHub-Konto verknüpft, und bist du Mitglied mit einer Schreibrolle?
-  Schau auf dem PR nach der Ablehnungsantwort des Bots, sie sagt, welcher Fall
-  es ist
+- Bist du auf diesem Server bei GitHub angemeldet, Mitglied mit einer
+  Schreibrolle und darfst du in das Repo pushen? Alle anderen ignoriert der
+  Server, ohne zu antworten
+- Ist bei der gemeinsamen App von Control Center die Installation der
+  Organisation für diesen Server autorisiert? Siehe
+  [Diesen Server für eine Organisation autorisieren](/de-DE/handbuch/anleitungen/github-app/#diesen-server-für-eine-organisation-autorisieren)
 - Immer noch nichts? Das Serverprotokoll nennt den Durchlauf und den PR, wenn
   etwas fehlschlägt; such nach `pr_conversation:` (der Poller) und
   `github_pr_conversation:` (die Brücke)
 
 **Das Label startet kein Review.**
 
-Es löst einmal je PR aus. Ist bereits ein Review gelaufen, oder wurde das Label
+Es löst einmal je PR aus, und die Person, die es gesetzt hat, durchläuft
+dieselben Prüfungen wie der Autor eines Kommentars. Ist bereits ein Review gelaufen, oder wurde das Label
 gesetzt, bevor der Server den PR je gesehen hat (der erste Durchlauf hält den
 Rückstand still fest, statt ihn loszutreten), erwähne stattdessen den Bot.
-`@myapp review` startet immer eines, solange nicht bereits ein Review unterwegs
+`@usectrl review` startet immer eines, solange nicht bereits ein Review unterwegs
 ist.
 
 **Die Antwort des Bots ist nie auf GitHub angekommen.**

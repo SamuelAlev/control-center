@@ -3,7 +3,7 @@ title: Arhitectură
 description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Prezentare generală
@@ -113,9 +113,9 @@ Ambele baze de date sunt deținute de `cc_persistence` și deschise doar de `cc_
 **go_router**, cu un singur fapt care guvernează restul: **fiecare destinație din aplicație are prefixul spațiului de lucru** sub forma `/workspaces/:workspaceId/…`. Id-ul spațiului de lucru din URL este singura sursă de adevăr pentru spațiul de lucru activ — `activeWorkspaceIdProvider` este condus de rută, nu invers — motiv pentru care citirea datelor care țin de un spațiu de lucru în afara unei rute cu prefix nu are de unde să ia id-ul.
 
 - _Funcții_ de construire a rutelor în `router/routes.dart`, fiecare primind id-ul spațiului de lucru ca prim argument, nu constante de tip string
-- Patru rute dinainte de context nu au prefix: `/splash`, `/onboarding`, `/signed-out` și `/workspaces` (selectorul de spații de lucru)
-- `ShellRoute` învelește shell-ul aplicației; acele patru suprafețe se afișează pe tot ecranul, în afara lui
-- Gardă de autentificare: o configurare incompletă duce la `/onboarding`; o configurare completă a cărei acreditare de forge a dispărut duce la `/signed-out`. Complet înseamnă că cel puțin un forge este conectat pentru utilizatorul autentificat și că există cel puțin un spațiu de lucru — nu neapărat GitHub, iar CLI-ul `gh` nu este o metodă de autentificare
+- Trei rute dinainte de context nu au prefix: `/splash`, `/onboarding` și `/workspaces` (selectorul de spații de lucru)
+- `ShellRoute` învelește shell-ul aplicației; acele trei suprafețe se afișează pe tot ecranul, în afara lui
+- Gardă de autentificare: o configurare incompletă duce la `/onboarding`. O configurare completă a cărei acreditare de forge a dispărut rămâne în aplicație, iar shell-ul spațiului de lucru afișează un avertisment care duce la pagina de autentificare. Complet înseamnă că cel puțin un forge este conectat pentru utilizatorul autentificat și că există cel puțin un spațiu de lucru — nu neapărat GitHub, iar CLI-ul `gh` nu este o metodă de autentificare
 - Poarta de onboarding în `features/auth/providers/`
 
 ## Rețelistică (pe server)

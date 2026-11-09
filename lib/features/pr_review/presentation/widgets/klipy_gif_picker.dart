@@ -1,35 +1,32 @@
 import 'dart:async';
 
-import 'package:cc_domain/features/pr_review/domain/entities/gif_result.dart';
+import 'package:cc_connect_core/cc_connect_core.dart' show KlipyGif;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _kDebounceMs = 400;
 
-/// Searches GIFs SERVER-SIDE over the `gif.search` RPC op (the thin client
-/// holds no Klipy app key; the browser can't reach Klipy cross-origin). The
-/// host runs Klipy with its configured key and returns flat `GifResult` maps.
-Future<List<GifResult>> _searchGifs(RemoteRpcClient rpc, String query) async {
-  final data = await rpc.call('gif.search', {'query': query});
-  return _parseGifs(data);
+/// Runs a `gif.*` op SERVER-SIDE for the picker's workspace: the client holds
+/// no KLIPY key; the server uses the workspace's, its own or Connect's.
+Future<List<KlipyGif>> _fetch(_GifPickerBody b, String op, [String? q]) async {
+  if (b.workspaceId case final ws?) {
+    final args = {'workspace_id': ws, 'query': ?q};
+    return _parseGifs(await b.rpcClient.call(op, args));
+  }
+  return const [];
 }
 
-/// Fetches trending GIFs SERVER-SIDE over the `gif.trending` RPC op.
-Future<List<GifResult>> _trendingGifs(RemoteRpcClient rpc) async {
-  final data = await rpc.call('gif.trending', const {});
-  return _parseGifs(data);
-}
-
-List<GifResult> _parseGifs(Map<String, dynamic> data) => [
-  for (final g in (data['gifs'] as List? ?? const []))
-    GifResult.fromWire((g as Map).cast<String, dynamic>()),
+/// Parses the result list. [KlipyGif.tryParse] drops any item whose preview
+/// or GIF is not an HTTPS URL on KLIPY's media CDN — the bytes load straight
+/// from that host, so nothing else may ride in a search answer.
+List<KlipyGif> _parseGifs(Map<String, dynamic> data) => [
+  for (final g in (data['gifs'] as List? ?? const [])) ?KlipyGif.tryParse(g),
 ];
 
 /// Toolbar GIF picker: a [CcIconButton] that opens a search popover anchored
@@ -45,7 +42,7 @@ class GifPickerPopover extends ConsumerStatefulWidget {
   const GifPickerPopover({super.key, required this.onGifSelected});
 
   /// Called with the chosen GIF; the popover then closes.
-  final void Function(GifResult gif) onGifSelected;
+  final void Function(KlipyGif gif) onGifSelected;
 
   @override
   ConsumerState<GifPickerPopover> createState() => _GifPickerPopoverState();
@@ -70,6 +67,7 @@ class _GifPickerPopoverState extends ConsumerState<GifPickerPopover> {
       followerAnchor: AlignmentDirectional.topEnd,
       overlayBuilder: (context, _) => _GifPickerBody(
         rpcClient: ref.read(rpcClientProvider),
+        workspaceId: ref.read(activeWorkspaceIdProvider),
         onSelected: (gif) {
           widget.onGifSelected(gif);
           _controller.hide();
@@ -90,12 +88,14 @@ class _GifPickerPopoverState extends ConsumerState<GifPickerPopover> {
 class _GifPickerBody extends StatefulWidget {
   const _GifPickerBody({
     required this.rpcClient,
+    required this.workspaceId,
     required this.onSelected,
     required this.onClose,
   });
 
   final RemoteRpcClient rpcClient;
-  final void Function(GifResult gif) onSelected;
+  final String? workspaceId;
+  final void Function(KlipyGif gif) onSelected;
   final VoidCallback onClose;
 
   @override
@@ -106,7 +106,7 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
   final _scrollCtrl = ScrollController();
-  List<GifResult> _gifs = [];
+  List<KlipyGif> _gifs = [];
   bool _loading = true;
   String? _error;
   Timer? _debounce;
@@ -132,7 +132,7 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
       _error = null;
     });
     try {
-      final gifs = await _trendingGifs(widget.rpcClient);
+      final gifs = await _fetch(widget, 'gif.trending');
       if (!mounted) {
         return;
       }
@@ -167,7 +167,7 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
         _error = null;
       });
       try {
-        final gifs = await _searchGifs(widget.rpcClient, query.trim());
+        final gifs = await _fetch(widget, 'gif.search', query.trim());
         if (!mounted) {
           return;
         }
@@ -298,13 +298,11 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
               fit: StackFit.expand,
               children: [
                 CcImageFade(
-                  // ~131px square tile; cap the decode. The proxy streams
-                  // animated GIFs through untouched so the animation survives —
-                  // only the in-memory per-frame decode shrinks.
+                  // Straight from KLIPY's CDN (the URL was checked against it
+                  // when the result was parsed). ~131px square tile, so the
+                  // per-frame decode is capped; the animation survives.
                   image: ResizeImage(
-                    DiskCachedNetworkImage(
-                      MediaProxyScope.urlOf(context, gif.previewUrl),
-                    ),
+                    NetworkImage(gif.previewUrl),
                     width: (131 * MediaQuery.devicePixelRatioOf(context))
                         .round(),
                   ),

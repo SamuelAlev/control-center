@@ -3,7 +3,7 @@ title: Seni bina
 description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Gambaran keseluruhan
@@ -113,9 +113,9 @@ Kedua-dua pangkalan data dimiliki oleh `cc_persistence` dan dibuka hanya oleh `c
 **go_router**, dengan satu fakta yang mengawal selebihnya: **setiap destinasi dalam aplikasi berawalan ruang kerja** sebagai `/workspaces/:workspaceId/…`. Id ruang kerja dalam URL ialah satu-satunya sumber kebenaran bagi ruang kerja aktif — `activeWorkspaceIdProvider` dipandu daripada laluan, bukan sebaliknya — dan itulah sebabnya membaca data berskop ruang kerja di luar laluan berawalan tiada tempat untuk mendapatkan idnya.
 
 - _Fungsi_ pembina laluan dalam `router/routes.dart`, setiap satu mengambil id ruang kerja sebagai argumen pertamanya, bukan pemalar rentetan
-- Empat laluan pra-konteks tidak berawalan: `/splash`, `/onboarding`, `/signed-out` dan `/workspaces` (pemilih)
-- `ShellRoute` membalut cangkerang aplikasi; keempat-empat permukaan itu dipaparkan skrin penuh di luarnya
-- Pengawal pengesahan: persediaan yang tidak lengkap pergi ke `/onboarding`; persediaan lengkap yang kelayakan hos kodnya telah hilang pergi ke `/signed-out`. Lengkap bermaksud sekurang-kurangnya satu hos kod disambungkan bagi pengguna yang telah daftar masuk dan sekurang-kurangnya satu ruang kerja wujud — bukan GitHub secara khusus, dan CLI `gh` bukan kaedah pengesahan
+- Tiga laluan pra-konteks tidak berawalan: `/splash`, `/onboarding` dan `/workspaces` (pemilih)
+- `ShellRoute` membalut cangkerang aplikasi; ketiga-tiga permukaan itu dipaparkan skrin penuh di luarnya
+- Pengawal pengesahan: persediaan yang tidak lengkap pergi ke `/onboarding`; persediaan lengkap yang kelayakan hos kodnya telah hilang kekal dalam aplikasi, dan cangkerang ruang kerja memaparkan amaran yang memautkan ke log masuk. Lengkap bermaksud sekurang-kurangnya satu hos kod disambungkan bagi pengguna yang telah daftar masuk dan sekurang-kurangnya satu ruang kerja wujud — bukan GitHub secara khusus, dan CLI `gh` bukan kaedah pengesahan
 - Gerbang onboarding dalam `features/auth/providers/`
 
 ## Rangkaian (sebelah pelayan)

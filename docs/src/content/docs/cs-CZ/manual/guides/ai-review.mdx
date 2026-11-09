@@ -2,7 +2,7 @@
 title: Používejte AI kontrolu
 description: Spusť na PR pipeline pr_review, přečti zjištění a verdikt a kontrolu zveřejni na GitHub.
 slug: cs-CZ/prirucka/navody/ai-kontrola
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Tenhle návod ukazuje, jak nechat recenzenty zkontrolovat pull request a jak
@@ -112,14 +112,15 @@ Zveřejnění je samostatný krok a schválně ho pouští uživatel. Pipeline
 
 Control Center odešle **jednu** revizi na GitHub. Zjištění už vyřešená nebo
 zamítnutá se přeskočí. Tlačítko zahrne každé zbývající otevřené zjištění a při
-**Ship** odešle `APPROVE`. (Nástroj MCP `publish_review_to_github` má pořád
-výchozí jen zjištění potvrzená kolegou a neschválí, dokud nepředáš
-`approve_on_ship`.) Zjištění s kotvou na soubor a řádek se stanou vloženými
+**Ship** odešle `APPROVE`. (Nástroj MCP `publish_review_to_github` má ve
+výchozím stavu jen zjištění potvrzená kolegou a nikdy neschvaluje: zveřejňuje
+jako automatizace, takže `approve_on_ship` tam nemá žádný účinek.) Zjištění s kotvou na soubor a řádek se stanou vloženými
 komentáři. Všechno ostatní splyne do těla shrnutí a každé nese patičku
 "— Control Center AI review", aby byl zdroj jednoznačný. Verdikt **Block** se
 odešle jako `REQUEST_CHANGES`, **Hold** jako `COMMENT` a **Ship** jako
 `APPROVE` z tohoto tlačítka. Toast pak hlásí **Zveřejněno**. Revize jde pod
-identitou aplikace serveru.
+tvým jménem, přes tvé vlastní přihlášení ke GitHubu: když ke GitHubu přihlášený
+nejsi, zveřejnění selže a vyzve tě k přihlášení.
 
 Když GitHub odmítne vloženou kotvu, protože řádek není součástí diffu, celá
 revize se pošle znovu a každé zjištění se složí do těla. Nic se potichu

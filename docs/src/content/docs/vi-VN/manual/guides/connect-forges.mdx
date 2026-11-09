@@ -2,7 +2,7 @@
 title: Kết nối máy chủ mã
 description: Kết nối GitHub, GitLab hoặc Bitbucket để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động — một không gian làm việc có thể dùng cả ba.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center làm việc với ba máy chủ mã, được gọi là **forge** xuyên suốt ứng dụng: **GitHub**, **GitLab** và **Bitbucket Cloud**. Không máy chủ nào là mặc định. Kết nối một cái là mọi thứ hoạt động; kết nối nhiều cái thì một không gian làm việc duy nhất có thể chứa kho mã từ tất cả cùng lúc.
@@ -13,9 +13,9 @@ Máy chủ mã là thuộc tính của từng **kho mã**, được đọc từ 
 
 1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** (`/settings/workspace/profile`).
 2. Tìm thẻ **Lưu trữ mã**. Mọi máy chủ mã được hỗ trợ đều được liệt kê, dù đã kết nối hay chưa.
-3. Nhấn **Đăng nhập với …** nếu hàng đó có nút này, hoặc **Thêm token** rồi dán một token vào.
+3. Trên **GitHub**, nhấn **Đăng nhập vào GitHub**. Trên **GitLab** hoặc **Bitbucket**, nhấn **Thêm token** rồi dán một token vào.
 
-**Đăng nhập** xuất hiện với máy chủ mã mà máy chủ của bạn đã đăng ký ứng dụng — hiện nay là GitHub, qua luồng thiết bị (xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)). Mọi trường hợp còn lại là dán token, một cách thể hiện thành thật thay vì một nút bấm không thể hoàn tất.
+**GitHub chỉ có đăng nhập.** Việc đăng nhập chạy qua GitHub App riêng của máy chủ hoặc qua Control Center Connect, tùy theo chủ máy chủ đã thiết lập (xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)); không có token GitHub nào để dán. GitLab và Bitbucket vẫn nhận một token cá nhân.
 
 Dù theo cách nào, thông tin xác thực **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn: không token nào được lưu trên máy mà bạn đã nhập nó, mọi thiết bị bạn đăng nhập đều dùng cùng một token, và không thành viên nào khác đọc được nó. Nó có hiệu lực ngay ở **yêu cầu kế tiếp** — không có gì phải khởi động lại, và việc ngắt kết nối sẽ dừng gửi nó ngay lập tức.
 
@@ -24,29 +24,28 @@ Mỗi hàng cho biết thông tin xác thực của nó đến từ đâu, vì �
 | Dòng phụ                         | Ý nghĩa                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `Đã đăng nhập với tên octocat`           | Thông tin xác thực của chính bạn đang được dùng                     |
-| `Đã đăng nhập với tên octocat · qua ứng dụng của máy chủ này` | Danh tính ứng dụng của máy chủ đang trả lời — bạn chưa đăng nhập |
-| `Đã đăng nhập với tên octocat · từ môi trường` | Một biến môi trường của máy chủ đang trả lời, không phải thông tin xác thực của bạn |
+| `Đã đăng nhập với tên octocat · từ môi trường` | Chỉ với GitLab hoặc Bitbucket: một biến môi trường của máy chủ đang trả lời, không phải token của bạn |
 | `Chưa kết nối`                  | Bạn chưa có thông tin xác thực cho máy chủ mã này                   |
+| `Đăng nhập GitHub chưa được thiết lập trên máy chủ này.` | Máy chủ không có GitHub App riêng cũng không có Connect; chủ máy chủ thiết lập một trong hai |
 
 ### Mỗi máy chủ mã cần loại token nào
 
 | Máy chủ mã         | Token                                                     | Nơi tạo                                                   |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Loại Classic: `repo` và `read:org`. Loại Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Một personal access token có `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Một token API của Atlassian, kèm email tài khoản của bạn  | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket xác thực bằng **email tài khoản của bạn làm tên người dùng** và token làm mật khẩu. Đặt `BITBUCKET_EMAIL` trong môi trường máy chủ để nó biết ghép token với email nào.
 
-### Hoặc dùng môi trường
+### Công việc nền
 
-Với bản cài không giao diện hoặc chạy CI, máy chủ đọc các biến sau:
+Công việc không có người đứng sau (lần chạy agent, pipeline, thăm dò PR) cũng cần một thông tin xác thực, và mỗi máy chủ mã trả lời theo cách riêng:
 
-- **GitHub** — `GITHUB_TOKEN`, rồi `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, rồi `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, rồi `BITBUCKET_TOKEN` (kèm `BITBUCKET_EMAIL`)
+- **GitHub** — một token cho đúng một kho mã tại một thời điểm, được cấp từ GitHub App của máy chủ hoặc qua Connect và giới hạn trong những gì một thành viên chịu trách nhiệm có thể làm ở đó. Đó không bao giờ là đăng nhập của một người được chuyển nguyên vẹn, và không có biến môi trường hay token dán vào nào đứng thay. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/#đăng-nhập-của-bạn-đại-diện-cho-ai)
+- **GitLab** — token mà chủ máy chủ đã dán, rồi `GITLAB_TOKEN`, rồi `CI_JOB_TOKEN`
+- **Bitbucket** — token mà chủ máy chủ đã dán, rồi `BITBUCKET_API_TOKEN`, rồi `BITBUCKET_TOKEN` (kèm `BITBUCKET_EMAIL`)
 
-Đây là thông tin xác thực **của máy chủ**, không phải của bạn, và sự phân biệt này mang tính quyết định: một yêu cầu thực hiện thay mặt bạn chỉ dùng thông tin xác thực của bạn và không dùng gì khác, nên môi trường không bao giờ âm thầm đứng ra thay bạn. Công việc không có người đứng sau — webhook, thăm dò PR, đồng bộ phiếu — phân giải danh tính ứng dụng của máy chủ trước, rồi đến thông tin xác thực của chủ máy chủ, rồi đến môi trường. Thứ tự này cố định để “tôi đã đăng nhập mà không có gì thay đổi” không bao giờ là một kết quả được hỗ trợ.
+Các biến môi trường của GitLab và Bitbucket là thông tin xác thực **của máy chủ**, không phải của bạn: một yêu cầu thực hiện thay mặt bạn chỉ dùng token của bạn và không dùng gì khác, nên môi trường không bao giờ âm thầm đứng ra thay bạn.
 
 ## Bạn là một người khác trên mỗi máy chủ mã
 
@@ -94,11 +93,11 @@ GitLab gọi pull request là **merge request**. Control Center dùng “pull re
 
 ### Danh sách PR trống và báo rằng một máy chủ mã chưa được kết nối
 
-Bạn chưa có thông tin xác thực cho máy chủ mã đó. Hãy đăng nhập hoặc dán token trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**. Các kho mã của những máy chủ mã khác không bị ảnh hưởng.
+Bạn chưa có thông tin xác thực cho máy chủ mã đó. Hãy đăng nhập vào GitHub, hoặc dán token GitLab hoặc Bitbucket, trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**. Các kho mã của những máy chủ mã khác không bị ảnh hưởng.
 
 ### Tôi đã kết nối một máy chủ mã nhưng các kho mã của nó vẫn không hiện gì
 
-Hãy kiểm tra dòng phụ của hàng. Nếu nó ghi “qua ứng dụng của máy chủ này” hoặc “từ môi trường”, thì một thông tin xác thực khác đang trả lời chứ không phải cái bạn mong đợi — thông tin xác thực của bạn luôn thắng với mọi thứ bạn yêu cầu, nên nếu dòng phụ ghi khác thì cái của bạn chưa được lưu.
+Hãy kiểm tra dòng phụ của hàng. Nếu một hàng GitLab hoặc Bitbucket ghi “từ môi trường”, thì một thông tin xác thực khác đang trả lời chứ không phải cái bạn mong đợi — token của bạn luôn thắng với mọi thứ bạn yêu cầu, nên nếu dòng phụ ghi khác thì cái của bạn chưa được lưu. Trên GitHub, hãy kiểm tra rằng GitHub App đã được cài trên tài khoản sở hữu các kho mã.
 
 ### Một kho mã không đăng ký được
 

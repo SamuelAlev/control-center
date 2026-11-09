@@ -26,6 +26,7 @@ class TrackedPipelineEngine implements PipelineEnginePort {
     String? parentPipelineRunId,
     String? parentStepId,
     bool dryRun = false,
+    String? requestedByUserId,
   }) async {
     final run = await _inner.start(
       templateId,
@@ -36,6 +37,7 @@ class TrackedPipelineEngine implements PipelineEnginePort {
       parentPipelineRunId: parentPipelineRunId,
       parentStepId: parentStepId,
       dryRun: dryRun,
+      requestedByUserId: requestedByUserId,
     );
     _analytics.track(
       AnalyticsEvents.pipelineRunRequested(

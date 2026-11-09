@@ -8,7 +8,6 @@ import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dar
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_rpc/cc_rpc.dart' show InProcessRpcChannel, RemoteRpcClient;
-import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -75,7 +74,7 @@ void main() {
     test(
       'returns EmptyPrReviewRepository when workspace has no repo info',
       () async {
-        final prefs = AppPreferences.inMemory({githubTokenKey: 'ghp_test'});
+        final prefs = AppPreferences.inMemory({});
 
         final container = ProviderContainer(
           overrides: [appPreferencesProvider.overrideWithValue(prefs)],
@@ -88,7 +87,7 @@ void main() {
 
     test('returns EmptyPrReviewRepository when authenticated but no active '
         'workspace is selected', () async {
-      final prefs = AppPreferences.inMemory({githubTokenKey: 'ghp_test'});
+      final prefs = AppPreferences.inMemory({});
 
       final container = ProviderContainer(
         overrides: [appPreferencesProvider.overrideWithValue(prefs)],

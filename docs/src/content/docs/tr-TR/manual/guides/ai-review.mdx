@@ -2,7 +2,7 @@
 title: YZ destekli inceleme kullanma
 description: Bir PR üzerinde pr_review pipeline'ını çalıştırın, bulguları ve kararı okuyun, ardından incelemeyi GitHub'a yayınlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yz-incelemesi
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Bu kılavuz, inceleyici ajanların bir pull request'i nasıl inceleyeceğini ve sonucu
@@ -115,14 +115,15 @@ Yayınlama ayrı ve bilinçli olarak kullanıcı kapısına bağlanmış bir ad�
 
 Control Center **tek** bir GitHub incelemesi gönderir. Zaten çözülmüş veya
 yoksayılmış bulgular atlanır. Düğme, kalan tüm açık bulguları içerir ve **Ship**
-durumunda `APPROVE` gönderir. (MCP aracı `publish_review_to_github` yine de
-varsayılan olarak yalnızca akran onaylı bulguları alır ve `approve_on_ship`
-vermediğiniz sürece onaylamaz.) Dosya ve satır çapası taşıyanlar satır içi yoruma
+durumunda `APPROVE` gönderir. (MCP aracı `publish_review_to_github`
+varsayılan olarak yalnızca akran onaylı bulguları alır ve asla onaylamaz: otomasyon
+olarak yayınlar, bu yüzden `approve_on_ship` orada etkisizdir.) Dosya ve satır çapası taşıyanlar satır içi yoruma
 dönüşür; geri kalan her şey, kaynağın belirsiz olmaması için her biri bir
 "— Control Center AI review" altbilgisiyle özet gövdesine katılır. **Block** kararı
 `REQUEST_CHANGES` olarak; **Hold** `COMMENT` olarak; **Ship** ise bu düğmeden
 `APPROVE` olarak gönderilir. Ardından bir bildirim **Yayınlandı** yazar. İnceleme,
-sunucunun uygulama kimliği altında yayınlanır.
+sizin adınıza, kendi GitHub oturum açmanızla yayınlanır: GitHub'a oturum
+açmadıysanız yayınlama başarısız olur ve oturum açmanızı ister.
 
 GitHub bir satır içi çapayı, satır diff'in parçası olmadığı için reddederse, tüm
 inceleme her bulgu gövdeye katılarak yeniden gönderilir; böylece hiçbir şey sessizce

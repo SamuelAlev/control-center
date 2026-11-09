@@ -1,36 +1,39 @@
 ---
 title: Beszélgetés a Control Centerrel GitHub PR-ből
-description: Kérjen átnézést vagy tegyen fel kérdést a szerver GitHub App botjának magából a PR-beszélgetésből, webhook és nyilvános URL nélkül.
+description: Kérjen átnézést vagy tegyen fel kérdést a Control Centernek magából a PR-beszélgetésből, webhook és nyilvános URL nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Ez az útmutató bemutatja, hogyan dolgozhat a Control Centerrel anélkül, hogy
 elhagyná a GitHubot: kérjen MI-átnézést a PR oldaláról, tegyen fel kérdést a
 botnak egy hozzászólásban, és folytassa a beszélgetést az átnézési szálaiban.
 
-A bot a szerver saját [GitHub Appja](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) — ugyanaz,
-amely már bejelentkezteti az embereket és háttérmunkát futtat. Semmi újat nem
+A válaszok a munkaterület GitHub-sávján keresztül érkeznek: a szerver saját
+[GitHub Appján](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/), vagy a
+Connecten keresztül a Control Center megosztott Appján. Semmi újat nem
 regisztrál, és semminek nem kell elérhetőnek lennie az internetről: a szerver
 lekérdezéssel deríti fel, mi hangzott el a GitHubon, így egy NAT mögötti laptop
 pontosan úgy viselkedik, mint egy nyilvános telepítés.
 
 ## Előfeltételek
 
-- A szerveren a GitHub App [regisztrálva és
-  telepítve](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) van, **Pull requests: read and write**
-  (hozzászólásokhoz, szálakhoz és reakciókhoz) és **Issues: read** (a
-  hozzászóláskereséshez) jogosultsággal. Mindkettő szerepel már abban az
-  útmutató jogosultságlistájában
+- A munkaterületnek van GitHub-sávja: a szerver saját GitHub Appja vagy a
+  Connect, az alkalmazás pedig [telepítve van](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#telepítse-oda-ahol-a-repói-vannak)
+  a repót birtokló fiókon. Egy saját alkalmazásnak **Pull requests** és
+  **Issues** olvasási és írási jogosultság kell, amelyet a **Saját
+  GitHub-alkalmazás létrehozása** már megad
 - A tároló egy munkaterülethez van kapcsolva a Control Centerben
+- Ön [be van jelentkezve a GitHubra](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+  ezen a szerveren, és pusholhat a repóba
 - Nincs webhook URL, nincs alagút, nincs callback — a hálózat oldalán nincs mit
   beállítani
 
 ## A bot nevének megkeresése
 
-Említse meg a `@usectrl` nevet, a Control Center külön GitHub-fiókját. Ez az alapértelmezett aktiválási mód; a kérést továbbra is a szerveren beállított GitHub App kezeli, és az küldi a válaszokat. A `usectrl` fiókhoz nem kell hitelesítő adat.
+Említse meg a `@usectrl` nevet, a Control Center külön GitHub-fiókját. Ez az alapértelmezett aktiválási mód; a kérést továbbra is a munkaterület GitHub-sávja kezeli, és az küldi a válaszokat. A `usectrl` fiókhoz nem kell hitelesítő adat.
 
-Az alkalmazás saját `<appslug>[bot]` bejelentkezési neve és a rövid `@appslug` alak is működik. Az opcionális alias megkeresése:
+Az alkalmazás saját `<appslug>[bot]` bejelentkezési neve és a rövid `@appslug` alak is működik. Az opcionális alias megkeresése saját alkalmazás esetén:
 
 1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt, és
    görgessen a **Szolgáltatói alkalmazások** kártyához
@@ -54,12 +57,12 @@ indítja el, amelyet a **Kérdezze az AI-t** gomb is:
 
 - **Adja hozzá az `ai-review` címkét** a PR-hez. Ez áll a legközelebb ahhoz,
   amit a GitHub a bot átnézőként való hozzárendelésére kínál — az
-  alkalmazásfiókok nem foglalhatják el a natív kért-átnéző helyet. Nincs
-  hozzászólás, amelyre reagálni lehetne, így semmi nem kerül fel a GitHubra; az
-  átnézés a Control Centerben indul el
+  alkalmazásfiókok nem foglalhatják el a natív kért-átnéző helyet. Az Ön fiókja
+  👀 reakcióval jelöli a PR-t, és az átnézés a Control Centerben indul el;
+  hozzászólás nem kerül fel
 - **Szóljon hozzá `@usectrl review`** (vagy csak `@usectrl`) formában a PR
-  beszélgetéséhez. A bot 👀 reakcióval válaszol, majd jelentkezik, hogy elindult
-  az átnézés (vagy hogy már fut egy)
+  beszélgetéséhez. A hozzászólásán megjelenik egy 👀, majd egy válasz jelzi,
+  hogy elindult az átnézés (vagy hogy már fut egy)
 
 Az átnézők a PR átnézési terében dolgoznak; a megállapításokat ugyanúgy olvassa
 el és tegye közzé, mint az [MI-alapú átnézés
@@ -81,11 +84,12 @@ Szóljon hozzá a PR beszélgetéséhez:
 
 Mi történik, sorrendben:
 
-1. A bot 👀 reakcióval jelzi, hogy észrevette a hozzászólást
+1. A hozzászólásán megjelenik egy 👀, az Ön saját fiókjától, így tudja, hogy
+   észrevették a hozzászólást
 2. A kérdés **az Ön nevében** kerül be a PR átnézési terébe — ugyanazzal az
    attribúcióval, mintha a Control Centerben gépelte volna be
-3. Egy ügynök válaszol a térben, és a válasz visszakerül a PR-re egy olyan
-   hozzászólásként, amely @-megemlíti Önt
+3. Egy ügynök válaszol a térben, és a válasz visszakerül a PR-re. Minden válasz
+   így kezdődik: `**Control Center** (for @your-login):`
 
 Egy olyan PR-en feltett kérdés, amelyen még nem futott átnézés, a munkaterület
 vezető (CEO) ügynökét ébreszti fel; ha már lefutott egy átnézés, az utoljára
@@ -113,37 +117,48 @@ ezért ott továbbra is kell az @-említés.
 
 ## Kihez beszél a bot
 
-Egy GitHub-hozzászólás alig többet hoz magával, mint egy bejelentkezési nevet,
-ezért a bot minden művelet előtt feloldja a szerzőt:
+A szerver minden művelet előtt feloldja a hozzászólás szerzőjét, vagy azt, aki
+az `ai-review` címkét hozzáadta:
 
-- **A GitHub-fiókját össze kell kapcsolni az identitásával** a Control
-  Centerben — [jelentkezzen be a GitHubdal](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/),
-  vagy illesszen be egy tokent, a **Beállítások → Munkaterület → Profil és
+- **A GitHub-fióknak be kell jelentkeznie** ezen a szerveren. Az egyeztetés a
+  GitHub numerikus fiókazonosítója alapján történik, soha nem a bejelentkezési
+  név alapján. Jelentkezzen be a **Beállítások → Munkaterület → Profil és
   identitás → Kódtárhely** helyen
 - **Írási jogosultságú szerepkörrel rendelkező tagnak kell lennie**
   (`member`, `admin` vagy `owner`) abban a munkaterületben, amely a tárolót
   kapcsolja
+- **Pusholnia kell tudnia** a repóba a GitHubon. A válaszok az adott személy
+  hozzáférésére korlátozott tokent használnak, így aki csak olvashat, nem kap
+  választ
 
-Mindenki más egyetlen udvarias választ kap arról, mi hiányzik — egy ismeretlen
-bejelentkezési név (nincs összekapcsolva, vagy össze van kapcsolva, de nem tag
-itt) és egy csak olvasásra jogosult szerepkör a két eset —, és a szavai soha nem
-lépnek be a munkaterületre. Az `ai-review` címke nincs így kapuzva: nincs
-szerzője, ezért abban a munkaterületben indítja el az átnézést, amely már
-kapcsolódik a repóhoz.
+Mindenki mást csendben figyelmen kívül hagy: semmi nem kerül közzétételre, és a
+szavai soha nem lépnek be a munkaterületre. A botok hozzászólásait és a Control
+Center saját válaszait soha nem kezeli kérdésként.
+
+### Két szerver, egy PR
+
+A 👀 egyben az a mód, ahogyan a szerverek megegyeznek abban, ki válaszol. A
+reakciót a szerző saját bejelentkezésével adja hozzá, és a GitHub megmondja a
+szervernek, hogy a reakció új-e. Ha Ön két olyan Control Center-szerverre is be
+van jelentkezve, amely egyaránt kapcsolja a repót, az válaszol, amelyik elsőként
+reagál, a másik pedig hallgat. Ugyanez érvényes a címkére.
 
 ## Amire számíthat
 
 | Dolog                | Viselkedés                                                                |
 | ------------------- | ------------------------------------------------------------------------ |
-| Visszaigazolás      | 👀 egy hozzászóláson körülbelül egy percen belül — a pásztázási intervallum. Az `ai-review` címkének nincs hozzászólása, amelyre reagálni lehetne |
-| Válaszok            | A bot (az alkalmazás) nevében közzétéve, abban a szálban, amelyben a kérdést feltették |
+| Visszaigazolás      | 👀 az Ön fiókjától a hozzászóláson (vagy címke esetén a PR-en), egy pásztázáson belül |
+| Válaszok            | Abban a szálban közzétéve, amelyben a kérdést feltették, `**Control Center** (for @your-login):` kezdettel. Saját alkalmazásnál a szerző az alkalmazás botja; a Connecten keresztül az Ön fiókja, amely a megosztott Appon keresztül jár el |
 | Attribúció a térben | A kérdés az Öné; az ügynök az Ön nevében fut, a tér autonómiatárcsája szerint |
 | Átnézések           | A megállapítások az átnézési térbe kerülnek; a GitHubra való közzététel kézi |
 
-A körülbelül egyperces késleltetés az ára annak, hogy egyáltalán nincs szükség
-bejövő hálózati hozzáférésre. A pásztázás miatt semmi sem sürgős, és semmi sem
-vész el, amíg a szerver offline — egy leállás alatt érkező hozzászólást a
-következő pásztázás elkapja.
+Saját alkalmazásnál a pásztázás percenként fut, és legfeljebb 25 pull requestet
+ellenőriz; a Connecten keresztül kétpercenként fut, és legfeljebb 10-et, mert
+ezek a hívások az egyes tagok saját GitHub-kvótáját használják. Az a
+munkaterület, amelynek GitHub-kvótája 15% alá esik, kimarad, amíg helyre nem
+áll. A késleltetés az ára annak, hogy egyáltalán nincs szükség bejövő hálózati
+hozzáférésre. Semmi sem vész el, amíg a szerver offline — egy leállás alatt
+érkező hozzászólást a következő pásztázás elkapja.
 
 ## Hibaelhárítás
 
@@ -153,18 +168,23 @@ következő pásztázás elkapja.
   kapcsolva** egy munkaterülethez? Egy nem kapcsolt repó kihagyásra kerül,
   mielőtt bármi rögzítésre kerülne, így a későbbi összekapcsolás még mindig
   leszállítja
-- Össze van kapcsolva a GitHub-fiókja, és írási jogosultságú szerepkörű tag?
-  Nézze meg a PR-en a bot elutasító válaszát — az megmondja, melyik eset
+- Be van jelentkezve a GitHubra ezen a szerveren, írási jogosultságú
+  szerepkörű tag, és pusholhat a repóba? A szerver mindenki mást válasz nélkül
+  figyelmen kívül hagy
+- A Control Center megosztott Appján engedélyezve van a szervezet telepítése
+  ehhez a szerverhez? Lásd:
+  [A szerver engedélyezése egy szervezet számára](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#a-szerver-engedélyezése-egy-szervezet-számára)
 - Még mindig semmi? A szervernapló megnevezi a pásztázást és a PR-t, amikor
   valami elszáll; keresse a `pr_conversation:` (a lekérdező) és a
   `github_pr_conversation:` (a híd) bejegyzést
 
 **A címke nem indít átnézést.**
 
-PR-enként egyszer fut le. Ha már lefutott egy átnézés, vagy a címkét még azelőtt
+PR-enként egyszer fut le, és aki hozzáadta, ugyanazokon az ellenőrzéseken megy
+át, mint egy hozzászólás szerzője. Ha már lefutott egy átnézés, vagy a címkét még azelőtt
 adták hozzá, hogy a szerver valaha is látta volna a PR-t (az első pásztázás
 csendben rögzíti a hátralékot, ahelyett hogy elárasztaná), említse meg inkább a
-botot — a `@myapp review` mindig elindít egyet, hacsak nem fut már átnézés.
+botot — a `@usectrl review` mindig elindít egyet, hacsak nem fut már átnézés.
 
 **A bot válasza soha nem érkezett meg a GitHubra.**
 

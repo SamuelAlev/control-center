@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Conectează un Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Server și implementare",
   "docs.sidebar.guidesRunHeadlessServer": "Rulează un server headless",
+  "docs.sidebar.guidesRunConnect": "Rulează un server Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Conectează-te la un server remote",
   "docs.sidebar.guidesRunFleetWorker": "Rulează un worker din flotă",
   "docs.sidebar.guidesBackUpAndRestore": "Backup și restaurare",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Scurtături de tastatură",
   "docs.sidebar.referenceRouteMap": "Hartă de rute",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Backup, export și import",
   "docs.sidebar.referenceTelemetry": "Statistici de utilizare",
   "docs.sidebar.referenceGlossary": "Glosar"

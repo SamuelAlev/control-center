@@ -1,0 +1,20 @@
+name: cc_connect
+description: "Control Center Connect: a small stateless service that runs provider OAuth for cc_server installs, seals refresh tokens to the install that authorized them, mints one-repository GitHub tokens, relays body-stripped Slack event references and proxies Klipy search. Holds no repository key and receives no source code."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_connect_core:
+    path: ../../packages/cc_connect_core
+  # AES-256-GCM (local seal key) + HMAC; pure Dart.
+  cryptography: ^2.9.0
+  crypto: ^3.0.7
+
+dev_dependencies:
+  test: any
+  lints: any

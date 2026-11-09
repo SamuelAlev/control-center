@@ -2,7 +2,7 @@
 title: Sözlük
 description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Adımları (ajan gönderimi, betikler, koşullar) birbirine zincirleyen DAG tabanlı bir iş akışı. Şablonlarla tanımlanır; çalıştırmalar olarak yürütülür.'],
 ['Toplantı', 'Yerel olarak kaydedilen ve yazıya dökülen bir toplantı oturumu. Mikrofonu ve sistem sesini yakalar, cihaz üzerinde seçilebilir bir ASR modeliyle (varsayılan olarak Parakeet TDT v3; Parakeet TDT v2, Whisper large-v3-turbo ve Whisper base.en alternatiflerdir) yazıya döker, konuşmacıları ayırır ve notlar, eylem öğeleri ve kararlar hâlinde özetler. Seçilen ASR modeli önyüklemede zorla kurulur ve kayıt işlemleri bir yeniden başlatmanın ardından devreye girer. Çalışma alanına özel.'],
 ['CalendarEvent', 'Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür, bir Toplantı ise kaydedilmiş bir oturumdur.'],
-['CalendarAccount', 'Çalışma alanı ve e-posta başına bir bağlı Google hesabı. OAuth yenileme jetonları sunucu tarafında, veri dizinindeki secrets.json dosyasında google_* anahtarları olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; bir authExpiredAt bayrağı yeniden bağlanma şeridini yönetir.'],
+['CalendarAccount', 'Çalışma alanı, üye ve e-posta başına bir bağlı Google hesabı. Kimlik bilgisi sunucu tarafında, veri dizinindeki secrets.json dosyasında bir google_* anahtarı olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; Connect üzerinden yapılan bir oturum açma yalnızca bir kimlik bilgisi mührü saklar. Bir authExpiredAt bayrağı yeniden bağlanma şeridini yönetir.'],
 ['AgentRole', 'Numaralandırılmış rol (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Personayı, bellek erişimini ve hiyerarşiyi belirler.'],
 ['AgentSkills', 'Gönderim anında istemlere ilgili bağlamı enjekte eden, büyük-küçük harf duyarsız beceri tanımlayıcıları kümesi.'],
 ['Beceri kaynağı', 'Çalışma alanı başına beceri kataloğu olarak kaydedilen bir GitHub deposu. Yapısı gereği güvenilmezdir: deponun üst verisi yalnızca görüntüleme amaçlıdır ve her kurulum, herhangi bir içerik diske ya da bir isteme ulaşmadan önce hataya kapalı tarama kapısından geçer.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).'],
 ['WakeReason', 'Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.'],
 ['SandboxPort', 'Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı kimlik bilgileri üretir (bir ajanın ortamı için salt okunur, yazma yalnızca sunucu tarafındaki push yolu için) ve sökme sırasında bunları iptal eder.'],
+['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı kimlik bilgileri üretir (bir ajanın ortamı için tek depoluk bir token, yazma yalnızca sunucu tarafındaki push yolu için) ve sökme sırasında bunları serbest bırakır.'],
 ['GitRepoInspectorPort', 'Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.'],
 ['EmbeddingPort', 'Anlamsal arama için birim normlu metin gömme vektörleri üretir.'],
 ['NotificationPort', 'Kategori/rota kapılamasına uyarak yerel masaüstü bildirimleri gösterir.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Review verdict', 'ship, hold veya block. Güveni >= 0.7 olan herhangi bir P0 bulgusu block verir; diğer herhangi bir P0 ya da herhangi bir P1 hold verir; aksi hâlde ship. Kapılanan ve başarısız olan bir eksen block’u zorlar ve bulgular tarafından alt edilemez.'],
 ['SessionRecording', 'Tek bir çalıştırma için yakalanan bir olay akışı artı HTTP/LLM kasetleri ve araç G/Ç’si; bir AgentConfigHash ile eşleştirilir.'],
 ['Altın oturum', 'Ajan ya da playbook başına sabitlenmiş, kutsanmış bir SessionRecording.'],
+['Control Center Connect', 'Kendi uygulamaları olmayan sunucular için sağlayıcı oturum açmalarını (GitHub, Google, Linear) yürüten isteğe bağlı bir hizmet. Control Center tarafından barındırılır, kendiniz barındırırsınız ya da kapalıdır. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez.'],
+['Kimlik bilgisi mührü', 'Yalnızca onu oluşturan Connect’in açabildiği, sağlayıcıya, Connect adresine, kurulum kimliğine, çalışma alanına, hesaba, uygulamaya ve gizli anahtar kuşağına bağlı şifrelenmiş bir kimlik bilgisi. Sunucu mührü saklar; erişim token’ları bellekte kalır.'],
+['Kurulum kimliği', 'Bir sunucunun tek bir Connect adresine karşı kimliği; kurulum anahtarından türetilir. Connect sunuculara kurulum kimliğine göre izin verir; anahtarı değiştirmek kimliği değiştirir ve herkesin Connect hatlarındaki oturumunu kapatır.'],
+['Kurulum bağlaması', 'Connect’in, hangi sunucuların paylaşılan App’in bir GitHub kurulumunu kullanabileceğine dair kaydı. Bir kuruluş kurulumunda her sunucuyu bir yöneticinin yetkilendirmesi gerekir.'],
+['Oturum açma hattı', 'Bir sağlayıcının tarayıcıda oturum açması: github, google, linear, linear_app ya da slack. Her hat, tamamlanmışsa sunucunun kendi uygulamasında, değilse Connect üzerinden çalışır; ikisi de yoksa kullanılamaz.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Sandbox başlatması için kapsamlı kimlik bilgileri üretir — bir ajanın ortamı için salt okunur, yazma yalnızca sunucu tarafındaki push yolu için — ve sökme sırasında bunları iptal eder.
+**CredentialBrokerPort**: Sandbox başlatması için kapsamlı kimlik bilgileri üretir — bir ajanın ortamı için tek depoluk bir token, yazma yalnızca sunucu tarafındaki push yolu için — ve sökme sırasında bunları serbest bırakır.
 
 **GitRepoInspectorPort**: Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür; bir Toplantı kaydedilmiş bir oturumdur. Bir `MeetingCalendarLink` ile bire bir bağlanır.
 
-**CalendarAccount**: Çalışma alanı ve e-posta başına bir bağlı Google hesabı. OAuth yenileme jetonları sunucu tarafında `<dataDir>/secrets.json` içinde `google_*` anahtarları olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; cihaz kodu akışı sunucuda tamamlanır. Bir `authExpiredAt` bayrağı yeniden bağlanma şeridini yönetir.
+**CalendarAccount**: Çalışma alanı, üye ve e-posta başına bir bağlı Google hesabı (`google:<workspaceId>:<userId>:<email>`). Kimlik bilgisi sunucu tarafında `<dataDir>/secrets.json` içinde bir `google_*` anahtarı olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; tarayıcıda oturum açma sunucuda tamamlanır. Connect üzerinden yapılan bir oturum açma yalnızca bir kimlik bilgisi mührü saklar. Bir `authExpiredAt` bayrağı yeniden bağlanma şeridini yönetir.
 
 ## Mimari terimler
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Telefon ince istemcisi — varsayılan olarak reddeden bir araç politikasıyla filoyu aracılı relay üzerinden uzaktan kontrol eden bir Flutter web PWA’sı.
 
 **cc_signaling_server**: Davetle kapılanan odalar barındıran durumsuz bir WebSocket relay broker’ı — yalnızca uçtan uca mühürlenmiş çerçeveleri ileten, hiçbir uygulama verisi tutmayan ve eşleştirme PSK’sını asla görmeyen aptal bir relay.
+
+**Control Center Connect**: Kendi uygulamalarını kaydetmemiş sunucular için sağlayıcı oturum açmalarını (GitHub, Google Calendar, Linear) yürüten isteğe bağlı bir hizmet: Control Center’ın barındırdığı, bir kuruluşun çalıştırdığı (`cc-connect` ya da `cc_server` içinde `/connect` yoluna bağlanmış) ya da hiçbiri. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez. Bkz. [Control Center Connect](/tr-TR/kilavuz/referans/connect/).
+
+**Kimlik bilgisi mührü**: Yalnızca onu oluşturan Connect’in açabildiği, sağlayıcıya, Connect adresine, kurulum kimliğine, çalışma alanına, hesaba, uygulamaya ve gizli anahtar kuşağına bağlı şifrelenmiş bir kimlik bilgisi (`credential_seal`). Sunucu mührü ve onun oluşturulduğu kurulum kimliğini saklar; erişim token’ları bellekte kalır. Kurulum kimliği artık eşleşmeyen bir mühür atılır ve sahibi yeniden oturum açar.
+
+**Kurulum kimliği**: Bir sunucunun tek bir Connect adresine karşı kimliği (`install_id`); gizli anahtarlar dosyasındaki kurulum anahtarından türetilir. Connect sunuculara kurulum kimliğine göre izin verir. Anahtarı değiştirmek yeni bir kimlik verir ve herkesin Connect hatlarındaki oturumunu kapatır.
+
+**Kurulum bağlaması**: Connect’in, hangi sunucuların paylaşılan App’in bir GitHub kurulumunu kullanabileceğine dair kaydı (`install_binding`). Bir sunucu üzerinden kurmak onu bağlar; bir kuruluş yöneticisinin **Bu sunucuyu yetkilendir** eylemi başka birini bağlar.
+
+**Oturum açma hattı**: Bir sağlayıcının tarayıcıda oturum açması — `github`, `google`, `linear`, `linear_app` ya da `slack`. Bir hat, sunucunun kendi uygulaması tamamlanmışsa onda, değilse Connect üzerinden çalışır; ikisi de yoksa kullanılamaz. Kısmen yapılandırılmış bir kendi uygulama bir hatadır, asla bir geri dönüş değildir.
 
 ## Ayrıca bakınız
 

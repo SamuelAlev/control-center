@@ -2,7 +2,7 @@
 title: 파이프라인 단계
 description: 파이프라인 단계 종류, 단계 본문 키, 그 구성과 단계 결과를 다루는 레퍼런스입니다.
 slug: ko-KR/매뉴얼/레퍼런스/파이프라인-단계
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 파이프라인 단계에는 서로 독립적인 두 축이 있습니다:
@@ -42,7 +42,7 @@ sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 | `script`    | 실행할 셸 명령(필수)                          |
 | `outputKey` | 종료 코드 0일 때 공백이 제거된 stdout을 받는 상태 키 |
 
-cwd `<cc_root>/pipelines/<pipelineRunId>/`(한 실행의 모든 bash 단계가 공유)와 환경의 `GITHUB_TOKEN`으로 실행됩니다. 또한 `<stepId>_runDir`을 상태에 기록합니다. 0이 아닌 종료 코드는 stderr 마지막 부분과 함께 단계를 실패시킵니다.
+호스트의 OS 샌드박스 안에서 cwd `<cc_root>/pipelines/<pipelineRunId>/`(한 실행의 모든 bash 단계가 공유)로 실행됩니다. 샌드박스가 없는 호스트에서는 단계가 실패합니다. 서버의 데이터 디렉터리와 `.env` 파일은 읽을 수 없고, git과 `gh`에는 호스트 구성이 보이지 않으며, `GH_TOKEN` / `GITHUB_TOKEN`에는 `repo_full_name`(상태 또는 트리거 페이로드)이 워크스페이스에 연결된 GitHub 저장소를 가리킬 때만 저장소 하나에 대한 `read` 토큰이 들어갑니다. 이 단계가 있는 템플릿을 만들거나 편집하려면 워크스페이스 관리자여야 합니다. 또한 `<stepId>_runDir`을 상태에 기록합니다. 0이 아닌 종료 코드는 stderr 마지막 부분과 함께 단계를 실패시킵니다.
 
 ### `conversation.promptAgent`
 

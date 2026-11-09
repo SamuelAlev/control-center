@@ -1,0 +1,306 @@
+---
+title: Spusťte server Connect
+description: Provozuj vlastní Control Center Connect z obrazu Dockeru cc-connect, nebo ho vestav do cc_server, aby tvoje servery přihlašovaly lidi přes aplikace poskytovatelů, které si zaregistruješ.
+slug: cs-CZ/prirucka/navody/spusteni-serveru-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect provádí přihlášení k poskytovatelům (GitHub, Google
+Calendar, Linear, Slack) pro servery, které si nezaregistrovaly vlastní
+aplikace. Tenhle návod ukazuje, jak provozovat vlastní Connect, aby aplikace
+poskytovatelů, jejich tajemství i seznam serverů, které je smějí používat,
+zůstaly u tebe.
+
+Co Connect vidí a co ne, popisuje
+[reference Connect](/cs-CZ/prirucka/referencni-prirucka/connect/). Přečti si ji
+nejdřív, pokud se rozhoduješ, jestli ho provozovat.
+
+:::note[Možná ho nepotřebuješ]
+Jeden server si může místo toho zaregistrovat vlastní aplikace: **Nastavení →
+Server → Jednotné přihlášení → Aplikace poskytovatelů**, kde **Vytvořit moji
+aplikaci GitHub** nastaví GitHub v jednom kroku. Vlastní aplikace serveru platí jen při **Použít vlastní aplikace**: s Control Center nebo vlastním Connect běží přes Connect každá dráha a vlastní aplikace pracovního prostoru platí dál. Connect provozuj, když má sadu
+aplikací sdílet víc serverů.
+:::
+
+## Předpoklady
+
+- Veřejná adresa **HTTPS** pro Connect, například `https://connect.example.com`,
+  za proxy, která ukončuje TLS. Obyčejné `http` se přijme jen na loopbacku
+- Docker, nebo `cc_server`, který můžeš restartovat s dalšími proměnnými
+  prostředí
+- Oprávnění registrovat aplikace u každého poskytovatele, kterého chceš
+  obsluhovat
+- Servery, které ho budou používat, a jejich vlastníky po ruce: každý má ID
+  instalace, které přidáš na seznam povolených v Connect
+
+## Krok 1: Zvol adresu
+
+URL vyber teď a už ji neměň. `CONNECT_PUBLIC_URL` je součástí všeho, co
+Connect dělá: podpisy požadavků, zapečetěná pověření, URL přesměrování
+poskytovatelů i ID instalace každého serveru jsou na ni vázané. Pozdější změna
+znamená znovu zaregistrovat přesměrování a znovu přihlásit všechny lidi.
+
+## Krok 2: Zaregistruj aplikace poskytovatelů
+
+Registruj jen poskytovatele, které chceš obsluhovat. Poskytovatel s neúplnými
+proměnnými se z konfigurace Connect vynechá a servery ho vidí jako
+nedostupného. `<base>` níže je tvoje `CONNECT_PUBLIC_URL`.
+
+| Poskytovatel   | Co zaregistrovat                                                                                                                                                                                                                                                              | Co si nechat                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` se zapnutým **Redirect on update**. **Request user authorization (OAuth) during installation** nech vypnuté: když je zapnuté, GitHub setup URL ignoruje. **Expire user authorization tokens** nech zapnuté | App id, slug, client id, client secret |
+| **Google**     | Klient OAuth typu **Web application** s URI přesměrování `<base>/oauth/google/callback` a zapnuté Google Calendar API                                                                                                                                                         | Client id, client secret                |
+| **Linear**     | Aplikace OAuth s callback URL `<base>/oauth/linear/callback` a `<base>/oauth/linear_app/callback`                                                                                                                                                                             | Jen client id                           |
+| **Slack**      | Redirect URL `<base>/oauth/slack_oidc/callback` a `<base>/oauth/slack/callback`. Event Subscriptions na `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash příkazy na `<base>/v1/hooks/slack/commands`. Zapnutá rotace tokenů | App id, client id, client secret, signing secret |
+
+Dej GitHub App tato oprávnění k repozitářům: **Metadata** pro čtení,
+**Contents** pro čtení a zápis, **Pull requests** pro čtení a zápis, **Issues**
+pro čtení a zápis, **Checks**, **Actions** a **Commit statuses** pro čtení. Pro
+žádosti o kontrolu od týmů přidej organizační oprávnění **Members** pro čtení.
+Webhooky můžou zůstat vypnuté: servery se dotazují samy.
+
+Connect soukromý klíč GitHub App nikdy nepotřebuje. Tokeny pro jediný
+repozitář vydává z vlastního přihlášení člověka. Linear nepotřebuje ani
+secret: Connect vrátí kód serveru, který výměnu dokončí sám.
+
+## Krok 3: Posbírej ID instalací
+
+Connect odpovídá jen serverům ze svého seznamu povolených. Na každém serveru ho
+nasměruj na svůj Connect a pak přečti jeho ID instalace:
+
+1. Jdi do **Nastavení → Server → Jednotné přihlášení**, otevři kartu **Control
+   Center Connect** a zvol **Použít vlastní server Connect**
+2. Zadej svou URL a ulož. Karta ukáže **ID instalace** serveru
+
+Z terminálu na hostiteli serveru je to totéž:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` vypíše ID instalace. Dokud nedokončíš krok 5, ukazuje
+`install_blocked`, a to se čeká.
+
+ID instalace se odvozuje pro každou adresu Connect zvlášť, takže tentýž server
+má pro každý Connect, se kterým mluví, jiné ID. Změní se jen tehdy, když
+vlastník vymění klíč.
+
+## Krok 4: Vytvoř klíč pečetí
+
+Connect každé pověření, které vrací, zašifruje klíčem pečetí. Vytvoř ho a drž
+ho jako soubor s tajemstvím:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Ztráta klíče pečetí odhlásí všechny: bez něj žádnou pečeť otevřít nejde.
+
+## Krok 5: Spusť kontejner
+
+Každé vydání publikuje `ghcr.io/samuelalev/cc-connect` s provenancí sestavení.
+V produkci připni tag verze.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Reverzní proxy nasměruj na port `8790`. Obraz běží jako neprivilegovaný
+uživatel, stav drží ve svazku `/data` a má vestavěnou kontrolu stavu
+(`cc-connect --healthcheck`, která se ptá `/healthz`).
+
+Connect odmítne nastartovat (exit kód `78`), když je jeho konfigurace otevřená,
+nebezpečná nebo nedokončená, a vypíše, která proměnná je špatně. Zastaví ho
+chybějící seznam povolených, adresa `http` mimo loopback, poškozený klíč pečetí
+nebo současně nastavené `NAME` a `NAME_FILE`.
+
+Kontrolní bod: na každém serveru karta Connect hlásí **Funguje** a **Kde
+probíhá každé přihlášení** u každého zaregistrovaného poskytovatele jmenuje
+**Connect**. `cc_server connect status` vypíše `Health: ok` a stejné dráhy.
+
+## Vestav Connect do cc_server
+
+Server může Connect hostovat sám, místo samostatného kontejneru. Vestavěná
+služba je tatáž, jakou spouští obraz.
+
+1. Dej proměnné `CONNECT_*` do souboru `.env` serveru (nebo do jeho prostředí),
+   stejně jako v kroku 5
+2. Přidej `CC_SERVER_CONNECT_HOST=on`
+3. Restartuj server. Jeho log vypíše `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect se pak obsluhuje na `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` je ve výchozím stavu origin veřejné URL serveru plus
+  `/connect`. Za proxy ho nastav výslovně. Jeho cesta musí být přesně
+  `/connect` a musí jít o HTTPS, pokud nejde o loopback
+- K vestavěné službě se dostanou jen proměnné `CONNECT_*`, takže si nikdy
+  nepůjčí vlastní aplikace poskytovatelů serveru
+- `CONNECT_ALLOWED_INSTALLS` je pořád povinné, i pro samotný hostující server
+- Špatně nastavená vestavba zabrání serveru nastartovat, místo aby obsluhoval
+  otevřeného brokera
+- Demo server ho nikdy nevestaví
+
+Přesměrování u poskytovatelů zaregistruj proti `https://<server>/connect` a pak
+na tu URL nasměruj servery (i ten hostující), stejně jako v kroku 3.
+
+## Referenční přehled konfigurace
+
+Každé nastavení je proměnná prostředí. Kterékoli tajemství může místo toho
+přijít z připojeného souboru: místo `NAME` nastav `NAME_FILE`. Connect soubor
+čte znovu nejvýš každých 30 sekund a drží si poslední dobrou hodnotu.
+Tajemství označená **dual** během rotace přijímají i `NAME_PREVIOUS` (nebo
+`NAME_PREVIOUS_FILE`).
+
+### Adresa a přístup
+
+| Proměnná                        | Výchozí   | Význam                                                                                                                           |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | povinná   | Kanonická veřejná URL. HTTPS, nebo `http` jen na loopbacku. Cesta znamená vestavbu. Bez query a fragmentu                        |
+| `CONNECT_ALLOWED_INSTALLS`      | povinná   | ID instalací oddělená čárkou. `*` se přijme jen spolu s `CONNECT_SIGNED_CONFIG_FILE`                                             |
+| `CONNECT_DENY_INSTALLS`         |           | ID instalací, která se odmítnou, i když jsou povolená                                                                            |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Číselná id vlastníků na GitHubu. Když je nastavené, tokeny repozitářů se vydávají jen pro repozitáře, které vlastní              |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Adresa a port, na které se váže                                                                                          |
+| `CONNECT_TRUST_PROXY`           | `0`       | Důvěryhodné skoky proxy v `X-Forwarded-For` (0 až 8). Použije se jen pro limit četnosti na adresu                                |
+
+### Dráhy poskytovatelů
+
+| Proměnná                                                                    | Výchozí | Význam                                                                      |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |      | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Tajemství, dual                                                             |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Klient Google. Tajemství je dual                                            |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Aplikace Linear. Bez tajemství                                              |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Aplikace Slack                                                              |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |         | Tajemství, dual                                                             |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | Klíč Klipy pro hledání GIF. Tajemství, dual                                 |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` drží klíč v Connect; `key` ho předá serverům                        |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub, Google a Slack: generace zapisovaná do nových pečetí                |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub, Google a Slack: se staršími pečetěmi se je nutné přihlásit znovu    |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | Každá dráha: `false` zastaví nová přihlášení, zatímco stávající se dál obnovují |
+
+### Pečetě, stav a úložiště
+
+| Proměnná                                                  | Výchozí                    | Význam                                                                                                     |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` nebo `gcp-kms`                                                                                     |
+| `CONNECT_SEAL_KEYS`                                       |                            | Tajemství, povinné pro `local`. Položky `kid:key` oddělené čárkou, nejnovější první; starší pořád dešifrují |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, povinné pro `gcp-kms`                                    |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` pro jednu instanci, `redis` pro několik                                                           |
+| `CONNECT_REDIS_URL`                                       |                            | Tajemství. `redis://` nebo `rediss://`                                                                     |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | Balík CA pro `rediss://`                                                                                   |
+| `CONNECT_BINDINGS`                                        | `file`                     | Kde leží vazby instalací GitHubu: `file` nebo `firestore`                                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` v obrazu)  | Obsahuje `bindings.json`                                                                                   |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databáze `(default)`       | Pro `CONNECT_BINDINGS=firestore`                                                                           |
+
+### Konfigurace, logy a limity
+
+| Proměnná                                | Výchozí            | Význam                                                                                              |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Offline podepsaná konfigurace, obsluhovaná tak, jak je. Používá ji hostovaný Connect od Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Klíče, proti kterým se podepsaná konfigurace musí ověřit                                            |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Epocha konfigurace, kterou generuje Connect hostovaný u tebe                                        |
+| `CONNECT_LOG_HMAC_KEY`                  | náhodný pro každý proces | Tajemství. Nastav ho, aby značky zastupující ID instalací zůstaly stejné napříč restarty a instancemi |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Hlásí je `/v1/version`                                                                              |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Požadavky na instalaci                                                                              |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Požadavky na adresu                                                                                 |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Požadavky na celou službu                                                                           |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Události Slacku na tým                                                                              |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Hledání GIF na instalaci                                                                            |
+
+## Provozuj víc než jednu instanci
+
+Většině organizací stačí jedna instance s `CONNECT_STATE=memory`. Několik
+instancí za jednou adresou potřebuje `CONNECT_STATE=redis` a buď sdílený
+`CONNECT_DATA_DIR`, nebo `CONNECT_BINDINGS=firestore`, aby přihlášení zahájené
+na jedné instanci šlo dokončit na jiné.
+
+## Obměň tajemství poskytovatele
+
+Nikdo se neodhlásí:
+
+1. U poskytovatele vytvoř nové tajemství a staré si nech
+2. Starou hodnotu přesuň do `NAME_PREVIOUS`, novou dej do `NAME` a zvyš
+   `CONNECT_<LANE>_SECRET_GENERATION`. Připojené soubory se převezmou do 30
+   sekund
+3. Počkej, až se přihlášení obnoví, pak staré tajemství u poskytovatele smaž
+   a odeber `NAME_PREVIOUS`
+
+Klíč pečetí obměníš tak, že novou položku z `cc-connect-config seal-key` dáš
+v `CONNECT_SEAL_KEYS` na první místo a starou necháš, dokud se její pečetě
+neobnoví.
+
+## Změň aplikaci
+
+Servery si pamatují id aplikací a klientů, které tvůj Connect ohlásil, když ho
+použily poprvé. Když aplikaci vyměníš, karta Connect na každém serveru ukáže
+**Aplikace Connect se změnily** a přihlášení přes Connect se pozastaví, dokud
+jeho vlastník nestiskne **Důvěřovat novým aplikacím**. Vlastníkům serverů to
+řekni předem, aby věděli, že výzva je od tebe.
+
+## Zablokuj server
+
+Přidej jeho ID instalace do `CONNECT_DENY_INSTALLS` a restartuj. Jeho vlastník
+uvidí „Connect zablokoval ID instalace tohoto serveru. Obraťte se na
+provozovatele svého serveru Connect.“ a každé přihlášení přes Connect na něm
+skončí.
+
+## Řešení problémů
+
+### Server hlásí, že ho Connect zablokoval
+
+Jeho ID instalace není v `CONNECT_ALLOWED_INSTALLS`, nebo je
+v `CONNECT_DENY_INSTALLS`. ID se změní, když vlastník vymění klíč; požádej
+o nové.
+
+### Poskytovatel se ukazuje jako nedostupný
+
+Chybí některá z jeho proměnných, takže Connect dráhu vynechal. Projdi log při
+startu a tabulky výše. GitHub potřebuje všechny čtyři: app id, slug, client id
+a client secret; Google potřebuje client id i secret.
+
+### Přihlášení selhávají na nesouladu přesměrování
+
+Přesměrování zaregistrované u poskytovatele přesně neodpovídá
+`CONNECT_PUBLIC_URL`. Porovnej schéma, hostitele, port a u vestavěného
+Connect cestu `/connect`.
+
+### Všichni se museli přihlásit znovu
+
+Klíč pečetí se změnil nebo ztratil, některý server vyměnil svůj klíč, nebo se
+data serveru obnovila na jiný stroj. Zapečetěné pověření se otevře jen pro
+instalaci a Connect, které ho vytvořily.
+
+## Související návody
+
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
+- [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
+
+## Související reference
+
+- [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/)
+- [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/)

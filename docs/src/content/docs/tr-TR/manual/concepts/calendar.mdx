@@ -1,21 +1,20 @@
 ---
 title: Takvim ve zamanlama
-description: Control Center’ın Google Calendar’ı sunucuda nasıl eşitlediği, oturum açmanın neden bir cihaz kodu izni olduğu ve salt okunur kapsamın neleri içerdiği.
+description: Control Center’ın Google Calendar’ı sunucuda nasıl eşitlediği, tarayıcıdaki oturum açmanın headless sunucuya nasıl ulaştığı ve Google’da neleri değiştirebileceği.
 slug: tr-TR/kilavuz/kavramlar/takvim
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center, günün filonun yanında yer alsın diye Google Calendar’a bağlanır.
 Etkinliklerini eşitler, onları ay, hafta, gün ve ajanda görünümlerinde gösterir,
-bir toplantı başlamadan önce seni uyarır ve her etkinliği kaydedilmiş,
+etkinlik oluşturmana, taşımana, yanıtlamana ve silmene izin verir, bir toplantı başlamadan önce seni uyarır ve her etkinliği kaydedilmiş,
 özetlenmiş bir [toplantıya](/tr-TR/kilavuz/kavramlar/toplantilar/) dönüştürür.
 
 ## Google’da neleri değiştirir
 
-Neredeyse hiçbir şeyi. Entegrasyon etkinlikleri çeker ve gösterir. Etkinlik
-oluşturmaz, düzenlemez, silmez veya davetlere yanıt vermez. Yerleşik ya da kendi
-getirdiğin her cihaz kodu bağlantısı, `calendar.readonly` ve `openid email`
-kapsamlarını ister.
+Yalnızca kendi yaptıklarını. Davete yanıt verebilir, bir etkinlik ayırtabilir (zaman ızgarasında sürükleyerek ya da **+** düğmesiyle) ve bir etkinliği silebilirsin. Her değişikliği sunucu kendi hesabının oturum açmasıyla, kendi takvimlerinde yapar; sunucu, başka bir üyenin hesabındaki ya da sana yalnızca okuma olarak paylaşılmış bir takvimdeki etkinliği reddeder. Google, Google Calendar’daki gibi konuklara e-posta gönderir. Yinelenen bir etkinliğin tek bir örneğini silmek, serinin geri kalanını korur. Etkinlikleri ızgarada taşıyabilir veya uzatabilirsiniz; yalnızca kendi etkinlikleriniz ve düzenlediğiniz etkinlikler taşınır.
+
+Connect ya da sunucunun kendi Google istemcisi üzerinden yapılan her bağlantı, `calendar.events` (etkinlikleri okuma ve değiştirme) ve `calendar.calendarlist.readonly` (hesabın hangi takvimlere sahip olduğunu görme) kapsamlarını, `openid email` ile birlikte ister. Sunucu, farklı bir kapsam kümesiyle dönen bir oturum açmayı reddeder; bu nedenle önceki salt okunur kapsamla bağlanmış bir hesabın yeniden bağlanması gerekir.
 
 Etkinlikler **sunucuda**, çalışma alanının kendi veritabanına
 (`<dataDir>/<workspaceId>/workspace.db`) eşitlenir ve her istemci tarafından RPC
@@ -23,47 +22,57 @@ Etkinlikler **sunucuda**, çalışma alanının kendi veritabanına
 
 ## Çalışma alanı başına hesaplar
 
-Takvim hesapları, Control Center’daki her şey gibi çalışma alanı kapsamındadır.
-Her [çalışma alanı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) kendi Google
-hesabını (ya da birkaçını) bağlar ve bir çalışma alanının etkinlikleri ile
-token’ları başka bir çalışma alanından asla görünmez. Çalışma alanı değiştirmek,
-gördüğün takvimleri de değiştirir.
+Takvim hesapları, Control Center’daki her şey gibi çalışma alanı kapsamındadır
+ve her biri onu bağlayan üyeye aittir. Her
+[çalışma alanı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) kendi Google
+hesaplarını bağlar ve bir çalışma alanının etkinlikleri ile kimlik bilgileri
+başka bir çalışma alanından asla görünmez. Aynı Google adresini bağlayan iki üye
+iki ayrı hesap elde eder. Çalışma alanı değiştirmek, gördüğün takvimleri de
+değiştirir.
 
 Bir çalışma alanı **birden çok** Google hesabı bağlayabilir; örneğin bir iş
 hesabı ile bir kişisel hesap ve bunların etkinlikleri aynı görünümlerde
 birleştirilir.
 
-## Oturum açma neden bir cihaz kodu
+## Oturum açma sunucuya nasıl ulaşır
 
-Headless `cc_server`’ın bir OAuth yönlendirmesini yakalayacak tarayıcısı yoktur.
-Bu yüzden tarayıcı kullanmaz: **cihaz kodu izniyle** (RFC 8628) yetkilendirir.
-Sunucu kısa bir kullanıcı kodu ile bir Google URL’si gösterir, sen tarayıcısı
-olan herhangi bir cihazda onaylarsın ve sunucu sen onaylayana kadar yoklar.
-Headless bir kurulumun bir hesabı bağlayabilmesinin nedeni tam olarak,
-barındırılacak bir yönlendirme uç noktasının olmamasıdır.
+Bağlanmak tarayıcıda bir oturum açmadır ve onu sunucu tamamlar. Hangi istemcinin
+yürüteceği sunucu sahibinin seçimidir:
 
-Kendi kimlik bilgilerini getirmeden önce bilmen gereken sonuç şudur: istemci
-türü Google’ın "TV'ler ve Sınırlı Girdi cihazları" türü olmalıdır. Google bu
-istemci türüne yalnızca izin listesine alınmış bir kapsam kümesi verir ve
-Calendar’ın bu tür için izinli olmadığı bir proje `invalid_scope` ile başarısız
-olur — bunun yerine bir loopback ya da web istemcisine ihtiyacın olur.
+- **Sunucunun kendi Google istemcisi.** `<server origin>/oauth/google/callback`
+  yönlendirmesiyle kaydedilmiş bir Web uygulaması istemcisi. Google tarayıcıyı
+  doğrudan sunucuya geri gönderir; bu yüzden tarayıcının sunucuya ulaşabilmesi
+  gerekir
+- **Control Center Connect.** Google tarayıcıyı Connect’e geri gönderir; Connect
+  8 karakterlik bir kod ve bir `control-center://` bağlantısı gösterir. Kişi kodu
+  uygulamaya yazar ya da bağlantıyı izler ve sunucu oturum açmayı bununla talep
+  eder. Sunucunun bunun için genel bir adrese ihtiyacı yoktur; özel bir ağdaki
+  headless bir sunucu takvimleri bu şekilde bağlar
 
-Token’lar sunucudan asla ayrılmaz. Sunucunun veri dizinindeki `secrets.json`
-dosyasına, `google_google:<workspaceId>:<email>` anahtarıyla, veritabanlarının
-yanına ve aynı ana makine dosya sistemi güven sınırının altına yazılır. Sunucu
-erişimi otomatik olarak yeniler ve Google bir hesabı kalıcı olarak geçersiz
-kıldığında (iptal edilmiş ya da süresi çoktan dolmuş bir oturum) sessizce
-başarısız olmak yerine `CalendarAuthExpired` yayımlar ve bir **yeniden bağlan**
+Kendi istemci her zaman önceliklidir. Gizli anahtarı olmayan bir istemci kimliği
+yarım kalmış bir kurulumdur ve Connect’e geri dönmek yerine oturum açmaları
+reddeder.
+
+Kimlik bilgileri sunucudan asla ayrılmaz. Sunucunun veri dizinindeki
+`secrets.json` dosyasına, `google_google:<workspaceId>:<userId>:<email>`
+anahtarıyla, veritabanlarının yanına ve aynı ana makine dosya sistemi güven
+sınırının altına yazılır. Kendi istemciyle yapılan bir oturum açma erişim ve
+yenileme token’larını saklar. Connect ile yapılan bir oturum açma yalnızca
+Connect’in sadece bu sunucu için açtığı mühürlü bir kimlik bilgisini saklar;
+erişim token’ı bellekte kalır. Sunucu erişimi otomatik olarak yeniler ve Google
+bir hesabı kalıcı olarak geçersiz kıldığında (iptal edilmiş ya da süresi çoktan
+dolmuş bir oturum) sessizce başarısız olmak yerine `CalendarAuthExpired` yayımlar
+ve bir **yeniden bağlan** banner’ı gösterir. Bu sunucunun artık kullanamadığı bir
+oturum açma (farklı bir kendi istemci tarafından verilmiş ya da farklı bir kurulum
+veya Connect için mühürlenmiş) bir sonraki okunuşunda temizlenir ve aynı
 banner’ı gösterir.
 
-Kaynaktan bir derleme **hiç** Google kimlik bilgisi içermez — kendi istemci
-kimliğini ve gizli anahtarını sen sağlarsın. Resmî sürüm derlemeleri, bağlantı
-akışının kutudan çıktığı gibi çalışması için gizli olmayan bir cihaz kodu
-istemcisi gömer; sunucu yalnızca ona atıfta bulunan bir işaretçi saklar, asla
-bir kopyasını değil. Ortamdaki `GOOGLE_OAUTH_CLIENT_ID` (ve gizli anahtarı) her
-zaman gömülü çiftin önüne geçer. `--google-client-id` diye bir bayrak bilinçli
-olarak yoktur: bilinmeyen bayraklar yok sayılır ve komut satırındaki bir gizli
-anahtar `ps` üzerinden okunabilir.
+Hiçbir derleme Google kimlik bilgisi taşımaz. Sunucunun istemcisi **Ayarlar →
+Sunucu → Tek oturum açma → Sağlayıcı uygulamaları** bölümünden ya da sunucunun
+`.env` dosyasından (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`)
+gelir. Bilinçli olarak bir komut satırı bayrağı yoktur: komut satırındaki bir
+gizli anahtar `ps` üzerinden okunabilir ve gizli anahtar süreç ortamına dışa
+aktarıldığında sunucu başlamayı reddeder.
 
 Kendi Google projenle çalışmak için
 [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
@@ -126,7 +135,7 @@ kayıt akışı tarayıcıda çalışır.
 
 :::note[Ajanlar takvimini okuyamaz]
 Takvim MCP araçları yoktur. Bir ajan etkinlikleri listeleyemez, bir etkinliğin
-ayrıntılarını okuyamaz veya senin adına yanıt veremez; `calendar.*` yüzeyi
+ayrıntılarını okuyamaz, etkinlik ayırtamaz, taşıyamaz veya silemez ya da senin adına yanıt veremez; `calendar.*` yüzeyi
 yalnızca insan istemcileri için RPC’dir.
 :::
 

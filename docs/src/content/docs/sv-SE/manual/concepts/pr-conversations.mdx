@@ -2,18 +2,18 @@
 title: PR-samtal
 description: Hur en GitHub-PR-kommentar blir en agenttur utan webhook, vad som auktoriserar avsändaren och vem varje sida av samtalet tillskrivs.
 slug: sv-SE/handbok/koncept/pr-samtal
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 En pull request är redan platsen där samtalet om kod äger rum. PR-samtal gör den
 till en yta i en Control Center-arbetsyta, på samma sätt som en
 [chattbrygga](/sv-SE/handbok/koncept/chattbryggor/) gör Slack till en: @-nämn
-serverns GitHub App-bot i en PR, svara i dess granskningstrådar, eller lägg till
-etiketten `ai-review`, och arbetet sker i PR:ens granskningsyta — under samma
-tillskrivning och samma räcken som allt som skrivs i appen. En kommentar kräver
-dessutom medlemskap; etiketten gör det inte, eftersom den inte har någon
-avsändare. Botens svar kommer tillbaka på GitHub, i samma spår som frågan
-ställdes i.
+`@usectrl` (eller boten för arbetsytans GitHub-app) i en PR, svara i dess
+granskningstrådar, eller lägg till etiketten `ai-review`, och arbetet sker i
+PR:ens granskningsyta — under samma tillskrivning och samma räcken som allt som
+skrivs i appen. En kommentar och en etikett kontrolleras på samma sätt: utifrån
+den medlem som skrev eller lade till den. Svaren kommer tillbaka på GitHub, i
+samma spår som frågan ställdes i.
 
 Tre beslut formar funktionen, och vart och ett är samma beslut som
 chattbryggan fattade för chatt, formulerat om för en kodvärd: **vilken riktning
@@ -24,16 +24,19 @@ och **vem varje sida tillskrivs**.
 
 GitHubs enda push-kanal för en app är en webhook, och en webhook kräver en
 inkommande URL — det enda som den här ytan medvetet aldrig behöver. Så
-upptäckten sker genom ett svep: ungefär varje minut ber en aliasbaserad sökning
-per appinstallation GitHub om PR:er som nämner boten (eller dess korta slug)
-och om öppna PR:er som bär granskningsetiketten, PR:er som redan har en
-granskningsyta får sina kommentarstrådar lästa, och allting jämförs via
-kommentars-id mot vad som sågs i förra svepet.
+upptäckten sker genom ett svep: en aliasbaserad sökning per appinstallation ber
+GitHub om PR:er som nämner boten (eller dess korta slug) och om öppna PR:er som
+bär granskningsetiketten, PR:er som redan har en granskningsyta får sina
+kommentarstrådar lästa, och allting jämförs via kommentars-id mot vad som sågs i
+förra svepet. En egen app sveper varje minut över högst 25 PR:er. Via Connect
+går anropen på medlemmarnas egen GitHub-kvot, så svepet körs varannan minut över
+högst 10, och en arbetsyta under 15 % av sin kvot hoppas över tills den har
+återhämtat sig. Connect själv ser aldrig PR-innehåll.
 
 Designkonsekvenserna är värda att nämna:
 
 - **Latensen är ett svepintervall, inte en händelse.** 👀-bekräftelsen landar
-  inom ungefär en minut. Inget brådskande hänger på den.
+  inom ett svep. Inget brådskande hänger på den.
 - **Exakt en gång, per kommentar.** Kommentars-id är unika i hela GitHub; var
   och ett registreras i samma stund som det klassas som kvalificerat, innan
   något agerar på det. En krasch kan förlora hanteringen av en kommentar, men
@@ -50,51 +53,60 @@ Designkonsekvenserna är värda att nämna:
   vägen till en ny körning.
 
 Sökningen körs en gång per installationskonto med den ägarens egen klient,
-eftersom en installationstoken bara ser den egna installationens repon — en
+eftersom en token bara ser den egna installationens repon — en
 enda serverövergripande autentiseringsuppgift skulle tyst missa varje PR under
 appens andra installationer.
 
 ## Medlemskap auktoriserar, inte kommentaren
 
-En PR-kommentar kommer in med föga mer än en avsändarinloggning — en
-oautentiserad extern identitet tills den bevisats. Boten matchar den mot ett
-omvänt index över arbetsytans medlemmar och deras anslutna GitHub-konton, som
-byggs om med ett TTL eftersom människor loggar in och blir inbjudna medan
-servern kör.
+En PR-kommentar kommer in med en avsändare — en oautentiserad extern identitet
+tills den bevisats. Servern matchar avsändarens oföränderliga numeriska
+GitHub-konto-id (aldrig inloggningsnamnet, som kan bytas och återanvändas) mot
+GitHub-inloggningarna för arbetsytans medlemmar, som byggs om med ett TTL
+eftersom människor loggar in och blir inbjudna medan servern kör. För etiketten
+`ai-review` är det den som senast lade till den som matchas.
 
-Att misslyckas stängt ser ut som en stege, och varje steg svarar i den tråd det
-nekade i:
+Tre kontroller, i ordning, och att misslyckas med någon av dem sker tyst —
+ingenting publiceras:
 
-- **En okänd inloggning** — inte länkad, eller länkad av någon som inte är
-  medlem i den här arbetsytan — uppmanas att logga in och se till att de hör hit
-- **En skrivskyddad medlem** (`viewer` eller `guest`) får veta att deras roll
-  inte kan starta arbete
+- **En inloggad medlem.** Kontot måste tillhöra en medlem i _den här_ arbetsytan
+  som har loggat in på GitHub på den här servern
+- **En roll med skrivrätt.** `viewer` och `guest` kan inte starta arbete
+- **Push-åtkomst.** Svar använder en `bot`-token som är begränsad till den
+  medlemmens åtkomst till repot. Om servern inte kan utfärda en går den inte
+  vidare
 
-De två fallen med okänd inloggning delar ett svar: det omvända indexet
-returnerar bara en medlem i _den här_ arbetsytan, så ett olänkat konto och en
-länkad icke-medlem är samma bom. Ingen av dem fortsätter. En kommentar tillskrivs
-aldrig någon som inte skickade den, och en främlings ord kommer aldrig in i en
-arbetsyta som de inte kan se.
+Varje kontroll körs före all bekräftelse, så en främling får varken reaktion
+eller svar. En kommentar tillskrivs aldrig någon som inte skickade den, och en
+främlings ord kommer aldrig in i en arbetsyta som de inte kan se.
 
-Etiketten `ai-review` har ingen avsändare att matcha, så den klättrar inte i den
-här stegen. Att lägga till den startar granskningen i den arbetsyta som redan
-länkar repot.
+### Anspråket
+
+Det sista steget före allt arbete är en 👀-reaktion, tillagd med avsändarens
+egen GitHub-inloggning. GitHub svarar `201` för en ny reaktion och `200` för en
+som redan finns, så reaktionen fungerar också som ett lås: när samma person är
+inloggad på två servrar som båda länkar repot gör bara den första som reagerar
+arbetet. En kommentar som flera arbetsytor på en server ser erbjuds var och en
+av dem, och samma anspråk avgör.
 
 ## Två identiteter, med avsikt
 
 Varje sida av samtalet bär en egen identitet, och skillnaden är själva
 funktionen:
 
-- **På GitHub är boten servern.** Varje kommentar, reaktion och svar som
-  bryggan publicerar går via appens installationstoken. Ingen klickade på något
-  i en klient, så inget lånar en persons konto — samma regel som håller
-  webhooks och pollning borta från mänskliga autentiseringsuppgifter.
+- **På GitHub är svaret automatisering för din räkning.** Varje svar går via en
+  `bot`-token för just det repot, begränsad till den frågande medlemmens
+  åtkomst. Med en egen app är författaren appens `[bot]`-konto. Via Connect är en
+  token för den delade appen en användartoken, så svaret skrivs av den frågande
+  medlemmens konto, som agerar genom appen. Hur som helst börjar varje svar med
+  `**Control Center** (for @login):`, som talar om vem som frågade och samtidigt
+  fungerar som loopskydd.
 - **I ytan är frågan din.** Meddelandet tillskrivs den medlem som avsändaren
   matchades till, och agentkörningen utförs på deras vägnar: commits anger dem
   som medförfattare, och ytans autonomi-inställning och åtgärdsräcken gäller
   precis som för ett meddelande som skrivs i appen. Skrivningar till kodvärden
-  från körningen går fortfarande ut som appen — samma regel som punkten ovan —
-  inte med medlemmens personliga token.
+  från körningen använder token för ett enda repo, begränsade av den medlemmen,
+  aldrig medlemmens inloggning överlämnad i sin helhet.
 
 Att publicera granskningsfynd tillbaka till GitHub är fortfarande en persons
 beslut, fattat i Control Center. En nämning kan _starta_ en granskning; bara en
@@ -104,8 +116,10 @@ människa publicerar en.
 
 Allt som skrivits av ett botkonto kastas innan någon grind körs — vårt
 specifikt, och varje `[bot]`-suffix, så att en annan apps granskningsbot inte
-heller kan väcka vår. Utan detta skulle botens egna svar komma in som nya
-kommentarer och utlösa den om och om igen för alltid.
+heller kan väcka vår — och likaså varje kommentar som börjar med prefixet
+`**Control Center** (for @`, eftersom ett svar via Connect skrivs av en persons
+konto. Utan detta skulle svaren komma in som nya kommentarer och utlösa bryggan
+om och om igen för alltid.
 
 Suffixet `[bot]` är också anledningen till att kortformen finns. GitHub låser
 ett appkontos inloggning till `<slug>[bot]`, erbjuder ingen autokomplettering
@@ -121,7 +135,10 @@ kollisionen hypotetisk.
 - **Ingen automatisk publicering.** Fynden landar i granskningsytan;
   publicering till GitHub är en separat, mänsklig åtgärd
 - **Ingen suddig identitet.** Avsändaren matchas till exakt en medlem eller
-  nekas — det finns ingen gissad tillskrivning
+  ignoreras — det finns ingen gissad tillskrivning
+- **Inget automatiskt godkännande.** Automatisering kan kommentera och begära
+  ändringar, men en `APPROVE`-granskning avvisas innan den skickas. Att godkänna
+  är en persons handling
 - **Ingen GitHub App-webhook.** Den här ytan registrerar aldrig någon, så det
   finns ingen inkommande URL att exponera för PR-kommentarer. Andra
   produktwebhooks (pipelines, ärendesynk) är en separat, valfri konfiguration.
@@ -133,7 +150,7 @@ kollisionen hypotetisk.
 - [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/): samma tre beslut,
   fattade för chatt
 - [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/): var
-  botidentiteten kommer från
+  botidentiteten för en egen app kommer från
 - [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/):
   de principals och roller som en inloggning matchas genom
 - [Räcken](/sv-SE/handbok/koncept/racken/): vad den svarande agenten får göra

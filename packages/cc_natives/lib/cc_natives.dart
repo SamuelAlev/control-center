@@ -30,6 +30,7 @@ export 'src/code_index/tree_sitter_parser.dart';
 export 'src/file_search/dart_file_search.dart';
 export 'src/file_search/fff_file_search.dart';
 export 'src/file_search/file_search.dart';
+export 'src/git/isolated_git.dart';
 export 'src/git/rig_worktree_guard.dart';
 export 'src/http/rhttp_runtime.dart';
 export 'src/inference/cc_inference_bindings.dart';

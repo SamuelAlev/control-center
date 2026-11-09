@@ -75,14 +75,18 @@ class GitHubAppTokenMinter {
   /// Exchanges a fresh App JWT for an installation token scoped to
   /// [repositories] (bare repo names) with [permissions]. Throws on failure.
   Future<MintedToken> mint({
-    List<String> repositories = const [],
+    required List<String> repositories,
     Map<String, String> permissions = const {},
   }) async {
+    if (repositories.isEmpty) {
+      // GitHub reads an absent list as every repository of the installation.
+      throw ArgumentError.value(repositories, 'repositories', 'is empty');
+    }
     final jwt = buildAppJwt();
     final res = await _httpClient.post(
       '/app/installations/${_config.installationId}/access_tokens',
       body: HttpBody.json({
-        if (repositories.isNotEmpty) 'repositories': repositories,
+        'repositories': repositories,
         if (permissions.isNotEmpty) 'permissions': permissions,
       }),
       headers: HttpHeaders.rawMap({
@@ -95,11 +99,45 @@ class GitHubAppTokenMinter {
     if (token == null || token.isEmpty) {
       throw StateError('GitHub App installation-token mint returned no token.');
     }
+    if (!_coversExactly(data, repositories)) {
+      try {
+        await revoke(token);
+      } on Object {
+        // Refused either way; an unrevoked token expires within the hour.
+      }
+      throw StateError(
+        'GitHub App installation-token mint was not limited to the '
+        'requested repositories.',
+      );
+    }
     final expStr = data['expires_at'] as String?;
     return MintedToken(
       token: token,
       expiresAt: expStr != null ? DateTime.tryParse(expStr) : null,
     );
+  }
+
+  static bool _coversExactly(
+    Map<String, dynamic> data,
+    List<String> repositories,
+  ) {
+    if (data['repository_selection'] != 'selected') {
+      return false;
+    }
+    final listed = data['repositories'];
+    if (listed == null) {
+      return true;
+    }
+    if (listed is! List) {
+      return false;
+    }
+    final names = {
+      for (final r in listed)
+        if (r is Map && r['name'] is String) (r['name'] as String).toLowerCase(),
+    };
+    return names.length == listed.length &&
+        names.length == repositories.length &&
+        repositories.every((r) => names.contains(r.toLowerCase()));
   }
 
   /// Best-effort revocation of an installation [token] (`DELETE

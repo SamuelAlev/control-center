@@ -2,7 +2,7 @@
 title: "Conectar un host de código"
 description: "Conecta GitHub, GitLab o Bitbucket para que funcionen la superficie de PR, el registro de repos y las ejecuciones de agentes: un mismo espacio de trabajo puede usar los tres."
 slug: es-MX/manual/guias/conectar-host-de-codigo
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center funciona con tres hosts de código, a los que en toda la
@@ -19,13 +19,14 @@ trabajo que puedas dejar mal.
 
 1. Abre **Ajustes → Espacio de trabajo → Perfil e identidad** (`/settings/workspace/profile`).
 2. Busca la tarjeta **Alojamiento de código**. En ella se listan todas las forjas compatibles, conectadas o no.
-3. Pulsa **Iniciar sesión con …** si la fila lo ofrece, o **Añadir token** y pega uno.
+3. En **GitHub**, presiona **Iniciar sesión en GitHub**. En **GitLab** o **Bitbucket**, presiona **Añadir token** y pega uno.
 
-**Iniciar sesión** aparece para una forja para la que tu servidor tiene una
-aplicación registrada; hoy ese es el caso de GitHub, mediante un flujo de
-dispositivo (consulta [Crear la GitHub App](/es-MX/manual/guias/github-app/)).
-Todo lo demás es un token pegado, que es la opción honesta en lugar de un botón
-que no puede llegar a completarse.
+**GitHub solo admite inicio de sesión.** El inicio de sesión pasa por la GitHub
+App propia del servidor o por Control Center Connect, según lo que haya
+configurado el propietario del servidor (consulta
+[Configurar la integración de GitHub](/es-MX/manual/guias/integracion-github/));
+no hay ningún token de GitHub que pegar. GitLab y Bitbucket siguen usando un
+token personal.
 
 En cualquier caso, la credencial es **tuya y vive en el servidor**, indexada por
 tu id de usuario: no se guarda ningún token en la computadora donde lo
@@ -39,15 +40,14 @@ entre «mi token no funciona» y «está respondiendo otro token»:
 | Subtítulo | Significado |
 | --------- | ----------- |
 | `Sesión iniciada como octocat` | Se está usando tu propia credencial |
-| `Sesión iniciada como octocat · mediante la app de este servidor` | Está respondiendo la identidad de la aplicación del servidor —no has iniciado sesión |
-| `Sesión iniciada como octocat · desde el entorno` | Está respondiendo una variable de entorno del servidor, no tu credencial |
+| `Sesión iniciada como octocat · desde el entorno` | Solo GitLab o Bitbucket: está respondiendo una variable de entorno del servidor, no tu token |
 | `No conectado` | No tienes ninguna credencial para esta forja |
+| `El inicio de sesión en GitHub aún no está configurado en este servidor.` | El servidor no tiene ni su propia GitHub App ni Connect; el propietario del servidor configura una de las dos |
 
 ### Qué token quiere cada forja
 
 | Forja | Token | Dónde crearlo |
 | ----- | ----- | ------------- |
-| **GitHub** | Clásico: `repo` y `read:org`. De grano fino: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab** | Un token de acceso personal con `api` | gitlab.com → User settings → Access tokens |
 | **Bitbucket** | Un token de API de Atlassian, más el correo de tu cuenta | id.atlassian.com → Security → API tokens |
 
@@ -55,21 +55,19 @@ Bitbucket se autentica con tu **correo de cuenta como nombre de usuario** y el
 token como contraseña. Configura `BITBUCKET_EMAIL` en el entorno del servidor
 para que sepa con qué correo emparejar el token.
 
-### O usa el entorno
+### Trabajo en segundo plano
 
-Para una instalación headless o de CI, el servidor lee estas variables:
+El trabajo sin ninguna persona detrás (ejecuciones de agentes, pipelines,
+sondeo de PR) también necesita una credencial, y cada forja lo resuelve de
+forma distinta:
 
-- **GitHub** — `GITHUB_TOKEN` y luego `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN` y luego `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN` y luego `BITBUCKET_TOKEN` (junto con `BITBUCKET_EMAIL`)
+- **GitHub** — un token para un solo repositorio a la vez, emitido desde la GitHub App del servidor o a través de Connect y limitado a lo que un miembro responsable puede hacer ahí. Nunca es el inicio de sesión de una persona entregado completo, y ninguna variable de entorno ni token pegado lo sustituye. Consulta [Configurar la integración de GitHub](/es-MX/manual/guias/integracion-github/#para-quién-habla-tu-credencial)
+- **GitLab** — el token pegado del propietario del servidor, luego `GITLAB_TOKEN` y luego `CI_JOB_TOKEN`
+- **Bitbucket** — el token pegado del propietario del servidor, luego `BITBUCKET_API_TOKEN` y luego `BITBUCKET_TOKEN` (junto con `BITBUCKET_EMAIL`)
 
-Estas son la credencial **del servidor**, no la tuya, y la distinción es
-fundamental: una petición hecha en tu nombre usa tu credencial y nada más, así
-que el entorno nunca te suplanta en silencio. El trabajo sin ninguna persona
-detrás —webhooks, sondeo de PR, sincronización de tickets— resuelve primero la
-identidad de la aplicación del servidor, luego la credencial del propietario del
-servidor y por último el entorno. El orden es fijo, de modo que «inicié sesión y
-nada cambió» no sea nunca un resultado posible.
+Las variables de entorno de GitLab y Bitbucket son la credencial **del
+servidor**, no la tuya: una solicitud hecha en tu nombre usa tu token y nada
+más, así que el entorno nunca te suplanta en silencio.
 
 ## Eres una persona distinta en cada forja
 
@@ -133,16 +131,18 @@ cuando habla de esa forja.
 
 ### La lista de PR está vacía y dice que una forja no está conectada
 
-No tienes ninguna credencial para esa forja. Inicia sesión o pega un token en
+No tienes ninguna credencial para esa forja. Inicia sesión en GitHub, o pega un
+token de GitLab o Bitbucket, en
 **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código**.
 Los repos de las demás forjas no se ven afectados.
 
 ### Conecté una forja, pero sus repos siguen sin mostrar nada
 
-Comprueba el subtítulo de la fila. Si dice «mediante la app de este servidor» o
+Comprueba el subtítulo de la fila. Si una fila de GitLab o Bitbucket dice
 «desde el entorno», está respondiendo una credencial distinta de la que
-esperabas —tu propia credencial gana para todo lo que pidas, así que si dice
-otra cosa, la tuya no se guardó.
+esperabas —tu propio token gana para todo lo que pidas, así que si dice otra
+cosa, el tuyo no se guardó. En GitHub, comprueba que la GitHub App esté
+instalada en la cuenta propietaria de los repos.
 
 ### Un repo no se registra
 

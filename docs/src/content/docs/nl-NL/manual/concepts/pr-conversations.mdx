@@ -2,18 +2,19 @@
 title: PR-gesprekken
 description: Hoe een GitHub-PR-opmerking een agentbeurt wordt zonder webhook, wat de auteur autoriseert en aan wie elke kant van het gesprek wordt toegeschreven.
 slug: nl-NL/handleiding/concepten/pr-gesprekken
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Een pull request is al de plek waar het gesprek over code plaatsvindt.
 PR-gesprekken maken er een oppervlak van op een Control Center-werkruimte, net
 zoals een [chatbrug](/nl-NL/handleiding/concepten/chatbruggen/) van Slack er een
-maakt: @-vermeld de GitHub App-bot van de server in een PR, antwoord binnen zijn
-reviewthreads of voeg het label `ai-review` toe, en het werk gebeurt in de
-reviewruimte van de PR — onder dezelfde attributie en beveiligingen als alles
-wat in de app wordt getypt. Een opmerking is bovendien afhankelijk van
-lidmaatschap; het label niet, want het heeft geen auteur. De antwoorden van de
-bot komen terug op GitHub, op de plek waar de vraag is gesteld.
+maakt: @-vermeld `@usectrl` (of de GitHub App-bot van de werkruimte) in een PR,
+antwoord binnen zijn reviewthreads of voeg het label `ai-review` toe, en het werk
+gebeurt in de reviewruimte van de PR — onder dezelfde attributie en
+beveiligingen als alles wat in de app wordt getypt. Een opmerking en een label
+worden op dezelfde manier gecontroleerd: op het lid dat de opmerking schreef of
+het label toevoegde. De antwoorden komen terug op GitHub, op de plek waar de
+vraag is gesteld.
 
 Drie beslissingen bepalen de functie, en elke beslissing is dezelfde die de
 chatbrug voor chat nam, opnieuw geformuleerd voor een codehost: **welke richting
@@ -24,17 +25,20 @@ wie elke kant wordt toegeschreven**.
 
 Het enige pushkanaal dat GitHub voor een app biedt, is een webhook, en een
 webhook heeft een inkomende URL nodig — precies het enige dat dit oppervlak
-bewust nooit vereist. Het opsporen gebeurt dus in een pollronde: ongeveer elke
-minuut vraagt één per appinstallatie gealiaste zoekopdracht aan GitHub om PR's
-die de bot (of zijn korte slug) vermelden, en om open PR's die het reviewlabel
-dragen; van PR's die al een reviewruimte hebben worden de opmerkingenthreads
-gelezen, en alles wordt op opmerking-id vergeleken met wat de vorige pollronde
-zag.
+bewust nooit vereist. Het opsporen gebeurt dus in een pollronde: één per
+appinstallatie gealiaste zoekopdracht vraagt GitHub om PR's die de bot (of zijn
+korte slug) vermelden, en om open PR's die het reviewlabel dragen; van PR's die
+al een reviewruimte hebben worden de opmerkingenthreads gelezen, en alles wordt
+op opmerking-id vergeleken met wat de vorige pollronde zag. Een eigen app pollt
+elke minuut over hoogstens 25 PR's. Via Connect gaan de aanroepen ten koste van
+het eigen GitHub-quotum van leden, dus draait de pollronde elke twee minuten over
+hoogstens 10, en een werkruimte onder 15% van zijn quotum wordt overgeslagen tot
+het quotum hersteld is. Connect zelf ziet nooit de inhoud van PR's.
 
 De ontwerpgevolgen zijn het benoemen waard:
 
 - **Latentietijd is een pollinterval, geen gebeurtenis.** De 👀-bevestiging komt
-  binnen ongeveer een minuut. Er hangt niets dringends aan.
+  binnen één pollronde. Er hangt niets dringends aan.
 - **Precies één keer, per opmerking.** Opmerking-id's zijn uniek binnen heel
   GitHub; elk id wordt vastgelegd zodra de opmerking als in aanmerking komend is
   geclassificeerd, voordat er iets op wordt ondernomen. Een crash kan de
@@ -53,54 +57,62 @@ De ontwerpgevolgen zijn het benoemen waard:
   opnieuw te draaien.
 
 De zoekopdracht draait één keer per installatieaccount met de eigen client van
-die eigenaar, omdat een installatietoken alleen de repo's van zijn eigen
-installatie ziet — één credential voor de hele server zou stilletjes elke PR
+die eigenaar, omdat een token alleen de repo's van zijn eigen installatie ziet — één credential voor de hele server zou stilletjes elke PR
 onder de andere installaties van de app missen.
 
 ## Lidmaatschap autoriseert, niet de opmerking
 
-Een PR-opmerking komt binnen met weinig meer dan de login van een auteur — een
-niet-geverifieerde externe identiteit tot het tegendeel blijkt. De bot herleidt
-die login via een omgekeerde index van de leden van de werkruimte en hun
-gekoppelde GitHub-accounts, die op een TTL opnieuw wordt opgebouwd omdat mensen
-zich aanmelden en uitgenodigd worden terwijl de server draait.
+Een PR-opmerking komt binnen met een auteur — een niet-geverifieerde externe
+identiteit tot het tegendeel blijkt. De server herleidt het onveranderlijke
+numerieke GitHub-account-id van de auteur (nooit de login, die kan worden
+hernoemd en hergebruikt) via de GitHub-aanmeldingen van de leden van de
+werkruimte, die op een TTL opnieuw worden opgebouwd omdat mensen zich aanmelden
+en uitgenodigd worden terwijl de server draait. Voor het label `ai-review` wordt
+de persoon herleid die het als laatste heeft toegevoegd.
 
-Fail-closed gedrag ziet eruit als een ladder, en elke trede antwoordt in de
-thread waarin hij weigerde:
+Drie controles, in volgorde, en wie er een niet doorstaat, wordt stil
+afgewezen — er wordt niets geplaatst:
 
-- **Een onbekende login** — niet gekoppeld, of gekoppeld door iemand die geen
-  lid is van deze werkruimte — krijgt het verzoek om in te loggen en te
-  controleren of diegene erbij hoort
-- **Een lid met alleen-lezenrechten** (`viewer` of `guest`) krijgt te horen dat
-  hun rol geen werk kan starten
+- **Een aangemeld lid.** Het account moet horen bij een lid van _deze_
+  werkruimte dat zich op deze server bij GitHub heeft aangemeld
+- **Een rol met schrijfrechten.** `viewer` en `guest` kunnen geen werk starten
+- **Pushtoegang.** Antwoorden gebruiken een `bot`-token dat beperkt is tot de
+  toegang van dat lid tot de repository. Kan de server er geen uitgeven, dan gaat
+  hij niet verder
 
-De twee gevallen van een onbekende login delen één antwoord: de omgekeerde index
-levert alleen een lid van _deze_ werkruimte op, dus een niet-gekoppeld account
-en een gekoppeld account dat geen lid is, zijn dezelfde misser. Geen van hen
-gaat verder. Een opmerking wordt nooit toegeschreven aan iemand die hem niet
-heeft verstuurd, en de woorden van een vreemde komen nooit een werkruimte
-binnen die diegene niet kan zien.
+Elke controle draait vóór elke bevestiging, dus een vreemde krijgt geen reactie
+en geen antwoord. Een opmerking wordt nooit toegeschreven aan iemand die hem niet
+heeft verstuurd, en de woorden van een vreemde komen nooit een werkruimte binnen
+die diegene niet kan zien.
 
-Het label `ai-review` heeft geen auteur om te herleiden, dus het beklimt deze
-ladder niet. Door het toe te voegen start de review in de werkruimte die de
-repository al koppelt.
+### De claim
+
+De laatste stap vóór enig werk is een 👀-reactie, toegevoegd met de eigen
+GitHub-aanmelding van de auteur. GitHub antwoordt `201` voor een nieuwe reactie en
+`200` voor een die al bestaat, dus de reactie werkt ook als slot: als dezelfde
+persoon is aangemeld op twee servers die allebei de repository koppelen, doet
+alleen de eerste die reageert het werk. Een opmerking die meerdere werkruimtes
+op één server zien, wordt aan elk aangeboden, en dezelfde claim beslist.
 
 ## Twee identiteiten, met opzet
 
 Elke kant van het gesprek draagt een andere identiteit, en dat verschil ís de
 functie:
 
-- **Op GitHub is de bot de server.** Elke opmerking, reactie en elk antwoord die
-  de brug plaatst, rijdt mee op het installatietoken van de app. Niemand heeft
-  ergens in een client op geklikt, dus niets leent het account van een persoon —
-  dezelfde regel die webhooks en polling van menselijke credentials afhoudt.
+- **Op GitHub is het antwoord automatisering namens jou.** Elk antwoord rijdt
+  mee op een `bot`-token voor die ene repository, beperkt tot de toegang van het
+  vragende lid. Bij een eigen app is de auteur het `[bot]`-account van de app.
+  Via Connect is een token voor de gedeelde App een gebruikerstoken, dus het
+  antwoord komt van het account van het vragende lid, dat via de App handelt. Hoe
+  dan ook begint elk antwoord met `**Control Center** (for @login):`, wat zegt
+  wie het vroeg en tegelijk als lusbeveiliging dient.
 - **In de ruimte is de vraag van jou.** Het bericht wordt toegeschreven aan het
   lid waaraan de auteur is herleid, en de agentrun wordt namens hen uitgevoerd:
   commits vermelden hen als medeauteur, en de autonomieregelaar en
   actiebeveiligingen van de ruimte gelden precies zoals voor een bericht dat in
-  de app is getypt. Schrijfacties naar de codehost vanuit de run gaan nog steeds
-  uit als de app — dezelfde regel als in het punt hierboven — niet op het
-  persoonlijke token van het lid.
+  de app is getypt. Schrijfacties naar de codehost vanuit de run gebruiken tokens
+  voor één repository, begrensd door dat lid, nooit diens volledige, doorgegeven
+  aanmelding.
 
 Het publiceren van reviewbevindingen terug naar GitHub blijft een beslissing van
 een persoon, genomen in Control Center. Een vermelding kan een review _starten_;
@@ -110,9 +122,11 @@ alleen een mens publiceert er een.
 
 Alles wat door een botaccount is geschreven, wordt weggegooid voordat er welke
 poort dan ook draait — specifiek het onze, en elk achtervoegsel `[bot]`, zodat
-de reviewbot van een andere app de onze ook niet kan wekken. Zonder dit zouden
-de antwoorden van de bot zelf als nieuwe opmerkingen binnenkomen en hem voor
-altijd opnieuw activeren.
+de reviewbot van een andere app de onze ook niet kan wekken — en net zo elke
+opmerking die begint met het voorvoegsel `**Control Center** (for @`, omdat een
+antwoord via Connect van het account van een persoon komt. Zonder dit zouden de
+antwoorden als nieuwe opmerkingen binnenkomen en de brug voor altijd opnieuw
+activeren.
 
 Het achtervoegsel `[bot]` is ook de reden dat de korte vorm bestaat. GitHub legt
 de login van een appaccount vast op `<slug>[bot]`, biedt daarvoor geen
@@ -129,7 +143,10 @@ botsing hypothetisch.
 - **Geen automatische publicatie.** Bevindingen belanden in de reviewruimte;
   publiceren naar GitHub is een aparte, menselijke actie
 - **Geen fuzzy identiteit.** De auteur wordt aan precies één lid gekoppeld of
-  wordt geweigerd — er is geen attributie op basis van een gok
+  wordt genegeerd — er is geen attributie op basis van een gok
+- **Geen geautomatiseerde goedkeuring.** Automatisering kan opmerkingen plaatsen
+  en wijzigingen vragen, maar een `APPROVE`-review wordt geweigerd voordat die
+  wordt verstuurd. Goedkeuren is een handeling van een persoon
 - **Geen webhook voor de GitHub App.** Dit oppervlak registreert er nooit een,
   dus er is geen inkomende URL om voor PR-opmerkingen bloot te stellen. Andere
   productwebhooks (pipelines, ticketsynchronisatie) zijn een aparte, optionele
@@ -142,7 +159,7 @@ botsing hypothetisch.
 - [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/): dezelfde drie
   beslissingen, gemaakt voor chat
 - [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/): waar de
-  identiteit van de bot vandaan komt
+  botidentiteit van een eigen app vandaan komt
 - [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/):
   de principals en rollen waarlangs een login wordt herleid
 - [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): wat de

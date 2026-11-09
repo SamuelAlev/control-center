@@ -2,7 +2,7 @@
 title: Crea un modello di pipeline
 description: Crea un modello di workflow DAG nell'editor delle pipeline — aggiungi nodi, collegali, dichiara gli input e rendilo eseguibile.
 slug: it-IT/manuale/guide/crea-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 I modelli di pipeline si creano nelle impostazioni dello spazio di lavoro. La
@@ -133,12 +133,21 @@ l'ambiente, perché nessuno dei due è configurabile:
 
 - Ogni passaggio bash di un'esecuzione condivide la cwd
   `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` viene iniettato dall'archivio delle credenziali, quindi `gh` e
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` funzionano senza
-  configurazione.
+- Lo script viene eseguito nel sandbox del sistema operativo dell'host, come i
+  comandi di un agente. Un host senza sandbox (Windows, o Linux senza `bwrap`)
+  fa fallire il passaggio invece di eseguirlo senza confini. La directory dati
+  del server e il file `.env` non sono leggibili dall'interno.
+- Git e `gh` non vedono alcuna configurazione dell'host: nessun login
+  memorizzato, credential helper o hook globale.
+- Quando la pipeline indica un repository GitHub collegato allo spazio di lavoro
+  (`repo_full_name` nello stato o nel payload del trigger), `GH_TOKEN` e
+  `GITHUB_TOKEN` contengono un token che può solo leggere quell'unico
+  repository, quindi `gh` e `git clone` su di esso funzionano senza
+  configurazione. Altrimenti non c'è alcun token GitHub.
+- Solo un amministratore dello spazio di lavoro può creare o modificare una
+  pipeline con un passaggio bash.
 - Lo script viene avviato come eseguibile letterale `bash`, quindi `bash` deve
-  trovarsi nel `PATH` dell'host del server. È una considerazione legata a
-  Windows.
+  trovarsi nel `PATH` dell'host del server.
 
 ### Router
 

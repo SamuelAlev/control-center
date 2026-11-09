@@ -12,6 +12,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_infra/src/dispatch/backends/harness_backend.dart';
@@ -48,6 +49,7 @@ class _NoopBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override
@@ -176,8 +178,11 @@ void main() {
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: runLogRepo,
       eventBus: null,
-      resolveGitIdentity: (_, {workspaceId}) async =>
-          (name: 'Test User', email: 'test@example.test'),
+      resolveCommitIdentity: (_, {workspaceId}) async =>
+          AgentCommitIdentity.owner(
+            name: 'Test User',
+            email: 'test@example.test',
+          ),
       // Harness-only: any other adapter resolves to null and fails loudly
       // rather than silently reaching for a CLI a demo host does not have.
       backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),

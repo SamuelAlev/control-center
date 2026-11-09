@@ -2,7 +2,7 @@
 title: Creează un șablon de pipeline
 description: Redactează un șablon de flux DAG în editorul de pipeline-uri — adaugă noduri, leagă-le, declară intrări și fă-l să poată rula.
 slug: ro-RO/manual/ghiduri-practice/creeaza-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Șabloanele de pipeline se redactează în setările spațiului de lucru. Intrarea
@@ -129,12 +129,21 @@ pentru că niciunul nu este configurabil:
 
 - Toate nodurile bash dintr-o rulare folosesc același director curent,
   `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` este injectat din depozitul de credențiale, așa că `gh` și
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` funcționează fără
-  configurare.
+- Scriptul rulează în sandbox-ul de sistem de operare al gazdei, ca și
+  comenzile unui agent. O gazdă fără sandbox (Windows sau Linux fără `bwrap`)
+  face pasul să eșueze în loc să-l ruleze neizolat. Directorul de date al
+  serverului și fișierul `.env` nu pot fi citite din interior.
+- Git și `gh` nu văd nicio configurație a gazdei: nicio autentificare stocată,
+  niciun credential helper și niciun hook global.
+- Când pipeline-ul numește un depozit GitHub legat de spațiul de lucru
+  (`repo_full_name` în stare sau în payload-ul declanșatorului), `GH_TOKEN` și
+  `GITHUB_TOKEN` conțin un token care poate doar citi acel depozit, așa că
+  `gh` și `git clone` pe el funcționează fără configurare. Altfel nu există
+  niciun token GitHub.
+- Doar un administrator al spațiului de lucru poate crea sau edita un pipeline
+  cu un pas bash.
 - Scriptul este lansat ca executabilul literal `bash`, deci `bash` trebuie să
-  fie în `PATH`-ul gazdei serverului. Aceasta este o considerație pentru
-  Windows.
+  fie în `PATH`-ul gazdei serverului.
 
 ### Router
 

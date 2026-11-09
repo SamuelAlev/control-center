@@ -1,3 +1,4 @@
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
@@ -9,32 +10,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// This workspace's GitHub identity as the server reports it.
 ///
-/// Presence flags only — the private key, client secret and background PAT
-/// never leave the server.
+/// Presence flags only — the private key and client secret never leave the
+/// server.
 class WorkspaceGitHubStatusView {
   /// Creates a [WorkspaceGitHubStatusView].
-  const WorkspaceGitHubStatusView({
-    required this.app,
-    required this.mode,
-    required this.hasBackgroundPat,
-  });
+  const WorkspaceGitHubStatusView({required this.app, required this.mode});
 
   /// Decodes a `workspaceGitHub.status` payload.
   factory WorkspaceGitHubStatusView.fromJson(Map<String, dynamic> json) =>
       WorkspaceGitHubStatusView(
         app: ProviderAppStatusView.fromJson(json),
         mode: GithubAuthMode.fromWire(json['github_auth_mode'] as String?),
-        hasBackgroundPat: json['has_background_pat'] as bool? ?? false,
       );
 
-  /// App credentials for the workspace App (empty in inherit / PAT modes).
+  /// App credentials for the workspace App (empty in inherit mode).
   final ProviderAppStatusView app;
 
-  /// How this workspace authenticates to GitHub for background work.
+  /// Whether the workspace inherits the server's GitHub lane or has its own
+  /// App.
   final GithubAuthMode mode;
-
-  /// Whether a workspace background PAT is stored.
-  final bool hasBackgroundPat;
 }
 
 /// The current workspace's GitHub identity, or null when the card should not
@@ -86,12 +80,23 @@ Future<WorkspaceGitHubStatusView> testWorkspaceGitHubApp(WidgetRef ref) async {
   return WorkspaceGitHubStatusView.fromJson(data);
 }
 
-/// Stores or clears this workspace's background GitHub PAT.
-Future<void> setWorkspaceGitHubPat(WidgetRef ref, String token) async {
-  final workspaceId = ref.read(activeWorkspaceIdProvider);
-  await ref.read(rpcClientProvider).call('workspaceGitHub.setPat', {
-    'token': token,
-    ...overlayWorkspaceArgs(workspaceId),
-  });
-  ref.invalidate(workspaceGitHubStatusProvider);
-}
+/// The GitHub App setup ops (manifest, install link, installations).
+final githubAppSetupProvider = Provider<RemoteGitHubAppSetup>(
+  (ref) => RemoteGitHubAppSetup(ref.watch(rpcClientProvider)),
+);
+
+/// The installations a workspace's GitHub lane can see. Never completes
+/// with an error: a failure reads as "none yet".
+final githubInstallationsProvider =
+    FutureProvider.family<List<GitHubInstallationView>, String>((
+      ref,
+      workspaceId,
+    ) async {
+      try {
+        return await ref
+            .watch(githubAppSetupProvider)
+            .installations(workspaceId: workspaceId);
+      } on Object {
+        return const [];
+      }
+    });

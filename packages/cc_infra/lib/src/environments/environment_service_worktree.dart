@@ -319,8 +319,7 @@ mixin _WorktreeOps
     } on StateError {
       return const [];
     }
-    final result = await Process.run(
-      'git',
+    final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs([
         '-C',
         context.worktreePath,

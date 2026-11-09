@@ -2,7 +2,7 @@
 title: Wdrażanie i klienci
 description: Jak architektura cienkiego klienta w Control Center rozdziela serwer headless od klientów desktopowych, webowych i mobilnych.
 slug: pl-PL/podrecznik/koncepcje/wdrazanie
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center to nie jeden program. To **architektura cienkiego klienta**:
@@ -201,7 +201,7 @@ się wykonać. Dziś tylko prawdziwy `cc_worker` wykonuje wydzierżawione zadani
 | Wykonywanie agentów                            | uruchamia je (lub wydzierżawia) | wykonuje wydzierżawione zadania | —            | —                                |
 | Renderowanie interfejsu                        | —                          | —                            | pełne             | pełne (web) / głównie odczyt (telefon) |
 | Nagrywanie spotkań (mikrofon + dźwięk spotkania) | —                        | —                            | natywne nagrywanie | tylko web, przez dźwięk z udostępniania ekranu |
-| OAuth kalendarza (Google)                      | przechowuje tokeny         | —                            | —                 | —                                |
+| Logowania do dostawców (GitHub, Google, Linear) | prowadzi je i przechowuje | —                            | —                 | —                                |
 
 Oba poziomy nie stosują takiego samego sandboxa. `cc_server` zamyka
 uruchomienia, które wykonuje samodzielnie, w sandboxie systemu operacyjnego hosta,
@@ -214,6 +214,14 @@ egzekwuje: wydzierżawione zadanie jest uruchamiane bezpośrednio, ograniczone
 więc wykonanie poza sandbox, nawet na hoście, który go ma. Co ogranicza
 uruchomienie w każdym z tych przypadków, opisano w sekcji
 [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
+
+Logowania do dostawców kończą się na serwerze, przez jego własne aplikacje albo
+przez [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/),
+opcjonalną usługę, która prowadzi OAuth dostawców dla serwerów bez własnych
+aplikacji. Connect zwraca dane uwierzytelniające, których może użyć tylko ten
+serwer, i nigdy nie widzi zawartości repozytoriów. Klienci tylko otwierają
+przeglądarkę, a przy logowaniu przez Connect przekazują z powrotem kod, który
+ona wyświetla.
 
 Nagrywanie spotkań odbywa się po stronie klienta, bo wymaga mikrofonu i dźwięku
 spotkania — serwer stojący w szafie nie nagra Twojej rozmowy. Nagranie jest

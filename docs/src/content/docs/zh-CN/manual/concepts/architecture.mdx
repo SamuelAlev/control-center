@@ -3,7 +3,7 @@ title: 架构
 description: Control Center 如何通过瘦客户端服务器模型、以功能为先的整洁架构以及端口与适配器进行组织。
 dateModified: 2026-09-19
 slug: zh-CN/手册/概念/架构
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## 概述
@@ -113,9 +113,9 @@ Control Center 是多用户的：人和智能体是由 `Principal` 统一起来�
 **go_router**，其中有一条事实支配着其余一切：**应用内的每个目标都带有工作区前缀**，形式为 `/workspaces/:workspaceId/…`。URL 中的工作区 id 是活动工作区的唯一事实来源——`activeWorkspaceIdProvider` 由路由驱动，而不是反过来——因此在前缀路由之外读取以工作区为作用域的数据时，根本无处获取它的 id。
 
 - `router/routes.dart` 中的路由构建器是_函数_，每个都以工作区 id 作为第一个参数，而不是字符串常量
-- 有四个上下文之前的路由不带前缀：`/splash`、`/onboarding`、`/signed-out` 和 `/workspaces`（选择器）
-- `ShellRoute` 包裹应用外壳；这四个界面在它之外全屏渲染
-- 认证守卫：设置未完成会跳转到 `/onboarding`；设置已完成但代码托管凭据已失效，会跳转到 `/signed-out`。完成意味着已登录用户至少连接了一个代码托管平台，并且至少存在一个工作区——并不特指 GitHub，而且 `gh` CLI 不是一种认证方式
+- 有三个上下文之前的路由不带前缀：`/splash`、`/onboarding` 和 `/workspaces`（选择器）
+- `ShellRoute` 包裹应用外壳；这三个界面在它之外全屏渲染
+- 认证守卫：设置未完成会跳转到 `/onboarding`。设置已完成但代码托管凭据已失效的，会留在应用内，工作区外壳会显示一条附带登录链接的警告。完成意味着已登录用户至少连接了一个代码托管平台，并且至少存在一个工作区——并不特指 GitHub，而且 `gh` CLI 不是一种认证方式
 - 引导流程的门控位于 `features/auth/providers/`
 
 ## 网络（服务器端）

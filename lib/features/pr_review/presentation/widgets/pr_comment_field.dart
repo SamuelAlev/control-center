@@ -190,7 +190,7 @@ class _PrCommentFieldState extends ConsumerState<PrCommentField> {
       toolbarTrailing: [
         EmojiPopover(onEmojiSelected: _insertAtCursor),
         GifPickerPopover(
-          onGifSelected: (gif) => _insertAtCursor('![gif](${gif.url})\n'),
+          onGifSelected: (gif) => _insertAtCursor('![gif](${gif.gifUrl})\n'),
         ),
       ],
       fieldBuilder: (context) => MentionAutocompleteField(

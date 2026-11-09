@@ -29,7 +29,8 @@ class PrWorktreeService implements PrWorktreePort {
   final WorkspaceFilesystemPort _filesystem;
   final RepoIsolationPort _isolation;
   final IsolatedRepoRepository _registry;
-  final Future<String?> Function() _githubToken;
+  /// A one-repository read token for [Repo] in a workspace, or null.
+  final Future<String?> Function(String workspaceId, Repo repo) _githubToken;
   final _uuid = const Uuid();
 
   /// The registry "unit" key for a PR worktree. Encodes the repo full name and
@@ -61,11 +62,10 @@ class PrWorktreeService implements PrWorktreePort {
       await _registry.deleteById(existing.workspaceId, existing.id);
     }
 
-    final token = await _safeToken();
-    final authUrl = (repo.hasForgeRemote && token != null && token.isNotEmpty)
-        ? 'https://x-access-token:$token@github.com/$owner/$repoName.git'
+    final token = repo.hasForgeRemote
+        ? await _safeToken(workspaceId, repo)
         : null;
-    if (authUrl == null) {
+    if (token == null || token.isEmpty) {
       throw const PrWorktreeException(
         'Connect GitHub to open a pull request branch in an editor.',
       );
@@ -89,7 +89,8 @@ class PrWorktreeService implements PrWorktreePort {
         destParentDir: parentDir,
         name: dirName,
         branch: branch,
-        authUrl: authUrl,
+        fetchUrl: 'https://github.com/$owner/$repoName.git',
+        fetchToken: token,
         headRef: 'refs/pull/$prNumber/head',
       );
     } catch (e) {
@@ -143,9 +144,9 @@ class PrWorktreeService implements PrWorktreePort {
     }
   }
 
-  Future<String?> _safeToken() async {
+  Future<String?> _safeToken(String workspaceId, Repo repo) async {
     try {
-      return await _githubToken();
+      return await _githubToken(workspaceId, repo);
     } catch (_) {
       return null;
     }

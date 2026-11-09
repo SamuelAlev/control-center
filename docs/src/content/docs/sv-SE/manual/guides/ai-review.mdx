@@ -2,7 +2,7 @@
 title: Använd AI-driven granskning
 description: Kör pipelinen pr_review på en PR, läs fynden och utfallet och publicera sedan granskningen till GitHub.
 slug: sv-SE/handbok/how-to-guider/ai-granskning
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Den här guiden visar hur du låter granskaragenter granska en pull request och hur
@@ -115,14 +115,15 @@ GitHub.
 
 Control Center skickar **en** GitHub-granskning. Fynd som redan är åtgärdade eller
 avvisade hoppas över. Knappen inkluderar varje återstående öppet fynd och skickar
-`APPROVE` vid **Ship**. (MCP-verktyget `publish_review_to_github` använder
-fortfarande som standard bara kollegabekräftade fynd och godkänner inte om du inte
-skickar med `approve_on_ship`.) De som bär ett ankare till fil och rad blir
+`APPROVE` vid **Ship**. (MCP-verktyget `publish_review_to_github` använder som
+standard bara kollegabekräftade fynd och godkänner aldrig: det publicerar som
+automatisering, så `approve_on_ship` har ingen effekt där.) De som bär ett ankare till fil och rad blir
 inline-kommentarer; allt annat vävs in i sammanfattningstexten, och var och en bär
 en "— Control Center AI review"-fotnot så att källan är entydig. Ett **Block**-utfall
 skickas in som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som
 `APPROVE` från den här knappen. En toast visar sedan **Publicerad**. Granskningen
-publiceras under serverns appidentitet.
+publiceras som du, med din egen GitHub-inloggning: om du inte är inloggad på
+GitHub misslyckas publiceringen och ber dig logga in.
 
 Om GitHub avvisar ett inline-ankare för att raden inte ingår i diffen skickas hela
 granskningen om med varje fynd invävt i texten, så att inget tyst tappas bort.

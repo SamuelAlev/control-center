@@ -3,7 +3,7 @@ title: Architectuur
 description: Hoe Control Center is opgebouwd met een thin-client-servermodel, feature-first Clean Architecture en poorten en adapters.
 dateModified: 2026-09-19
 slug: nl-NL/handleiding/concepten/architectuur
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Overzicht
@@ -113,9 +113,9 @@ Beide databases zijn eigendom van `cc_persistence` en worden alleen door `cc_ser
 **go_router**, met één gegeven dat de rest bepaalt: **elke bestemming in de app krijgt een werkruimteprefix** als `/workspaces/:workspaceId/…`. Het werkruimte-id in de URL is de enige bron van waarheid voor de actieve werkruimte — `activeWorkspaceIdProvider` wordt vanuit de route aangestuurd, niet andersom — en daarom heeft het lezen van gegevens met werkruimtescope buiten een geprefixte route nergens om zijn id vandaan te halen.
 
 - Routebuilder-_functies_ in `router/routes.dart`, elk met het werkruimte-id als eerste argument, geen stringconstanten
-- Vier routes vóór de context hebben geen prefix: `/splash`, `/onboarding`, `/signed-out` en `/workspaces` (de kiezer)
-- `ShellRoute` omvat de app-shell; die vier oppervlakken renderen schermvullend daarbuiten
-- Auth-guard: een onvolledige installatie leidt naar `/onboarding`; een voltooide installatie waarvan de forge-referentie verdwenen is, leidt naar `/signed-out`. Voltooid betekent dat er voor de aangemelde gebruiker minstens één forge is gekoppeld en dat er minstens één werkruimte bestaat — niet specifiek GitHub, en de `gh`-CLI is geen authenticatiemethode
+- Drie routes vóór de context hebben geen prefix: `/splash`, `/onboarding` en `/workspaces` (de kiezer)
+- `ShellRoute` omvat de app-shell; die drie oppervlakken renderen schermvullend daarbuiten
+- Auth-guard: een onvolledige installatie leidt naar `/onboarding`; een voltooide installatie waarvan de forge-referentie verdwenen is, blijft in de app, en de werkruimte-shell toont een waarschuwing met een link naar de aanmelding. Voltooid betekent dat er voor de aangemelde gebruiker minstens één forge is gekoppeld en dat er minstens één werkruimte bestaat — niet specifiek GitHub, en de `gh`-CLI is geen authenticatiemethode
 - Onboarding-gate in `features/auth/providers/`
 
 ## Netwerken (serverzijde)

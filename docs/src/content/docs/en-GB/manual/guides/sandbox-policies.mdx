@@ -2,7 +2,7 @@
 title: Configure sandbox policies
 description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and how the action rules decide what an agent may push or reach.
 slug: en-GB/manual/guides/sandbox-policies
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Whether an agent run is sandboxed is decided on the server, at boot
@@ -73,9 +73,10 @@ approval naming the repo and the refs; under **Deny**, git prints
 
 How each rule reaches the run:
 
-- **Push** is enforced by what the run holds. Its GitHub token is a read-only
-  GitHub App installation token that can read contents and work with pull
-  requests. Its git configuration sends every GitHub push to a loopback gateway
+- **Push** is enforced by what the run holds. Its GitHub token covers the
+  run's one repository and cannot push: it can read contents and, when the
+  accountable member can push, comment on pull requests. Its git configuration
+  sends every GitHub push to a loopback gateway
   on `cc_server`, which asks the rule and only then forwards the push on a
   write token the agent never sees. The gateway forwards only to the
   worktree's own repo or a GitHub repo linked to the workspace. This holds for
@@ -91,16 +92,13 @@ How each rule reaches the run:
   **Ask first** the harness's `web_fetch` and `web_search` tools still ask per
   call. While the network is on, GitHub is always on the egress allowlist.
 
-:::caution[Without a GitHub App the push rule is advisory]
-With no GitHub App configured, the run gets the fallback personal access token,
-which cannot be narrowed to read-only. `git push` still goes through the gateway
-and the rule, but code that uses the token directly can push around it.
-Configure the GitHub App to make the rule binding.
-
-The run's GitHub credential is only ever the broker's — a repo-scoped GitHub
-App installation token, or the PAT fallback — never the requesting member's
-own stored token. The server PAT is withheld from a run acting for a member who
-is not the owner and has not connected GitHub.
+:::note[Where the run's GitHub token comes from]
+The token is minted for the run from the workspace's GitHub App, the server's
+own app, or Control Center Connect, and it is limited to what the accountable
+member (the one who asked, else the workspace owner) can do on that repository.
+It is never a member's own sign-in handed over whole, and there is no fallback
+token: when none can be minted, the run starts without one and its notes say
+why.
 :::
 
 ## Check whether your agent runs are sandboxed

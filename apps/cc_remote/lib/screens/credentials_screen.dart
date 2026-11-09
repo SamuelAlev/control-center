@@ -1,3 +1,5 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart' show SignInLaneInfo;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
@@ -36,7 +38,7 @@ class CredentialsScreen extends ConsumerWidget {
     final harness = ref.watch(remoteHarnessProvidersProvider);
     final forges = ref.watch(remoteForgeConnectionsProvider);
     final ticketing = ref.watch(remoteTicketConnectionsProvider);
-    final signIns = ref.watch(remoteSignInProvidersProvider);
+    final signIns = ref.watch(remoteSignInLanesProvider);
     final claude = owner ? ref.watch(remoteClaudeAccountsProvider) : null;
     final forgeById = {
       for (final c in forges.value ?? const <ForgeConnection>[])
@@ -45,8 +47,7 @@ class CredentialsScreen extends ConsumerWidget {
     final ticketById =
         ticketing.value ??
         const <String, ({bool connected, String username})>{};
-    final advertised =
-        signIns.value ?? const <String, ({String flow, String redirectUri})>{};
+    final lanes = signIns.value ?? const <ConnectOAuthLane, SignInLaneInfo>{};
 
     return SafeArea(
       child: ColoredBox(
@@ -151,7 +152,7 @@ class CredentialsScreen extends ConsumerWidget {
                     if (forges.hasError || signIns.hasError)
                       _loadError(context, t, l, () {
                         ref.invalidate(remoteForgeConnectionsProvider);
-                        ref.invalidate(remoteSignInProvidersProvider);
+                        ref.invalidate(remoteSignInLanesProvider);
                       }),
                     if (member && !forges.hasError && !signIns.hasError)
                       for (final forge in ForgeHost.supported)
@@ -169,13 +170,16 @@ class CredentialsScreen extends ConsumerWidget {
                             statusError: forgeById[forge.wire]?.error,
                             hostManaged:
                                 forgeById[forge.wire]?.source ==
-                                    ForgeCredentialSource.app ||
-                                forgeById[forge.wire]?.source ==
-                                    ForgeCredentialSource.environment,
+                                ForgeCredentialSource.environment,
                             canManage: member,
-                            signInFlow: advertised[forge.wire]?.flow,
-                            redirectUri:
-                                advertised[forge.wire]?.redirectUri ?? '',
+                            // GitHub is sign-in only; GitLab and Bitbucket
+                            // take a personal token.
+                            lane: forge == ForgeHost.github
+                                ? ConnectOAuthLane.github
+                                : null,
+                            laneInfo: forge == ForgeHost.github
+                                ? lanes[ConnectOAuthLane.github]
+                                : null,
                           ),
                         ),
                     const SizedBox(height: 20),
@@ -204,8 +208,8 @@ class CredentialsScreen extends ConsumerWidget {
                         connected: ticketById['linear']?.connected ?? false,
                         username: ticketById['linear']?.username ?? '',
                         canManage: member,
-                        signInFlow: advertised['linear']?.flow,
-                        redirectUri: advertised['linear']?.redirectUri ?? '',
+                        lane: ConnectOAuthLane.linear,
+                        laneInfo: lanes[ConnectOAuthLane.linear],
                       ),
                     const SizedBox(height: 16),
                     Text(

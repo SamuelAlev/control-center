@@ -214,10 +214,10 @@ abstract interface class MessagingPort {
   /// pipeline output contract.
   /// [requestedByUserId] is the human on whose behalf this run executes. It
   /// flows down to the run's environment so the agent's git commits carry an
-  /// honest co-author trailer and, when that member stored their own GitHub
-  /// token, the run uses it instead of the owner's. Programmatic callers
-  /// (pipelines, retries, plan refinement) pass null — the run then attributes
-  /// to the server owner.
+  /// honest co-author trailer, and it bounds the run's one-repository forge
+  /// tokens to that member's access. A pipeline passes its requester; null
+  /// (nobody asked) bounds the run by the workspace's accountable human,
+  /// never by the server owner.
   /// Returns the run-log id of the dispatched run (the `submit_output` /
   /// resume key), or null when the agent could not be resolved.
   Future<String?> dispatchAgent({

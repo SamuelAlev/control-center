@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Runs the platform file-manager command. Injected so revealing can be
 /// exercised in unit tests without spawning real processes.
 typedef RevealProcessRunner =
@@ -39,7 +41,7 @@ class RevealInFileManager {
   static Future<ProcessResult> _defaultRun(
     String executable,
     List<String> args,
-  ) => Process.run(executable, args);
+  ) => ChildProcess.run(executable, args, display: true);
 
   /// Reveals [path] in the OS file manager. Throws a
   /// [RevealInFileManagerException] when the path is empty, the platform is

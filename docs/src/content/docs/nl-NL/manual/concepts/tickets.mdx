@@ -2,7 +2,7 @@
 title: Tickets en delegatie
 description: Waarom een ticket werk bijhoudt zonder het te dispatchen, hoe delegatie wordt bewaakt en wat de leveranciersspiegel wel en niet bezit.
 slug: nl-NL/handleiding/concepten/tickets
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Een ticket is de werkeenheid die Control Center bijhoudt. Het is met opzet een
@@ -143,10 +143,11 @@ lokaal**, dus een ticket dat door een leverancier wordt ondersteund en dat je
 verwijdert, wordt niet op de tracker verwijderd en kan bij de volgende
 synchronisatie weer opduiken. Medewerkers en kindtickets worden mee verwijderd.
 
-De inloggegevens van adapters worden opgehaald uit de inloggegevensopslag van de
-server (een Linear-sleutel of GitHub-token die je in Instellingen plakt, wordt
-bij het volgende verzoek opgepikt; de omgeving levert alleen de beginvulling
-voor die opslag).
+De inloggegevens van adapters worden per aanroep op de server bepaald: de eigen
+Linear- of GitHub-aanmelding van een persoon voor wat die doet, en voor
+ticketsynchronisatie de Linear-automatisering van de werkruimte (of de
+Linear-servicesleutel van de server) of een GitHub-token voor één repository.
+Een nieuwe aanmelding wordt bij het volgende verzoek opgepikt.
 
 ## Tickets en pipelines
 

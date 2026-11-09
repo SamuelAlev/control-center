@@ -1,0 +1,174 @@
+---
+title: Referens för Control Center Connect
+description: Vad Connect ser och aldrig ser, de tre lägena, installationsidentitet, förseglade inloggningsuppgifter, förtroende för konfigurationen och varje inställning, åtgärd och statuskod.
+slug: sv-SE/handbok/referens/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect kör leverantörsinloggningar för servrar som inte har
+registrerat egna appar. En server använder antingen Control Centers hostade
+Connect, en Connect som organisationen kör
+([Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)),
+eller ingen alls. Valet görs under **Inställningar → Server → Enkel inloggning →
+Control Center Connect**, med `cc_server connect` eller med `CC_CONNECT_URL`.
+
+## Spår
+
+Under **Använd mina egna appar** (eller innan någon har valt) körs ett spår på serverns egen app när en sådan är fullständigt konfigurerad, annars är det otillgängligt. Med Control Center Connect eller en egen Connect betjänar Connect varje spår det hanterar: serverns egna appar förblir sparade men används inte, varken för inloggningar, serverautomatisering eller den status servern rapporterar. En arbetsytas egna app vinner i varje läge.
+
+| Spår         | En egen app behöver                              | Via Connect                                                    |
+| ------------ | ------------------------------------------------ | -------------------------------------------------------------- |
+| `github`     | App-ID, privat nyckel, klient-ID och klienthemlighet | Personer loggar in i den delade GitHub-appen               |
+| `google`     | Klient-ID och klienthemlighet                    | Personer ansluter Google Calendar                              |
+| `linear`     | Klient-ID                                        | Personer loggar in på Linear                                   |
+| `linear_app` | Klient-ID                                        | En administratör för arbetsytan ansluter Linears appaktör      |
+| `slack`      | En arbetsytas egen anslutning till en Slack-app  | En administratör för arbetsytan ansluter Slack till den delade Slack-appen |
+| `klipy`      | `KLIPY_APP_KEY`                                  | GIF-sökning, med Connect som proxy                             |
+
+En egen app som bara är delvis konfigurerad gör sitt spår till ett fel, aldrig
+till en tyst återgång till Connect. En arbetsyta som använder sin egen GitHub App
+(**Inställningar → Arbetsyta → Allmänt → GitHub-identitet**) går aldrig via
+Connect för GitHub, och en som använder sin egen Google-, Linear- eller Klipy-app (**Inställningar → Arbetsyta → Allmänt → Leverantörsappar**) går aldrig via serverns app eller Connect för den leverantören. Byte av Connect-valet loggar ingen ut från en arbetsytas egna app.
+
+## Vad Connect ser och aldrig ser
+
+| Connect ser                                                                                   | Connect ser aldrig                                                    |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Serverns installations-id och begärandesignaturer                                             | Källkod, repoinnehåll, diffar eller text i pull requests              |
+| Leverantörskontot som loggade in, under inloggningen                                          | Ärenden, transkript eller något i en arbetsytas databas               |
+| Vilken arbetsyta en inloggningsuppgift tillhör, som ett ogenomskinligt id inuti sigillet      | En privat nyckel för en GitHub App: repotoken kommer från en persons inloggning |
+| Repot som en GitHub-token för ett enda repo utfärdas för                                      | Uppdateringstoken i vila: de finns bara inuti sigill som servern behåller |
+| GitHub-installations-id:n som är bundna till servern                                          | Linear-hemligheter: servern byter själv Linears kod                   |
+| GIF-söktermer, när den är proxy för Klipy                                                     | Lösenord, parkopplingsnycklar eller nycklar till modelleverantörer    |
+| Referenser till Slack-händelser (team, kanal, meddelande-id) och text i slash-kommandon       | Text i Slack-meddelanden: Connect släpper den när den kommer in, och servern läser meddelandet direkt från Slack |
+
+Connect behåller kortlivat tillstånd (påbörjade inloggningar, nonces, cachar) i
+högst 15 minuter. Dess enda varaktiga poster är installationsbindningar: vilka
+servrar som får använda vilken GitHub-installation, och vilken server varje
+Slack-team är bundet till. Fel bär en kod, aldrig leverantörens svar, och
+loggarna registrerar installations-id:n bara som nyckelade hashar.
+
+## Lägen
+
+| Läge     | Inställning                       | Beteende                                                                                                 |
+| -------- | --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Ej angivet | Ny server                       | Inget spår använder Connect. Introduktionen ber serverns ägare att välja                                 |
+| `hosted` | **Använd Control Centers appar**  | `https://connect.usectrl.dev`, med en konfiguration som signerats offline. Serverns egna appar används inte                                |
+| `custom` | **Använd en egen Connect-server** | En Connect på en HTTPS-URL (`http` bara på loopback), betrodd vid första användningen. Serverns egna appar används inte                   |
+| `off`    | **Använd mina egna appar**        | Inget spår använder Connect. Bara egna appar loggar in personer                                          |
+
+`CC_CONNECT_URL` i serverns miljö eller `.env` låser valet: `hosted`, `off` eller
+en Connect-URL. Inställningarna visar då låset och kan inte ändra det.
+
+Den här byggnaden har ingen nyckel för den hostade konfigurationen inkompilerad,
+så hostat läge rapporterar `hosted_unprovisioned` och betjänar inget spår. Egna
+appar och en egen Connect fungerar.
+
+En server läser Connects konfiguration högst var 10:e minut och väntar högst 5
+sekunder på varje anrop. När Connect inte går att nå används den senaste
+fungerande konfigurationen, och inställningarna markerar den som inaktuell.
+
+## Installationsidentitet
+
+| Post                 | Vad det är                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Installationsnyckel  | Ett frö på 32 byte i serverns hemlighetsfil (`connect_install_key`), skilt från nycklarna för enhetsparkoppling   |
+| Nyckel per Connect   | En Ed25519-nyckel härledd från fröet och Connects adress. Varje begäran till Connect signeras med den (RFC 9421) |
+| Installations-id     | 26 tecken härledda från den publika nyckeln. Visas i inställningarna och av `cc_server connect status`           |
+
+Samma server har ett annat installations-id för varje Connect-adress. Id:t
+ändras bara när nyckeln byts.
+
+## Förseglade inloggningsuppgifter
+
+En inloggning via Connect returnerar ett **sigill för inloggningsuppgiften**: en
+krypterad blob som bara den Connect som skapade den kan öppna. Den är bunden till
+leverantören, Connect-adressen, installations-id:t, arbetsytan,
+leverantörskontot, appen och hemlighetens generation.
+
+- Servern lagrar sigillet och installations-id:t det förseglades för.
+  Åtkomsttoken stannar i minnet
+- För att förnya skickar servern tillbaka sigillet och får en ny åtkomsttoken och
+  ett nytt sigill
+- Ett sigill vars installations-id eller Connect-adress inte längre stämmer tas
+  bort nästa gång det läses, och den personen loggar in igen. Det händer efter ett
+  nyckelbyte, ett byte till en annan Connect, eller en datakatalog som
+  återställts på en annan server
+- Ett sigill som Connect inte kan öppna avvisas med `access_denied`
+
+## GitHub-installationer
+
+En installation av den delade GitHub-appen kan bara användas av en server när
+Connect har bundit den till serverns installations-id.
+
+- **Installera GitHub-appen** under **Inställningar → Arbetsyta → Allmänt**
+  öppnar GitHub med en biljett som gäller i 15 minuter. Connect binder den nya
+  installationen när den som installerar äger det personliga kontot eller
+  administrerar organisationen
+- **Auktorisera den här servern** binder en installation som redan finns. Bara
+  en administratör för organisationen kan göra det
+- En organisationsinstallation kan bindas till flera servrar; var och en behöver
+  en administratörs auktorisering
+
+## Förtroende för konfigurationen
+
+| Connect | Hur servern litar på dess konfiguration                                                                                                   |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Hostad  | Verifierar en Ed25519-signatur mot nycklar som är inkompilerade i byggnaden. Avvisar en epok som är lägre än den högsta den har sett (`rollback`) |
+| Egen    | Låser GitHub-appens app-ID och klient-ID, klient-id:na för Google och Linear, och Slack-appens app- och klient-id:n vid första användningen. En ändring pausar Connect-inloggningar (`pins_changed`) tills serverns ägare trycker på **Lita på nya appar** |
+
+## Åtgärder
+
+Alla Connect-inställningar är bara för serverns ägare.
+
+| Åtgärd                | Gör                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `connect.status`      | Läge, URL, lås, installations-id, hälsa, konfigurationens epok och varje spårs källa   |
+| `connect.configure`   | Anger `hosted`, `custom` (med `url`) eller `off`                                       |
+| `connect.test`        | Hämtar konfigurationen igen och rapporterar hälsan                                     |
+| `connect.confirmPins` | Godtar en egen Connects ändrade identifierare                                          |
+| `connect.rotateKey`   | Skapar en ny installationsnyckel. Varje inloggning via Connect på den här servern slutar fungera |
+
+Själva inloggningarna använder `oauth.lanes`, `oauth.begin`, `oauth.status`,
+`oauth.complete`, `oauth.connections` och `oauth.disconnect`. Personen är alltid
+den inloggade anroparen.
+
+## Inloggning via Connect
+
+1. Servern ber Connect att starta spåret och får leverantörens
+   auktoriserings-URL, som den kontrollerar innan den visar den
+2. Personen godkänner i webbläsaren. Leverantören återvänder till Connect
+3. Connect visar en kod på 8 tecken och en länk `control-center://oauth-done`
+4. Personen skriver in koden i appen eller följer länken. Servern hämtar
+   inloggningen med koden och sitt eget bevis på begäran
+
+En inloggning går ut efter 10 minuter. Fem felaktiga koder avslutar den. En länk
+som den här appen inte startade avvisas med **Inloggningen startades inte här**.
+
+## Byt installationsnyckeln
+
+**Byt nyckel** på Connect-kortet, eller `cc_server connect rotate-key --yes`:
+
+- Ger servern en ny installationsnyckel och ett nytt installations-id
+- Loggar ut alla från varje spår som körs via Connect
+- Lämnar inloggningar via serverns egna appar orörda
+- Kräver att det nya installations-id:t läggs till i en egen Connects
+  tillåtelselista
+
+## Statuskoder
+
+| Kod                    | Betydelse                                                            |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Den här byggnaden har ingen nyckel för den hostade konfigurationen   |
+| `signature`            | Den hostade konfigurationen klarade inte signaturkontrollen          |
+| `rollback`             | Connect serverade en äldre konfiguration än servern redan har sett   |
+| `unreachable`          | Servern kan inte nå Connect                                          |
+| `install_blocked`      | Connect tillåter inte det här installations-id:t                     |
+| `pins_changed`         | En egen Connect annonserade andra app-identifierare                  |
+| `protocol`             | Connect svarade i en form som den här servern inte förstår           |
+
+## Relaterat
+
+- [Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)
+- [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)
+- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/)

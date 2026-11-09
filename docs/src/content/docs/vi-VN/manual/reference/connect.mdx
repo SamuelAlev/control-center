@@ -1,0 +1,161 @@
+---
+title: Tham chiếu Control Center Connect
+description: Connect thấy gì và không bao giờ thấy gì, ba chế độ, danh tính cài đặt, niêm phong thông tin xác thực, tin cậy cấu hình và mọi cài đặt, thao tác cùng mã trạng thái.
+slug: vi-VN/so-tay/tham-chieu/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect chạy các đăng nhập nhà cung cấp cho những máy chủ chưa đăng ký ứng
+dụng riêng. Một máy chủ hoặc dùng Connect do Control Center lưu trữ, hoặc một Connect do một
+tổ chức vận hành ([Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/)),
+hoặc không dùng gì. Lựa chọn nằm trong **Cài đặt → Máy chủ → Đăng nhập một lần → Control
+Center Connect**, lệnh `cc_server connect`, hoặc `CC_CONNECT_URL`.
+
+## Làn
+
+Dưới **Dùng ứng dụng của riêng tôi** (hoặc trước khi ai đó chọn), một làn chạy trên ứng dụng của máy chủ khi ứng dụng đó đã được cấu hình đầy đủ, nếu không thì không khả dụng. Với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn mà nó phục vụ: ứng dụng riêng của máy chủ vẫn được lưu nhưng không được dùng, cho đăng nhập, tự động hóa máy chủ hay trạng thái máy chủ báo cáo. Ứng dụng riêng của không gian làm việc thắng ở mọi chế độ.
+
+| Làn          | Ứng dụng riêng cần                              | Qua Connect                                               |
+| ------------ | ----------------------------------------------- | --------------------------------------------------------- |
+| `github`     | Id app, khóa riêng, id client và bí mật client  | Người dùng đăng nhập vào GitHub App dùng chung            |
+| `google`     | Id client và bí mật client                      | Người dùng kết nối Google Calendar                        |
+| `linear`     | Id client                                       | Người dùng đăng nhập vào Linear                           |
+| `linear_app` | Id client                                       | Quản trị viên không gian làm việc kết nối tác nhân Linear của app |
+| `slack`      | Kết nối app Slack riêng của một không gian làm việc | Quản trị viên không gian làm việc kết nối Slack vào app Slack dùng chung |
+| `klipy`      | `KLIPY_APP_KEY`                                 | Tìm GIF, được Connect proxy                               |
+
+Một ứng dụng riêng chỉ cấu hình dở dang sẽ biến làn của nó thành lỗi, không bao giờ âm thầm
+rơi về Connect. Một không gian làm việc dùng GitHub App riêng (**Cài đặt → Không gian làm việc →
+Chung → Danh tính GitHub**) không bao giờ đi qua Connect cho GitHub, và một không gian làm việc dùng ứng dụng Google, Linear hoặc Klipy riêng (**Cài đặt → Không gian làm việc → Chung → Ứng dụng nhà cung cấp**) không bao giờ đi qua ứng dụng của máy chủ hay Connect cho nhà cung cấp đó. Việc đổi lựa chọn Connect không đăng xuất ai khỏi ứng dụng riêng của không gian làm việc.
+
+## Connect thấy gì và không bao giờ thấy gì
+
+| Connect thấy                                                                                  | Connect không bao giờ thấy                                            |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Id cài đặt của máy chủ và chữ ký yêu cầu                                                     | Mã nguồn, nội dung kho mã, diff hay văn bản pull request              |
+| Tài khoản nhà cung cấp đã đăng nhập, trong lúc đăng nhập                                     | Phiếu, bản ghi hội thoại hay bất cứ thứ gì trong cơ sở dữ liệu không gian làm việc |
+| Thông tin xác thực thuộc về không gian làm việc nào, dưới dạng id mờ bên trong niêm phong    | Khóa riêng của GitHub App: token kho mã đến từ đăng nhập của một người |
+| Kho mã mà một token GitHub một-kho được cấp cho                                               | Refresh token ở trạng thái lưu trữ: chúng chỉ tồn tại bên trong niêm phong mà máy chủ giữ |
+| Id cài đặt GitHub gắn với máy chủ                                                             | Bí mật Linear: máy chủ tự đổi mã của Linear                           |
+| Từ khóa tìm GIF, khi nó proxy Klipy                                                           | Mật khẩu, khóa ghép nối hay khóa nhà cung cấp mô hình                 |
+| Tham chiếu sự kiện Slack (team, kênh, id tin nhắn) và văn bản lệnh slash                     | Nội dung tin nhắn Slack: Connect bỏ nó ngay khi nhận, và máy chủ tự đọc tin nhắn từ Slack |
+
+Connect giữ trạng thái ngắn hạn (đăng nhập đang chờ, nonce, bộ nhớ đệm) tối đa 15 phút. Các bản
+ghi lâu dài duy nhất của nó là ràng buộc cài đặt: máy chủ nào được dùng cài đặt GitHub nào, và
+mỗi đội Slack được gắn với máy chủ nào. Lỗi mang theo một mã, không bao giờ mang phản hồi của
+nhà cung cấp, và nhật ký chỉ ghi id cài đặt dưới dạng băm có khóa.
+
+## Chế độ
+
+| Chế độ   | Cài đặt                       | Hành vi                                                                                                  |
+| -------- | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Chưa đặt | Máy chủ mới                   | Không làn nào dùng Connect. Phần thiết lập ban đầu yêu cầu chủ máy chủ chọn                              |
+| `hosted` | **Dùng ứng dụng của Control Center** | `https://connect.usectrl.dev`, với cấu hình đã ký offline. Ứng dụng riêng của máy chủ không được dùng                                          |
+| `custom` | **Dùng máy chủ Connect tùy chỉnh** | Một Connect tại URL HTTPS (chỉ `http` trên loopback), được tin cậy ở lần dùng đầu tiên. Ứng dụng riêng của máy chủ không được dùng              |
+| `off`    | **Dùng ứng dụng của riêng tôi** | Không làn nào dùng Connect. Chỉ các ứng dụng riêng mới đăng nhập được người dùng                          |
+
+`CC_CONNECT_URL` trong môi trường hoặc `.env` của máy chủ sẽ khóa lựa chọn: `hosted`, `off`, hoặc
+một URL Connect. Khi đó Cài đặt hiển thị khóa và không thể đổi nó.
+
+Bản dựng này không mang khóa cấu hình hosted nào, nên chế độ hosted báo `hosted_unprovisioned`
+và không phục vụ làn nào. Ứng dụng riêng và Connect tùy chỉnh vẫn hoạt động.
+
+Một máy chủ đọc cấu hình của Connect tối đa mỗi 10 phút và chờ tối đa 5 giây cho mỗi lệnh gọi.
+Khi không liên lạc được với Connect, cấu hình tốt gần nhất vẫn được dùng và Cài đặt đánh dấu nó
+là cũ.
+
+## Danh tính cài đặt
+
+| Mục             | Đó là gì                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Khóa cài đặt    | Một hạt giống 32 byte trong tệp secret của máy chủ (`connect_install_key`), tách biệt với khóa ghép nối thiết bị    |
+| Khóa theo Connect | Một khóa Ed25519 suy ra từ hạt giống và địa chỉ của Connect. Mọi yêu cầu gửi tới Connect đều được ký bằng nó (RFC 9421) |
+| Id cài đặt      | 26 ký tự suy ra từ khóa công khai đó. Hiển thị trong Cài đặt và bởi `cc_server connect status`                       |
+
+Cùng một máy chủ có id cài đặt khác nhau cho mỗi địa chỉ Connect. Id chỉ đổi khi khóa được xoay.
+
+## Niêm phong thông tin xác thực
+
+Một đăng nhập qua Connect trả về một **niêm phong thông tin xác thực**: một khối đã mã hóa mà chỉ
+Connect đã tạo ra nó mới mở được. Nó ràng buộc với nhà cung cấp, địa chỉ Connect, id cài đặt, không
+gian làm việc, tài khoản nhà cung cấp, ứng dụng và thế hệ secret.
+
+- Máy chủ lưu niêm phong và id cài đặt mà nó được tạo cho. Access token nằm trong bộ nhớ
+- Để làm mới, máy chủ gửi niêm phong trở lại và nhận một access token mới cùng một niêm phong mới
+- Một niêm phong có id cài đặt hoặc địa chỉ Connect không còn khớp sẽ bị xóa ở lần đọc tiếp theo,
+  và chủ của nó đăng nhập lại. Điều này xảy ra sau khi xoay khóa, khi chuyển sang Connect khác, hoặc
+  khi một thư mục dữ liệu được khôi phục sang một máy chủ khác
+- Một niêm phong mà Connect không mở được sẽ bị từ chối với `access_denied`
+
+## Cài đặt GitHub
+
+Một cài đặt của GitHub App dùng chung chỉ được một máy chủ sử dụng khi Connect đã ràng buộc nó
+với id cài đặt của máy chủ đó.
+
+- **Cài GitHub App** trong **Cài đặt → Không gian làm việc → Chung** mở GitHub với một vé 15 phút.
+  Connect ràng buộc cài đặt mới khi người cài sở hữu tài khoản cá nhân hoặc quản trị tổ chức
+- **Ủy quyền máy chủ này** ràng buộc một cài đặt đã tồn tại. Chỉ quản trị viên tổ chức mới làm
+  được việc này
+- Một cài đặt của tổ chức có thể được ràng buộc với nhiều máy chủ; mỗi máy chủ cần quản trị viên
+  ủy quyền
+
+## Tin cậy cấu hình
+
+| Connect | Cách máy chủ tin cậy cấu hình của nó                                                                                                                                                                                  |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosted  | Xác minh chữ ký Ed25519 bằng các khóa được biên dịch vào bản dựng. Từ chối một epoch thấp hơn epoch cao nhất mà nó đã thấy (`rollback`)                                                                                  |
+| Custom  | Ghim id GitHub app và id client, id client Google và Linear, cùng id app và client Slack ở lần dùng đầu tiên. Một thay đổi sẽ tạm dừng đăng nhập qua Connect (`pins_changed`) cho đến khi chủ máy chủ nhấn **Tin tưởng ứng dụng mới** |
+
+## Thao tác
+
+Mọi cài đặt Connect chỉ dành cho chủ máy chủ.
+
+| Thao tác              | Làm gì                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `connect.status`      | Chế độ, URL, khóa, id cài đặt, tình trạng, epoch cấu hình và nguồn của từng làn               |
+| `connect.configure`   | Đặt `hosted`, `custom` (kèm `url`) hoặc `off`                                                |
+| `connect.test`        | Tải lại cấu hình và báo tình trạng                                                           |
+| `connect.confirmPins` | Chấp nhận các định danh đã thay đổi của một Connect tùy chỉnh                                 |
+| `connect.rotateKey`   | Tạo khóa cài đặt mới. Mọi đăng nhập qua Connect trên máy chủ này sẽ ngừng hoạt động          |
+
+Chính các đăng nhập dùng `oauth.lanes`, `oauth.begin`, `oauth.status`, `oauth.complete`,
+`oauth.connections` và `oauth.disconnect`. Người đăng nhập luôn là người gọi.
+
+## Đăng nhập qua Connect
+
+1. Máy chủ yêu cầu Connect khởi động làn và nhận URL ủy quyền của nhà cung cấp, rồi kiểm tra
+   URL đó trước khi hiển thị
+2. Người dùng phê duyệt trong trình duyệt. Nhà cung cấp đưa trình duyệt quay về Connect
+3. Connect hiển thị một mã gồm 8 ký tự và liên kết `control-center://oauth-done`
+4. Người dùng gõ mã vào ứng dụng, hoặc nhấp liên kết. Máy chủ nhận đăng nhập bằng mã đó cùng
+   bằng chứng riêng của nó về yêu cầu
+
+Một đăng nhập hết hạn sau 10 phút. Năm mã sai sẽ kết thúc nó. Một liên kết mà ứng dụng này không
+khởi tạo sẽ bị từ chối với **Đăng nhập không bắt đầu từ đây**.
+
+## Xoay khóa cài đặt
+
+**Xoay khóa** trên thẻ Connect, hoặc `cc_server connect rotate-key --yes`:
+
+- Cấp cho máy chủ một khóa cài đặt mới và một id cài đặt mới
+- Đăng xuất mọi người khỏi mọi làn chạy qua Connect
+- Không ảnh hưởng đến các đăng nhập qua ứng dụng riêng của máy chủ
+- Cần thêm id cài đặt mới vào danh sách cho phép của một Connect tùy chỉnh
+
+## Mã trạng thái
+
+| Mã                     | Ý nghĩa                                                              |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Bản dựng này không có khóa cấu hình hosted                           |
+| `signature`            | Cấu hình hosted không vượt qua kiểm tra chữ ký                       |
+| `rollback`             | Connect đã phục vụ một cấu hình cũ hơn cấu hình máy chủ đã thấy       |
+| `unreachable`          | Máy chủ không liên lạc được với Connect                              |
+| `install_blocked`      | Connect không cho phép id cài đặt này                                |
+| `pins_changed`         | Một Connect tùy chỉnh đã công bố các định danh ứng dụng khác          |
+| `protocol`             | Connect trả lời theo một dạng mà máy chủ này không hiểu              |
+
+## Liên quan
+
+- [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/)
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+- [Lệnh `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/)

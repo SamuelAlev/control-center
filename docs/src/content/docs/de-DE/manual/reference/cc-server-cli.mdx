@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Jedes Flag, jede Umgebungsvariable, jeder Unterbefehl und jeder Pfad im Datenverzeichnis des Headless-Servers.
 slug: de-DE/handbuch/referenz/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Jedes Prozess-Flag lässt sich als CLI-Flag oder als Umgebungsvariable setzen; das
-Flag gewinnt, dann die Umgebung, dann die Vorgabe. Zugangsdaten Dritter sind die
-Ausnahme — siehe unten.
+Flag gewinnt, dann die Umgebung, dann die Vorgabe. Zugangsdaten der Anbieter sind
+die Ausnahme — siehe [Anbieter-Apps und Connect](#anbieter-apps-und-connect).
 
 :::caution[Unbekannte Flags werden stillschweigend ignoriert]
 Der Argument-Parser ist von Hand geschrieben und überspringt alles, was er
@@ -44,7 +44,7 @@ Zeilen des Startlogs, wenn ein Flag keine Wirkung zu haben scheint.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | nicht gesetzt                 | Erwarteter SHA-256 dieser Binärdatei, vor jedem Start geprüft                                                                                                      |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | leer                          | Kommagetrennte zusätzliche Argumente für den Tunnel-Aufruf                                                                                                         |
 
-## Indexierung und Zugangsdaten Dritter
+## Indexierung und Laufzeit
 
 | Flag                     | Umgebung                        | Vorgabe                               | Bedeutung                                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +54,45 @@ Zeilen des Startlogs, wenn ein Flag keine Wirkung zu haben scheint.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Ob Harness-Läufe eine kleine residente Tool-Menge plus einen Namensindex schicken und den Rest beim ersten Gebrauch laden. Siehe unten |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Sekunden, die ein Lauf geparkt wartet, bis ein Mensch Zugangsdaten richtet, die ihn nicht bedienen können (begrenzt auf 0–3600). Siehe unten |
 
-Ein leerer Wert für Zugangsdaten gilt als nicht gesetzt, der eingebaute Fallback
-greift also weiter. Ein Build aus dem Quellcode bringt überhaupt keine
-eingebauten Zugangsdaten mit.
+## Anbieter-Apps und Connect
 
-Google Calendar und die GIF-Auswahl von Klipy gibt es **nur über die Umgebung**
-— ein Flag `--google-client-id` / `--klipy-app-key` gibt es nicht (unbekannte
-Flags werden ignoriert). Setze `GOOGLE_OAUTH_CLIENT_ID` +
-`GOOGLE_OAUTH_CLIENT_SECRET` und `KLIPY_APP_KEY` in der Umgebung (oder in einer
-`.env` neben dem Server). Leer schaltet die Funktion ab, statt den Start
-scheitern zu lassen.
+Kein Build bringt Zugangsdaten von Anbietern mit. Mit eingeschaltetem Control
+Center Connect läuft jeder Anbieter über Connect, und diese eigenen Apps bleiben
+gespeichert, aber ungenutzt. Unter **Eigene Apps verwenden** läuft jeder Anbieter
+über die eigene App des Servers, wenn sie vollständig konfiguriert ist, sonst ist
+er nicht verfügbar. Eine eigene App des Arbeitsbereichs gilt in beiden Fällen.
+Eigene Apps setzt du unter **Einstellungen → Server → Single sign-on →
+Anbieter-Apps**, oder sie werden einmalig aus der `.env`-Datei des Servers
+belegt. Flags gibt es dafür nicht: Ein Secret auf der Befehlszeile lässt sich
+über `ps` lesen.
+
+| Variable                       | Bedeutung                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Die ID der GitHub App des Servers                                                             |
+| `GITHUB_APP_PRIVATE_KEY`       | Ihr privater Schlüssel, in einer Zeile mit `\n`-Escapes. **Nur `.env`**                       |
+| `GITHUB_CLIENT_ID`             | Ihre Client-ID, für die Anmeldung von Personen                                                |
+| `GITHUB_CLIENT_SECRET`         | Ihr Client-Secret. **Nur `.env`**                                                             |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Der Google-Client des Servers vom Typ Webanwendung                                            |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Sein Secret. **Nur `.env`**                                                                   |
+| `LINEAR_CLIENT_ID`             | Die Linear-Anwendung des Servers (PKCE, ohne Secret)                                          |
+| `LINEAR_API_KEY`               | Ein Linear-Dienstschlüssel für Automatisierung. **Nur `.env`**                                |
+| `KLIPY_APP_KEY`                | Der eigene Klipy-Schlüssel des Servers für die GIF-Suche, nur unter **Eigene Apps verwenden** genutzt |
+| `CC_CONNECT_URL`               | `hosted`, `off` oder eine Connect-URL. Legt die Connect-Wahl fest; die Einstellungen können sie dann nicht ändern |
+| `CC_SERVER_CONNECT_HOST`       | `on` hängt Control Center Connect unter `<server>/connect` ein, konfiguriert über die Variablen `CONNECT_*`. Siehe [Einen Connect-Server betreiben](/de-DE/handbuch/anleitungen/connect-server-betreiben/#connect-in-cc_server-einhängen) |
+
+Die `.env`-Datei wird aus dem Arbeitsverzeichnis des Servers gelesen, neben der
+ausführbaren Datei oder aus einem Quell-Checkout darüber; in Docker hängst du sie
+unter `/app/bin/.env` ein. Der Server **verweigert den Start** (Exit-Code `78`),
+wenn `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` oder irgendein `SLACK_*SECRET*` in
+seiner Prozessumgebung exportiert ist, wo jeder Kindprozess es lesen könnte. Das
+Belegen aus der `.env` passiert einmal je Feld, eine spätere Änderung in den
+Einstellungen macht ein Neustart also nicht rückgängig. Ein leerer Wert gilt als
+nicht gesetzt.
+
+Hintergrundarbeit für GitLab und Bitbucket liest außerdem `GITLAB_TOKEN` /
+`CI_JOB_TOKEN` und `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` mit
+`BITBUCKET_EMAIL`. Für GitHub gibt es kein Zugangsdatum aus der Umgebung.
 
 ### `--sandbox`
 
@@ -121,7 +150,7 @@ schlechte Zugangsdaten beenden den Turn genau so wie vor dem Gate.
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Führt den Server, bis `SIGINT`/`SIGTERM` kommt                                                                                   |
 | `cc_server pair`                              | Stellt ein Gerät bereit und gibt seine ID und den Kopplungsschlüssel aus. Gefahrlos auch für ein Datenverzeichnis, das ein Server schon bedient — der laufende Server nimmt das Gerät ohne Neustart auf |
-| `cc_server calendar connect --workspace <id>` | Verbindet ein Google-Konto über den Device-Code-Flow mit einem Arbeitsbereich und beendet sich                                   |
+| `cc_server connect <command>`                 | Zeigt oder ändert, welches Control Center Connect dieser Server nutzt, ohne ihn zu starten                                       |
 | `cc_server update`                            | Prüft auf ein neueres eigenständiges Release, lädt es herunter und verifiziert es                                                |
 | `cc_server --version`                         | Gibt die Build-Version und den Git-SHA aus — dieselbe Identität, die `/healthz` und der RPC-Handshake bekannt geben              |
 
@@ -149,6 +178,26 @@ vollständigen Verbindungsdeskriptor des Servers plus einem Ablaufdatum. Die
 beiden sind nicht austauschbar — siehe
 [Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/).
 :::
+
+### `connect`
+
+Liest und schreibt dieselben Einstellungen wie die Karte **Control Center
+Connect** unter **Einstellungen → Server → Single sign-on**, aus dem
+Datenverzeichnis. Ein laufender Server übernimmt eine Änderung innerhalb von
+10 Minuten oder beim Neustart.
+
+| Befehl                          | Wirkung                                                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Gibt Modus, URL, ob `CC_CONNECT_URL` ihn festlegt, die Installations-ID, den Zustand und die Quelle jeder Spur (`own`, `connect` oder `off`) aus |
+| `cc_server connect enable`      | Nutzt das gehostete Connect von Control Center                                                                   |
+| `cc_server connect enable --url <url>` | Nutzt ein eigenes Connect unter dieser URL (HTTPS, oder `http` auf Loopback)                              |
+| `cc_server connect disable`     | Hört auf, Connect zu nutzen. Nur die eigenen Apps des Servers melden Personen an                                 |
+| `cc_server connect rotate-key --yes` | Erzeugt einen neuen Installationsschlüssel und eine neue Installations-ID. Alle, die sich über Connect angemeldet haben, melden sich erneut an. Ohne `--yes` warnt es nur und endet mit `2` |
+
+`status` ohne Befehl ist die Vorgabe. Jeder Befehl nimmt `--data-dir`.
+`CC_CONNECT_URL` überstimmt, was diese Befehle speichern. Ein unbekannter Befehl
+endet mit `64`. Modi, Installationsidentität und Statuscodes stehen unter
+[Control Center Connect](/de-DE/handbuch/referenz/connect/).
 
 ### `update`
 
@@ -195,7 +244,7 @@ lässt.
 | `global.db`                       | Die Registrierung der Arbeitsbereiche, die Benutzer, die gekoppelten Geräte, der Newsfeed und die Warteschlange der Flotte |
 | `<workspaceId>/workspace.db`      | Eine Datenbank je Arbeitsbereich — Agenten, Bereiche, Tickets, Gedächtnis, der Code-Graph  |
 | `<workspaceId>/chat_credentials/` | Token der Chatbots, als einfaches JSON, damit sie mit dem Arbeitsbereich mitgehen          |
-| `secrets.json`                    | Kopplungsschlüssel, die App-Identität des Anbieters, Token je Benutzer und von Google, SSO (`0600`) |
+| `secrets.json`                    | Kopplungsschlüssel, der Installationsschlüssel für Connect, Anbieter-Apps, die Anmeldungen der Personen (versiegelt, wenn über Connect erfolgt), SSO (`0600`) |
 | `backups/<timestamp>/`            | Ein Installations-Snapshot — `manifest.json`, `global.db` und eine Kopie jedes Arbeitsbereichs |
 | `backups/exports/`                | Exporte einzelner Arbeitsbereiche, `<workspaceId>-<timestamp>.db`                           |
 | `backups/transfer/`               | Zwischenlager für Backup-Downloads und -Uploads; aufgeräumt von der Route, die hineinschreibt |

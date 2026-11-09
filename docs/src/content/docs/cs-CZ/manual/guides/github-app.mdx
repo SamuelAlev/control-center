@@ -1,204 +1,196 @@
 ---
 title: Vytvořte GitHub App
-description: Zaregistruj pro svůj server GitHub App, aby se členové mohli přihlásit a aby práce na pozadí běžela jako aplikace, ne jako člověk.
+description: Dej svému serveru vlastní GitHub App jedním kliknutím, nainstaluj ji tam, kde máš repozitáře, a autorizuj server pro instalaci v organizaci.
 slug: cs-CZ/prirucka/navody/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Tenhle návod ukáže, jak serveru dát vlastní identitu na GitHubu. Zabere to
-asi dvě minuty, dělá to jen vlastník serveru a na každý server stačí jednou.
+Tenhle návod ukáže, jak serveru dát vlastní GitHub App. Zabere to asi dvě
+minuty, dělá to jen vlastník serveru a na každý server stačí jednou.
 
 :::note[Možná ji nepotřebuješ]
-Oficiální vydání už vozí GitHub **client id**, takže
-[Přihlásit se přes GitHub](/cs-CZ/prirucka/navody/integrace-github/) funguje hned
-a nic neregistruješ. Device flow se ověřuje jen tím client id, a proto ho lze
-bezpečně přibalit do sestavení. Vlastní aplikaci registruj, když chceš, aby
-**server** jednal sám za sebe (webhooky, dotazování na PR a synchronizace
-ticketů na instalaci aplikace, ne na přihlašovacím údaji člověka), nebo když
-stavíš ze zdrojového kódu.
+Se zapnutým Control Center Connect se lidé ke GitHubu přihlašují přes
+sdílenou App od Control Center, nebo přes App, kterou používá Connect tvé
+organizace. Vlastní registruj, když jsi zvolil **Použít vlastní aplikace**: App serveru se použije jen v tom případě. Viz [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/).
 :::
 
-Vlastní účet připojíš potom podle
+Ke svému účtu se potom přihlásíš podle
 [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/).
 
-## Proč server potřebuje vlastní aplikaci
+## Co aplikace dělá
 
-Z jedné registrace vycházejí dvě různé práce a aplikace je to, co obě drží
-poctivě:
+Jedna registrace obslouží dvě různé práce:
 
-| Práce                  | Čím se plní                                    | Proč na tom záleží                                                                                            |
-| ---------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Přihlásí se člověk** | Client id aplikace, přes device flow           | Dostaneš přihlašovací údaj, který je tvůj, na serveru a na každém zařízení, bez tokenu k vložení nebo obměně |
-| **Jedná server**       | Id aplikace + soukromý klíč → instalační token | Webhooky, dotazování na PR a synchronizace ticketů přestanou viset na tom, jestli token jednoho člověka ještě platí |
+| Práce                  | Čím se plní                                     | Proč na tom záleží                                                                           |
+| ---------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Člověk se přihlásí** | Client id a client secret aplikace              | Každý dostane vlastní pověření ke GitHubu, na serveru, na každém zařízení                    |
+| **Server jedná**       | Id aplikace a soukromý klíč                     | Agenti, pipelines, obchůzky a odpovědi bota dostávají tokeny vždy pro jeden repozitář        |
 
-V tabulce **není** client secret. Device flow GitHubu se ověřuje jen client id,
-jak žádost o device code, tak poll tokenu, takže k přihlášení žádné tajemství
-nedržíš.
+Druhá práce si nikdy nepůjčí celé pověření člověka. Každý token, který server
+vydá, pokrývá jeden repozitář a je omezený na to, co tam smí odpovědný člen.
+Ke čtení propojeného repozitáře stačí aplikace; cokoli, co zapisuje, potřebuje
+člena, který smí pushovat. Automatizace pull request nikdy neschválí.
 
-Bez vlastní aplikace ta první pořád funguje přes client id, které vozí
-sestavení. Ta druhá spadne na přihlašovací údaj vlastníka serveru, takže práce
-na pozadí visí na tom, kdo server nastavil jako první.
-
-:::note[Tlačítko „nainstaluj GitHub App od Control Center“ neexistuje]
-Distribuovaná GitHub App by znamenala jeden sdílený client secret a jednu
-sdílenou instalaci na serverech všech, takže přístup k repozitářům každého
-pracovního prostoru by šel přes údaje, které v tom prostoru nikdo neřídí.
-Každý server proto vlastní svou aplikaci. Tenhle návod je o tom, jak málo to
-stojí.
-:::
+Aplikace serveru platí jen při **Použít vlastní aplikace**. S Control Center nebo vlastním Connect běží přes Connect každá dráha včetně GitHubu; aplikace serveru zůstává uložená, ale nepoužitá, dokud se nevrátíš zpět. Vlastní App pracovního prostoru ([Dej pracovnímu prostoru jinou App](#dej-pracovnímu-prostoru-jinou-app)) platí dál v každém režimu. Aplikace, které
+chybí některá pole, je chyba, ne přechod na náhradu: přihlášení ke GitHubu se
+odmítají, dokud nejsou nastavená všechna pole.
 
 ## Než začneš
 
-- Jsi **vlastník serveru**. Operace `providerApps.*` jsou vázané na něj
-  a kartu nikdo jiný nevidí
-- Účet na GitHubu, nebo organizace, ve které umíš zakládat aplikace
-- Nic veřejně dosažitelného: přihlášení je **device flow**, takže server
-  nepotřebuje příchozí port, tunel, callback URL ani doménu
+- Jsi **vlastník serveru**. Kartu **Aplikace poskytovatelů** nikdo jiný nevidí
+- Účet na GitHubu. Aplikace se vytvoří pod ním
+- Adresa serveru, na kterou tvůj prohlížeč dosáhne. Veřejná URL serveru (nebo
+  loopback u vlastního serveru desktopu) je místo, kam tě GitHub vrátí
 
-## Zaregistruj aplikaci
-
-1. Otevři [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (u organizace: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — cokoli; `Control Center (yourname)` stačí. Jméno
-   se ukáže u commitů a komentářů, které dělá server
-3. **Homepage URL** — cokoli, třeba `https://github.com/your-name`
-4. **Callback URL** — nech prázdné. Device flow žádné nemá
-5. Zaškrtni **Enable Device Flow**. Bez tohohle nastavení přihlášení nefunguje
-6. Odškrtni **Webhook → Active**, pokud webhooky nezapojíš zvlášť
-7. Pod **Repository permissions** dej aspoň:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (povinné)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, pokud tickety vedeš v GitHub Issues a
-     kvůli hledání komentářů bota v konverzaci PR
-     (viz [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/))
-   - **Checks**: Read-only, kvůli stavu CI na stránce PR
-8. Pod **Where can this GitHub App be installed?** vyber, co sedí.
-   „Only on this account“ je správně pro osobní server
-9. Klikni na **Create GitHub App**
-
-## Získej tři hodnoty
-
-Na stránce aplikace, hned po vytvoření:
-
-| Hodnota         | Kde                                             |
-| --------------- | ----------------------------------------------- |
-| **App ID**      | Záložka **General**, nahoře                     |
-| **Client ID**   | Záložka **General**, pod „Client secrets“       |
-| **Private key** | **Generate a private key** — stáhne se `.pem`   |
-
-Soubor se soukromým klíčem se stáhne jednou a GitHub ho už neukáže. Nech si ho,
-dokud ho nevložíš. Další můžeš vygenerovat kdykoli.
-
-**Client secret** je volitelný a koupí přesně jednu věc: když necháš
-„Expire user authorization tokens“ zapnuté, právě on potichu obnoví něčí token,
-místo aby se člověk musel každých osm hodin přihlásit znovu. Samotné přihlášení
-ho nepoužívá.
-
-Jednodušší je to vypršení vypnout. Pak tajemství nikde nepotřebuješ. Když ho
-necháš zapnuté, vygeneruj secret a vlož ho v
-**Nastavení → Server → Jednotné přihlášení** (karta **Aplikace poskytovatelů**).
-Proměnná prostředí pro něj není a do sestavení se žádná nezapeče, takže zůstane
-na tvém serveru.
-
-## Nainstaluj ji na svůj účet
-
-Aplikace, která je zaregistrovaná a nenainstalovaná, umí lidi ověřit a
-nepřečte nic.
-
-1. Na stránce aplikace otevři **Install App**
-2. Nainstaluj ji na svůj účet nebo organizaci
-3. Zvol **All repositories**, nebo vyber ty, které má tenhle server vidět
-
-## Vlož ji do Control Center
+## Vytvoř ji jedním kliknutím
 
 1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď ke kartě
    **Aplikace poskytovatelů**
-2. V bloku **GitHub** vyplň pole:
-   - **ID aplikace** — číselné App ID
-   - **Soukromý klíč** — vlož celé `.pem`, včetně řádků `BEGIN` a `END`
-   - **Client id** — z téže stránky
-   - **Client secret** — jen když jsi nějaké vygeneroval (kvůli obnově tokenu)
-3. Klikni na **Test**
+2. V bloku **GitHub** můžeš do pole **Organizace (volitelné)** napsat
+   organizaci na GitHubu, která má aplikaci vlastnit. Nech ho prázdné a
+   aplikace vznikne pod tvým vlastním účtem; vytvořit ji pod organizací může
+   jen vlastník té organizace
+3. Klikni na **Vytvořit moji aplikaci GitHub**
+4. Prohlížeč otevře GitHub s už vyplněnou aplikací. Klikni na
+   **Create GitHub App**
+5. GitHub tě vrátí na server, který si uloží id aplikace, soukromý klíč,
+   client id a client secret, a pak otevře stránku instalace aplikace
 
-Klíč se při uložení parsuje, takže oříznuté vložení nebo špatný formát se
-odmítne hned, a ne až na požadavku na pozadí o několik hodin později.
-**Test** jde dál a zeptá se GitHubu, na kterých účtech je aplikace
-nainstalovaná. „Uložené“ a „funguje“ jsou dvě různá tvrzení a jen to druhé
-znamená, že něco poběží.
+Nic se neopisuje ručně a konverzní kód jde z GitHubu rovnou na tvůj server.
+Odkaz funguje jednou a vyprší po deseti minutách; když vyprší, klikni na
+**Vytvořit moji aplikaci GitHub** znovu.
 
-Kontrola: blok GitHub hlásí „Server může jednat jako on sám a lidé se můžou přihlásit.“
-a řádek **GitHub** v **Nastavení → Pracovní prostor → Profil a identita →
-Hostování kódu** teď nabízí **Přihlásit se přes GitHub**.
+Aplikace se jmenuje `Control Center <code>` a žádá přesně to, co Control Center
+používá:
 
-## Nastav to radši proměnnými prostředí
+| Oprávnění                                  | Přístup          |
+| ------------------------------------------ | ---------------- |
+| Metadata                                   | Čtení            |
+| Contents                                   | Čtení a zápis    |
+| Pull requests                              | Čtení a zápis    |
+| Issues                                     | Čtení a zápis    |
+| Checks, Actions, Commit statuses           | Čtení            |
+| Organization members                       | Čtení            |
 
-U instalace bez rozhraní nebo ze skriptu server každé pole naplní z prostředí
-poprvé, kdy pro něj nemá uloženou hodnotu:
+Webhooky jsou vypnuté: server se dotazuje sám. Aplikaci vytvořenou pod
+vlastním účtem později přesuneš do organizace přes **Transfer ownership**
+v pokročilém nastavení aplikace na GitHubu.
+
+Kontrolní bod: blok GitHub hlásí „Server může jednat jako on sám a lidé se
+můžou přihlásit.“
+
+## Nainstaluj ji tam, kde máš repozitáře
+
+Aplikace, která je zaregistrovaná a nenainstalovaná, umí lidi přihlásit
+a nepřečte nic.
+
+1. Na stránce instalace, kterou GitHub otevřel, vyber účet nebo organizaci,
+   která vlastní tvoje repozitáře
+2. Zvol **All repositories**, nebo vyber ty, které má tenhle server vidět
+
+Na další účet ji později nainstaluje admin pracovního prostoru: v **Nastavení →
+Pracovní prostor → Obecné** najde na kartě identity GitHubu **Instalace
+aplikace GitHub** a klikne na **Nainstalovat aplikaci GitHub**. Seznam ukazuje
+každý účet, na kterém je aplikace nainstalovaná, a označí pozastavenou
+instalaci.
+
+## Autorizuj tento server pro organizaci
+
+U sdílené App od Control Center obsluhuje instalace organizace jen servery,
+které její admini autorizovali. Instalace přes **Nainstalovat aplikaci GitHub**
+autorizuje server, který ji spustil. U instalace, která už existuje:
+
+1. Admin té organizace se na tomto serveru přihlásí ke GitHubu
+2. Otevře **Nastavení → Pracovní prostor → Obecné → Instalace aplikace GitHub**
+3. Řádek organizace hlásí **Neautorizováno**. Klikne na **Autorizovat tento
+   server**
+
+Řádek pak hlásí **Autorizováno**. Vlastní aplikace nic z toho nepotřebuje:
+každá její instalace patří tvému serveru.
+
+## Zaregistruj ji raději ručně
+
+Karta **Aplikace poskytovatelů** bere hodnoty i přímo, pro aplikaci, kterou
+sis zaregistroval sám:
+
+| Skupina                        | Pole                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| **Jednání jako server**        | **ID aplikace** a **Soukromý klíč** (celý `.pem`, včetně řádků `BEGIN` a `END`)                  |
+| **Přihlašování lidí**          | **Client id** a **Client secret**. **Adresy URL zpětného volání** ukazují URL k registraci, doslova |
+| **Konverzace pull requestů**   | **Přihlášení bota**, vyřešené při testu spojení                                                 |
+
+Zaregistruj callback URL `<server origin>/oauth/github/callback` přesně tak,
+jak ji karta ukazuje, nech **Expire user authorization tokens** zapnuté a uděl
+oprávnění z tabulky výše. Klikni na **Test**: zeptá se GitHubu, na kterých
+účtech je aplikace nainstalovaná, takže si „uloženo“ a „funguje“ nesplete.
+
+## Nastav ji ze souboru `.env` serveru
+
+U instalace bez rozhraní nebo ze skriptu server každé pole naplní ze svého
+souboru `.env` poprvé, kdy pro něj nemá uloženou hodnotu:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Příznaky příkazové řádky pro ně nejsou. Tajemství na příkazové řádce přečte
-každý proces na hostiteli přes `ps`. Prostředí je jediné místo, kam je dáš,
-a přebije to, co vozí sestavení. Úplný seznam je `.env.template`.
-
-Při místním vývoji nese tytéž hodnoty `.env` v kořeni repozitáře a desktop je
-předá serveru, který spustí. Klíč tam dej na **jeden řádek**: hodnota v `.env`
-je jeden řádek a `\n` ve dvojitých uvozovkách se dekóduje jako nový řádek.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` a `GITHUB_APP_PRIVATE_KEY` jsou tatáž jména, která už čte
-broker tokenů sandboxu. Hostitel nastavený na tokeny agentů s úzkým rozsahem
-tak dostane přihlášení navíc. Naplnění proběhne **u každého pole jen jednou**.
-Potom vyhraje uložená hodnota, takže úprava v Nastavení se dalším restartem
-nezruší.
+Klíč dej na **jeden řádek**: hodnota v `.env` je jeden řádek a `\n` uvnitř
+dvojitých uvozovek se dekóduje na nový řádek. Server odmítne nastartovat, když
+je `GITHUB_APP_PRIVATE_KEY` nebo `GITHUB_CLIENT_SECRET` exportované v prostředí
+jeho procesu, kde by je přečetl každý podřízený proces; drž je v souboru
+`.env` (v Dockeru ho připoj na `/app/bin/.env`). Naplnění proběhne **pro každé
+pole jednou**, takže úpravu v Nastavení další restart nevrátí.
 
-## Totéž pro Linear
+## Dej jednomu pracovnímu prostoru jinou aplikaci
 
-Linear device flow nemá, takže jeho přihlášení je cesta přes prohlížeč a
-callback URL potřebuje. Karta **Aplikace poskytovatelů** ukáže přesně tu,
-kterou zaregistruješ.
+Pracovní prostor může místo aplikace serveru používat vlastní. Admin
+pracovního prostoru jde do **Nastavení → Pracovní prostor → Obecné**, na kartě
+**Identita GitHub** zvolí **Použít jinou GitHub App** a zadá id, soukromý klíč,
+client id a client secret té aplikace. Členové se pak pro tenhle pracovní
+prostor přihlašují k té aplikaci. Pracovní prostor na vlastní aplikaci nikdy
+nepřejde na aplikaci serveru ani na Connect: dokud nejsou jeho pole úplná, jeho
+práce s GitHubem se odmítá.
 
-1. Vytvoř OAuth aplikaci na
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. **Callback URL** nastav na URL, které karta ukazuje, doslova
-3. Do bloku Linear vlož **Client ID** a **Client secret**
-4. Volitelně přidej **API klíč** pracovního prostoru. Tím údajem server
-   synchronizuje tickety, když o to nikdo nepožádal
+Karta **Aplikace poskytovatelů** na stejné stránce dělá totéž pro Google Calendar, Linear a hledání GIF. Viz [Dej pracovnímu prostoru vlastní aplikaci Linear](/cs-CZ/prirucka/navody/integrace-linear/#dej-pracovnímu-prostoru-vlastní-aplikaci-linear) a [Dej pracovnímu prostoru vlastního klienta Google](/cs-CZ/prirucka/navody/pripojeni-kalendare/#dej-pracovnímu-prostoru-vlastního-klienta-google).
 
 ## Řešení problémů
 
-### Dialog přihlášení hlásí, že poskytovatel nevrátil žádný device code
+### Vytvořit moji aplikaci GitHub hlásí, že server nemá adresu
 
-**Enable Device Flow** je na aplikaci vypnuté. Zapni ho pod **General** a zkus to znovu.
+Server nemá veřejnou URL, na kterou by se prohlížeč mohl vrátit. Nastav
+`CC_SERVER_PUBLIC_URL` (nebo `--public-url`) a zkus to znovu.
+
+### GitHub hlásí, že odkaz vypršel
+
+Jednorázová stránka už se použila, nebo uběhlo deset minut. Začni znovu
+z Nastavení.
 
 ### Test hlásí, že údaje fungují, ale aplikace není nikde nainstalovaná
 
-Registrace a instalace jsou dva kroky. Na stránce aplikace otevři **Install App**
-a nainstaluj ji.
+Registrace a instalace jsou dva kroky. Otevři stránku instalace aplikace, nebo
+použij **Nainstalovat aplikaci GitHub** v Pracovní prostor → Obecné.
 
 ### Test hlásí, že soukromý klíč nešel přečíst
 
 Vlož celý soubor `.pem`, včetně řádků `-----BEGIN` a `-----END`. Klíč `ed25519`
-ani EC použít nejde. GitHub Apps se podepisují RSA.
+ani EC použít nejde: GitHub Apps se podepisují RSA.
 
 ### Člen se přihlásil, ale nevidí žádné repozitáře
 
 Aplikace není nainstalovaná na účtu, který je vlastní, nebo její instalace
-vybírá jiné repozitáře. Jeho vlastní přihlášení pustí jen to, co aplikace
-smí vidět.
+vybírá jiné repozitáře. Přihlášení pustí jen to, co aplikace smí vidět.
+
+### Agenti hlásí, že instalace GitHub App je pozastavená
+
+Někdo instalaci na GitHubu pozastavil. Zruš pozastavení v **Settings →
+Applications → Installed GitHub Apps** daného účtu.
 
 ## Související návody
 
 - [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
 - [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/)
 - [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
+- [Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)
 - [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
-- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)

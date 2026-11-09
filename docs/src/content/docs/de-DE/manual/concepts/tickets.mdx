@@ -2,7 +2,7 @@
 title: Tickets und Delegation
 description: Warum ein Ticket Arbeit festhält, ohne sie zu starten, wie die Delegation abgesichert ist und was der Spiegel des Anbieters umfasst und was nur Control Center gehört.
 slug: de-DE/handbuch/konzepte/tickets
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Ein Ticket ist die Arbeitseinheit, die Control Center festhält. Es ist absichtlich
@@ -150,10 +150,11 @@ du ein Ticket, das beim Anbieter liegt, bleibt es auf dem Tracker bestehen und
 kann bei der nächsten Synchronisierung wieder auftauchen. Mitwirkende und
 Untertickets werden kaskadierend gelöscht.
 
-Die Zugangsdaten des Adapters kommen aus den Zugangsdatenspeichern des Servers
-(ein Linear-Schlüssel oder ein GitHub-Token, den du in den Einstellungen
-einfügst, gilt ab der nächsten Anfrage; die Umgebung befüllt diese Speicher
-nur als Startwert).
+Die Zugangsdaten des Adapters werden auf dem Server bei jedem Aufruf ermittelt:
+die eigene Linear- oder GitHub-Anmeldung einer Person für das, was sie tut, und
+für die Ticket-Synchronisierung die Linear-Automatisierung des Arbeitsbereichs
+(oder der Linear-Dienstschlüssel des Servers) oder ein GitHub-Token für ein
+einzelnes Repository. Eine neue Anmeldung gilt ab der nächsten Anfrage.
 
 ## Tickets und Pipelines
 

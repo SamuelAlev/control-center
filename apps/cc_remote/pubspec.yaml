@@ -38,6 +38,10 @@ dependencies:
   # fetches — the workspaces/tickets/messaging/newsfeed/agents repositories.
   cc_data:
     path: ../../packages/cc_data
+  # The sign-in lane names (`github`, `linear`, …) the server's `oauth.*` ops
+  # speak. Pure Dart, web-safe. Workspace member.
+  cc_connect_core:
+    path: ../../packages/cc_connect_core
   # Analytics provider adapters (the Umami sink behind cc_domain's Analytics
   # facade). Pure Dart over package:http, which the PWA already ships.
   cc_analytics:

@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Bir Google Calendar bağlama",
   "docs.sidebar.guidesServerAndDeployment": "Sunucu ve dağıtım",
   "docs.sidebar.guidesRunHeadlessServer": "Headless bir sunucu çalıştırma",
+  "docs.sidebar.guidesRunConnect": "Bir Connect sunucusu çalıştırma",
   "docs.sidebar.guidesConnectRemoteServer": "Uzak bir sunucuya bağlanma",
   "docs.sidebar.guidesRunFleetWorker": "Bir filo worker’ı çalıştırma",
   "docs.sidebar.guidesBackUpAndRestore": "Yedekleme ve geri yükleme",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Klavye kısayolları",
   "docs.sidebar.referenceRouteMap": "Rota haritası",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Yedekleme, dışa ve içe aktarma",
   "docs.sidebar.referenceTelemetry": "Kullanım analizleri",
   "docs.sidebar.referenceGlossary": "Sözlük"

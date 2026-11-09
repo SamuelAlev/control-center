@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 
 /// Wrapping logic for Linux (and WSL2), using `bubblewrap` (`bwrap`) for
@@ -299,7 +300,7 @@ abstract final class LinuxSandbox {
       return 'x64';
     }
     try {
-      final result = Process.runSync('uname', ['-m']);
+      final result = ChildProcess.runSync('uname', ['-m']);
       final out = (result.stdout as String).trim().toLowerCase();
       if (out == 'aarch64' || out == 'arm64') {
         return 'arm64';
@@ -326,7 +327,7 @@ abstract final class LinuxSandbox {
     if (httpProxyPort != null) {
       final socket = '/tmp/cc-sb-${sessionId}_http.sock';
       _unlinkIfExists(socket);
-      final p = await Process.start(socatPath, [
+      final p = await ChildProcess.start(socatPath, [
         'UNIX-LISTEN:$socket,fork,reuseaddr',
         'TCP:127.0.0.1:$httpProxyPort',
       ]);
@@ -342,7 +343,7 @@ abstract final class LinuxSandbox {
     if (socksProxyPort != null) {
       final socket = '/tmp/cc-sb-${sessionId}_socks.sock';
       _unlinkIfExists(socket);
-      final p = await Process.start(socatPath, [
+      final p = await ChildProcess.start(socatPath, [
         'UNIX-LISTEN:$socket,fork,reuseaddr',
         'TCP:127.0.0.1:$socksProxyPort',
       ]);
@@ -361,7 +362,7 @@ abstract final class LinuxSandbox {
     for (final port in loopbackPorts) {
       final socket = '/tmp/cc-sb-${sessionId}_lo$port.sock';
       _unlinkIfExists(socket);
-      final p = await Process.start(socatPath, [
+      final p = await ChildProcess.start(socatPath, [
         'UNIX-LISTEN:$socket,fork,reuseaddr',
         'TCP:127.0.0.1:$port',
       ]);

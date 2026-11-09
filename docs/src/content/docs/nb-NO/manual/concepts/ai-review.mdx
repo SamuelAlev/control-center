@@ -2,7 +2,7 @@
 title: AI-gjennomgang
 description: Hvordan en pull request blir gjennomgått – gjennomgangsområder, gjennomgangsknoder og peer-konsensus, kohorter og akser, dommen Ship/Hold/Block, og hvorfor publisering fortsatt er et steg du tar selv.
 slug: nb-NO/handbok/konsepter/ai-gjennomgang
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Strukturen i en gjennomgang
@@ -200,10 +200,13 @@ brukeren, slik at en gjennomgang aldri kan publiseres dobbelt. Når du trykker
   lagt inn i teksten, slik at ingenting forsvinner i stillhet.
 - En **Block**-dom sendes inn som `REQUEST_CHANGES`; **Hold** som `COMMENT`;
   **Ship** som `APPROVE` fra knappen (`approve_on_ship: true`). MCP-verktøyet
-  lar Ship stå som `COMMENT` med mindre du oppgir `approve_on_ship`.
-- Gjennomgangen legges ut under serverens appidentitet. Hvem som trykket på
-  Publiser, registreres for rolleporten og revisjonsloggen; det er ikke
-  GitHub-forfatteren.
+  publiserer som automatisering og lar alltid Ship stå som `COMMENT`.
+- Knappen **Publiser til GitHub** legger ut gjennomgangen som personen som
+  trykket på den, med personens egen GitHub-pålogging: utgivelsesporten er
+  deres, og da er gjennomgangen det også. En publisering uten en person bak seg
+  er automatisering, og automatisering godkjenner aldri: Ship sendes da som
+  `COMMENT`, og på Control Center Connect krediteres innlegget med prefikset
+  `**Control Center** (for @login):`.
 
 Publiseringen deklarerer handlingsklassen `prPublish`, så kontrollpunktet i
 tillatelsesreglene behandler den som enhver muterende handling – den ber om

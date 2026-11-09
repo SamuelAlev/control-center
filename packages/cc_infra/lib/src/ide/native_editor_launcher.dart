@@ -4,6 +4,8 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/ide_editor.dart';
 import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Tests the OS launch process. Injected so launching can be exercised in
 /// unit tests without spawning real processes.
 typedef ProcessRunner =
@@ -97,7 +99,13 @@ class NativeEditorLauncher implements EditorLauncherPort {
     String executable,
     List<String> args, {
     String? workingDirectory,
-  }) => Process.run(executable, args, workingDirectory: workingDirectory);
+  }) => ChildProcess.run(
+    executable,
+    args,
+    workingDirectory: workingDirectory,
+    toolchain: true,
+    display: true,
+  );
 
   @override
   Future<List<IdeEditor>> detectEditors() async {

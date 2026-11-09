@@ -2,7 +2,7 @@
 title: Zgłoszenia i delegowanie
 description: Dlaczego zgłoszenie śledzi pracę, nie wysyłając jej, jak chronione jest delegowanie oraz czym dysponuje kopia lustrzana dostawcy, a czym nie.
 slug: pl-PL/podrecznik/koncepcje/zgloszenia
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Zgłoszenie to jednostka pracy, którą śledzi Control Center. To celowo _głupi_
@@ -143,9 +143,11 @@ lokalne**, więc zgłoszenie oparte na dostawcy, które usuniesz, nie zostaje
 usunięte w trackerze i może powrócić przy następnej synchronizacji.
 Współpracownicy i zgłoszenia potomne są usuwane kaskadowo.
 
-Poświadczenia adaptera są rozwiązywane z magazynów poświadczeń serwera (klucz
-Linear lub token GitHub wklejony w Ustawieniach zostaje podjęty przy następnym
-żądaniu; środowisko tylko zasiewa te magazyny).
+Poświadczenia adaptera są rozwiązywane na serwerze przy każdym wywołaniu:
+własne logowanie osoby do Linear lub GitHuba dla tego, co ona robi, a dla
+synchronizacji zgłoszeń automatyzacja Linear obszaru roboczego (albo klucz
+usługi Linear serwera) lub token GitHub dla jednego repozytorium. Nowe
+logowanie zostaje podjęte przy następnym żądaniu.
 
 ## Zgłoszenia i potoki
 

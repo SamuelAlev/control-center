@@ -1,35 +1,92 @@
 ---
 title: Linear انضمام سیٹ کریں
-description: سرور پر ایک Linear API کلید محفوظ کریں تاکہ ایجنٹس Linear کو کال کر سکیں، اور نئے ٹکٹس کے لیے Linear کو ٹکٹنگ فراہم کنندہ کے طور پر منتخب کریں۔
+description: Linear میں sign in کریں، workspace کا Linear automation جوڑیں، اور نئے tickets کے لیے Linear کو ticketing provider منتخب کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-سرور پر اپنے صارف کے تحت ایک Linear API کلید پیسٹ کریں، بالکل اُسی طرح جیسے آپ کوئی
-forge جوڑتے ہیں۔ ٹکٹس، پروجیکٹس، لنکس، معاونین، تفویض اور اسائنمنٹ سب Control Center کے
-اپنے ڈیٹا بیس کے خلاف کام کرتے ہیں اور کسی بیرونی سروس کی ضرورت نہیں —
-دیکھیں [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)۔
+Control Center میں Linear کی دو شناختیں ہیں، اور دونوں browser sign-ins ہیں: آپ کی اپنی، جو آپ کے کاموں کے لیے ہے، اور workspace کی Control Center app، جو ایجنٹس اور pipelines کے کاموں کے لیے ہے۔ tickets، projects، links، collaborators، delegation اور assignment سب Control Center کے اپنے database کے خلاف کام کرتے ہیں اور کسی بیرونی سروس کی ضرورت نہیں — دیکھیں [tickets بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)۔
 
-## اپنی Linear کلید محفوظ کریں
+## پیشگی شرائط
 
-**ٹکٹنگ API کلید** **ترتیبات → ورک اسپیس → عام** پر، **ٹکٹنگ** کارڈ میں رہتی ہے۔ یہ
-کلید سرور پر آپ کے صارف id کے تحت محفوظ کرتی ہے۔ بغیر کسی نگرانی کے کام کے لیے سرور کی
-اپنی کلید `LINEAR_API_KEY` یا **فراہم کنندہ ایپس** کارڈ سے آتی ہے۔ ایجنٹ کے سینڈ باکس
-میں کوئی ٹکٹنگ کلید نہیں رکھی جاتی: ایجنٹ Control Center کے اپنے ٹولز کے ذریعے ٹکٹ لکھتے
-ہیں، جو پہلے **بیرونی ٹریکر پر لکھیں** قاعدے سے پوچھتے ہیں۔
+- سرور لوگوں کو Linear میں sign in کرا سکے: Control Center Connect کے ذریعے، یا سرور کی اپنی Linear application کے ساتھ ([اپنی Linear application رجسٹر کریں](#اپنی-linear-application-رجسٹر-کریں))۔ سرور کا مالک **Settings → Server → Single sign-on** میں انتخاب کرتا ہے
+- ایک workspace admin، تاکہ Linear کو ticketing provider چنا جا سکے اور Linear automation جوڑا جا سکے
 
-## نئے ٹکٹس پر Linear کی مہر لگائیں
+## workspace کے لیے Linear چنیں
 
-**ٹکٹنگ فراہم کنندہ** (آن بورڈنگ کا پہلا قدم، اور
-`/workspaces/<workspaceId>/api-keys`) `local` اور `linear` پیش کرتا ہے۔ `linear` چننے پر
-اُس کے بعد آپ جو ٹکٹس بناتے ہیں اُن پر `provider: linear` کی مہر لگ جاتی ہے۔
+1. **Settings → Workspace → General** پر جائیں اور **Ticketing** کارڈ تلاش کریں
+2. **Ticketing provider** کو **Linear** پر سیٹ کریں
+
+اس کے بعد آپ کے بنائے tickets `provider: linear` کے نشان کے ساتھ آتے ہیں۔ **Local** tickets کو اسی سرور کے اپنے database میں رکھتا ہے اور Linear کی قطاریں چھپا دیتا ہے: تصدیق کے لیے کچھ نہیں ہوتا۔
+
+## Linear میں sign in
+
+اسی کارڈ پر، **Linear** قطار آپ کی ہے:
+
+1. **Sign in to Linear** پر کلک کریں
+2. براؤزر میں منظوری دیں
+3. سرور کی اپنی application کے ساتھ، dialog خود اسے پہچان لیتا ہے۔ Connect کے ذریعے، براؤزر کا دکھایا ہوا 8 حروف کا کوڈ ٹائپ کریں، یا اسے `control-center://` لنک کے ذریعے Control Center کھولنے دیں
+
+Control Center سے Linear میں آپ جو بھی کرتے ہیں وہ اسی sign-in پر چلتا ہے اور کسی اور پر نہیں۔ اگر آپ sign in نہیں ہیں تو ایپ آپ سے sign in کرنے کو کہتی ہے، نہ کہ کسی اور کے طور پر کام کرنے لگتی ہے۔
+
+## Linear automation جوڑیں
+
+**Linear automation** قطار workspace کی Control Center app ہے جو Linear میں ہے۔ ticket sync، pipelines اور agents اسی سے لکھتے ہیں، اس لیے خودکار issues اور تبصرے کسی فرد کے بجائے Control Center کے نام سے ظاہر ہوتے ہیں۔
+
+1. ایک workspace admin **Connect Linear for automation** پر کلک کرتا ہے
+2. وہ براؤزر میں app کو Linear workspace کے لیے منظور کرتا ہے، جیسا اوپر ہے
+
+قطار پھر یہ پڑھتی ہے "Connected to _your Linear workspace_"۔ صرف workspace admins اسے جوڑ یا توڑ سکتے ہیں۔
+
+کسی بھی Linear credential کو agent کے sandbox میں نہیں رکھا جاتا: ایجنٹس tickets کو Control Center کے اپنے ٹولز کے ذریعے لکھتے ہیں، جو پہلے **Write to an external tracker** قاعدے سے پوچھتے ہیں۔
+
+## اپنی Linear application رجسٹر کریں
+
+اپنی application صرف اس وقت استعمال کریں جب آپ نے **Use my own apps** چنا ہو۔ سرور کی application صرف تب لاگو ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Linear سمیت، اور سرور کی application اور service API key محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ workspace کی اپنی application ([نیچے](#ایک-workspace-کو-اپنی-linear-application-دیں)) ہر mode میں لاگو رہتی ہے۔
+
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new) پر ایک OAuth application بنائیں
+2. دونوں callback URLs شامل کریں جو **Settings → Server → Single sign-on → Provider apps → Linear** کے تحت **Callback URLs** میں دکھائے گئے ہیں، ہو بہو:
+   `<server origin>/oauth/linear/callback` اور `<server origin>/oauth/linear_app/callback`
+3. **Client id** کو Linear بلاک میں چسپاں کریں
+
+کوئی client secret نہیں: سرور PKCE کے ساتھ sign in کرتا ہے۔ Linear کے refresh tokens 30 دن استعمال نہ ہونے پر ختم ہو جاتے ہیں، اس لیے سرور 20 دن سے پرانی ہر Linear sign-in کو روزانہ ایک بار تازہ کرتا ہے۔
+
+اسی بلاک میں ایک اختیاری **Service API key** بھی ہے۔ یہ سرور کا اپنا Linear credential ہے جو ان workspaces میں automation کے لیے ہے جنہوں نے Linear automation نہیں جوڑی۔ اسے **Settings** میں یا سرور کی `.env` فائل میں `LINEAR_API_KEY` کے طور پر رکھیں: سرور اس وقت شروع ہونے سے انکار کرتا ہے جب `LINEAR_API_KEY` اس کے process ماحول میں ایکسپورٹ ہو۔
+
+## ایک workspace کو اپنی Linear application دیں
+
+workspace سرور کی application کے بجائے اپنی application کے ذریعے Linear میں sign in کر سکتا ہے۔ یہ صرف workspace admin یا owner ترتیب دے سکتا ہے۔
+
+1. اوپر کے مراحل کی طرح ایک Linear OAuth application بنائیں
+2. **Settings → Workspace → General → پرووائیڈر ایپس** پر جائیں اور **Linear** کھولیں
+3. **اس ورک اسپیس کی اپنی ایپ استعمال کریں** چنیں
+4. row کے **کال بیک URLs** کے تحت دکھائے گئے دونوں callback URLs کو Linear application میں ہو بہو شامل کریں
+5. اس کا **Client id** چسپاں کریں، اور اختیاری طور پر اس workspace کے automation کے لیے **سروس API کلید** شامل کریں
+
+workspace کی application پھر اس workspace میں ہر Linear sign-in اور automation درخواست کا جواب دیتی ہے، چاہے سرور لوگوں کو کسی بھی طریقے سے sign in کرائے۔ یہ کبھی سرور کی application یا Connect پر fall back نہیں کرتی: جب تک client id سیٹ نہ ہو، اس workspace میں Linear بند رہتا ہے، اور row بتاتی ہے کیا غائب ہے۔ اس کی service API key صرف یہیں استعمال ہوتی ہے؛ اس کے بغیر sync کو **آٹومیشن کے لیے Linear منسلک کریں** درکار ہے۔
+
+سرور کی application اور workspace کی application کے درمیان سوئچ کرنے، یا workspace کے client id کو بدلنے سے، اس workspace کے ہر فرد کو Linear سے sign out کیا جاتا ہے اور ان کا automation disconnect ہو جاتا ہے۔ وہ نئی application سے دوبارہ sign in کرتے ہیں۔ **اس سرور کی ایپ استعمال کریں** workspace کے محفوظ شدہ فیلڈز حذف کر دیتا ہے۔ secrets صرف لکھنے کے لیے ہیں: row بس دکھاتی ہے کہ ایک محفوظ ہے یا نہیں۔ سرور کے دوسرے workspaces متاثر نہیں ہوتے۔
+
+## خرابیوں کا ازالہ
+
+### Linear قطار کہتی ہے sign-in سیٹ نہیں ہے
+
+سرور کے پاس نہ اپنی Linear application ہے نہ Connect۔ سرور کا مالک **Settings → Server → Single sign-on** میں ان میں سے ایک چنتا ہے۔ جب workspace اپنی application استعمال کرتا ہے تو row کے بجائے بتاتی ہے کہ اس کا سیٹ اپ مکمل نہیں: workspace admin **Settings → Workspace → General → پرووائیڈر ایپس** میں client id شامل کرتا ہے۔
+
+### ticket sync authentication error کے ساتھ ناکام ہوتا ہے
+
+workspace کے ساتھ کوئی Linear automation نہیں جڑی اور سرور کے پاس service API key نہیں، اس لیے sync کے پاس کوئی credential نہیں۔ ایک workspace admin **Connect Linear for automation** پر کلک کرتا ہے۔
+
+### automation جوڑتے وقت کہتا ہے کہ Linear workspace کہیں اور جڑا ہے
+
+اس Linear workspace کی Control Center app پہلے ہی کسی اور Control Center سرور سے جڑی ہوئی ہے۔
 
 ## متعلقہ گائیڈز
 
-- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
+- [tickets بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
 - [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
 - [API کلیدیں منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
 
 ## متعلقہ تصورات
 
-- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
+- [Tickets اور delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)

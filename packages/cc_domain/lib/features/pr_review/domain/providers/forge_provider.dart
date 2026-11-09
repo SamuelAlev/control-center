@@ -10,7 +10,12 @@ export 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 /// [PrReviewRepository].
 class ForgeProviderContext {
   /// Creates a [ForgeProviderContext] for the given [repo] and workspace.
-  const ForgeProviderContext({required this.repo, required this.workspaceId});
+  const ForgeProviderContext({
+    required this.repo,
+    required this.workspaceId,
+    this.userId,
+    this.linkedToWorkspace = false,
+  });
 
   /// The repo whose forge provider is being resolved. Its `forge` is what
   /// selects the factory.
@@ -18,6 +23,14 @@ class ForgeProviderContext {
 
   /// The workspace ID associated with this provider context.
   final String workspaceId;
+
+  /// The member the repository acts for (server side), when there is one.
+  final String? userId;
+
+  /// Whether [repo] is linked to [workspaceId]
+  /// (`isRepoLinkedToWorkspace`). Only then may cached forge data be shared
+  /// across the workspace's members; otherwise it is the [userId]'s alone.
+  final bool linkedToWorkspace;
 }
 
 /// Factory that creates a [PrReviewRepository] for one [ForgeHost].

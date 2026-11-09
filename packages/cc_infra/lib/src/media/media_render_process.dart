@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Captured image/metadata output and bounded decoder diagnostics.
@@ -90,19 +91,17 @@ class MediaRenderProcess {
         'Media executables must have absolute managed paths.',
       );
     }
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       executable,
       arguments,
-      runInShell: false,
-      includeParentEnvironment: false,
-      environment: {
+      inheritBase: false,
+      // Windows processes cannot start without SystemRoot.
+      inherit: [if (Platform.isWindows) 'SYSTEMROOT'],
+      environment: const {
         'PATH': '',
         'LANG': 'C',
         'LC_ALL': 'C',
         'AV_LOG_FORCE_NOCOLOR': '1',
-        if (Platform.isWindows)
-          for (final entry in Platform.environment.entries)
-            if (entry.key.toLowerCase() == 'systemroot') entry.key: entry.value,
       },
     );
     _children.add(process);

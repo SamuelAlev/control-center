@@ -109,10 +109,6 @@ jobs:
         with:
           os: macos
           version: ${{ env.VERSION }}
-          google-client-id: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_ID }}
-          google-client-secret: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_SECRET }}
-          klipy-app-key: ${{ secrets.CC_BUILTIN_KLIPY_APP_KEY }}
-          github-client-id: ${{ secrets.CC_BUILTIN_GITHUB_CLIENT_ID }}
 
       - name: Build macOS release
         run: flutter build macos --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
@@ -142,6 +138,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: bash scripts/release/cc_server_package.sh "$VERSION" macos
+
+      # Official builds ship no third-party keys (RELEASING.md, Bundled secrets).
+      - name: Scan for bundled credentials
+        run: |
+          bash scripts/release/check_no_bundled_secrets.sh --self-test
+          bash scripts/release/check_no_bundled_secrets.sh build/macos/Build/Products/Release apps/cc_server/build/cli
 
       # Read-only over finished files: no ordering between them.
       - parallel:
@@ -255,10 +257,6 @@ jobs:
           os: windows
           arch: ${{ matrix.arch }}
           version: ${{ env.VERSION }}
-          google-client-id: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_ID }}
-          google-client-secret: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_SECRET }}
-          klipy-app-key: ${{ secrets.CC_BUILTIN_KLIPY_APP_KEY }}
-          github-client-id: ${{ secrets.CC_BUILTIN_GITHUB_CLIENT_ID }}
           fetch-code-server: "false"
 
       # pwsh: Git Bash shadows MSVC link.exe and Windows tar.exe. Prepend the
@@ -301,6 +299,13 @@ jobs:
       - name: Package standalone cc_server
         shell: bash
         run: bash scripts/release/cc_server_package.sh "$VERSION" windows "$ARCH"
+
+      # Official builds ship no third-party keys (RELEASING.md, Bundled secrets).
+      - name: Scan for bundled credentials
+        shell: bash
+        run: |
+          bash scripts/release/check_no_bundled_secrets.sh --self-test
+          bash scripts/release/check_no_bundled_secrets.sh "build/windows/$ARCH/runner/Release" apps/cc_server/build/cli
 
       # Read-only over finished files: no ordering between them.
       - parallel:
@@ -433,10 +438,6 @@ jobs:
         with:
           os: linux
           version: ${{ env.VERSION }}
-          google-client-id: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_ID }}
-          google-client-secret: ${{ secrets.CC_BUILTIN_GOOGLE_CLIENT_SECRET }}
-          klipy-app-key: ${{ secrets.CC_BUILTIN_KLIPY_APP_KEY }}
-          github-client-id: ${{ secrets.CC_BUILTIN_GITHUB_CLIENT_ID }}
 
       - name: Build Linux release
         run: flutter build linux --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
@@ -461,6 +462,12 @@ jobs:
           # Separate binary, not a flag on cc_server. Feeds the cc-server-demo image.
           - name: Package standalone cc_demo_server
             run: bash scripts/release/cc_demo_server_package.sh "$VERSION"
+
+      # Official builds ship no third-party keys (RELEASING.md, Bundled secrets).
+      - name: Scan for bundled credentials
+        run: |
+          bash scripts/release/check_no_bundled_secrets.sh --self-test
+          bash scripts/release/check_no_bundled_secrets.sh build/linux/x64/release/bundle apps/cc_server/build/cli apps/cc_demo_server/build/cli
 
       # Read-only over finished files: no ordering between them.
       - parallel:
@@ -556,7 +563,7 @@ jobs:
       - name: Create draft release (assemble + checksums + notes)
         run: bash scripts/release/make_release.sh
 
-  # GHCR: cc-server, demo, web, phone PWA, signaling. Reuses the Linux
+  # GHCR: cc-server, demo, web, phone PWA, signaling, Connect. Reuses the Linux
   # cc_server archive. Separate from the Cloudflare deploys.
   containers:
     needs: [prepare, build-linux]
@@ -613,6 +620,12 @@ jobs:
       - name: Build phone PWA (cc_remote)
         working-directory: apps/cc_remote
         run: flutter build web --release --wasm --enable-wasm-deferred-loading
+
+      # Official builds ship no third-party keys (RELEASING.md, Bundled secrets).
+      - name: Scan web builds for bundled credentials
+        run: |
+          bash scripts/release/check_no_bundled_secrets.sh --self-test
+          bash scripts/release/check_no_bundled_secrets.sh build/web apps/cc_remote/build/web
 
       - name: Stage encrypted resource assets
         run: |
@@ -728,6 +741,21 @@ jobs:
                 ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server:latest
               provenance: false
 
+          # Compiles in-image like signaling; its one in-repo dependency
+          # (the wire contract) is the named context `core`.
+          - name: Build + push Connect image
+            id: connect
+            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            with:
+              context: apps/cc_connect
+              build-contexts: |
+                core=packages/cc_connect_core
+              push: true
+              tags: |
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-connect:${{ env.VERSION }}
+                ghcr.io/${{ steps.ns.outputs.owner }}/cc-connect:latest
+              provenance: false
+
       # After the build group: each attestation needs its image's digest, and
       # a background step's outputs exist only once its group has joined.
       - parallel:
@@ -764,4 +792,11 @@ jobs:
             with:
               subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server
               subject-digest: ${{ steps.signaling.outputs.digest }}
+              push-to-registry: true
+
+          - name: Attest Connect image
+            uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+            with:
+              subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-connect
+              subject-digest: ${{ steps.connect.outputs.digest }}
               push-to-registry: true

@@ -16,6 +16,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -64,6 +65,7 @@ class _RecordingBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async {
     mints.add((repoOwner: repoOwner, repoName: repoName));
     scopes.add(scope);
@@ -182,8 +184,11 @@ class _ScriptedLoop implements AgentLoop {
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: _UnusedRunLogRepo(),
     eventBus: null,
-    resolveGitIdentity: (_, {workspaceId}) async =>
-        (name: 'Test User', email: 'test@example.test'),
+    resolveCommitIdentity: (_, {workspaceId}) async =>
+        AgentCommitIdentity.owner(
+          name: 'Test User',
+          email: 'test@example.test',
+        ),
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),
@@ -284,7 +289,7 @@ void main() {
       await h.session.run();
 
       expect(inspector.inspections, 1);
-      expect(h.broker.scopes.single, ForgeTokenScope.read);
+      expect(h.broker.scopes.single, ForgeTokenScope.review);
     },
   );
 }

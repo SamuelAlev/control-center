@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dar
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Backend for Claude Code driven directly as a structured CLI: `claude -p`
 /// is spawned inside the OS sandbox and emits `stream-json` NDJSON that the
 /// dispatch session parses. This class declares the transport + the argv flags
@@ -327,13 +329,13 @@ class ClaudeCliBackend implements AgentBackend {
     String? helpText;
     String? versionText;
     try {
-      final probe = await Process.run(binaryPath, const ['--help']);
+      final probe = await ChildProcess.run(binaryPath, const ['--help']);
       helpText = '${probe.stdout}${probe.stderr}';
     } on Object {
       helpText = null;
     }
     try {
-      final probe = await Process.run(binaryPath, const ['--version']);
+      final probe = await ChildProcess.run(binaryPath, const ['--version']);
       versionText = '${probe.stdout}${probe.stderr}';
     } on Object {
       versionText = null;

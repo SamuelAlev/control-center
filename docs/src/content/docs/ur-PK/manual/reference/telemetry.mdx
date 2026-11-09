@@ -2,7 +2,7 @@
 title: استعمال کے تجزیات
 description: استعمال کے تجزیات آن ہونے پر Control Center کیا ریکارڈ کرتا ہے، فیصلہ کون کرتا ہے، اور کیا کبھی نہیں بھیجا جاتا۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/استعمال-کے-تجزیات
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center ایک [Umami](https://umami.is) انسٹینس کو **فرضی شناخت والے استعمال کے ایونٹس** بھیج سکتا ہے۔ استعمال کے تجزیات **اُس وقت تک بند رہتے ہیں جب تک سرور آپریٹر انہیں آن نہ کرے**۔ یہ سیٹنگ سرور کی ہے اور اُس سے جڑے ہر کلائنٹ پر لاگو ہوتی ہے: ڈیسک ٹاپ ایپ، ویب ایپ، فون اور خود سرور۔
@@ -95,9 +95,12 @@ Umami کو اس کے علاوہ درخواست کا IP ایڈریس ملتا ہ�
 | `pipeline_run_retried` | `workspace_id`، `pipeline_run_id` | ناکام رن دوبارہ چلایا گیا |
 | `pipeline_run_cancel_requested` | `workspace_id`، `pipeline_run_id` | ایپ سے کوئی رن منسوخ کیا گیا |
 | `pipeline_step_killed` | `workspace_id`، `step_run_id` | چلتا ہوا کوئی مرحلہ زبردستی روکا گیا |
-| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client`، `duration_s` | کیلنڈر میں سائن اِن کی کوشش ختم ہوئی |
+| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client` (درست جب sign-in Control Center Connect کے ذریعے ہوا، سرور کے اپنے Google client کے ذریعے نہیں)، `duration_s` | ایک calendar sign-in کی کوشش ختم ہوئی |
 | `calendar_disconnected` | `workspace_id` | کیلنڈر اکاؤنٹ منقطع کیا گیا |
 | `calendar_rsvp_sent` | `calendar_event_id`، `response`، `previous_response`، `workspace_id` | کسی دعوت نامے کا جواب دیا گیا |
+| `calendar_event_created` | `workspace_id`، `all_day`، `guests` (تعداد)، `conference` | Google Calendar پر ایک event بُک ہوا |
+| `calendar_event_moved` | `workspace_id`، `calendar_event_id`، `had_guests` | calendar grid پر ایک event منتقل یا resize ہوا |
+| `calendar_event_deleted` | `workspace_id`، `calendar_event_id`، `had_guests` | Google Calendar سے ایک event حذف ہوا |
 | `calendar_event_recorded` | `workspace_id`، `calendar_event_id` | کیلنڈر ایونٹ سے ریکارڈنگ شروع کی گئی |
 | `calendar_meeting_joined` | `provider` (`meet`، `zoom`، `teams`، `webex`، `other`)، `workspace_id`، `calendar_event_id` | میٹنگ لنک کھولا گیا (فون)۔ لنک سے صرف فراہم کنندہ اخذ کیا جاتا ہے |
 | `notification_action` | `action` (`read`، `unread`، `dismiss`، `mark_all_read`، `clear_all`)، `workspace_id` | نوٹیفکیشن سینٹر استعمال ہوا |

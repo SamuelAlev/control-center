@@ -13,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
@@ -41,6 +42,7 @@ class _Broker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async => const ScopedCredentials(handle: 'test', environment: {});
   @override
   Future<void> revoke(String handle) async {}
@@ -168,8 +170,11 @@ void main() {
         agentRepo: _Agents(),
         runLogRepo: null,
         eventBus: null,
-        resolveGitIdentity: (_, {workspaceId}) async =>
-            (name: 'Test User', email: 'test@example.test'),
+        resolveCommitIdentity: (_, {workspaceId}) async =>
+            AgentCommitIdentity.owner(
+              name: 'Test User',
+              email: 'test@example.test',
+            ),
         backendRegistry: BackendRegistry({
           'cc-harness': const HarnessBackend(),
         }),

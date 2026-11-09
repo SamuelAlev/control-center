@@ -1,34 +1,55 @@
 ---
 title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a sign-in expires.
 slug: en-GB/manual/guides/connect-calendar
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/en-GB/manual/concepts/calendar/) for the full picture.
+per-workspace and per-member: it syncs your events for that workspace into
+Control Center, where you can also answer invitations, book, move and delete events. See [Calendar and scheduling](/en-GB/manual/concepts/calendar/)
+for the full picture.
+
+## Prerequisites
+
+- The server can sign people in to Google: either through Control Center Connect,
+  or with the server's own Google client
+  ([Bring your own Google client](#bring-your-own-google-client)). The server
+  owner chooses in **Settings → Server → Single sign-on**
+- A workspace open: a calendar account always belongs to one
 
 ## Connect an account
 
 1. Open **Calendar** in the sidebar.
 2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorise:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+3. Click **Connect Google Calendar**. Your browser opens Google's consent page.
+4. Choose the account and approve access to your calendar events and calendar list.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+How it finishes depends on who runs the sign-in:
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+- **The server's own Google client:** Google sends your browser back to the
+  server and the dialog closes on its own
+- **Control Center Connect:** the browser page shows an 8-character code. Type
+  it into the dialog, or let the browser open Control Center through the
+  `control-center://` link and skip typing it
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Your events begin syncing straight away. The server, not your device, finishes
+the exchange and keeps the credential.
+
+The account is connected **to the active workspace only**, and it is yours: two
+members who connect the same Google address get separate accounts. Switch
+workspaces and you'll see that workspace's calendars instead.
+
+The connect flow requests `calendar.events` and `calendar.calendarlist.readonly` plus `openid email`, whichever client runs it. An account connected before Control Center could write to Google has only the read-only scope; it asks you to reconnect, and the new sign-in grants the rest.
+
+## Book, move, answer and delete events
+
+- **Book an event:** in the week or day view, drag across the time grid to draw the span (in the month view, drag across days for an all-day event). A card opens beside it with the title, times, guests, a Google Meet link, location, description and which calendar to book on. **Save** books it on Google and opens it. The **+** button in the calendar header opens the same card for the next free quarter hour. Press Escape to drop it
+- **Move an event:** drag it to another time or day, or drag its bottom edge to change when it ends. It opens once Google has the new time; if Google refuses, it goes back where it was. You can move your own events and the ones you organise; an invitation stays where its organiser put it
+- **Answer an invitation:** open the event and choose **Yes**, **Maybe** or **No**
+- **Delete an event:** open it and click the trash icon. The confirmation says who is affected: guests are told an event you organise is cancelled, while deleting an invitation removes it from your calendar only. Deleting one occurrence of a recurring event leaves the rest of the series
+
+Guests receive Google's own email invitation, update or cancellation, and moving one occurrence of a recurring event leaves the rest of the series. You can only book on calendars your account may write to, and only with your own accounts: another member's connected calendar is never offered.
 
 ## How syncing works
 
@@ -42,9 +63,11 @@ present that token and receive only what changed, which is what makes a
 two-minute cadence affordable. The window is re-anchored with a full sync every
 24 hours and whenever Google invalidates the token.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
+Credentials live server-side in `secrets.json` under the server's data
 directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+client device. A sign-in through Connect stores only a sealed credential that
+Connect can open for this server alone; its access token stays in the server's
+memory.
 
 ## Connect multiple accounts
 
@@ -55,69 +78,71 @@ disconnected on its own.
 
 ## Reconnect an expired account
 
-If Google permanently invalidates an account's token (a revoked or long-expired
+If Google permanently invalidates an account's sign-in (a revoked or long-expired
 session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
+calendar, plus a desktop notification. Click **Reconnect** and sign in again;
 the banner clears on the next successful sync.
+
+The same banner appears when the sign-in can no longer be used by this server:
+the server owner switched Connect servers or rotated the Connect key, the
+server's own Google client changed, or the data directory was restored onto
+another machine.
 
 ## Disconnect an account
 
 From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
 **Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+stored credential on the server.
 
-## Connect from a headless server
+## Bring your own Google client
 
-A server with no GUI attached connects the same account from its own terminal:
+Run your own Google client when you chose **Use my own apps**. The server's own client applies only then: with Control Center's or a custom Connect, Connect runs every lane, Google included, and the server's client stays saved but unused. To have the consent screen name your own project while the server uses Connect, give the workspace its own client ([below](#give-one-workspace-its-own-google-client)); that applies in every mode.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.events`, `calendar.calendarlist.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**.
+2. Create an **OAuth client ID** of application type **Web application**.
+3. Add the authorised redirect URI `<server origin>/oauth/google/callback`. **Settings → Server → Single sign-on → Provider apps → Google** shows the exact URL under **Callback URLs**; copy it verbatim.
+4. Paste the **Client id** and **Client secret** into that same Google block, or put them in the server's `.env` file as `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+The server refuses to start when `GOOGLE_OAUTH_CLIENT_SECRET` is exported in its
+process environment; keep it in the `.env` file (in Docker, mount it at
+`/app/bin/.env`). The secret never leaves the server: no RPC response carries it.
+A client id without its secret is an unfinished setup, and Google sign-ins are
+refused until both are set.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Changing to a different client signs everyone out of Google Calendar: a sign-in
+belongs to the client that issued it.
 
-## Bring your own Google client (forks and self-hosting)
+## Give one workspace its own Google client
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+A workspace can connect Google Calendar through a client of its own instead of the server's. Only a workspace admin or owner can set it up.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Create a Google **Web application** client as in steps 1 and 2 above
+2. Go to **Settings → Workspace → General → Provider apps** and open **Google Calendar**
+3. Choose **Use this workspace's own app**
+4. Add the redirect URI the row shows under **Callback URL** to the client, verbatim
+5. Paste the **Client id** and **Client secret**
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Calendar accounts connected in this workspace then go through that client, whichever way the server signs people in. It never falls back to the server's client or to Connect: until both fields are set, Google Calendar is off in this workspace and the row says what is missing. The secret never leaves the server.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Switching between the server's client and the workspace's, or changing the workspace's client id, marks every Google account in this workspace for reconnection. **Use this server's app** deletes the workspace's saved fields. Other workspaces on the server are not affected.
 
-### Troubleshooting
+## Troubleshooting
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Symptom                                             | Likely cause                                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Connect Google Calendar** says sign-in isn't set up | The server has neither its own Google client nor Connect. The server owner picks one in **Settings → Server → Single sign-on**    |
+| Google shows `redirect_uri_mismatch`                | The redirect registered on the client does not match the **Callback URLs** value exactly, or the server's public URL changed       |
+| `invalid_client` from Google                        | The id and secret are from different clients, or the client was deleted                                                            |
+| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or a requested scope was not granted                                    |
+| The dialog says the code does not match             | Type the 8 characters exactly as the browser shows them. Five wrong codes end the sign-in; start again                               |
+| "Couldn't update your response", or booking, moving or deleting fails          | The account was connected with the old read-only scope. Reconnect it; a calendar shared with you read-only also refuses writes                                                                          |
+| Everybody has to reconnect                          | The server's or the workspace's Google client changed, or the server's Connect choice or key changed. See [Reconnect an expired account](#reconnect-an-expired-account) |
 
 ## Related guides
 
 - [Record and summarise a meeting](/en-GB/manual/guides/record-meeting/): turn an event into a recording
-- [Run a headless server](/en-GB/manual/guides/run-headless-server/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/en-GB/manual/guides/github-integration/)
+- [Run a headless server](/en-GB/manual/guides/run-headless-server/): where the credentials and the sync schedule live
+- [Run a Connect server](/en-GB/manual/guides/run-connect/)
 
 ## Related concepts
 

@@ -1,9 +1,9 @@
 ---
 title: Kjør en headless server
 description: Kjør den headless binærfilen cc_server eller Docker-imaget dens, par en klient til den og konfigurer den med hele flagg- og miljøflaten i CLI-et.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: nb-NO/handbok/slik-gjor-du/kjor-headless-server
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Kjør `cc_server` på en maskin som står på hele tiden, og koble deg deretter til
@@ -15,8 +15,10 @@ eksterne API-kall; klientene gjengir bare.
 ## Kjør i Docker (forhåndsbygde imager)
 
 Hver utgivelse publiserer en selvhostet stakk med fire GHCR-imager — backend-en,
-de to statiske tynne klientene og det valgfrie paringsreléet — pluss et eget
-`cc-server-demo`-image for den offentlige demoverten. En selvhostet installasjon
+de to statiske tynne klientene og det valgfrie paringsreléet — pluss den
+valgfrie påloggingstjenesten `cc-connect`
+([Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)) og
+et eget `cc-server-demo`-image for den offentlige demoverten. En selvhostet installasjon
 trenger ingen utsjekking av kildekoden. Fest en versjonstagg
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) eller følg `latest`.
 
@@ -69,6 +71,12 @@ Noen ting det er verdt å vite før du eksponerer noe av dette utenfor loopback:
 - **`/data` er den eneste tilstanden.** SQLite-databasene, hemmelighetene til
   parede enheter, nedlastede modeller og møtelyd ligger alle i volumet —
   sikkerhetskopier det, og containeren blir engangs.
+- **Leverandørhemmeligheter hører hjemme i en montert `.env`, aldri i `-e`.**
+  Serveren nekter å starte når `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` eller en `SLACK_*SECRET*` ligger
+  i prosessmiljøet. Monter filen skrivebeskyttet på `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), eller konfigurer appene i
+  Innstillinger.
 - **Par en klient fra inne i imaget** før den første tilkoblingen; dette er
   container-ekvivalenten av [trinn 3](#trinn-3-par-en-klient-før-første-oppstart):
 
@@ -275,21 +283,35 @@ kommando fra editorutvidelsen serveren starter, gjennom en offentlig proxy.
 Følsomme offentlige HTTP-forespørsler avvises; ressurser krever en autentisert
 kryptert økt.
 
-## Trinn 6: Koble til en Google Calendar (valgfritt)
+## Trinn 6: Velg hvordan folk logger inn
 
-For å synkronisere kalenderen til et arbeidsområde uten noe grafisk grensesnitt,
-bruk enhetskodeflyten:
+Den første klienten som kobler til som servereier, blir spurt om hvordan denne
+serveren logger inn folk på GitHub, Google Calendar og Linear: **Bruk appene til
+Control Center**, **Bruk mine egne apper** eller **Bruk en egen Connect-server**.
+Fra terminalen er det samme valget:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Den skriver ut en kode og en URL du godkjenner på en annen enhet, lagrer
-oppdateringstokenet på serversiden og avslutter. Et bygg fra kildekoden leveres
-uten Google-klient, så miljøvariablene for id og hemmelighet er påkrevd — det
-finnes ikke noe `--google-client-id`-flagg. Se [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/).
+`CC_CONNECT_URL` (`hosted`, `off` eller en URL) i serverens miljø eller `.env`
+låser valget i stedet. Med **Bruk mine egne apper** registrerer du hver
+leverandør under **Innstillinger → Server → Enkel pålogging → Leverandørapper**;
+**Opprett min GitHub-app** setter opp GitHub i ett trinn. Leverandørhemmeligheter
+hører hjemme i serverens `.env`-fil, aldri i det eksporterte miljøet. Se
+[Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/) og
+[Control Center Connect](/nb-NO/handbok/referanse/connect/).
+
+Pålogginger via Connect avsluttes med en kode som nettleseren viser, så serveren
+trenger ingen offentlig adresse for dem. Pålogginger via serverens egne apper
+sender nettleseren tilbake til serverens offentlige URL, så sett `--public-url`
+til en adresse som folks nettlesere kan nå.
+
+For å være vert for Connect for andre servere fra denne, setter du
+`CC_SERVER_CONNECT_HOST=on`; se
+[Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/#monter-connect-i-cc_server).
 
 ## Konfigurasjon
 
@@ -345,6 +367,7 @@ To ting du bør vite før du eksponerer porten utenfor loopback (TLS alene gir i
 - [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/)
 - [Kjør en flåteworker](/nb-NO/handbok/slik-gjor-du/kjor-fleet-worker/)
 - [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
+- [Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)
 
 ## Relaterte konsepter
 

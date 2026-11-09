@@ -2605,6 +2605,27 @@ class AppLocalizationsEl extends AppLocalizations {
       'Αναμονή έγκρισης στο πρόγραμμα περιήγησης…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Αυτό δεν μοιάζει με κωδικό σύνδεσης. Οι κωδικοί έχουν 8 γράμματα και ψηφία.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Η σύνδεση στο $provider δεν έχει ρυθμιστεί ακόμη σε αυτόν τον διακομιστή.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Η διεύθυνση επιστροφής σύνδεσης αυτού του διακομιστή δεν είναι προσβάσιμη με ασφάλεια από τηλέφωνο. Συνδεθείτε από την εφαρμογή υπολογιστή ή ζητήστε από τον κάτοχο του διακομιστή να ρυθμίσει μια δημόσια διεύθυνση HTTPS.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Η διαδικασία σύνδεσης έληξε. Ξεκινήστε νέα προσπάθεια σύνδεσης.';
 
@@ -2625,10 +2646,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Ολοκλήρωση σύνδεσης';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Η διεύθυνση επιστροφής του διακομιστή για το πρόγραμμα περιήγησης δεν είναι ασφαλώς προσβάσιμη από τηλέφωνο. Ζητήστε από τον ιδιοκτήτη του διακομιστή να ρυθμίσει μια δημόσια διεύθυνση επιστροφής HTTPS ή προσθέστε ένα token.';
 
   @override
   String get credentialsUpdateToken => 'Ενημέρωση token';

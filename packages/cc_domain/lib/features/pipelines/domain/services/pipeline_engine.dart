@@ -24,6 +24,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_templa
 import 'package:cc_domain/features/pipelines/domain/services/downstream_planner.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_input_snapshot.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_domain/features/pipelines/domain/services/state_reducer.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
@@ -224,6 +225,7 @@ class PipelineEngine implements PipelineEnginePort {
     String? parentPipelineRunId,
     String? parentStepId,
     bool dryRun = false,
+    String? requestedByUserId,
   }) async {
     final definition = await _requireTemplate(workspaceId, templateId);
     if (!definition.isEnabled) {
@@ -232,6 +234,12 @@ class PipelineEngine implements PipelineEnginePort {
       );
       return null;
     }
+    triggerPayload = await _withRequester(
+      triggerPayload,
+      requestedByUserId: requestedByUserId,
+      parentPipelineRunId: parentPipelineRunId,
+      workspaceId: workspaceId,
+    );
 
     // Without a dedup key there's nothing to serialize.
     if (dedupKey == null) {
@@ -285,6 +293,40 @@ class PipelineEngine implements PipelineEnginePort {
         unawaited(_startLocks.remove(lockKey));
       }
     }
+  }
+
+  /// [payload] with [kPipelineRequestedByKey] set from [requestedByUserId]
+  /// (or the parent run's, for a sub-pipeline) and never from the payload
+  /// itself: a trigger's inputs, a webhook body or a client argument must not
+  /// be able to name whose access a run borrows.
+  Future<Map<String, dynamic>?> _withRequester(
+    Map<String, dynamic>? payload, {
+    required String? requestedByUserId,
+    required String? parentPipelineRunId,
+    required String workspaceId,
+  }) async {
+    var requester = requestedByUserId;
+    if ((requester == null || requester.isEmpty) &&
+        parentPipelineRunId != null) {
+      final parent = await repository.getRun(parentPipelineRunId);
+      final Object? inherited;
+      if (parent != null && parent.workspaceId == workspaceId) {
+        inherited =
+            (parent.triggerPayload ?? const {})[kPipelineRequestedByKey];
+      } else {
+        inherited = null;
+      }
+      requester = inherited is String ? inherited : null;
+    }
+    final hasKey = payload?.containsKey(kPipelineRequestedByKey) ?? false;
+    if (!hasKey && (requester == null || requester.isEmpty)) {
+      return payload;
+    }
+    final sanitized = {...?payload}..remove(kPipelineRequestedByKey);
+    if (requester != null && requester.isNotEmpty) {
+      sanitized[kPipelineRequestedByKey] = requester;
+    }
+    return sanitized;
   }
 
   /// Builds the run row, persists it and kicks
@@ -1484,7 +1526,7 @@ class PipelineEngine implements PipelineEnginePort {
     await repository.updateStepRun(
       current.workspaceId,
       stepRunId,
-      inputJson: _encodeInputSnapshot(stepDef, ctx),
+      inputJson: encodePipelineInputSnapshot(stepDef, ctx),
     );
 
     // ── Attempt loop: retry synchronous failures per the node policy ────
@@ -2172,40 +2214,6 @@ class PipelineEngine implements PipelineEnginePort {
     f.whenComplete(() => _inFlight.remove(f));
   }
 
-  /// Snapshots the body's input — config metadata, the rendered prompt with
-  /// `{{key}}` placeholders substituted, the values of the keys listed in
-  /// `inputKeys` and the trigger payload. Stored on the step run so the
-  /// run-detail card can show what the body actually saw.
-  String _encodeInputSnapshot(
-    PipelineStepDefinition stepDef,
-    PipelineContext ctx,
-  ) {
-    final config = stepDef.config;
-    final inputs = <String, dynamic>{};
-    for (final key in config.inputKeys) {
-      final v = ctx.state[key] ?? ctx.triggerPayload?[key];
-      if (v != null) {
-        inputs[key] = _redactSecret(key, v);
-      }
-    }
-    final rendered = config.prompt?.replaceAllMapped(
-      RegExp(r'\{\{\s*([a-zA-Z0-9_.$]+)\s*\}\}'),
-      (m) {
-        final key = m.group(1)!;
-        final v = ctx.state[key] ?? ctx.triggerPayload?[key];
-        return v == null ? '' : '${_redactSecret(key, v)}';
-      },
-    );
-    return jsonEncode({
-      'bodyKey': stepDef.bodyKey,
-      if (config.agentId != null) 'agentId': config.agentId,
-      if (config.outputKey != null) 'outputKey': config.outputKey,
-      'prompt': ?rendered,
-      if (inputs.isNotEmpty) 'inputs': inputs,
-      if (ctx.triggerPayload != null) 'triggerPayload': ctx.triggerPayload,
-    });
-  }
-
   /// Drops the in-memory attempt/step-count bookkeeping for a finished run.
   void _clearRunBookkeeping(String runId) {
     _stepCounts.remove(runId);
@@ -2213,20 +2221,6 @@ class PipelineEngine implements PipelineEnginePort {
     // A terminal run re-fires nothing; `_cancelOpenSteps` closes whatever rows
     // were still being held.
     _resumableSteps.remove(runId);
-  }
-
-  static final RegExp _secretKeyPattern = RegExp(
-    r'(token|secret|password|passwd|apikey|api_key|authorization|credential|private_key)',
-    caseSensitive: false,
-  );
-
-  /// Redacts values whose key name looks secret, so the persisted input
-  /// snapshot never writes credentials to disk in cleartext.
-  static Object? _redactSecret(String key, Object? value) {
-    if (_secretKeyPattern.hasMatch(key)) {
-      return '***redacted***';
-    }
-    return value;
   }
 
   static const _uuidGen = Uuid();

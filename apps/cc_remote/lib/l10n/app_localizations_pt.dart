@@ -2596,6 +2596,27 @@ class AppLocalizationsPt extends AppLocalizations {
       'Aguardando autorização no navegador…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Digite o código mostrado no seu navegador';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Isso não parece um código de login. Os códigos têm 8 letras e dígitos.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Esse código não corresponde a este login. Confira e tente de novo.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'O login no $provider ainda não está configurado neste servidor.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'O endereço de retorno do login deste servidor não pode ser acessado com segurança de um celular. Entre pelo app para computador ou peça ao proprietário do servidor para configurar um endereço HTTPS público.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'O login expirou. Inicie uma nova tentativa.';
 
@@ -2616,10 +2637,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Concluir login';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Não é possível acessar com segurança o retorno do navegador deste servidor pelo telefone. Peça ao proprietário do servidor para configurar um endereço público de retorno HTTPS ou adicione um token.';
 
   @override
   String get credentialsUpdateToken => 'Atualizar token';
@@ -2759,4 +2776,12 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get noTextDiff =>
       'Não há diff de texto para este ficheiro — é binário ou grande demais para a forge retornar.';
+
+  @override
+  String get credentialsConnectCodePrompt =>
+      'Introduza o código apresentado no seu navegador';
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'O endereço de retorno do início de sessão deste servidor não está acessível de forma segura a partir de um telemóvel. Inicie sessão na aplicação para computador ou peça ao proprietário do servidor para configurar um endereço HTTPS público.';
 }

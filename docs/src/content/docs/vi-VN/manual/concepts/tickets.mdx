@@ -2,7 +2,7 @@
 title: Phiếu và ủy thác
 description: Vì sao một phiếu theo dõi công việc mà không điều phối nó, ủy thác được canh chừng ra sao, và bản gương từ nhà cung cấp sở hữu những gì và không sở hữu gì.
 slug: vi-VN/so-tay/khai-niem/phieu
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Phiếu là đơn vị công việc mà Control Center theo dõi. Nó cố ý là một thực thể
@@ -143,9 +143,11 @@ bộ**, nên một phiếu được nhà cung cấp hậu thuẫn mà bạn xóa
 trình theo dõi và có thể xuất hiện lại trong lần đồng bộ kế tiếp. Cộng tác viên
 và phiếu con bị xóa theo dây chuyền.
 
-Thông tin xác thực của adapter được phân giải từ các kho thông tin xác thực của
-máy chủ (một khóa Linear hoặc token GitHub được dán trong Cài đặt sẽ được nhận ở
-yêu cầu kế tiếp; biến môi trường chỉ gieo mầm cho các kho đó).
+Thông tin xác thực của adapter được phân giải theo từng lệnh gọi trên máy chủ: đăng
+nhập Linear hoặc GitHub của chính người dùng cho những việc họ làm, và automation
+Linear của không gian làm việc (hoặc khóa dịch vụ Linear của máy chủ) hoặc một token
+GitHub chỉ cho một kho mã để đồng bộ phiếu. Một đăng nhập mới được nhận ở yêu cầu kế
+tiếp.
 
 ## Phiếu và quy trình
 

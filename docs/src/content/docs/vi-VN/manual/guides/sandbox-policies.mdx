@@ -2,7 +2,7 @@
 title: Cấu hình chính sách sandbox
 description: Điều gì ràng buộc một lượt chạy agent, làm sao biết sandbox hệ điều hành có đang bọc nó hay không và các quy tắc hành động quyết định agent được push hay truy cập những gì ra sao.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Việc một lượt chạy agent có được sandbox hay không được quyết định trên máy chủ,
@@ -73,11 +73,11 @@ yêu cầu phê duyệt nêu kho mã và các ref; với **Từ chối**, git in
 
 Mỗi quy tắc tác động tới lượt chạy thế nào:
 
-- **Push** được thực thi bằng thứ lượt chạy nắm giữ. Token GitHub của nó là một
-  token cài đặt GitHub App chỉ đọc, có thể đọc nội dung và làm việc với pull
-  request. Cấu hình git của nó gửi mọi lần push lên GitHub tới một cổng loopback
-  trên `cc_server`, nơi hỏi quy tắc và chỉ khi đó mới chuyển tiếp lần push bằng
-  một token ghi mà agent không bao giờ thấy. Cổng chỉ chuyển tiếp tới kho mã của
+- **Push** được thực thi bằng thứ lượt chạy nắm giữ. Token GitHub của nó chỉ thuộc
+  một kho mã của lượt chạy và không thể push: nó có thể đọc nội dung và, khi thành viên
+  chịu trách nhiệm có quyền push, bình luận trên pull request. Cấu hình git của nó gửi
+  mọi lần push lên GitHub tới một cổng loopback trên `cc_server`, nơi hỏi quy tắc và chỉ
+  khi đó mới chuyển tiếp lần push bằng một token ghi mà agent không bao giờ thấy. Cổng chỉ chuyển tiếp tới kho mã của
   chính worktree hoặc tới một kho mã GitHub được liên kết với không gian làm
   việc. Điều này đúng với mọi adapter.
 - **Pull request và issue từ shell** được nhận ra qua dòng lệnh, trong công cụ
@@ -91,17 +91,13 @@ Mỗi quy tắc tác động tới lượt chạy thế nào:
   các công cụ `web_fetch` và `web_search` của harness vẫn hỏi ở mỗi lệnh gọi.
   Khi mạng bật, GitHub luôn nằm trong danh sách cho phép egress.
 
-:::caution[Không có GitHub App, quy tắc push chỉ mang tính khuyến nghị]
-Khi chưa cấu hình GitHub App, lượt chạy nhận personal access token dự phòng, thứ
-không thể thu hẹp thành chỉ đọc. `git push` vẫn đi qua cổng và quy tắc, nhưng mã
-dùng trực tiếp token có thể push vòng qua nó. Hãy cấu hình GitHub App để quy tắc
-có hiệu lực ràng buộc.
-
-Thông tin xác thực GitHub của lượt chạy luôn chỉ thuộc về broker — một token cài
-đặt GitHub App giới hạn theo kho mã, hoặc PAT dự phòng — chứ không bao giờ là
-token đã lưu của chính thành viên yêu cầu. PAT của máy chủ bị giữ lại khỏi một
-lượt chạy hành động thay một thành viên không phải chủ sở hữu và chưa kết nối
-GitHub.
+:::note[Token GitHub của lượt chạy đến từ đâu]
+Token được cấp cho lượt chạy từ GitHub App của không gian làm việc, App riêng của máy
+chủ, hoặc Control Center Connect, và bị giới hạn trong những gì thành viên chịu trách
+nhiệm (người đã yêu cầu, nếu không thì là chủ không gian làm việc) có thể làm trên kho
+mã đó. Đó không bao giờ là đăng nhập GitHub của một thành viên được chuyển nguyên vẹn,
+và không có token dự phòng nào: khi không cấp được token, lượt chạy bắt đầu mà không có
+token và ghi chú của nó nói rõ lý do.
 :::
 
 ## Kiểm tra xem các lượt chạy agent của bạn có được sandbox không

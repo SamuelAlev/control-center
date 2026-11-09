@@ -2,7 +2,7 @@
 title: Bir pipeline şablonu oluşturma
 description: Pipeline düzenleyicisinde bir DAG iş akışı şablonu yazın — düğümler ekleyin, onları bağlayın, girdileri bildirin ve çalıştırılabilir hale getirin.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipeline şablonları çalışma alanı ayarlarında yazılır. Çalışma alanı kenar
@@ -130,12 +130,20 @@ yapılandırılamaz:
 
 - Bir çalıştırmadaki her bash adımı aynı cwd’yi paylaşır:
   `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN`, kimlik bilgisi deposundan enjekte edilir; böylece `gh` ve
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` ek bir kurulum olmadan
-  çalışır.
+- Betik, bir ajanın komutları gibi ana makinenin işletim sistemi sandbox’ında
+  çalışır. Sandbox’ı olmayan bir ana makine (Windows ya da `bwrap` içermeyen
+  Linux) adımı kısıtlamasız çalıştırmak yerine başarısız kılar. Sunucunun veri
+  dizini ve `.env` dosyası içeriden okunamaz.
+- Git ve `gh` ana makine yapılandırmasını görmez: kayıtlı oturum, kimlik bilgisi
+  yardımcısı ya da genel hook yoktur.
+- Pipeline çalışma alanına bağlı bir GitHub deposunu adlandırdığında (durumda ya
+  da tetikleyici yükünde `repo_full_name`), `GH_TOKEN` ve `GITHUB_TOKEN` yalnızca
+  o tek depoyu okuyabilen bir token taşır; böylece ona karşı `gh` ve `git clone`
+  ek bir kurulum olmadan çalışır. Aksi halde GitHub token’ı yoktur.
+- Bash adımı içeren bir pipeline’ı yalnızca çalışma alanı yöneticisi oluşturabilir
+  ya da düzenleyebilir.
 - Betik, birebir `bash` yürütülebilir dosyası olarak başlatılır; bu yüzden
-  `bash`, sunucu ana makinesinin `PATH`’inde olmalıdır. Bu, Windows’a özgü bir
-  husustur.
+  `bash`, sunucu ana makinesinin `PATH`’inde olmalıdır.
 
 ### Router
 

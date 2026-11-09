@@ -1,36 +1,73 @@
 ---
 title: Google Calendar csatlakoztatása
-description: Csatlakoztassa a Google Calendar naptárat egy munkaterülethez, kezeljen több fiókot, és csatlakozzon újra, amikor egy token lejár.
+description: Csatlakoztassa a Google Calendar naptárat egy munkaterülethez, kezeljen több fiókot, és csatlakozzon újra, amikor egy bejelentkezés lejár.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Ez az útmutató bemutatja, hogyan csatlakoztathat Google Calendar naptárat egy
-munkaterülethez. Munkaterületenként működik: írásvédetten szinkronizálja az adott
-munkaterület eseményeit a Control Centerbe. A teljes képről a
-[Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/) oldalon olvashat.
+munkaterülethez. Munkaterületenként és tagonként működik: szinkronizálja az Ön adott
+munkaterülethez tartozó eseményeit a Control Centerbe, ahol a meghívókra is válaszolhat,
+új eseményeket foglalhat, áthelyezhet és törölhet eseményeket.
+A teljes képről a [Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/) oldalon
+olvashat.
+
+## Előfeltételek
+
+- A szerver be tudja jelentkeztetni az embereket a Google-ba: vagy a Control
+  Center Connecten keresztül, vagy a szerver saját Google-kliensével
+  ([Saját Google-kliens használata](#saját-google-kliens-használata)). Ezt a
+  szerver tulajdonosa választja ki a **Beállítások → Szerver → Egyszeri
+  bejelentkezés** helyen
+- Egy megnyitott munkaterület: a naptárfiók mindig egyhez tartozik
 
 ## Fiók csatlakoztatása
 
 1. Nyissa meg a **Naptár** elemet az oldalsávon.
 2. Kattintson a **Naptárfiók hozzáadása** elemre a naptár oldalsávján. (Ugyanez a szakasz a **Beállítások → Munkaterület → Profil és identitás** alatt, a **Google Calendar** alpontban található.)
-3. Válassza ki az engedélyezés módját:
-   - **A Control Center Google-alkalmazásának használata** — nincs mit beállítani. Ez az alapértelmezett, ha a buildhez tartozik ilyen.
-   - **Saját Google Cloud kliens használata** — illessze be a saját projektje kliens-ID-ját és titkát (lásd: [Saját Google-kliens használata](#saját-google-kliens-használata-forkok-és-saját-hosztolás)).
-4. Kattintson a **Google Calendar csatlakoztatása** elemre. A párbeszédpanel egy rövid kódot és egy hivatkozást mutat a Google eszközoldalára.
-5. Nyissa meg ezt az oldalt bármely eszközön, adja meg a kódot, és hagyja jóvá a kért hozzáférést. A párbeszédpanel magától bezárul, és az eseményei elkezdenek szinkronizálódni.
+3. Kattintson a **Google Calendar csatlakoztatása** elemre. A böngészője megnyitja a Google hozzájárulási oldalát.
+4. Válassza ki a fiókot, és hagyja jóvá a naptáreseményeihez és a naptárlistájához való hozzáférést.
 
-Ezt a folyamatot nem az eszköze, hanem a szerver bonyolítja le, és ő őrzi a
-keletkező refresh tokent — ezért hagyja jóvá a kódot „bármely eszközön”, nem
-pedig kifejezetten ebben az alkalmazásban.
+A befejezés attól függ, ki futtatja a bejelentkezést:
 
-A fiók **csak az aktív munkaterülethez** kapcsolódik. Ha munkaterületet vált,
-az adott munkaterület naptárait fogja látni helyette.
+- **A szerver saját Google-kliense:** a Google visszaküldi a böngészőt a
+  szerverre, és a párbeszédpanel magától bezárul
+- **Control Center Connect:** a böngészőoldal egy 8 karakteres kódot mutat. Írja
+  be a párbeszédpanelbe, vagy hagyja, hogy a böngésző a `control-center://`
+  hivatkozáson keresztül megnyissa a Control Centert, és hagyja ki a beírást
 
-A csatlakozási folyamat a `calendar.readonly` hatókört kéri, valamint az
-e-mail-címét — ugyanezeket a hatóköröket a beépített alkalmazás és a beillesztett
-kliens esetében is. A Control Center olvassa az eseményeket; nem hoz létre,
-szerkeszt, töröl és nem válaszol meghívókra a Google-on.
+Az eseményei azonnal elkezdenek szinkronizálódni. A cserét nem az eszköze, hanem
+a szerver fejezi be, és ő őrzi a hitelesítő adatot.
+
+A fiók **csak az aktív munkaterülethez** kapcsolódik, és az Öné: ha két tag
+ugyanazt a Google-címet csatlakoztatja, külön fiókot kapnak. Ha munkaterületet
+vált, az adott munkaterület naptárait fogja látni helyette.
+
+A csatlakozási folyamat a `calendar.events` és a `calendar.calendarlist.readonly`
+hatókört, valamint az `openid email` hatókört kéri, bármelyik kliens futtatja is. A
+Control Center még nem írhatott a Google-be, amikor a fiókot csatlakoztatták: az ilyen
+fiók csak olvasási hatókörrel rendelkezik, újracsatlakozást kér, és az új bejelentkezés
+adja meg a többit.
+
+## Események lefoglalása, áthelyezése, megválaszolása és törlése
+
+- **Esemény lefoglalása:** a heti vagy napi nézetben húzza át az időrácsot az időtartam
+  megadásához (a havi nézetben húzzon át napokat egy egész napos eseményhez). Megjelenik
+  mellette egy kártya a címmel, az idővel, a vendégekkel, a Google Meet-hivatkozással, a
+  helyszínnel, a leírással és azzal, melyik naptárra foglal. A **Mentés** a Google-ben
+  lefoglalja, és megnyitja az eseményt. A naptár fejlécében lévő **+** gomb ugyanezt a
+  kártyát nyitja meg a következő szabad negyedórára. Az Escape billentyűvel elvetheti
+- **Esemény áthelyezése:** húzza az eseményt másik időpontra vagy napra, vagy az alsó szélét húzva módosítsa a befejezés idejét. Az esemény az új időpontban jelenik meg, amint a Google elfogadta; ha a Google elutasítja, visszaáll az eredeti helyére. Csak a saját és az Ön által szervezett eseményeket helyezheti át; a meghívás ott marad, ahová a szervezője tette
+- **Meghívó megválaszolása:** nyissa meg az eseményt, és válassza az **Igen**, **Talán**
+  vagy **Nem** lehetőséget
+- **Esemény törlése:** nyissa meg az eseményt, és kattintson a kuka ikonra. A megerősítés
+  megmutatja, kit érint: a szervezett esemény törlésekor a vendégek értesítést kapnak a
+  lemondásról, a meghívó törlése pedig csak az Ön naptárából távolítja el. Egy ismétlődő
+  esemény egy előfordulásának törlése nem törli a sorozat többi részét
+
+A vendégek megkapják a Google saját e-mail-meghívóját, frissítését vagy lemondását. Egy ismétlődő esemény egy előfordulásának áthelyezése is érintetlenül hagyja a sorozat többi részét.
+Csak olyan naptárakra foglalhat, amelyekbe a fiókja írhat, és csak a saját fiókjaival:
+más tag csatlakoztatott naptára soha nem kínálkozik fel.
 
 ## Hogyan működik a szinkronizálás
 
@@ -46,9 +83,12 @@ meg — ez teszi megfizethetővé a kétperces ütemet. Az ablak 24 óránként,
 minden alkalommal, amikor a Google érvényteleníti a tokent, egy teljes
 szinkronizálással horgonyzódik újra.
 
-A refresh tokenek a szerveroldalon, a szerver adatkönyvtárában lévő
+A hitelesítő adatok a szerveroldalon, a szerver adatkönyvtárában lévő
 `secrets.json` fájlban élnek, amely csak tulajdonosi jogosultsággal (`0600`)
-íródik — nem az operációs rendszer kulcskarikájában, és soha nem egy kliensen.
+íródik — nem az operációs rendszer kulcskarikájában, és soha nem egy kliensen. A
+Connecten keresztüli bejelentkezés csak egy lepecsételt hitelesítő adatot tárol,
+amelyet a Connect kizárólag ennek a szervernek tud megnyitni; a hozzáférési
+tokenje a szerver memóriájában marad.
 
 ## Több fiók csatlakoztatása
 
@@ -59,74 +99,85 @@ eseményeik ugyanabba a havi / heti / napirend nézetbe olvadnak össze. Minden 
 
 ## Lejárt fiók újracsatlakoztatása
 
-Ha a Google véglegesen érvényteleníti egy fiók tokenjét (visszavont vagy rég
+Ha a Google véglegesen érvényteleníti egy fiók bejelentkezését (visszavont vagy rég
 lejárt munkamenet), a szinkronizálás leáll, és a Control Center egy
 **Újracsatlakozás** sávot jelenít meg a naptáron, valamint egy asztali
-értesítést. Kattintson az **Újracsatlakozás** elemre, és hagyjon jóvá egy új
-kódot; a sáv a következő sikeres szinkronizáláskor eltűnik.
+értesítést. Kattintson az **Újracsatlakozás** elemre, és jelentkezzen be újra; a
+sáv a következő sikeres szinkronizáláskor eltűnik.
+
+Ugyanez a sáv jelenik meg, ha ez a szerver már nem tudja használni a
+bejelentkezést: a szerver tulajdonosa Connect-szervert váltott vagy lecserélte a
+Connect-kulcsot, megváltozott a szerver saját Google-kliense, vagy az
+adatkönyvtárat egy másik gépre állították vissza.
 
 ## Fiók leválasztása
 
 A naptár oldalsávján (vagy a **Beállítások → Munkaterület → Profil és
 identitás** alatt) kattintson a fiók **Leválasztás** elemére. Ez törli a
-szinkronizált eseményeit, és törli a szerveren tárolt tokenjeit.
+szinkronizált eseményeit, és törli a szerveren tárolt hitelesítő adatát.
 
-## Csatlakoztatás headless szerverről
+## Saját Google-kliens használata
 
-Egy grafikus felület nélküli szerver ugyanezt a fiókot a saját termináljából
-csatlakoztatja:
+Akkor futtasson saját Google-klienst, ha a **Saját alkalmazások használata**
+lehetőséget választotta. A szerver saját kliense csak ebben az esetben érvényes: a
+Control Center vagy egyéni Connect esetén a Connect fut minden sávon, a Google is, a
+szerver kliense pedig mentve marad, de nincs használatban. Ha azt szeretné, hogy a
+hozzájárulási képernyő az Ön projektjét nevezze meg, miközben a szerver a Connectet
+használja, állítson be a munkaterületnek saját klienst ([lent](#egy-munkaterület-saját-google-kliensének-beállítása));
+ez minden módban érvényes.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. A [Google Cloud Console](https://console.cloud.google.com/apis/credentials) felületén engedélyezze a **Google Calendar API**-t, és konfigurálja az **OAuth hozzájárulási képernyőt**, hozzáadva a `calendar.events`, `calendar.calendarlist.readonly`, `openid` és `email` hatókört. Amíg az alkalmazás nincs ellenőrizve, vegye fel magát **tesztfelhasználóként**.2. Hozzon létre egy **OAuth kliens-ID**-t **Web application** alkalmazástípussal.
+3. Adja hozzá a `<server origin>/oauth/google/callback` engedélyezett átirányítási URI-t. A **Beállítások → Szerver → Egyszeri bejelentkezés → Szolgáltatói alkalmazások → Google** a **Visszahívási URL-ek** alatt mutatja a pontos URL-t; másolja ki szó szerint.
+4. Illessze be a **Kliens-ID** és a **Kliens titok** értékét ugyanabba a Google-blokkba, vagy tegye őket a szerver `.env` fájljába `GOOGLE_OAUTH_CLIENT_ID` és `GOOGLE_OAUTH_CLIENT_SECRET` néven.
 
-Kiír egy kódot és egy URL-t, megvárja a jóváhagyást, majd eltárolja a tokeneket,
-és a következő bejáráskor szinkronizál.
+A szerver nem indul el, ha a `GOOGLE_OAUTH_CLIENT_SECRET` a folyamata
+környezetébe van exportálva; tartsa a `.env` fájlban (Dockerben csatolja a
+`/app/bin/.env` helyre). A titok soha nem hagyja el a szervert: egyetlen
+RPC-válasz sem tartalmazza. A titok nélküli kliensazonosító befejezetlen
+beállítás, és a Google-bejelentkezések elutasításra kerülnek, amíg mindkettő
+nincs megadva.
 
-A forrásból készült build **nem** tartalmaz Google-klienst, ezért az ID és a
-titok kötelező — állítsa be a `GOOGLE_OAUTH_CLIENT_ID` és a
-`GOOGLE_OAUTH_CLIENT_SECRET` változót. Nincs `--google-client-id` kapcsoló (az
-ismeretlen kapcsolókat a rendszer figyelmen kívül hagyja). A környezeti
-változópár nélkül a parancs hiányzó kliensre utaló hibával lép ki.
+Egy másik kliensre váltás mindenkit kijelentkeztet a Google Calendarból: a
+bejelentkezés ahhoz a klienshez tartozik, amely kiadta.
 
-## Saját Google-kliens használata (forkok és saját hosztolás)
+## Egy munkaterület saját Google-kliensének beállítása
 
-A kiadott buildek tartalmaznak Google-klienst, így a legtöbb felhasználó soha nem
-nyúl ehhez. Akkor használjon sajátot, ha forrásból buildel, saját szervert
-futtat, vagy szeretné, hogy a hozzájárulási képernyő az Ön projektjét nevezze
-meg.
+A munkaterület a szerver kliense helyett saját klienssel is csatlakozhat a Google Calendarhoz.
+Ezt csak munkaterületi adminisztrátor vagy tulajdonos állíthatja be.
 
-1. A [Google Cloud Console](https://console.cloud.google.com/apis/credentials) felületén engedélyezze a **Google Calendar API**-t, és konfigurálja az **OAuth hozzájárulási képernyőt**, hozzáadva a `calendar.readonly`, `openid` és `email` hatókört. Amíg az alkalmazás nincs ellenőrizve, vegye fel magát **tesztfelhasználóként**. A `calendar.events` hozzáadása a hozzájárulási képernyőn nem teszi lehetővé az RSVP-t — a Control Center soha nem kéri ezt a hatókört.
-2. Hozzon létre egy **OAuth kliens-ID**-t **TV-k és korlátozott bemenetű eszközök** alkalmazástípussal, és másolja ki a kliens-ID-t és a kliens titkot is.
-3. Adja meg őket vagy kapcsolatonként (válassza a **Saját Google Cloud kliens használata** lehetőséget a párbeszédpanelen), vagy szerver szinten a `GOOGLE_OAUTH_CLIENT_ID` és a `GOOGLE_OAUTH_CLIENT_SECRET` változóval.
+1. Hozzon létre egy Google **Web application** klienst a fenti 1. és 2. lépés szerint
+2. Nyissa meg a **Beállítások → Munkaterület → Általános → Szolgáltatói alkalmazások** menüpontot, és nyissa meg a **Google Calendar** elemet
+3. Válassza a **A munkaterület saját alkalmazásának használata** lehetőséget
+4. Adja hozzá a klienshez a sor **Callback URL** alatt megjelenő átirányítási URI-t, szó szerint
+5. Illessze be a **Kliens-ID** és a **Kliens titok** értékét
 
-A szerver szinten megadott pár mindenhol felváltja a beépítettet, még a „Control
-Center Google-alkalmazásának használata” beállítás mögött is — így a saját
-szerverén ez a beállítás az Ön alkalmazását jelenti.
+Az ebben a munkaterületen csatlakoztatott naptárfiókok a saját klienssel működnek, bárhogyan
+jelentkezteti be a szerver az embereket. Soha nem esnek vissza a szerver klienséhez vagy a
+Connectre: amíg mindkét mező nincs kitöltve, a Google Calendar ki van kapcsolva ebben a
+munkaterületen, és a sor megmondja, mi hiányzik. A titok soha nem hagyja el a szervert.
 
-A kliens titok soha nem hagyja el a szervert: egyetlen RPC-válasz sem
-tartalmazza, és a szerver saját kliense útján csatlakoztatott fiók jelölőt tárol
-a pár másolata helyett, így a cseréje csak annyi, hogy új értékkel újraindítja a
-szervert.
+A szerver kliense és a munkaterület kliense közötti váltás, illetve a munkaterület kliensazonosítójának
+módosítása megjelöli az összes Google-fiókot ebben a munkaterületen újracsatlakozásra. A
+**szerver alkalmazásának használata** lehetőség törli a munkaterület mentett mezőit. A szerver többi
+munkaterülete nem érintett.
 
-### Hibaelhárítás
+## Hibaelhárítás
 
-| Tünet                                                  | Valószínű ok                                                                                                                                                      |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A párbeszédpanel nem kínál beépített lehetőséget        | Ez a build nem tartalmaz Google-klienst (forrásból készült build), vagy a szervert a párnak csak az egyik felével indították. Mind az ID, mind a titok kötelező |
-| `invalid_scope` a folyamat indításakor                 | A Naptár nincs engedélyezve az adott Cloud-projektben egy eszközkódos kliens számára. Használjon helyette loopback- vagy webkliens-projektet                     |
-| `invalid_client` a Google-től                          | A kliens nem **TV-k és korlátozott bemenetű eszközök** típusú, vagy az ID és a titok különböző kliensekből származik                                               |
-| A jóváhagyás sikerül, de a szinkronizálás üres         | A fiókja nincs **tesztfelhasználóként** felvéve a hozzájárulási képernyőn, vagy a `calendar.readonly` hatókört nem adták meg                                      |
-| A kód a jóváhagyás előtt lejár                         | Az eszközkódok rövid élettartamúak. Indítsa újra a csatlakoztatást egy új kódért                                                                                  |
-| „Nem sikerült frissíteni a válaszát” egy RSVP-nél       | Várható: a csatlakozási folyamat soha nem kéri a `calendar.events` hatókört                                                                                       |
-| A szinkronizálás leáll, és a szervernaplóban frissítési figyelmeztetés jelenik meg | A fiókot olyan klienssel csatlakoztatták, amely már nincs konfigurálva. Csatlakoztassa újra a fiókot, vagy állítsa vissza azt a kliens-ID-t és titkot             |
+| Tünet                                                  | Valószínű ok                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| A **Google Calendar csatlakoztatása** azt írja, hogy a bejelentkezés nincs beállítva | A szervernek nincs sem saját Google-kliense, sem Connectje. A szerver tulajdonosa a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen választja ki az egyiket |
+| A Google `redirect_uri_mismatch` hibát mutat           | A kliensen regisztrált átirányítás nem egyezik pontosan a **Visszahívási URL-ek** értékével, vagy megváltozott a szerver nyilvános URL-je |
+| `invalid_client` a Google-től                          | Az ID és a titok különböző kliensekből származik, vagy a klienst törölték                                                            |
+| A jóváhagyás sikerül, de a szinkronizálás üres         | A fiókja nincs **tesztfelhasználóként** felvéve a hozzájárulási képernyőn, vagy a kért hatókörök valamelyikét nem adták meg         |
+| A párbeszédpanel azt írja, hogy a kód nem egyezik      | Írja be a 8 karaktert pontosan úgy, ahogy a böngésző mutatja. Öt hibás kód lezárja a bejelentkezést; kezdje újra                      |
+| „Nem sikerült frissíteni a válaszát”, vagy a lefoglalás, áthelyezés vagy törlés sikertelen | A fiókot a régi, csak olvasási hatókörrel csatlakoztatták. Csatlakoztassa újra; a csak olvasásra megosztott naptárakba írás szintén elutasításra kerül                                              |
+| Mindenkinek újra kell csatlakoznia                     | Megváltozott a szerver vagy a munkaterület Google-kliense, vagy a szerver Connect-választása, illetve a kulcsa. Lásd: [Lejárt fiók újracsatlakoztatása](#lejárt-fiók-újracsatlakoztatása) |
 
 ## Kapcsolódó útmutatók
 
 - [Megbeszélés rögzítése és összefoglalása](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/): alakítson egy eseményt felvétellé
-- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): hol élnek a tokenek és a szinkronizálási ütemezés
-- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): hol élnek a hitelesítő adatok és a szinkronizálási ütemezés
+- [Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/)
 
 ## Kapcsolódó fogalmak
 

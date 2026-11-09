@@ -6,7 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/services/scm_path_order.dart';
 import 'package:cc_infra/src/git/git_diff_z_parser.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 
 /// A [SessionDiffPort] that shells out to `git` to compute what changed in a
 /// worktree since a snapshot ref.
@@ -231,8 +231,7 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     String workdir, {
     Map<String, String>? env,
   }) async {
-    final result = await Process.run(
-      'git',
+    final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
       workingDirectory: workdir,
       environment: env,

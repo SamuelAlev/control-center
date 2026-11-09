@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 import 'package:cc_infra/src/detection/claude_code_model_probe.dart';
 import 'package:cc_infra/src/detection/claude_control_session.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
 
 /// What `claude` reported about one account's plan.
@@ -89,25 +91,17 @@ class ClaudeCliUsageProbe {
   /// The bound on one control request.
   final Duration requestTimeout;
 
-  /// Credential variables that would make the CLI report a metered login
-  /// instead of the plan this reading is about.
-  static const List<String> _meteredCredentials = [
-    'ANTHROPIC_API_KEY',
-    'ANTHROPIC_AUTH_TOKEN',
-  ];
-
   static Future<Process> _defaultStart(
     String executable,
     List<String> arguments, {
     required String workingDirectory,
     required Map<String, String> environment,
-  }) => Process.start(
+  }) => ChildProcess.start(
     executable,
     arguments,
     workingDirectory: workingDirectory,
     environment: environment,
-    includeParentEnvironment: false,
-    runInShell: false,
+    inheritBase: false,
   );
 
   static String? _defaultStandInDir() {
@@ -120,9 +114,12 @@ class ClaudeCliUsageProbe {
   }
 
   /// The environment one read runs with. Visible for tests.
+  ///
+  /// The child allowlist never carries `ANTHROPIC_API_KEY`/`_AUTH_TOKEN`, so a
+  /// metered key cannot make the CLI report that login instead of the plan
+  /// this reading is about.
   Map<String, String> environmentFor(String? configDir) {
-    final env = {..._env};
-    _meteredCredentials.forEach(env.remove);
+    final env = ChildEnvironment.build(_env, toolchain: true);
     if (configDir == null || configDir.isEmpty) {
       return env;
     }

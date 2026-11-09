@@ -1,20 +1,43 @@
 part of 'personal_connection_card.dart';
 
+/// One browser sign-in attempt: `oauth.begin`, then `oauth.status` until it
+/// settles. In Connect mode the browser shows a confirmation code the person
+/// types here (`oauth.complete`); in own mode the provider redirects to the
+/// server, which must be reachable over public HTTPS from the phone.
 mixin _PersonalConnectionFlow
     on ConsumerState<PersonalConnectionCard>, _PersonalCredentialActions {
   Timer? _timer;
-  String? _loginId;
-  String? _verificationUrl;
-  String? _userCode;
-  DateTime? _expires;
+  SignInAttempt? _attempt;
+  final _code = TextEditingController();
   bool _polling = false;
+
+  /// Whether this server's sign-in for the lane can finish from a phone.
+  bool get _canSignIn {
+    final info = widget.laneInfo;
+    if (widget.lane == null || info == null) return false;
+    return switch (info.mode) {
+      SignInLaneMode.connect => true,
+      SignInLaneMode.own => phoneCanUseRedirect(info.redirectUri),
+      SignInLaneMode.unavailable => false,
+    };
+  }
+
+  /// Own mode whose callback a phone cannot reach.
+  bool get _ownUnreachable {
+    final info = widget.laneInfo;
+    return widget.lane != null &&
+        info != null &&
+        info.mode == SignInLaneMode.own &&
+        !phoneCanUseRedirect(info.redirectUri);
+  }
 
   @override
   void didUpdateWidget(PersonalConnectionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.workspaceId != widget.workspaceId ||
         oldWidget.providerId != widget.providerId ||
-        oldWidget.isForge != widget.isForge) {
+        oldWidget.isForge != widget.isForge ||
+        oldWidget.lane != widget.lane) {
       _stop();
       _token.clear();
       _editing = false;
@@ -27,12 +50,19 @@ mixin _PersonalConnectionFlow
     _timer?.cancel();
     _token.clear();
     _token.dispose();
+    _code.dispose();
     super.dispose();
   }
 
   Future<void> _begin() async {
-    if (!_authorized || _busy || _verificationUrl != null) return;
-    final providerId = widget.providerId;
+    final lane = widget.lane;
+    if (lane == null ||
+        !_authorized ||
+        _busy ||
+        _attempt != null ||
+        !_canSignIn) {
+      return;
+    }
     final workspaceId = widget.workspaceId;
     setState(() {
       _busy = true;
@@ -40,58 +70,26 @@ mixin _PersonalConnectionFlow
     });
     try {
       final client = ref.read(rpcClientProvider).requireValue;
-      final data = await client.call('oauth.begin', {
-        'provider': providerId,
-        'workspace_id': workspaceId,
-      });
+      final attempt = await RemoteProviderSignIn(
+        client,
+      ).begin(lane, workspaceId: workspaceId);
       if (!mounted ||
           !_authorized ||
-          widget.providerId != providerId ||
+          widget.lane != lane ||
           widget.workspaceId != workspaceId) {
         return;
       }
-      final mode = data['mode'];
-      if (mode == 'device') {
-        final code = data['user_code'] as String? ?? '';
-        final url = data['verification_uri'] as String? ?? '';
-        final id = data['login_id'] as String? ?? '';
-        final uri = Uri.tryParse(url);
-        if (id.isEmpty ||
-            code.isEmpty ||
-            uri == null ||
-            (uri.scheme != 'http' && uri.scheme != 'https')) {
-          throw StateError('Invalid device sign-in response');
-        }
-        setState(() {
-          _loginId = id;
-          _userCode = code;
-          _verificationUrl = url;
-          _expires = DateTime.now().add(
-            Duration(seconds: (data['expires_in'] as num?)?.toInt() ?? 900),
-          );
-        });
-        _timer = Timer.periodic(
-          const Duration(seconds: 2),
-          (_) => unawaited(_poll()),
-        );
-      } else if (mode == 'redirect') {
-        final url = data['url'] as String? ?? '';
-        final uri = Uri.tryParse(url);
-        if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-          throw StateError('Invalid redirect sign-in response');
-        }
-        setState(() {
-          _verificationUrl = url;
-          _expires = DateTime.now().add(const Duration(minutes: 10));
-        });
-        _timer = Timer.periodic(
-          const Duration(seconds: 2),
-          (_) => unawaited(_poll()),
-        );
-        openExternal(url);
-      } else {
-        throw StateError('Unsupported sign-in response');
+      final uri = Uri.tryParse(attempt.url);
+      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+        throw StateError('Invalid sign-in URL');
       }
+      _code.clear();
+      setState(() => _attempt = attempt);
+      _timer = Timer.periodic(
+        const Duration(seconds: 2),
+        (_) => unawaited(_poll()),
+      );
+      openExternal(attempt.url);
     } on Object {
       if (mounted) {
         setState(
@@ -104,70 +102,98 @@ mixin _PersonalConnectionFlow
     }
   }
 
+  /// Hands the code Connect's page showed back to the server.
+  Future<void> _confirmCode() async {
+    final attempt = _attempt;
+    if (attempt == null ||
+        attempt.mode != SignInLaneMode.connect ||
+        _busy ||
+        !_authorized) {
+      return;
+    }
+    final l = AppLocalizations.of(context);
+    final code = normaliseConfirmCode(_code.text);
+    if (code == null) {
+      setState(() => _error = l.credentialsConnectCodeMalformed);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final client = ref.read(rpcClientProvider).requireValue;
+      final result = await RemoteProviderSignIn(client).complete(
+        loginId: attempt.loginId,
+        code: code,
+        workspaceId: widget.workspaceId,
+      );
+      if (mounted && _attempt?.loginId == attempt.loginId) {
+        _settle(result);
+      }
+    } on RemoteRpcException {
+      // The server refused this code; the attempt stays open for another.
+      if (mounted) setState(() => _error = l.credentialsSignInInvalidCode);
+    } on Object {
+      if (mounted) setState(() => _error = l.credentialsOperationFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _poll() async {
-    if (!mounted || _polling || _verificationUrl == null) return;
+    final attempt = _attempt;
+    if (!mounted || _polling || attempt == null) return;
     if (!_authorized) {
       _stop();
       return;
     }
-    if (DateTime.now().isAfter(_expires!)) {
+    if (DateTime.now().toUtc().isAfter(attempt.expiresAt)) {
       _stop(error: AppLocalizations.of(context).credentialsLoginTimedOut);
       return;
     }
     _polling = true;
     try {
       final client = ref.read(rpcClientProvider).requireValue;
-      final url = _verificationUrl;
-      final loginId = _loginId;
-      if (loginId != null) {
-        final data = await client.call('oauth.status', {
-          'login_id': loginId,
-          'workspace_id': widget.workspaceId,
-        });
-        if (!mounted ||
-            !_authorized ||
-            _loginId != loginId ||
-            _verificationUrl != url) {
-          return;
-        }
-        if (data['status'] == 'succeeded') {
-          _stop();
-          _refresh();
-          return;
-        }
-        if (data['status'] != 'pending') {
-          _stop(error: AppLocalizations.of(context).credentialsOperationFailed);
-          return;
-        }
-      } else {
-        _refresh();
-        final connected = widget.isForge
-            ? (await ref.read(remoteForgeConnectionsProvider.future)).any(
-                (c) => c.forge.wire == widget.providerId && c.authenticated,
-              )
-            : (await ref.read(
-                    remoteTicketConnectionsProvider.future,
-                  ))[widget.providerId]?.connected ==
-                  true;
-        if (mounted && _authorized && _verificationUrl == url && connected) {
-          _stop();
-        }
+      final status = await RemoteProviderSignIn(
+        client,
+      ).status(attempt.loginId, workspaceId: widget.workspaceId);
+      if (mounted && _authorized && _attempt?.loginId == attempt.loginId) {
+        _settle(status);
       }
     } on Object {
-      // A lost phone connection is not a failed server login; wait for expiry.
+      // A lost phone connection is not a failed sign-in; wait for expiry.
     } finally {
       _polling = false;
     }
   }
 
+  void _settle(SignInAttempt attempt) {
+    switch (attempt.status) {
+      case SignInAttemptStatus.pending:
+        return;
+      case SignInAttemptStatus.succeeded:
+        _stop();
+        _refresh();
+      case SignInAttemptStatus.failed:
+        final l = AppLocalizations.of(context);
+        _stop(
+          error: switch (attempt.error) {
+            SignInFailure.expired => l.credentialsLoginTimedOut,
+            SignInFailure.invalidCode => l.credentialsSignInInvalidCode,
+            _ => l.credentialsOperationFailed,
+          },
+        );
+    }
+  }
+
   void _stop({String? error}) {
     _timer?.cancel();
+    _timer = null;
+    _code.clear();
     if (!mounted) return;
     setState(() {
-      _loginId = null;
-      _verificationUrl = null;
-      _userCode = null;
-      _expires = null;
+      _attempt = null;
       _error = error;
     });
   }

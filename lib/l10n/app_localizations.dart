@@ -2160,6 +2160,168 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update your response'**
   String get calendarRsvpFailed;
 
+  /// No description provided for @calendarNewEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get calendarNewEvent;
+
+  /// No description provided for @calendarComposerTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a title'**
+  String get calendarComposerTitleHint;
+
+  /// No description provided for @calendarComposerStarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get calendarComposerStarts;
+
+  /// No description provided for @calendarComposerEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get calendarComposerEnds;
+
+  /// No description provided for @calendarComposerDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get calendarComposerDate;
+
+  /// No description provided for @calendarComposerEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last day'**
+  String get calendarComposerEndDate;
+
+  /// No description provided for @calendarComposerGuestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add guests by email'**
+  String get calendarComposerGuestsHint;
+
+  /// No description provided for @calendarComposerMeet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Google Meet link'**
+  String get calendarComposerMeet;
+
+  /// No description provided for @calendarComposerLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a location'**
+  String get calendarComposerLocationHint;
+
+  /// No description provided for @calendarComposerDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description'**
+  String get calendarComposerDescriptionHint;
+
+  /// No description provided for @calendarComposerCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendarComposerCalendar;
+
+  /// No description provided for @calendarComposerTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a title to save the event'**
+  String get calendarComposerTitleRequired;
+
+  /// No description provided for @calendarComposerInvalidGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'One of the guest emails isn\'t valid'**
+  String get calendarComposerInvalidGuests;
+
+  /// No description provided for @calendarComposerEndBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'The event has to end after it starts'**
+  String get calendarComposerEndBeforeStart;
+
+  /// No description provided for @calendarComposerSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the event. Try again.'**
+  String get calendarComposerSaveFailed;
+
+  /// No description provided for @calendarComposerGuestsNotified.
+  ///
+  /// In en, this message translates to:
+  /// **'Guests get an email invitation from Google.'**
+  String get calendarComposerGuestsNotified;
+
+  /// No description provided for @calendarDeleteEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete event'**
+  String get calendarDeleteEvent;
+
+  /// No description provided for @calendarDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{title}”?'**
+  String calendarDeleteConfirmTitle(String title);
+
+  /// No description provided for @calendarDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s removed from Google Calendar.'**
+  String get calendarDeleteConfirmBody;
+
+  /// No description provided for @calendarDeleteConfirmGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s removed from Google Calendar, and every guest is told it\'s cancelled.'**
+  String get calendarDeleteConfirmGuests;
+
+  /// No description provided for @calendarDeleteConfirmInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s removed from your calendar only. The organizer and other guests keep it.'**
+  String get calendarDeleteConfirmInvite;
+
+  /// No description provided for @calendarDeleteConfirmRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Only this occurrence is deleted; the rest of the series stays.'**
+  String get calendarDeleteConfirmRecurring;
+
+  /// No description provided for @calendarDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the event. Try again.'**
+  String get calendarDeleteFailed;
+
+  /// Toast when dragging a calendar event to a new time fails; the tile returns to its old slot
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t move the event. It\'s back where it was.'**
+  String get calendarMoveFailed;
+
+  /// No description provided for @activityCreatedCalendarEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Created a calendar event'**
+  String get activityCreatedCalendarEvent;
+
+  /// Audit-trail sentence for calendar.moveEvent
+  ///
+  /// In en, this message translates to:
+  /// **'Moved a calendar event'**
+  String get activityMovedCalendarEvent;
+
+  /// No description provided for @activityDeletedCalendarEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted a calendar event'**
+  String get activityDeletedCalendarEvent;
+
   /// No description provided for @calendarAddAccount.
   ///
   /// In en, this message translates to:
@@ -2178,12 +2340,6 @@ abstract class AppLocalizations {
   /// **'Connect a Google account to sync events into this workspace. These calendars are yours here.'**
   String get calendarSettingsDescription;
 
-  /// No description provided for @calendarConnecting.
-  ///
-  /// In en, this message translates to:
-  /// **'Connecting…'**
-  String get calendarConnecting;
-
   /// No description provided for @calendarSyncNow.
   ///
   /// In en, this message translates to:
@@ -2201,54 +2357,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t connect Google Calendar'**
   String get calendarConnectError;
-
-  /// No description provided for @calendarClientIdLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Client ID'**
-  String get calendarClientIdLabel;
-
-  /// No description provided for @calendarClientSecretLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Client secret'**
-  String get calendarClientSecretLabel;
-
-  /// No description provided for @calendarConnectCredsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the Google OAuth device-code client ID and secret for your project. The server runs the connection and sync — your browser never holds the tokens.'**
-  String get calendarConnectCredsHint;
-
-  /// No description provided for @calendarConnectApproveInstruction.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the verification page on any device, sign in and enter this code:'**
-  String get calendarConnectApproveInstruction;
-
-  /// No description provided for @calendarConnectOpenPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Open verification page'**
-  String get calendarConnectOpenPage;
-
-  /// No description provided for @calendarConnectWaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for approval…'**
-  String get calendarConnectWaiting;
-
-  /// No description provided for @calendarConnectDenied.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorization was denied. Please try again.'**
-  String get calendarConnectDenied;
-
-  /// No description provided for @calendarConnectExpired.
-  ///
-  /// In en, this message translates to:
-  /// **'The code expired. Please try again.'**
-  String get calendarConnectExpired;
 
   /// No description provided for @notificationMeetingStartsSoon.
   ///
@@ -4218,12 +4326,6 @@ abstract class AppLocalizations {
   /// **'Changed a member\'s repository access'**
   String get activityChangedMemberRepoAccess;
 
-  /// No description provided for @activityUpdatedGitHubToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Updated the GitHub token'**
-  String get activityUpdatedGitHubToken;
-
   /// No description provided for @activityRefreshedWeather.
   ///
   /// In en, this message translates to:
@@ -4295,12 +4397,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Responded to the event invitation'**
   String get activityRespondedToInvitation;
-
-  /// No description provided for @activityStartedCalendarConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Started the calendar connection'**
-  String get activityStartedCalendarConnect;
 
   /// No description provided for @activityDisconnectedCalendar.
   ///
@@ -8229,7 +8325,7 @@ abstract class AppLocalizations {
   /// Placeholder text in the GIF search field
   ///
   /// In en, this message translates to:
-  /// **'Search GIFs...'**
+  /// **'Search KLIPY'**
   String get searchGifsHint;
 
   /// Placeholder text in the diff search field
@@ -9089,12 +9185,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unnamed agent'**
   String get unnamedAgent;
-
-  /// Update key
-  ///
-  /// In en, this message translates to:
-  /// **'Update key'**
-  String get updateKey;
 
   /// Generic update button label
   ///
@@ -10869,7 +10959,7 @@ abstract class AppLocalizations {
   /// Helper text for the bash script field
   ///
   /// In en, this message translates to:
-  /// **'Runs with bash -c. GITHUB_TOKEN is set. Placeholders are substituted before execution.'**
+  /// **'Runs with bash -c in the OS sandbox. GH_TOKEN and GITHUB_TOKEN hold a read-only token for the linked repository. Placeholders are quoted and substituted before execution.'**
   String get nodeConfigScriptHelp;
 
   /// Header for the per-edge route-key fields below the trigger chips
@@ -12099,7 +12189,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectGitHubHint.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to GitHub or add a token in Settings → Workspace → Profile & identity → Code hosting'**
+  /// **'Sign in to GitHub in Settings → Workspace → Profile & identity → Code hosting'**
   String get connectGitHubHint;
 
   /// No description provided for @connectGitHubToLoadPrs.
@@ -20362,7 +20452,7 @@ abstract class AppLocalizations {
   /// Subtitle of a chat provider row when it is not connected
   ///
   /// In en, this message translates to:
-  /// **'Mention the bot in {provider} to put an agent on something, or file tickets with {command}.'**
+  /// **'Mention the bot in {provider} to put an agent on something, or draft tickets with {command}.'**
   String chatProviderDescription(String provider, String command);
 
   /// Button that opens the connect dialog for a chat provider
@@ -20485,10 +20575,10 @@ abstract class AppLocalizations {
   /// **'Link your {provider} account'**
   String chatLinkCodeTitle(String provider);
 
-  /// Instruction above the copyable link command
+  /// Instruction above the one-time code the member sends to the bot in a direct message
   ///
   /// In en, this message translates to:
-  /// **'Send this command to the bot in {provider}. It works once and expires in 15 minutes.'**
+  /// **'Send this code to the {provider} bot in a direct message. It works once and expires in 15 minutes.'**
   String chatLinkCodeInstruction(String provider);
 
   /// Shown in the link dialog once the member has redeemed the code in the chat app
@@ -20724,30 +20814,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install app → copy the bot user OAuth token.'**
   String get chatStepInstallHint;
-
-  /// Option using Control Center's own Google OAuth app
-  ///
-  /// In en, this message translates to:
-  /// **'Use Control Center\'s Google app'**
-  String get calendarUseBuiltinApp;
-
-  /// Explains the built-in Google app option
-  ///
-  /// In en, this message translates to:
-  /// **'Approve with your Google account. Nothing to set up in Google Cloud.'**
-  String get calendarUseBuiltinAppHint;
-
-  /// Option using the user's own Google Cloud OAuth client
-  ///
-  /// In en, this message translates to:
-  /// **'Use my own Google Cloud client'**
-  String get calendarUseOwnClient;
-
-  /// Explains the bring-your-own Google client option
-  ///
-  /// In en, this message translates to:
-  /// **'Enter an OAuth client from your own Google Cloud project.'**
-  String get calendarUseOwnClientHint;
 
   /// Section heading for the About card (build identity of the app and connected server)
   ///
@@ -21895,29 +21961,23 @@ abstract class AppLocalizations {
   /// **'Sign in again'**
   String get signInAgain;
 
-  /// Toast when the app stopped waiting for a provider sign-in
+  /// Workspace shell warning title when no code host has a working sign-in for this workspace
   ///
   /// In en, this message translates to:
-  /// **'The sign-in has not come back yet. Finish it in your browser, then check again.'**
-  String get signInNotFinished;
+  /// **'Code hosting isn\'t connected in this workspace'**
+  String get forgeSignInBannerTitle;
 
-  /// Title of the re-authentication screen shown when a completed setup lost its forge credential
+  /// Workspace shell warning body: why the code-hosting sign-in is missing and what is paused
   ///
   /// In en, this message translates to:
-  /// **'You\'re signed out'**
-  String get signedOutTitle;
+  /// **'A sign-in expired or was revoked, or this workspace uses its own GitHub App. Pull requests, reviews and repository sync are paused until you sign in.'**
+  String get forgeSignInBannerBody;
 
-  /// Explains that only the forge credential lapsed and nothing else was lost
+  /// Button on the code-hosting warning that opens the workspace sign-in settings
   ///
   /// In en, this message translates to:
-  /// **'Your code-hosting connection is no longer valid — a token expired, or its access was revoked. Nothing else changed: sign back in and everything is where you left it.'**
-  String get signedOutSubtitle;
-
-  /// Credential source label: the server's own app identity
-  ///
-  /// In en, this message translates to:
-  /// **'via this server\'s app'**
-  String get viaServerApp;
+  /// **'Sign in'**
+  String get forgeSignInBannerAction;
 
   /// Card title for the ticketing vendor and its credential
   ///
@@ -21943,12 +22003,6 @@ abstract class AppLocalizations {
   /// **'Local'**
   String get ticketProviderLocal;
 
-  /// Action that opens the paste-a-key dialog for a ticketing vendor
-  ///
-  /// In en, this message translates to:
-  /// **'Add key'**
-  String get addKey;
-
   /// Server settings card: how this server authenticates as itself
   ///
   /// In en, this message translates to:
@@ -21958,7 +22012,7 @@ abstract class AppLocalizations {
   /// Subtitle of the provider apps card
   ///
   /// In en, this message translates to:
-  /// **'Workspaces inherit this GitHub App unless they pick a different App or a personal access token. Background work — webhooks, polling, sync — runs on the app, never on a person\'s token.'**
+  /// **'Apps this server registered with each provider itself. People sign in through them, and background work like webhooks, polling and sync runs on them, never on a person\'s sign-in.'**
   String get providerAppsDescription;
 
   /// The GitHub App's numeric id
@@ -21984,12 +22038,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Client secret'**
   String get providerClientSecret;
-
-  /// Server-level API key for a provider
-  ///
-  /// In en, this message translates to:
-  /// **'API key'**
-  String get providerApiKey;
 
   /// The redirect URL to register with the provider
   ///
@@ -22020,24 +22068,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The credentials work. Installed on: {accounts}'**
   String providerAppInstalledOn(String accounts);
-
-  /// Device-code dialog body
-  ///
-  /// In en, this message translates to:
-  /// **'Enter this code on the {provider} page that just opened. It has been copied to your clipboard.'**
-  String deviceCodeInstructions(String provider);
-
-  /// Device-code dialog status while polling
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for you to finish in the browser…'**
-  String get deviceCodeWaiting;
-
-  /// Device-code dialog action: copy the code and reopen the provider page
-  ///
-  /// In en, this message translates to:
-  /// **'Copy code and open'**
-  String get copyCodeAndOpen;
 
   /// Error when the app cannot launch a browser for a sign-in
   ///
@@ -22648,7 +22678,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAppsGroupServerDescription.
   ///
   /// In en, this message translates to:
-  /// **'Used by workspaces that inherit this install\'s GitHub App. A workspace with its own App or a PAT configures that under Workspace → General.'**
+  /// **'Used by workspaces that inherit this install\'s GitHub App. A workspace with its own App configures it under Workspace → General.'**
   String get providerAppsGroupServerDescription;
 
   /// Settings group: how developers talk to the server on GitHub PRs
@@ -25156,7 +25186,7 @@ abstract class AppLocalizations {
   /// Subtitle of the workspace GitHub identity card
   ///
   /// In en, this message translates to:
-  /// **'How background GitHub work in this workspace authenticates. Inherit this install\'s App, use a different App, or a personal access token only.'**
+  /// **'How background GitHub work in this workspace authenticates: this install\'s App, or a different App of the workspace\'s own.'**
   String get workspaceGitHubIdentityDescription;
 
   /// Workspace GitHub auth mode: inherit the server App
@@ -25171,12 +25201,6 @@ abstract class AppLocalizations {
   /// **'Use a different GitHub App'**
   String get workspaceGitHubModeApp;
 
-  /// Workspace GitHub auth mode: PAT, no App
-  ///
-  /// In en, this message translates to:
-  /// **'Personal access token only'**
-  String get workspaceGitHubModePat;
-
   /// Hint when the workspace inherits the install GitHub App
   ///
   /// In en, this message translates to:
@@ -25188,30 +25212,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This workspace\'s bot and polling identity. Members sign in on You through this App.'**
   String get workspaceGitHubAppHint;
-
-  /// Label for the workspace GitHub PAT field
-  ///
-  /// In en, this message translates to:
-  /// **'Background token'**
-  String get workspaceGitHubPatLabel;
-
-  /// Hint for PAT-only GitHub identity
-  ///
-  /// In en, this message translates to:
-  /// **'Used for polling and agents in this workspace. Not a member\'s profile token.'**
-  String get workspaceGitHubPatDescription;
-
-  /// Presence copy when a workspace GitHub PAT is set
-  ///
-  /// In en, this message translates to:
-  /// **'A background token is stored.'**
-  String get workspaceGitHubHasPat;
-
-  /// Presence copy when no workspace GitHub PAT is set
-  ///
-  /// In en, this message translates to:
-  /// **'No background token stored.'**
-  String get workspaceGitHubNoPat;
 
   /// Profile card subtitle: workspace overlay, not a second account
   ///
@@ -28228,6 +28228,840 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch workspace'**
   String get trayPanelSwitchWorkspace;
+
+  /// Button that starts a sign-in with a provider; provider is a brand name such as GitHub or Linear
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {provider}'**
+  String signInToProvider(String provider);
+
+  /// Button: a workspace admin connects the Linear app actor used by agents and pipelines
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Linear for automation'**
+  String get linearConnectAutomation;
+
+  /// Sign-in dialog status while the sign-in page is being opened
+  ///
+  /// In en, this message translates to:
+  /// **'Opening {provider} in your browser…'**
+  String signInOpeningBrowser(String provider);
+
+  /// Sign-in dialog instruction while the server waits for the provider to redirect back
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the request on {provider}\'s page in your browser. This window notices by itself when you\'re done.'**
+  String signInWaitingOwn(String provider);
+
+  /// Sign-in dialog status line while waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for {provider}…'**
+  String signInWaiting(String provider);
+
+  /// Title of the alert shown when a provider sign-in fails
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in didn\'t finish'**
+  String get signInFailedTitle;
+
+  /// Button that reopens the provider sign-in page in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Open the sign-in page again'**
+  String get signInReopenPage;
+
+  /// Sign-in dialog instruction to type the 8-character confirmation code
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code shown in your browser'**
+  String get signInCodePrompt;
+
+  /// Validation error under the sign-in code field
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like a sign-in code. Codes have 8 letters and digits.'**
+  String get signInCodeMalformed;
+
+  /// Hint under the sign-in code field about the deep link
+  ///
+  /// In en, this message translates to:
+  /// **'If your browser asks to open Control Center, allow it and you can skip typing the code.'**
+  String get signInCodeDeepLinkHint;
+
+  /// Toast after a successful sign-in; account is the provider login or email
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in to {provider} as {account}'**
+  String signInSucceeded(String provider, String account);
+
+  /// Toast after a successful sign-in when no account name is known
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in to {provider}'**
+  String signInSucceededNoAccount(String provider);
+
+  /// Sign-in failure: the attempt timed out
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in expired. Start it again.'**
+  String get signInErrorExpired;
+
+  /// Sign-in failure: the person declined on the provider page
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in was cancelled or denied.'**
+  String signInErrorAccessDenied(String provider);
+
+  /// Sign-in failure: not all requested scopes were granted
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} granted fewer permissions than Control Center needs. Sign in again and approve every permission.'**
+  String signInErrorScopeMismatch(String provider);
+
+  /// Sign-in failure: wrong confirmation code
+  ///
+  /// In en, this message translates to:
+  /// **'That code doesn\'t match this sign-in. Check it and try again.'**
+  String get signInErrorInvalidCode;
+
+  /// Sign-in failure: the provider is down
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} isn\'t responding right now. Try again in a few minutes.'**
+  String signInErrorProviderUnavailable(String provider);
+
+  /// Sign-in failure: the token exchange failed
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} accepted the sign-in, but the server couldn\'t finish it. Try again.'**
+  String signInErrorExchangeFailed(String provider);
+
+  /// Sign-in failure: the provider app configuration is broken
+  ///
+  /// In en, this message translates to:
+  /// **'This server\'s {provider} app is set up incorrectly. Ask the server owner to check Settings → Server → Single sign-on.'**
+  String signInErrorMisconfigured(String provider);
+
+  /// The person has a grant, but it no longer works
+  ///
+  /// In en, this message translates to:
+  /// **'Your {provider} sign-in has lapsed. Sign in again to keep working as yourself.'**
+  String signInErrorNeedsSignIn(String provider);
+
+  /// Sign-in failure: the provider app is not installed on the needed account
+  ///
+  /// In en, this message translates to:
+  /// **'The {provider} app isn\'t installed where this needs it. Install it, then try again.'**
+  String signInErrorNotInstalled(String provider);
+
+  /// Sign-in failure: the installation belongs to another server
+  ///
+  /// In en, this message translates to:
+  /// **'This GitHub App installation is already authorized for another Control Center server.'**
+  String get signInErrorInstallationBoundElsewhere;
+
+  /// Sign-in failure: the Linear team belongs to another server
+  ///
+  /// In en, this message translates to:
+  /// **'This Linear workspace is already connected to another Control Center server.'**
+  String get signInErrorTeamBoundElsewhere;
+
+  /// Sign-in failure: the person who approved the first Slack connection is not a workspace admin or owner
+  ///
+  /// In en, this message translates to:
+  /// **'Only a Slack workspace admin or owner can connect it to Control Center the first time. Ask one of them to add the app.'**
+  String get signInErrorNotAdmin;
+
+  /// Sign-in failure: the provider app installation is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'The {provider} app is suspended. Unsuspend it on {provider}, then try again.'**
+  String signInErrorSuspended(String provider);
+
+  /// Sign-in failure: Connect refuses this server install
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center Connect has blocked this server. Contact whoever runs your Connect server.'**
+  String get signInErrorInstallBlocked;
+
+  /// Sign-in failure with no known reason
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed for a reason the server didn\'t report. Try again.'**
+  String get signInErrorUnknown;
+
+  /// Title of the warning shown for a sign-in link this app did not start
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in not started here'**
+  String get signInPhishingTitle;
+
+  /// Warning shown for a sign-in link this app did not start
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in was not started from this app. If someone sent you this link, do not continue.'**
+  String get signInPhishingBody;
+
+  /// Explains why the unknown sign-in link was ignored
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was sent. Completing a sign-in someone else started would connect your account to their server.'**
+  String get signInPhishingDetail;
+
+  /// Dialog title when an action was refused because the person is not signed in
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in needed'**
+  String signInRequiredTitle(String provider);
+
+  /// Dialog body when an action was refused because the person is not signed in
+  ///
+  /// In en, this message translates to:
+  /// **'This runs as you on {provider}, and you aren\'t signed in. Sign in, then try again.'**
+  String signInRequiredBody(String provider);
+
+  /// Inline notice above a surface whose actions run as the person
+  ///
+  /// In en, this message translates to:
+  /// **'You aren\'t signed in to {provider}. Anything you do here runs as you, so sign in first.'**
+  String signInRequiredBanner(String provider);
+
+  /// Shown instead of a sign-in button when the server has no way to sign in to the provider
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in isn\'t set up on this server yet.'**
+  String signInUnavailable(String provider);
+
+  /// Settings group title listing where the GitHub App is installed
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub App installations'**
+  String get githubInstallations;
+
+  /// Settings group description for GitHub App installations
+  ///
+  /// In en, this message translates to:
+  /// **'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to. An organization\'s installation works only on servers its admins authorize.'**
+  String get githubInstallationsDescription;
+
+  /// Empty state for the GitHub App installations list
+  ///
+  /// In en, this message translates to:
+  /// **'The GitHub App isn\'t installed on any account this workspace\'s repositories belong to.'**
+  String get githubInstallationsEmpty;
+
+  /// Button that opens the GitHub App installation page
+  ///
+  /// In en, this message translates to:
+  /// **'Install GitHub App'**
+  String get githubInstallApp;
+
+  /// Button: an organization admin authorizes this server to use the installation
+  ///
+  /// In en, this message translates to:
+  /// **'Authorize this server'**
+  String get githubAuthorizeServer;
+
+  /// Toast after authorizing this server for an installation; account is the GitHub organization
+  ///
+  /// In en, this message translates to:
+  /// **'This server can now use the installation on {account}.'**
+  String githubServerAuthorized(String account);
+
+  /// Status tag: the GitHub App installation is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get githubInstallationSuspended;
+
+  /// Status tag: this server may use the installation
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized'**
+  String get githubInstallationAuthorized;
+
+  /// Status tag: this server may not use the installation yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized'**
+  String get githubInstallationNotAuthorized;
+
+  /// Row title for the workspace Linear app actor
+  ///
+  /// In en, this message translates to:
+  /// **'Linear automation'**
+  String get linearAutomationTitle;
+
+  /// Row subtitle for the workspace Linear app actor
+  ///
+  /// In en, this message translates to:
+  /// **'Lets this workspace\'s agents and pipelines act in Linear as an app rather than as a person. Workspace admins connect it.'**
+  String get linearAutomationHint;
+
+  /// Row subtitle when the Linear app actor is connected; account is the Linear workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {account}'**
+  String linearAutomationConnectedAs(String account);
+
+  /// Connect mode option: hosted Connect
+  ///
+  /// In en, this message translates to:
+  /// **'Use Control Center\'s apps'**
+  String get connectModeHosted;
+
+  /// Disclosure under the hosted Connect option
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-ins run through Control Center Connect. Connect seals each sign-in so only this server can open it, mints GitHub tokens limited to one repository, holds no repository key, and never receives your source code.'**
+  String get connectModeHostedDisclosure;
+
+  /// Connect mode option: the operator registers their own provider apps
+  ///
+  /// In en, this message translates to:
+  /// **'Use my own apps'**
+  String get connectModeOwn;
+
+  /// Hint under the own-apps option
+  ///
+  /// In en, this message translates to:
+  /// **'Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace\'s own Slack app in its settings. Create my GitHub App sets up GitHub in one step.'**
+  String get connectModeOwnHint;
+
+  /// Connect mode option: a self-run Connect server
+  ///
+  /// In en, this message translates to:
+  /// **'Use a custom Connect server'**
+  String get connectModeCustom;
+
+  /// Hint under the custom Connect option
+  ///
+  /// In en, this message translates to:
+  /// **'Your organization runs its own Connect server. Sign-ins go there instead of to Control Center\'s.'**
+  String get connectModeCustomHint;
+
+  /// Connect mode when none was chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up yet'**
+  String get connectModeUnset;
+
+  /// Label of the custom Connect server URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Connect server URL'**
+  String get connectCustomUrlLabel;
+
+  /// Validation error for the custom Connect URL
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an HTTPS address, like https://connect.example.com.'**
+  String get connectCustomUrlInvalid;
+
+  /// Helper under the custom Connect URL field when the URL is plain HTTP to this machine
+  ///
+  /// In en, this message translates to:
+  /// **'Plain HTTP only reaches a Connect on this machine. Use HTTPS for anything on a network.'**
+  String get connectCustomUrlLoopbackHint;
+
+  /// Connect health: this build has no hosted Connect
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center\'s hosted apps are not available yet on this build. Use your own apps or a custom Connect server.'**
+  String get connectErrorHostedUnprovisioned;
+
+  /// Connect health: bad signature
+  ///
+  /// In en, this message translates to:
+  /// **'Connect\'s configuration failed its signature check. Sign-ins through Connect are paused until it verifies again.'**
+  String get connectErrorSignature;
+
+  /// Connect health: configuration rollback
+  ///
+  /// In en, this message translates to:
+  /// **'Connect served an older configuration than this server has already seen, so it was refused. Sign-ins through Connect are paused.'**
+  String get connectErrorRollback;
+
+  /// Connect health: unreachable
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t reach Connect right now. Sign-ins that use it will fail until it\'s back.'**
+  String get connectErrorUnreachable;
+
+  /// Connect health: install blocked
+  ///
+  /// In en, this message translates to:
+  /// **'Connect has blocked this server\'s install id. Contact whoever runs your Connect server.'**
+  String get connectErrorInstallBlocked;
+
+  /// Connect health: new signing keys await confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Connect\'s apps changed'**
+  String get connectErrorPinsChanged;
+
+  /// Connect health: protocol mismatch
+  ///
+  /// In en, this message translates to:
+  /// **'Connect answered in a way this server doesn\'t understand. Update the server or check the Connect URL.'**
+  String get connectErrorProtocol;
+
+  /// Connect health: unknown error
+  ///
+  /// In en, this message translates to:
+  /// **'Connect reported a problem it didn\'t explain. Run a test to retry.'**
+  String get connectErrorUnknown;
+
+  /// Explains the pending signing keys
+  ///
+  /// In en, this message translates to:
+  /// **'Your Connect server now names different GitHub, Google, Linear or Slack apps than the ones this server pinned on first use. Trust them only if its operator told you to expect this.'**
+  String get connectPinsConfirmHint;
+
+  /// Button that accepts Connect signing keys
+  ///
+  /// In en, this message translates to:
+  /// **'Trust new apps'**
+  String get connectConfirmPins;
+
+  /// Connect warning: stale configuration
+  ///
+  /// In en, this message translates to:
+  /// **'The configuration in use is older than expected. Run a test to refresh it.'**
+  String get connectStale;
+
+  /// Lane source tag: an own provider app
+  ///
+  /// In en, this message translates to:
+  /// **'Own app'**
+  String get connectLaneSourceOwn;
+
+  /// Lane source tag: Control Center Connect (product name)
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectLaneSourceConnect;
+
+  /// Lane source tag: sign-in unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get connectLaneSourceOff;
+
+  /// Settings card title (product name)
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center Connect'**
+  String get connectTitle;
+
+  /// Settings card description for Connect
+  ///
+  /// In en, this message translates to:
+  /// **'Whose apps this server uses for GitHub, Google Calendar, Linear, Slack and GIF search.'**
+  String get connectDescription;
+
+  /// Summary fact label: which apps sign people in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in apps'**
+  String get connectFactMode;
+
+  /// Summary fact label: Connect health
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get connectFactHealth;
+
+  /// Summary fact label: Connect configuration epoch
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration version'**
+  String get connectFactEpoch;
+
+  /// Connect status: not used
+  ///
+  /// In en, this message translates to:
+  /// **'Not in use'**
+  String get connectHealthOff;
+
+  /// Connect status: healthy
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get connectHealthOk;
+
+  /// Connect status: unhealthy
+  ///
+  /// In en, this message translates to:
+  /// **'Not working'**
+  String get connectHealthDown;
+
+  /// Shown when the environment pins the Connect mode; CC_CONNECT_URL is an environment variable
+  ///
+  /// In en, this message translates to:
+  /// **'CC_CONNECT_URL in this server\'s environment sets this. Change it there and restart the server.'**
+  String get connectLocked;
+
+  /// Settings group title listing each provider lane source
+  ///
+  /// In en, this message translates to:
+  /// **'Where each sign-in runs'**
+  String get connectLanesTitle;
+
+  /// Settings group description for lane sources
+  ///
+  /// In en, this message translates to:
+  /// **'An own app always takes precedence over Connect for its provider.'**
+  String get connectLanesDescription;
+
+  /// Settings group title for the server identity on Connect
+  ///
+  /// In en, this message translates to:
+  /// **'This server'**
+  String get connectServerGroup;
+
+  /// Field label: this server install id on Connect
+  ///
+  /// In en, this message translates to:
+  /// **'Install id'**
+  String get connectInstallId;
+
+  /// Field description for the install id
+  ///
+  /// In en, this message translates to:
+  /// **'Identifies this server to Connect. Give it to an organization owner or Connect operator who asks for it.'**
+  String get connectInstallIdHint;
+
+  /// Shown when there is no install id yet
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned the first time this server uses Connect.'**
+  String get connectInstallIdEmpty;
+
+  /// Toast after a successful Connect test
+  ///
+  /// In en, this message translates to:
+  /// **'Connect is working.'**
+  String get connectTestOk;
+
+  /// Button that rotates the server Connect key
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate key'**
+  String get connectRotateKey;
+
+  /// Confirm dialog title for rotating the Connect key
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate this server\'s Connect key?'**
+  String get connectRotateKeyTitle;
+
+  /// Confirm dialog body for rotating the Connect key
+  ///
+  /// In en, this message translates to:
+  /// **'This server gets a new key and install id. Every sign-in made through Connect stops working, and everyone has to sign in again. Sign-ins through your own apps aren\'t affected.'**
+  String get connectRotateKeyBody;
+
+  /// Toast after rotating the Connect key
+  ///
+  /// In en, this message translates to:
+  /// **'Key rotated. Everyone who signed in through Connect needs to sign in again.'**
+  String get connectRotateKeyDone;
+
+  /// Field label above the cc_server connect command line
+  ///
+  /// In en, this message translates to:
+  /// **'From a terminal'**
+  String get connectCliLabel;
+
+  /// Onboarding progress label: choose sign-in apps
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in'**
+  String get onboardingStepSignIn;
+
+  /// Onboarding step title: choose sign-in apps
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how people sign in'**
+  String get onboardingConnectTitle;
+
+  /// Onboarding step subtitle: choose sign-in apps
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center works with GitHub, Google Calendar, Linear, Slack and GIF search through apps registered with each provider. Pick whose apps this server uses. You can change it later in Settings → Server → Single sign-on.'**
+  String get onboardingConnectSubtitle;
+
+  /// Onboarding note under the own-apps option
+  ///
+  /// In en, this message translates to:
+  /// **'Create a GitHub App for this server now, or add your apps later in Settings → Server → Single sign-on.'**
+  String get onboardingConnectOwnNext;
+
+  /// Field label: the Linear service API key used by the server itself
+  ///
+  /// In en, this message translates to:
+  /// **'Service API key'**
+  String get providerServiceApiKey;
+
+  /// Provider app status: some fields are set and others are missing
+  ///
+  /// In en, this message translates to:
+  /// **'Setup isn\'t finished'**
+  String get providerAppPartial;
+
+  /// Lists the missing provider app fields
+  ///
+  /// In en, this message translates to:
+  /// **'Still missing: {fields}. Until every field is set, sign-ins for this provider are refused rather than sent through Connect.'**
+  String providerAppMissingFields(String fields);
+
+  /// Settings group description for the Linear app fields
+  ///
+  /// In en, this message translates to:
+  /// **'The client id signs members in. The service API key lets this server read and write Linear by itself.'**
+  String get providerAppsGroupSignInLinearDescription;
+
+  /// Field label when the provider needs several callback URLs registered
+  ///
+  /// In en, this message translates to:
+  /// **'Callback URLs'**
+  String get providerCallbackUrls;
+
+  /// Field description for callback URLs
+  ///
+  /// In en, this message translates to:
+  /// **'Register this with the provider exactly as shown.'**
+  String get providerCallbackUrlHint;
+
+  /// Settings group title for the GitHub App manifest flow
+  ///
+  /// In en, this message translates to:
+  /// **'Create a GitHub App'**
+  String get providerAppCreateGitHubTitle;
+
+  /// Settings group description for the GitHub App manifest flow
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub registers an App with the right permissions and callback, then hands its credentials to this server. Nothing to copy by hand.'**
+  String get providerAppCreateGitHubHint;
+
+  /// Button that starts the GitHub App manifest flow
+  ///
+  /// In en, this message translates to:
+  /// **'Create my GitHub App'**
+  String get providerAppCreateGitHub;
+
+  /// Label of the optional field naming the GitHub organization the new App is created under
+  ///
+  /// In en, this message translates to:
+  /// **'Organization (optional)'**
+  String get providerAppCreateGitHubOrg;
+
+  /// Hint under the GitHub organization field of the App manifest flow
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to create the app under your own GitHub account. Creating it under an organization takes an owner of that organization.'**
+  String get providerAppCreateGitHubOrgHint;
+
+  /// Provider app status: sign-in works
+  ///
+  /// In en, this message translates to:
+  /// **'People can sign in.'**
+  String get providerAppSignInReady;
+
+  /// Status line under the link code while Control Center waits for the code to arrive in a direct message
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your direct message…'**
+  String get chatLinkWaiting;
+
+  /// Title of the panel asking the member to confirm the chat profile that sent their link code
+  ///
+  /// In en, this message translates to:
+  /// **'Is this your {provider} account?'**
+  String chatLinkClaimTitle(String provider);
+
+  /// Explains what confirming a claimed link code does
+  ///
+  /// In en, this message translates to:
+  /// **'This account sent your code to the bot. Confirm only if it is yours: once linked, what it sends in {provider} acts as you in this workspace.'**
+  String chatLinkClaimBody(String provider);
+
+  /// Button that refuses the chat profile that claimed the link code
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get chatLinkDecline;
+
+  /// Shown in the link dialog after the member declined the claim
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was linked. Get a new code if you still want to link your {provider} account.'**
+  String chatLinkDeclined(String provider);
+
+  /// Button that mints a fresh link code after a decline
+  ///
+  /// In en, this message translates to:
+  /// **'Get a new code'**
+  String get chatLinkNewCode;
+
+  /// Title of the row and sign-in dialog that installs the shared Control Center app into a chat workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Add Control Center to {provider}'**
+  String signInAddControlCenter(String provider);
+
+  /// Toast after the shared Control Center app was installed; workspace is the chat workspace name
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center was added to {workspace}'**
+  String signInAddedControlCenter(String workspace);
+
+  /// Subtitle of the row that installs the shared Control Center app
+  ///
+  /// In en, this message translates to:
+  /// **'Installs the shared Control Center app in your {provider} workspace. There is no app to create and no token to paste.'**
+  String chatSharedAppHint(String provider);
+
+  /// Button that starts the shared Control Center app install
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {provider}'**
+  String chatAddToProvider(String provider);
+
+  /// Caption on a chat connection that runs on the shared Control Center app
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on the shared Control Center app, so there are no tokens or bot settings to manage here.'**
+  String get chatSharedAppConnected;
+
+  /// Title of the settings card listing the member's ticket drafts from chat
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket drafts from chat'**
+  String get chatTicketDraftsTitle;
+
+  /// Explains that chat ticket drafts only become tickets when created in Control Center
+  ///
+  /// In en, this message translates to:
+  /// **'A draft becomes a backlog ticket only when you create it here. Drafts you leave are dropped after a day.'**
+  String get chatTicketDraftsDescription;
+
+  /// Where a ticket draft came from
+  ///
+  /// In en, this message translates to:
+  /// **'From {provider}'**
+  String chatTicketDraftFrom(String provider);
+
+  /// Button that creates a backlog ticket from a chat draft
+  ///
+  /// In en, this message translates to:
+  /// **'Create ticket'**
+  String get chatTicketDraftCreate;
+
+  /// Toast after a chat draft became a ticket; key is the ticket key
+  ///
+  /// In en, this message translates to:
+  /// **'Created {key}'**
+  String chatTicketDraftCreated(String key);
+
+  /// Title of the workspace card that sets which Google Calendar, Linear and Klipy apps the workspace uses
+  ///
+  /// In en, this message translates to:
+  /// **'Provider apps'**
+  String get workspaceProviderApps;
+
+  /// Subtitle of the workspace provider apps card
+  ///
+  /// In en, this message translates to:
+  /// **'Which Google Calendar, Linear and Klipy apps this workspace uses. By default it uses this server\'s apps or Control Center Connect. A workspace with its own app never falls back to them.'**
+  String get workspaceProviderAppsDescription;
+
+  /// Radio option: the workspace uses the server's app (or Connect) for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'Use this server\'s app'**
+  String get workspaceProviderAppModeInherit;
+
+  /// Hint under the 'use this server's app' option
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-ins and requests use this server\'s own app, or Control Center Connect.'**
+  String get workspaceProviderAppModeInheritHint;
+
+  /// Radio option: the workspace brings its own app for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'Use this workspace\'s own app'**
+  String get workspaceProviderAppModeOwn;
+
+  /// Hint under the 'use this workspace's own app' option
+  ///
+  /// In en, this message translates to:
+  /// **'Only this workspace\'s app is used. While it is incomplete, this provider is off here instead of falling back.'**
+  String get workspaceProviderAppModeOwnHint;
+
+  /// Status tag: the workspace uses the server's app for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'Server\'s app'**
+  String get workspaceProviderAppStatusInherit;
+
+  /// Status tag: the workspace uses its own complete app for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'Own app'**
+  String get workspaceProviderAppStatusOwn;
+
+  /// Lists the fields a workspace's own provider app still needs
+  ///
+  /// In en, this message translates to:
+  /// **'Still missing: {fields}. Until every field is set, this provider is off in this workspace. It does not fall back to this server\'s app.'**
+  String workspaceProviderAppMissingFields(String fields);
+
+  /// Hint under a workspace provider app's credential fields
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the app signs everyone in this workspace out of it. They sign in again with the new one.'**
+  String get workspaceProviderAppClientChangeHint;
+
+  /// Label of the Klipy app key field
+  ///
+  /// In en, this message translates to:
+  /// **'App key'**
+  String get workspaceProviderAppKlipyKey;
+
+  /// Description of the Klipy app key group
+  ///
+  /// In en, this message translates to:
+  /// **'GIF search in this workspace uses this key.'**
+  String get workspaceProviderAppKlipyHint;
+
+  /// Confirm dialog title when switching which app a workspace uses for a provider
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the {provider} app?'**
+  String workspaceProviderAppSwitchTitle(String provider);
+
+  /// Confirm dialog body when switching a workspace to its own provider app
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone connected to {provider} in this workspace through this server\'s app has to sign in again with the workspace\'s app.'**
+  String workspaceProviderAppSwitchToOwnBody(String provider);
+
+  /// Confirm dialog body when switching a workspace back to the server's provider app
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes the workspace\'s {provider} credentials. Everyone connected through the workspace\'s app has to sign in again.'**
+  String workspaceProviderAppSwitchToServerBody(String provider);
+
+  /// Confirm button that switches which app a workspace uses for a provider
+  ///
+  /// In en, this message translates to:
+  /// **'Switch app'**
+  String get workspaceProviderAppSwitchAction;
 }
 
 class _AppLocalizationsDelegate

@@ -2,16 +2,16 @@
 title: Mapa tras
 description: Každá trasa, kterou Control Center registruje, s její obrazovkou a parametry dotazu.
 slug: cs-CZ/prirucka/referencni-prirucka/mapa-tras
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell aplikace
 
-Shell aplikace (`ControlCenterLayout`) obaluje každou trasu uvnitř pracovního prostoru přes `ShellRoute`. **Každá destinace ve shellu má prefix pracovního prostoru — `/workspaces/:workspaceId/…` — a id pracovního prostoru v URL je jediný zdroj pravdy pro aktivní pracovní prostor.** Prefix nemají jen plochy před kontextem: `/splash`, `/onboarding`, `/signed-out` a holý výběr `/workspaces`, všechny přes celou obrazovku a mimo shell.
+Shell aplikace (`ControlCenterLayout`) obaluje každou trasu uvnitř pracovního prostoru přes `ShellRoute`. **Každá destinace ve shellu má prefix pracovního prostoru — `/workspaces/:workspaceId/…` — a id pracovního prostoru v URL je jediný zdroj pravdy pro aktivní pracovní prostor.** Prefix nemají jen plochy před kontextem: `/splash`, `/onboarding` a holý výběr `/workspaces`, všechny přes celou obrazovku a mimo shell.
 
 Brána je hotová, když je připojená aspoň jedna forge **pro přihlášeného uživatele** a existuje aspoň jeden pracovní prostor.
 
-Chybějící přihlašovací údaj a chybějící nastavení jsou různé obrazovky a rozlišuje je `users.onboarding_finished_at` přečtené z vlastního `identity.me` volajícího — nikdy „pracovní prostory existují“, což je špatně v okamžiku, kdy tě někdo pozve do pracovního prostoru, který jsi nezaložil. Bez připojené forge jde účet, který úvodní nastavení dokončil, na `/signed-out`, aby se znovu ověřil; účet, který ho nedokončil, jde na `/onboarding`. Dokud je příznak pořád neznámý, stráž podrží startovací obrazovku a nehádá, protože z úvodního nastavení se ven nikdy nepřesměrovává.
+Chybějící přihlašovací údaj a chybějící nastavení se řeší jinak a rozlišuje je `users.onboarding_finished_at` přečtené z vlastního `identity.me` volajícího — nikdy „pracovní prostory existují“, což je špatně v okamžiku, kdy tě někdo pozve do pracovního prostoru, který jsi nezaložil. Bez připojené forge zůstává účet, který úvodní nastavení dokončil, v aplikaci: shell pracovního prostoru ukáže varování s odkazem na Nastavení → Pracovní prostor → Profil a identita, kde je přihlášení; účet, který ho nedokončil, jde na `/onboarding`. Dokud je příznak pořád neznámý, stráž podrží startovací obrazovku a nehádá, protože z úvodního nastavení se ven nikdy nepřesměrovává.
 
 ## Trasy bez prefixu
 
@@ -19,7 +19,6 @@ Chybějící přihlašovací údaj a chybějící nastavení jsou různé obrazo
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/splash`                  | Startovací obrazovka, která vyhodnotí bránu úvodního nastavení                                                                                                        |
 | `/onboarding`              | Připoj forge, založ pracovní prostor nebo se k němu připoj, sandbox, výchozí adaptér a pak hlas. Krok pracovního prostoru odpadne, když účet už do nějakého patří |
-| `/signed-out`              | Nové ověření: stejná karta připojení forge, kterou vykresluje Nastavení, bez lišty kroků a bez tlačítka Pokračovat — router odejde sám, jakmile se forge ohlásí   |
 | `/workspaces`              | Seznam a výběr pracovních prostorů                                                                                                                                     |
 | `/workspaces/:workspaceId` | Přesměruje na `/workspaces/:workspaceId/inbox`                                                                                                                         |
 

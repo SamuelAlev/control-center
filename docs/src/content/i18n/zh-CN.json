@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "连接 Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "服务器与部署",
   "docs.sidebar.guidesRunHeadlessServer": "运行无界面服务器",
+  "docs.sidebar.guidesRunConnect": "运行 Connect 服务器",
   "docs.sidebar.guidesConnectRemoteServer": "连接到远程服务器",
   "docs.sidebar.guidesRunFleetWorker": "运行机群工作进程",
   "docs.sidebar.guidesBackUpAndRestore": "备份与恢复",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "键盘快捷键",
   "docs.sidebar.referenceRouteMap": "路由图",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "备份、导出与导入",
   "docs.sidebar.referenceTelemetry": "使用情况分析",
   "docs.sidebar.referenceGlossary": "术语表"

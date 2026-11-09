@@ -2,20 +2,20 @@
 title: PR-Unterhaltungen
 description: Wie aus einem GitHub-PR-Kommentar ohne Webhook ein Agentenzug wird, was den Autor autorisiert und wem jede Seite der Unterhaltung zugeschrieben wird.
 slug: de-DE/handbuch/konzepte/pr-unterhaltungen
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Ein Pull Request ist schon der Ort, an dem das Gespräch über Code stattfindet.
 PR-Unterhaltungen machen ihn zu einer Oberfläche auf einem Arbeitsbereich von
 Control Center, so wie eine
-[Chat-Brücke](/de-DE/handbuch/konzepte/chat-bruecken/) Slack zu einer macht: den
-Bot der GitHub App des Servers auf einem PR mit @ erwähnen, in seinen
-Review-Threads antworten oder das Label `ai-review` setzen, und die Arbeit
-läuft im Review-Bereich des PR — unter derselben Zuschreibung und denselben
-Schutzregeln wie alles, was in der App getippt wird. Ein Kommentar hängt
-zusätzlich an der Mitgliedschaft; das Label nicht, weil es keinen Autor hat.
-Die Antworten des Bots kommen auf GitHub zurück, in der Spur, in der die Frage
-gestellt wurde.
+[Chat-Brücke](/de-DE/handbuch/konzepte/chat-bruecken/) Slack zu einer macht:
+`@usectrl` (oder den Bot der GitHub App des Arbeitsbereichs) auf einem PR mit @
+erwähnen, in seinen Review-Threads antworten oder das Label `ai-review` setzen,
+und die Arbeit läuft im Review-Bereich des PR — unter derselben Zuschreibung
+und denselben Schutzregeln wie alles, was in der App getippt wird. Kommentar
+und Label werden gleich geprüft: anhand des Mitglieds, das ihn geschrieben
+oder es gesetzt hat. Die Antworten kommen auf GitHub zurück, in der Spur, in
+der die Frage gestellt wurde.
 
 Drei Entscheidungen prägen die Funktion, und jede ist dieselbe Entscheidung,
 die die Chat-Brücke für den Chat getroffen hat, hier für eine Forge neu
@@ -27,17 +27,21 @@ wird**.
 
 Der einzige Push-Kanal, den GitHub einer App bietet, ist ein Webhook, und ein
 Webhook braucht eine eingehende URL — genau das, was diese Oberfläche bewusst
-nie verlangt. Die Erkennung ist deshalb ein Durchlauf: ungefähr jede Minute
-fragt eine Suche mit Alias je App-Installation GitHub nach Pull Requests, die
-den Bot erwähnen (oder seinen kurzen Slug), und nach offenen Pull Requests mit
-dem Review-Label. Pull Requests, die schon einen Review-Bereich haben, werden
-auf ihre Kommentar-Threads gelesen, und alles wird anhand der Kommentar-ID
-gegen den letzten Durchlauf abgeglichen.
+nie verlangt. Die Erkennung ist deshalb ein Durchlauf: Eine Suche mit Alias je
+App-Installation fragt GitHub nach Pull Requests, die den Bot erwähnen (oder
+seinen kurzen Slug), und nach offenen Pull Requests mit dem Review-Label. Pull
+Requests, die schon einen Review-Bereich haben, werden auf ihre
+Kommentar-Threads gelesen, und alles wird anhand der Kommentar-ID gegen den
+letzten Durchlauf abgeglichen. Eine eigene App läuft jede Minute über höchstens
+25 Pull Requests. Über Connect gehen die Aufrufe auf das eigene GitHub-Kontingent
+der Mitglieder, deshalb läuft der Durchlauf alle zwei Minuten über höchstens 10,
+und ein Arbeitsbereich unter 15 % seines Kontingents wird übersprungen, bis es
+sich erholt hat. Connect selbst sieht nie PR-Inhalte.
 
 Die Folgen des Entwurfs lohnt es zu benennen:
 
 - **Die Latenz ist ein Durchlaufintervall, kein Ereignis.** Die Bestätigung
-  👀 trifft innerhalb von etwa einer Minute ein. Nichts Dringendes hängt daran.
+  👀 trifft innerhalb eines Durchlaufs ein. Nichts Dringendes hängt daran.
 - **Genau einmal, je Kommentar.** Kommentar-IDs sind auf ganz GitHub eindeutig;
   jede wird in dem Moment festgehalten, in dem sie als zulässig gilt, bevor
   irgendetwas darauf reagiert. Ein Absturz kann die Bearbeitung eines
@@ -54,55 +58,65 @@ Die Folgen des Entwurfs lohnt es zu benennen:
   Durchlauf unsichtbar; eine Erwähnung ist der Weg zum erneuten Lauf.
 
 Die Suche läuft einmal je Installationskonto auf dem eigenen Client dieses
-Inhabers, weil ein Installationstoken nur die Repos seiner eigenen Installation
-sieht — ein einziges serverweites Zugangsdatum würde still jeden Pull Request
+Inhabers, weil ein Token nur die Repos seiner eigenen Installation sieht — ein einziges serverweites Zugangsdatum würde still jeden Pull Request
 unter den übrigen Installationen der App verpassen.
 
 ## Die Mitgliedschaft autorisiert, nicht der Kommentar
 
-Ein PR-Kommentar kommt mit kaum mehr an als dem Login des Autors — einer nicht
-authentifizierten externen Identität, bis der Nachweis steht. Der Bot löst ihn
-über einen Umkehrindex der Mitglieder des Arbeitsbereichs und ihrer verbundenen
-GitHub-Konten auf, neu aufgebaut nach einer TTL, weil sich Menschen anmelden
-und eingeladen werden, während der Server läuft.
+Ein PR-Kommentar kommt mit einem Autor an — einer nicht authentifizierten
+externen Identität, bis der Nachweis steht. Der Server löst die unveränderliche
+numerische ID des GitHub-Kontos des Autors auf (nie den Login, der sich
+umbenennen und neu vergeben lässt), und zwar gegen die GitHub-Anmeldungen der
+Mitglieder des Arbeitsbereichs, neu aufgebaut nach einer TTL, weil sich
+Menschen anmelden und eingeladen werden, während der Server läuft. Beim Label
+`ai-review` wird die Person aufgelöst, die es zuletzt gesetzt hat.
 
-Im Zweifel zu schließen sieht aus wie eine Leiter, und jede Sprosse antwortet
-in dem Thread, in dem sie abgelehnt hat:
+Drei Prüfungen, in dieser Reihenfolge, und wer an einer scheitert, scheitert
+still — es wird nichts gepostet:
 
-- **Ein unbekannter Login** — nicht verknüpft, oder verknüpft von jemandem, der
-  kein Mitglied dieses Arbeitsbereichs ist — wird aufgefordert, sich anzumelden
-  und zu prüfen, ob er dazugehört
-- **Ein Nur-Lese-Mitglied** (`viewer` oder `guest`) erfährt, dass seine Rolle
-  keine Arbeit starten kann
+- **Ein angemeldetes Mitglied.** Das Konto muss einem Mitglied _dieses_
+  Arbeitsbereichs gehören, das sich auf diesem Server bei GitHub angemeldet hat
+- **Eine Rolle mit Schreibrecht.** `viewer` und `guest` können keine Arbeit
+  starten
+- **Push-Zugriff.** Antworten nutzen ein `bot`-Token, das auf den Zugriff dieses
+  Mitglieds auf das Repository begrenzt ist. Kann der Server keines ausstellen,
+  geht es nicht weiter
 
-Die beiden Fälle eines unbekannten Logins teilen sich eine Antwort: Der
-Umkehrindex liefert nur ein Mitglied _dieses_ Arbeitsbereichs, ein nicht
-verknüpftes Konto und ein verknüpftes Nichtmitglied sind also derselbe
-Fehltreffer. Keiner davon kommt weiter. Ein Kommentar wird nie jemandem
+Jede Prüfung läuft vor jeder Bestätigung, eine fremde Person bekommt also
+weder eine Reaktion noch eine Antwort. Ein Kommentar wird nie jemandem
 zugeschrieben, der ihn nicht geschrieben hat, und die Worte einer fremden
 Person gelangen nie in einen Arbeitsbereich, den sie nicht sehen kann.
 
-Das Label `ai-review` hat keinen Autor zum Auflösen und steigt diese Leiter
-deshalb nicht hinauf. Es zu setzen startet das Review in dem Arbeitsbereich,
-der das Repository bereits verknüpft.
+### Der Anspruch
+
+Der letzte Schritt vor jeder Arbeit ist eine Reaktion 👀, gesetzt mit der
+eigenen GitHub-Anmeldung des Autors. GitHub antwortet mit `201` auf eine neue
+Reaktion und mit `200` auf eine, die schon existiert, die Reaktion dient also
+zugleich als Sperre: Ist dieselbe Person auf zwei Servern angemeldet, die beide
+das Repository verknüpfen, erledigt nur der die Arbeit, der zuerst reagiert.
+Ein Kommentar, den mehrere Arbeitsbereiche auf einem Server sehen, wird jedem
+angeboten, und derselbe Anspruch entscheidet.
 
 ## Zwei Identitäten, mit Absicht
 
 Jede Seite der Unterhaltung trägt eine andere Identität, und der Unterschied
 ist die Funktion:
 
-- **Auf GitHub ist der Bot der Server.** Jeder Kommentar, jede Reaktion und
-  jede Antwort, die die Brücke schreibt, läuft über das Installationstoken der
-  App. Niemand hat in einem Client etwas angeklickt, also leiht sich nichts das
-  Konto einer Person — dieselbe Regel, die Webhooks und Polling von
-  menschlichen Zugangsdaten fernhält.
+- **Auf GitHub ist die Antwort Automatisierung in deinem Namen.** Jede Antwort
+  läuft über ein `bot`-Token für dieses eine Repository, begrenzt auf den
+  Zugriff des fragenden Mitglieds. Bei einer eigenen App ist der Autor das
+  Konto `[bot]` der App. Über Connect ist ein Token für die gemeinsame App ein
+  Benutzertoken, die Antwort stammt also vom Konto des fragenden Mitglieds, das
+  über die App handelt. In beiden Fällen beginnt jede Antwort mit
+  `**Control Center** (for @login):`. Das sagt, wer gefragt hat, und dient
+  zugleich als Schleifensperre.
 - **Im Bereich gehört die Frage dir.** Die Nachricht wird dem Mitglied
   zugeschrieben, zu dem der Autor aufgelöst wurde, und der Agentenlauf läuft in
   dessen Namen: Commits nennen es als Co-Autor, und der Autonomieregler des
   Bereichs sowie die Schutzregeln für Aktionen gelten genauso wie bei einer
   Nachricht, die in der App getippt wurde. Schreibvorgänge an die Forge aus dem
-  Lauf gehen weiterhin als die App hinaus — dieselbe Regel wie im Punkt oben —
-  und nicht über das persönliche Token des Mitglieds.
+  Lauf nutzen Tokens für ein einzelnes Repository, begrenzt durch dieses
+  Mitglied, nie seine vollständig weitergereichte Anmeldung.
 
 Review-Befunde auf GitHub zu veröffentlichen bleibt die Entscheidung einer
 Person, getroffen in Control Center. Eine Erwähnung kann ein Review _starten_;
@@ -112,8 +126,10 @@ veröffentlicht wird es nur von einem Menschen.
 
 Alles, was ein Bot-Konto verfasst, wird verworfen, bevor irgendein Tor läuft —
 unseres ausdrücklich, und jedes Suffix `[bot]`, damit auch der Review-Bot
-einer anderen App unseren nicht weckt. Ohne das kämen die eigenen Antworten des
-Bots als neue Kommentare an und lösten ihn endlos erneut aus.
+einer anderen App unseren nicht weckt —, und ebenso jeder Kommentar, der mit dem
+Präfix `**Control Center** (for @` beginnt, denn eine Antwort über Connect
+stammt vom Konto einer Person. Ohne das kämen die Antworten als neue Kommentare
+an und lösten die Brücke endlos erneut aus.
 
 Das Suffix `[bot]` ist auch der Grund für die Kurzform. GitHub legt den Login
 eines App-Kontos auf `<slug>[bot]` fest, bietet dafür keine Autovervollständigung
@@ -129,7 +145,10 @@ Unverwechselbare App-Namen machen die Kollision hypothetisch.
 - **Kein automatisches Veröffentlichen.** Befunde landen im Review-Bereich; das
   Veröffentlichen auf GitHub ist eine eigene Handlung eines Menschen
 - **Keine unscharfe Identität.** Der Autor löst auf genau ein Mitglied auf oder
-  wird abgelehnt — eine Zuschreibung nach bestem Ermessen gibt es nicht
+  wird ignoriert — eine Zuschreibung nach bestem Ermessen gibt es nicht
+- **Keine automatische Genehmigung.** Automatisierung kann kommentieren und
+  Änderungen anfordern, aber ein Review `APPROVE` wird abgelehnt, bevor es
+  gesendet wird. Genehmigen ist die Handlung einer Person
 - **Kein Webhook der GitHub App.** Diese Oberfläche registriert nie einen, es
   gibt also keine eingehende URL, die für PR-Kommentare offenzulegen wäre.
   Andere Webhooks des Produkts (Pipelines, Ticket-Sync) sind eine eigene,
@@ -142,7 +161,7 @@ Unverwechselbare App-Namen machen die Kollision hypothetisch.
 - [Chat-Brücken](/de-DE/handbuch/konzepte/chat-bruecken/): dieselben drei
   Entscheidungen, für den Chat getroffen
 - [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/): woher die
-  Identität des Bots kommt
+  Bot-Identität einer eigenen App kommt
 - [Multiplayer — Identität, Mitgliedschaft und Präsenz](/de-DE/handbuch/konzepte/multiplayer/):
   die Prinzipale und Rollen, durch die ein Login aufgelöst wird
 - [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): was der antwortende

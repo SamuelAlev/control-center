@@ -1,3 +1,4 @@
+import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_infra/src/network/klipy_api_client.dart';
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:rhttp/rhttp.dart';
@@ -85,6 +86,33 @@ void main() {
 
       nextBody = <String, dynamic>{};
       expect(await client.search('x'), isEmpty);
+    });
+  });
+
+  group('failures never carry the key', () {
+    test('an HTTP error names the status only', () async {
+      fake.handler = (request) =>
+          httpTextResponse(request, 'denied for APPKEY', statusCode: 403);
+      final error = await client
+          .search('x')
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect(error, isA<NetworkException>());
+      final network = error! as NetworkException;
+      expect(network.statusCode, 403);
+      expect(network.code, 'klipy_unavailable');
+      expect('$network ${network.message}', isNot(contains('APPKEY')));
+      expect(network.responseBody, isNull);
+    });
+
+    test('a transport error names no URL', () async {
+      fake.handler = (request) =>
+          throw RhttpConnectionException(request, 'refused');
+      final error = await client.trending().then<Object?>(
+        (_) => null,
+        onError: (Object e) => e,
+      );
+      expect(error, isA<NetworkException>());
+      expect('$error', isNot(contains('APPKEY')));
     });
   });
 

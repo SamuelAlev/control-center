@@ -2,7 +2,7 @@
 title: 利用状況の分析
 description: 利用状況の分析がオンのときに Control Center が記録する内容、誰が決めるのか、そして決して送信されないもの。
 slug: ja-JP/マニュアル/リファレンス/利用状況の分析
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center は **仮名化された利用イベント** を [Umami](https://umami.is) のインスタンスに送信できます。利用状況の分析は **サーバーのオペレーターがオンにするまでオフ** です。この設定はサーバーに属し、そのサーバーに接続するすべてのクライアント (デスクトップアプリ、Web アプリ、スマートフォン、そしてサーバー自身) に適用されます。
@@ -95,9 +95,12 @@ Umami はさらに、リクエストの IP アドレス (アドレス自体は�
 | `pipeline_run_retried` | `workspace_id`、`pipeline_run_id` | 失敗した実行が再試行されたとき |
 | `pipeline_run_cancel_requested` | `workspace_id`、`pipeline_run_id` | アプリから実行がキャンセルされたとき |
 | `pipeline_step_killed` | `workspace_id`、`step_run_id` | 実行中のステップが強制終了されたとき |
-| `calendar_connect_finished` | `outcome` (`connected`、`denied`、`expired`、`failed`、`cancelled`)、`builtin_client`、`duration_s` | カレンダーへのサインインの試行が終了したとき |
+| `calendar_connect_finished` | `outcome` (`connected`、`denied`、`expired`、`failed`、`cancelled`)、`builtin_client`（サーバー自身の Google クライアントではなく Control Center Connect を通じてサインインした場合に true）、`duration_s` | カレンダーへのサインインの試行が終了したとき |
 | `calendar_disconnected` | `workspace_id` | カレンダーアカウントの接続が解除されたとき |
 | `calendar_rsvp_sent` | `calendar_event_id`、`response`、`previous_response`、`workspace_id` | 招待に返答したとき |
+| `calendar_event_created` | `workspace_id`、`all_day`、`guests`（件数）、`conference` | Google カレンダーに予定を予約したとき |
+| `calendar_event_moved` | `workspace_id`、`calendar_event_id`、`had_guests` | カレンダーのグリッド上で予定を移動またはリサイズしたとき |
+| `calendar_event_deleted` | `workspace_id`、`calendar_event_id`、`had_guests` | Google カレンダーから予定を削除したとき |
 | `calendar_event_recorded` | `workspace_id`、`calendar_event_id` | カレンダーのイベントから録音を開始したとき |
 | `calendar_meeting_joined` | `provider` (`meet`、`zoom`、`teams`、`webex`、`other`)、`workspace_id`、`calendar_event_id` | ミーティングのリンクを開いたとき (スマートフォン)。リンクから割り出すのはプロバイダーだけです |
 | `notification_action` | `action` (`read`、`unread`、`dismiss`、`mark_all_read`、`clear_all`)、`workspace_id` | 通知センターを使ったとき |

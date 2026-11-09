@@ -1,14 +1,10 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 
-/// A human sentence for an audit-trail [entry] — the machine op (`agents.upsert`) stays on
-/// the action chip; this is the prose read of it, e.g.
-/// `Updated agent · ceo`.
-/// (`workerHeartbeat` → "Worker heartbeat") — never an empty line, never the dotted machine
-/// op (that stays on the chip).
-/// A present `targetId` or `details` snapshot (setting key/value, the command that was
-/// sent, the space a rig lived in) is appended after a middle dot, so "Added repository"
-/// becomes "Added repository · /Users/sam/control-center" and "Changed workspace settings"
+/// A human sentence for an audit-trail [entry]: the prose read of the machine
+/// op on the action chip (`agents.upsert` → `Updated agent · ceo`), never an
+/// empty line. A `targetId` or `details` snapshot (setting, command, the space
+/// a rig lived in) is appended after a middle dot.
 String describeActivity(AppLocalizations l10n, UserActivityDto entry) {
   final action = entry.action;
   final dot = action.indexOf('.');
@@ -109,10 +105,7 @@ String activityDetailSuffix(UserActivityDto entry) {
 /// Appends ` · details` when the audit record carries a target or snapshot.
 String _withDetails(String description, UserActivityDto entry) {
   final suffix = activityDetailSuffix(entry);
-  if (suffix.isEmpty) {
-    return description;
-  }
-  return '$description · $suffix';
+  return suffix.isEmpty ? description : '$description · $suffix';
 }
 
 /// The first camelCase or snake_case segment of [verbPart], lowercased:
@@ -170,7 +163,6 @@ String? _special(AppLocalizations l10n, String action) => switch (action) {
   'fs.persistLogo' || 'fs.persistLogoBytes' => l10n.activitySavedWorkspaceLogo,
   'members.setRole' || 'member.role_changed' => l10n.activityChangedMemberRole,
   'members.setRepoGrant' => l10n.activityChangedMemberRepoAccess,
-  'credentials.setGitHubToken' => l10n.activityUpdatedGitHubToken,
   'weather.refreshNow' => l10n.activityRefreshedWeather,
   'weather.setManualLocation' => l10n.activitySetWeatherLocation,
   'weather.clearManualLocation' => l10n.activityClearedWeatherLocation,
@@ -183,7 +175,9 @@ String? _special(AppLocalizations l10n, String action) => switch (action) {
   'server.backupNow' => l10n.activityBackedUpServer,
   'space_read.markSpaceRead' => l10n.activityMarkedSpaceRead,
   'calendar.rsvp' => l10n.activityRespondedToInvitation,
-  'calendar.beginConnect' => l10n.activityStartedCalendarConnect,
+  'calendar.createEvent' => l10n.activityCreatedCalendarEvent,
+  'calendar.moveEvent' => l10n.activityMovedCalendarEvent,
+  'calendar.deleteEvent' => l10n.activityDeletedCalendarEvent,
   'calendar.disconnect' => l10n.activityDisconnectedCalendar,
   'pr_review.markFileAsViewed' => l10n.activityMarkedFileViewed,
   'confirmation.respond' => l10n.activityRespondedToApproval,

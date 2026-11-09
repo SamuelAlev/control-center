@@ -398,6 +398,42 @@ abstract final class AnalyticsEvents {
     'workspace_id': AnalyticsId.maybe(workspaceId),
   });
 
+  /// The user booked a Google Calendar event from Control Center ([guests]:
+  /// how many people were invited; [conference]: a Meet link was added).
+  static AnalyticsEvent calendarEventCreated({
+    required String workspaceId,
+    required bool allDay,
+    required int guests,
+    required bool conference,
+  }) => AnalyticsEvent('calendar_event_created', {
+    'workspace_id': AnalyticsId(workspaceId),
+    'all_day': allDay,
+    'guests': guests,
+    'conference': conference,
+  });
+
+  /// The user moved or resized a Google Calendar event on the grid.
+  static AnalyticsEvent calendarEventMoved({
+    required String workspaceId,
+    required String calendarEventId,
+    required bool hadGuests,
+  }) => AnalyticsEvent('calendar_event_moved', {
+    'workspace_id': AnalyticsId(workspaceId),
+    'calendar_event_id': AnalyticsId(calendarEventId),
+    'had_guests': hadGuests,
+  });
+
+  /// The user deleted a Google Calendar event from Control Center.
+  static AnalyticsEvent calendarEventDeleted({
+    required String workspaceId,
+    required String calendarEventId,
+    required bool hadGuests,
+  }) => AnalyticsEvent('calendar_event_deleted', {
+    'workspace_id': AnalyticsId(workspaceId),
+    'calendar_event_id': AnalyticsId(calendarEventId),
+    'had_guests': hadGuests,
+  });
+
   /// The user started recording a meeting straight from a calendar event.
   static AnalyticsEvent calendarEventRecorded({
     required String workspaceId,

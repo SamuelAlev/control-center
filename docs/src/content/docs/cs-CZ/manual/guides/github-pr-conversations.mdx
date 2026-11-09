@@ -1,35 +1,37 @@
 ---
 title: Mluvte s Control Center z GitHub PR
-description: Požádej bota GitHub App svého serveru o kontrolu, nebo mu polož otázku, přímo z konverzace PR. Bez webhooku a bez veřejné URL.
+description: Požádej Control Center o kontrolu, nebo mu polož otázku, přímo z konverzace PR. Bez webhooku a bez veřejné URL.
 slug: cs-CZ/prirucka/navody/konverzace-v-github-pr
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Tenhle návod ukazuje, jak pracovat s Control Center a neopustit GitHub:
 požádat o AI kontrolu ze stránky PR, položit botovi otázku v komentáři a vést
 konverzaci dál v jeho vláknech revize.
 
-Bot je vlastní [GitHub App](/cs-CZ/prirucka/navody/github-app/) tvého serveru,
-ta samá, která už lidi přihlašuje a pouští práci na pozadí. Nic nového se
-neregistruje a nic nemusí být dostupné z internetu. Server zjistí, co se na
-GitHubu řeklo, obchůzkou, takže notebook za NAT se chová stejně jako veřejné
-nasazení.
+Odpovědi přicházejí přes dráhu GitHubu pracovního prostoru: vlastní
+[GitHub App](/cs-CZ/prirucka/navody/github-app/) tvého serveru, nebo sdílenou
+App od Control Center přes Connect. Nic nového se neregistruje a nic nemusí být
+dostupné z internetu. Server zjistí, co se na GitHubu řeklo, obchůzkou, takže
+notebook za NAT se chová stejně jako veřejné nasazení.
 
 ## Předpoklady
 
-- Server má svou GitHub App [zaregistrovanou a
-  nainstalovanou](/cs-CZ/prirucka/navody/github-app/), s oprávněním **Pull requests: read and write**
-  (komentáře, vlákna a reakce) a **Issues: read** (hledání komentářů). Obojí
-  už je v seznamu oprávnění toho návodu
+- Pracovní prostor má dráhu GitHubu: vlastní GitHub App serveru, nebo Connect,
+  s aplikací [nainstalovanou](/cs-CZ/prirucka/navody/github-app/#nainstaluj-ji-tam-kde-máš-repozitáře)
+  na účtu, který repozitář vlastní. Vlastní aplikace potřebuje **Pull requests**
+  a **Issues** pro čtení i zápis, což **Vytvořit moji aplikaci GitHub** už udělí
 - Repozitář je propojený s pracovním prostorem v Control Center
+- Jsi na tomto serveru [přihlášený ke GitHubu](/cs-CZ/prirucka/navody/integrace-github/)
+  a do repozitáře smíš pushovat
 - Žádná URL webhooku, žádný tunel, žádný callback. Na straně sítě není co
   nastavovat
 
 ## Najdi jméno bota
 
-Zmiň `@usectrl`, vyhrazený účet Control Center na GitHubu. To je výchozí způsob spuštění; požadavek však dál zpracuje nakonfigurovaná GitHub App tvého serveru a ona také odpovídá. Přihlašovací údaje k účtu `usectrl` nepotřebuješ.
+Zmiň `@usectrl`, vyhrazený účet Control Center na GitHubu. To je výchozí způsob spuštění; požadavek však dál zpracuje dráha GitHubu tvého pracovního prostoru a ta také odpovídá. Přihlašovací údaje k účtu `usectrl` nepotřebuješ.
 
-Funguje také vlastní login aplikace `<appslug>[bot]` i jeho krátký tvar `@appslug`. Volitelný alias zjistíš takto:
+Funguje také vlastní login aplikace `<appslug>[bot]` i jeho krátký tvar `@appslug`. Volitelný alias u vlastní aplikace zjistíš takto:
 
 1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď na kartu
    **Aplikace poskytovatelů**
@@ -52,10 +54,11 @@ spouští tlačítko **Zeptat se AI**:
 
 - **Přidej na PR štítek `ai-review`.** Je to nejblíž tomu, co GitHub umí místo
   přiřazení bota jako recenzenta. Účty aplikací nemůžou obsadit nativní slot
-  požadovaného recenzenta. Není tu komentář, na který by šlo reagovat, takže
-  se na GitHub nic nepošle. Kontrola se spustí v Control Center
-- **Napiš do konverzace PR `@usectrl review`** (nebo jen `@usectrl`). Bot
-  zareaguje 👀 a odpoví, až se kontrola spustí, nebo že už jedna běží
+  požadovaného recenzenta. Tvůj účet na PR zareaguje 👀 a kontrola se spustí
+  v Control Center; žádný komentář se neodešle
+- **Napiš do konverzace PR `@usectrl review`** (nebo jen `@usectrl`). Na tvém
+  komentáři se objeví 👀 a pak odpověď, že se kontrola spustila (nebo že už
+  jedna běží)
 
 Recenzenti pracují v prostoru kontroly daného PR. Zjištění čteš a zveřejňuješ
 jako v [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/).
@@ -76,11 +79,12 @@ Napiš do konverzace PR:
 
 Co se stane, po pořádku:
 
-1. Bot zareaguje 👀, abys věděl, že komentář viděl
+1. Na tvém komentáři se objeví 👀 od tvého vlastního účtu, abys věděl, že ho
+   někdo viděl
 2. Otázka se zapíše do prostoru kontroly daného PR **jako ty**, se stejným
    připsáním, jako bys ji napsal v Control Center
-3. Agent odpoví v prostoru a odpověď se vrátí na PR jako komentář, který tě
-   zmíní přes @
+3. Agent odpoví v prostoru a odpověď se vrátí na PR. Každá odpověď začíná
+   `**Control Center** (for @your-login):`
 
 Otázka na PR, který ještě nemá kontrolu, probudí agenta CEO daného pracovního
 prostoru. Jakmile kontrola proběhla, odpovídá agent, který mluvil naposled,
@@ -106,33 +110,43 @@ takže pořád potřebuje zmínku přes @.
 
 ## S kým bot mluví
 
-Komentář z GitHubu přijde skoro jen s loginem, takže bot autora vyřeší, než
+Server vyřeší autora komentáře, nebo toho, kdo přidal štítek `ai-review`, než
 cokoli udělá:
 
-- **Účet GitHub musí být propojený s tvou identitou** v Control Center.
-  [Přihlas se přes GitHub](/cs-CZ/prirucka/navody/integrace-github/), nebo
-  vlož token, v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
-- **Musíš být člen s rolí pro zápis** (`member`, `admin` nebo `owner`)
+- **Účet GitHub musí být na tomto serveru přihlášený.** Shoda se hledá podle
+  číselného id účtu na GitHubu, nikdy podle loginu. Přihlas se v **Nastavení →
+  Pracovní prostor → Profil a identita → Hostování kódu**
+- **Musí jít o člena s rolí pro zápis** (`member`, `admin` nebo `owner`)
   v pracovním prostoru, který ten repozitář propojuje
+- **Musí smět do repozitáře na GitHubu pushovat.** Odpovědi používají token
+  omezený na přístup toho člověka, takže kdo smí jen číst, odpověď nedostane
 
-Každý jiný dostane jednu zdvořilou odpověď, která řekne, co chybí. Jsou dva
-případy: neznámý login (nepřipojený, nebo připojený, ale tady není členem)
-a role jen ke čtení. Jejich slova do pracovního prostoru nikdy nevstoupí.
-Štítek `ai-review` touhle bránou neprochází. Nemá autora, takže kontrolu
-spustí v pracovním prostoru, který repozitář už propojuje.
+Kdokoli jiný se potichu ignoruje: nic se neodešle a jeho slova do pracovního
+prostoru nikdy nevstoupí. Komentáře od botů a vlastní odpovědi Control Center
+se nikdy neberou jako otázky.
+
+### Dva servery, jeden PR
+
+Podle 👀 se servery taky dohodnou, kdo odpoví. Reakce se přidá vlastním
+přihlášením autora a GitHub serveru řekne, jestli je nová. Když jsi přihlášený
+na dvou serverech Control Center, které oba propojují repozitář, odpoví ten,
+který zareaguje první, a druhý mlčí. Totéž platí pro štítek.
 
 ## Co čekat
 
 | Věc                  | Chování                                                                                         |
 | -------------------- | ----------------------------------------------------------------------------------------------- |
-| Potvrzení            | 👀 u komentáře zhruba do minuty, což je interval obchůzky. Štítek `ai-review` nemá komentář, na který by šlo reagovat |
-| Odpovědi             | Odeslané jako bot (aplikace), ve stopě, ve které se ptalo                                       |
+| Potvrzení            | 👀 od tvého účtu na komentáři (u štítku na PR), do jedné obchůzky                                 |
+| Odpovědi             | Odeslané ve stopě, ve které se ptalo, se začátkem `**Control Center** (for @your-login):`. U vlastní aplikace je autorem bot aplikace; přes Connect je to tvůj účet, který jedná přes sdílenou App |
 | Připsání v prostoru  | Otázka je tvoje; agent běží tvým jménem, podle voliče autonomie prostoru                        |
 | Kontroly             | Zjištění skončí v prostoru kontroly; zveřejnění na GitHub je ruční                              |
 
-Zhruba minutová latence je cena za to, že není potřeba žádný příchozí síťový
-přístup. Na obchůzce nic nespěchá a nic se neztratí, když je server offline.
-Komentář, který přijde v té době, chytí další obchůzka.
+U vlastní aplikace běží obchůzka každou minutu a projde až 25 pull requestů;
+přes Connect běží každé dvě minuty a projde až 10, protože ta volání sdílejí
+vlastní kvótu GitHubu každého člena. Pracovní prostor, jehož kvóta GitHubu je
+pod 15 %, se přeskočí, dokud se nezotaví. Latence je cena za to, že není
+potřeba žádný příchozí síťový přístup. Nic se neztratí, když je server
+offline: komentář, který přijde v té době, chytí další obchůzka.
 
 ## Řešení problémů
 
@@ -141,16 +155,20 @@ Komentář, který přijde v té době, chytí další obchůzka.
 - Je aplikace **nainstalovaná** na účtu, kterému repozitář patří, a je
   repozitář **propojený** s pracovním prostorem? Nepropojený repozitář se
   přeskočí dřív, než se cokoli zapíše, takže pozdější propojení pořád doručí
-- Je tvůj účet GitHub propojený a jsi člen s rolí pro zápis? Podívej se na PR,
-  jestli tam bot neodmítl. Odpověď řekne, který z těch dvou případů to je
+- Jsi na tomto serveru přihlášený ke GitHubu, jsi člen s rolí pro zápis a smíš
+  do repozitáře pushovat? Kohokoli jiného server ignoruje bez odpovědi
+- Je u sdílené App od Control Center instalace organizace autorizovaná pro
+  tento server? Viz
+  [Autorizuj tento server pro organizaci](/cs-CZ/prirucka/navody/github-app/#autorizuj-tento-server-pro-organizaci)
 - Pořád nic? Log serveru při selhání jmenuje obchůzku a PR. Hledej
   `pr_conversation:` (obchůzka) a `github_pr_conversation:` (most)
 
 **Štítek kontrolu nespustí.**
 
-U jednoho PR se spustí jednou. Když už kontrola proběhla, nebo byl štítek
+U jednoho PR se spustí jednou a ten, kdo ho přidal, prochází stejnými
+kontrolami jako autor komentáře. Když už kontrola proběhla, nebo byl štítek
 přidaný dřív, než server ten PR vůbec viděl (první obchůzka nevyřízené zapíše
-potichu, místo aby je hromadně rozjela), zmiň místo toho bota. `@myapp review`
+potichu, místo aby je hromadně rozjela), zmiň místo toho bota. `@usectrl review`
 kontrolu vždy spustí, pokud už jedna neběží.
 
 **Odpověď bota na GitHub nedorazila.**

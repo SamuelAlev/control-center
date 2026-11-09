@@ -2,7 +2,7 @@
 title: Instal
 description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
@@ -124,14 +124,9 @@ Daftar model dilayani secara langsung oleh setiap penyedia yang terhubung; [mode
 
 Kredensial GitHub adalah **milik Anda dan tersimpan di server**, dikunci berdasarkan id pengguna Anda — bukan di keychain OS klien. Setiap perangkat yang Anda gunakan untuk masuk memakai kredensial yang sama, dan tidak ada anggota lain yang dapat membacanya.
 
-Jika server memiliki GitHub App yang terdaftar ([Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)), **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** menawarkan **Masuk dengan GitHub** (alur perangkat yang dijalankan server). Jika tidak, tempelkan token akses pribadi:
+GitHub hanya memakai proses masuk: **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** menawarkan **Masuk ke GitHub**, dan tidak ada token yang perlu ditempel. Proses masuk berjalan melalui GitHub App server ([Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)) atau melalui Control Center Connect, tergantung pilihan pemilik server. Dengan app milik server, peramban kembali ke server dengan sendirinya; melalui Connect, Anda mengetik kode 8 karakter yang ditampilkan peramban, atau membiarkannya membuka Control Center. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/).
 
-- Klasik: `repo` dan `read:org`
-- Berbutir halus: **Contents** dan **Pull requests** (read and write), **Checks** dan **Actions** (read)
-
-Buat satu di [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Server memeriksa token untuk mendapatkan nama akun saat disimpan, sehingga barisnya dapat menampilkan "Masuk sebagai …"; pemeriksaan yang gagal tetap menyimpan token, dan salah ketik atau cakupan yang kurang akan muncul sebagai permintaan yang gagal di kemudian hari.
-
-Langkah pertama onboarding adalah koneksi ini. Setelah itu, kartu yang sama menjadi tempat Anda mengganti atau menghapusnya. GitLab dan Bitbucket menggunakan kartu yang sama; lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
+Penyiapan awal meminta koneksi ini. Setelah itu, kartu yang sama menjadi tempat Anda masuk ulang atau memutuskannya. GitLab dan Bitbucket menggunakan kartu yang sama dengan token pribadi yang ditempel; lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
 
 ## Pilih tempat server berjalan
 

@@ -2,7 +2,7 @@
 title: Koble til en kodevert
 description: Koble til GitHub, GitLab eller Bitbucket slik at PR-flaten, repo-registrering og agentkjøringer fungerer — ett arbeidsområde kan bruke alle tre.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kodevert
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center støtter tre kodeverter, kalt **forger** i hele appen: **GitHub**, **GitLab** og **Bitbucket Cloud**. Ingen av dem er standardvalget. Koble til én, og alt fungerer; koble til flere, og ett enkelt arbeidsområde kan romme repoer fra alle samtidig.
@@ -13,9 +13,9 @@ Forgen er en egenskap ved hvert **repo**, lest fra `origin`-remoteen når du reg
 
 1. Åpne **Innstillinger → Arbeidsområde → Profil og identitet** (`/settings/workspace/profile`).
 2. Finn kortet **Kodehosting**. Alle forger som støttes, er listet opp, tilkoblet eller ikke.
-3. Trykk **Logg inn med …** hvis raden tilbyr det, eller **Legg til token** og lim inn ett.
+3. På **GitHub** trykker du **Logg inn på GitHub**. På **GitLab** eller **Bitbucket** trykker du **Legg til token** og limer inn ett.
 
-**Logg inn** vises for en forge serveren din har en registrert app for — i dag gjelder det GitHub, via en device-flyt (se [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)). Alt annet er et innlimt token, som er den ærlige og tydelige løsningen i stedet for en knapp som ikke kan fullføres.
+**GitHub har bare pålogging.** Påloggingen går via serverens egen GitHub App eller via Control Center Connect, avhengig av hva servereieren har satt opp (se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)); det finnes ikke noe GitHub-token å lime inn. GitLab og Bitbucket tar fortsatt imot et personlig token.
 
 Uansett er påloggingsinformasjonen **din og ligger på serveren**, knyttet til bruker-ID-en din: ingen token lagres på maskinen der du skrev den inn, hver enhet du logger inn fra, bruker den samme, og ingen andre medlemmer kan lese den. Den trer i kraft ved **neste forespørsel** — det er ingenting å starte på nytt, og å koble fra stopper sendingen umiddelbart.
 
@@ -24,29 +24,28 @@ Hver rad forteller hvor påloggingsinformasjonen kom fra, fordi det er forskjell
 | Undertekst                                                        | Betydning                                                              |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `Logget inn som octocat`                                          | Din egen påloggingsinformasjon brukes                                  |
-| `Logget inn som octocat · via denne serverens app`                | Serverens appidentitet svarer — du er ikke logget inn                  |
-| `Logget inn som octocat · fra miljøet`                            | En miljøvariabel på serveren svarer, ikke påloggingsinformasjonen din  |
+| `Logget inn som octocat · fra miljøet`                            | Bare GitLab eller Bitbucket: en miljøvariabel på serveren svarer, ikke tokenet ditt |
 | `Ikke tilkoblet`                                                  | Du har ingen påloggingsinformasjon for denne forgen                    |
+| `Pålogging på GitHub er ikke satt opp på denne serveren ennå.`    | Serveren har verken sin egen GitHub App eller Connect; servereieren setter opp en av dem |
 
 ### Hvilket token hver forge vil ha
 
 | Forge         | Token                                                     | Hvor du oppretter det                                      |
 | ------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
-| **GitHub**    | Klassisk: `repo` og `read:org`. Finkornet: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Et personlig tilgangstoken med `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Et Atlassian-API-token, pluss e-postadressen til kontoen din | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket autentiserer med **e-postadressen til kontoen din som brukernavn** og tokenet som passord. Sett `BITBUCKET_EMAIL` i servermiljøet, slik at den vet hvilken e-postadresse som skal kobles til tokenet.
 
-### Eller bruk miljøet
+### Bakgrunnsarbeid
 
-For en headless- eller CI-installasjon leser serveren disse:
+Arbeid uten et menneske bak (agentkjøringer, pipelines, PR-polling) trenger også påloggingsinformasjon, og hver forge løser det på sin måte:
 
-- **GitHub** — `GITHUB_TOKEN`, deretter `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, deretter `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, deretter `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
+- **GitHub** — et token for ett repo om gangen, utstedt fra serverens GitHub App eller via Connect og begrenset til det et ansvarlig medlem kan gjøre der. Det er aldri en persons pålogging overlevert i sin helhet, og ingen miljøvariabel eller innlimt token trer inn i stedet. Se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/#hvem-påloggingsinformasjonen-din-taler-for)
+- **GitLab** — servereierens innlimte token, deretter `GITLAB_TOKEN`, deretter `CI_JOB_TOKEN`
+- **Bitbucket** — servereierens innlimte token, deretter `BITBUCKET_API_TOKEN`, deretter `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
 
-Dette er **serverens** påloggingsinformasjon, ikke din, og skillet er avgjørende: en forespørsel som gjøres på dine vegne, bruker din påloggingsinformasjon og ingenting annet, så miljøet trer aldri stille inn i stedet for deg. Arbeid uten et menneske bak — webhooks, PR-polling, sakssynk — bruker først serverens appidentitet, deretter servereierens påloggingsinformasjon, så miljøet. Rekkefølgen er fast, slik at «jeg logget inn, og ingenting endret seg» aldri er et gyldig utfall.
+Miljøvariablene for GitLab og Bitbucket er **serverens** påloggingsinformasjon, ikke din: en forespørsel som gjøres på dine vegne, bruker tokenet ditt og ingenting annet, så miljøet trer aldri stille inn i stedet for deg.
 
 ## Du er en annen person hos hver forge
 
@@ -94,11 +93,11 @@ GitLab kaller en pull request for en **merge request**. Control Center sier «pu
 
 ### PR-listen er tom og sier at en forge ikke er tilkoblet
 
-Du har ingen påloggingsinformasjon for den forgen. Logg inn eller lim inn et token i **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**. Repoer fra andre forger påvirkes ikke.
+Du har ingen påloggingsinformasjon for den forgen. Logg inn på GitHub, eller lim inn et GitLab- eller Bitbucket-token, i **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**. Repoer fra andre forger påvirkes ikke.
 
 ### Jeg koblet til en forge, men repoene viser fortsatt ingenting
 
-Sjekk underteksten på raden. Hvis den sier «via denne serverens app» eller «fra miljøet», er det en annen påloggingsinformasjon som svarer enn den du forventet — din egen påloggingsinformasjon vinner for alt du ber om, så hvis den sier noe annet, ble ikke din lagret.
+Sjekk underteksten på raden. Hvis en GitLab- eller Bitbucket-rad sier «fra miljøet», er det en annen påloggingsinformasjon som svarer enn den du forventet — ditt eget token vinner for alt du ber om, så hvis den sier noe annet, ble ikke ditt lagret. På GitHub sjekker du at GitHub App-en er installert på kontoen som eier repoene.
 
 ### Et repo vil ikke registreres
 

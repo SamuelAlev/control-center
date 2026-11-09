@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
+import 'package:cc_infra/cc_infra.dart' show ChildProcess;
 import 'package:cc_persistence/cc_persistence.dart' show workspaceDirPath;
 import 'package:path/path.dart' as p;
 
@@ -23,12 +24,7 @@ class ChatAppSetup {
 
   /// Parses from the stored JSON.
   factory ChatAppSetup.fromJson(Map<String, dynamic> json) => ChatAppSetup(
-    // `configRefreshToken` is the pre-generalization key, still read so a
-    // half-finished Slack setup survives the rename.
-    managementCredential:
-        json['managementCredential'] as String? ??
-        json['configRefreshToken'] as String? ??
-        '',
+    managementCredential: json['managementCredential'] as String? ?? '',
     appId: json['appId'] as String?,
     installUrl: json['installUrl'] as String?,
   );
@@ -70,15 +66,6 @@ class FileChatConnectionStore {
 
   final String _dataDir;
 
-  /// Legacy single-provider file names, from before the store was generalized.
-  /// Read once and migrated in place; a developer machine has one of these.
-  static const _legacyNames = {
-    ChatProvider.slack: (
-      credentials: 'slack_credentials.json',
-      setup: 'slack_app_setup.json',
-    ),
-  };
-
   String _dirFor(String workspaceId) =>
       p.join(workspaceDirPath(_dataDir, workspaceId), 'chat_credentials');
 
@@ -88,24 +75,6 @@ class FileChatConnectionStore {
   File _setupFileFor(String workspaceId, ChatProvider provider) =>
       File(p.join(_dirFor(workspaceId), '${provider.wire}_setup.json'));
 
-  File? _legacyFileFor(String workspaceId, ChatProvider provider) {
-    final names = _legacyNames[provider];
-    if (names == null) {
-      return null;
-    }
-    return File(
-      p.join(workspaceDirPath(_dataDir, workspaceId), names.credentials),
-    );
-  }
-
-  File? _legacySetupFileFor(String workspaceId, ChatProvider provider) {
-    final names = _legacyNames[provider];
-    if (names == null) {
-      return null;
-    }
-    return File(p.join(workspaceDirPath(_dataDir, workspaceId), names.setup));
-  }
-
   /// The connection stored for [workspaceId] on [provider], or null when it is
   /// not connected there.
   Future<ChatBridgeConnection?> load(
@@ -114,7 +83,7 @@ class FileChatConnectionStore {
   ) async {
     final file = _fileFor(workspaceId, provider);
     if (!file.existsSync()) {
-      return _migrateLegacy(workspaceId, provider);
+      return null;
     }
     final map = await _readJson(file);
     if (map == null) {
@@ -134,8 +103,7 @@ class FileChatConnectionStore {
   /// Whether credentials exist for [workspaceId] on [provider] (cheap boot probe:
   /// no parse, no workspace database opened).
   bool has(String workspaceId, ChatProvider provider) =>
-      _fileFor(workspaceId, provider).existsSync() ||
-      (_legacyFileFor(workspaceId, provider)?.existsSync() ?? false);
+      _fileFor(workspaceId, provider).existsSync();
 
   /// Persists [connection], replacing whatever was stored for its provider.
   Future<void> save(ChatBridgeConnection connection) => _write(
@@ -146,7 +114,6 @@ class FileChatConnectionStore {
   /// Removes the stored connection (disconnect).
   Future<void> clear(String workspaceId, ChatProvider provider) async {
     await _delete(_fileFor(workspaceId, provider));
-    await _delete(_legacyFileFor(workspaceId, provider));
   }
 
   /// The half-finished guided create, if any.
@@ -155,9 +122,7 @@ class FileChatConnectionStore {
     ChatProvider provider,
   ) async {
     final file = _setupFileFor(workspaceId, provider);
-    final map = file.existsSync()
-        ? await _readJson(file)
-        : await _readLegacySetup(workspaceId, provider);
+    final map = file.existsSync() ? await _readJson(file) : null;
     if (map == null) {
       return null;
     }
@@ -179,68 +144,6 @@ class FileChatConnectionStore {
   /// Forgets the in-progress guided create (it completed, or was abandoned).
   Future<void> clearSetup(String workspaceId, ChatProvider provider) async {
     await _delete(_setupFileFor(workspaceId, provider));
-    await _delete(_legacySetupFileFor(workspaceId, provider));
-  }
-
-  /// Reads a pre-generalization Slack file, rewrites it in the new shape and
-  /// deletes the old one.
-  ///
-  /// The typed token fields become entries in the credentials map under the ids
-  /// the Slack descriptor declares — which is exactly what the connect op would
-  /// have written today, so a developer machine keeps its working connection
-  /// across the rename instead of silently going quiet.
-  Future<ChatBridgeConnection?> _migrateLegacy(
-    String workspaceId,
-    ChatProvider provider,
-  ) async {
-    final legacy = _legacyFileFor(workspaceId, provider);
-    if (legacy == null || !legacy.existsSync()) {
-      return null;
-    }
-    final map = await _readJson(legacy);
-    if (map == null) {
-      return null;
-    }
-    final credentials = {
-      for (final key in const ['botToken', 'appToken', 'configRefreshToken'])
-        if ((map[key] as String? ?? '').isNotEmpty) key: map[key] as String,
-    };
-    if (credentials.isEmpty) {
-      return null;
-    }
-    final ChatBridgeConnection connection;
-    try {
-      connection = ChatBridgeConnection(
-        provider: provider,
-        workspaceId: workspaceId,
-        credentials: credentials,
-        appId: map['appId'] as String? ?? '',
-        teamId: map['teamId'] as String? ?? '',
-        teamName: map['teamName'] as String? ?? '',
-        botUserId: map['botUserId'] as String? ?? '',
-        botName: map['botName'] as String? ?? '',
-        enabled: map['enabled'] as bool? ?? true,
-        connectedAt:
-            DateTime.tryParse(map['connectedAt'] as String? ?? '') ??
-            DateTime.now(),
-      );
-    } on Object {
-      return null;
-    }
-    await save(connection);
-    await _delete(legacy);
-    return connection;
-  }
-
-  Future<Map<String, dynamic>?> _readLegacySetup(
-    String workspaceId,
-    ChatProvider provider,
-  ) async {
-    final legacy = _legacySetupFileFor(workspaceId, provider);
-    if (legacy == null || !legacy.existsSync()) {
-      return null;
-    }
-    return _readJson(legacy);
   }
 
   Future<Map<String, dynamic>?> _readJson(File file) async {
@@ -260,8 +163,8 @@ class FileChatConnectionStore {
     await _restrictPerms(file);
   }
 
-  Future<void> _delete(File? file) async {
-    if (file != null && file.existsSync()) {
+  Future<void> _delete(File file) async {
+    if (file.existsSync()) {
       await file.delete();
     }
   }
@@ -274,7 +177,7 @@ class FileChatConnectionStore {
       return;
     }
     try {
-      await Process.run('chmod', ['600', file.path]);
+      await ChildProcess.run('chmod', ['600', file.path]);
     } on Object {
       // The tokens are written either way; the host umask applies.
     }

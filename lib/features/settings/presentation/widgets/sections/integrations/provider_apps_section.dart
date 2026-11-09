@@ -1,5 +1,8 @@
+import 'package:cc_data/cc_data.dart' show ConnectModeSetting, ConnectStatus;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/connect/providers/connect_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_app_detail.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_app_fields.dart';
 import 'package:control_center/features/settings/providers/provider_apps_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -8,11 +11,40 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// How this SERVER authenticates as itself: the GitHub App and the Linear app.
+/// Whether the server runs on its own apps rather than a Connect.
+///
+/// Held back until the Connect choice is known so the card does not flash in
+/// and out. A status that could not be read keeps the card: an operator who
+/// cannot see the choice must still be able to reach the apps.
+bool _usesOwnApps(AsyncValue<ConnectStatus?> status) {
+  if (!status.hasValue && !status.hasError) {
+    return false;
+  }
+  return switch (status.value?.mode) {
+    ConnectModeSetting.hosted || ConnectModeSetting.custom => false,
+    _ => true,
+  };
+}
+
+/// The provider's name as people know it; brand names stay untranslated.
+String providerAppName(String provider) => switch (provider) {
+  'github' => 'GitHub',
+  'google' => 'Google Calendar',
+  'linear' => 'Linear',
+  _ => provider,
+};
+
+/// This server's own provider apps: the GitHub App, the Google OAuth client
+/// and the Linear app, for the lanes that do not run through Connect.
 ///
 /// Server scope, operator only — the `providerApps.*` ops are gated to the
 /// server admin, and a member who cannot change these never sees the card
 /// (the list resolves empty for them).
+///
+/// Shown only while the server uses its own apps ("Use my own apps" in the
+/// Connect card). Under Control Center's or a custom Connect the server
+/// ignores these apps, so showing them would offer settings that do nothing;
+/// what is stored is kept and comes back when the operator switches back.
 ///
 /// Two different jobs come out of one registration and the card says so: the
 /// app id + private key are what lets the server read repositories with no
@@ -37,7 +69,7 @@ class _ProviderAppsSectionState extends ConsumerState<ProviderAppsSection> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final apps = ref.watch(providerAppsProvider).value ?? const [];
-    if (apps.isEmpty) {
+    if (apps.isEmpty || !_usesOwnApps(ref.watch(connectStatusProvider))) {
       return const SizedBox.shrink();
     }
 
@@ -88,9 +120,6 @@ class _ProviderAppRow extends ConsumerStatefulWidget {
 class _ProviderAppRowState extends ConsumerState<_ProviderAppRow> {
   bool _testing = false;
 
-  Future<void> _save(String field, String value) =>
-      saveProviderApp(ref, widget.app.provider, {field: value});
-
   Future<void> _test() async {
     final l10n = AppLocalizations.of(context);
     setState(() => _testing = true);
@@ -124,33 +153,37 @@ class _ProviderAppRowState extends ConsumerState<_ProviderAppRow> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = widget.app;
-    final isGitHub = app.provider == 'github';
-    final name = isGitHub ? 'GitHub' : 'Linear';
-    final broken = app.error.isNotEmpty;
-    final anyCapability = app.canActAsServer || app.canSignIn;
+    final broken =
+        app.error.isNotEmpty || app.state == ProviderAppState.partial;
+    final ready = app.state == ProviderAppState.complete;
 
     return SettingsEntityRow(
-      title: name,
-      icon: isGitHub ? AppIcons.gitBranch : AppIcons.circleCheck,
+      title: providerAppName(app.provider),
+      icon: switch (app.provider) {
+        'github' => AppIcons.gitBranch,
+        'google' => AppIcons.calendar,
+        _ => AppIcons.ticket,
+      },
       tone: broken
           ? CcStatusTone.negative
-          : anyCapability
+          : ready
           ? CcStatusTone.positive
           : CcStatusTone.neutral,
       statusLabel: broken
           ? l10n.settingsStateFailed
-          : anyCapability
+          : ready
           ? l10n.configuredLabel
           : l10n.notConfiguredLabel,
       subtitle: _summary(l10n),
-      // The two capabilities, always both stated. "Configured" alone hid which
+      // The capabilities, always all stated. "Configured" alone hid which
       // half worked, and the halves fail in completely different ways: one
-      // breaks background sync silently, the other breaks the sign-in button.
+      // breaks background work silently, the other breaks the sign-in button.
       meta: [
-        ProviderAppCapability(
-          label: l10n.providerAppCapActsAsServer,
-          enabled: app.canActAsServer,
-        ),
+        if (app.provider != 'google')
+          ProviderAppCapability(
+            label: l10n.providerAppCapActsAsServer,
+            enabled: app.canActAsServer,
+          ),
         ProviderAppCapability(
           label: l10n.providerAppCapSignsIn,
           enabled: app.canSignIn,
@@ -165,107 +198,7 @@ class _ProviderAppRowState extends ConsumerState<_ProviderAppRow> {
       ),
       expanded: widget.expanded,
       onExpandedChanged: widget.onExpandedChanged,
-      detail: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (broken) ...[
-            CcAlert(title: app.error, variant: CcAlertVariant.danger),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          if (isGitHub)
-            SettingsGroup(
-              title: l10n.providerAppsGroupServer,
-              description: l10n.providerAppsGroupServerDescription,
-              gap: AppSpacing.md,
-              children: [
-                ProviderAppSecretField(
-                  title: l10n.providerAppId,
-                  value: app.appId,
-                  onSet: (v) => _save('app_id', v),
-                ),
-                ProviderAppSecretField(
-                  title: l10n.providerPrivateKey,
-                  configured: app.hasPrivateKey,
-                  secret: true,
-                  multiline: true,
-                  onSet: (v) => _save('private_key', v),
-                ),
-              ],
-            ),
-          if (isGitHub) ...[
-            const SizedBox(height: AppSpacing.lg),
-            SettingsGroup(
-              title: l10n.providerAppsGroupPrConversations,
-              description: l10n.providerAppsGroupPrConversationsDescription,
-              gap: AppSpacing.md,
-              children: [
-                // The exact spelling a commenter must type — GitHub does not
-                // offer app accounts in the @ autocomplete, so it has to be
-                // copied from somewhere.
-                SettingsField(
-                  label: l10n.providerAppBotLogin,
-                  layout: SettingsFieldLayout.stacked,
-                  child: SettingsCopyField(
-                    value: app.botLogin,
-                    emptyLabel: l10n.providerAppBotLoginEmpty,
-                  ),
-                ),
-                SettingsField(
-                  label: l10n.providerAppAskOnGitHub,
-                  layout: SettingsFieldLayout.stacked,
-                  child: Builder(
-                    builder: (context) {
-                      final tokens =
-                          context.designSystem ?? DesignSystemTokens.light();
-                      return Text(
-                        l10n.providerAppAskOnGitHubHint,
-                        style: TextStyle(color: tokens.textSecondary),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (isGitHub) const SizedBox(height: AppSpacing.lg),
-          SettingsGroup(
-            title: l10n.providerAppsGroupSignIn,
-            description: l10n.providerAppsGroupSignInDescription,
-            showRule: isGitHub,
-            gap: AppSpacing.md,
-            children: [
-              ProviderAppSecretField(
-                title: l10n.providerClientId,
-                value: app.clientId,
-                onSet: (v) => _save('client_id', v),
-              ),
-              ProviderAppSecretField(
-                title: l10n.providerClientSecret,
-                configured: app.hasClientSecret,
-                secret: true,
-                onSet: (v) => _save('client_secret', v),
-              ),
-              if (!isGitHub)
-                ProviderAppSecretField(
-                  title: l10n.providerApiKey,
-                  configured: app.hasApiKey,
-                  secret: true,
-                  onSet: (v) => _save('api_key', v),
-                ),
-              if (app.redirectUri.isNotEmpty)
-                // Shown verbatim because the provider compares it byte for
-                // byte: a callback URL assembled by hand is the most common
-                // reason a sign-in that "should work" is refused.
-                SettingsField(
-                  label: l10n.providerCallbackUrl,
-                  layout: SettingsFieldLayout.stacked,
-                  child: SettingsCopyField(value: app.redirectUri),
-                ),
-            ],
-          ),
-        ],
-      ),
+      detail: ProviderAppDetail(app: app),
     );
   }
 
@@ -273,6 +206,14 @@ class _ProviderAppRowState extends ConsumerState<_ProviderAppRow> {
     final app = widget.app;
     if (app.error.isNotEmpty) {
       return app.error;
+    }
+    if (app.state == ProviderAppState.partial) {
+      return l10n.providerAppPartial;
+    }
+    if (app.provider == 'google') {
+      return app.canSignIn
+          ? l10n.providerAppSignInReady
+          : l10n.notConfiguredLabel;
     }
     return switch ((app.canActAsServer, app.canSignIn)) {
       (true, true) => l10n.providerAppFullyConfigured,

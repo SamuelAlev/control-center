@@ -2,16 +2,16 @@
 title: Peta laluan
 description: Setiap laluan yang didaftarkan Control Center, berserta skrin dan parameter pertanyaannya.
 slug: ms-MY/manual-pengguna/rujukan/peta-laluan
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Cangkerang aplikasi
 
-Cangkerang aplikasi (`ControlCenterLayout`) membalut setiap laluan dalam ruang kerja melalui `ShellRoute`. **Setiap destinasi dalam cangkerang berawalan ruang kerja — `/workspaces/:workspaceId/…` — dan id ruang kerja dalam URL ialah satu-satunya sumber kebenaran bagi ruang kerja aktif.** Hanya permukaan pra-konteks yang tiada awalan: `/splash`, `/onboarding`, `/signed-out` dan pemilih `/workspaces` kosong, semuanya skrin penuh dan di luar cangkerang.
+Cangkerang aplikasi (`ControlCenterLayout`) membalut setiap laluan dalam ruang kerja melalui `ShellRoute`. **Setiap destinasi dalam cangkerang berawalan ruang kerja — `/workspaces/:workspaceId/…` — dan id ruang kerja dalam URL ialah satu-satunya sumber kebenaran bagi ruang kerja aktif.** Hanya permukaan pra-konteks yang tiada awalan: `/splash`, `/onboarding` dan pemilih `/workspaces` kosong, semuanya skrin penuh dan di luar cangkerang.
 
 Gerbang itu lengkap apabila sekurang-kurangnya satu hos kod disambungkan **bagi pengguna yang telah daftar masuk** dan sekurang-kurangnya satu ruang kerja wujud.
 
-Kelayakan yang hilang dan persediaan yang hilang ialah dua skrin yang berbeza, dan pembezanya ialah `users.onboarding_finished_at` yang dibaca daripada `identity.me` pemanggil itu sendiri — bukan sekali-kali "ruang kerja wujud", yang salah sebaik sahaja seseorang dijemput ke ruang kerja yang tidak pernah diciptanya. Tanpa hos kod disambungkan, akaun yang telah melalui onboarding pergi ke `/signed-out` untuk mengesahkan semula; yang belum pergi ke `/onboarding`. Selagi bendera itu masih tidak diketahui, pengawal mengekalkan skrin pemula dan bukannya meneka, kerana ia tidak pernah mengubah hala keluar semula daripada onboarding.
+Kelayakan yang hilang dan persediaan yang hilang dilayan secara berbeza, dan pembezanya ialah `users.onboarding_finished_at` yang dibaca daripada `identity.me` pemanggil itu sendiri — bukan sekali-kali "ruang kerja wujud", yang salah sebaik sahaja seseorang dijemput ke ruang kerja yang tidak pernah diciptanya. Tanpa hos kod disambungkan, akaun yang telah melalui onboarding kekal dalam aplikasi, dan cangkerang ruang kerja memaparkan amaran dengan pautan ke Tetapan → Ruang kerja → Profil & identiti, tempat log masuk berada; yang belum pergi ke `/onboarding`. Selagi bendera itu masih tidak diketahui, pengawal mengekalkan skrin pemula dan bukannya meneka, kerana ia tidak pernah mengubah hala keluar semula daripada onboarding.
 
 ## Laluan tanpa awalan
 
@@ -19,7 +19,6 @@ Kelayakan yang hilang dan persediaan yang hilang ialah dua skrin yang berbeza, d
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Skrin pemula permulaan yang menyelesaikan gerbang onboarding |
 | `/onboarding`              | Sambungkan hos kod, cipta atau sertai ruang kerja, kotak pasir, penyesuai lalai, kemudian suara. Langkah ruang kerja digugurkan apabila akaun itu sudah menyertai satu |
-| `/signed-out`              | Daftar masuk semula: kad sambungan hos kod yang sama yang dipaparkan oleh Tetapan, tanpa bar langkah dan tanpa butang teruskan — penghala keluar dengan sendirinya sebaik sahaja hos kod melaporkan masuk |
 | `/workspaces`              | Senarai dan pemilih ruang kerja                  |
 | `/workspaces/:workspaceId` | Mengubah hala ke `/workspaces/:workspaceId/inbox` |
 

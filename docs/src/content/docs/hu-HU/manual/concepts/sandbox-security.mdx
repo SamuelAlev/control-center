@@ -2,7 +2,7 @@
 title: Homokozó és biztonság
 description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Hová ér el az operációs rendszer homokozója, és hová nem]
@@ -139,9 +139,11 @@ engedélyezés, előbb kérdezzen vagy tiltás —, és ugyanazok a szabályok
 
 A push az a művelet, amelynek akkor is tartania kell, ha az ügynök megpróbál
 megkerülni egy szabályt, ezért azzal érvényesítjük, ami az ügynök birtokában
-van, nem azzal, amit futtat. Beállított GitHub App esetén egy GitHub-worktree-ben
-zajló futás repóra korlátozott telepítési tokent kap, amely tartalmat olvashat és
-pull requestekkel dolgozhat, de pusholni nem tud. A futás git-konfigurációja
+van, nem azzal, amit futtat. Egy GitHub-worktree-ben zajló
+futás tokent kap erre az egy repóra, amelyet a munkaterület GitHub Appja, a
+szerver saját alkalmazása vagy a Control Center Connect állít ki. Tartalmat
+olvashat, és ha a felelős tag pusholhat, megjegyzést fűzhet a pull requestekhez,
+de pusholni nem tud. A futás git-konfigurációja
 minden GitHub-push URL-t (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) átír az **ügynökfuttatási átjáróra**, egy loopback
 végpontra a `cc_server`-en. Az átjáró kiolvassa, mely refeket frissíti a push,
@@ -171,12 +173,10 @@ hozzáférés**. Ez a művelet szokásos leírását ismeri fel, és egy ügynö
 el akarja rejteni (`eval`, szkriptfájl, közvetlen API-hívás), képes rá. A
 pushok nem függenek tőle.
 
-:::caution[GitHub App nélkül a push-szabály csak tanácsadó jellegű]
-Beállított GitHub App nélkül a közvetítő személyes hozzáférési tokenre tér
-vissza, amelyet nem lehet csak olvasásra korlátozni. A szabály a `git push`-ra
-továbbra is érvényes, mert a git az átjárónak küldi a pusht, de az a kód, amely a
-környezetben lévő tokent közvetlenül használja, megkerülheti.
-:::
+Minden GitHub-token, amelyet egy futás kap, kétszeresen korlátozott: egyetlen
+repóra, és arra, amit a felelős tag (aki kérte, egyébként a munkaterület
+tulajdonosa) ott megtehet. Nincs tartalék hitelesítő adat. Ha nem állítható ki
+token, a futás token nélkül indul, és a jegyzetei megmondják, miért.
 
 A homokozóba nem kerül jegykezelő API-kulcs. Az ügynökök a Control Center MCP
 eszközein keresztül írnak jegyeket, amelyek az **Írás külső követőbe**
@@ -185,9 +185,11 @@ szabályt kérdezik meg.
 A **Hálózati hozzáférés** szabályt egyszer olvassuk ki, a futás indulásakor. A
 homokozó hálózata vagy be van kapcsolva, vagy ki, így a tiltás kikapcsolja, az
 engedélyezés és az előbb kérdezzen pedig bekapcsolva hagyja; a harness
-`web_fetch` és `web_search` eszköze továbbra is minden hívásnál kérdez. A
-hitelesítő adatok a futás lebontásakor visszavonásra kerülnek, az átjáró által
-kiállított írási tokenekkel együtt, így egy fogantyú nem éli túl a futást.
+`web_fetch` és `web_search` eszköze továbbra is minden hívásnál kérdez. A futás
+hitelesítőadat-fogantyúi a lebontáskor felszabadulnak. A mögöttük álló tokenek
+tagonként és repónként közösek, és körülbelül egy órán belül lejárnak; ha egy tag
+kijelentkezik a GitHubról vagy elhagyja a munkaterületet, a nevében kiállított
+összes token egyszerre megszűnik.
 
 ## Mit ad hozzá a homokozó, és hol áll meg
 

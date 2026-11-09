@@ -2,7 +2,7 @@
 title: Tickety a delegování
 description: Proč ticket zaznamenává práci, aniž by ji odesílal, jak se delegování hlídá a co zrcadlo dodavatele vlastní a co ne.
 slug: cs-CZ/prirucka/koncepty/tickety
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Ticket je jednotka práce, kterou Control Center sleduje. Schválně toho umí
@@ -131,9 +131,11 @@ Primární je ticket v Control Center. Smazání ticketu je **jen místní**, ta
 ticket krytý dodavatelem, který smažeš, se na trackeru nesmaže a při další
 synchronizaci se může vrátit. Spolupracovníci a podtickety se mažou kaskádou.
 
-Přihlašovací údaje adaptéru se berou z úložišť přihlašovacích údajů na serveru
-(klíč Linear nebo token GitHub vložený v Nastavení se vezme při dalším
-požadavku; prostředí ta úložiště jen naplní).
+Přihlašovací údaje adaptéru se na serveru vyhodnocují při každém volání:
+vlastní přihlášení člověka k Linear nebo GitHubu pro to, co dělá on, a pro
+synchronizaci ticketů automatizace Linear pracovního prostoru (nebo servisní
+klíč Linear serveru) či token GitHubu pro jediný repozitář. Nové přihlášení se
+projeví při dalším požadavku.
 
 ## Tickety a pipelines
 

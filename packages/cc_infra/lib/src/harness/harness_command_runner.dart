@@ -15,7 +15,7 @@ import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/agent_shell_process_service.dart';
-import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 
@@ -202,7 +202,6 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     // 2. Build argv + working directory.
     final cwd = workdir ?? Directory.current.path;
     final argv = ['bash', '-lc', command];
-    final sanitizedParent = const EnvSanitizer().hardenPlatform({});
 
     try {
       final manager = sandboxManager;
@@ -214,31 +213,24 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
           argv: argv,
           workingDirectory: cwd,
         );
-        process = await Process.start(
+        process = await ChildProcess.start(
           wrap.executable,
           wrap.argv,
           workingDirectory: cwd,
-          environment: {
-            ...sanitizedParent,
-            ...wrap.environment,
-            ..._baseEnv,
-            ...?env,
-          },
-          includeParentEnvironment: false,
-          runInShell: false,
+          environment: {...wrap.environment, ..._baseEnv, ...?env},
+          toolchain: true,
         );
       } else {
         CcInfraLog.warning(
-          'Harness bash: no native sandbox available; running with env '
-          'sanitization only.',
+          'Harness bash: no native sandbox available; running with the '
+          'allowlisted environment only.',
         );
-        process = await Process.start(
+        process = await ChildProcess.start(
           argv.first,
           argv.skip(1).toList(),
           workingDirectory: cwd,
-          environment: {...sanitizedParent, ..._baseEnv, ...?env},
-          includeParentEnvironment: false,
-          runInShell: false,
+          environment: {..._baseEnv, ...?env},
+          toolchain: true,
         );
       }
 

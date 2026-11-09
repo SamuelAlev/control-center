@@ -2,35 +2,42 @@ part of 'personal_connection_card.dart';
 
 class _PersonalSignInForm extends StatelessWidget {
   const _PersonalSignInForm({
+    required this.provider,
     required this.canSignIn,
+    required this.ownUnreachable,
+    required this.unavailable,
     required this.connected,
-    required this.signInFlow,
-    required this.verificationUrl,
-    required this.userCode,
+    required this.needsAttention,
+    required this.attempt,
+    required this.code,
     required this.busy,
     required this.onBegin,
+    required this.onConfirmCode,
     required this.onStop,
   });
 
+  final String provider;
   final bool canSignIn;
+  final bool ownUnreachable;
+  final bool unavailable;
   final bool connected;
-  final String? signInFlow;
-  final String? verificationUrl;
-  final String? userCode;
+  final bool needsAttention;
+  final SignInAttempt? attempt;
+  final TextEditingController code;
   final bool busy;
   final VoidCallback onBegin;
+  final VoidCallback onConfirmCode;
   final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final url = verificationUrl;
-    final code = userCode;
+    final current = attempt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (canSignIn && url == null && (!connected || signInFlow == 'device'))
+        if (canSignIn && current == null && (!connected || needsAttention))
           CcButton(
             size: CcButtonSize.lg,
             variant: CcButtonVariant.secondary,
@@ -39,46 +46,48 @@ class _PersonalSignInForm extends StatelessWidget {
               connected ? l.credentialsSignInAgain : l.credentialsBrowserLogin,
             ),
           ),
-        if (signInFlow == 'redirect' && !canSignIn)
+        if (current == null && ownUnreachable)
           Text(
-            l.credentialsRedirectUnavailable,
+            l.credentialsSignInPhoneUnreachable,
             style: TextStyle(color: t.textSecondary),
           ),
-        if (url != null) ...[
+        if (current == null && unavailable)
+          Text(
+            l.credentialsSignInUnavailable(provider),
+            style: TextStyle(color: t.textSecondary),
+          ),
+        if (current != null) ...[
           Text(
             l.credentialsWaitingForLogin,
             style: TextStyle(color: t.textSecondary),
           ),
-          if (code != null) ...[
+          if (current.mode == SignInLaneMode.connect) ...[
             const SizedBox(height: 8),
+            // RTL carve-out: the confirmation code is a Latin token.
             Directionality(
               textDirection: TextDirection.ltr,
               child: CcTextField(
-                key: ValueKey(code),
-                initialValue: code,
-                readOnly: true,
+                controller: code,
+                label: l.credentialsConnectCodePrompt,
                 textStyle: TextStyle(
                   fontSize: 22,
                   letterSpacing: 3,
                   color: t.textPrimary,
                 ),
+                onSubmitted: (_) => onConfirmCode(),
               ),
             ),
             CcButton(
               size: CcButtonSize.lg,
-              variant: CcButtonVariant.ghost,
-              onPressed: () => Clipboard.setData(ClipboardData(text: code)),
-              child: Text(l.credentialsCopyCode),
-            ),
-            Text(
-              l.credentialsDeviceCodeHint,
-              style: TextStyle(color: t.textSecondary),
+              variant: CcButtonVariant.primary,
+              onPressed: busy ? null : onConfirmCode,
+              child: Text(l.confirm),
             ),
           ],
           CcButton(
             size: CcButtonSize.lg,
             variant: CcButtonVariant.secondary,
-            onPressed: () => openExternal(url),
+            onPressed: () => openExternal(current.url),
             child: Text(l.openInBrowser),
           ),
           CcButton(

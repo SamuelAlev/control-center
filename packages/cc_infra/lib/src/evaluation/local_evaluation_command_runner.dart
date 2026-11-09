@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 
 /// Runs the harness `bash` tool's commands directly on the host, inside the
 /// isolated evaluation workspace.
@@ -49,18 +50,15 @@ class LocalEvaluationCommandRunner implements HarnessCommandRunner {
         stderr: 'working directory does not exist',
       );
     }
-    final resolvedEnv = <String, String>{
-      ...Platform.environment,
-      ...?environment,
-      ...?env,
-    };
+    final resolvedEnv = <String, String>{...?environment, ...?env};
     Process process;
     try {
-      process = await Process.start(
+      process = await ChildProcess.start(
         'bash',
         ['-lc', command],
         workingDirectory: cwd,
         environment: resolvedEnv,
+        toolchain: true,
       );
     } on ProcessException catch (error) {
       return HarnessCommandResult(

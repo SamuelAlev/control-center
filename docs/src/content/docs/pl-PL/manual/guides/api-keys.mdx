@@ -2,7 +2,7 @@
 title: Zarządzaj kluczami API
 description: Gdzie znajduje się każde poświadczenie — Twoje konto użytkownika na serwerze, sam serwer czy zewnętrzne CLI — oraz jak je ustawić, wymienić i usunąć.
 slug: pl-PL/podrecznik/poradniki/klucze-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Ten poradnik pokazuje, gdzie przechowywane jest każde poświadczenie używane przez
@@ -14,26 +14,32 @@ czy stoi za nim człowiek.
 
 | Poświadczenie                        | Gdzie jest przechowywane                                  | Kto go używa                                                     |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Twoje poświadczenie hosta kodu / systemu zgłoszeń | Plik sekretów serwera z uprawnieniami 0600, przypisany do Twojego identyfikatora użytkownika | Wszystko, o co poprosisz: powierzchnia pull requestów, uruchomienia Twoich agentów, Twoje obrazy |
-| Tożsamość aplikacji serwera          | Ten sam plik, a dla danych niebędących sekretami — `server_settings` | Praca, o którą nie poprosił żaden człowiek: webhooki, odpytywanie pull requestów, synchronizacja zgłoszeń |
+| Twoje logowanie do hosta kodu / systemu zgłoszeń | Plik sekretów serwera z uprawnieniami 0600, przypisany do Twojego identyfikatora użytkownika | Wszystko, co robisz: powierzchnia pull requestów, recenzje, scalenia, Twoje działania w Linear |
+| Aplikacje dostawców serwera          | Ten sam plik, a dla danych niebędących sekretami — `server_settings` | Logowanie ludzi oraz tokeny dla jednego repozytorium dla agentów, potoków i odpytywania |
+| Klucz instalacji Connect             | Ten sam plik (`connect_install_key`)                      | Identyfikowanie tego serwera wobec Control Center Connect        |
 | Klucze dostawców modeli i tokeny OAuth | Własny magazyn poświadczeń serwera                      | Wbudowany adapter, dla każdego obszaru roboczego w instalacji     |
-| Tokeny bota Slack                    | `<dataDir>/<workspaceId>/chat_credentials/` na serwerze   | Most czatu tego obszaru roboczego                                |
+| Poświadczenia bota Slack             | `<dataDir>/<workspaceId>/chat_credentials/` na serwerze   | Most czatu tego obszaru roboczego: tokeny Twojej własnej aplikacji albo zapieczętowany grant współdzielonej aplikacji |
 | Poświadczenia zewnętrznych CLI       | To, czego używa dane CLI                                  | Claude Code, na hoście serwera                                   |
 
-## Dwa poświadczenia GitHub, które odpowiadają na różne pytania
+## GitHub: Twoje logowanie i tokeny dla jednego repozytorium
 
-- **Twoje**, z logowania za pomocą kodu urządzenia lub wklejenia tokenu. Stoi za
-  każdym żądaniem wykonanym *w Twoim imieniu*, więc komentarz opublikowany za Ciebie
-  nosi Twoje imię. Inny członek nie może go odczytać i łączy własne
-- **Serwera**, z GitHub App zarejestrowanej przez operatora. Odpowiada na wszystko,
-  co nie ma wywołującego — dzięki temu dostęp do hosta kodu nie znika, gdy jedna
-  osoba odejdzie albo wymieni token
+- **Twoje**, z **Zaloguj się do GitHub**. Stoi za każdym żądaniem wykonanym
+  *w Twoim imieniu*, więc recenzja opublikowana za Ciebie nosi Twoje imię. Inny
+  członek nie może go użyć i loguje się sam. Nie ma tokenu GitHub do wklejania
+- **Praca, przy której nikt nie pisze** (agenci, potoki, odpytywanie, odpowiedzi
+  bota), dostaje token zawsze dla jednego repozytorium, wydany z GitHub App
+  serwera albo przez Control Center Connect i ograniczony do tego, co może tam
+  zrobić odpowiedzialny członek. Nigdy nie jest to całe przekazane Twoje
+  logowanie
 
 Twoje ustawia się w karcie **Hosting kodu** w **Ustawienia → Obszar roboczy → Profil
-i tożsamość**; poświadczenie serwera — w **Aplikacje dostawców** w **Ustawienia →
+i tożsamość**; aplikację serwera — w **Aplikacje dostawców** w **Ustawienia →
 Serwer → Logowanie jednokrotne**. Zobacz
 [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
 i [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/).
+
+GitLab i Bitbucket nadal przyjmują wklejony osobisty token, przechowywany w ten
+sam sposób. Zobacz [Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/).
 
 :::note[Istnieje też ekran dostępny tylko pod adresem URL]
 `/workspaces/<workspaceId>/api-keys` wyświetla te same dwie karty co pierwszy krok
@@ -70,48 +76,61 @@ serwer czyta własną kopię i nic ich nie łączy. Zobacz
 ## Łączenie dostawcy zgłoszeń
 
 Karta **Zgłoszenia** w **Ustawienia → Obszar roboczy → Ogólne** zawiera obie części
-jednej decyzji: u którego dostawcy znajdują się Twoje zgłoszenia i jakie są dla niego
-poświadczenia. Wybranie opcji **Lokalnie** ukrywa wiersz poświadczeń — lokalne
-zgłoszenia znajdują się we własnej bazie danych tego serwera i nie mają się wobec
-czego uwierzytelniać.
+jednej decyzji: u którego dostawcy znajdują się Twoje zgłoszenia i kim jest
+Control Center, gdy z nim rozmawia. Wybranie opcji **Lokalnie** ukrywa wiersze
+Linear — lokalne zgłoszenia znajdują się we własnej bazie danych tego serwera
+i nie mają się wobec czego uwierzytelniać.
 
-Twój klucz jest przechowywany na serwerze przy Twoim identyfikatorze użytkownika,
-podobnie jak klucz hosta kodu. Serwer przechowuje własny klucz Linear osobno
-(**Aplikacje dostawców**) — to na nim działa synchronizacja zgłoszeń, gdy nie poprosił
-o nią żaden człowiek. Do sandboxa agenta nie jest wstrzykiwany żaden klucz
-zgłoszeń; agenci zapisują zgłoszenia przez narzędzia Control Center, które pytają
-regułę **Zapis do zewnętrznego trackera**. Zobacz
+Linear ma dwa logowania i żadnego wklejanego klucza: **Linear** jest Twoje, dla
+tego, co robisz, a **Automatyzacja Linear** to aplikacja Control Center obszaru
+roboczego, łączona przez administratora, dla synchronizacji zgłoszeń, potoków
+i agentów. Serwer może też przechowywać **Klucz API usługi** (**Aplikacje
+dostawców**) dla obszarów roboczych bez połączonej automatyzacji. Do sandboxa
+agenta nie jest wstrzykiwane żadne poświadczenie zgłoszeń; agenci zapisują
+zgłoszenia przez narzędzia Control Center, które pytają regułę **Zapis do
+zewnętrznego trackera**. Zobacz
 [Skonfiguruj integrację Linear](/pl-PL/podrecznik/poradniki/integracja-linear/).
 
 ## Wymiana i unieważnianie
 
-- **Twoje poświadczenie GitHub**: naciśnij **Rozłącz**, a następnie zaloguj się
-  ponownie lub wklej nowy token. Unieważnij stary w GitHub
+- **Twoje logowanie do GitHuba**: naciśnij **Rozłącz**, a następnie ponownie
+  **Zaloguj się do GitHub**. Rozłączenie usuwa też każdy token, który serwer
+  wydał w Twoim imieniu
+- **Token GitLab lub Bitbucket**: naciśnij **Aktualizuj token** i wklej nowy,
+  a następnie unieważnij stary w serwisie
 - **Aplikacja serwera**: wygeneruj nowy klucz prywatny lub sekret klienta na stronie
-  aplikacji w GitHub, wklej go w **Aplikacje dostawców** i naciśnij **Test**
+  aplikacji u dostawcy, wklej go w **Aplikacje dostawców** i naciśnij **Test**
+- **Klucz instalacji Connect**: **Wymień klucz** na karcie **Control Center
+  Connect** albo `cc_server connect rotate-key --yes`. Każdy, kto zalogował się
+  przez Connect, loguje się ponownie. Zobacz
+  [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/)
 - **Dostawca modeli**: w jego wierszu wyloguj się (OAuth) lub usuń klucz, a następnie
   połącz się ponownie
-- **Slack**: wklej ponownie tokeny w oknie łączenia. Zobacz
+- **Slack**: w przypadku własnej aplikacji wklej ponownie tokeny w oknie
+  łączenia. Współdzielona aplikacja Control Center nie ma tokenu do wymiany: jej
+  token bota jest odnawiany przez Connect, a **Rozłącz** go unieważnia
+  i odinstalowuje bota ze Slacka. Zobacz
   [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/)
 
 ## Rozwiązywanie problemów
 
-### Lista pull requestów jest pusta, ale mój token działa w `curl`
+### Token GitLab lub Bitbucket działa w `curl`, ale nie tutaj
 
-Sprawdź podtytuł wiersza **Hosting kodu**. Jeśli wskazuje inne źródło („przez
-aplikację tego serwera”, „ze środowiska”), testowane poświadczenie nie jest tym,
-które odpowiada — Twoje nie zostało zapisane.
+Sprawdź podtytuł wiersza **Hosting kodu**. Jeśli widnieje w nim „ze środowiska”,
+odpowiada poświadczenie serwera, a nie Twoje — Twoje nie zostało zapisane.
 
-### Token jest akceptowany, ale późniejsze żądania kończą się niepowodzeniem
+### Token GitLab lub Bitbucket jest akceptowany, ale późniejsze żądania kończą się niepowodzeniem
 
 Token jest sprawdzany w postaci, w jakiej jest przechowywany, więc wiersz podaje
 konto, które za nim stoi — ale tylko konto, nie zakresy uprawnień. Token o zbyt
 wąskich zakresach łączy się, a następnie poszczególne żądania kończą się
-niepowodzeniem. Sprawdź zakresy i termin ważności:
+niepowodzeniem. Sprawdź jego zakresy i termin ważności w serwisie.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Dostawca informuje, że logowanie nie jest skonfigurowane na tym serwerze
+
+Serwer nie ma ani własnej aplikacji dla tego dostawcy, ani Control Center
+Connect. Właściciel serwera wybiera jedno z nich w **Ustawienia → Serwer →
+Logowanie jednokrotne**.
 
 ## Powiązane poradniki
 

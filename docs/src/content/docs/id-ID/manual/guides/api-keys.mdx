@@ -2,7 +2,7 @@
 title: Kelola kunci API
 description: Di mana setiap kredensial disimpan — akun pengguna Anda di server, server itu sendiri, atau CLI eksternal — serta cara menetapkan, merotasi, dan menghapusnya.
 slug: id-ID/panduan-pengguna/panduan-praktis/kunci-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Panduan ini menunjukkan kepada Anda di mana setiap kredensial yang digunakan
@@ -14,26 +14,31 @@ bergantung pada apakah ada manusia di baliknya.
 
 | Kredensial                           | Disimpan                                                  | Siapa yang memakainya                                            |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Kredensial host kode / tiket Anda    | Berkas rahasia 0600 milik server, dikunci berdasarkan id pengguna Anda | Apa pun yang Anda minta: permukaan PR, eksekusi agen Anda, image Anda |
-| Identitas aplikasi server            | Berkas yang sama, ditambah `server_settings` untuk bagian yang bukan rahasia | Pekerjaan yang tidak diminta manusia: webhook, polling PR, sinkronisasi tiket |
+| Proses masuk host kode / tiket Anda  | Berkas rahasia 0600 milik server, dikunci berdasarkan id pengguna Anda | Apa pun yang Anda lakukan: permukaan PR, tinjauan, merge, tindakan Linear Anda |
+| Aplikasi penyedia milik server       | Berkas yang sama, ditambah `server_settings` untuk bagian yang bukan rahasia | Menandatangani orang masuk, dan token satu-repositori untuk agen, pipeline, dan polling |
+| Kunci instalasi Connect              | Berkas yang sama (`connect_install_key`)                  | Mengidentifikasi server ini kepada Control Center Connect        |
 | Kunci penyedia model dan token OAuth | Penyimpanan kredensial milik server sendiri               | Adapter bawaan, untuk setiap ruang kerja pada instalasi          |
-| Token bot Slack                      | `<dataDir>/<workspaceId>/chat_credentials/` di server     | Jembatan chat untuk ruang kerja tersebut                         |
+| Kredensial bot Slack                 | `<dataDir>/<workspaceId>/chat_credentials/` di server     | Jembatan chat untuk ruang kerja tersebut: token app Anda sendiri, atau hibah tersegel dari app bersama |
 | Kredensial CLI eksternal             | Apa pun yang digunakan CLI tersebut                       | Claude Code, di host server                                      |
 
-## Dua kredensial GitHub, dan keduanya menjawab pertanyaan yang berbeda
+## GitHub: proses masuk Anda, dan token satu-repositori
 
-- **Milik Anda**, dari proses masuk (device flow) atau penempelan token. Inilah
-  yang dipakai setiap permintaan yang dibuat *atas nama Anda*, sehingga komentar
-  yang dikirim untuk Anda membawa nama Anda. Anggota lain tidak dapat
-  membacanya, dan setiap anggota menghubungkan kredensialnya sendiri
-- **Milik server**, dari GitHub App yang didaftarkan operator. Ini menjawab
-  semuanya tanpa pemanggil — sehingga akses host kode tidak hilang ketika satu
-  orang keluar atau merotasi token
+- **Milik Anda**, dari **Masuk ke GitHub**. Inilah yang dipakai setiap permintaan yang
+  dibuat *atas nama Anda*, sehingga ulasan yang dikirim untuk Anda membawa nama Anda.
+  Anggota lain tidak dapat memakainya, dan mereka masuk sendiri. Tidak ada token GitHub
+  untuk ditempel
+- **Pekerjaan tanpa orang mengetik** (agen, pipeline, polling, balasan bot) menerima token
+  untuk satu repositori dalam satu waktu, dicetak dari GitHub App server atau melalui
+  Control Center Connect, dan dibatasi pada apa yang dapat dilakukan anggota yang
+  bertanggung jawab di sana. Itu tidak pernah proses masuk Anda yang diserahkan utuh
 
-Milik Anda diatur di kartu **Hosting kode** pada **Pengaturan → Ruang kerja →
-Profil & identitas**; milik server di **Aplikasi penyedia** pada **Pengaturan →
-Server → Single sign-on**. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+Milik Anda diatur di kartu **Hosting kode** pada **Pengaturan → Ruang kerja → Profil &
+identitas**; aplikasi server di **Aplikasi penyedia** pada **Pengaturan → Server → Single
+sign-on**. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
 dan [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
+
+GitLab dan Bitbucket masih menerima token pribadi yang ditempel, disimpan dengan cara yang
+sama. Lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
 
 :::note[Ada juga layar yang hanya bisa diakses lewat URL]
 `/workspaces/<workspaceId>/api-keys` menampilkan dua kartu yang sama seperti
@@ -72,47 +77,54 @@ keduanya. Lihat
 ## Hubungkan vendor tiket
 
 Kartu **Tiket** pada **Pengaturan → Ruang kerja → Umum** memuat kedua bagian
-dari satu keputusan: di mana tiket Anda berada, dan kredensial untuknya. Memilih
-**Lokal** menyembunyikan baris kredensial — tiket lokal berada di basis data
-server ini sendiri dan tidak ada yang perlu diautentikasi.
+dari satu keputusan: di mana tiket Anda berada, dan siapa Control Center saat
+berbicara dengannya. Memilih **Lokal** menyembunyikan baris Linear — tiket lokal
+berada di basis data server ini sendiri dan tidak ada yang perlu diautentikasi.
 
-Kunci Anda disimpan di server dan dikaitkan dengan id pengguna Anda, seperti
-kunci host kode. Server menyimpan kunci Linear-nya sendiri secara terpisah
-(**Aplikasi penyedia**), yang menjadi sandaran sinkronisasi tiket saat tidak ada
-manusia yang meminta. Tidak ada kunci ticketing yang disuntikkan ke sandbox
-agen; agen menulis tiket melalui alat Control Center, yang menanyakan aturan
-**Tulis ke pelacak eksternal**. Lihat
-[Siapkan integrasi Linear](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/).
+Linear memiliki dua proses masuk dan tanpa kunci yang ditempel: **Linear** adalah milik
+Anda, untuk apa yang Anda lakukan, dan **Otomatisasi Linear** adalah app Control Center
+milik ruang kerja, dihubungkan oleh admin, untuk sinkronisasi tiket, pipeline, dan agen.
+Server juga dapat menyimpan **Kunci API layanan** (**Aplikasi penyedia**) untuk ruang kerja
+yang belum menghubungkan otomatisasi. Tidak ada kredensial tiket yang disuntikkan ke sandbox
+agen; agen menulis tiket melalui alat Control Center, yang menanyakan aturan **Tulis ke
+pelacak eksternal**. Lihat [Siapkan integrasi Linear](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/).
 
 ## Rotasi atau cabut
 
-- **Kredensial GitHub Anda**: tekan **Putuskan**, lalu masuk lagi atau tempel
-  token barunya. Cabut token lama di GitHub
-- **Aplikasi server**: buat kunci privat atau client secret baru di halaman
-  GitHub aplikasi tersebut, tempel di **Aplikasi penyedia** dan tekan **Tes**
+- **Proses masuk GitHub Anda**: tekan **Putuskan**, lalu **Masuk ke GitHub** lagi.
+  Memutuskan juga membatalkan setiap token yang dicetak server atas nama Anda
+- **Token GitLab atau Bitbucket**: tekan **Perbarui token** dan tempel yang baru, lalu
+  cabut yang lama di host kode
+- **Aplikasi server**: buat kunci privat atau client secret baru di halaman penyedia
+  aplikasi tersebut, tempel di **Aplikasi penyedia** dan tekan **Tes**
+- **Kunci instalasi Connect**: **Rotasi kunci** pada kartu **Control Center Connect**, atau
+  `cc_server connect rotate-key --yes`. Semua orang yang masuk melalui Connect harus masuk
+  lagi. Lihat [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/)
 - **Penyedia model**: pada barisnya, keluar (OAuth) atau hapus kuncinya, lalu
   hubungkan lagi
-- **Slack**: tempel ulang token di dialog koneksi. Lihat
+- **Slack**: untuk app Anda sendiri, tempel ulang token di dialog koneksi. App Slack bersama
+  milik Control Center tidak memiliki token untuk dirotasi: token bot-nya diperbarui melalui
+  Connect, dan **Putuskan** mencabutnya serta menghapus bot dari Slack. Lihat
   [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
 
 ## Pemecahan masalah
 
-### Daftar PR kosong tetapi token saya berfungsi di `curl`
+### Token GitLab atau Bitbucket berfungsi di `curl` tetapi tidak di sini
 
-Periksa subjudul baris **Hosting kode**. Jika subjudul itu menyebut sumber lain
-("lewat aplikasi server ini", "dari environment"), kredensial yang Anda uji bukan
-yang menjawab — milik Anda tidak tersimpan.
+Periksa subjudul baris **Hosting kode**. Jika menyebut "dari environment", kredensial yang
+menjawab adalah milik server, bukan milik Anda — milik Anda tidak tersimpan.
 
-### Token diterima tetapi permintaan berikutnya gagal
+### Token GitLab atau Bitbucket diterima tetapi permintaan berikutnya gagal
 
 Token diuji sebagaimana disimpannya, sehingga barisnya menyebut akun di baliknya
 — tetapi hanya akunnya, bukan scope-nya. Token dengan scope terlalu sedikit
 berhasil terhubung lalu gagal pada permintaan individual. Periksa scope dan masa
-berlakunya:
+berlakunya di host kode.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Penyedia menyatakan proses masuk belum disiapkan di server ini
+
+Server tidak memiliki aplikasinya sendiri untuk penyedia itu maupun Control Center Connect.
+Pemilik server memilih salah satunya di **Pengaturan → Server → Single sign-on**.
 
 ## Panduan terkait
 

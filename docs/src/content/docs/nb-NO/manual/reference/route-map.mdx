@@ -2,16 +2,16 @@
 title: Rutekart
 description: Alle ruter Control Center registrerer, med tilhørende skjermbilde og spørringsparametere.
 slug: nb-NO/handbok/referanse/rutekart
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Appskallet
 
-Appskallet (`ControlCenterLayout`) omslutter hver rute inne i et arbeidsområde via en `ShellRoute`. **Hvert mål inne i skallet har prefiks for arbeidsområdet — `/workspaces/:workspaceId/…` — og arbeidsområde-id-en i URL-en er den eneste kilden til sannhet for det aktive arbeidsområdet.** Bare flatene før konteksten er etablert mangler prefiks: `/splash`, `/onboarding`, `/signed-out` og den bare `/workspaces`-velgeren, alle i fullskjerm og utenfor skallet.
+Appskallet (`ControlCenterLayout`) omslutter hver rute inne i et arbeidsområde via en `ShellRoute`. **Hvert mål inne i skallet har prefiks for arbeidsområdet — `/workspaces/:workspaceId/…` — og arbeidsområde-id-en i URL-en er den eneste kilden til sannhet for det aktive arbeidsområdet.** Bare flatene før konteksten er etablert mangler prefiks: `/splash`, `/onboarding` og den bare `/workspaces`-velgeren, alle i fullskjerm og utenfor skallet.
 
 Porten er oppfylt når minst én forge er tilkoblet **for den påloggede brukeren**, og minst ett arbeidsområde finnes.
 
-Manglende påloggingsinformasjon og et manglende oppsett er forskjellige skjermer, og skillet går ved `users.onboarding_finished_at` lest fra kalleren sin egen `identity.me` — aldri «arbeidsområder finnes», som er feil i det øyeblikket noen blir invitert inn i et arbeidsområde de aldri har opprettet. Når ingen forge er tilkoblet, går en konto som har fullført onboarding, til `/signed-out` for å autentisere seg på nytt; en konto som ikke har det, går til `/onboarding`. Så lenge flagget fortsatt er ukjent, holder vakten splash-skjermen i stedet for å gjette, fordi den aldri omdirigerer tilbake ut av onboarding.
+Manglende påloggingsinformasjon og et manglende oppsett behandles forskjellig, og skillet går ved `users.onboarding_finished_at` lest fra kalleren sin egen `identity.me` — aldri «arbeidsområder finnes», som er feil i det øyeblikket noen blir invitert inn i et arbeidsområde de aldri har opprettet. Når ingen forge er tilkoblet, blir en konto som har fullført onboarding i appen, og arbeidsområdeskallet viser en advarsel med lenke til Innstillinger → Arbeidsområde → Profil og identitet, der pålogging ligger; en konto som ikke har det, går til `/onboarding`. Så lenge flagget fortsatt er ukjent, holder vakten splash-skjermen i stedet for å gjette, fordi den aldri omdirigerer tilbake ut av onboarding.
 
 ## Ruter uten prefiks
 
@@ -19,7 +19,6 @@ Manglende påloggingsinformasjon og et manglende oppsett er forskjellige skjerme
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Oppstartssplash som avgjør onboarding-porten     |
 | `/onboarding`              | Koble til en forge, opprett eller bli med i et arbeidsområde, sandkasse, standardadapter og til slutt tale. Arbeidsområde-steget hoppes over når kontoen allerede tilhører ett |
-| `/signed-out`              | Autentiser på nytt: det samme kortet for forge-tilkoblinger som Innstillinger viser, uten steglinje og uten fortsett-knapp — ruteren forlater skjermen av seg selv så snart en forge melder seg |
 | `/workspaces`              | Arbeidsområdeliste og velger                     |
 | `/workspaces/:workspaceId` | Omdirigerer til `/workspaces/:workspaceId/inbox` |
 

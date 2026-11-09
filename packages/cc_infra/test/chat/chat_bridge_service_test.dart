@@ -75,7 +75,8 @@ void main() {
       expect(h.adapter.ephemerals, isEmpty);
       final refusal = h.adapter.posted.single;
       expect(refusal.threadId, '1.1');
-      expect(refusal.markdown, contains('link'));
+      expect(refusal.markdown, contains('Link my Slack account'));
+      expect(refusal.markdown, contains('direct message'));
     });
 
     test('a linked non-member is refused, never attributed', () async {
@@ -101,22 +102,10 @@ void main() {
       expect(h.adapter.posted.single.markdown, contains('read-only'));
     });
 
-    test('a verified provider email links a member on first contact', () async {
-      h.adapter.profiles['U3'] = const ChatUserProfile(
-        id: 'U3',
-        label: 'Dana',
-        email: 'dana@example.com',
-        teamId: 'T1',
-      );
-      h.users.add(
-        User(
-          id: 'user-3',
-          handle: 'dana',
-          displayName: 'Dana',
-          email: 'dana@example.com',
-          createdAt: DateTime(2026),
-        ),
-      );
+    test('a confirmed email links a full member on first contact', () async {
+      h.adapter.profiles['U3'] = _fullMember('U3', 'dana@example.com');
+      h.users.add(_user('user-3', 'dana'));
+      h.verifiedUsers.add('user-3');
       h.member('user-3', WorkspaceRole.member);
       await h.bridge.start();
 
@@ -127,23 +116,98 @@ void main() {
       expect(link.userId, 'user-3');
       expect(link.method, ChatLinkMethod.email);
       expect(link.provider, ChatProvider.slack);
+      expect(link.externalTeamId, 'T1');
+    });
+
+    // Every condition is load-bearing: each of these profiles controls an
+    // email that is not proof of who sent the message.
+    for (final (name, profile) in [
+      (
+        'a guest',
+        const ChatUserProfile(
+          id: 'U3',
+          label: 'Dana',
+          email: 'dana@example.com',
+          teamId: 'T1',
+          emailConfirmed: true,
+        ),
+      ),
+      (
+        'a visitor from another team',
+        const ChatUserProfile(
+          id: 'U3',
+          label: 'Dana',
+          email: 'dana@example.com',
+          teamId: 'T-other',
+          fullMember: true,
+          emailConfirmed: true,
+        ),
+      ),
+      (
+        'an unconfirmed provider email',
+        const ChatUserProfile(
+          id: 'U3',
+          label: 'Dana',
+          email: 'dana@example.com',
+          teamId: 'T1',
+          fullMember: true,
+        ),
+      ),
+      (
+        'a profile with no team',
+        const ChatUserProfile(
+          id: 'U3',
+          label: 'Dana',
+          email: 'dana@example.com',
+          fullMember: true,
+          emailConfirmed: true,
+        ),
+      ),
+    ]) {
+      test('$name is never auto-linked by email', () async {
+        h.adapter.profiles['U3'] = profile;
+        h.users.add(_user('user-3', 'dana'));
+        h.verifiedUsers.add('user-3');
+        h.member('user-3', WorkspaceRole.member);
+        await h.bridge.start();
+
+        await h.mention('U3', text: 'hello');
+
+        expect(h.userLinks.rows, isEmpty);
+        expect(h.messaging.dispatched, isEmpty);
+      });
+    }
+
+    test('an unverified Control Center email links nothing', () async {
+      h.adapter.profiles['U3'] = _fullMember('U3', 'dana@example.com');
+      h.users.add(_user('user-3', 'dana'));
+      h.member('user-3', WorkspaceRole.member);
+      await h.bridge.start();
+
+      await h.mention('U3', text: 'hello');
+
+      expect(h.userLinks.rows, isEmpty);
+      expect(h.messaging.dispatched, isEmpty);
+    });
+
+    test('without an email verifier nobody is linked by email', () async {
+      h = _Harness(verifiesEmail: false);
+      h.adapter.profiles['U3'] = _fullMember('U3', 'dana@example.com');
+      h.users.add(_user('user-3', 'dana'));
+      h.verifiedUsers.add('user-3');
+      h.member('user-3', WorkspaceRole.member);
+      await h.bridge.start();
+
+      await h.mention('U3', text: 'hello');
+
+      expect(h.userLinks.rows, isEmpty);
+      expect(h.adapter.calls, isNot(contains('userProfile')));
     });
 
     test('an email that matches a non-member links nothing', () async {
-      h.adapter.profiles['U4'] = const ChatUserProfile(
-        id: 'U4',
-        label: 'Outsider',
-        email: 'outsider@example.com',
-      );
-      h.users.add(
-        User(
-          id: 'user-4',
-          handle: 'outsider',
-          displayName: 'Outsider',
-          email: 'outsider@example.com',
-          createdAt: DateTime(2026),
-        ),
-      );
+      h.adapter.profiles['U4'] = _fullMember('U4', 'outsider@example.com');
+      h.users.add(_user('user-4', 'outsider'));
+      h.verifiedUsers.add('user-4');
       await h.bridge.start();
 
       await h.mention('U4', text: 'hello');
@@ -158,7 +222,11 @@ void main() {
         label: 'Deploy bot',
         email: 'alex@example.com',
         isBot: true,
+        teamId: 'T1',
+        fullMember: true,
+        emailConfirmed: true,
       );
+      h.verifiedUsers.add('user-1');
       await h.bridge.start();
 
       await h.mention('U5', text: 'release');
@@ -305,55 +373,47 @@ void main() {
       // person who asked always hears why nothing happened.
       final refusal = h.adapter.posted.single;
       expect(refusal.threadId, '1.1');
-      expect(refusal.markdown, contains('link'));
+      expect(refusal.markdown, contains('Link my Slack account'));
+      expect(refusal.markdown, contains('direct message'));
       expect(h.messaging.dispatched, isEmpty);
     });
 
-    test(
-      'a stale link whose space was deleted is rebuilt in place',
-      () async {
-        h.link('U1', 'user-1');
-        h.spaceLinks.rows.add(
-          ChatSpaceLink(
-            id: 'link-1',
-            workspaceId: 'ws-1',
-            provider: ChatProvider.slack,
-            externalTeamId: 'T1',
-            externalChannelId: 'C1',
-            externalThreadId: '1.1',
-            ccSpaceId: 'gone',
-            createdByUserId: 'user-1',
-            createdAt: DateTime(2026),
-            lastActivityAt: DateTime(2026),
-          ),
-        );
-        await h.bridge.start();
+    test('a stale link whose space was deleted is rebuilt in place', () async {
+      h.link('U1', 'user-1');
+      h.spaceLinks.rows.add(
+        ChatSpaceLink(
+          id: 'link-1',
+          workspaceId: 'ws-1',
+          provider: ChatProvider.slack,
+          externalTeamId: 'T1',
+          externalChannelId: 'C1',
+          externalThreadId: '1.1',
+          ccSpaceId: 'gone',
+          createdByUserId: 'user-1',
+          createdAt: DateTime(2026),
+          lastActivityAt: DateTime(2026),
+        ),
+      );
+      await h.bridge.start();
 
-        await h.mention('U1', text: 'again', messageId: '1.1');
+      await h.mention('U1', text: 'again', messageId: '1.1');
 
-        // The row is unique on the external tuple, so the id has to be reused.
-        expect(h.spaceLinks.rows, hasLength(1));
-        expect(h.spaceLinks.rows.single.id, 'link-1');
-        expect(h.spaceLinks.rows.single.ccSpaceId, isNot('gone'));
-        expect(h.messaging.dispatched, hasLength(1));
-      },
-    );
+      // The row is unique on the external tuple, so the id has to be reused.
+      expect(h.spaceLinks.rows, hasLength(1));
+      expect(h.spaceLinks.rows.single.id, 'link-1');
+      expect(h.spaceLinks.rows.single.ccSpaceId, isNot('gone'));
+      expect(h.messaging.dispatched, hasLength(1));
+    });
 
-    test(
-      'the space is named after the request and the conversation',
-      () async {
-        h.link('U1', 'user-1');
-        h.adapter.conversationNames['C1'] = 'engineering';
-        await h.bridge.start();
+    test('the space is named after the request and the conversation', () async {
+      h.link('U1', 'user-1');
+      h.adapter.conversationNames['C1'] = 'engineering';
+      await h.bridge.start();
 
-        await h.mention('U1', text: 'Fix the flaky login test');
+      await h.mention('U1', text: 'Fix the flaky login test');
 
-        expect(
-          h.createdSpaces.single,
-          '#engineering · Fix the flaky login test',
-        );
-      },
-    );
+      expect(h.createdSpaces.single, '#engineering · Fix the flaky login test');
+    });
   });
 
   group('outbound streaming', () {
@@ -424,40 +484,43 @@ void main() {
       );
     });
 
-    test('a provider that refuses streaming falls back to one message', () async {
-      h.adapter.streamingRefusal = const ChatStreamingUnavailable(
-        'feature_not_enabled',
-      );
-      h.link('U1', 'user-1');
-      var availability = true;
-      h.onStreamingAvailability = (value) => availability = value;
-      await h.bridge.start();
-      await h.mention('U1', text: 'explain');
-      final spaceId = h.messaging.dispatched.single.spaceId;
+    test(
+      'a provider that refuses streaming falls back to one message',
+      () async {
+        h.adapter.streamingRefusal = const ChatStreamingUnavailable(
+          'feature_not_enabled',
+        );
+        h.link('U1', 'user-1');
+        var availability = true;
+        h.onStreamingAvailability = (value) => availability = value;
+        await h.bridge.start();
+        await h.mention('U1', text: 'explain');
+        final spaceId = h.messaging.dispatched.single.spaceId;
 
-      h.registry.register('msg-1', spaceId: spaceId);
-      h.registry.apply('msg-1', SegmentOpened(0, _text('Full reply.')));
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      h.registry.apply('msg-1', const TurnFinished(0, TurnOutcome.completed));
-      await pumpEventQueue();
+        h.registry.register('msg-1', spaceId: spaceId);
+        h.registry.apply('msg-1', SegmentOpened(0, _text('Full reply.')));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        h.registry.apply('msg-1', const TurnFinished(0, TurnOutcome.completed));
+        await pumpEventQueue();
 
-      expect(availability, isFalse);
-      expect(h.bridge.streamingAvailable, isFalse);
-      // The whole reply arrives once and nothing was lost to the failed start.
-      expect(
-        h.adapter.posted.where((p) => p.markdown == 'Full reply.'),
-        hasLength(1),
-      );
+        expect(availability, isFalse);
+        expect(h.bridge.streamingAvailable, isFalse);
+        // The whole reply arrives once and nothing was lost to the failed start.
+        expect(
+          h.adapter.posted.where((p) => p.markdown == 'Full reply.'),
+          hasLength(1),
+        );
 
-      // A second turn does not retry streaming.
-      h.adapter.calls.clear();
-      h.registry.register('msg-2', spaceId: spaceId);
-      h.registry.apply('msg-2', SegmentOpened(0, _text('Second.')));
-      h.registry.apply('msg-2', const TurnFinished(0, TurnOutcome.completed));
-      await pumpEventQueue();
-      expect(h.adapter.calls, isNot(contains('startStream')));
-      expect(h.adapter.posted.last.markdown, 'Second.');
-    });
+        // A second turn does not retry streaming.
+        h.adapter.calls.clear();
+        h.registry.register('msg-2', spaceId: spaceId);
+        h.registry.apply('msg-2', SegmentOpened(0, _text('Second.')));
+        h.registry.apply('msg-2', const TurnFinished(0, TurnOutcome.completed));
+        await pumpEventQueue();
+        expect(h.adapter.calls, isNot(contains('startStream')));
+        expect(h.adapter.posted.last.markdown, 'Second.');
+      },
+    );
 
     test('the stream is opened for the member who asked', () async {
       h.link('U1', 'user-1');
@@ -1212,66 +1275,203 @@ void main() {
     });
   });
 
+  group('linking by code', () {
+    ChatLinkCode mint() => h.linkCodes.mint(
+      workspaceId: 'ws-1',
+      provider: ChatProvider.slack,
+      userId: 'user-1',
+    );
+
+    ChatLinkClaim? claimOf(ChatLinkCode code) => h.linkCodes
+        .lookup('ws-1', code.code, provider: ChatProvider.slack)
+        ?.claim;
+
+    test('a code sent in a direct message is claimed, not linked', () async {
+      final code = mint();
+      h.adapter.profiles['U7'] = _fullMember('U7', 'alex@example.com');
+      await h.bridge.start();
+
+      await h.message('U7', text: code.code, conversationId: 'D7', isDm: true);
+
+      // Linking waits for the member who minted the code to confirm this
+      // exact profile in Control Center.
+      expect(h.userLinks.rows, isEmpty);
+      final claim = claimOf(code);
+      expect(claim?.externalUserId, 'U7');
+      expect(claim?.externalTeamId, 'T1');
+      expect(claim?.conversationId, 'D7');
+      expect(claim?.label, 'Alex');
+      expect(h.adapter.posted.single.conversationId, 'D7');
+      expect(h.adapter.posted.single.markdown, contains('Confirm this Slack'));
+      expect(h.messaging.dispatched, isEmpty);
+    });
+
+    test('a code is recognized in backticks and lower case', () async {
+      final code = mint();
+      h.adapter.profiles['U7'] = _fullMember('U7', 'alex@example.com');
+      await h.bridge.start();
+
+      await h.message(
+        'U7',
+        text: ' `${code.code.toLowerCase()}` ',
+        conversationId: 'D7',
+        isDm: true,
+      );
+
+      expect(claimOf(code)?.externalUserId, 'U7');
+    });
+
+    for (final (name, profile) in [
+      ('a guest', const ChatUserProfile(id: 'U7', label: 'Alex', teamId: 'T1')),
+      (
+        'a visitor from another team',
+        const ChatUserProfile(
+          id: 'U7',
+          label: 'Alex',
+          teamId: 'T-other',
+          fullMember: true,
+        ),
+      ),
+    ]) {
+      test('$name cannot claim a code', () async {
+        final code = mint();
+        h.adapter.profiles['U7'] = profile;
+        await h.bridge.start();
+
+        await h.message(
+          'U7',
+          text: code.code,
+          conversationId: 'D7',
+          isDm: true,
+        );
+
+        expect(claimOf(code), isNull);
+        expect(h.adapter.posted.single.markdown, contains('Only full members'));
+      });
+    }
+
+    test('an unknown code from an unlinked sender is explained', () async {
+      await h.bridge.start();
+
+      await h.message('U7', text: 'ZZZZZZ', conversationId: 'D7', isDm: true);
+
+      expect(h.adapter.posted.single.markdown, contains('not valid'));
+      expect(h.messaging.dispatched, isEmpty);
+    });
+
+    test('a code-shaped request from a linked member is a request', () async {
+      h.link('U1', 'user-1');
+      await h.bridge.start();
+
+      await h.message('U1', text: 'revert', conversationId: 'D1', isDm: true);
+
+      expect(h.messaging.dispatched.single.content, 'revert');
+    });
+
+    test('a code posted in a shared channel is not a link attempt', () async {
+      final code = mint();
+      h.adapter.profiles['U7'] = _fullMember('U7', 'alex@example.com');
+      await h.bridge.start();
+
+      await h.mention('U7', text: code.code);
+
+      expect(claimOf(code), isNull);
+      expect(h.adapter.posted.single.markdown, contains('direct message'));
+    });
+
+    test('the first claim wins', () async {
+      final code = mint();
+      h.adapter.profiles['U7'] = _fullMember('U7', 'alex@example.com');
+      h.adapter.profiles['U8'] = _fullMember('U8', 'eve@example.com');
+      await h.bridge.start();
+
+      await h.message('U7', text: code.code, conversationId: 'D7', isDm: true);
+      await h.message('U8', text: code.code, conversationId: 'D8', isDm: true);
+
+      expect(claimOf(code)?.externalUserId, 'U7');
+      expect(h.adapter.posted.last.conversationId, 'D8');
+      expect(h.adapter.posted.last.markdown, contains('not valid'));
+    });
+
+    test(
+      'a confirmed link is announced in the claiming conversation',
+      () async {
+        await h.bridge.start();
+
+        await h.bridge.announceLinked(
+          conversationId: 'D7',
+          displayName: 'Alex Doe',
+        );
+
+        expect(h.adapter.posted.single.conversationId, 'D7');
+        expect(h.adapter.posted.single.markdown, contains('Alex Doe'));
+      },
+    );
+  });
+
   group('commands', () {
-    test('ticket files a ticket for the linked reporter', () async {
+    test('ticket drafts a ticket for the linked reporter', () async {
       h.link('U1', 'user-1');
       await h.bridge.start();
 
       await h.command('ticket', 'Fix the flaky login test | It fails on CI.');
 
-      final ticket = h.tickets.single;
-      expect(ticket.title, 'Fix the flaky login test');
-      expect(ticket.description, 'It fails on CI.');
-      expect(ticket.reporterUserId, 'user-1');
-      expect(h.adapter.commandReplies.single, contains('CC-1'));
-      // The confirmation is a finished card whose reason to exist is the link:
-      // the reporter's next move is opening the ticket they just filed.
-      final card = h.adapter.commandCards.single;
-      expect(card?.status, ChatTaskStatus.complete);
-      expect(card?.title, 'CC-1 — Fix the flaky login test');
-      expect(
-        card?.link?.url,
-        'https://cc.example/open/workspaces/ws-1/tickets/${ticket.id}',
-      );
-    });
-
-    test('a refused ticket gets no card, only the reason', () async {
-      await h.bridge.start();
-
-      await h.command('ticket', 'Something', user: 'U-stranger');
-
+      // Only a draft: the reporter creates the ticket in Control Center, where
+      // they can see exactly what will be filed.
+      final draft = h.ticketDrafts.forUser('ws-1', 'user-1').single;
+      expect(draft.title, 'Fix the flaky login test');
+      expect(draft.description, 'It fails on CI.');
+      expect(draft.reporterUserId, 'user-1');
+      expect(draft.provider, ChatProvider.slack);
+      expect(draft.externalUserId, 'U1');
+      expect(draft.externalChannelId, 'C1');
+      expect(h.adapter.commandReplies.single, contains('Drafted'));
       expect(h.adapter.commandCards.single, isNull);
     });
 
-    test('a ticket without a description is still filed', () async {
+    test('a ticket without a description is still drafted', () async {
       h.link('U1', 'user-1');
       await h.bridge.start();
 
       await h.command('ticket', 'Rotate the staging certificate');
 
-      expect(h.tickets.single.description, isNull);
+      expect(
+        h.ticketDrafts.forUser('ws-1', 'user-1').single.description,
+        isNull,
+      );
     });
 
-    test('an unlinked account cannot file a ticket', () async {
+    test('an unlinked account cannot draft a ticket', () async {
       await h.bridge.start();
 
       await h.command('ticket', 'Something', user: 'U-stranger');
 
-      expect(h.tickets, isEmpty);
-      expect(h.adapter.commandReplies.single, contains('link'));
+      expect(h.ticketDrafts.forUser('ws-1', 'user-1'), isEmpty);
+      expect(h.adapter.commandReplies.single, contains('Link my'));
     });
 
-    test('a titleless ticket is explained, not filed', () async {
+    test('a read-only member cannot draft a ticket', () async {
+      h.link('U1', 'user-1');
+      h.member('user-1', WorkspaceRole.viewer);
+      await h.bridge.start();
+
+      await h.command('ticket', 'Something');
+
+      expect(h.ticketDrafts.forUser('ws-1', 'user-1'), isEmpty);
+      expect(h.adapter.commandReplies.single, contains('read-only'));
+    });
+
+    test('a titleless ticket is explained, not drafted', () async {
       h.link('U1', 'user-1');
       await h.bridge.start();
 
       await h.command('ticket', '');
 
-      expect(h.tickets, isEmpty);
+      expect(h.ticketDrafts.forUser('ws-1', 'user-1'), isEmpty);
       expect(h.adapter.commandReplies.single, contains('title'));
     });
 
-    test('link CODE links this chat account, once', () async {
+    test('link is no longer a command', () async {
       final code = h.linkCodes.mint(
         workspaceId: 'ws-1',
         provider: ChatProvider.slack,
@@ -1281,28 +1481,14 @@ void main() {
 
       await h.command('link', code.code);
 
-      expect(h.userLinks.rows.single.userId, 'user-1');
-      expect(h.userLinks.rows.single.method, ChatLinkMethod.code);
-      expect(h.adapter.commandReplies.single, contains('Linked'));
-
-      // Replaying the same code links nothing further.
-      await h.command('link', code.code, user: 'U-other', key: 'cmd-2');
-      expect(h.userLinks.rows, hasLength(1));
-      expect(h.adapter.commandReplies.last, contains('not valid'));
-    });
-
-    test('a code whose member left the workspace is refused', () async {
-      final code = h.linkCodes.mint(
-        workspaceId: 'ws-1',
-        provider: ChatProvider.slack,
-        userId: 'user-gone',
-      );
-      await h.bridge.start();
-
-      await h.command('link', code.code);
-
       expect(h.userLinks.rows, isEmpty);
-      expect(h.adapter.commandReplies.single, contains('no longer a member'));
+      expect(
+        h.linkCodes
+            .lookup('ws-1', code.code, provider: ChatProvider.slack)
+            ?.claim,
+        isNull,
+      );
+      expect(h.adapter.commandReplies.single, contains('I do not know `link`'));
     });
 
     test(
@@ -1322,13 +1508,13 @@ void main() {
       },
     );
 
-    test('a renamed command also reaches the linking instructions', () async {
+    test('help explains linking by direct message', () async {
       await h.bridge.start();
-      await h.command('help', '', command: '/ops');
 
-      await h.mention('U-stranger', text: 'hello');
+      await h.command('help', '');
 
-      expect(h.adapter.posted.single.markdown, contains('`/ops link CODE`'));
+      expect(h.adapter.commandReplies.single, contains('direct message'));
+      expect(h.adapter.commandReplies.single, isNot(contains('link CODE')));
     });
 
     test(
@@ -1344,6 +1530,25 @@ void main() {
     );
   });
 }
+
+/// A full member of team `T1` whose email Slack has confirmed — the only kind
+/// of profile whose email proves anything.
+ChatUserProfile _fullMember(String id, String email) => ChatUserProfile(
+  id: id,
+  label: email == 'alex@example.com' ? 'Alex' : 'Dana',
+  email: email,
+  teamId: 'T1',
+  fullMember: true,
+  emailConfirmed: true,
+);
+
+User _user(String id, String handle) => User(
+  id: id,
+  handle: handle,
+  displayName: handle,
+  email: '$handle@example.com',
+  createdAt: DateTime(2026),
+);
 
 /// A provider whose only capability is posting a message, for the degrade paths.
 const _bare = ChatProviderCapabilities(maxMessageLength: 100);
@@ -1393,6 +1598,9 @@ class _Harness {
     // A server nobody can reach by link is the one case a card carries no call
     // to action, so it is a harness switch rather than a separate fixture.
     bool linkable = true,
+    // Off is the server today: Control Center has no verified-email signal, so
+    // nobody is linked by email until one exists.
+    bool verifiesEmail = true,
   }) {
     adapter = _FakeChatProviderAdapter(capabilities: capabilities);
     registry = ActiveStreamRegistry();
@@ -1424,7 +1632,10 @@ class _Harness {
       members: members,
       linkCodes: linkCodes,
       eventBus: eventBus,
-      createTicket: _createTicket,
+      ticketDrafts: ticketDrafts,
+      emailVerified: verifiesEmail
+          ? (userId) async => verifiedUsers.contains(userId)
+          : null,
       deepLinks: linkable
           ? const ChatDeepLinks(origin: 'https://cc.example')
           : null,
@@ -1459,16 +1670,10 @@ class _Harness {
   final linkCodes = ChatLinkCodeStore();
   final eventBus = DomainEventBus();
   final createdSpaces = <String>[];
-  final tickets =
-      <
-        ({
-          String id,
-          String key,
-          String title,
-          String? description,
-          String reporterUserId,
-        })
-      >[];
+  final ticketDrafts = ChatTicketDraftStore(clock: () => DateTime(2026));
+
+  /// The Control Center users whose email counts as verified.
+  final verifiedUsers = <String>{};
   void Function(bool available)? onStreamingAvailability;
   int _ids = 0;
   int _events = 0;
@@ -1604,23 +1809,6 @@ class _Harness {
     messaging.spaces.add(space.id);
     messages.spaces[space.id] = space;
     return space;
-  }
-
-  Future<({String id, String key, String title})> _createTicket({
-    required String workspaceId,
-    required String title,
-    required String reporterUserId,
-    String? description,
-  }) async {
-    final key = 'CC-${tickets.length + 1}';
-    tickets.add((
-      id: 'ticket-$key',
-      key: key,
-      title: title,
-      description: description,
-      reporterUserId: reporterUserId,
-    ));
-    return (id: 'ticket-$key', key: key, title: title);
   }
 
   void dispose() {
@@ -1929,10 +2117,8 @@ class _FakeMessages implements MessagingRepository {
   final Map<String, Space> spaces = {};
 
   @override
-  Future<Message?> getMessageById(
-    String workspaceId,
-    String messageId,
-  ) async => rows[messageId];
+  Future<Message?> getMessageById(String workspaceId, String messageId) async =>
+      rows[messageId];
 
   @override
   Future<Space?> getSpaceById(String workspaceId, String spaceId) async =>
@@ -2002,9 +2188,7 @@ class _FakeSpaceLinks implements ChatSpaceLinkRepository {
     String workspaceId,
     String ccSpaceId,
   ) async => rows
-      .where(
-        (r) => r.workspaceId == workspaceId && r.ccSpaceId == ccSpaceId,
-      )
+      .where((r) => r.workspaceId == workspaceId && r.ccSpaceId == ccSpaceId)
       .firstOrNull;
 
   @override

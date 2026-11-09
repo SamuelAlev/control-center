@@ -2,7 +2,7 @@
 title: Homokozószabályzatok konfigurálása
 description: Mi korlátozza az ügynökfutást, hogyan állapíthatja meg, hogy az operációs rendszer homokozója becsomagolja-e, és hogyan döntik el a műveleti szabályok, mit pusholhat vagy érhet el egy ügynök.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Hogy egy ügynökfutás homokozóba kerül-e, a szerver dönti el, indításkor
@@ -79,8 +79,8 @@ esetén a git ezt írja ki:
 Hogyan érik el az egyes szabályok a futást:
 
 - **A push** azzal érvényesül, ami a futás birtokában van. A GitHub-tokenje
-  egy csak olvasásra jogosult GitHub App telepítési token, amely tartalmat
-  olvashat és pull requestekkel dolgozhat. A git-konfigurációja minden
+  a futás egyetlen repójára szól, és nem tud pusholni: tartalmat olvashat, és ha
+  a felelős tag pusholhat, megjegyzést fűzhet a pull requestekhez. A git-konfigurációja minden
   GitHub-pusht egy loopback átjáróhoz küld a `cc_server`-en, amely megkérdezi a
   szabályt, és csak ezután továbbítja a pusht egy írási tokennel, amelyet az
   ügynök soha nem lát. Az átjáró csak a worktree saját repójába vagy a
@@ -98,18 +98,13 @@ Hogyan érik el az egyes szabályok a futást:
   `web_fetch` és `web_search` eszköze továbbra is minden hívásnál kérdez. Amíg
   a hálózat be van kapcsolva, a GitHub mindig szerepel a kimenő engedélylistán.
 
-:::caution[GitHub App nélkül a push-szabály csak tanácsadó jellegű]
-Beállított GitHub App nélkül a futás a tartalék személyes hozzáférési tokent
-kapja, amelyet nem lehet csak olvasásra korlátozni. A `git push` továbbra is az
-átjárón és a szabályon megy át, de az a kód, amely közvetlenül a tokent
-használja, megkerülheti. Állítsa be a GitHub Appot, hogy a szabály kötelező
-legyen.
-
-A futás GitHub-hitelesítő adata soha nem más, mint a közvetítőé — egy repóra
-korlátozott GitHub App telepítési token vagy a tartalék PAT —, soha nem a kérő
-tag saját tárolt tokenje. A szerver PAT-jét visszatartja a közvetítő attól a
-futástól, amely olyan tag nevében jár el, aki nem a tulajdonos, és nem
-csatlakoztatta a GitHubot.
+:::note[Honnan származik a futás GitHub-tokenje]
+A tokent a futás számára a munkaterület GitHub Appja, a szerver saját
+alkalmazása vagy a Control Center Connect állítja ki, és arra korlátozódik, amit
+a felelős tag (aki kérte, egyébként a munkaterület tulajdonosa) azon a repón
+megtehet. Soha nem egy tag saját bejelentkezése adódik át egészben, és nincs
+tartaléktoken: ha egyik sem állítható ki, a futás token nélkül indul, és a
+jegyzetei megmondják, miért.
 :::
 
 ## Ellenőrizze, hogy az ügynökfutásai homokozóba vannak-e zárva

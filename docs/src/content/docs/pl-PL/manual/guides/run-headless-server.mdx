@@ -1,9 +1,9 @@
 ---
 title: Uruchom serwer headless
 description: Uruchom binarkę headless cc_server lub jej obraz Docker, sparuj z nią klienta i skonfiguruj ją pełnym zestawem flag CLI i zmiennych środowiskowych.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Uruchom `cc_server` na maszynie, która jest stale włączona, a następnie połącz się
@@ -16,7 +16,9 @@ wszystkie wywołania zewnętrznych API; klienty tylko renderują interfejs.
 
 Każde wydanie publikuje hostowany samodzielnie stos czterech obrazów GHCR —
 backend, dwa statyczne cienkie klienty i opcjonalny przekaźnik parowania — a
-także osobny obraz `cc-server-demo` dla publicznego hosta demonstracyjnego.
+także opcjonalną usługę logowania `cc-connect`
+([Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/))
+i osobny obraz `cc-server-demo` dla publicznego hosta demonstracyjnego.
 Instalacja hostowana samodzielnie nie wymaga pobierania źródeł. Przypnij tag
 wersji (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) albo korzystaj z `latest`.
 
@@ -68,6 +70,12 @@ O czym warto wiedzieć, zanim wystawisz to wszystko poza loopback (sam TLS nie d
 - **`/data` to cały stan.** Bazy SQLite, sekrety sparowanych urządzeń, pobrane
   modele i dźwięk ze spotkań — wszystko to mieszka w wolumenie; zrób jego kopię
   zapasową, a kontener stanie się jednorazowy.
+- **Sekrety dostawców trafiają do zamontowanego `.env`, nigdy do `-e`.** Serwer
+  odmawia startu, gdy `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` lub dowolne `SLACK_*SECRET*`
+  znajduje się w środowisku jego procesu. Zamontuj plik tylko do odczytu pod
+  `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`) albo skonfiguruj
+  aplikacje w Ustawieniach.
 - **Sparuj klienta z wnętrza obrazu** przed pierwszym połączeniem — to kontenerowy
   odpowiednik [kroku 3](#krok-3-sparuj-klienta-przed-pierwszym-uruchomieniem):
 
@@ -78,7 +86,7 @@ O czym warto wiedzieć, zanim wystawisz to wszystko poza loopback (sam TLS nie d
 
 - **Oba obrazy klientów to statyczne hosty nginx.** Wbudowane edytory
   w przeglądarce korzystają z tego samego originu aplikacji i tego samego
-  szyfrowanego połączenia, jak opisano [poniżej](#zasoby-edytora-w-przegladarce).
+  szyfrowanego połączenia, jak opisano [poniżej](#zasoby-edytora-w-przeglądarce).
   Formularz połączenia każdego klienta przyjmuje adres URL serwera,
   identyfikator urządzenia i klucz
   parowania. Przekaźnik sygnalizacyjny potrzebuje wyłącznie swojego portu
@@ -280,22 +288,35 @@ zakresie uprawnień. Nie wystawiaj prywatnej bramy raportów i poleceń rozszerz
 edytora uruchamianego przez serwer przez publiczne proxy. Wrażliwe publiczne
 żądania HTTP są odrzucane; zasoby wymagają uwierzytelnionej szyfrowanej sesji.
 
-## Krok 6: Połącz Google Calendar (opcjonalnie)
+## Krok 6: Wybierz, jak ludzie się logują
 
-Aby zsynchronizować kalendarz obszaru roboczego bez podłączonego interfejsu
-graficznego, użyj przepływu kodu urządzenia:
+Pierwszy klient, który połączy się jako właściciel serwera, zostanie zapytany,
+jak ten serwer ma logować ludzi do GitHuba, Kalendarza Google i Linear: **Użyj
+aplikacji Control Center**, **Użyj własnych aplikacji** albo **Użyj własnego
+serwera Connect**. Z terminala ten sam wybór wygląda tak:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Wypisuje kod i adres URL do zatwierdzenia na innym urządzeniu, zapisuje token
-odświeżania po stronie serwera i kończy działanie. Kompilacja ze źródeł nie
-zawiera klienta Google, więc zmienne środowiskowe z identyfikatorem i sekretem są
-wymagane — nie ma flagi `--google-client-id`. Zobacz
-[Połącz Google Calendar](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/).
+`CC_CONNECT_URL` (`hosted`, `off` lub adres URL) w środowisku serwera albo
+w `.env` zamiast tego przypina wybór. Przy **Użyj własnych aplikacji**
+zarejestruj każdego dostawcę w **Ustawienia → Serwer → Logowanie jednokrotne →
+Aplikacje dostawców**; **Utwórz moją aplikację GitHub** konfiguruje GitHub
+w jednym kroku. Sekrety dostawców należą do pliku `.env` serwera, nigdy do
+eksportowanego środowiska. Zobacz [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)
+i [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/).
+
+Logowania przez Connect kończą się kodem, który pokazuje przeglądarka, więc
+serwer nie potrzebuje dla nich publicznego adresu. Logowania przez własne
+aplikacje serwera odsyłają przeglądarkę na publiczny adres URL serwera, więc
+ustaw `--public-url` na adres, do którego przeglądarki ludzi mogą dotrzeć.
+
+Aby hostować Connect dla innych serwerów z tego serwera, ustaw
+`CC_SERVER_CONNECT_HOST=on`; zobacz
+[Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/#osadź-connect-w-cc_server).
 
 ## Konfiguracja
 
@@ -353,6 +374,7 @@ Dwie rzeczy, o których warto wiedzieć, zanim wystawisz port poza loopback:
 - [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/)
 - [Uruchom workera floty](/pl-PL/podrecznik/poradniki/uruchamianie-workera-floty/)
 - [Połącz Google Calendar](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/)
+- [Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/)
 
 ## Powiązane koncepcje
 

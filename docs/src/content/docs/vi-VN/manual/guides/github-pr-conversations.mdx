@@ -1,37 +1,40 @@
 ---
 title: Nói chuyện với Control Center từ một PR GitHub
-description: Yêu cầu bot GitHub App của máy chủ đánh giá hoặc đặt câu hỏi ngay từ cuộc hội thoại trong PR, không cần webhook hay URL công khai.
+description: Yêu cầu Control Center đánh giá hoặc đặt câu hỏi ngay từ cuộc hội thoại trong PR, không cần webhook hay URL công khai.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Hướng dẫn này chỉ cách làm việc với Control Center mà không cần rời khỏi GitHub:
 yêu cầu một lượt đánh giá bằng AI ngay từ trang PR, đặt câu hỏi cho bot trong
 một bình luận, và tiếp tục cuộc hội thoại trong các luồng đánh giá của bot.
 
-Bot chính là [GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) của
-riêng máy chủ bạn — cũng là app đã đảm nhiệm việc đăng nhập cho mọi người và
-chạy công việc nền. Không có gì mới được đăng ký, và không có gì phải truy cập
-được từ internet: máy chủ phát hiện những gì đã được nói trên GitHub qua thăm dò
-định kỳ, nên một chiếc laptop nằm sau NAT hành xử y hệt một bản triển khai công
-khai.
+Câu trả lời đi qua làn GitHub của không gian làm việc: [GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+riêng của máy chủ bạn, hoặc App dùng chung của Control Center qua Connect. Không có
+gì mới được đăng ký, và không có gì phải truy cập được từ internet: máy chủ phát hiện
+những gì đã được nói trên GitHub qua thăm dò định kỳ, nên một chiếc laptop nằm sau NAT
+hành xử y hệt một bản triển khai công khai.
 
 ## Điều kiện tiên quyết
 
-- Máy chủ đã [đăng ký và
-  cài đặt](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) GitHub App của mình, với
-  **Pull requests: read and write** (để bình luận, tạo luồng và thả cảm xúc) và
-  **Issues: read** (để tìm kiếm bình luận). Cả hai quyền này đều đã có trong
-  danh sách quyền của hướng dẫn đó
+- Không gian làm việc có một làn GitHub: GitHub App riêng của máy chủ hoặc Connect, với
+  app được [cài đặt](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) trên tài khoản sở hữu
+  kho mã. Một app riêng cần quyền đọc và ghi **Pull requests** và **Issues**, mà
+  **Tạo ứng dụng GitHub của tôi** đã cấp sẵn
 - Kho mã đã được liên kết với một không gian làm việc trong Control Center
+- Bạn đã [đăng nhập GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/) trên máy
+  chủ này, và bạn có thể push lên kho mã
 - Không cần URL webhook, không cần tunnel, không cần callback — không có gì phải
   cấu hình ở phía mạng
 
 ## Tìm tên bot của bạn
 
-Hãy nhắc đến `@usectrl`, tài khoản GitHub riêng của Control Center. Đây là cách kích hoạt mặc định; GitHub App đã cấu hình trên máy chủ của bạn vẫn xử lý yêu cầu và đăng câu trả lời. Bạn không cần thông tin xác thực của tài khoản `usectrl`.
+Hãy nhắc đến `@usectrl`, tài khoản GitHub riêng của Control Center. Đây là cách kích
+hoạt mặc định; làn GitHub của không gian làm việc vẫn xử lý yêu cầu và đăng câu trả lời.
+Bạn không cần thông tin xác thực của tài khoản `usectrl`.
 
-Tên đăng nhập riêng của App, `<appslug>[bot]`, và dạng ngắn `@appslug` cũng hoạt động. Để tìm bí danh tùy chọn này:
+Tên đăng nhập riêng của App, `<appslug>[bot]`, và dạng ngắn `@appslug` cũng hoạt động.
+Để tra bí danh tùy chọn này trên app riêng của bạn:
 
 1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
    **Ứng dụng nhà cung cấp**
@@ -55,12 +58,11 @@ nút **Hỏi AI** khởi động:
 
 - **Thêm nhãn `ai-review`** vào PR. Đây là thứ gần nhất mà GitHub có thể cung
   cấp cho việc gán bot làm người đánh giá — tài khoản app không thể giữ vị trí
-  người được yêu cầu đánh giá gốc của GitHub. Không có bình luận nào để thả cảm
-  xúc, nên không có gì được đăng lên GitHub; lượt đánh giá bắt đầu trong Control
-  Center
+  người được yêu cầu đánh giá gốc của GitHub. Tài khoản của bạn thả 👀 lên PR và
+  lượt đánh giá bắt đầu trong Control Center; không có bình luận nào được đăng
 - **Bình luận `@usectrl review`** (hoặc chỉ `@usectrl`) trong cuộc hội thoại của PR.
-  Bot thả cảm xúc 👀, rồi trả lời khi lượt đánh giá đã bắt đầu (hoặc rằng một
-  lượt đang chạy rồi)
+  Một 👀 xuất hiện trên bình luận của bạn, rồi một câu trả lời cho biết lượt đánh giá
+  đã bắt đầu (hoặc rằng một lượt đang chạy rồi)
 
 Các agent đánh giá làm việc trong không gian đánh giá của PR; hãy đọc và công bố
 các phát hiện như trong [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/).
@@ -81,11 +83,12 @@ Bình luận trong cuộc hội thoại của PR:
 
 Những gì diễn ra, theo thứ tự:
 
-1. Bot thả cảm xúc 👀 để bạn biết bình luận đã được thấy
+1. Một 👀 xuất hiện trên bình luận của bạn, từ tài khoản của chính bạn, để bạn biết
+   bình luận đã được thấy
 2. Câu hỏi được đăng vào không gian đánh giá của PR **dưới danh nghĩa bạn** —
    cùng cách quy kết như khi bạn tự gõ nó trong Control Center
-3. Một agent trả lời trong space, và câu trả lời được đăng trở lại trên PR dưới
-   dạng bình luận có nhắc đến bạn bằng @
+3. Một agent trả lời trong space, và câu trả lời được đăng trở lại trên PR. Mọi câu
+   trả lời đều bắt đầu bằng `**Control Center** (for @your-login):`
 
 Một câu hỏi trên PR chưa có lượt đánh giá nào sẽ đánh thức agent CEO của không
 gian làm việc; khi đã có một lượt đánh giá chạy, agent nói sau cùng sẽ trả lời,
@@ -112,36 +115,44 @@ nhất mới, nên nó vẫn cần một lượt nhắc đến bằng @.
 
 ## Bot nói chuyện với ai
 
-Một bình luận GitHub đến chỉ mang theo không hơn gì một tên đăng nhập, nên bot
-phân giải tác giả trước khi làm bất cứ điều gì:
+Máy chủ phân giải tác giả của một bình luận, hoặc người đã thêm nhãn `ai-review`,
+trước khi làm bất cứ điều gì:
 
-- **Tài khoản GitHub của bạn phải được liên kết với danh tính của bạn** trong
-  Control Center — hãy [đăng nhập bằng GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/),
-  hoặc dán một token, từ **Cài đặt → Không gian làm việc → Hồ sơ & danh tính →
-  Lưu trữ mã**
-- **Bạn phải là thành viên có vai trò ghi** (`member`, `admin` hoặc `owner`)
-  trong không gian làm việc đã liên kết kho mã đó
+- **Tài khoản GitHub phải đã đăng nhập** trên máy chủ này. Việc khớp dựa trên id tài
+  khoản số của GitHub, không bao giờ dựa trên tên đăng nhập. Đăng nhập từ
+  **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**
+- **Họ phải là thành viên có vai trò ghi** (`member`, `admin` hoặc `owner`) trong
+  không gian làm việc liên kết kho mã đó
+- **Họ phải có quyền push** lên kho mã trên GitHub. Câu trả lời dùng một token giới
+  hạn theo quyền truy cập của người đó, nên ai chỉ có quyền đọc sẽ không nhận được
+  câu trả lời nào
 
-Mọi người khác đều nhận một câu trả lời lịch sự giải thích điều còn thiếu — một
-tên đăng nhập không rõ (chưa liên kết, hoặc đã liên kết nhưng không phải thành
-viên ở đây) và một vai trò chỉ đọc là hai trường hợp đó — và lời của họ không bao
-giờ bước vào không gian làm việc. Nhãn `ai-review` không bị chặn theo cách này:
-nó không có tác giả, nên nó khởi động lượt đánh giá trong không gian làm việc vốn
-đã liên kết kho mã.
+Bất kỳ ai khác đều bị bỏ qua âm thầm: không có gì được đăng, và lời của họ không bao
+giờ bước vào không gian làm việc. Bình luận từ bot, và chính câu trả lời của Control
+Center, không bao giờ được coi là câu hỏi.
+
+### Hai máy chủ, một PR
+
+Phản ứng 👀 cũng là cách các máy chủ thống nhất với nhau ai sẽ trả lời. Nó được thêm
+bằng đăng nhập của chính tác giả, và GitHub cho máy chủ biết phản ứng đó có mới hay
+không. Nếu bạn đăng nhập trên hai máy chủ cùng liên kết một kho mã, máy chủ nào phản
+ứng trước sẽ trả lời và máy chủ kia im lặng. Điều tương tự cũng đúng với nhãn.
 
 ## Điều cần mong đợi
 
 | Hạng mục            | Hành vi                                                                  |
 | ------------------- | ------------------------------------------------------------------------ |
-| Phản hồi xác nhận   | 👀 trên một bình luận trong khoảng một phút — đó là khoảng quét. Nhãn `ai-review` không có bình luận nào để thả cảm xúc |
-| Câu trả lời         | Được đăng dưới danh nghĩa bot (ứng dụng), trong làn mà câu hỏi được đặt ra |
+| Phản hồi xác nhận   | 👀 từ tài khoản của bạn trên bình luận (hoặc trên PR, với nhãn), trong một lượt quét |
+| Câu trả lời         | Được đăng trong làn mà câu hỏi được đặt ra, bắt đầu bằng `**Control Center** (for @your-login):`. Trên app riêng, tác giả là bot của app; qua Connect, đó là tài khoản của bạn, hoạt động thông qua App |
 | Quy kết trong space | Câu hỏi là của bạn; agent chạy thay mặt bạn, theo núm tự chủ của space    |
 | Đánh giá            | Các phát hiện đáp xuống không gian đánh giá; việc công bố lên GitHub là thủ công |
 
-Độ trễ chừng một phút là cái giá phải trả để không cần bất kỳ quyền truy cập
-mạng vào nào. Không có gì trong lượt quét là gấp gáp, và không có gì bị mất khi
-máy chủ ngoại tuyến — một bình luận đến trong lúc ngừng hoạt động sẽ được bắt ở
-lượt quét kế tiếp.
+Một lượt quét chạy mỗi phút trên app riêng và kiểm tra tối đa 25 PR; qua Connect, nó
+chạy hai phút một lần và kiểm tra tối đa 10 PR, vì các lệnh gọi đó dùng chung hạn mức
+GitHub của từng thành viên. Một không gian làm việc có hạn mức GitHub dưới 15% sẽ bị
+bỏ qua cho đến khi hồi phục. Độ trễ là cái giá phải trả để không cần bất kỳ quyền truy
+cập mạng vào nào. Không có gì bị mất khi máy chủ ngoại tuyến — một bình luận đến trong
+lúc ngừng hoạt động sẽ được bắt ở lượt quét kế tiếp.
 
 ## Xử lý sự cố
 
@@ -151,18 +162,21 @@ lượt quét kế tiếp.
   **liên kết** với một không gian làm việc chưa? Một kho mã chưa liên kết sẽ bị
   bỏ qua trước khi bất cứ thứ gì được ghi lại, nên liên kết nó sau đó vẫn được
   xử lý
-- Tài khoản GitHub của bạn đã được liên kết chưa, và bạn có phải thành viên với
-  vai trò ghi không? Hãy xem câu trả lời từ chối của bot trên PR — nó cho biết
-  bạn vướng điều kiện nào
+- Bạn đã đăng nhập GitHub trên máy chủ này chưa, bạn có phải thành viên với vai trò
+  ghi không, và có push được lên kho mã không? Máy chủ bỏ qua bất kỳ ai khác mà không
+  trả lời
+- Trên app dùng chung của Control Center, installation của tổ chức đã được ủy quyền
+  cho máy chủ này chưa? Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
 - Vẫn không có gì? Nhật ký máy chủ nêu tên lượt quét và PR khi có gì đó thất bại;
   hãy tìm `pr_conversation:` (bộ thăm dò) và `github_pr_conversation:` (cầu)
 
 **Nhãn không khởi động một lượt đánh giá.**
 
-Nó chỉ kích hoạt một lần cho mỗi PR. Nếu một lượt đánh giá đã chạy, hoặc nhãn
-được thêm trước khi máy chủ từng thấy PR (lượt quét đầu tiên ghi lại phần tồn
-đọng một cách âm thầm thay vì xả ồ ạt), thì hãy nhắc đến bot — `@myapp review`
-luôn khởi động một lượt, trừ khi đã có một lượt đang chạy.
+Nó chỉ kích hoạt một lần cho mỗi PR, và người đã thêm nhãn phải qua các kiểm tra giống
+như tác giả của một bình luận. Nếu một lượt đánh giá đã chạy, hoặc nhãn được thêm trước
+khi máy chủ từng thấy PR (lượt quét đầu tiên ghi lại phần tồn đọng một cách âm thầm thay
+vì xả ồ ạt), thì hãy nhắc đến bot — `@usectrl review` luôn khởi động một lượt, trừ khi đã
+có một lượt đang chạy.
 
 **Câu trả lời của bot không bao giờ đến GitHub.**
 
@@ -173,8 +187,8 @@ PR trong Control Center. Một lần đăng thất bại (GitHub sập, quyền 
 
 ## Hướng dẫn liên quan
 
-- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): bản đăng ký mà
-  bot ra đời từ đó
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): nơi danh tính của
+  bot app riêng bắt nguồn
 - [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/): đọc
   các phát hiện mà một lượt đánh giá do nhắc đến tạo ra
 - [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/):

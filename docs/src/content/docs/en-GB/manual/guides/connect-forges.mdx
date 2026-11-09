@@ -2,7 +2,7 @@
 title: Connect a code host
 description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
 slug: en-GB/manual/guides/connect-forges
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
@@ -13,9 +13,9 @@ The forge is a property of each **repo**, read from its `origin` remote when you
 
 1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
 2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+3. On **GitHub**, press **Sign in to GitHub**. On **GitLab** or **Bitbucket**, press **Add token** and paste one.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/en-GB/manual/guides/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**GitHub is sign-in only.** The sign-in runs through the server's own GitHub App or through Control Center Connect, whichever the server owner set up (see [Set up GitHub integration](/en-GB/manual/guides/github-integration/)); there is no GitHub token to paste. GitLab and Bitbucket still take a personal token.
 
 Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
 
@@ -24,29 +24,28 @@ Each row tells you where its credential came from, because that is the differenc
 | Subtitle                         | Meaning                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
+| `Signed in as octocat · from the environment` | GitLab or Bitbucket only: a server environment variable is answering, not your token |
 | `Not connected`                  | You have no credential for this forge                               |
+| `GitHub sign-in isn't set up on this server yet.` | The server has neither its own GitHub App nor Connect; the server owner sets one up |
 
 ### What token each forge wants
 
 | Forge         | Token                                                     | Where to create it                                        |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
 
-### Or use the environment
+### Background work
 
-For a headless or CI install, the server reads these:
+Work with no human behind it (agent runs, pipelines, PR polling) needs a credential too, and each forge answers it differently:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — a token for one repository at a time, minted from the server's GitHub App or through Connect and limited to what an accountable member can do there. It is never a person's sign-in handed over whole, and no environment variable or pasted token stands in. See [Set up GitHub integration](/en-GB/manual/guides/github-integration/#who-your-credential-speaks-for)
+- **GitLab** — the server owner's pasted token, then `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
+- **Bitbucket** — the server owner's pasted token, then `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+The GitLab and Bitbucket environment variables are the **server's** credential, not yours: a request made on your behalf uses your token and nothing else, so the environment never quietly stands in for you.
 
 ## You are a different person on each forge
 
@@ -94,11 +93,11 @@ GitLab calls a pull request a **merge request**. Control Center says "pull reque
 
 ### The PR list is empty and says a forge is not connected
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+You have no credential for that forge. Sign in to GitHub, or paste a GitLab or Bitbucket token, in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
 
 ### I connected a forge but its repos still show nothing
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Check the row's subtitle. If a GitLab or Bitbucket row reads "from the environment", a different credential is answering than the one you expected — your own token wins for anything you ask for, so if it says otherwise yours was not saved. On GitHub, check that the GitHub App is installed on the account that owns the repos.
 
 ### A repo will not register
 

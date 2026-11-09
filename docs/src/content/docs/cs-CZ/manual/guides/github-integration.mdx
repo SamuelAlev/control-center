@@ -2,7 +2,7 @@
 title: Nastavte integraci GitHub
 description: Přihlas se na GitHub, aby fungovala plocha PR, registrace repozitářů a běhy agentů.
 slug: cs-CZ/prirucka/navody/integrace-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Tenhle návod bere ty části nastavení, které patří ke GitHubu. GitHub je jeden
@@ -13,71 +13,67 @@ je pracovní prostor míchá, je v
 ## Než začneš
 
 - Účet na GitHubu s přístupem k repozitářům, na kterých chceš pracovat
-- Buď GitHub App zaregistrovaná pro tvůj server (viz
-  [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)), abys se mohl
-  **přihlásit**, **nebo** osobní přístupový token s `repo` a `read:org` k vložení
+- Server, který umí přihlašovat lidi ke GitHubu: buď vlastní GitHub App (viz
+  [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)), nebo Control
+  Center Connect, podle volby vlastníka serveru v **Nastavení → Server →
+  Jednotné přihlášení**
 
 :::note[Přihlašovací údaje leží na serveru, u tebe]
-Na stroji, na kterém píšeš, se neukládá nic. Tvůj přihlašovací údaj drží
-`cc_server`, klíčovaný tvým id uživatele, a použije ho každé zařízení, ze
+Na stroji, na kterém píšeš, se neukládá nic. Tvoje přihlášení ke GitHubu drží
+`cc_server`, klíčované tvým id uživatele, a použije ho každé zařízení, ze
 kterého se přihlásíš: plocha, web i telefon. Jiný člen téhož serveru ho
-nepřečte a přihlásí se sám.
+použít nemůže a přihlásí se sám.
 :::
 
-## Přihlas se přes GitHub
+## Přihlas se ke GitHubu
 
-**Device flow**: GitHub ti ukáže krátký kód, ty ho schválíš na github.com
-a server dostane přihlašovací údaj. Žádná callback URL, žádný port, nic
-k vystavení. Je k dispozici, kdykoli má server client id, což oficiální build
-už obsahuje.
+GitHub umí jen přihlášení: žádný token se nevkládá.
 
 1. Jdi do **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
    (nebo na první krok onboardingu)
-2. Na řádku **GitHub** klikni na **Přihlásit se přes GitHub**
-3. Dialog ukáže osmiznakový kód a v prohlížeči otevře
-   [github.com/login/device](https://github.com/login/device).
-   Kód už máš ve schránce
-4. Vlož ho, schval aplikaci a vrať se. Řádek se sám přepne na
-   „Přihlášeno jako _tvoje-uživatelské-jméno_.“
+2. Na řádku **GitHub** klikni na **Přihlásit se k GitHub**
+3. Prohlížeč otevře GitHub. Schval aplikaci
 
-Dialog můžeš zavřít, než to v prohlížeči dokončíš. Server se dál ptá, dokud
-kód nevyprší (asi 15 minut), takže přihlášení stejně dorazí.
+Jak se přihlášení dokončí, záleží na tom, kdo ho provádí:
 
-## Nebo vlož token
-
-Záloha pro případ, kdy server nemá aplikaci, kdy aplikace není nainstalovaná
-na účtu, který potřebuješ, nebo kdy prostě chceš použít PAT.
-
-1. Jdi do **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
-2. Na řádku **GitHub** klikni na **Přidat token**
-3. Vlož token s `repo` a `read:org` (classic) a ulož ho. Token **fine-grained**
-   potřebuje u repozitáře **Contents** a **Pull requests** (read and write)
-   a k tomu **Checks** a **Actions** (read).
-
-Token se při uložení ověří, takže řádek umí pojmenovat účet, ke kterému patří.
-Odeber ho kliknutím na **Odpojit**.
+- **Vlastní aplikace serveru:** GitHub pošle prohlížeč zpět na server a dialog
+  si toho všimne sám. Nic se neopisuje
+- **Control Center Connect:** stránka v prohlížeči ukáže 8místný kód. Opiš ho
+  do dialogu, nebo nech prohlížeč otevřít Control Center přes odkaz
+  `control-center://` a opisování přeskoč
 
 Kontrolní bod: řádek **GitHub** ukazuje „Přihlášeno jako _tvoje-uživatelské-jméno_.“.
-Když odpovídající přihlašovací údaj není tvůj, přípona pojmenuje zdroj:
-„přes aplikaci tohoto serveru“ nebo „z prostředí“.
 
-:::note[Pořadí je dané]
-Požadavek tvým jménem použije **tvůj** přihlašovací údaj a nic jiného. Prostředí
-je přihlašovací údaj serveru, ne tvůj, takže tě nikdy nezastoupí. Práce, o kterou
-nikdo nepožádal (webhooky, dotazování na PR, synchronizace ticketů), použije
-identitu aplikace serveru, pak přihlašovací údaj vlastníka serveru a nakonec
-prostředí.
-:::
+Kód nebo odkaz, který dialog sám nezahájil, odmítne hláškou **Přihlášení nebylo
+zahájeno zde**. Když ti někdo pošle odkaz na přihlášení, nepokračuj: jeho
+dokončením bys připojil svůj účet k jeho serveru.
+
+Přihlášení odebereš kliknutím na **Odpojit**. Odhlášení z GitHubu nebo
+odebrání z pracovního prostoru navíc zruší všechny tokeny, které server vydal
+tvým jménem.
+
+## Za koho tvé pověření mluví
+
+- **Všechno, co děláš ty** (otevření stránky PR, odeslání revize, schválení,
+  sloučení), běží na **tvém** přihlášení a na ničem jiném. Když přihlášený
+  nejsi, aplikace to řekne a vyzve tě k přihlášení. Žádné jiné pověření tě
+  nezastoupí
+- **Práce, u které nikdo nepíše** (běhy agentů, pipelines, dotazování na PR,
+  odpovědi bota, klony), dostane token pro jeden repozitář, vydaný z GitHub App
+  serveru nebo přes Connect. Je omezený na to, co tam smí odpovědný člen: člen,
+  který požádal, jinak vlastník pracovního prostoru. Člen, který nesmí
+  pushovat, omezí token na čtení
+- **Automatizace pull request nikdy neschválí.** Schválení je čin člověka
 
 ## Co ti integrace dá
 
 | Funkce                  | Jak                                                                                                      |
 | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| Seznam a detail PR      | GitHub REST API, ze serveru, na identitě aplikace nebo na tvém přihlašovacím údaji                      |
+| Seznam a detail PR      | GitHub REST API, ze serveru, na tvém vlastním přihlášení                                                 |
 | Běhy kontrol            | GitHub Checks API                                                                                        |
-| Publikování revize      | Krok vázaný na uživatele, který odešle tvoji revizi do PR                                                |
+| Publikování revize      | Krok vázaný na uživatele, který odešle tvoji revizi do PR, tvým jménem                                   |
 | Registrace repozitáře   | Checkout se přijme, když remote `origin` míří na github.com, nebo na gitlab.com / bitbucket.org          |
-| Přístup agenta ke GitHubu | Broker přihlašovacích údajů vloží token jen pro čtení jako `GH_TOKEN` / `GITHUB_TOKEN`; push jde přes Control Center |
+| Přístup agenta ke GitHubu | Token pro jediný repozitář běhu jako `GH_TOKEN` / `GITHUB_TOKEN`; push jde přes Control Center        |
 | Upozornění              | Dotazování na doručenou poštu oznámení GitHubu na serveru vyvolá „Zmíněn v pull requestu“ a „Vyžádána kontrola“ |
 | Profily uživatelů       | Karty profilu při najetí a filtrování PR podle autora                                                    |
 
@@ -96,51 +92,50 @@ a tlačítkem **Obnovit**. Stavy se samy obnoví každé dvě minuty.
 
 ## Jak agenti na GitHubu jednají
 
-- Agent, který pracuje ve worktree GitHubu, dostane vždycky token GitHub jen pro
-  čtení. Push jde přes Control Center, které se zeptá pravidla **Odeslat na
+- Agent, který pracuje ve worktree GitHubu, dostane token pro tento jediný
+  repozitář. Umí číst kód a komentovat pull requesty, když odpovědný člen smí
+  pushovat, a jen číst, když nesmí. Push jde přes Control Center, které se zeptá pravidla **Odeslat na
   remote** a pak ho předá se zapisovacím tokenem, který agent nikdy nedrží. Viz
   [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/)
 - Commity agenta vždy používají Git identitu žadatele jako autora i committera. Ve výchozím nastavení trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` připisuje spoluautorství účtu GitHub `@usectrl`. V **Nastavení → Vy → Připisování autorství commitů** můžeš toto spoluautorství vypnout, aniž by se změnila tvoje identita. Nastavení pracovního prostoru v **Nastavení → Pracovní prostor → Obecné** má přednost a zamkne osobní přepínač. Vlastní atribuce Claude Code je vždy vypnutá. Podepisování commitů stále vyžaduje vlastní platnou konfiguraci
-- Když je nakonfigurovaná GitHub App, broker při každém spuštění vystaví úzce
-  vymezené instalační tokeny vázané na repozitář, platné zhruba hodinu, místo
-  aby předal široký token. Instalace se určí podle **vlastníka** repozitáře
-  daného běhu, takže jedna aplikace nainstalovaná na několika účtech se správně
-  omezí na účet, kterého se běh dotkne. Bez aplikace agenti dostanou token
-  z prostředí, který nejde omezit jen na čtení: pravidlo pro push pak váže
-  `git push`, ale ne kód, který token používá přímo
-- Token je vždycky ten od brokera, nikdy vlastní token člena, který o běh
-  požádal. Token serveru se odepře běhu, který jedná za člena, jenž není
-  vlastník a nemá připojený GitHub
+- Terminál, který otevřeš na stanici, dostane tvoje vlastní přihlášení zúžené
+  na ten jeden repozitář, takže pushe odtamtud jsou tvoje
+- Když se token vydat nedá (nikdo odpovědný není přihlášený, aplikace není
+  nainstalovaná u vlastníka, nebo je instalace pozastavená), běh nastartuje bez
+  něj a jeho poznámky uvedou proč. Žádné záložní pověření neexistuje
 
 ## Řešení potíží
 
 ### Seznam PR je prázdný a hlásí, že GitHub není připojený
 
-Na tomhle serveru nemáš přihlašovací údaj ke GitHubu. Přihlas se nebo vlož token
-v **Hostování kódu**. Repozitáře na jiných forge to nezasáhne. Nic nepřispívá
-jen GitHub.
+Na tomhle serveru nejsi přihlášený ke GitHubu. Klikni na **Přihlásit se k
+GitHub** v **Hostování kódu**. Repozitáře na jiných forge to nezasáhne.
 
-### Řádek nabízí „Přidat token“, ale ne „Přihlásit se přes GitHub“
+### Řádek GitHub hlásí, že přihlášení na tomto serveru není nastavené
 
-Server nemá client id. U buildu ze zdrojového kódu je to běžný stav, protože
-přihlašovací údaje se zapékají jen do oficiálních buildů. Viz
-[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/): zabere to asi dvě
-minuty a udělat to musí jen vlastník serveru, a to jednou.
+Server nemá vlastní GitHub App ani Connect. Jedno z nich vybere vlastník
+serveru v **Nastavení → Server → Jednotné přihlášení**: **Vytvořit moji
+aplikaci GitHub** zabere asi dvě minuty. Viz
+[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/).
 
-### Dialog přihlášení hlásí, že poskytovatel nevrátil device code
+### Dialog hlásí, že kód nesedí
 
-GitHub App existuje, ale zaškrtnutí **Device flow** je vypnuté. Zapni ho
-v nastavení aplikace (General → Device flow) a zkus to znovu.
+Opiš kód přesně tak, jak ho ukazuje prohlížeč: 8 písmen a číslic. Pět
+chybných kódů přihlášení ukončí; začni znovu.
 
-### Řádek hlásí „přes aplikaci tohoto serveru“, a já čekám vlastní účet
+### Přihlášení hlásí, že aplikace není nainstalovaná
 
-Nepřihlásil ses. To, co vidíš, je identita aplikace serveru, která odpovídá.
-Na tom řádku klikni na **Přihlásit se přes GitHub**.
+GitHub App nemá instalaci na účtu, který repozitář vlastní. Admin pracovního
+prostoru ji nainstaluje z **Nastavení → Pracovní prostor → Obecné → Instalace
+aplikace GitHub**. U organizace na sdílené App od Control Center může být
+potřeba, aby admin té organizace klikl na **Autorizovat tento server**. Viz
+[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/#autorizuj-tento-server-pro-organizaci).
 
-### Fine-grained PAT neukáže tlačítko sloučení ani stav kontrol
+### Všichni se musí ke GitHubu přihlásit znovu
 
-Token potřebuje **Contents** a **Pull requests** (read and write) a k tomu
-**Checks** a **Actions** (read). Po změně ho znovu vlož v Hostování kódu.
+Vlastník serveru vyměnil klíč Connect serveru, přešel na jiný server Connect,
+nebo se datový adresář obnovil na jiný stroj. Přihlášení přes Connect jsou
+vázaná na server, který je vytvořil.
 
 ### Přidání repozitáře se odmítne
 
@@ -165,4 +160,4 @@ chyby se zkusí znovu nejvýš třikrát, s exponenciální prodlevou, a drží 
 - [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
 - [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/)
 - [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/)

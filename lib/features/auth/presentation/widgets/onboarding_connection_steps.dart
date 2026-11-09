@@ -8,9 +8,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Connects a forge before advancing through first-run setup.
-class OnboardingConnectStep extends StatelessWidget {
+class OnboardingForgeStep extends StatelessWidget {
   /// Creates the forge connection step.
-  const OnboardingConnectStep({
+  const OnboardingForgeStep({
     required this.isAuthed,
     required this.onContinue,
     super.key,

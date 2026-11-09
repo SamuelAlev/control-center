@@ -1,0 +1,310 @@
+---
+title: Een Connect-server draaien
+description: Draai je eigen Control Center Connect vanuit de Docker-image cc-connect, of bouw hem in cc_server in, zodat je servers mensen aanmelden via provider-apps die jij registreert.
+slug: nl-NL/handleiding/gidsen/connect-server-draaien
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect voert provider-aanmeldingen (GitHub, Google Calendar,
+Linear, Slack) uit voor servers die geen eigen apps hebben geregistreerd. Deze
+gids laat zien hoe je je eigen Connect draait, zodat de provider-apps, hun
+secrets en de lijst met servers die ze mogen gebruiken allemaal bij jou blijven.
+
+Wat Connect wel en niet kan zien, staat in de
+[Connect-referentie](/nl-NL/handleiding/referentie/connect/). Lees die eerst als
+je twijfelt of je er een wilt draaien.
+
+:::note[Misschien heb je het niet nodig]
+Eén server kan in plaats daarvan zijn eigen apps registreren: **Instellingen →
+Server → Single sign-on → Provider-apps**, waar **Mijn GitHub-app maken** GitHub
+in één stap opzet. De apps van de server gelden alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect elke route, terwijl een app van de werkruimte blijft gelden. Draai een Connect wanneer meerdere servers één set apps moeten delen.
+:::
+
+## Vereisten
+
+- Een openbaar **HTTPS**-adres voor Connect, zoals `https://connect.example.com`,
+  achter een proxy die TLS afhandelt. Gewone `http` wordt alleen op loopback
+  geaccepteerd
+- Docker, of een `cc_server` die je met extra omgevingsvariabelen kunt
+  herstarten
+- Toestemming om apps te registreren bij elke provider die je wilt bedienen
+- De servers die hem gaan gebruiken, met hun eigenaren binnen bereik: elke server
+  heeft een installatie-ID die je aan de toegestane lijst van Connect toevoegt
+
+## Stap 1: Het adres kiezen
+
+Kies de URL nu en houd hem vast. `CONNECT_PUBLIC_URL` zit in alles wat Connect
+doet: aanvraagsignaturen, verzegelde inloggegevens, redirect-URL's van providers
+en het installatie-ID van elke server zijn eraan gebonden. Hem later wijzigen
+betekent de redirects opnieuw registreren en iedereen die zich opnieuw moet
+aanmelden.
+
+## Stap 2: De provider-apps registreren
+
+Registreer alleen de providers die je wilt bedienen. Een provider waarvan de
+variabelen onvolledig zijn, blijft buiten de configuratie van Connect, en servers
+zien hem als niet beschikbaar. `<base>` hieronder is je `CONNECT_PUBLIC_URL`.
+
+| Provider       | Registreren                                                                                                                                                                                                                                                          | Bewaren                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` met **Redirect on update** aan. Laat **Request user authorization (OAuth) during installation** uit: als die aan staat, negeert GitHub de setup-URL. Laat **Expire user authorization tokens** aan | App-id, slug, client-id, client-secret |
+| **Google**     | Een OAuth-client van het type **Webapplicatie** met redirect-URI `<base>/oauth/google/callback`, en de Google Calendar API ingeschakeld                                                                                                                            | Client-id, client-secret                |
+| **Linear**     | Een OAuth-applicatie met de callback-URL's `<base>/oauth/linear/callback` en `<base>/oauth/linear_app/callback`                                                                                                                                                   | Alleen de client-id                     |
+| **Slack**      | Redirect-URL's `<base>/oauth/slack_oidc/callback` en `<base>/oauth/slack/callback`. Event Subscriptions op `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-commando's op `<base>/v1/hooks/slack/commands`. Tokenrotatie aan | App-id, client-id, client-secret, signing secret |
+
+Geef de GitHub App deze repositorymachtigingen: **Metadata** lezen, **Contents**
+lezen en schrijven, **Pull requests** lezen en schrijven, **Issues** lezen en
+schrijven, **Checks**, **Actions** en **Commit statuses** lezen. Voeg voor
+reviewverzoeken aan teams **Members** van de organisatie met leesrechten toe.
+Webhooks kunnen uit blijven: servers pollen.
+
+Connect heeft de privésleutel van de GitHub App nooit nodig. Het geeft tokens
+voor één repository in plaats daarvan uit vanuit de eigen aanmelding van een
+persoon. Linear heeft ook geen secret nodig: Connect geeft de code terug aan de
+server, die de uitwisseling zelf afrondt.
+
+## Stap 3: De installatie-ID's verzamelen
+
+Connect antwoordt alleen de servers op zijn toegestane lijst. Richt elke server
+op je Connect en lees daarna het installatie-ID af:
+
+1. Ga naar **Instellingen → Server → Single sign-on**, open de kaart **Control
+   Center Connect** en kies **Een eigen Connect-server gebruiken**
+2. Voer je URL in en sla op. De kaart toont het **Installatie-ID** van de server
+
+Vanuit een terminal op de serverhost gaat hetzelfde zo:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` drukt het installatie-ID af. Tot stap 5 klaar is, toont het
+`install_blocked`, en dat is verwacht.
+
+Een installatie-ID wordt per Connect-adres afgeleid, dus dezelfde server heeft
+een ander ID voor elke Connect waarmee hij praat. Het verandert alleen wanneer de
+eigenaar de sleutel vervangt.
+
+## Stap 4: Een zegelsleutel maken
+
+Connect versleutelt alle inloggegevens die het teruggeeft met een zegelsleutel.
+Maak er een en bewaar hem als geheim bestand:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Raak je de zegelsleutel kwijt, dan is iedereen afgemeld: zonder de sleutel kan
+geen enkel zegel worden geopend.
+
+## Stap 5: De container starten
+
+Elke release publiceert `ghcr.io/samuelalev/cc-connect` met buildherkomst. Pin
+in productie een versietag.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Richt je reverse proxy op poort `8790`. De image draait als gebruiker zonder
+privileges, bewaart zijn state in het volume `/data` en heeft een ingebouwde
+healthcheck (`cc-connect --healthcheck`, die `/healthz` controleert).
+
+Connect weigert te starten (exitcode `78`) wanneer zijn configuratie open,
+onveilig of half af is, en meldt welke variabele fout is. Een ontbrekende
+toegestane lijst, een `http`-adres buiten loopback, een misvormde zegelsleutel of
+zowel `NAME` als `NAME_FILE` ingesteld houden hem allemaal tegen.
+
+Controlepunt: op elke server staat op de Connect-kaart **Werkt**, en **Waar elke
+login loopt** noemt **Connect** voor elke provider die je hebt geregistreerd.
+`cc_server connect status` drukt `Health: ok` en dezelfde routes af.
+
+## Connect in cc_server inbouwen
+
+Een server kan Connect zelf hosten in plaats van een aparte container. De
+ingebouwde dienst is dezelfde die de image draait.
+
+1. Zet de `CONNECT_*`-variabelen in het `.env`-bestand van de server (of in zijn
+   omgeving), zoals in stap 5
+2. Voeg `CC_SERVER_CONNECT_HOST=on` toe
+3. Herstart de server. Het log toont `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect wordt dan geserveerd op `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` is standaard de origin van de openbare URL van de server
+  plus `/connect`. Stel hem achter een proxy expliciet in. Het pad moet precies
+  `/connect` zijn, en het moet HTTPS zijn, tenzij het loopback is
+- Alleen `CONNECT_*`-variabelen bereiken de ingebouwde dienst, dus hij leent nooit
+  de eigen provider-apps van de server
+- `CONNECT_ALLOWED_INSTALLS` is nog steeds verplicht, ook voor de hostende server
+  zelf
+- Een verkeerd geconfigureerde inbouw houdt de server tegen bij het opstarten in
+  plaats van een open broker te serveren
+- De demoserver bouwt hem nooit in
+
+Registreer de redirects van de providers tegen `https://<server>/connect` en
+richt daarna de servers (de hostende inbegrepen) op die URL, zoals in stap 3.
+
+## Configuratiereferentie
+
+Elke instelling is een omgevingsvariabele. Elk secret kan in plaats daarvan uit
+een gekoppeld bestand komen: stel `NAME_FILE` in plaats van `NAME` in. Connect
+leest het bestand hoogstens elke 30 seconden opnieuw en houdt de laatste goede
+waarde vast. Secrets gemarkeerd met **dual** accepteren tijdens een rotatie ook
+`NAME_PREVIOUS` (of `NAME_PREVIOUS_FILE`).
+
+### Adres en toegang
+
+| Variabele                       | Standaard | Betekenis                                                                                                                        |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | verplicht | De canonieke openbare URL. HTTPS, of `http` alleen op loopback. Een pad betekent inbouw. Geen query of fragment                  |
+| `CONNECT_ALLOWED_INSTALLS`      | verplicht | Kommagescheiden installatie-ID's. `*` wordt alleen geaccepteerd samen met `CONNECT_SIGNED_CONFIG_FILE`                           |
+| `CONNECT_DENY_INSTALLS`         |           | Installatie-ID's die worden geweigerd, ook als ze zijn toegestaan                                                                |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerieke GitHub-eigenaar-ID's. Als dit is ingesteld, worden repositorytokens alleen uitgegeven voor repository's die zij bezitten |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bindadres en poort                                                                                                       |
+| `CONNECT_TRUST_PROXY`           | `0`       | Vertrouwde proxyhops in `X-Forwarded-For` (0 tot 8). Alleen gebruikt voor de ratelimit per adres                                 |
+
+### Providerroutes
+
+| Variabele                                                                   | Standaard | Betekenis                                                                 |
+| --------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |           | De GitHub App                                                             |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |           | Secret, dual                                                              |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |           | De Google-client. Het secret is dual                                      |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |           | De Linear-applicatie. Geen secret                                         |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |           | De Slack-app                                                              |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |           | Secrets, dual                                                             |
+| `CONNECT_KLIPY_APP_KEY`                                                     |           | Sleutel voor GIF-zoeken van Klipy. Secret, dual                           |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy`   | `proxy` houdt de sleutel in Connect; `key` geeft hem aan servers          |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`       | GitHub, Google en Slack: de generatie die in nieuwe zegels wordt vastgelegd |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`       | GitHub, Google en Slack: oudere zegels moeten zich opnieuw aanmelden      |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`    | Elke route: `false` stopt nieuwe aanmeldingen terwijl bestaande blijven vernieuwen |
+
+### Zegels, state en opslag
+
+| Variabele                                                 | Standaard                  | Betekenis                                                                                                  |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` of `gcp-kms`                                                                                       |
+| `CONNECT_SEAL_KEYS`                                       |                            | Secret, verplicht voor `local`. Kommagescheiden `kid:key`-items, nieuwste eerst; oudere items ontsleutelen nog steeds |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, verplicht voor `gcp-kms`                                 |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` voor één instantie, `redis` voor meerdere                                                         |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` of `rediss://`                                                                          |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | CA-bundel voor `rediss://`                                                                                 |
+| `CONNECT_BINDINGS`                                        | `file`                     | Waar bindingen van GitHub-installaties staan: `file` of `firestore`                                        |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` in de image) | Bevat `bindings.json`                                                                                    |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`       | Voor `CONNECT_BINDINGS=firestore`                                                                          |
+
+### Configuratie, logs en limieten
+
+| Variabele                               | Standaard          | Betekenis                                                                                           |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Een offline ondertekende configuratie, ongewijzigd geserveerd. Gebruikt door de gehoste Connect van Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Sleutels waartegen de ondertekende configuratie moet verifiëren                                     |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Het epoch van de configuratie die een zelf gehoste Connect genereert                                |
+| `CONNECT_LOG_HMAC_KEY`                  | willekeurig per proces | Secret. Stel het in om de tags die voor installatie-ID's staan stabiel te houden over herstarts en instanties heen |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Gerapporteerd door `/v1/version`                                                                    |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Verzoeken per installatie                                                                           |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Verzoeken per adres                                                                                 |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Verzoeken voor de hele dienst                                                                       |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-gebeurtenissen per team                                                                       |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-zoekopdrachten per installatie                                                                  |
+
+## Meer dan één instantie draaien
+
+Eén instantie met `CONNECT_STATE=memory` is genoeg voor de meeste organisaties.
+Meerdere instanties achter één adres hebben `CONNECT_STATE=redis` nodig, en
+ofwel een gedeelde `CONNECT_DATA_DIR` ofwel `CONNECT_BINDINGS=firestore`, zodat
+een aanmelding die op de ene instantie begint, op een andere kan eindigen.
+
+## Een providersecret roteren
+
+Niemand wordt afgemeld:
+
+1. Maak het nieuwe secret aan bij de provider en houd het oude
+2. Verplaats de oude waarde naar `NAME_PREVIOUS`, zet de nieuwe in `NAME` en
+   verhoog `CONNECT_<LANE>_SECRET_GENERATION`. Gekoppelde bestanden worden
+   binnen 30 seconden opgepikt
+3. Wacht tot de aanmeldingen zijn vernieuwd, verwijder daarna het oude secret bij
+   de provider en haal `NAME_PREVIOUS` weg
+
+Om een zegelsleutel te roteren, zet je een nieuw item van
+`cc-connect-config seal-key` vooraan in `CONNECT_SEAL_KEYS` en houd je het oude
+item tot de zegels ervan zijn vernieuwd.
+
+## Een app wijzigen
+
+Servers onthouden de app- en client-id's die je Connect aankondigde toen ze hem
+voor het eerst gebruikten. Vervang je een app, dan toont de Connect-kaart van elke
+server **De apps van Connect zijn gewijzigd**, en aanmeldingen via Connect
+pauzeren tot de eigenaar op **Nieuwe apps vertrouwen** drukt.
+Laat servereigenaren het weten voordat je overstapt, zodat ze weten dat de
+melding van jou komt.
+
+## Een server blokkeren
+
+Voeg het installatie-ID toe aan `CONNECT_DENY_INSTALLS` en herstart. De eigenaar
+ziet "Connect heeft de installatie-ID van deze server geblokkeerd", en elke
+Connect-aanmelding op die server stopt.
+
+## Problemen oplossen
+
+### Een server meldt dat Connect hem heeft geblokkeerd
+
+Het installatie-ID staat niet in `CONNECT_ALLOWED_INSTALLS`, of het staat in
+`CONNECT_DENY_INSTALLS`. Het ID verandert wanneer de eigenaar de sleutel
+vervangt; vraag om het nieuwe.
+
+### Een provider wordt als niet beschikbaar getoond
+
+Een van de variabelen ontbreekt, dus Connect heeft de route weggelaten.
+Controleer het opstartlog en de tabellen hierboven. GitHub heeft alle vier nodig:
+app-id, slug, client-id en client-secret; Google heeft zowel client-id als
+secret nodig.
+
+### Aanmeldingen mislukken met een redirect-mismatch
+
+De redirect die bij de provider is geregistreerd, komt niet exact overeen met
+`CONNECT_PUBLIC_URL`. Vergelijk schema, host, poort en bij een ingebouwde Connect
+het pad `/connect`.
+
+### Iedereen moest zich opnieuw aanmelden
+
+De zegelsleutel is gewijzigd of kwijtgeraakt, een server heeft zijn sleutel
+vervangen, of de gegevens van een server zijn op een andere machine hersteld.
+Verzegelde inloggegevens openen alleen voor de installatie en de Connect die ze
+hebben gemaakt.
+
+## Gerelateerde gidsen
+
+- [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)
+- [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/)
+- [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
+
+## Gerelateerde referentie
+
+- [Control Center Connect](/nl-NL/handleiding/referentie/connect/)
+- [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/)

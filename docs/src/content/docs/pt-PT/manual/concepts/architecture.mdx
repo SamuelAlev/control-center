@@ -3,7 +3,7 @@ title: Arquitetura
 description: Como o Control Center está estruturado com um modelo de servidor de cliente fino, Clean Architecture orientada a funcionalidades e portas e adaptadores.
 dateModified: 2026-09-19
 slug: pt-PT/manual/conceitos/arquitetura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Visão geral
@@ -113,9 +113,9 @@ Ambas as bases de dados pertencem a `cc_persistence` e são abertas apenas pelo 
 **go_router**, com um facto que governa todo o resto: **todos os destinos dentro da aplicação têm o prefixo do espaço de trabalho**, no formato `/workspaces/:workspaceId/…`. O id do espaço de trabalho no URL é a única fonte de verdade do espaço de trabalho ativo — o `activeWorkspaceIdProvider` é determinado pela rota, e não o contrário — e é por isso que ler dados com âmbito de espaço de trabalho fora de uma rota com prefixo não tem de onde obter o id.
 
 - _Funções_ construtoras de rotas em `router/routes.dart`, cada uma recebendo o id do espaço de trabalho como primeiro argumento, e não constantes de string
-- Quatro rotas anteriores ao contexto não têm prefixo: `/splash`, `/onboarding`, `/signed-out` e `/workspaces` (o seletor)
-- O `ShellRoute` envolve o shell da aplicação; essas quatro superfícies são renderizadas em ecrã inteiro fora dele
-- Guarda de autenticação: uma configuração incompleta vai para `/onboarding`; uma configuração concluída cuja credencial de forge desapareceu vai para `/signed-out`. Concluída significa que pelo menos uma forge está ligada para o utilizador com sessão iniciada e que existe pelo menos um espaço de trabalho — não especificamente o GitHub — e o CLI `gh` não é um método de autenticação
+- Três rotas anteriores ao contexto não têm prefixo: `/splash`, `/onboarding` e `/workspaces` (o seletor)
+- O `ShellRoute` envolve o shell da aplicação; essas três superfícies são renderizadas em ecrã inteiro fora dele
+- Guarda de autenticação: uma configuração incompleta vai para `/onboarding`. Uma configuração concluída cuja credencial de forge desapareceu mantém-se na aplicação, e o shell do espaço de trabalho mostra um aviso com uma ligação para o início de sessão. Concluída significa que pelo menos uma forge está ligada para o utilizador com sessão iniciada e que existe pelo menos um espaço de trabalho — não especificamente o GitHub — e o CLI `gh` não é um método de autenticação
 - Portão de onboarding em `features/auth/providers/`
 
 ## Rede (do lado do servidor)

@@ -3,14 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Storage key constants', () {
-    test('githubTokenKey is correct', () {
-      expect(githubTokenKey, 'github_token');
-    });
-
-    test('ticketingApiKeyKey is correct', () {
-      expect(ticketingApiKeyKey, 'ticketing_api_key');
-    });
-
     test('themeModeKey is correct', () {
       expect(themeModeKey, 'theme_mode');
     });
@@ -49,8 +41,6 @@ void main() {
 
   group('Constants are compile-time', () {
     test('all constants are non-null and non-empty strings', () {
-      expect(githubTokenKey, isNotEmpty);
-      expect(ticketingApiKeyKey, isNotEmpty);
       expect(themeModeKey, isNotEmpty);
       expect(appFontFamilyKey, isNotEmpty);
       expect(appFontSourceKey, isNotEmpty);
@@ -61,8 +51,6 @@ void main() {
     });
 
     test('storage keys are snake_case', () {
-      expect(githubTokenKey, contains('_'));
-      expect(ticketingApiKeyKey, contains('_'));
       expect(themeModeKey, contains('_'));
     });
 

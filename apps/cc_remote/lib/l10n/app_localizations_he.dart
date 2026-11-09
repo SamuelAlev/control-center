@@ -2560,6 +2560,26 @@ class AppLocalizationsHe extends AppLocalizations {
   String get credentialsWaitingForLogin => 'ממתינים לאישור בדפדפן שלך…';
 
   @override
+  String get credentialsConnectCodePrompt => 'הזינו את הקוד שמוצג בדפדפן';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'זה לא נראה כמו קוד כניסה. קודים כוללים 8 אותיות וספרות.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'הקוד הזה לא תואם לכניסה הזו. בדקו אותו ונסו שוב.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'הכניסה ל-$provider עדיין לא הוגדרה בשרת הזה.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'כתובת החזרה של ההתחברות בשרת הזה אינה נגישה באופן מאובטח מטלפון. התחברו מאפליקציית המחשב, או בקשו מבעל השרת להגדיר כתובת HTTPS ציבורית.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'תוקף ההתחברות פג. יש להתחיל ניסיון התחברות חדש.';
 
@@ -2579,10 +2599,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'השלמת ההתחברות';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'לא ניתן להגיע בצורה מאובטחת מטלפון לכתובת החזרה מהדפדפן של השרת הזה. יש לבקש מהבעלים של השרת להגדיר כתובת חזרה ציבורית ב-HTTPS, או להוסיף אסימון גישה במקום.';
 
   @override
   String get credentialsUpdateToken => 'עדכון אסימון גישה';

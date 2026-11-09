@@ -62,7 +62,6 @@ void main() {
       expect(e.code, 'not-found');
       expect(e.toString(), 'NotFoundException(missing, code: not-found)');
     });
-
   });
 
   group('EditorLaunchException and PrWorktreeException', () {
@@ -99,40 +98,6 @@ void main() {
       const e = ConcurrencyConflictException('stale', code: 'cc/409');
       expect(e.message, 'stale');
       expect(e.code, 'cc/409');
-    });
-  });
-
-  group('GoogleOAuthException', () {
-    test('carries the classified failure kind', () {
-      const e = GoogleOAuthException(
-        'denied',
-        kind: GoogleOAuthFailureKind.consentDenied,
-        code: 'oauth',
-      );
-      expect(e.message, 'denied');
-      expect(e.kind, GoogleOAuthFailureKind.consentDenied);
-      expect(e.code, 'oauth');
-    });
-
-    test('kind is optional', () {
-      const e = GoogleOAuthException('refresh failed');
-      expect(e.kind, isNull);
-    });
-
-    test('every GoogleOAuthFailureKind value exists', () {
-      // Guards against a future rename dropping a kind a caller switches on.
-      expect(
-        GoogleOAuthFailureKind.values,
-        containsAll(<GoogleOAuthFailureKind>[
-          GoogleOAuthFailureKind.userCancelled,
-          GoogleOAuthFailureKind.consentDenied,
-          GoogleOAuthFailureKind.timedOut,
-          GoogleOAuthFailureKind.stateMismatch,
-          GoogleOAuthFailureKind.tokenExchangeFailed,
-          GoogleOAuthFailureKind.invalidGrant,
-          GoogleOAuthFailureKind.missingClientId,
-        ]),
-      );
     });
   });
 

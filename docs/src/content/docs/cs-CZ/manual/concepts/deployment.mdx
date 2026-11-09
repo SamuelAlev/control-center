@@ -2,7 +2,7 @@
 title: Nasazení a klienti
 description: Jak architektura tenkého klienta v Control Center odděluje server bez rozhraní od klientů na počítači, webu a v telefonu.
 slug: cs-CZ/prirucka/koncepty/nasazeni
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center není jeden program. Je to **architektura tenkého klienta**:
@@ -189,7 +189,7 @@ místního workera opravdu umístí, selže, místo aby se provedla. Dnes zapůj
 | Provádění agentů                               | spouští ho (nebo ho zapůjčí)  | provádí zapůjčené úlohy      | —                 | —                                            |
 | Vykreslování rozhraní                          | —                             | —                            | plné              | plné (web) / převážně čtení (telefon)        |
 | Záznam schůzky (mikrofon + zvuk schůzky)       | —                             | —                            | nativní záznam    | jen web, přes zvuk sdílení obrazovky         |
-| OAuth kalendáře (Google)                       | ukládá tokeny                 | —                            | —                 | —                                            |
+| Přihlášení k poskytovatelům (GitHub, Google, Linear) | provádí je a ukládá     | —                            | —                 | —                                            |
 
 Obě vrstvy sandbox nepoužívají stejně. `cc_server` obalí běhy, které provádí
 sám, sandboxem operačního systému hostitele, kde backend existuje — Seatbelt
@@ -201,6 +201,13 @@ ohraničená prostředím zapůjčení a worktree, který dostala. Zapůjčit pr
 tedy přesune provádění mimo sandbox i na hostiteli, který ho má. Viz
 [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
 pro to, co běh v každém případě ohraničuje.
+
+Přihlášení k poskytovatelům se dokončují na serveru, přes jeho vlastní aplikace
+nebo přes [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/),
+volitelnou službu, která provádí OAuth poskytovatelů pro servery bez vlastních
+aplikací. Connect vrátí pověření, které může použít jen tento server, a obsah
+repozitářů nikdy nevidí. Klienti jen otevřou prohlížeč a u přihlášení přes
+Connect předají zpět kód, který zobrazí.
 
 Záznam schůzky probíhá na klientovi, protože potřebuje mikrofon a zvuk
 schůzky. Server ve skříni ti hovor nenahraje. Nahrávku pak shrne pipeline

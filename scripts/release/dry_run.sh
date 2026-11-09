@@ -57,15 +57,8 @@ else
   fi
 fi
 
-# 2. Built-in credentials, then the build identity stamp. Both must precede any
-# build: the credentials are compiled into cc_server as source constants and
-# BuildInfo is compiled into every client.
-if [ -n "${CC_BUILTIN_GOOGLE_CLIENT_ID:-}${CC_BUILTIN_KLIPY_APP_KEY:-}${CC_BUILTIN_GITHUB_CLIENT_ID:-}" ]; then
-  # inject rewrites a TRACKED file; restore it when this script exits however it
-  # exits, so a dry run never leaves real credentials in the working tree.
-  bash scripts/release/builtin_credentials.sh inject
-  trap 'bash scripts/release/builtin_credentials.sh restore' EXIT
-fi
+# 2. The build identity stamp. It must precede any build: BuildInfo is compiled
+# into every client.
 # shellcheck disable=SC2086  # `fvm dart` must word-split into two argv entries.
 $DART run tool/gen_build_info.dart --version "$VERSION"
 

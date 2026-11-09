@@ -1,3 +1,4 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_harness/provider.dart';
@@ -48,25 +49,17 @@ final remoteTicketConnectionsProvider =
       };
     });
 
-/// Server-advertised sign-in methods vary by workspace and installed apps.
-final remoteSignInProvidersProvider =
-    FutureProvider<Map<String, ({String flow, String redirectUri})>>((
-      ref,
-    ) async {
+/// Who runs each browser sign-in lane (the server's own app or Connect) for
+/// the active workspace.
+final remoteSignInLanesProvider =
+    FutureProvider<Map<ConnectOAuthLane, SignInLaneInfo>>((ref) async {
       final client = await ref.watch(rpcClientProvider.future);
       final workspaceId = await ref.watch(activeWorkspaceIdProvider.future);
       if (workspaceId == null) return const {};
-      final data = await client.call('oauth.providers', {
-        'workspace_id': workspaceId,
-      });
-      return {
-        for (final row in data['providers'] as List? ?? const [])
-          if (row is Map && row['provider'] is String)
-            row['provider'] as String: (
-              flow: row['flow'] as String? ?? '',
-              redirectUri: row['redirect_uri'] as String? ?? '',
-            ),
-      };
+      final lanes = await RemoteProviderSignIn(
+        client,
+      ).lanes(workspaceId: workspaceId);
+      return {for (final info in lanes) info.lane: info};
     });
 
 /// The host CLI owns Claude Code sign-in; its status is informational on a phone.

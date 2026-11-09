@@ -2,7 +2,7 @@
 title: Phân tích sử dụng
 description: Control Center ghi lại những gì khi bật phân tích sử dụng, ai là người quyết định và những gì không bao giờ được gửi đi.
 slug: vi-VN/so-tay/tham-chieu/phan-tich-su-dung
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center có thể gửi **sự kiện sử dụng ở dạng bí danh** đến một phiên bản [Umami](https://umami.is). Phân tích sử dụng **tắt cho đến khi người vận hành máy chủ bật lên**. Thiết lập này thuộc về máy chủ và áp dụng cho mọi máy khách kết nối với nó: ứng dụng máy tính, ứng dụng web, điện thoại và chính máy chủ.
@@ -95,9 +95,12 @@ Mỗi lần điều hướng ghi một lượt xem trang có URL là **mẫu tuy
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Một lần chạy thất bại được thử lại |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Một lần chạy bị hủy từ ứng dụng |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Một bước đang chạy bị buộc dừng |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Một lần thử đăng nhập lịch kết thúc |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (đúng khi đăng nhập chạy qua Control Center Connect thay vì máy khách Google của chính máy chủ), `duration_s` | Một lần thử đăng nhập lịch kết thúc |
 | `calendar_disconnected` | `workspace_id` | Một tài khoản lịch bị ngắt kết nối |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Một lời mời được trả lời |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (số lượng), `conference` | Một sự kiện đã được tạo trên Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Một sự kiện đã được dời hoặc đổi kích thước trên lưới lịch |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Một sự kiện đã bị xóa khỏi Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Một bản ghi được bắt đầu từ sự kiện lịch |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Một liên kết cuộc họp được mở (điện thoại). Chỉ nhà cung cấp được suy ra từ liên kết |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Trung tâm thông báo được sử dụng |

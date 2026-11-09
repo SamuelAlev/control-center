@@ -1,22 +1,28 @@
 ---
 title: Agenda en planning
-description: Hoe Control Center Google Calendar op de server synchroniseert, waarom aanmelden via een device-code verloopt en wat de alleen-lezenscope dekt.
+description: Hoe Control Center Google Calendar op de server synchroniseert, hoe de aanmelding in de browser een headless server bereikt en wat je in Google mag wijzigen.
 slug: nl-NL/handleiding/concepten/agenda
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center maakt verbinding met Google Calendar, zodat je dag naast je fleet
 staat. Het synchroniseert je afspraken, toont ze in de weergaven maand, week, dag
-en agenda, waarschuwt je voordat een vergadering begint en maakt van elke
+en agenda, laat je afspraken boeken, verplaatsen, beantwoorden en verwijderen, waarschuwt je voordat een vergadering begint en maakt van elke
 afspraak een opgenomen, samengevatte
 [vergadering](/nl-NL/handleiding/concepten/vergaderingen/).
 
 ## Wat het in Google verandert
 
-Bijna niets. De integratie haalt afspraken op en toont ze. Hij maakt, bewerkt of
-verwijdert geen afspraken en reageert niet op uitnodigingen. Elke
-device-codeverbinding, ingebouwd of met je eigen client, vraagt
-`calendar.readonly` plus `openid email` aan.
+Alleen wat je zelf doet. Je kunt op een uitnodiging reageren, een afspraak boeken (door over het tijdraster
+te slepen, of met de knop **+**), een afspraak verplaatsen of het formaat ervan aanpassen op het rooster, en een afspraak verwijderen. Alleen je eigen afspraken en afspraken die je organiseert, kunnen worden verplaatst: als een gast ze verplaatste, zouden alle anderen op het oude tijdstip blijven staan. Elke wijziging wordt door de server gedaan met
+de aanmelding van je eigen account, in je eigen agenda's; de server weigert een afspraak op het account van een
+ander lid of op een agenda die met je alleen-lezen is gedeeld. Google stuurt e-mails naar gasten, zoals vanuit
+Google Agenda. Het verplaatsen of verwijderen van één exemplaar van een terugkerende afspraak laat de rest van de reeks staan.
+
+Elke verbinding, via Connect of via de eigen Google-client van de server, vraagt `calendar.events` (afspraken
+lezen en wijzigen) en `calendar.calendarlist.readonly` (de agenda's van het account zien) plus `openid email`
+aan. De server weigert een aanmelding die met een andere set terugkomt, dus een account dat met de eerdere
+alleen-lezen-scope is verbonden, moet opnieuw worden verbonden.
 
 Afspraken worden gesynchroniseerd naar de eigen database van de werkruimte **op
 de server** (`<dataDir>/<workspaceId>/workspace.db`) en door elke client via RPC
@@ -24,47 +30,57 @@ getoond. Geen enkele client bewaart een Google-referentie.
 
 ## Accounts per werkruimte
 
-Agenda-accounts horen bij een werkruimte, net als alles in Control Center. Elke
+Agenda-accounts horen bij een werkruimte, net als alles in Control Center, en elk
+account is van het lid dat het verbond. Elke
 [werkruimte](/nl-NL/handleiding/concepten/werkruimtes/) verbindt zijn eigen
-Google-account (of meerdere), en de afspraken en tokens van de ene werkruimte
-zijn nooit zichtbaar vanuit een andere. Wissel je van werkruimte, dan wisselen
-ook de agenda's die je ziet.
+Google-accounts, en de afspraken en inloggegevens van de ene werkruimte zijn
+nooit zichtbaar vanuit een andere. Twee leden die hetzelfde Google-adres
+verbinden, krijgen twee accounts. Wissel je van werkruimte, dan wisselen ook de
+agenda's die je ziet.
 
 Een werkruimte kan **meerdere** Google-accounts verbinden, bijvoorbeeld een
 werkaccount en een privéaccount, en hun afspraken worden in dezelfde weergaven
 samengevoegd.
 
-## Waarom aanmelden via een device-code verloopt
+## Hoe de aanmelding de server bereikt
 
-De headless `cc_server` heeft geen browser om een OAuth-redirect op te vangen.
-Daarom gebruikt hij er ook geen: hij autoriseert met de
-**device-codetoekenning** (RFC 8628). De server toont een korte gebruikerscode en
-een Google-URL, jij keurt goed op een willekeurig apparaat met een browser en de
-server blijft pollen tot je dat doet. Een headless installatie kan juist een
-account verbinden omdat er geen redirect-endpoint te hosten is.
+Verbinden is een aanmelding in de browser, en de server rondt die af. Welke
+client die uitvoert, kiest de servereigenaar:
 
-Wat je moet weten voordat je je eigen referenties meeneemt: het clienttype moet
-het "TV and Limited Input devices" van Google zijn. Google kent aan dat
-clienttype alleen een toegestane lijst met scopes toe, en een project waarin
-Calendar daarvoor niet is toegestaan mislukt met `invalid_scope` — dan heb je een
-loopback- of webclient nodig.
+- **De eigen Google-client van de server.** Een client van het type
+  Webapplicatie, geregistreerd met de redirect
+  `<server origin>/oauth/google/callback`. Google stuurt de browser direct terug
+  naar de server, dus de browser moet de server kunnen bereiken
+- **Control Center Connect.** Google stuurt de browser terug naar Connect, dat
+  een code van 8 tekens en een `control-center://`-link toont. De persoon typt de
+  code in de app of volgt de link, en de server claimt de aanmelding daarmee. De
+  server heeft hiervoor geen openbaar adres nodig; zo verbindt een headless
+  server in een privénetwerk agenda's
 
-Tokens verlaten de server nooit. Ze worden weggeschreven naar `secrets.json` van
-de server in zijn gegevensmap, met de sleutel
-`google_google:<workspaceId>:<email>`, naast de databases en binnen dezelfde
-vertrouwensgrens van het hostbestandssysteem. De server vernieuwt de toegang
+Een eigen client heeft altijd voorrang. Een client-id zonder bijbehorend secret
+is een onafgemaakte configuratie en weigert aanmeldingen in plaats van terug te
+vallen op Connect.
+
+Inloggegevens verlaten de server nooit. Ze worden weggeschreven naar
+`secrets.json` van de server in zijn gegevensmap, met de sleutel
+`google_google:<workspaceId>:<userId>:<email>`, naast de databases en binnen
+dezelfde vertrouwensgrens van het hostbestandssysteem. Een aanmelding via de
+eigen client bewaart het access- en refreshtoken. Een aanmelding via Connect
+bewaart alleen verzegelde inloggegevens die Connect uitsluitend voor deze server
+opent; het accesstoken blijft in het geheugen. De server vernieuwt de toegang
 automatisch en publiceert `CalendarAuthExpired` wanneer Google een account
 permanent ongeldig maakt (een ingetrokken of lang verlopen sessie); in plaats van
-stil te falen toont hij dan een banner **Opnieuw verbinden**.
+stil te falen toont hij dan een banner **Opnieuw verbinden**. Een aanmelding die
+deze server niet meer kan gebruiken (uitgegeven door een andere eigen client, of
+verzegeld voor een andere installatie of een andere Connect) wordt gewist zodra
+die weer wordt gelezen en toont dezelfde banner.
 
-Een build vanaf de broncode bevat **geen** enkele Google-referentie — je levert
-je eigen client-id en secret aan. Officiële releasebuilds bevatten een
-niet-vertrouwelijke device-codeclient, zodat de verbindingsflow meteen werkt; de
-server bewaart alleen een markering die ernaar verwijst, nooit een kopie.
-`GOOGLE_OAUTH_CLIENT_ID` (en het bijbehorende secret) in de omgeving heeft altijd
-voorrang op het ingebouwde paar. Er is bewust geen `--google-client-id`-flag:
-onbekende flags worden genegeerd, en een secret op een commandoregel is leesbaar
-via `ps`.
+Geen enkele build bevat Google-inloggegevens. De client van de server komt uit
+**Instellingen → Server → Single sign-on → Provider-apps** of uit het
+`.env`-bestand van de server (`GOOGLE_OAUTH_CLIENT_ID`,
+`GOOGLE_OAUTH_CLIENT_SECRET`). Er is bewust geen commandoregelflag: een secret op
+een commandoregel is leesbaar via `ps`, en de server weigert te starten wanneer
+het secret in zijn procesomgeving is geëxporteerd.
 
 Zie [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
 als je je eigen Google-project wilt draaien.
@@ -130,7 +146,7 @@ het vergaderingscherm zelf wél in de browser.
 
 :::note[Agenten kunnen je agenda niet lezen]
 Er zijn geen agenda-MCP-tools. Een agent kan geen afspraken opsommen, de details
-van een afspraak lezen of namens jou RSVP'en; het `calendar.*`-oppervlak is
+van een afspraak lezen, boeken, verplaatsen, verwijderen of namens jou RSVP'en; het `calendar.*`-oppervlak is
 alleen RPC voor menselijke clients.
 :::
 

@@ -2603,6 +2603,27 @@ class AppLocalizationsFr extends AppLocalizations {
       'En attente d’autorisation dans votre navigateur…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Saisissez le code affiché dans votre navigateur';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Ce n\'est pas un code de connexion valide. Les codes comptent 8 lettres et chiffres.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Ce code ne correspond pas à cette connexion. Vérifiez-le et réessayez.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'La connexion à $provider n\'est pas encore configurée sur ce serveur.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'L’adresse de retour de connexion de ce serveur n’est pas accessible de manière sécurisée depuis un téléphone. Connectez-vous depuis l’application de bureau, ou demandez au propriétaire du serveur de configurer une adresse HTTPS publique.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'La connexion a expiré. Relancez la procédure.';
 
@@ -2623,10 +2644,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Terminer la connexion';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Le rappel du navigateur de ce serveur n’est pas accessible de manière sécurisée depuis un téléphone. Demandez au propriétaire du serveur de configurer un rappel HTTPS public, ou ajoutez plutôt un jeton.';
 
   @override
   String get credentialsUpdateToken => 'Mettre à jour le jeton';

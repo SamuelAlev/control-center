@@ -2571,6 +2571,27 @@ class AppLocalizationsId extends AppLocalizations {
       'Menunggu otorisasi di browser Anda…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Masukkan kode yang ditampilkan di browser';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Itu tidak terlihat seperti kode masuk. Kode terdiri dari 8 huruf dan angka.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Kode itu tidak cocok dengan proses masuk ini. Periksa lalu coba lagi.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Proses masuk ke $provider belum disiapkan di server ini.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Alamat callback masuk server ini tidak dapat dijangkau dengan aman dari ponsel. Masuk dari aplikasi desktop, atau minta pemilik server menyiapkan alamat HTTPS publik.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Sesi login kedaluwarsa. Mulai lagi proses masuk.';
 
@@ -2590,10 +2611,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Selesaikan proses masuk';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Callback browser server ini tidak dapat diakses secara aman dari ponsel. Minta pemilik server mengatur callback HTTPS publik, atau tambahkan token sebagai gantinya.';
 
   @override
   String get credentialsUpdateToken => 'Perbarui token';

@@ -6,7 +6,8 @@ enum ChatLinkMethod {
   /// The provider's verified account email matched a Control Center user's.
   email('email'),
 
-  /// The user redeemed a one-time code from Control Center via `/cc link`.
+  /// The user sent a one-time code from Control Center to the bot in a
+  /// direct message, then confirmed the claiming profile in Control Center.
   code('code'),
 
   /// An owner/admin linked the pair by hand from workspace settings.

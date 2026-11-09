@@ -2,7 +2,7 @@
 title: Deployment en clients
 description: Hoe de thin-clientarchitectuur van Control Center een headless server scheidt van de desktop-, web- en mobiele clients.
 slug: nl-NL/handleiding/concepten/deployment
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center is geen enkel programma. Het is een
@@ -206,7 +206,7 @@ alleen een echte `cc_worker` geleasede taken uit.
 | Agentuitvoering                                     | voert ze uit (of besteedt ze uit via leases)  | voert geleasede taken uit    | —              | —                                             |
 | UI-rendering                                        | —                                             | —                            | volledig       | volledig (web) / overwegend lezend (telefoon) |
 | Vergaderopname (microfoon + vergaderaudio)          | —                                             | —                            | native opname  | alleen web, via audio van schermdeling        |
-| Agenda-OAuth (Google)                               | slaat tokens op                               | —                            | —              | —                                             |
+| Provider-aanmeldingen (GitHub, Google, Linear)      | voert ze uit en slaat ze op                   | —                            | —              | —                                             |
 
 De twee niveaus pakken sandboxing niet hetzelfde aan. `cc_server` hult de runs
 die hij zelf uitvoert in de OS-sandbox van de host waar een backend bestaat —
@@ -219,6 +219,13 @@ hij meekreeg. Werk uitbesteden via leases verplaatst de uitvoering dus buiten de
 sandbox, zelfs op een host die er een heeft. Zie [Sandbox en
 beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor wat een
 run in elk geval begrenst.
+
+Provider-aanmeldingen worden op de server afgerond, via zijn eigen apps of via
+[Control Center Connect](/nl-NL/handleiding/referentie/connect/), een optionele
+dienst die de OAuth van providers uitvoert voor servers zonder eigen apps.
+Connect geeft inloggegevens terug die alleen deze server kan gebruiken en ziet
+nooit de inhoud van repository's. Clients openen alleen de browser en geven bij
+een aanmelding via Connect de code terug die het toont.
 
 Vergaderopname gebeurt op een client, omdat die een microfoon en de audio van de
 vergadering nodig heeft — een server in een kast kan je gesprek niet opnemen. De

@@ -2,7 +2,7 @@
 title: Use AI-powered review
 description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
 slug: en-GB/manual/guides/ai-review
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 This guide shows you how to have reviewer agents review a pull request and how to
@@ -110,14 +110,15 @@ keeps the review in Control Center; it does not post to GitHub.
 
 Control Center sends **one** GitHub review. Findings already resolved or dismissed
 are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
+submits `APPROVE`. (The MCP tool `publish_review_to_github` defaults to
+peer-confirmed findings only and never approves: it publishes as automation,
+so `approve_on_ship` has no effect there.) Those that carry a file and line anchor become inline
 comments; everything else folds into the summary body, each with a
 "— Control Center AI review" footer so the source is unambiguous. A **Block**
 verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
 `APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+posted as you, on your own GitHub sign-in: if you are not signed in to GitHub,
+publishing fails and asks you to sign in.
 
 If GitHub rejects an inline anchor because the line is not part of the diff, the
 whole review is re-sent with every finding folded into the body, so nothing is

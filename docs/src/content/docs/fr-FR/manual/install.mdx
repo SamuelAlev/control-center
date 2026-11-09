@@ -2,7 +2,7 @@
 title: Installer
 description: Utilisez Control Center dans le navigateur ou installez l’application de bureau, configurez un backend d’agent et choisissez où s’exécute son serveur.
 slug: fr-FR/manuel/installer
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center s’exécute de deux façons : en **application web** sur
@@ -131,14 +131,9 @@ Les listes de modèles sont servies en direct par chaque fournisseur connecté 
 
 Un identifiant GitHub est **le vôtre et réside sur le serveur**, indexé par votre identifiant utilisateur — pas dans le trousseau du système d’exploitation du client. Chaque appareil depuis lequel vous vous connectez utilise le même, et aucun autre membre ne peut le lire.
 
-Si le serveur a une GitHub App enregistrée ([Créer la GitHub App](/fr-FR/manuel/guides/github-app/)), **Paramètres → Espace de travail → Profil et identité → Hébergement de code** propose **Se connecter avec GitHub** (un flux d’appareil exécuté par le serveur). Sinon, collez un jeton d’accès personnel :
+Pour GitHub, il n’y a que la connexion : **Paramètres → Espace de travail → Profil et identité → Hébergement de code** propose **Se connecter à GitHub**, et il n’y a aucun jeton à coller. La connexion passe par la GitHub App propre au serveur ([Créer la GitHub App](/fr-FR/manuel/guides/github-app/)) ou par Control Center Connect, selon le choix du propriétaire du serveur. Avec l’application propre au serveur, le navigateur revient de lui-même vers le serveur ; via Connect, vous saisissez le code de 8 caractères affiché par le navigateur, ou vous le laissez ouvrir Control Center. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/).
 
-- Classique : `repo` et `read:org`
-- À granularité fine : **Contents** et **Pull requests** (lecture et écriture), **Checks** et **Actions** (lecture)
-
-Créez-en un sur [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Le serveur sonde le jeton pour obtenir le nom du compte au moment de son enregistrement, si bien que la ligne peut indiquer « Connecté en tant que … » ; une sonde en échec enregistre tout de même le jeton, et une faute de frappe ou une portée manquante se manifeste plus tard par une requête en échec.
-
-La première étape de la configuration initiale est cette connexion. Ensuite, c’est sur la même carte que vous la remplacez ou l’effacez. GitLab et Bitbucket utilisent la même carte ; voir [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/).
+La configuration initiale demande cette connexion. Ensuite, c’est sur la même carte que vous vous reconnectez ou vous déconnectez. GitLab et Bitbucket utilisent la même carte, avec un jeton personnel collé ; voir [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/).
 
 ## Choisir où s’exécute le serveur
 

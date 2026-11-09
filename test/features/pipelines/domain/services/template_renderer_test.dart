@@ -217,17 +217,27 @@ void main() {
         // VULN-007: the bash-script renderer passes a shell-escape so an
         // untrusted trigger value (e.g. an external ticket title) spliced into a
         // `"{{x}}"` context can't break out into arbitrary commands.
-        String shellEscape(String v) => v
-            .replaceAll('\\', r'\\')
-            .replaceAll(r'"', r'\"')
-            .replaceAll(r'$', r'\$')
-            .replaceAll(r'`', r'\`');
+        const template = 'gh pr create --title "{{title}}"';
+        final offsets = <int>[];
+        String shellEscape(String v, int offset) {
+          offsets.add(offset);
+          return v
+              .replaceAll('\\', r'\\')
+              .replaceAll(r'"', r'\"')
+              .replaceAll(r'$', r'\$')
+              .replaceAll(r'`', r'\`');
+        }
+
         const title = 'a"; rm -rf ~; echo "';
         final result = renderer.render(
-          'gh pr create --title "{{title}}"',
+          template,
           state: const {'title': title},
           escape: shellEscape,
         );
+        // The escape learns where the placeholder sits, so a shell escape
+        // can pick the quoting it is inside.
+        expect(offsets, [template.indexOf('{{title}}')]);
+        expect(renderer.placeholderOffsets(template), offsets);
         // Both `"` from the value are backslash-escaped, so bash reads the whole
         // title as ONE literal double-quoted argument — the embedded `;` never
         // becomes a command separator (no injection).

@@ -1,22 +1,34 @@
 ---
 title: Kalender und Terminplanung
-description: Wie Control Center Google Calendar auf dem Server synchronisiert, warum die Anmeldung ein Device-Code-Grant ist und was der Nur-Lese-Scope abdeckt.
+description: Wie Control Center Google Calendar auf dem Server synchronisiert, wie die Anmeldung im Browser einen Headless-Server erreicht und was sie bei Google ändern darf.
 slug: de-DE/handbuch/konzepte/kalender
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center verbindet sich mit Google Calendar, damit dein Tag neben deiner
 Flotte liegt. Es synchronisiert deine Termine, zeigt sie in den Ansichten
-Monat, Woche, Tag und Agenda, warnt dich vor Beginn einer Besprechung und kann
+Monat, Woche, Tag und Agenda, lässt dich Termine buchen, verschieben, beantworten und löschen,
+warnt dich vor Beginn einer Besprechung und kann
 aus jedem Termin eine aufgezeichnete, zusammengefasste
 [Besprechung](/de-DE/handbuch/konzepte/besprechungen/) machen.
 
 ## Was sich bei Google ändert
 
-Fast nichts. Die Integration holt Termine herein und stellt sie dar. Sie legt
-nichts an, bearbeitet nichts, löscht nichts und beantwortet keine Einladungen.
-Jede Device-Code-Verbindung, mit dem eingebauten oder einem eigenen Client,
-fordert `calendar.readonly` sowie `openid email` an.
+Nur, was du selbst tust. Du kannst auf eine Einladung antworten, einen Termin
+buchen (über das Zeitraster ziehen oder den Button **+**) , einen Termin verschieben oder in der Dauer ändern und einen Termin
+löschen. Jede Änderung führt der Server mit deiner eigenen Anmeldung auf deinen
+eigenen Kalendern aus. Er lehnt einen Termin auf dem Konto eines anderen
+Mitglieds oder auf einem Kalender ab, der dir nur schreibgeschützt geteilt wurde.
+Google schickt den Gästen E-Mails, wie es auch in Google Calendar geschieht. Nur deine eigenen Termine und die, die du organisierst, lassen sich verschieben: Die Änderung eines Gastes würde alle anderen auf der alten Zeit lassen.
+Das Verschieben oder Löschen eines einzelnen Vorkommens eines wiederkehrenden Termins lässt den
+Rest der Serie bestehen.
+
+Jede Verbindung, ob über Connect oder den eigenen Google-Client des Servers,
+fordert `calendar.events` (Termine lesen und ändern) und
+`calendar.calendarlist.readonly` (sehen, welche Kalender das Konto hat) sowie
+`openid email` an. Der Server lehnt eine Anmeldung ab, die mit einer anderen
+Menge zurückkommt; ein Konto, das mit dem früheren schreibgeschützten Scope
+verbunden wurde, muss daher erneut verbunden werden.
 
 Termine werden **auf dem Server** in die eigene Datenbank des Arbeitsbereichs
 synchronisiert (`<dataDir>/<workspaceId>/workspace.db`) und von jedem Client
@@ -25,46 +37,56 @@ synchronisiert (`<dataDir>/<workspaceId>/workspace.db`) und von jedem Client
 ## Konten pro Arbeitsbereich
 
 Kalenderkonten sind an den Arbeitsbereich gebunden, wie alles andere in Control
-Center. Jeder [Arbeitsbereich](/de-DE/handbuch/konzepte/arbeitsbereiche/)
-verbindet sein eigenes Google-Konto (oder mehrere), und Termine sowie Tokens
-eines Arbeitsbereichs sind aus einem anderen nie sichtbar. Mit dem
-Arbeitsbereich wechseln auch die Kalender, die du siehst.
+Center, und jedes gehört dem Mitglied, das es verbunden hat. Jeder
+[Arbeitsbereich](/de-DE/handbuch/konzepte/arbeitsbereiche/) verbindet seine
+eigenen Google-Konten, und Termine sowie Zugangsdaten eines Arbeitsbereichs sind
+aus einem anderen nie sichtbar. Verbinden zwei Mitglieder dieselbe
+Google-Adresse, entstehen zwei Konten. Mit dem Arbeitsbereich wechseln auch die
+Kalender, die du siehst.
 
 Ein Arbeitsbereich kann **mehrere** Google-Konten verbinden, etwa ein
 Arbeitskonto und ein privates, und ihre Termine fließen in dieselben Ansichten.
 
-## Warum die Anmeldung ein Device-Code ist
+## Wie die Anmeldung den Server erreicht
 
-Der `cc_server` im Headless-Betrieb hat keinen Browser, der einen OAuth-Redirect
-entgegennehmen könnte. Deshalb nutzt er keinen: Er autorisiert mit dem
-**Device-Code-Grant** (RFC 8628). Der Server zeigt einen kurzen Nutzer-Code und
-eine Google-URL, du bestätigst auf einem beliebigen Gerät mit Browser, und der
-Server fragt so lange nach, bis du das tust. Eine Headless-Installation kann
-ein Konto genau deshalb verbinden, weil kein Redirect-Endpunkt zu betreiben ist.
+Das Verbinden ist eine Anmeldung im Browser, und der Server schließt sie ab.
+Welcher Client sie ausführt, entscheidet der Server-Eigentümer:
 
-Bevor du eigene Zugangsdaten mitbringst: Der Client-Typ muss Googles „TV and
-Limited Input devices“ sein. Google gewährt diesem Client-Typ nur eine fest
-zugelassene Menge an Scopes, und ein Projekt, in dem Calendar dafür nicht
-erlaubt ist, scheitert mit `invalid_scope`. Dann brauchst du einen Loopback-
-oder Web-Client.
+- **Der eigene Google-Client des Servers.** Ein Client vom Typ
+  Webanwendung, registriert mit dem Redirect
+  `<server origin>/oauth/google/callback`. Google schickt den Browser direkt
+  zum Server zurück, der Browser muss ihn also erreichen können
+- **Control Center Connect.** Google schickt den Browser zu Connect zurück, das
+  einen 8-stelligen Code und einen `control-center://`-Link anzeigt. Die Person
+  tippt den Code in die App ein oder folgt dem Link, und der Server übernimmt
+  die Anmeldung damit. Dafür braucht der Server keine öffentliche Adresse. So
+  verbindet ein Headless-Server in einem privaten Netzwerk Kalender
 
-Tokens verlassen den Server nie. Sie stehen in der `secrets.json` des Servers
-in seinem Datenverzeichnis, unter dem Schlüssel
-`google_google:<workspaceId>:<email>`, neben den Datenbanken und innerhalb
-derselben Vertrauensgrenze des Host-Dateisystems. Der Server erneuert den
-Zugriff automatisch und veröffentlicht, wenn Google ein Konto dauerhaft für
-ungültig erklärt (eine widerrufene oder lange abgelaufene Sitzung),
-`CalendarAuthExpired`. Dazu zeigt er das Banner **Erneut verbinden**, statt
-still zu scheitern.
+Ein eigener Client hat immer Vorrang. Eine Client-ID ohne ihr Secret ist eine
+unfertige Einrichtung und lehnt Anmeldungen ab, statt auf Connect
+zurückzufallen.
 
-Ein Build aus dem Quellcode bringt **keine** Google-Zugangsdaten mit. Client-ID
-und Secret gibst du selbst an. Offizielle Release-Builds bringen einen nicht
-vertraulichen Device-Code-Client mit, damit die Verbindung ohne weitere
-Einrichtung funktioniert. Der Server speichert nur eine Markierung, die darauf
-verweist, nie eine Kopie. `GOOGLE_OAUTH_CLIENT_ID` (und das zugehörige Secret)
-in der Umgebung hat immer Vorrang vor dem mitgelieferten Paar. Absichtlich gibt
-es kein Flag `--google-client-id`: Unbekannte Flags werden ignoriert, und ein
-Secret auf der Befehlszeile lässt sich über `ps` lesen.
+Zugangsdaten verlassen den Server nie. Sie stehen in der `secrets.json` des
+Servers in seinem Datenverzeichnis, unter dem Schlüssel
+`google_google:<workspaceId>:<userId>:<email>`, neben den Datenbanken und
+innerhalb derselben Vertrauensgrenze des Host-Dateisystems. Eine Anmeldung über
+den eigenen Client speichert ihr Access- und ihr Refresh-Token. Eine Anmeldung
+über Connect speichert nur ein versiegeltes Zugangsdatum, das Connect allein für
+diesen Server öffnet; das Access-Token bleibt im Arbeitsspeicher. Der Server
+erneuert den Zugriff automatisch und veröffentlicht, wenn Google ein Konto
+dauerhaft für ungültig erklärt (eine widerrufene oder lange abgelaufene
+Sitzung), `CalendarAuthExpired`. Dazu zeigt er das Banner **Erneut verbinden**,
+statt still zu scheitern. Eine Anmeldung, die dieser Server nicht mehr nutzen
+kann (von einem anderen eigenen Client ausgestellt oder für eine andere
+Installation oder ein anderes Connect versiegelt), wird beim nächsten Lesen
+gelöscht und zeigt dasselbe Banner.
+
+Kein Build bringt Google-Zugangsdaten mit. Der Client des Servers kommt aus
+**Einstellungen → Server → Single sign-on → Anbieter-Apps** oder aus der
+`.env`-Datei des Servers (`GOOGLE_OAUTH_CLIENT_ID`,
+`GOOGLE_OAUTH_CLIENT_SECRET`). Absichtlich gibt es kein Befehlszeilen-Flag: Ein
+Secret auf der Befehlszeile lässt sich über `ps` lesen, und der Server
+verweigert den Start, wenn das Secret in seiner Prozessumgebung exportiert ist.
 
 Für ein eigenes Google-Projekt siehe
 [Einen Google Calendar verbinden](/de-DE/handbuch/anleitungen/kalender-verbinden/).
@@ -129,8 +151,8 @@ des Besprechungsbildschirms selbst im Browser funktioniert.
 
 :::note[Agenten können deinen Kalender nicht lesen]
 Es gibt keine MCP-Tools für den Kalender. Ein Agent kann keine Termine
-auflisten, keine Einzelheiten eines Termins lesen und nicht in deinem Namen
-zu- oder absagen. Die Oberfläche `calendar.*` ist RPC und steht nur
+auflisten, keine Einzelheiten eines Termins lesen und nicht in deinem Namen buchen, verschieben,
+löschen oder zu- oder absagen. Die Oberfläche `calendar.*` ist RPC und steht nur
 menschlichen Clients zur Verfügung.
 :::
 

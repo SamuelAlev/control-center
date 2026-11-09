@@ -5,6 +5,8 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart'
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/evaluation_artifact_reader.dart';
+import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
 
 /// A real, isolated, disposable workspace for one evaluation attempt.
@@ -62,7 +64,7 @@ class IsolatedTaskWorkspace {
           'fixture repository "$fixtureRepoPath" does not exist',
         );
       }
-      final clone = await Process.run('git', [
+      final clone = await IsolatedGit.run([
         'clone',
         '--quiet',
         '--no-hardlinks',
@@ -77,7 +79,7 @@ class IsolatedTaskWorkspace {
       }
       isGitRepo = true;
       if (task.baseCommit != null && task.baseCommit!.isNotEmpty) {
-        final checkout = await Process.run('git', [
+        final checkout = await IsolatedGit.run([
           '-C',
           root.path,
           'checkout',
@@ -137,11 +139,11 @@ class IsolatedTaskWorkspace {
       // Trusted fixture generation: it runs BEFORE the agent and its result
       // becomes part of the immutable baseline, so the candidate is measured
       // against the prepared state rather than the raw seeds.
-      final prepared = await Process.run(
+      final prepared = await ChildProcess.run(
         'bash',
         ['-lc', setup],
         workingDirectory: root.path,
-        environment: Platform.environment,
+        toolchain: true,
       );
       if (prepared.exitCode != 0) {
         throw StateError(
@@ -246,7 +248,7 @@ class IsolatedTaskWorkspace {
       return '';
     }
     await _git(['add', '-A']);
-    final result = await Process.run('git', [
+    final result = await IsolatedGit.run([
       '-C',
       root,
       'diff',
@@ -370,7 +372,7 @@ class IsolatedTaskWorkspace {
       // unrelated reason measures nothing.
       if (target.endsWith('.sh')) {
         try {
-          await Process.run('chmod', ['+x', target]);
+          await ChildProcess.run('chmod', ['+x', target]);
         } on ProcessException {
           // chmod is unavailable on some hosts; the corpus can then only use
           // `bash script.sh`, which every check here does anyway.
@@ -380,7 +382,7 @@ class IsolatedTaskWorkspace {
   }
 
   Future<ProcessResult> _git(List<String> args) async {
-    final result = await Process.run('git', ['-C', root, ...args]);
+    final result = await IsolatedGit.run(['-C', root, ...args]);
     if (result.exitCode != 0) {
       throw StateError(
         'git ${args.join(' ')} failed (${result.exitCode}): ${result.stderr}',

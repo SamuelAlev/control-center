@@ -1,0 +1,318 @@
+---
+title: Einen Connect-Server betreiben
+description: Betreibe dein eigenes Control Center Connect aus dem Docker-Image cc-connect oder hänge es in cc_server ein, damit deine Server Personen über Anbieter-Apps anmelden, die du registrierst.
+slug: de-DE/handbuch/anleitungen/connect-server-betreiben
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect führt Anbieter-Anmeldungen (GitHub, Google Calendar,
+Linear, Slack) für Server aus, die keine eigenen Apps registriert haben. Diese
+Anleitung zeigt, wie du dein eigenes Connect betreibst, sodass die Anbieter-Apps,
+ihre Secrets und die Liste der Server, die sie nutzen dürfen, alle bei dir
+bleiben.
+
+Was Connect sehen kann und was nicht, steht in der
+[Connect-Referenz](/de-DE/handbuch/referenz/connect/). Lies sie zuerst, wenn du
+entscheidest, ob du eines betreiben willst.
+
+:::note[Du brauchst es vielleicht nicht]
+Ein einzelner Server kann stattdessen eigene Apps registrieren: **Einstellungen →
+Server → Single sign-on → Anbieter-Apps**, wo **Meine GitHub-App erstellen**
+GitHub in einem Schritt einrichtet. Die eigenen Apps des Servers gelten nur unter
+**Eigene Apps verwenden**: Mit Apps von Control Center oder einem eigenen
+Connect-Server läuft Connect jede Spur, während eine App des Arbeitsbereichs
+weiterhin gilt. Betreibe ein Connect, wenn sich mehrere Server einen Satz
+Apps teilen sollen.
+:::
+
+## Voraussetzungen
+
+- Eine öffentliche **HTTPS**-Adresse für Connect, etwa
+  `https://connect.example.com`, hinter einem Proxy, der TLS terminiert. Reines
+  `http` wird nur auf Loopback angenommen
+- Docker, oder ein `cc_server`, den du mit zusätzlichen Umgebungsvariablen neu
+  starten kannst
+- Die Berechtigung, bei jedem Anbieter, den du bedienen willst, Apps zu
+  registrieren
+- Die Server, die es nutzen werden, und ihre Eigentümer in Reichweite: Jeder hat
+  eine Installations-ID, die du in die Zulassungsliste von Connect einträgst
+
+## Schritt 1: Die Adresse wählen
+
+Wähle die URL jetzt und behalte sie. `CONNECT_PUBLIC_URL` steckt in allem, was
+Connect tut: Anfragesignaturen, versiegelte Zugangsdaten, Redirect-URLs der
+Anbieter und die Installations-ID jedes Servers sind daran gebunden. Sie später
+zu ändern heißt, die Redirects neu zu registrieren und dass sich alle erneut
+anmelden.
+
+## Schritt 2: Die Anbieter-Apps registrieren
+
+Registriere nur die Anbieter, die du bedienen willst. Ein Anbieter, dessen
+Variablen unvollständig sind, fehlt in der Konfiguration von Connect, und Server
+sehen ihn als nicht verfügbar. `<base>` ist unten deine `CONNECT_PUBLIC_URL`.
+
+| Anbieter       | Registrieren                                                                                                                                                                                                                                                         | Behalten                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` mit eingeschaltetem **Redirect on update**. Lass **Request user authorization (OAuth) during installation** aus: Ist es an, ignoriert GitHub die Setup-URL. Lass **Expire user authorization tokens** an | App-ID, Slug, Client-ID, Client-Secret |
+| **Google**     | Ein OAuth-Client vom Typ **Webanwendung** mit dem Redirect-URI `<base>/oauth/google/callback`, und die Google Calendar API aktiviert                                                                                                                                | Client-ID, Client-Secret                |
+| **Linear**     | Eine OAuth-Anwendung mit den Callback-URLs `<base>/oauth/linear/callback` und `<base>/oauth/linear_app/callback`                                                                                                                                                  | Nur die Client-ID                       |
+| **Slack**      | Redirect-URLs `<base>/oauth/slack_oidc/callback` und `<base>/oauth/slack/callback`. Event Subscriptions unter `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-Befehle unter `<base>/v1/hooks/slack/commands`. Token-Rotation an | App-ID, Client-ID, Client-Secret, Signing Secret |
+
+Gib der GitHub App diese Repository-Berechtigungen: **Metadata** lesen,
+**Contents** lesen und schreiben, **Pull requests** lesen und schreiben,
+**Issues** lesen und schreiben, **Checks**, **Actions** und **Commit statuses**
+lesen. Füge für Review-Anfragen an Teams **Members** der Organisation mit
+Lesezugriff hinzu. Webhooks können aus bleiben: Server pollen.
+
+Connect braucht den privaten Schlüssel der GitHub App nie. Es stellt Tokens für
+ein einzelnes Repository stattdessen aus der eigenen Anmeldung einer Person aus.
+Linear braucht ebenfalls kein Secret: Connect gibt den Code an den Server zurück,
+der den Austausch selbst abschließt.
+
+## Schritt 3: Die Installations-IDs sammeln
+
+Connect antwortet nur den Servern auf seiner Zulassungsliste. Richte jeden Server
+auf dein Connect aus und lies dann seine Installations-ID ab:
+
+1. Geh zu **Einstellungen → Server → Single sign-on**, öffne die Karte
+   **Control Center Connect** und wähle **Eigenen Connect-Server verwenden**
+2. Gib deine URL ein und speichere. Die Karte zeigt die **Installations-ID** des
+   Servers
+
+In einem Terminal auf dem Server-Host geht dasselbe so:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` gibt die Installations-ID aus. Bis Schritt 5 erledigt ist, zeigt es
+`install_blocked`, und das ist erwartet.
+
+Eine Installations-ID wird je Connect-Adresse abgeleitet, derselbe Server hat
+also für jedes Connect, mit dem er spricht, eine andere ID. Sie ändert sich nur,
+wenn ihr Eigentümer den Schlüssel rotiert.
+
+## Schritt 4: Einen Siegelschlüssel erzeugen
+
+Connect verschlüsselt jedes Zugangsdatum, das es zurückgibt, mit einem
+Siegelschlüssel. Erzeuge einen und bewahre ihn als geheime Datei auf:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Geht der Siegelschlüssel verloren, sind alle abgemeldet: Ohne ihn lässt sich
+kein Siegel öffnen.
+
+## Schritt 5: Den Container starten
+
+Jedes Release veröffentlicht `ghcr.io/samuelalev/cc-connect` mit
+Build-Provenienz. Pinne in der Produktion einen Versions-Tag.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Richte deinen Reverse Proxy auf Port `8790` aus. Das Image läuft als
+unprivilegierter Benutzer, hält seinen Zustand im Volume `/data` und hat einen
+eingebauten Health-Check (`cc-connect --healthcheck`, der `/healthz` abfragt).
+
+Connect verweigert den Start (Exit-Code `78`), wenn seine Konfiguration offen,
+unsicher oder halb fertig ist, und nennt die falsche Variable. Eine fehlende
+Zulassungsliste, eine `http`-Adresse außerhalb von Loopback, ein fehlerhafter
+Siegelschlüssel oder gleichzeitig gesetzte `NAME` und `NAME_FILE` halten es
+alle an.
+
+Kontrolle: Auf jedem Server zeigt die Connect-Karte **Funktioniert**, und **Wo
+jede Anmeldung läuft** nennt **Connect** für jeden Anbieter, den du registriert
+hast. `cc_server connect status` gibt `Health: ok` und dieselben Spuren aus.
+
+## Connect in cc_server einhängen
+
+Ein Server kann Connect selbst hosten, statt einen eigenen Container zu nutzen.
+Der eingehängte Dienst ist derselbe, den das Image ausführt.
+
+1. Trag die Variablen `CONNECT_*` in die `.env`-Datei des Servers ein (oder in
+   seine Umgebung), wie in Schritt 5
+2. Füge `CC_SERVER_CONNECT_HOST=on` hinzu
+3. Starte den Server neu. Sein Log zeigt `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect wird dann unter `<server>/connect` ausgeliefert:
+
+- `CONNECT_PUBLIC_URL` ist standardmäßig der Origin der öffentlichen URL des
+  Servers plus `/connect`. Setze sie hinter einem Proxy ausdrücklich. Ihr Pfad
+  muss genau `/connect` sein, und sie muss HTTPS sein, außer auf Loopback
+- Nur Variablen `CONNECT_*` erreichen den eingehängten Dienst, er leiht sich also
+  nie die eigenen Anbieter-Apps des Servers
+- `CONNECT_ALLOWED_INSTALLS` ist weiterhin Pflicht, auch für den hostenden Server
+  selbst
+- Ein falsch konfiguriertes Einhängen hindert den Server am Start, statt einen
+  offenen Broker auszuliefern
+- Der Demo-Server hängt es nie ein
+
+Registriere die Redirects der Anbieter gegen `https://<server>/connect` und
+richte die Server (den hostenden eingeschlossen) dann wie in Schritt 3 auf diese
+URL aus.
+
+## Konfigurationsreferenz
+
+Jede Einstellung ist eine Umgebungsvariable. Jedes Secret kann stattdessen aus
+einer eingehängten Datei kommen: Setze `NAME_FILE` statt `NAME`. Connect liest
+die Datei höchstens alle 30 Sekunden neu und behält den letzten gültigen Wert.
+Mit **dual** markierte Secrets nehmen während einer Rotation außerdem
+`NAME_PREVIOUS` (oder `NAME_PREVIOUS_FILE`).
+
+### Adresse und Zugriff
+
+| Variable                        | Vorgabe   | Bedeutung                                                                                                                        |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | Pflicht   | Die kanonische öffentliche URL. HTTPS, oder `http` nur auf Loopback. Ein Pfad bedeutet Einhängen. Keine Query und kein Fragment  |
+| `CONNECT_ALLOWED_INSTALLS`      | Pflicht   | Kommagetrennte Installations-IDs. `*` wird nur zusammen mit `CONNECT_SIGNED_CONFIG_FILE` angenommen                              |
+| `CONNECT_DENY_INSTALLS`         |           | Installations-IDs, die auch bei Zulassung abgewiesen werden                                                                      |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerische GitHub-Owner-IDs. Ist sie gesetzt, werden Repository-Tokens nur für Repositorys ausgestellt, die ihnen gehören        |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bind-Adresse und Port                                                                                                    |
+| `CONNECT_TRUST_PROXY`           | `0`       | Vertrauenswürdige Proxy-Hops in `X-Forwarded-For` (0 bis 8). Nur für das Rate-Limit je Adresse genutzt                           |
+
+### Anbieter-Spuren
+
+| Variable                                                                    | Vorgabe | Bedeutung                                                                   |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | Die GitHub App                                                              |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Secret, dual                                                                |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Der Google-Client. Das Secret ist dual                                      |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Die Linear-Anwendung. Ohne Secret                                           |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Die Slack-App                                                               |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |         | Secrets, dual                                                               |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | Schlüssel für die GIF-Suche von Klipy. Secret, dual                         |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` behält den Schlüssel in Connect; `key` gibt ihn an Server weiter    |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub, Google und Slack: die Generation, die in neuen Siegeln steht        |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub, Google und Slack: ältere Siegel müssen sich erneut anmelden         |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | Jede Spur: `false` stoppt neue Anmeldungen, bestehende werden weiter erneuert |
+
+### Siegel, Zustand und Speicher
+
+| Variable                                                  | Vorgabe                    | Bedeutung                                                                                                  |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` oder `gcp-kms`                                                                                     |
+| `CONNECT_SEAL_KEYS`                                       |                            | Secret, Pflicht für `local`. Kommagetrennte Einträge `kid:key`, der neueste zuerst; ältere Einträge entschlüsseln weiterhin |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, Pflicht für `gcp-kms`                                    |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` für eine Instanz, `redis` für mehrere                                                             |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` oder `rediss://`                                                                        |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | CA-Bundle für `rediss://`                                                                                  |
+| `CONNECT_BINDINGS`                                        | `file`                     | Wo die Bindungen der GitHub-Installationen liegen: `file` oder `firestore`                                 |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` im Image)  | Enthält `bindings.json`                                                                                    |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | Datenbank `(default)`      | Für `CONNECT_BINDINGS=firestore`                                                                           |
+
+### Konfiguration, Logs und Limits
+
+| Variable                                | Vorgabe            | Bedeutung                                                                                           |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Eine offline signierte Konfiguration, unverändert ausgeliefert. Vom gehosteten Connect von Control Center genutzt |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Schlüssel, gegen die sich die signierte Konfiguration verifizieren muss                             |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Die Epoche der Konfiguration, die ein selbst gehostetes Connect erzeugt                             |
+| `CONNECT_LOG_HMAC_KEY`                  | zufällig je Prozess | Secret. Setze ihn, damit die Kennungen, die für Installations-IDs stehen, über Neustarts und Instanzen hinweg stabil bleiben |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Von `/v1/version` gemeldet                                                                          |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Anfragen je Installation                                                                            |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Anfragen je Adresse                                                                                 |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Anfragen für den ganzen Dienst                                                                      |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-Ereignisse je Team                                                                            |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-Suchen je Installation                                                                          |
+
+## Mehr als eine Instanz betreiben
+
+Eine Instanz mit `CONNECT_STATE=memory` reicht für die meisten Organisationen.
+Mehrere Instanzen hinter einer Adresse brauchen `CONNECT_STATE=redis` und
+entweder ein gemeinsames `CONNECT_DATA_DIR` oder `CONNECT_BINDINGS=firestore`,
+damit eine Anmeldung, die auf einer Instanz beginnt, auf einer anderen enden kann.
+
+## Ein Anbieter-Secret rotieren
+
+Niemand wird abgemeldet:
+
+1. Erzeuge das neue Secret beim Anbieter und behalte das alte
+2. Verschiebe den alten Wert nach `NAME_PREVIOUS`, setze den neuen in `NAME` und
+   erhöhe `CONNECT_<LANE>_SECRET_GENERATION`. Eingehängte Dateien werden
+   innerhalb von 30 Sekunden übernommen
+3. Warte, bis sich die Anmeldungen erneuert haben, lösche dann das alte Secret
+   beim Anbieter und entferne `NAME_PREVIOUS`
+
+Um einen Siegelschlüssel zu rotieren, setze einen neuen Eintrag aus
+`cc-connect-config seal-key` an den Anfang von `CONNECT_SEAL_KEYS` und behalte
+den alten Eintrag, bis sich seine Siegel erneuert haben.
+
+## Eine App ändern
+
+Server merken sich die App- und Client-IDs, die dein Connect angekündigt hat,
+als sie es zum ersten Mal genutzt haben. Ersetzt du eine App, zeigt die
+Connect-Karte jedes Servers **Die Apps von Connect haben sich geändert**, und
+Anmeldungen über Connect pausieren, bis ihr Eigentümer auf **Neuen Apps
+vertrauen** klickt. Sag den Server-Eigentümern vor dem Wechsel
+Bescheid, damit sie wissen, dass die Rückfrage von dir kommt.
+
+## Einen Server sperren
+
+Füge seine Installations-ID zu `CONNECT_DENY_INSTALLS` hinzu und starte neu. Sein
+Eigentümer sieht „Connect hat die Installations-ID dieses Servers gesperrt“, und jede
+Connect-Anmeldung darauf stoppt.
+
+## Fehlersuche
+
+### Ein Server meldet, Connect habe ihn gesperrt
+
+Seine Installations-ID steht nicht in `CONNECT_ALLOWED_INSTALLS`, oder sie steht
+in `CONNECT_DENY_INSTALLS`. Die ID ändert sich, wenn ihr Eigentümer den
+Schlüssel rotiert; frag nach der neuen.
+
+### Ein Anbieter erscheint als nicht verfügbar
+
+Eine seiner Variablen fehlt, deshalb hat Connect die Spur weggelassen. Prüfe das
+Startlog und die Tabellen oben. GitHub braucht alle vier: App-ID, Slug,
+Client-ID und Client-Secret; Google braucht Client-ID und Secret.
+
+### Anmeldungen scheitern an einem nicht passenden Redirect
+
+Der beim Anbieter registrierte Redirect stimmt nicht genau mit
+`CONNECT_PUBLIC_URL` überein. Vergleiche Schema, Host, Port und bei einem
+eingehängten Connect den Pfad `/connect`.
+
+### Alle mussten sich erneut anmelden
+
+Der Siegelschlüssel hat sich geändert oder ging verloren, ein Server hat seinen
+Schlüssel rotiert, oder die Daten eines Servers wurden auf einer anderen
+Maschine wiederhergestellt. Ein versiegeltes Zugangsdatum öffnet sich nur für
+die Installation und das Connect, die es erzeugt haben.
+
+## Verwandte Anleitungen
+
+- [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)
+- [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/)
+- [Einen Google Calendar verbinden](/de-DE/handbuch/anleitungen/kalender-verbinden/)
+
+## Verwandte Referenz
+
+- [Control Center Connect](/de-DE/handbuch/referenz/connect/)
+- [`cc_server` CLI](/de-DE/handbuch/referenz/cc-server-cli/)

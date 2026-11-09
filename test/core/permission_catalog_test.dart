@@ -33,7 +33,7 @@ void main() {
     'agents', 'approval_routing', 'approvals', 'autonomy',
     'blob', 'cache', 'calendar', 'changelog', 'chat',
     'checker', 'claude', 'claude_accounts', 'codeGraph', 'codeServer',
-    'confirmation', 'connection', 'connectivity', 'context',
+    'confirmation', 'connect', 'connection', 'connectivity', 'context',
     'conversation', 'credential_gate', 'credentials', 'demo',
     'dictation', 'dispatch', 'evals', 'files', 'fleet',
     'fonts', 'forge', 'fs', 'gif',
@@ -56,7 +56,8 @@ void main() {
     'takeover', 'team', 'telemetry', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
     'usage', 'users', 'voice_profile', 'weather',
-    'workProduct', 'workspace', 'workspaceGitHub', 'workspace_settings',
+    'workProduct', 'workspace', 'workspaceGitHub', 'workspaceProviderApps',
+    'workspace_settings',
     'worktree',
   };
 

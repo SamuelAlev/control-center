@@ -2,7 +2,7 @@
 title: Configurează politicile de sandbox
 description: Ce constrânge o rulare de agent, cum îți dai seama dacă sandbox-ul sistemului de operare o învelește și cum decid regulile de acțiune ce poate trimite sau accesa un agent.
 slug: ro-RO/manual/ghiduri-practice/politici-sandbox
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Dacă o rulare de agent este sandboxată se decide pe server, la pornire
@@ -75,9 +75,9 @@ git afișează `! [remote rejected] <ref> (Control Center policy: …)`.
 
 Cum ajunge fiecare regulă la rulare:
 
-- **Push-ul** este impus prin ce deține rularea. Tokenul ei GitHub este un token
-  de instalare GitHub App doar pentru citire, care poate citi conținut și lucra
-  cu pull request-uri. Configurația ei git trimite fiecare push către GitHub
+- **Push-ul** este impus prin ce deține rularea. Tokenul ei GitHub acoperă singurul
+  depozit al rulării și nu poate face push: poate citi conținut și, când membrul
+  responsabil poate face push, poate comenta pe pull request-uri. Configurația ei git trimite fiecare push către GitHub
   unui gateway de loopback pe `cc_server`, care întreabă regula și abia apoi
   transmite push-ul cu un token de scriere pe care agentul nu îl vede niciodată.
   Gateway-ul transmite doar către depozitul propriu al worktree-ului sau către
@@ -96,18 +96,13 @@ Cum ajunge fiecare regulă la rulare:
   ale harness-ului întreabă în continuare la fiecare apel. Cât timp rețeaua este
   pornită, GitHub este mereu pe lista de permisiuni de ieșire.
 
-:::caution[Fără GitHub App, regula de push este doar orientativă]
-Fără un GitHub App configurat, rularea primește tokenul de acces personal de
-rezervă, care nu poate fi restrâns doar la citire. `git push` trece în
-continuare prin gateway și prin regulă, dar codul care folosește direct tokenul
-poate face push ocolind-o. Configurează GitHub App ca regula să fie
-obligatorie.
-
-Acreditarea GitHub a rulării este întotdeauna doar a brokerului — un token de
-instalare GitHub App limitat la depozit, sau PAT-ul de rezervă — niciodată
-tokenul stocat al membrului care face cererea. PAT-ul serverului este reținut
-de la o rulare care acționează pentru un membru care nu este proprietarul și nu
-a conectat GitHub.
+:::note[De unde vine tokenul GitHub al rulării]
+Tokenul este emis pentru rulare din GitHub App a spațiului de lucru, din
+aplicația proprie a serverului sau din Control Center Connect și este limitat la
+ce poate face membrul responsabil (cel care a cerut, altfel proprietarul
+spațiului de lucru) pe acel depozit. Nu este niciodată autentificarea proprie a
+unui membru predată întreagă și nu există niciun token de rezervă: când nu se
+poate emite niciunul, rularea pornește fără token, iar notele ei spun de ce.
 :::
 
 ## Verifică dacă rulările agenților tăi sunt sandboxate

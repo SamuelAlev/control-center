@@ -2,7 +2,7 @@
 title: Utiliser la révision assistée par IA
 description: Exécutez le pipeline pr_review sur une PR, lisez les constats et le verdict, puis publiez la révision sur GitHub.
 slug: fr-CA/manuel/guides/revision-par-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Ce guide vous montre comment faire relire une demande de tirage par des agents
@@ -122,14 +122,16 @@ sur GitHub.
 Control Center envoie **une seule** révision GitHub. Les constats déjà résolus ou
 rejetés sont ignorés. Le bouton inclut tous les constats ouverts restants et, sur
 **Ship**, soumet `APPROVE`. (L’outil MCP `publish_review_to_github` se limite
-toujours par défaut aux constats confirmés par un pair et n’approuve pas, à moins
-que vous ne passiez `approve_on_ship`.) Les constats qui portent un ancrage de
+par défaut aux constats confirmés par un pair et n’approuve jamais : il publie en
+tant qu’automatisation, de sorte que `approve_on_ship` n’y a aucun effet.) Les constats qui portent un ancrage de
 fichier et de ligne deviennent des commentaires en ligne ; tout le reste est
 regroupé dans le corps du résumé, chacun accompagné d’une mention
 « — Control Center AI review » pour que la source soit sans ambiguïté. Un verdict
 **Block** est soumis comme `REQUEST_CHANGES` ; **Hold** comme `COMMENT` ; **Ship**
 comme `APPROVE` à partir de ce bouton. Une notification affiche alors **Publié**.
-La révision est publiée sous l’identité d’application du serveur.
+La révision est publiée en votre nom, avec votre propre connexion GitHub : si
+vous n’êtes pas connecté à GitHub, la publication échoue et vous demande de vous
+connecter.
 
 Si GitHub rejette un ancrage en ligne parce que la ligne ne fait pas partie du diff,
 la révision entière est renvoyée avec chaque constat regroupé dans le corps, de

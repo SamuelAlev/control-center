@@ -2,81 +2,79 @@
 title: Konfigurera GitHub-integration
 description: Logga in på GitHub så att PR-ytan, reporegistreringen och agentkörningarna fungerar.
 slug: sv-SE/handbok/how-to-guider/github-integration
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Den här guiden handlar om de GitHub-specifika delarna av uppsättningen. GitHub är
-en av tre kodvärdar som stöds — se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
+en av tre kodvärdar som stöds. Se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
 för att ansluta GitLab eller Bitbucket, och för hur en arbetsyta blandar dem.
 
 ## Förutsättningar
 
 - Ett GitHub-konto med åtkomst till de repos du vill arbeta med
-- Antingen en GitHub-app registrerad för din server (se
-  [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) så att du kan **logga in**,
-  **eller** en personlig åtkomsttoken med `repo` och `read:org` att klistra in
+- En server som kan logga in personer på GitHub: antingen med en egen GitHub-app
+  (se [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) eller med
+  Control Center Connect, valt av serverägaren under **Inställningar → Server →
+  Enkel inloggning**
 
 :::note[Inloggningsuppgifterna ligger på servern, knutna till dig]
-Inget lagras på maskinen du skriver på. Din inloggningsuppgift hålls av din
+Inget lagras på maskinen du skriver på. Din GitHub-inloggning hålls av din
 `cc_server`, knuten till ditt användar-id, och varje enhet du loggar in från
 använder den — skrivbord, webb och telefon. En annan medlem på samma server kan
-inte läsa den, och att logga in dem är något de gör själva.
+inte använda den, och att logga in dem är något de gör själva.
 :::
 
-## Logga in med GitHub
+## Logga in på GitHub
 
-Ett **enhetsflöde**: GitHub visar en kort kod, du godkänner den på github.com och
-servern tar emot inloggningsuppgiften — ingen callback-URL, ingen port, inget att
-exponera. Tillgängligt närhelst servern har ett klient-ID, vilket ett officiellt
-bygge redan levereras med.
+GitHub har bara inloggning: det finns ingen token att klistra in.
 
 1. Gå till **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** (eller första
    steget i introduktionen)
-2. På raden **GitHub**, klicka på **Logga in med GitHub**
-3. En dialog visar en åttateckens kod och öppnar
-   [github.com/login/device](https://github.com/login/device) i din webbläsare.
-   Koden finns redan i urklipp
-4. Klistra in den, godkänn appen och kom tillbaka. Raden växlar till
-   ”Inloggad som _ditt-användarnamn_” av sig själv
+2. På raden **GitHub**, klicka på **Logga in på GitHub**
+3. Din webbläsare öppnar GitHub. Godkänn appen
 
-Dialogen kan stängas medan du gör klart i webbläsaren — servern fortsätter att
-polla tills koden går ut (cirka 15 minuter), så inloggningen landar ändå.
+Hur inloggningen avslutas beror på vem som kör den:
 
-## Eller klistra in en token
+- **Serverns egen app:** GitHub skickar tillbaka din webbläsare till servern, och
+  dialogen märker det själv. Inget att skriva in
+- **Control Center Connect:** webbläsarsidan visar en kod på 8 tecken. Skriv in
+  den i dialogen, eller låt webbläsaren öppna Control Center via
+  `control-center://`-länken och slipp skriva den
 
-Reservvägen när servern inte har någon app, när appen inte är installerad på ett
-konto du behöver, eller när du helt enkelt hellre använder en PAT.
+Kontrollpunkt: raden **GitHub** visar ”Inloggad som _ditt-användarnamn_”.
 
-1. Gå till **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**
-2. På raden **GitHub**, klicka på **Lägg till token**
-3. Klistra in en token med `repo` och `read:org` (classic) och spara. En
-   **fine-grained**-token behöver **Contents** och **Pull requests** (read and write)
-   på repositoryt, plus **Checks** och **Actions** (read).
+Dialogen avvisar en kod eller länk som den inte själv startade, med
+**Inloggningen startades inte här**. Om någon skickar dig en inloggningslänk ska
+du inte fortsätta: att slutföra den skulle ansluta ditt konto till personens
+server.
 
-Token provas när den sparas, så raden kan namnge kontot den tillhör. Klicka på
-**Koppla från** för att ta bort den.
+Klicka på **Koppla från** för att ta bort din inloggning. Att logga ut från
+GitHub, eller att tas bort från en arbetsyta, tar också bort varje token som
+servern har utfärdat för din räkning.
 
-Kontrollpunkt: raden **GitHub** visar ”Inloggad som _ditt-användarnamn_”. Ett
-suffix namnger källan när inloggningsuppgiften som svarar inte är din — ”via
-den här serverns app” eller ”från miljön”.
+## Vem din inloggningsuppgift talar för
 
-:::note[Ordningen är fast]
-En begäran som görs för din räkning använder **din** inloggningsuppgift och inget
-annat — miljön är serverns inloggningsuppgift, inte din, så den kliver aldrig in i
-ditt ställe. Arbete utan en människa bakom sig (webhooks, PR-pollning,
-ärendesynkronisering) använder serverns appidentitet, sedan serverägarens
-inloggningsuppgift och sist miljön.
-:::
+- **Allt du gör** (öppnar PR-sidan, publicerar en granskning, godkänner, slår
+  ihop) körs på **din** inloggning och inget annat. Om du inte är inloggad säger
+  appen det och ber dig logga in. Ingen annan inloggningsuppgift kliver in i ditt
+  ställe
+- **Arbete där ingen skriver** (agentkörningar, pipelines, PR-pollning, botsvar,
+  kloner) får en token för ett repo, utfärdad från serverns GitHub-app eller via
+  Connect. Den är begränsad till vad en ansvarig medlem kan göra där: medlemmen
+  som frågade, annars arbetsytans ägare. En medlem som inte kan pusha begränsar
+  token till läsning
+- **Automatisering godkänner aldrig** en pull request. Att godkänna är en persons
+  handling
 
 ## Vad integrationen ger dig
 
 | Funktion              | Hur                                                                                                            |
 | --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR-lista och detaljvy | GitHub REST-API:et, från servern, på appidentiteten eller din egen inloggningsuppgift                          |
+| PR-lista och detaljvy | GitHub REST-API:et, från servern, på din egen inloggning                                                        |
 | Kontrollkörningar     | GitHub Checks API                                                                                              |
-| Publicera granskning  | Ett steg som en användare måste godkänna och som publicerar din granskning på PR:en                            |
+| Publicera granskning  | Ett steg som en användare måste godkänna och som publicerar din granskning på PR:en, som du                    |
 | Reporegistrering      | En utcheckning godtas om dess `origin`-remote pekar på github.com — eller på gitlab.com / bitbucket.org        |
-| Agenters GitHub-åtkomst | Mäklaren för inloggningsuppgifter injicerar en token som bara kan läsa som `GH_TOKEN` / `GITHUB_TOKEN`; pushar går genom Control Center |
+| Agenters GitHub-åtkomst | En token för körningens enda repo som `GH_TOKEN` / `GITHUB_TOKEN`; pushar går genom Control Center          |
 | Aviseringsping        | En pollning på serversidan av din GitHub-aviseringsinkorg väcker ”Omnämnd i pull request” och ”Granskning begärd” |
 | Användarprofiler      | Profilkort vid hovring och filtrering av PR:er per författare                                                  |
 
@@ -96,52 +94,53 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
 
 ## Så agerar agenter på GitHub
 
-- En agent som arbetar i en GitHub-worktree får alltid en GitHub-token som bara
-  kan läsa. En push går genom Control Center, som frågar regeln **Pusha till en
-  remote** och sedan skickar den vidare med en skrivtoken som agenten aldrig
-  har. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
+- En agent som arbetar i en GitHub-worktree får en token för just det repot. Den
+  kan läsa koden och kommentera på pull requests när den ansvariga medlemmen kan
+  pusha, och bara läsa när medlemmen inte kan. En push går genom Control Center,
+  som frågar regeln **Pusha till en remote** och sedan skickar den vidare med en
+  skrivtoken som agenten aldrig har. Se
+  [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
 - Agentens commits använder alltid den begärande personens Git-identitet som både författare och committer. Som standard krediterar raden `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medförfattare. Under **Inställningar → Du → Tillskrivning av commits** kan du stänga av den medförfattarkrediteringen utan att ändra din identitet. En inställning för arbetsytan under **Inställningar → Arbetsyta → Allmänt** har företräde och låser det personliga reglaget. Claude Codes egen tillskrivning är alltid avstängd. Commitsignering kräver fortfarande en egen giltig konfiguration
-- Med en GitHub-app konfigurerad utfärdar mäklaren för inloggningsuppgifter
-  finkorniga installationstoken, begränsade till repot och giltiga i ungefär en
-  timme, per start i stället för att lämna över en bred token. Installationen
-  löses från körningens repo-**ägare**, så en app som är installerad på flera
-  konton begränsas korrekt till det konto körningen rör. Utan en app får
-  agenterna token från miljön, som inte kan begränsas till enbart läsning:
-  pushregeln binder då `git push`, men inte kod som använder token direkt
-- Token är alltid mäklarens, aldrig den begärande medlemmens egen. Serverns
-  token hålls tillbaka från en körning som agerar för en medlem som inte är
-  ägare och inte har anslutit GitHub
+- En terminal som du öppnar på en rigg får din egen inloggning, begränsad till
+  just det repot, så pushar därifrån är dina
+- När ingen token kan utfärdas (ingen ansvarig är inloggad, appen är inte
+  installerad hos ägaren, eller installationen är avstängd) startar körningen
+  utan, och dess anteckningar förklarar varför. Det finns ingen
+  reservinloggningsuppgift
 
 ## Felsökning
 
 ### PR-listan är tom och säger att GitHub inte är anslutet
 
-Du har ingen GitHub-inloggningsuppgift på den här servern. Logga in eller klistra
-in en token under **Kodvärd**. Repos på andra kodvärdar påverkas inte — bara
-GitHubs bidrar inte med något.
+Du är inte inloggad på GitHub på den här servern. Klicka på **Logga in på
+GitHub** under **Kodvärd**. Repos på andra kodvärdar påverkas inte.
 
-### Raden erbjuder ”Lägg till token” men inte ”Logga in med GitHub”
+### Raden GitHub säger att inloggningen inte är konfigurerad på den här servern
 
-Servern har inget klient-ID — vilket är normaltillståndet för ett bygge från
-källkoden, eftersom inloggningsuppgifter bara bakas in i officiella byggen. Se
-[Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/): det tar ungefär två minuter
-och bara serverägaren behöver göra det, en gång.
+Servern har varken en egen GitHub-app eller Connect. Serverägaren väljer en av
+dem under **Inställningar → Server → Enkel inloggning**: **Skapa min GitHub-app**
+tar ungefär två minuter. Se
+[Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/).
 
-### Inloggningsdialogen säger att leverantören inte returnerade någon enhetskod
+### Dialogen säger att koden inte stämmer
 
-GitHub-appen finns, men kryssrutan **Device flow** är av. Slå på den i appens
-inställningar (General → Device flow) och försök igen.
+Skriv in koden exakt som webbläsaren visar den: 8 bokstäver och siffror. Fem
+felaktiga koder avslutar inloggningen; starta den igen.
 
-### Raden säger ”via den här serverns app” trots att jag väntade mig mitt eget konto
+### Inloggningen säger att appen inte är installerad
 
-Du har inte loggat in; det du ser är serverns appidentitet som svarar. Klicka på
-**Logga in med GitHub** på den raden.
+GitHub-appen har ingen installation på kontot som äger repot. En administratör i
+arbetsytan installerar den från **Inställningar → Arbetsyta → Allmänt →
+Installationer av GitHub-appen**. För en organisation på Control Centers delade
+app kan en administratör i organisationen behöva klicka på **Auktorisera den här
+servern**. Se
+[Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/#auktorisera-den-här-servern-för-en-organisation).
 
-### En fine-grained-PAT visar ingen sammanfogningsknapp eller kontrollstatus
+### Alla måste logga in på GitHub igen
 
-Token behöver **Contents** och **Pull requests** (read and write), plus
-**Checks** och **Actions** (read). När du har ändrat den klistrar du in den igen
-under Kodvärd.
+Serverägaren har bytt serverns Connect-nyckel, bytt Connect-server, eller så
+återställdes datakatalogen på en annan maskin. Inloggningar via Connect är
+bundna till servern som skapade dem.
 
 ### Ett repo avvisas när det läggs till
 
@@ -166,4 +165,4 @@ Tillfälliga fel görs om upp till tre gånger med exponentiell backoff, och
 - [Hantera API-nycklar](/sv-SE/handbok/how-to-guider/api-nycklar/)
 - [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
 - [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)
+- [Prata med Control Center från en GitHub-PR](/sv-SE/handbok/how-to-guider/github-pr-samtal/)

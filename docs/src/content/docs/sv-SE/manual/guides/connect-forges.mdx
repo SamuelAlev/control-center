@@ -2,7 +2,7 @@
 title: Anslut en kodvärd
 description: Anslut GitHub, GitLab eller Bitbucket så att PR-ytan, reporegistreringen och agentkörningar fungerar — en arbetsyta kan använda alla tre.
 slug: sv-SE/handbok/how-to-guider/anslut-kodvard
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center arbetar med tre kodvärdar — så kallar appen dem genomgående: **GitHub**, **GitLab** och **Bitbucket Cloud**. Ingen av dem är standard. Anslut en och allt fungerar; anslut flera och en och samma arbetsyta kan hålla repos från alla tre samtidigt.
@@ -13,9 +13,9 @@ Kodvärden är en egenskap hos varje **repo** och läses från dess `origin`-rem
 
 1. Öppna **Inställningar → Arbetsyta → Profil och identitet** (`/settings/workspace/profile`).
 2. Hitta kortet **Kodvärd**. Varje kodvärd som stöds listas, ansluten eller inte.
-3. Tryck **Logga in med …** om raden erbjuder det, eller **Lägg till token** och klistra in en.
+3. På **GitHub** trycker du **Logga in på GitHub**. På **GitLab** eller **Bitbucket** trycker du **Lägg till token** och klistrar in en.
 
-**Logga in** visas för en kodvärd som din server har en registrerad app för — i dag gäller det GitHub, via ett enhetsflöde (se [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)). Allt annat är en inklistrad token, vilket är den ärliga lösningen i stället för en knapp som inte går att slutföra.
+**GitHub har bara inloggning.** Inloggningen går via serverns egen GitHub-app eller via Control Center Connect, beroende på vad serverägaren har konfigurerat (se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)); det finns ingen GitHub-token att klistra in. GitLab och Bitbucket tar fortfarande emot en personlig token.
 
 Hur som helst är inloggningsuppgiften **din och ligger på servern**, knuten till ditt användar-id: ingen token lagras på maskinen du skrev in den på, varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den. Den börjar gälla vid **nästa begäran** — det finns inget att starta om, och kopplar du från slutar den skickas omedelbart.
 
@@ -24,29 +24,28 @@ Varje rad berättar varifrån dess inloggningsuppgift kommer, för det är skill
 | Undertext                                     | Betydelse                                                             |
 | --------------------------------------------- | --------------------------------------------------------------------- |
 | `Inloggad som octocat`                        | Din egen inloggningsuppgift används                                   |
-| `Inloggad som octocat · via den här serverns app` | Serverns appidentitet svarar — du är inte inloggad                 |
-| `Inloggad som octocat · från miljön`          | En miljövariabel på servern svarar, inte din inloggningsuppgift       |
+| `Inloggad som octocat · från miljön`          | Bara GitLab eller Bitbucket: en miljövariabel på servern svarar, inte din token |
 | `Inte ansluten`                               | Du har ingen inloggningsuppgift för den här kodvärden                 |
+| `Inloggning på GitHub är inte konfigurerad på den här servern än.` | Servern har varken en egen GitHub-app eller Connect; serverägaren konfigurerar en av dem |
 
 ### Vilken token varje kodvärd vill ha
 
 | Kodvärd       | Token                                                     | Var du skapar den                                         |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` och `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | En personlig åtkomsttoken med `api`                       | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | En Atlassian-API-token plus din kontos e-postadress       | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket autentiserar med din **kontos e-postadress som användarnamn** och token som lösenord. Ange `BITBUCKET_EMAIL` i serverns miljö så att den vet vilken e-postadress som ska paras ihop med token.
 
-### Eller använd miljön
+### Bakgrundsarbete
 
-Vid en headless- eller CI-installation läser servern dessa:
+Arbete utan en människa bakom sig (agentkörningar, pipelines, PR-pollning) behöver också en inloggningsuppgift, och varje kodvärd löser det på sitt sätt:
 
-- **GitHub** — `GITHUB_TOKEN`, sedan `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, sedan `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, sedan `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
+- **GitHub** — en token för ett repo i taget, utfärdad från serverns GitHub-app eller via Connect och begränsad till vad en ansvarig medlem kan göra där. Det är aldrig en persons inloggning överlämnad i sin helhet, och ingen miljövariabel eller inklistrad token kliver in i dess ställe. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/#vem-din-inloggningsuppgift-talar-för)
+- **GitLab** — serverägarens inklistrade token, sedan `GITLAB_TOKEN`, sedan `CI_JOB_TOKEN`
+- **Bitbucket** — serverägarens inklistrade token, sedan `BITBUCKET_API_TOKEN`, sedan `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
 
-Det här är **serverns** inloggningsuppgift, inte din, och skillnaden är avgörande: en begäran som görs för din räkning använder din inloggningsuppgift och inget annat, så miljön kliver aldrig tyst in i ditt ställe. Arbete utan en människa bakom sig — webhooks, PR-pollning, ärendesynk — löser först serverns appidentitet, sedan serverägarens inloggningsuppgift och sist miljön. Ordningen är fast, så att ”jag loggade in och inget ändrades” aldrig är ett resultat som stöds.
+Miljövariablerna för GitLab och Bitbucket är **serverns** inloggningsuppgift, inte din: en begäran som görs för din räkning använder din token och inget annat, så miljön kliver aldrig tyst in i ditt ställe.
 
 ## Du är en annan person på varje kodvärd
 
@@ -94,11 +93,11 @@ GitLab kallar en pull request för en **merge request**. Control Center säger �
 
 ### PR-listan är tom och säger att en kodvärd inte är ansluten
 
-Du har ingen inloggningsuppgift för den kodvärden. Logga in eller klistra in en token under **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**. Andra kodvärdars repos påverkas inte.
+Du har ingen inloggningsuppgift för den kodvärden. Logga in på GitHub, eller klistra in en GitLab- eller Bitbucket-token, under **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**. Andra kodvärdars repos påverkas inte.
 
 ### Jag anslöt en kodvärd men dess repos visar fortfarande inget
 
-Kontrollera radens undertext. Om det står ”via den här serverns app” eller ”från miljön” svarar en annan inloggningsuppgift än den du förväntade dig — din egen inloggningsuppgift vinner för allt du begär, så står det något annat sparades inte din.
+Kontrollera radens undertext. Om det står ”från miljön” på en GitLab- eller Bitbucket-rad svarar en annan inloggningsuppgift än den du förväntade dig — din egen token vinner för allt du begär, så står det något annat sparades inte din. På GitHub kontrollerar du att GitHub-appen är installerad på kontot som äger repona.
 
 ### Ett repo går inte att registrera
 

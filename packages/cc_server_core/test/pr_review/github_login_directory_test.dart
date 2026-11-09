@@ -2,11 +2,9 @@ import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_server_core/src/identity/github_login_directory.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
-import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:test/test.dart';
 
 /// Scripts `getForWorkspace`; every other member is unused here and throws
@@ -24,22 +22,12 @@ class _FakeMembershipRepository implements WorkspaceMembershipRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Scripts `forgeToken` per user id; null (no credential) by default.
-class _FakeCredentialsStore implements UserCredentialsStore {
-  _FakeCredentialsStore(this.tokens);
+/// A credential lookup over a per-user map; null (not signed in) by default.
+GitHubCredentialLookup _credentials(Map<String, ProviderToken?> tokens) =>
+    (userId, workspaceId) async => tokens[userId];
 
-  final Map<String, ProviderToken?> tokens;
-
-  @override
-  Future<ProviderToken?> forgeToken(
-    String userId,
-    ForgeHost forge, {
-    String? workspaceId,
-  }) async => tokens[userId];
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+ProviderToken _signIn(String accountId, String login) =>
+    ProviderToken(accessToken: 't', accountId: accountId, accountLogin: login);
 
 WorkspaceMember _member(
   String userId, {
@@ -55,90 +43,83 @@ WorkspaceMember _member(
 
 void main() {
   group('GitHubLoginDirectory', () {
-    test('maps a login to its member, case-insensitively', () async {
+    test('maps a numeric account id to its member', () async {
       final directory = GitHubLoginDirectory(
         members: _FakeMembershipRepository([_member('u1')]),
-        credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(accessToken: 't', accountLogin: 'Octocat'),
-        }),
+        credentials: _credentials({'u1': _signIn('583231', 'octocat')}),
       );
 
-      final member = await directory.memberForLogin('ws1', 'octocat');
-
-      expect(member?.userId, 'u1');
+      expect((await directory.memberForAccountId('ws1', 583231))?.userId, 'u1');
     });
 
-    test('a login nobody connected resolves to null', () async {
+    test('a different account that took the old login does not map', () async {
+      // Somebody registered the freed "octocat" login; their id differs.
       final directory = GitHubLoginDirectory(
         members: _FakeMembershipRepository([_member('u1')]),
-        credentials: _FakeCredentialsStore({
+        credentials: _credentials({'u1': _signIn('583231', 'octocat')}),
+      );
+
+      expect(await directory.memberForAccountId('ws1', 9999999), isNull);
+    });
+
+    test('a sign-in without an account id never maps', () async {
+      final directory = GitHubLoginDirectory(
+        members: _FakeMembershipRepository([_member('u1')]),
+        credentials: _credentials({
           'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
         }),
       );
 
-      expect(await directory.memberForLogin('ws1', 'someone-else'), isNull);
+      expect(await directory.memberForAccountId('ws1', 583231), isNull);
+      expect(await directory.memberForAccountId('ws1', 0), isNull);
+      expect(await directory.memberForAccountId('', 583231), isNull);
     });
 
     test(
-      'a member whose credential carries no login resolves to null',
-      () async {
-        final directory = GitHubLoginDirectory(
-          members: _FakeMembershipRepository([_member('u1')]),
-          credentials: _FakeCredentialsStore({
-            'u1': const ProviderToken(accessToken: 't'),
-          }),
-        );
-
-        expect(await directory.memberForLogin('ws1', ''), isNull);
-        expect(await directory.memberForLogin('', 'octocat'), isNull);
-      },
-    );
-
-    test(
-      'a login connected by a user of ANOTHER workspace resolves to null',
+      'an account signed in by a user of ANOTHER workspace resolves to null',
       () async {
         // The reverse index is built per workspace from that workspace's
         // members; a foreign workspace's user is simply absent from it.
         final directory = GitHubLoginDirectory(
           members: _FakeMembershipRepository([_member('u1')]),
-          credentials: _FakeCredentialsStore({
-            'u1': const ProviderToken(
-              accessToken: 't',
-              accountLogin: 'octocat',
-            ),
-            'u9': const ProviderToken(
-              accessToken: 't',
-              accountLogin: 'intruder',
-            ),
+          credentials: _credentials({
+            'u1': _signIn('1', 'octocat'),
+            'u9': _signIn('9', 'intruder'),
           }),
         );
 
-        expect(await directory.memberForLogin('ws1', 'intruder'), isNull);
+        expect(await directory.memberForAccountId('ws1', 9), isNull);
       },
     );
 
-    test('the oldest member wins a duplicate login claim', () async {
+    test('the lookup is per workspace', () async {
+      final looked = <(String, String)>[];
+      final directory = GitHubLoginDirectory(
+        members: _FakeMembershipRepository([_member('u1')]),
+        credentials: (userId, workspaceId) async {
+          looked.add((userId, workspaceId));
+          return _signIn('1', 'octocat');
+        },
+      );
+
+      await directory.memberForAccountId('ws1', 1);
+
+      expect(looked, [('u1', 'ws1')]);
+    });
+
+    test('the oldest member wins a duplicate account claim', () async {
       final directory = GitHubLoginDirectory(
         members: _FakeMembershipRepository([
           _member('first'),
           _member('second'),
         ]),
-        credentials: _FakeCredentialsStore({
-          'first': const ProviderToken(
-            accessToken: 't',
-            accountLogin: 'shared',
-          ),
-          'second': const ProviderToken(
-            accessToken: 't',
-            accountLogin: 'shared',
-          ),
+        credentials: _credentials({
+          'first': _signIn('7', 'shared'),
+          'second': _signIn('7', 'shared'),
         }),
       );
 
-      expect(
-        (await directory.memberForLogin('ws1', 'shared'))?.userId,
-        'first',
-      );
+      expect((await directory.memberForAccountId('ws1', 7))?.userId, 'first');
     });
 
     test(
@@ -146,46 +127,39 @@ void main() {
       () async {
         var now = DateTime(2026, 8, 26, 12);
         final members = _FakeMembershipRepository([_member('u1')]);
-        final tokens = <String, ProviderToken?>{
-          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
-        };
+        final tokens = <String, ProviderToken?>{'u1': _signIn('1', 'octocat')};
         final directory = GitHubLoginDirectory(
           members: members,
-          credentials: _FakeCredentialsStore(tokens),
+          credentials: _credentials(tokens),
           now: () => now,
         );
 
-        expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
+        expect(await directory.memberForAccountId('ws1', 2), isNull);
 
         members.members.add(_member('u2'));
-        tokens['u2'] = const ProviderToken(
-          accessToken: 't',
-          accountLogin: 'newbie',
-        );
+        tokens['u2'] = _signIn('2', 'newbie');
         // Inside the TTL: the cached index still answers.
         now = now.add(const Duration(minutes: 1));
-        expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
+        expect(await directory.memberForAccountId('ws1', 2), isNull);
         // Past it: the index rebuilds from the current members.
         now = now.add(const Duration(minutes: 5));
-        expect((await directory.memberForLogin('ws1', 'newbie'))?.userId, 'u2');
+        expect((await directory.memberForAccountId('ws1', 2))?.userId, 'u2');
       },
     );
 
-    test('membership removal revokes a cached login before TTL', () async {
+    test('membership removal revokes a cached mapping before TTL', () async {
       final bus = DomainEventBus();
       addTearDown(bus.dispose);
       final members = _FakeMembershipRepository([_member('u1')]);
       final directory = GitHubLoginDirectory(
         members: members,
-        credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
-        }),
+        credentials: _credentials({'u1': _signIn('1', 'octocat')}),
         eventBus: bus,
       );
 
-      expect((await directory.memberForLogin('ws1', 'octocat'))?.userId, 'u1');
+      expect((await directory.memberForAccountId('ws1', 1))?.userId, 'u1');
       members.members = [];
-      expect((await directory.memberForLogin('ws1', 'octocat'))?.userId, 'u1');
+      expect((await directory.memberForAccountId('ws1', 1))?.userId, 'u1');
 
       bus.publish(
         WorkspaceMemberRemoved(
@@ -195,7 +169,7 @@ void main() {
         ),
       );
       await Future<void>.delayed(Duration.zero);
-      expect(await directory.memberForLogin('ws1', 'octocat'), isNull);
+      expect(await directory.memberForAccountId('ws1', 1), isNull);
     });
 
     test('role change refreshes the cached write permission', () async {
@@ -204,14 +178,12 @@ void main() {
       final members = _FakeMembershipRepository([_member('u1')]);
       final directory = GitHubLoginDirectory(
         members: members,
-        credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
-        }),
+        credentials: _credentials({'u1': _signIn('1', 'octocat')}),
         eventBus: bus,
       );
 
       expect(
-        (await directory.memberForLogin('ws1', 'octocat'))!.role.canWrite,
+        (await directory.memberForAccountId('ws1', 1))!.role.canWrite,
         isTrue,
       );
       members.members = [_member('u1', role: WorkspaceRole.viewer)];
@@ -225,7 +197,7 @@ void main() {
       );
       await Future<void>.delayed(Duration.zero);
       expect(
-        (await directory.memberForLogin('ws1', 'octocat'))!.role.canWrite,
+        (await directory.memberForAccountId('ws1', 1))!.role.canWrite,
         isFalse,
       );
     });

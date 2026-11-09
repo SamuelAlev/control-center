@@ -2576,6 +2576,27 @@ class AppLocalizationsNb extends AppLocalizations {
       'Venter på autorisasjon i nettleseren …';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Skriv inn koden som vises i nettleseren';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Det ser ikke ut som en påloggingskode. Koder har 8 bokstaver og sifre.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Koden hører ikke til denne påloggingen. Sjekk den og prøv igjen.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Pålogging på $provider er ikke satt opp på denne serveren ennå.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Påloggingsadressen denne serveren sender deg tilbake til, kan ikke nås sikkert fra en telefon. Logg på fra skrivebordsappen, eller be servereieren sette opp en offentlig HTTPS-adresse.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Påloggingen utløp. Start et nytt påloggingsforsøk.';
 
@@ -2596,10 +2617,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Fullfør pålogging';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Serverens nettleser-tilbakekall kan ikke nås sikkert fra en telefon. Be servereieren konfigurere et offentlig HTTPS-tilbakekall, eller legg til et token i stedet.';
 
   @override
   String get credentialsUpdateToken => 'Oppdater token';

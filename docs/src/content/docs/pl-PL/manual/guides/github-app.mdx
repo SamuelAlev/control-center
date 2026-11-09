@@ -1,210 +1,212 @@
 ---
 title: Utwórz GitHub App
-description: Zarejestruj GitHub App dla swojego serwera, aby członkowie mogli się logować i aby praca w tle działała jako aplikacja, a nie jako osoba.
+description: Daj swojemu serwerowi własną GitHub App jednym kliknięciem, zainstaluj ją tam, gdzie są Twoje repozytoria, i autoryzuj serwer dla instalacji organizacji.
 slug: pl-PL/podrecznik/poradniki/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Ten poradnik pokazuje, jak nadać serwerowi własną tożsamość w GitHub. Zajmuje to
-około dwóch minut, robi to wyłącznie właściciel serwera i trzeba to zrobić tylko
-raz na serwer.
+Ten poradnik pokazuje, jak dać serwerowi własną GitHub App. Zajmuje to około
+dwóch minut, robi to wyłącznie właściciel serwera i trzeba to zrobić tylko raz
+na serwer.
 
 :::note[Możesz tego nie potrzebować]
-Oficjalny build zawiera już GitHubowy **identyfikator klienta**, więc
-[Zaloguj się przez GitHub](/pl-PL/podrecznik/poradniki/integracja-github/) działa
-od razu, bez niczego zarejestrowanego — przepływ urządzenia uwierzytelnia się
-samym identyfikatorem klienta, więc można go bezpiecznie dostarczać. Zarejestruj
-własną aplikację, gdy chcesz, aby SERWER działał jako on sam (webhooki,
-odpytywanie PR-ów i synchronizacja zgłoszeń działające na instalacji aplikacji, a
-nie na poświadczeniu osoby), albo gdy budujesz ze źródeł.
+Przy włączonym Control Center Connect ludzie logują się do GitHuba przez
+współdzieloną App od Control Center albo przez App, której używa Connect Twojej
+organizacji. Zarejestruj własną, gdy wybrano **Użyj własnych aplikacji**: własna
+aplikacja serwera jest używana tylko wtedy. Zobacz [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/).
 :::
 
-Aby następnie połączyć własne konto, zobacz
+Aby następnie zalogować się na własne konto, zobacz
 [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/).
 
-## Dlaczego serwer potrzebuje własnej aplikacji
+## Co robi aplikacja
 
-Z jednej rejestracji wynikają dwa różne zadania, a to aplikacja sprawia, że oba są
-rzetelne:
+Jedna rejestracja obsługuje dwa różne zadania:
 
-| Zadanie                | Co na nie odpowiada                            | Dlaczego to ważne                                                                                    |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Osoba się loguje**   | Identyfikator klienta aplikacji, przez przepływ urządzenia | Otrzymujesz poświadczenie, które jest Twoje, na serwerze, na każdym urządzeniu — bez tokenu do wklejania czy rotacji |
-| **Serwer działa**      | Identyfikator aplikacji + klucz prywatny → token instalacji | Webhooki, odpytywanie PR-ów i synchronizacja zgłoszeń przestają zależeć od tego, czy token jednego człowieka wciąż jest ważny |
+| Zadanie                | Co na nie odpowiada                             | Dlaczego to ważne                                                                                 |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Osoba się loguje**   | Identyfikator klienta i sekret klienta aplikacji | Każdy dostaje własne poświadczenie GitHub, na serwerze, na każdym urządzeniu                      |
+| **Serwer działa**      | Identyfikator aplikacji i klucz prywatny        | Agenci, pipeline'y, odpytywanie i odpowiedzi bota dostają tokeny dla jednego repozytorium naraz   |
 
-Zwróć uwagę, czego w tej tabeli **nie** ma: sekretu klienta. Przepływ urządzenia
-GitHub uwierzytelnia się samym identyfikatorem klienta — zarówno w żądaniu kodu
-urządzenia, jak i w odpytywaniu o token — więc do logowania nie trzeba przechowywać
-żadnego sekretu.
+Drugie zadanie nigdy nie pożycza całego poświadczenia osoby. Każdy token, który
+tworzy serwer, obejmuje jedno repozytorium i jest ograniczony do tego, co może
+tam zrobić odpowiedzialny członek. Do odczytu połączonego repozytorium wystarczy
+aplikacja; wszystko, co zapisuje, wymaga członka, który może wykonywać push.
+Automatyzacja nigdy nie zatwierdza pull requesta.
 
-Bez własnej aplikacji pierwsza opcja nadal działa dzięki identyfikatorowi klienta
-dostarczanemu w buildzie; druga spada na poświadczenie właściciela serwera, więc
-praca w tle opiera się na osobie, która jako pierwsza przeprowadziła konfigurację.
-
-:::note[Nie ma przycisku „zainstaluj GitHub App Control Center”]
-Wspólnie udostępniana GitHub App oznaczałaby jeden współdzielony sekret klienta i
-jedną wspólną instalację na wszystkich serwerach, więc dostęp każdego obszaru
-roboczego do repozytoriów przechodziłby przez poświadczenia, których nikt w tym
-obszarze nie kontroluje. Dlatego każdy serwer ma własną aplikację — ten poradnik
-pokazuje, jak niewiele to kosztuje.
-:::
+Aplikacja serwera obowiązuje tylko przy **Użyj własnych aplikacji**. Przy aplikacjach
+Control Center albo własnym Connect to Connect obsługuje każdą ścieżkę, także GitHub;
+aplikacja serwera pozostaje zapisana, ale nieużywana, aż przełączysz z powrotem.
+Aplikacja obszaru roboczego ([Daj jednemu obszarowi roboczemu inną aplikację](#daj-jednemu-obszarowi-roboczemu-inną-aplikację))
+nadal obowiązuje we wszystkich trybach. Aplikacja, której brakuje części pól, to błąd,
+a nie przejście na rozwiązanie zapasowe: logowania do GitHuba są odrzucane, dopóki nie
+ustawi się wszystkich pól.
 
 ## Wymagania wstępne
 
-- Jesteś **właścicielem serwera** — operacje `providerApps.*` są do niego
-  ograniczone, a karta jest niewidoczna dla wszystkich innych
-- Konto GitHub albo organizacja, w której możesz tworzyć aplikacje
-- Nic publicznie dostępnego: logowanie to **przepływ urządzenia**, więc serwer nie
-  potrzebuje portu przychodzącego, tunelu, adresu URL wywołania zwrotnego ani domeny
+- Jesteś **właścicielem serwera**. Karta **Aplikacje dostawców** jest
+  niewidoczna dla wszystkich innych
+- Konto GitHub. Aplikacja zostanie utworzona pod nim
+- Adres serwera osiągalny dla Twojej przeglądarki. Publiczny adres URL serwera
+  (albo loopback w przypadku własnego serwera aplikacji desktopowej) to miejsce,
+  do którego GitHub Cię odeśle
 
-## Zarejestruj aplikację
+## Utwórz ją jednym kliknięciem
 
-1. Przejdź do [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (w przypadku organizacji: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — dowolna nazwa; `Control Center (yourname)` wystarczy.
-   Pojawia się przy commitach i komentarzach tworzonych przez serwer
-3. **Homepage URL** — cokolwiek, np. `https://github.com/your-name`
-4. **Callback URL** — pozostaw pusty. Przepływ urządzenia go nie używa
-5. Zaznacz **Enable Device Flow**. Bez tego jednego ustawienia logowanie nie
-   zadziała
-6. Odznacz **Webhook → Active**, chyba że konfigurujesz webhooki osobno
-7. W sekcji **Repository permissions** przyznaj co najmniej:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (obowiązkowe)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, jeśli używasz GitHub Issues do zgłoszeń, a także
-     do wyszukiwania komentarzy w rozmowach PR przez bota
-     (zobacz [Rozmawiaj z Control Center z PR w GitHub](/pl-PL/podrecznik/poradniki/rozmowy-w-pr-github/))
-   - **Checks**: Read-only, na potrzeby stanu CI na stronie PR
-8. W sekcji **Where can this GitHub App be installed?** wybierz, co pasuje —
-   „Only on this account” jest właściwe dla osobistego serwera
-9. Kliknij **Create GitHub App**
+1. Przejdź do **Ustawienia → Serwer → Logowanie jednokrotne** i przewiń do
+   karty **Aplikacje dostawców**
+2. W bloku **GitHub** możesz opcjonalnie wpisać w polu **Organizacja
+   (opcjonalnie)** organizację GitHub, która ma być właścicielem aplikacji.
+   Pozostaw je puste, aby utworzyć aplikację na własnym koncie; utworzenie jej
+   w organizacji wymaga właściciela tej organizacji
+3. Kliknij **Utwórz moją aplikację GitHub**
+4. Przeglądarka otwiera GitHuba z już wypełnioną aplikacją. Kliknij
+   **Create GitHub App**
+5. GitHub odsyła Cię z powrotem do serwera, który zapisuje identyfikator
+   aplikacji, klucz prywatny, identyfikator klienta i sekret klienta, a potem
+   otwiera stronę instalacji aplikacji
 
-## Zbierz trzy wartości
+Nic nie jest kopiowane ręcznie, a kod konwersji trafia z GitHuba prosto na Twój
+serwer. Link działa raz i wygasa po dziesięciu minutach; jeśli wygaśnie, kliknij
+ponownie **Utwórz moją aplikację GitHub**.
 
-Na stronie aplikacji, zaraz po jej utworzeniu:
+Aplikacja nazywa się `Control Center <code>` i prosi dokładnie o to, czego
+używa Control Center:
 
-| Wartość         | Gdzie                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | Karta **General**, u góry                         |
-| **Client ID**   | Karta **General**, pod „Client secrets”           |
-| **Private key** | **Generate a private key** — pobierany jest plik `.pem` |
+| Uprawnienie                                | Dostęp            |
+| ------------------------------------------ | ----------------- |
+| Metadata                                   | Odczyt            |
+| Contents                                   | Odczyt i zapis    |
+| Pull requests                              | Odczyt i zapis    |
+| Issues                                     | Odczyt i zapis    |
+| Checks, Actions, Commit statuses           | Odczyt            |
+| Organization members                       | Odczyt            |
 
-Plik klucza prywatnego pobiera się tylko raz i GitHub już go nie pokaże. Zachowaj
-go, dopóki go nie wkleisz; zawsze możesz wygenerować kolejny.
+Webhooki są wyłączone: serwer sam odpytuje. Aby później przenieść aplikację
+utworzoną na własnym koncie do organizacji, użyj **Transfer ownership**
+w zaawansowanych ustawieniach aplikacji na GitHubie.
 
-**Sekret klienta** jest opcjonalny i daje dokładnie jedno: jeśli pozostawisz
-„Expire user authorization tokens” włączone, to on po cichu odnawia czyjś token,
-zamiast prosić tę osobę o ponowne zalogowanie co osiem godzin. Samo logowanie
-nigdy go nie używa.
+Punkt kontrolny: blok GitHub głosi „Serwer może działać jako on sam, a ludzie
+mogą się logować.”
 
-Prostsza konfiguracja to wyłączenie tego wygasania — wtedy sekret nie jest
-potrzebny nigdzie. Jeśli je zostawisz, wygeneruj sekret i wklej go w
-**Ustawienia → Serwer → Logowanie jednokrotne** (karta **Aplikacje dostawców**) —
-nie ma dla niego żadnej zmiennej środowiskowej i żadna nie jest wpisana w build,
-więc zostaje na Twoim serwerze.
+## Zainstaluj ją tam, gdzie są Twoje repozytoria
 
-## Zainstaluj ją na swoim koncie
+Aplikacja zarejestrowana, ale niezainstalowana, potrafi logować ludzi i nie
+odczyta niczego.
 
-Aplikacja zarejestrowana, ale niezainstalowana, może uwierzytelniać ludzi, lecz
-niczego nie odczyta.
+1. Na stronie instalacji, którą otworzył GitHub, wybierz konto lub organizację,
+   do której należą Twoje repozytoria
+2. Wybierz **All repositories** albo zaznacz te, które ten serwer ma widzieć
 
-1. Na stronie aplikacji otwórz **Install App**
-2. Zainstaluj ją na swoim koncie lub w organizacji
-3. Wybierz **All repositories** albo wskaż te, które ten serwer ma widzieć
+Aby później zainstalować ją na innym koncie, administrator obszaru roboczego
+przechodzi do **Ustawienia → Obszar roboczy → Ogólne**, znajduje **Instalacje
+aplikacji GitHub** na karcie tożsamości GitHub i klika **Zainstaluj aplikację
+GitHub**. Lista pokazuje każde konto, na którym aplikacja jest zainstalowana,
+i oznacza zawieszoną instalację.
 
-## Wklej ją do Control Center
+## Autoryzuj ten serwer dla organizacji
 
-1. Przejdź do **Ustawienia → Serwer → Logowanie jednokrotne** i przewiń do karty
-   **Aplikacje dostawców**
-2. W bloku **GitHub** ustaw każde pole:
-   - **Identyfikator aplikacji** — numeryczny App ID
-   - **Klucz prywatny** — wklej cały plik `.pem`, wraz z wierszami `BEGIN` i `END`
-   - **Identyfikator klienta** — z tej samej strony
-   - **Sekret klienta** — tylko jeśli go wygenerowałeś (do odświeżania tokenu)
-3. Kliknij **Test**
+Przy współdzielonej App od Control Center instalacja organizacji obsługuje tylko
+serwery, które autoryzowali jej administratorzy. Instalacja przez **Zainstaluj
+aplikację GitHub** autoryzuje serwer, który ją rozpoczął. Dla instalacji, która
+już istnieje:
 
-Klucz jest analizowany w momencie zapisu, więc obcięte lub źle sformatowane
-wklejenie zostaje odrzucone od razu, a nie dopiero przy żądaniu w tle wiele godzin
-później. **Test** idzie dalej i pyta GitHub, na jakich kontach aplikacja jest
-zainstalowana — „zapisane” i „działa” to dwa różne twierdzenia, a tylko drugie
-oznacza, że cokolwiek będzie działać.
+1. Administrator tej organizacji loguje się do GitHuba na tym serwerze
+2. Otwiera **Ustawienia → Obszar roboczy → Ogólne → Instalacje aplikacji GitHub**
+3. Wiersz organizacji pokazuje **Nieautoryzowana**. Klika **Autoryzuj ten serwer**
 
-Punkt kontrolny: blok GitHub pokazuje „Serwer może działać jako on sam, a ludzie
-mogą się logować”, a wiersz **GitHub** w **Ustawienia → Obszar roboczy → Profil i
-tożsamość → Hosting kodu** oferuje teraz **Zaloguj się przez GitHub**.
+Wiersz pokazuje wtedy **Autoryzowana**. Własna aplikacja nie potrzebuje niczego
+z tego: każda jej instalacja należy do Twojego serwera.
 
-## Skonfiguruj to zamiast tego zmiennymi środowiskowymi
+## Albo zarejestruj ją ręcznie
 
-W przypadku instalacji headless lub skryptowej serwer wypełnia każde pole ze
-środowiska, gdy po raz pierwszy nie ma zapisanej wartości:
+Karta **Aplikacje dostawców** przyjmuje też wartości bezpośrednio, dla
+aplikacji, którą zarejestrowałeś sam:
+
+| Grupa                              | Pola                                                                                            |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Działanie jako serwer**          | **Identyfikator aplikacji** i **Klucz prywatny** (cały `.pem`, łącznie z wierszami `BEGIN` i `END`) |
+| **Logowanie ludzi**                | **Identyfikator klienta** i **Sekret klienta**. **Adresy URL wywołania zwrotnego** pokazują adres do zarejestrowania, dosłownie |
+| **Rozmowy przy pull requestach**   | **Login bota**, ustalany przy teście połączenia                                                 |
+
+Zarejestruj adres URL wywołania zwrotnego `<server origin>/oauth/github/callback`
+dokładnie tak, jak pokazuje go karta, pozostaw włączone **Expire user
+authorization tokens** i przyznaj uprawnienia z tabeli powyżej. Kliknij
+**Test**: pyta GitHuba, na których kontach aplikacja jest zainstalowana, więc
+„zapisano” i „działa” nie zostaną pomylone.
+
+## Skonfiguruj ją z pliku `.env` serwera
+
+Przy instalacji bez interfejsu albo skryptowej serwer wypełnia każde pole ze
+swojego pliku `.env` za pierwszym razem, gdy nie ma dla niego zapisanej wartości:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Nie ma dla nich żadnych flag wiersza poleceń — sekret podany w wierszu poleceń
-może odczytać każdy proces na hoście przez `ps`. Środowisko to jedyne miejsce, w
-którym można je skonfigurować, i ma ono pierwszeństwo przed tym, co dostarcza
-build. `.env.template` to pełna lista.
-
-Do lokalnego tworzenia oprogramowania plik `.env` w katalogu głównym repozytorium
-zawiera te same wartości, a aplikacja desktopowa przekazuje je do uruchamianego
-serwera. Umieść tam klucz w **jednym wierszu**: wartość w `.env` to jeden wiersz, a
-`\n` w podwójnych cudzysłowach jest dekodowane jako znak nowego wiersza.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` i `GITHUB_APP_PRIVATE_KEY` to te same nazwy, które odczytuje już
-broker tokenów sandboxa, więc host, który skonfigurował drobnoziarniste tokeny
-agentów, dostaje ścieżkę logowania za darmo. Wypełnianie następuje **raz na pole** —
-potem wygrywa zapisana wartość, więc edycja w Ustawieniach nie zostanie cofnięta
-przy następnym restarcie.
+Umieść klucz w **jednym wierszu**: wartość w `.env` to jeden wiersz, a `\n`
+w podwójnych cudzysłowach jest dekodowane jako znak nowego wiersza. Serwer
+odmawia startu, gdy `GITHUB_APP_PRIVATE_KEY` albo `GITHUB_CLIENT_SECRET` jest
+wyeksportowane w środowisku jego procesu, gdzie mógłby je odczytać każdy proces
+potomny; trzymaj je w pliku `.env` (w Dockerze zamontuj go pod `/app/bin/.env`).
+Wypełnianie następuje **raz na pole**, więc edycji w Ustawieniach nie cofnie
+następny restart.
 
-## Zrób to samo dla Linear
+## Daj jednemu obszarowi roboczemu inną aplikację
 
-Linear nie ma przepływu urządzenia, więc jego logowanie to wycieczka przez
-przeglądarkę i faktycznie wymaga adresu URL wywołania zwrotnego — karta
-**Aplikacje dostawców** pokazuje dokładny adres do zarejestrowania.
+Obszar roboczy może zamiast aplikacji serwera używać własnej. Administrator
+obszaru roboczego przechodzi do **Ustawienia → Obszar roboczy → Ogólne**, na
+karcie **Tożsamość GitHub** wybiera **Użyj innej GitHub App** i wpisuje
+identyfikator, klucz prywatny, identyfikator klienta i sekret klienta tej
+aplikacji. Członkowie logują się wtedy do tej aplikacji dla tego obszaru
+roboczego. Obszar roboczy na własnej aplikacji nigdy nie przechodzi na aplikację
+serwera ani na Connect: dopóki jego pola nie są kompletne, jego praca z GitHubem
+jest odrzucana. Działa to niezależnie od tego, jak serwer loguje ludzi, także przy Connect.
 
-1. Utwórz aplikację OAuth pod adresem
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Ustaw **Callback URL** na adres URL pokazany na karcie, dosłownie
-3. Wklej **Identyfikator klienta** i **Sekret klienta** w bloku Linear
-4. Opcjonalnie dodaj **klucz API** obszaru roboczego — to poświadczenie, którego
-   serwer używa do synchronizacji zgłoszeń, gdy nie poprosił o to żaden człowiek
+Karta **Aplikacje dostawców** na tej samej stronie robi to samo dla Kalendarza Google,
+Linear i wyszukiwania GIF. Zobacz [Daj jednemu obszarowi roboczemu własną aplikację Linear](/pl-PL/podrecznik/poradniki/integracja-linear/#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear)
+oraz [Daj jednemu obszarowi roboczemu własnego klienta Google](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google).
 
 ## Rozwiązywanie problemów
 
-### Okno logowania informuje, że dostawca nie zwrócił kodu urządzenia
+### Utwórz moją aplikację GitHub informuje, że serwer nie ma adresu
 
-W aplikacji jest wyłączone **Enable Device Flow**. Włącz je na karcie **General** i
-spróbuj ponownie.
+Serwer nie ma publicznego adresu URL, do którego mogłaby wrócić przeglądarka.
+Ustaw `CC_SERVER_PUBLIC_URL` (albo `--public-url`) i spróbuj ponownie.
+
+### GitHub informuje, że link wygasł
+
+Jednorazowa strona została już użyta albo minęło dziesięć minut. Zacznij od
+nowa w Ustawieniach.
 
 ### Test mówi, że poświadczenia działają, ale aplikacja nie jest nigdzie zainstalowana
 
-Rejestracja i instalacja to osobne kroki. Otwórz **Install App** na stronie
-aplikacji i zainstaluj ją.
+Rejestracja i instalacja to osobne kroki. Otwórz stronę instalacji aplikacji
+albo użyj **Zainstaluj aplikację GitHub** w Obszar roboczy → Ogólne.
 
 ### Test mówi, że nie udało się odczytać klucza prywatnego
 
 Wklej cały plik `.pem`, łącznie z wierszami `-----BEGIN` i `-----END`. Klucz
-`ed25519` lub EC nie może zostać użyty — GitHub Apps podpisują za pomocą RSA.
+`ed25519` lub EC nie może zostać użyty: GitHub Apps podpisują za pomocą RSA.
 
 ### Członek się zalogował, ale nie widzi żadnych repozytoriów
 
-Aplikacja nie jest zainstalowana na koncie, do którego należą, albo jej instalacja
-obejmuje inne repozytoria. Własne logowanie daje dostęp tylko do tego, co aplikacja
-może widzieć.
+Aplikacja nie jest zainstalowana na koncie, do którego należą, albo jej
+instalacja obejmuje inne repozytoria. Logowanie daje dostęp tylko do tego, co
+aplikacja może widzieć.
+
+### Agenci informują, że instalacja GitHub App jest zawieszona
+
+Ktoś zawiesił instalację na GitHubie. Wznów ją w **Settings → Applications →
+Installed GitHub Apps** danego konta.
 
 ## Powiązane poradniki
 
 - [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
 - [Rozmawiaj z Control Center z PR w GitHub](/pl-PL/podrecznik/poradniki/rozmowy-w-pr-github/)
 - [Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/)
+- [Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/)
 - [Zarządzaj kluczami API](/pl-PL/podrecznik/poradniki/klucze-api/)
-- [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/)

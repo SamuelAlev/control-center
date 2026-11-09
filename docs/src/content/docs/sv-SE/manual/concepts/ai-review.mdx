@@ -2,7 +2,7 @@
 title: AI-granskning
 description: Hur en pull request blir granskad – granskningsytor, granskningsnoder och kollegakonsensus, kohorter och axlar, utfallet Ship/Hold/Block, och varför publiceringen är ett steg du själv tar.
 slug: sv-SE/handbok/koncept/ai-granskning
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Hur en granskning ser ut
@@ -198,10 +198,13 @@ användaren så att en granskning aldrig kan publiceras dubbelt. När du trycker
   texten så att inget tyst tappas bort.
 - Ett **Block**-utfall skickas in som `REQUEST_CHANGES`; **Hold** som `COMMENT`;
   **Ship** som `APPROVE` från knappen (`approve_on_ship: true`). MCP-verktyget
-  lämnar Ship som `COMMENT` om du inte skickar med `approve_on_ship`.
-- Granskningen publiceras under serverns appidentitet. Den som tryckte på
-  Publicera registreras för rollgrinden och revisionsloggen; det är inte
-  GitHub-författaren.
+  publicerar som automatisering och lämnar alltid Ship som `COMMENT`.
+- Knappen **Publicera till GitHub** publicerar granskningen som den person som
+  tryckte på den, med personens egen GitHub-inloggning: releasegrinden är
+  personens, och då är granskningen det också. En publicering utan en person
+  bakom sig är automatisering, och automatisering godkänner aldrig: Ship skickas
+  då som `COMMENT`, och på Control Center Connect krediteras inlägget med
+  prefixet `**Control Center** (for @login):`.
 
 Publicering deklarerar åtgärdsklassen `prPublish`, så räckesflaskhalsen grindar
 den precis som vilken muterande åtgärd som helst – den frågar som standard och

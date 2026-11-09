@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:cc_natives/src/code_index/code_languages.dart';
+import 'package:cc_natives/src/git/isolated_git.dart';
 import 'package:cc_natives/src/git/rig_worktree_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -127,8 +128,7 @@ class SourceFileWalker {
   Future<List<String>?> _gitListedPaths(String rootPath) async {
     ProcessResult result;
     try {
-      result = await Process.run(
-        'git',
+      result = await IsolatedGit.run(
         RigWorktreeGuard.gitArgs(const [
           'ls-files',
           '--cached',
@@ -435,8 +435,7 @@ class SourceFileWalker {
   ) async {
     Process process;
     try {
-      process = await Process.start(
-        'git',
+      process = await IsolatedGit.start(
         RigWorktreeGuard.gitArgs(const [
           'check-ignore',
           '-z',

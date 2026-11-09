@@ -24,6 +24,7 @@ Keep this file for cross-cutting coding rules. Put subsystem details in the owni
 - Riverpod owns client state (`Notifier`, `AsyncNotifier`, `FutureProvider`, `Provider`). Use `ref.read/watch`, never `ProviderScope.containerOf()`. Central infrastructure is in `lib/core/providers/`; repository bindings in `lib/di/`. MCP tools take typed dependencies, never `Ref`.
 - Settings is a shell. Feature-owned `presentation/settings/` and `settings_contributions.dart` implement `settings_extensions.dart`; `lib/di/settings_registry.dart` composes them. Settings must not import another feature's presentation. Contribution IDs are unique and `<feature>.`-namespaced; destinations resolve against `kSettingsNav`.
 - Use declared `DomainEventBus` events, not assumed ones. Workspace seeding reacts to `WorkspaceCreated`, never fire-and-forget from widget `build()`.
+- People act on a provider only through their own sign-in (`GitHubClients.asPerson`, `LinearClients.personAuthorization`); automation only through one-repository tokens bounded by an accountable human (`GitHubClients.mintScoped`/`forOwner`) or an app actor. No PAT, server-owner or environment fallback; build no other authenticated GitHub client. See [ARCH.md](ARCH.md#provider-credentials-and-connect).
 
 ## Workspace isolation
 

@@ -2,7 +2,7 @@
 title: Urus kunci API
 description: Di mana setiap kelayakan berada — akaun pengguna anda pada pelayan, pelayan itu sendiri, atau CLI luaran — dan cara menetapkannya, memutarnya serta membuangnya.
 slug: ms-MY/manual-pengguna/panduan-cara/kunci-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Panduan ini menunjukkan kepada anda di mana setiap kelayakan yang digunakan oleh
@@ -14,26 +14,30 @@ pada sama ada ada manusia di belakangnya.
 
 | Kelayakan                            | Disimpan                                                   | Siapa yang menggunakannya                                          |
 | ------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| Kelayakan hos kod / penetikan anda   | Fail rahsia 0600 pelayan, dikunci mengikut id pengguna anda | Apa sahaja yang anda minta: permukaan PR, larian ejen, imej anda   |
-| Identiti apl pelayan                 | Fail yang sama, ditambah `server_settings` untuk yang bukan rahsia | Kerja yang tiada manusia meminta: webhook, pengundian PR, penyegerakan tiket |
+| Log masuk hos kod / penetikan anda   | Fail rahsia 0600 pelayan, dikunci mengikut id pengguna anda | Apa sahaja yang anda lakukan: permukaan PR, semakan, merge, tindakan Linear anda |
+| Apl penyedia pelayan                 | Fail yang sama, ditambah `server_settings` untuk yang bukan rahsia | Mendaftar masuk orang, dan token satu-repo untuk ejen, pipeline dan pengundian |
+| Kunci pemasangan Connect             | Fail yang sama (`connect_install_key`)                      | Mengenal pasti pelayan ini kepada Control Center Connect           |
 | Kunci penyedia model dan token OAuth | Stor kelayakan pelayan sendiri                              | Penyesuai terbina, untuk setiap ruang kerja pada pemasangan ini    |
-| Token bot Slack                      | `<dataDir>/<workspaceId>/chat_credentials/` pada pelayan    | Jambatan sembang bagi ruang kerja itu                              |
+| Kelayakan bot Slack                  | `<dataDir>/<workspaceId>/chat_credentials/` pada pelayan    | Jambatan sembang bagi ruang kerja itu: token apl anda sendiri, atau geran bermeterai bagi apl kongsi |
 | Kelayakan CLI luaran                 | Apa sahaja yang digunakan oleh CLI itu                      | Claude Code, pada hos pelayan                                      |
 
-## Dua kelayakan GitHub, dan keduanya menjawab soalan yang berbeza
+## GitHub: log masuk anda, dan token satu-repo
 
-- **Milik anda**, daripada daftar masuk (aliran peranti) atau menampal token.
-  Ia yang digunakan oleh setiap permintaan yang dibuat *bagi pihak anda*, jadi
-  komen yang disiarkan untuk anda membawa nama anda. Ahli lain tidak boleh
-  membacanya, dan mereka menyambungkan milik mereka sendiri
-- **Milik pelayan**, daripada GitHub App yang didaftarkan oleh pengendali. Ia
-  menjawab semua perkara yang tiada pemanggil — jadi akses hos kod tidak hilang
-  apabila seseorang keluar atau memutar token
+- **Milik anda**, daripada **Log masuk ke GitHub**. Ia yang digunakan oleh setiap permintaan yang dibuat
+  *bagi pihak anda*, jadi ulasan yang disiarkan untuk anda membawa nama anda. Ahli lain tidak boleh
+  menggunakannya, dan mereka log masuk sendiri. Tiada token GitHub untuk ditampal
+- **Kerja yang tiada sesiapa menaip** (ejen, pipeline, pengundian, balasan bot) menerima token untuk
+  satu repositori pada satu masa, dicetak daripada GitHub App pelayan atau melalui Control Center
+  Connect, dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana. Ia tidak
+  pernah log masuk anda yang diserahkan sepenuhnya
 
 Milik anda ditetapkan dalam kad **Hos kod** di **Tetapan → Ruang kerja → Profil &
-identiti**; milik pelayan dalam **Apl penyedia** di **Tetapan → Pelayan → Daftar
+identiti**; apl pelayan dalam **Apl penyedia** di **Tetapan → Pelayan → Daftar
 masuk tunggal**. Lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
 dan [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
+
+GitLab dan Bitbucket masih menerima token peribadi yang ditampal, disimpan dengan cara yang sama.
+Lihat [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
 
 :::note[Ada juga skrin URL sahaja]
 `/workspaces/<workspaceId>/api-keys` memaparkan dua kad yang sama seperti langkah
@@ -71,47 +75,53 @@ apa yang menghubungkan keduanya. Lihat
 ## Sambungkan vendor penetikan
 
 Kad **Tiket** pada **Tetapan → Ruang kerja → Umum** memegang kedua-dua belah satu
-keputusan: vendor tempat tiket anda berada, dan kelayakan untuknya. Memilih
-**Setempat** menyembunyikan baris kelayakan — tiket setempat berada dalam pangkalan
+keputusan: di mana tiket anda berada, dan siapa Control Center apabila bercakap
+dengannya. Memilih **Setempat** menyembunyikan baris Linear — tiket setempat berada dalam pangkalan
 data pelayan ini sendiri dan tiada apa-apa untuk disahkan.
 
-Kunci anda disimpan pada pelayan terhadap id pengguna anda, seperti kunci hos kod.
-Pelayan menyimpan kunci Linear-nya sendiri secara berasingan (**Apl penyedia**),
-iaitu yang digunakan oleh penyegerakan tiket apabila tiada manusia memintanya.
-Tiada kunci penetikan disuntik ke dalam kotak pasir ejen; ejen menulis tiket
-melalui alat Control Center, yang bertanya kepada peraturan **Tulis ke penjejak
-luaran**. Lihat
-[Sediakan integrasi Linear](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/).
+Linear mempunyai dua log masuk dan tiada kunci yang ditampal: **Linear** ialah milik anda, untuk perkara
+yang anda lakukan, dan **Automasi Linear** ialah apl Control Center ruang kerja, disambungkan oleh pentadbir,
+untuk penyegerakan tiket, pipeline dan ejen. Pelayan juga boleh menyimpan **Kunci API perkhidmatan**
+(**Apl penyedia**) bagi ruang kerja yang belum menyambungkan automasi. Tiada kelayakan penetikan disuntik
+ke dalam kotak pasir ejen; ejen menulis tiket melalui alat Control Center, yang bertanya kepada peraturan
+**Tulis ke penjejak luaran**. Lihat [Sediakan integrasi Linear](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/).
 
 ## Putar atau tarik balik
 
-- **Kelayakan GitHub anda**: tekan **Putuskan**, kemudian daftar masuk semula
-  atau tampal token baharu. Tarik balik yang lama pada GitHub
-- **Apl pelayan**: jana kunci persendirian atau rahsia klien baharu pada halaman
-  GitHub apl itu, tampalkannya dalam **Apl penyedia** dan tekan **Uji**
+- **Log masuk GitHub anda**: tekan **Nyahsambung**, kemudian **Log masuk ke GitHub** semula. Nyahsambung
+  juga membatalkan setiap token yang dicetak oleh pelayan bagi pihak anda
+- **Token GitLab atau Bitbucket**: tekan **Kemas kini token** dan tampal yang baharu, kemudian tarik balik
+  yang lama pada hos kod
+- **Apl pelayan**: jana kunci persendirian atau rahsia klien baharu pada halaman pembekal apl itu,
+  tampalkannya dalam **Apl penyedia** dan tekan **Uji**
+- **Kunci pemasangan Connect**: **Putar kunci** pada kad **Control Center Connect**, atau
+  `cc_server connect rotate-key --yes`. Semua orang yang log masuk melalui Connect perlu log masuk semula.
+  Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/)
 - **Penyedia model**: pada barisnya, daftar keluar (OAuth) atau buang kunci itu,
   kemudian sambung semula
-- **Slack**: tampal semula token dalam dialog sambungan. Lihat
+- **Slack**: bagi apl anda sendiri, tampal semula token dalam dialog sambungan. Apl Slack kongsi Control
+  Center tiada token untuk diputar: token botnya diperbaharui melalui Connect, dan **Nyahsambung** akan
+  menariknya balik serta menyahpasang bot daripada Slack. Lihat
   [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
 
 ## Penyelesaian masalah
 
-### Senarai PR kosong tetapi token saya berfungsi dalam `curl`
+### Token GitLab atau Bitbucket berfungsi dalam `curl` tetapi tidak di sini
 
-Semak subtajuk baris **Hos kod**. Jika ia menamakan sumber lain ("melalui apl
-pelayan ini", "daripada persekitaran"), kelayakan yang anda uji bukan yang
-menjawab — milik anda tidak disimpan.
+Semak subtajuk baris **Hos kod**. Jika ia berbunyi "daripada persekitaran", kelayakan yang menjawab ialah
+milik pelayan, bukan milik anda — milik anda tidak disimpan.
 
-### Token diterima tetapi permintaan kemudiannya gagal
+### Token GitLab atau Bitbucket diterima tetapi permintaan kemudiannya gagal
 
 Token itu diperiksa semasa ia disimpan, jadi baris itu menamakan akaun di
 belakangnya — tetapi hanya akaun, bukan skop. Token dengan skop yang terlalu
 sedikit akan bersambung dan kemudian gagal pada permintaan individu. Semak skop
-dan tarikh luputnya:
+dan tarikh luputnya pada hos kod.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Penyedia memaklumkan log masuk tidak disediakan pada pelayan ini
+
+Pelayan tiada apl sendiri untuk penyedia itu mahupun Control Center Connect. Pemilik pelayan memilih salah
+satu daripadanya dalam **Tetapan → Pelayan → Daftar masuk tunggal**.
 
 ## Panduan berkaitan
 

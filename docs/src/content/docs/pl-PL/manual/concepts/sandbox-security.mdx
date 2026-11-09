@@ -2,7 +2,7 @@
 title: Sandbox i bezpieczeństwo
 description: Co dziś realnie ogranicza agenta w Control Center, jak daleko sięga sandbox systemowy i które granice utrzymują się na hoście bez backendu.
 slug: pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Gdzie sandbox systemowy sięga, a gdzie nie]
@@ -140,9 +140,11 @@ uruchamia agenta.
 
 Push to akcja, która musi się utrzymać nawet wobec agenta próbującego obejść
 regułę, więc egzekwuje się ją przez to, co agent posiada, a nie przez to, co
-uruchamia. Przy skonfigurowanej GitHub App uruchomienie w worktree GitHuba
-dostaje token instalacji o zakresie repozytorium, który może czytać zawartość i
-pracować z pull requestami, ale nie może wykonać push. Konfiguracja gita
+uruchamia. Uruchomienie w worktree GitHuba dostaje token dla tego jednego
+repozytorium, wydany z GitHub App obszaru roboczego, z własnej aplikacji serwera
+albo przez Control Center Connect. Może czytać zawartość i, gdy odpowiedzialny
+członek ma prawo push, komentować pull requesty, ale nie może wykonać push.
+Konfiguracja gita
 uruchomienia przepisuje każdy adres URL push do GitHuba (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) na **bramę uruchomień agentów**,
 punkt końcowy na pętli zwrotnej w `cc_server`. Brama odczytuje, które refy push
@@ -170,12 +172,11 @@ i `close` to **Zapis do zewnętrznego trackera**; instalacje pakietów to
 typowy zapis akcji, a agent zdecydowany ją ukryć (`eval`, plik skryptu,
 bezpośrednie wywołanie API) jest w stanie to zrobić. Push od tego nie zależy.
 
-:::caution[Bez GitHub App reguła push jest tylko doradcza]
-Bez skonfigurowanej GitHub App broker sięga po osobisty token dostępu, którego
-nie da się ograniczyć do odczytu. Reguła nadal obowiązuje dla `git push`, bo git
-wysyła push do bramy, ale kod, który bezpośrednio używa tokenu ze środowiska,
-może wykonać push z jej pominięciem.
-:::
+Każdy token GitHub, który dostaje uruchomienie, jest ograniczony podwójnie: do
+jednego repozytorium i do tego, co może tam zrobić odpowiedzialny członek (ten,
+kto poprosił, a w przeciwnym razie właściciel obszaru roboczego). Nie ma
+zapasowego poświadczenia. Gdy nie da się wydać tokenu, uruchomienie startuje bez
+niego, a jego notatki wyjaśniają dlaczego.
 
 Do sandboxa nie trafia żaden klucz API zgłoszeń. Agenci zapisują zgłoszenia
 przez narzędzia MCP Control Center, które pytają regułę **Zapis do zewnętrznego
@@ -184,9 +185,11 @@ trackera**.
 Reguła **Dostęp do sieci** jest odczytywana raz, na starcie uruchomienia. Sieć
 sandboxa jest albo włączona, albo wyłączona, więc odmowa ją wyłącza, a zezwól i
 zapytaj najpierw zostawiają ją włączoną; narzędzia `web_fetch` i `web_search`
-harnessa nadal pytają przy każdym wywołaniu. Poświadczenia są unieważniane, gdy
-uruchomienie się kończy, razem z każdym tokenem zapisu utworzonym przez bramę,
-więc uchwyt nie przeżywa uruchomienia.
+harnessa nadal pytają przy każdym wywołaniu. Uchwyty poświadczeń uruchomienia są
+zwalniane, gdy się ono kończy. Tokeny za nimi są współdzielone per członek
+i repozytorium i wygasają w ciągu mniej więcej godziny; gdy członek wyloguje się
+z GitHuba albo opuści obszar roboczy, wszystkie tokeny wydane w jego imieniu
+przepadają naraz.
 
 ## Co dodaje sandbox i gdzie się zatrzymuje
 

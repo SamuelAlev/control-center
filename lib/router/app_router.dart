@@ -1,6 +1,5 @@
 import 'package:control_center/features/auth/presentation/screens/api_keys_screen.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
-import 'package:control_center/features/auth/presentation/screens/signed_out_screen.dart';
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:control_center/features/inbox/presentation/inbox_screen.dart';
@@ -317,14 +316,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: onboardingRoute,
         pageBuilder: (context, state) =>
             buildPage(state, _absorb(const OnboardingScreen())),
-      ),
-      // Re-authentication for an operator who is already set up. Full-screen
-      // like onboarding — with no forge credential there is nothing behind it
-      // that would render.
-      GoRoute(
-        path: signedOutRoute,
-        pageBuilder: (context, state) =>
-            buildPage(state, _absorb(const SignedOutScreen())),
       ),
       // The workspace picker is full-screen (outside the workspace shell): it
       // has no single-workspace context. Selecting one enters its inbox.

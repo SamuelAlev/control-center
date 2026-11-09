@@ -1,0 +1,24 @@
+# Build artifacts
+.dart_tool/
+build/
+
+# Not needed to compile the binaries (manifests are synthesized in the builder)
+pubspec.yaml
+pubspec.lock
+analysis_options.yaml
+dart_test.yaml
+
+# Sources not required by the AOT compile
+test/
+README.md
+
+# Local state from a development run (bindings.json)
+data/
+
+# Docker self-references
+Dockerfile
+.dockerignore
+
+# OS / editor noise
+.DS_Store
+*.swp

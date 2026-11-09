@@ -2,7 +2,7 @@
 title: Kroki potoku
 description: Dokumentacja referencyjna rodzajów kroków potoku, kluczy ciał kroków, ich konfiguracji oraz wyników kroków.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Krok potoku ma dwie niezależne osie:
@@ -42,7 +42,7 @@ Krok powłoki bez agenta (`bash -c`). Symbole zastępcze `{{key}}` w skrypcie s�
 | `script`          | Polecenie powłoki do wykonania (wymagane)                       |
 | `outputKey`       | Klucz stanu, który przy kodzie wyjścia 0 otrzymuje przycięty stdout |
 
-Działa z cwd `<cc_root>/pipelines/<pipelineRunId>/` (wspólnym dla wszystkich kroków bash w danym uruchomieniu) i `GITHUB_TOKEN` w środowisku. Zapisuje też `<stepId>_runDir` do stanu. Kod wyjścia inny niż zero powoduje niepowodzenie kroku z końcówką stderr.
+Działa w sandboxie systemu operacyjnego hosta z cwd `<cc_root>/pipelines/<pipelineRunId>/` (wspólnym dla wszystkich kroków bash w danym uruchomieniu); na hoście bez sandboxa krok kończy się niepowodzeniem. Katalog danych serwera i plik `.env` są nieczytelne, git i `gh` nie widzą konfiguracji hosta, a `GH_TOKEN` / `GITHUB_TOKEN` zawierają token `read` dla jednego repozytorium tylko wtedy, gdy `repo_full_name` (stan lub ładunek wyzwalacza) wskazuje repozytorium GitHub połączone z obszarem roboczym. Utworzenie lub edycja szablonu z tym krokiem wymaga administratora obszaru roboczego. Zapisuje też `<stepId>_runDir` do stanu. Kod wyjścia inny niż zero powoduje niepowodzenie kroku z końcówką stderr.
 
 ### `conversation.promptAgent`
 

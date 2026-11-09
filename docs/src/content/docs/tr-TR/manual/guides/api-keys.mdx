@@ -2,7 +2,7 @@
 title: API anahtarlarını yönetme
 description: Her kimlik bilgisinin nerede yaşadığı — sunucudaki kullanıcı hesabınız, sunucunun kendisi ya da harici bir CLI — ve nasıl ayarlanacağı, döndürüleceği ve kaldırılacağı.
 slug: tr-TR/kilavuz/nasil-yapilir/api-anahtarlari
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Bu kılavuz, Control Center’ın kullandığı her kimlik bilgisinin nerede
@@ -14,27 +14,33 @@ olmadığına bağlıdır.
 
 | Kimlik bilgisi                          | Saklandığı yer                                                        | Kim kullanır                                                              |
 | --------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Forge / biletleme kimlik bilginiz       | Sunucunun 0600 izinli sırlar dosyası, kullanıcı kimliğinize göre       | İstediğiniz her şey: PR yüzeyi, ajan çalıştırmalarınız, imajlarınız        |
-| Sunucunun uygulama kimliği              | Aynı dosya, sır olmayanlar içinse `server_settings`                    | Hiçbir insanın istemediği işler: webhook’lar, PR yoklaması, bilet eşitleme |
+| Forge / biletleme oturum açmanız        | Sunucunun 0600 izinli sırlar dosyası, kullanıcı kimliğinize göre       | Yaptığınız her şey: PR yüzeyi, incelemeler, birleştirmeler, Linear eylemleriniz |
+| Sunucunun sağlayıcı uygulamaları        | Aynı dosya, sır olmayanlar içinse `server_settings`                    | Kişileri oturum açtırmak ve ajanlar, pipeline’lar ve yoklama için tek depoluk token’lar |
+| Connect kurulum anahtarı                | Aynı dosya (`connect_install_key`)                                     | Bu sunucuyu Control Center Connect’e tanıtmak                              |
 | Model sağlayıcı anahtarları ve OAuth token’ları | Sunucunun kendi kimlik bilgisi deposu                          | Kurulumdaki her çalışma alanı için yerleşik adaptör                        |
-| Slack bot token’ları                    | Sunucuda `<dataDir>/<workspaceId>/chat_credentials/`                  | O çalışma alanının sohbet köprüsü                                         |
+| Slack bot kimlik bilgileri              | Sunucuda `<dataDir>/<workspaceId>/chat_credentials/`                  | O çalışma alanının sohbet köprüsü: kendi uygulamanızın token’ları ya da paylaşılan uygulamanın mühürlü izni |
 | Harici CLI kimlik bilgileri             | O CLI’ın kullandığı her ne ise                                        | Sunucu ana makinesindeki Claude Code                                      |
 
-## İki GitHub kimlik bilgisi ve farklı sorulara yanıt verirler
+## GitHub: oturum açmanız ve tek depoluk token’lar
 
-- **Sizinki**, oturum açmadan (cihaz akışı) ya da bir token yapıştırmadan gelir.
-  *Sizin adınıza* yapılan her isteğin kullandığı şey budur, dolayısıyla sizin
-  için gönderilen bir yorum sizin adınızı taşır. Başka bir üye bunu okuyamaz;
-  kendi kimlik bilgisini kendisi bağlar
-- **Sunucununki**, operatörün kaydettiği GitHub App’ten gelir. Çağıranı olmayan
-  her şeye yanıt verir — böylece biri ayrıldığında ya da bir token’ı
-  döndürdüğünde forge erişimi ortadan kalkmaz
+- **Sizinki**, **GitHub hesabıyla oturum aç**’tan gelir. *Sizin adınıza* yapılan
+  her isteğin kullandığı şey budur, dolayısıyla sizin için gönderilen bir
+  inceleme sizin adınızı taşır. Başka bir üye bunu kullanamaz; kendisi oturum
+  açar. Yapıştırılacak bir GitHub token’ı yoktur
+- **Kimsenin yazmadığı işler** (ajanlar, pipeline’lar, yoklama, bot yanıtları)
+  her seferinde tek bir depo için, sunucunun GitHub App’inden ya da Control
+  Center Connect üzerinden üretilen ve hesap verebilir bir üyenin orada
+  yapabilecekleriyle sınırlı bir token alır. Bu asla bütünüyle devredilmiş
+  oturum açmanız değildir
 
 Sizinki **Ayarlar → Çalışma alanı → Profil ve kimlik** altındaki **Kod
-barındırma** kartında ayarlanır; sunucununki **Ayarlar → Sunucu → Tek oturum
+barındırma** kartında ayarlanır; sunucunun uygulaması **Ayarlar → Sunucu → Tek oturum
 açma** altındaki **Sağlayıcı uygulamaları**'nda. Bkz.
 [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
 ve [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/).
+
+GitLab ve Bitbucket hâlâ aynı şekilde saklanan, yapıştırılmış kişisel bir token
+alır. Bkz. [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
 
 :::note[Yalnızca URL ile erişilen bir ekran da var]
 `/workspaces/<workspaceId>/api-keys` adresi, ilk kurulumun ilk adımındaki iki
@@ -73,49 +79,61 @@ sunucu kendi kopyasını okur ve ikisi arasında hiçbir köprü yoktur. Bkz.
 ## Bir bilet sağlayıcısı bağlama
 
 **Ayarlar → Çalışma alanı → Genel** üzerindeki **Biletler** kartı tek bir kararın
-iki yarısını barındırır: biletlerinizin hangi sağlayıcıda yaşadığı ve ona ait
-kimlik bilgisi. **Yerel**'i seçmek kimlik bilgisi satırını gizler — yerel
-biletler bu sunucunun kendi veritabanında yaşar ve kimlik doğrulaması yapılacak
-bir şeyleri yoktur.
+iki yarısını barındırır: biletlerinizin hangi sağlayıcıda yaşadığı ve Control
+Center’ın onunla konuşurken kim olduğu. **Yerel**'i seçmek Linear satırlarını
+gizler — yerel biletler bu sunucunun kendi veritabanında yaşar ve kimlik
+doğrulaması yapılacak bir şeyleri yoktur.
 
-Anahtarınız, forge’daki gibi, sunucuda kullanıcı kimliğinize bağlı olarak
-saklanır. Sunucu kendi Linear anahtarını ayrıca tutar (**Sağlayıcı
-uygulamaları**); hiçbir insan istemediğinde bilet eşitlemesi bunun üzerinden
-çalışır. Bir ajanın sandbox'ına hiçbir biletleme anahtarı enjekte edilmez;
-ajanlar biletleri, **Harici takip sistemine yaz** kuralına soran Control Center
+Linear’da iki oturum açma vardır ve yapıştırılan anahtar yoktur: **Linear**
+sizindir, yaptıklarınız için; **Linear otomasyonu** ise bir yöneticinin bağladığı,
+bilet senkronizasyonu, pipeline’lar ve ajanlar için çalışma alanının Control
+Center uygulamasıdır. Sunucu ayrıca otomasyonu bağlı olmayan çalışma alanları
+için bir **Hizmet API anahtarı** (**Sağlayıcı uygulamaları**) tutabilir. Bir
+ajanın sandbox'ına hiçbir biletleme kimlik bilgisi enjekte edilmez; ajanlar
+biletleri, **Harici takip sistemine yaz** kuralına soran Control Center
 araçlarıyla yazar. Bkz.
 [Linear entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/).
 
 ## Döndürme veya iptal etme
 
-- **GitHub kimlik bilginiz**: **Bağlantıyı kes**'e basın, ardından yeniden oturum
-  açın ya da yeni token’ı yapıştırın. Eskisini GitHub’da iptal edin
-- **Sunucunun uygulaması**: uygulamanın GitHub sayfasında yeni bir özel anahtar
-  ya da istemci sırrı oluşturun, **Sağlayıcı uygulamaları**'na yapıştırın ve
-  **Test**'e basın
+- **GitHub oturum açmanız**: **Bağlantıyı kes**'e basın, ardından yeniden
+  **GitHub hesabıyla oturum aç**’a basın. Bağlantıyı kesmek, sunucunun sizin
+  adınıza ürettiği tüm token’ları da geçersiz kılar
+- **Bir GitLab ya da Bitbucket token’ı**: **Token'ı güncelle**'ye basıp yenisini
+  yapıştırın, ardından eskisini forge’da iptal edin
+- **Sunucunun uygulaması**: uygulamanın sağlayıcı sayfasında yeni bir özel
+  anahtar ya da istemci sırrı oluşturun, **Sağlayıcı uygulamaları**'na
+  yapıştırın ve **Test**'e basın
+- **Connect kurulum anahtarı**: **Control Center Connect** kartında **Anahtarı
+  değiştir** ya da `cc_server connect rotate-key --yes`. Connect üzerinden oturum
+  açan herkes yeniden oturum açar. Bkz.
+  [Control Center Connect](/tr-TR/kilavuz/referans/connect/)
 - **Bir model sağlayıcısı**: satırında oturumu kapatın (OAuth) ya da anahtarı
   kaldırın, sonra yeniden bağlayın
-- **Slack**: token’ları bağlantı iletişim kutusuna yeniden yapıştırın. Bkz.
+- **Slack**: kendi uygulamanız için token’ları bağlantı iletişim kutusuna yeniden
+  yapıştırın. Paylaşılan Control Center uygulamasında değiştirilecek bir token
+  yoktur: bot token’ı Connect üzerinden yenilenir ve **Bağlantıyı kes** onu iptal
+  edip botu Slack’ten kaldırır. Bkz.
   [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
 
 ## Sorun giderme
 
-### PR listesi boş ama token’ım `curl` ile çalışıyor
+### Bir GitLab ya da Bitbucket token’ı `curl` ile çalışıyor ama burada çalışmıyor
 
-**Kod barındırma** satırının alt başlığına bakın. Başka bir kaynak adı veriyorsa
-(“bu sunucunun uygulaması üzerinden”, “ortamdan”), test ettiğiniz kimlik bilgisi
-yanıt veren değildir — sizinki kaydedilmemiştir.
+**Kod barındırma** satırının alt başlığına bakın. “ortamdan” yazıyorsa yanıt
+veren kimlik bilgisi sizinki değil, sunucununkidir — sizinki kaydedilmemiştir.
 
-### Token kabul ediliyor ama sonraki istekler başarısız oluyor
+### Bir GitLab ya da Bitbucket token’ı kabul ediliyor ama sonraki istekler başarısız oluyor
 
 Token, saklandığı hâliyle yoklanır, dolayısıyla satır arkasındaki hesabın adını
 verir — ama yalnızca hesabı, kapsamları değil. Kapsamları çok az olan bir token
-bağlanır, sonra tek tek isteklerde başarısız olur. Kapsamları ve son kullanma
-tarihini kontrol edin:
+bağlanır, sonra tek tek isteklerde başarısız olur. Kapsamlarını ve son kullanma
+tarihini forge’da kontrol edin.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Bir sağlayıcı, oturum açmanın bu sunucuda ayarlanmadığını söylüyor
+
+Sunucunun o sağlayıcı için ne kendi uygulaması ne de Control Center Connect’i var.
+Sunucu sahibi **Ayarlar → Sunucu → Tek oturum açma** bölümünde birini seçer.
 
 ## İlgili kılavuzlar
 

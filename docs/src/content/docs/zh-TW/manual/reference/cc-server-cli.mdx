@@ -2,11 +2,11 @@
 title: cc_server CLI
 description: 無介面伺服器的每一個旗標、環境變數、子指令與資料目錄路徑。
 slug: zh-TW/手冊/參考/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 每個行程旗標都接受一個命令列旗標或一個環境變數；旗標優先，其次是環境變數，
-最後才是預設值。第三方憑證是例外——見下文。
+最後才是預設值。供應商憑證是例外——見[供應商應用程式與 Connect](#供應商應用程式與-connect)。
 
 :::caution[未知的旗標會被無聲忽略]
 引數剖析器是手寫的，會略過任何它不認得的內容，因此打錯字
@@ -42,7 +42,7 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | 未設定                        | 該二進位檔的預期 SHA-256，每次啟動前都會驗證                                                                                                             |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | 空                            | 通道呼叫的額外引數，以逗號分隔                                                                                                                           |
 
-## 索引與第三方憑證
+## 索引與執行環境
 
 | 旗標                     | 環境變數                        | 預設值                                | 意義                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -52,14 +52,36 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | 執行環境的執行是否只送出一小組常駐工具加上一份名稱索引，其餘工具在首次使用時才載入。見下文                     |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | 執行擱置等待真人修復無法服務它的憑證的秒數（限制在 0–3600 之間）。見下文                                       |
 
-憑證取空值會被視為未設定，因此內建的回退值仍然適用。從原始碼建置的版本完全不含
-任何內建憑證。
+## 供應商應用程式與 Connect
 
-Google Calendar 與 Klipy GIF 選擇器**只能透過環境變數設定**——沒有
-`--google-client-id` / `--klipy-app-key` 旗標（未知的旗標會被忽略）。請在環境中
-（或伺服器旁的 `.env` 檔案裡）設定 `GOOGLE_OAUTH_CLIENT_ID` +
-`GOOGLE_OAUTH_CLIENT_SECRET`，以及 `KLIPY_APP_KEY`。留空會停用該功能，而不會
-導致啟動失敗。
+沒有任何建置版本會攜帶供應商憑證。開啟 Control Center Connect 時，Connect 會執行每個供應商，伺服器自己的應用程式則保留但不使用。在**使用我自己的應用程式**下，每個供應商在伺服器自己的應用程式設定完整時使用它，否則無法使用。工作區自己的應用程式在兩種情況下都優先。自己的應用程式
+在 **設定 → 伺服器 → 單一登入 → 供應商應用程式** 中設定，或從伺服器的 `.env` 檔案
+提供一次初始值。它們沒有對應的旗標：命令列上的密鑰可透過 `ps` 讀取。
+
+| 變數                           | 意義                                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | 伺服器的 GitHub App id                                                                        |
+| `GITHUB_APP_PRIVATE_KEY`       | 它的私鑰，寫成一行並使用 `\n` 跳脫。**僅限 `.env`**                                           |
+| `GITHUB_CLIENT_ID`             | 它的用戶端 id，用於讓人們登入                                                                 |
+| `GITHUB_CLIENT_SECRET`         | 它的用戶端密鑰。**僅限 `.env`**                                                               |
+| `GOOGLE_OAUTH_CLIENT_ID`       | 伺服器的 Google 網頁應用程式用戶端                                                            |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | 它的密鑰。**僅限 `.env`**                                                                     |
+| `LINEAR_CLIENT_ID`             | 伺服器的 Linear 應用程式（PKCE，無密鑰）                                                      |
+| `LINEAR_API_KEY`               | 供自動化使用的 Linear 服務金鑰。**僅限 `.env`**                                               |
+| `KLIPY_APP_KEY`                | 伺服器自己用於 GIF 搜尋的 Klipy 金鑰，僅在**使用我自己的應用程式**下使用                         |
+| `CC_CONNECT_URL`               | `hosted`、`off` 或一個 Connect 網址。會鎖定 Connect 的選擇；之後設定就無法變更它               |
+| `CC_SERVER_CONNECT_HOST`       | `on` 會在 `<server>/connect` 掛載 Control Center Connect，並以 `CONNECT_*` 變數設定。見[執行 Connect 伺服器](/zh-TW/手冊/操作指南/執行-connect-伺服器/#在-cc_server-內掛載-connect) |
+
+`.env` 檔案會從伺服器的工作目錄、可執行檔旁邊，或其上層的原始碼簽出中讀取；在
+Docker 中，請將它掛載到 `/app/bin/.env`。若 `GITHUB_APP_PRIVATE_KEY`、
+`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、`LINEAR_API_KEY` 或任何
+`SLACK_*SECRET*` 被匯出到伺服器的行程環境中（每個子行程都讀得到），伺服器會
+**拒絕啟動**（結束代碼 `78`）。從 `.env` 提供初始值每個欄位只發生一次，因此之後在
+設定中所做的編輯不會因重新啟動而被復原。空值會被視為未設定。
+
+GitLab 與 Bitbucket 的背景工作也會讀取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`，以及
+`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` 搭配 `BITBUCKET_EMAIL`。GitHub 沒有
+環境變數憑證。
 
 ### `--sandbox`
 
@@ -104,7 +126,7 @@ webhook——不必一直等待一個正在睡覺的人。期限一到，該次�
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | 執行伺服器，直到收到 `SIGINT`/`SIGTERM`                                                                     |
 | `cc_server pair`                              | 佈建一台裝置，並印出它的 id 與配對金鑰。即使伺服器正在提供某個資料目錄的服務也能安全執行——執行中的伺服器無需重新啟動就會接收該裝置 |
-| `cc_server calendar connect --workspace <id>` | 透過裝置代碼流程把 Google 帳號連接到工作區，然後結束                                                        |
+| `cc_server connect <command>`                 | 顯示或變更這台伺服器使用哪個 Control Center Connect，而不必啟動伺服器                                       |
 | `cc_server update`                            | 檢查、下載並驗證較新的獨立發行版本                                                                          |
 | `cc_server --version`                         | 印出建置版本與 git SHA——與 `/healthz` 及 RPC 交握所公告的身分相同                                           |
 
@@ -127,6 +149,23 @@ webhook——不必一直等待一個正在睡覺的人。期限一到，該次�
 裝置 id 與金鑰都放在 URL 片段中）。手機配對用的是從應用程式內配對面板
 簽發的另一種酬載——伺服器完整的連線描述元加上到期時間。兩者不能互換——參閱[配對裝置](/zh-TW/手冊/操作指南/配對裝置/)。
 :::
+
+### `connect`
+
+從資料目錄讀取並寫入與 **設定 → 伺服器 → 單一登入** 中 **Control Center Connect**
+卡片相同的設定。執行中的伺服器會在 10 分鐘內或重新啟動時接收變更。
+
+| 指令                            | 作用                                                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | 印出模式、網址、是否被 `CC_CONNECT_URL` 鎖定、安裝 id、健康狀態，以及每條通道的來源（`own`、`connect` 或 `off`） |
+| `cc_server connect enable`      | 使用 Control Center 代管的 Connect                                                                               |
+| `cc_server connect enable --url <url>` | 使用位於該網址的自訂 Connect（HTTPS，或回送位址上的 `http`）                                              |
+| `cc_server connect disable`     | 停止使用 Connect。只有伺服器自己的應用程式能讓人們登入                                                           |
+| `cc_server connect rotate-key --yes` | 產生新的安裝金鑰與安裝 id。所有透過 Connect 登入的人都要重新登入。沒有 `--yes` 時只會發出警告並以 `2` 結束 |
+
+不帶指令時預設為 `status`。每個指令都接受 `--data-dir`。`CC_CONNECT_URL` 會覆寫這些
+指令所儲存的內容。未知的指令會以 `64` 結束。模式、安裝身分與狀態代碼請參閱
+[Control Center Connect](/zh-TW/手冊/參考/connect/)。
 
 ### `update`
 
@@ -167,7 +206,7 @@ webhook——不必一直等待一個正在睡覺的人。期限一到，該次�
 | `global.db`                       | 工作區註冊表、使用者、已配對裝置、新聞動態與機群佇列                      |
 | `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶、程式碼圖                    |
 | `<workspaceId>/chat_credentials/` | 聊天機器人權杖，以純文字 JSON 保存，因此會隨工作區一起移動                |
-| `secrets.json`                    | 配對金鑰、供應商應用程式身分、每位使用者的權杖與 Google 權杖、SSO（`0600`） |
+| `secrets.json`                    | 配對金鑰、Connect 安裝金鑰、供應商應用程式、人們的登入（透過 Connect 建立者為封存形式）、SSO（`0600`） |
 | `backups/<timestamp>/`            | 一份安裝快照——`manifest.json`、`global.db` 以及每個工作區的副本          |
 | `backups/exports/`                | 單一工作區的匯出，`<workspaceId>-<timestamp>.db`                         |
 | `backups/transfer/`               | 備份下載與上傳的暫存區；由寫入它的路由負責清理                           |

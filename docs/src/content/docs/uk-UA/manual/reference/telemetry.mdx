@@ -2,7 +2,7 @@
 title: Статистика використання
 description: Що Control Center записує, коли статистику використання ввімкнено, хто це вирішує і що ніколи не надсилається.
 slug: uk-UA/керівництво/довідка/статистика-використання
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center може надсилати **псевдонімізовані події використання** до екземпляра [Umami](https://umami.is). Статистика використання **вимкнена, доки її не ввімкне оператор сервера**. Цей параметр належить серверу й діє для кожного підключеного до нього клієнта: настільного застосунку, вебзастосунку, телефона і самого сервера.
@@ -95,9 +95,12 @@ ID надсилаються, але лише як псевдоніми. Коже
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Невдалий запуск повторено |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Запуск скасовано із застосунку |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Крок, що виконувався, примусово зупинено |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Спроба входу в календар завершилася |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true, коли вхід пройшов через Control Center Connect, а не через власний клієнт Google сервера), `duration_s` | Спроба входу в календар завершилася |
 | `calendar_disconnected` | `workspace_id` | Обліковий запис календаря від'єднано |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | На запрошення надано відповідь |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (кількість), `conference` | Подію створено в Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Подію перенесено або змінено її тривалість у сітці календаря |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Подію видалено з Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Запис почато з події календаря |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Відкрито посилання на зустріч (телефон). Із посилання визначається лише провайдер |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Використано центр сповіщень |

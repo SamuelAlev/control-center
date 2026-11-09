@@ -2,7 +2,7 @@
 title: Konfigurasi kebijakan sandbox
 description: Apa yang membatasi sebuah run agen, cara mengetahui apakah sandbox OS membungkusnya, dan bagaimana aturan aksi menentukan apa yang boleh di-push atau dijangkau agen.
 slug: id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Apakah sebuah run agen di-sandbox ditentukan di server, saat boot
@@ -25,7 +25,7 @@ yang bersyarat — lima sisanya berlaku di setiap host.
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sandbox OS               | Seatbelt di macOS, bubblewrap di Linux dan WSL2. Membungkus Claude Code CLI, adapter ACP, dan alat `bash` harness. **Tidak ada di Windows dan di Linux tanpa `bwrap` dan `socat`** |
 | Worktree-nya sendiri     | Setiap percakapan mendapat checkout copy-on-write. Checkout asli dilipat ke dalam run sebagai jalur tolak-tulis dan sandbox-lah yang menegakkannya                                                  |
-| Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dan mencabutnya saat pembongkaran. Token GitHub di dalamnya dapat membaca tetapi tidak dapat push: push melewati Control Center, yang lebih dulu menanyakan aturan push |
+| Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dan melepaskannya saat pembongkaran. Token GitHub di dalamnya dapat membaca tetapi tidak dapat push: push melewati Control Center, yang lebih dulu menanyakan aturan push |
 | Pagar pengaman tindakan  | Setiap alat yang memutasi mendeklarasikan kelas efeknya dan pagar menyelesaikannya sebelum panggilan berjalan. Sebuah `prompt` tanpa penyetuju yang terhubung ditolak                              |
 | Sanitasi lingkungan      | ACP dan alat `bash` harness mendapat lingkungan yang difilter. Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host                                                                   |
 | Permukaan alat mode      | Mode hanya-baca menghapus alat yang memutasi worktree mentah-mentah dan menyematkan verb keluaran mode itu sendiri agar tetap dapat menyerahkan hasil                                           |
@@ -74,9 +74,9 @@ git mencetak `! [remote rejected] <ref> (Control Center policy: …)`.
 
 Bagaimana setiap aturan menjangkau run:
 
-- **Push** ditegakkan lewat apa yang dipegang run. Token GitHub-nya adalah token
-  instalasi GitHub App hanya-baca yang dapat membaca konten dan bekerja dengan
-  pull request. Konfigurasi git-nya mengirim setiap push GitHub ke gateway
+- **Push** ditegakkan lewat apa yang dipegang run. Token GitHub-nya hanya mencakup satu
+  repositori run dan tidak dapat push: ia dapat membaca konten dan, ketika anggota yang
+  bertanggung jawab dapat push, berkomentar di pull request. Konfigurasi git-nya mengirim setiap push GitHub ke gateway
   loopback di `cc_server`, yang menanyakan aturan dan baru kemudian meneruskan
   push dengan token tulis yang tidak pernah dilihat agen. Gateway hanya
   meneruskan ke repo milik worktree itu sendiri atau ke repo GitHub yang
@@ -93,17 +93,12 @@ Bagaimana setiap aturan menjangkau run:
   bertanya di setiap panggilan. Selama jaringan menyala, GitHub selalu ada di
   daftar izin egress.
 
-:::caution[Tanpa GitHub App, aturan push hanya bersifat anjuran]
-Tanpa GitHub App yang terkonfigurasi, run mendapat personal access token
-fallback, yang tidak dapat dipersempit menjadi hanya-baca. `git push` tetap
-melewati gateway dan aturan, tetapi kode yang memakai token secara langsung
-dapat push dengan melewatinya. Konfigurasikan GitHub App agar aturan itu
-mengikat.
-
-Kredensial GitHub milik run selalu hanya milik broker — token instalasi GitHub
-App dengan cakupan repo, atau PAT fallback — tidak pernah token tersimpan milik
-anggota yang meminta. PAT server ditahan dari run yang bertindak untuk anggota
-yang bukan pemilik dan belum menghubungkan GitHub.
+:::note[Dari mana token GitHub run berasal]
+Token dicetak untuk run dari GitHub App ruang kerja, app milik server, atau Control Center
+Connect, dan dibatasi pada apa yang dapat dilakukan anggota yang bertanggung jawab (yang meminta,
+atau jika tidak, pemilik ruang kerja) di repositori tersebut. Itu tidak pernah proses masuk GitHub
+seorang anggota yang diserahkan utuh, dan tidak ada token cadangan: ketika token tidak dapat
+dicetak, run berjalan tanpa token dan catatannya menjelaskan alasannya.
 :::
 
 ## Periksa apakah run agen Anda di-sandbox

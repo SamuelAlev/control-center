@@ -3,7 +3,7 @@ title: Mimari
 description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Genel bakış
@@ -113,9 +113,9 @@ Her iki veritabanının sahibi de `cc_persistence`tır ve yalnızca `cc_server` 
 **go_router**; geri kalan her şeyi belirleyen tek bir olguyla: **uygulama içindeki her hedef, `/workspaces/:workspaceId/…` biçiminde çalışma alanı öneki taşır**. URL’deki çalışma alanı kimliği, etkin çalışma alanı için tek doğruluk kaynağıdır — `activeWorkspaceIdProvider` rotadan sürülür, tersi değil — bu yüzden önekli bir rota dışında çalışma alanı kapsamlı veriyi okumak, kimliğini alacak bir yer bulamaz.
 
 - `router/routes.dart` içindeki, her biri çalışma alanı kimliğini ilk argümanı olarak alan rota kurucu _fonksiyonları_, dizge sabitleri değil
-- Bağlam öncesi dört rota öneksizdir: `/splash`, `/onboarding`, `/signed-out` ve `/workspaces` (seçici)
-- `ShellRoute` uygulama kabuğunu sarar; bu dört yüzey onun dışında tam ekran işlenir
-- Kimlik doğrulama koruması: tamamlanmamış kurulum `/onboarding` adresine, forge kimlik bilgisi kaybolmuş tamamlanmış bir kurulum ise `/signed-out` adresine gider. Tamamlanmış olmak, oturum açmış kullanıcı için en az bir forge’un bağlı olması ve en az bir çalışma alanının var olması demektir — özellikle GitHub değil; ayrıca `gh` CLI bir kimlik doğrulama yöntemi değildir
+- Bağlam öncesi üç rota öneksizdir: `/splash`, `/onboarding` ve `/workspaces` (seçici)
+- `ShellRoute` uygulama kabuğunu sarar; bu üç yüzey onun dışında tam ekran işlenir
+- Kimlik doğrulama koruması: tamamlanmamış kurulum `/onboarding` adresine gider. Forge kimlik bilgisi kaybolmuş tamamlanmış bir kurulum uygulamada kalır ve çalışma alanı kabuğu oturum açmaya giden bir uyarı gösterir. Tamamlanmış olmak, oturum açmış kullanıcı için en az bir forge’un bağlı olması ve en az bir çalışma alanının var olması demektir — özellikle GitHub değil; ayrıca `gh` CLI bir kimlik doğrulama yöntemi değildir
 - `features/auth/providers/` içindeki onboarding kapısı
 
 ## Ağ (sunucu tarafı)

@@ -95,6 +95,9 @@ class DemoProfile {
     'agent_run_log.',
     'claude_accounts.',
     'codeServer.',
+    // Control Center Connect: which broker signs people in, its pins and the
+    // install key. A demo signs nobody in.
+    'connect.',
     'connectivity.',
     'credentials.',
     'dictation.',
@@ -147,6 +150,9 @@ class DemoProfile {
     'users.',
     'voice_profile.',
     'workspaceGitHub.',
+    // A workspace's own Google, Linear and Klipy apps: secrets and sign-in
+    // routing. A demo signs nobody in.
+    'workspaceProviderApps.',
     'workspace_settings.',
     'worktree.',
   };
@@ -241,9 +247,6 @@ class DemoProfile {
     'workspace.export',
     // Names backup files on the server's disk; the demo keeps none.
     'workspace.listBackups',
-    // The only calendar READ that is about reaching a provider rather than
-    // reading the seeded calendar.
-    'calendar.connectInfo',
     // The other `pr.*` one-shots dial GitHub. `pr.closedByAuthorForWorkspace`
     // is admitted: the demo answers it from the seeded cache (see
     // `DemoMergedHistory`) so the inbox's "Merging and recently merged"
@@ -619,14 +622,16 @@ class DemoProfile {
     'meeting.ingestAudio',
     'meeting.setActionItemTicket',
     'meeting.setSpeakerEnrolledProfile',
-    // Every calendar mutation either reaches Google (connect, RSVP, refresh)
-    // or manages an account the demo's single local one stands in for. The
-    // seeded week is read-only, which is what a demo calendar should be.
-    'calendar.beginConnect',
-    'calendar.pollConnect',
+    // Every calendar mutation either reaches Google (RSVP, create, move,
+    // delete, refresh) or manages an account the demo's single local one
+    // stands in for. The seeded week is read-only, as a demo calendar should
+    // be.
     'calendar.disconnect',
     'calendar.refreshNow',
     'calendar.rsvp',
+    'calendar.createEvent',
+    'calendar.moveEvent',
+    'calendar.deleteEvent',
     'calendar.linkMeetingToEvent',
     'calendar.unlinkMeeting',
   };
@@ -641,8 +646,10 @@ class DemoProfile {
   /// per-subscriber to the caller's workspaces.
   /// Watch queries deliberately refused.
   static const Set<String> defaultDeniedWatchQueries = {
-    // Chat transports are never connected on a demo, so this streams a link
-    // set that cannot exist.
+    // Chat transports are never connected on a demo, so these stream link
+    // sets, link claims and ticket drafts that cannot exist.
+    'chat.watchPendingUserLink',
+    'chat.watchTicketDrafts',
     'chat.watchUserLinks',
     // A demo runs no environments, so these stream state that can't exist.
     'environment.watch',

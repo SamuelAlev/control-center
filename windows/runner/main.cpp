@@ -9,15 +9,6 @@
 #include <string>
 #include <vector>
 
-// Reversed Google OAuth iOS client id used as the OAuth redirect URL scheme
-// (com.googleusercontent.apps.<CLIENT_ID>). PUBLIC, not a secret; must match
-// GOOGLE_OAUTH_CLIENT_ID in .env. Defined by windows/runner/CMakeLists.txt;
-// the fallback keeps the file self-contained for ad-hoc builds.
-#ifndef GOOGLE_REVERSED_CLIENT_ID
-#define GOOGLE_REVERSED_CLIENT_ID \
-  "com.googleusercontent.apps.806422936280-h53u9n27h9pmvrbs2ci86hisla0addqn"
-#endif
-
 namespace {
 
 // Per-session name guarding single-instance: a protocol launch must hand its
@@ -42,6 +33,46 @@ std::string GetExecutablePath() {
   wchar_t buffer[MAX_PATH];
   GetModuleFileNameW(nullptr, buffer, MAX_PATH);
   return Utf8FromUtf16(buffer);
+}
+
+// Builds before the Device Flow removal also registered the Google OAuth
+// redirect scheme (`com.googleusercontent.apps.<client id>`), which nothing
+// handles any more. Deletes such keys under HKCU — only ones carrying this
+// app's own protocol description, so another program's registration of a
+// Google scheme is left alone.
+void RemoveRetiredGoogleSchemes() {
+  HKEY classes;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes", 0,
+                    KEY_READ | KEY_WRITE, &classes) != ERROR_SUCCESS) {
+    return;
+  }
+  const std::wstring prefix = L"com.googleusercontent.apps.";
+  std::vector<std::wstring> retired;
+  wchar_t name[256];
+  for (DWORD i = 0;; i++) {
+    DWORD length = static_cast<DWORD>(std::size(name));
+    const LSTATUS status = RegEnumKeyExW(classes, i, name, &length, nullptr,
+                                         nullptr, nullptr, nullptr);
+    if (status == ERROR_NO_MORE_ITEMS) {
+      break;
+    }
+    if (status != ERROR_SUCCESS ||
+        std::wstring(name, length).rfind(prefix, 0) != 0) {
+      continue;
+    }
+    wchar_t description[64] = {};
+    DWORD size = sizeof(description) - sizeof(wchar_t);
+    if (RegGetValueW(classes, name, nullptr, RRF_RT_REG_SZ, nullptr,
+                     description, &size) == ERROR_SUCCESS &&
+        wcscmp(description, L"URL:Control Center Protocol") == 0) {
+      retired.emplace_back(name, length);
+    }
+  }
+  // Deleted after the walk: removing keys while enumerating shifts indices.
+  for (const auto& scheme : retired) {
+    RegDeleteTreeW(classes, scheme.c_str());
+  }
+  RegCloseKey(classes);
 }
 
 // Registers a single custom URL scheme under HKCU so Windows launches this exe
@@ -89,16 +120,9 @@ void RegisterUriScheme(const std::wstring& scheme, const std::string& exe_path) 
   RegCloseKey(key);
 }
 
-// Widens an ASCII scheme literal (the reversed client id is ASCII-only).
-std::wstring WidenAscii(const std::string& s) {
-  return std::wstring(s.begin(), s.end());
-}
-
 std::string FindDeepLinkUrl(const std::vector<std::string>& args) {
-  const std::string google_prefix = "com.googleusercontent.apps.";
   for (const auto& arg : args) {
-    if (arg.rfind("control-center://", 0) == 0 ||
-        arg.rfind(google_prefix, 0) == 0) {
+    if (arg.rfind("control-center://", 0) == 0) {
       return arg;
     }
   }
@@ -174,7 +198,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // Primary instance.
   std::string exe_path = GetExecutablePath();
   RegisterUriScheme(L"control-center", exe_path);
-  RegisterUriScheme(WidenAscii(GOOGLE_REVERSED_CLIENT_ID), exe_path);
+  RemoveRetiredGoogleSchemes();
 
   flutter::DartProject project(L"data");
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));

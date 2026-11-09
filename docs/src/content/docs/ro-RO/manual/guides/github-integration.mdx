@@ -1,12 +1,12 @@
 ---
 title: Configurează integrarea GitHub
-description: Autentifică-te pe GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
+description: Autentifică-te în GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
 slug: ro-RO/manual/ghiduri-practice/integrare-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Acest ghid acoperă părțile specifice GitHub ale configurării. GitHub este unul
-dintre cele trei hosturi de cod acceptate — vezi
+dintre cele trei hosturi de cod acceptate. Vezi
 [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
 pentru conectarea GitLab sau Bitbucket și pentru modul în care un spațiu de lucru
 le combină.
@@ -14,77 +14,75 @@ le combină.
 ## Cerințe preliminare
 
 - Un cont GitHub cu acces la repo-urile pe care vrei să lucrezi
-- Fie un GitHub App înregistrat pentru serverul tău (vezi
-  [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) ca să te poți **autentifica**,
-  **fie** un token de acces personal cu `repo` și `read:org` de lipit
+- Un server care poate autentifica oamenii în GitHub: fie prin propria GitHub
+  App (vezi [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)),
+  fie prin Control Center Connect, ales de proprietarul serverului în
+  **Setări → Server → Autentificare unică**
 
-:::note[Credențialele stau pe server, legate de tine]
-Nimic nu este stocat pe mașina pe care tastezi. Credențialul tău este păstrat de
-`cc_server`, indexat după id-ul tău de utilizator, și îl folosește fiecare dispozitiv
-de pe care te autentifici — desktop, web și telefon. Un alt membru al aceluiași
-server nu îl poate citi, iar autentificarea lui este ceva ce face singur.
+:::note[Acreditările stau pe server, legate de tine]
+Nimic nu este stocat pe mașina pe care tastezi. Autentificarea ta GitHub este
+păstrată de `cc_server`, indexată după id-ul tău de utilizator, și o folosește
+fiecare dispozitiv de pe care te autentifici: desktop, web și telefon. Un alt
+membru al aceluiași server nu o poate folosi, iar autentificarea lui este ceva
+ce face singur.
 :::
 
-## Autentifică-te cu GitHub
+## Autentifică-te în GitHub
 
-Un **flux de dispozitiv**: GitHub îți arată un cod scurt, îl aprobi pe github.com,
-iar serverul primește credențialul — fără URL de callback, fără port, nimic de
-expus. Disponibil oricând serverul are un client id, pe care o versiune oficială
-îl include deja.
-
-1. Mergi la **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** (sau la primul
-   pas al onboardingului)
-2. Pe rândul **GitHub**, apasă **Autentifică-te cu GitHub**
-3. Un dialog afișează un cod de opt caractere și deschide
-   [github.com/login/device](https://github.com/login/device) în browser.
-   Codul este deja în clipboard
-4. Lipește-l, aprobă aplicația și revino. Rândul trece singur la
-   „Autentificat ca _numele-tău-de-utilizator_"
-
-Dialogul poate fi închis cât timp termini în browser — serverul continuă să
-interogheze până când codul expiră (aproximativ 15 minute), așa că autentificarea
-se finalizează oricum.
-
-## Sau lipește un token
-
-Soluția de rezervă pentru când serverul nu are nicio aplicație, când aplicația nu
-este instalată pe un cont de care ai nevoie sau când preferi pur și simplu să
-folosești un PAT.
+GitHub funcționează doar prin autentificare: nu există niciun token de lipit.
 
 1. Mergi la **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**
-2. Pe rândul **GitHub**, apasă **Adaugă token**
-3. Lipește un token cu `repo` și `read:org` (clasic) și salvează. Un token
-   **fine-grained** are nevoie de **Contents** și **Pull requests** la nivel de
-   repository (citire și scriere), plus **Checks** și **Actions** (citire).
+   (sau la primul pas al onboardingului)
+2. Pe rândul **GitHub**, apasă **Autentifică-te în GitHub**
+3. Browserul deschide GitHub. Aprobă aplicația
 
-Tokenul este verificat pe măsură ce este stocat, așa că rândul poate indica
-contul căruia îi aparține. Apasă **Deconectează** pentru a-l elimina.
+Felul în care se încheie autentificarea depinde de cine o rulează:
 
-Punct de control: rândul **GitHub** afișează „Autentificat ca _numele-tău-de-utilizator_".
-Un sufix indică sursa atunci când credențialul care răspunde nu este al tău —
-„prin aplicația acestui server" sau „din mediu".
+- **Aplicația proprie a serverului:** GitHub trimite browserul înapoi la server,
+  iar dialogul observă singur. Nimic de tastat
+- **Control Center Connect:** pagina din browser afișează un cod de 8
+  caractere. Tastează-l în dialog sau lasă browserul să deschidă Control Center
+  prin linkul `control-center://` și sari peste tastare
 
-:::note[Ordinea de prioritate este fixă]
-O cerere făcută în numele tău folosește credențialul **tău** și nimic altceva —
-mediul este credențialul serverului, nu al tău, așa că nu te substituie niciodată.
-Munca fără un om în spate (webhook-uri, interogarea PR-urilor, sincronizarea
-tichetelor) folosește identitatea de aplicație a serverului, apoi credențialul
-proprietarului serverului, apoi mediul.
-:::
+Punct de control: rândul **GitHub** afișează „Autentificat ca _numele-tău-de-utilizator_”.
+
+Dialogul refuză un cod sau un link pe care nu l-a pornit el însuși, cu
+**Autentificare nepornită de aici**. Dacă cineva îți trimite un link de
+autentificare, nu continua: finalizarea lui ți-ar conecta contul la serverul
+acelei persoane.
+
+Apasă **Deconectează** pentru a-ți elimina autentificarea. Deconectarea de la
+GitHub sau eliminarea dintr-un spațiu de lucru anulează și toate tokenurile pe
+care serverul le-a emis în numele tău.
+
+## Pentru cine vorbește acreditarea ta
+
+- **Orice faci tu** (deschiderea paginii PR, publicarea unei revizuiri,
+  aprobarea, îmbinarea) rulează pe autentificarea **ta** și pe nimic altceva.
+  Dacă nu ești autentificat, aplicația îți spune asta și îți cere să te
+  autentifici. Nicio altă acreditare nu ține locul tău
+- **Munca pe care nu o tastează nimeni** (rulări de agenți, pipeline-uri,
+  interogarea PR-urilor, răspunsurile botului, clonări) primește un token pentru
+  un singur depozit, emis din GitHub App a serverului sau prin Connect. Este
+  limitat la ce poate face acolo un membru responsabil: membrul care a cerut,
+  altfel proprietarul spațiului de lucru. Un membru care nu poate face push
+  limitează tokenul la citire
+- **Automatizarea nu aprobă niciodată** un pull request. Aprobarea este actul
+  unei persoane
 
 ## Ce îți oferă integrarea
 
-| Funcție                 | Cum                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Lista și detaliile PR-urilor | API-ul GitHub REST, de pe server, cu identitatea aplicației sau cu propriul tău credențial                              |
-| Rulările de verificare          | API-ul GitHub Checks                                                                                          |
-| Publicarea revizuirilor   | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR                                                             |
-| Înregistrarea repo-urilor   | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com — sau spre gitlab.com / bitbucket.org          |
-| Accesul agenților la GitHub | Brokerul de credențiale injectează un token doar pentru citire ca `GH_TOKEN` / `GITHUB_TOKEN`; push-urile trec prin Control Center |
-| Notificări  | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request" și „revizuire solicitată" |
-| Profilurile utilizatorilor       | Carduri de profil la hover și filtrarea PR-urilor după autor                                                                |
+| Funcție                      | Cum                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Lista și detaliile PR-urilor | API-ul GitHub REST, de pe server, cu propria ta autentificare                                                    |
+| Rulările de verificare       | API-ul GitHub Checks                                                                                             |
+| Publicarea revizuirilor      | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR, ca tine                       |
+| Înregistrarea repo-urilor    | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com, sau spre gitlab.com / bitbucket.org |
+| Accesul agenților la GitHub  | Un token pentru singurul depozit al rulării ca `GH_TOKEN` / `GITHUB_TOKEN`; push-urile trec prin Control Center |
+| Notificări                   | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request” și „revizuire solicitată” |
+| Profilurile utilizatorilor   | Carduri de profil la hover și filtrarea PR-urilor după autor                                                     |
 
-Unele căi folosesc API-ul GraphQL în loc de REST acolo unde este mai ieftin —
+Unele căi folosesc API-ul GraphQL în loc de REST acolo unde este mai ieftin:
 activitatea de ramuri pentru selectorul de compunere a PR-urilor și starea de
 revizuire în timp real care decide dacă o notificare de revizuire solicitată mai
 este în așteptare.
@@ -93,7 +91,7 @@ este în așteptare.
 
 Bara de titlu afișează un indicator de stare când un furnizor este degradat,
 acoperind GitHub, Claude, OpenAI și Kimi. **Este ascuns cât timp totul este
-în regulă** — prezența semnalează o problemă, nu absența ei.
+în regulă**: prezența semnalează o problemă, nu absența ei.
 
 Apasă pe indicator pentru a deschide o fereastră glisantă cu starea fiecărui
 furnizor și un buton de reîmprospătare. Stările se reîmprospătează singure la
@@ -101,53 +99,53 @@ fiecare două minute.
 
 ## Află cum acționează agenții pe GitHub
 
-- Un agent care lucrează într-un worktree GitHub primește întotdeauna un token
-  GitHub doar pentru citire. Un push trece prin Control Center, care întreabă
+- Un agent care lucrează într-un worktree GitHub primește un token pentru acel
+  singur depozit. Poate citi codul și comenta pe pull request-uri când membrul
+  responsabil poate face push, și doar citi când nu poate. Un push trece prin Control Center, care întreabă
   regula **Push către un remote** și apoi îl transmite cu un token de scriere pe
   care agentul nu îl deține niciodată. Vezi
   [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
 - Commiturile agentului folosesc întotdeauna identitatea Git a solicitantului atât ca autor, cât și ca persoană care face commitul. În mod implicit, trailerul `Co-Authored-By: Control Center <hi@usectrl.dev>` creditează contul GitHub `@usectrl` drept coautor. Din **Setări → Tu → Atribuirea autorului commiturilor** poți dezactiva acest credit de coautor fără să-ți schimbi identitatea. O setare a spațiului de lucru din **Setări → Spațiu de lucru → General** are prioritate și blochează comutatorul personal. Atribuirea proprie a Claude Code este întotdeauna dezactivată. Semnarea commiturilor necesită în continuare propria configurație validă
-- Cu un GitHub App configurat, brokerul emite la fiecare lansare tokenuri de instalare
-  fine-grained, limitate la repo și valabile aproximativ o oră, în loc să predea un
-  token larg. Instalarea este rezolvată pornind de la **proprietarul** repo-ului
-  rulării, așa că o singură aplicație instalată pe mai multe conturi se limitează
-  corect la contul pe care îl atinge rularea. Fără o aplicație, agenții primesc
-  tokenul din mediu, care nu poate fi restrâns doar la citire: regula de push
-  leagă atunci `git push`, dar nu și codul care folosește tokenul direct
-- Tokenul este întotdeauna al brokerului, niciodată al membrului care face
-  cererea. Tokenul serverului este reținut de la o rulare care acționează pentru
-  un membru care nu este proprietarul și nu a conectat GitHub
+- Un terminal pe care îl deschizi pe o stație primește propria ta autentificare,
+  restrânsă la singurul depozit, așa că push-urile de acolo sunt ale tale
+- Când nu se poate emite niciun token (nicio persoană responsabilă nu este
+  autentificată, aplicația nu este instalată pe proprietar sau instalarea este
+  suspendată), rularea pornește fără, iar notele ei spun de ce. Nu există nicio
+  acreditare de rezervă
 
 ## Depanare
 
 ### Lista de PR-uri este goală și spune că GitHub nu este conectat
 
-Nu ai niciun credențial GitHub pe acest server. Autentifică-te sau lipește un token
-la **Găzduire de cod**. Repo-urile de pe alte forge-uri nu sunt afectate — doar cele
-de pe GitHub nu contribuie cu nimic.
+Nu ești autentificat în GitHub pe acest server. Apasă **Autentifică-te în GitHub**
+la **Găzduire de cod**. Repo-urile de pe alte forge-uri nu sunt afectate.
 
-### Rândul oferă „Adaugă token", dar nu și „Autentifică-te cu GitHub"
+### Rândul GitHub spune că autentificarea nu este configurată pe acest server
 
-Serverul nu are un client id — ceea ce este starea normală pentru o compilare din
-sursă, întrucât credențialele sunt incluse doar în versiunile oficiale. Vezi
-[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): durează aproximativ două minute
-și doar proprietarul serverului trebuie să o facă, o singură dată.
+Serverul nu are nici GitHub App proprie, nici Connect. Proprietarul serverului
+alege una dintre ele în **Setări → Server → Autentificare unică**:
+**Creează aplicația mea GitHub** durează aproximativ două minute. Vezi
+[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
 
-### Dialogul de autentificare spune că furnizorul nu a returnat niciun cod de dispozitiv
+### Dialogul spune că codul nu se potrivește
 
-GitHub App există, dar caseta de selectare **Device flow** este dezactivată.
-Activeaz-o în setările aplicației (General → Device flow) și încearcă din nou.
+Tastează codul exact cum îl afișează browserul: 8 litere și cifre. Cinci coduri
+greșite încheie autentificarea; pornește-o din nou.
 
-### Rândul spune „prin aplicația acestui server" când mă așteptam la propriul cont
+### Autentificarea spune că aplicația nu este instalată
 
-Nu te-ai autentificat; ceea ce vezi este identitatea de aplicație a serverului care
-răspunde. Apasă **Autentifică-te cu GitHub** pe acel rând.
+GitHub App nu are nicio instalare pe contul care deține repozitoriul. Un
+administrator al spațiului de lucru o instalează din **Setări → Spațiu de lucru
+→ General → Instalări ale aplicației GitHub**. Pentru o organizație pe aplicația
+partajată a Control Center, un administrator al acelei organizații poate fi
+nevoit să apese **Autorizează acest server**. Vezi
+[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/#autorizează-acest-server-pentru-o-organizație).
 
-### Un PAT fine-grained nu afișează buton de îmbinare sau starea verificărilor
+### Toată lumea trebuie să se autentifice din nou în GitHub
 
-Tokenul are nevoie de **Contents** și **Pull requests** (citire și scriere), plus
-**Checks** și **Actions** (citire). După ce îl modifici, lipește-l din nou la
-Găzduire de cod.
+Proprietarul serverului a schimbat cheia Connect a serverului, a trecut pe alt
+server Connect sau directorul de date a fost restaurat pe o altă mașină.
+Autentificările prin Connect sunt legate de serverul care le-a făcut.
 
 ### Adăugarea unui repo este respinsă
 
@@ -172,4 +170,4 @@ backoff exponențial, respectând `retry-after`.
 - [Gestionează cheile API](/ro-RO/manual/ghiduri-practice/chei-api/)
 - [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
 - [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Vorbește cu Control Center dintr-un PR GitHub](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/)

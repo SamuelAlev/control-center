@@ -2,92 +2,86 @@
 title: Set up GitHub integration
 description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
 slug: en-GB/manual/guides/github-integration
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/en-GB/manual/guides/connect-forges/)
+supported code hosts. See [Connect a code host](/en-GB/manual/guides/connect-forges/)
 for connecting GitLab or Bitbucket, and for how a workspace mixes them.
 
 ## Prerequisites
 
 - A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/en-GB/manual/guides/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- A server that can sign people in to GitHub: either its own GitHub App (see
+  [Create the GitHub App](/en-GB/manual/guides/github-app/)) or Control Center
+  Connect, chosen by the server owner in **Settings → Server → Single sign-on**
 
 :::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+Nothing is stored on the machine you are typing on. Your GitHub sign-in is held
+by your `cc_server`, keyed by your user id, and every device you sign in from
+uses it: desktop, web and phone. Another member of the same server cannot use
+it, and signing them in is something they do themselves.
 :::
 
-## Sign in with GitHub
+## Sign in to GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+GitHub is sign-in only: there is no token to paste.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the
+   first step of onboarding)
+2. On the **GitHub** row, click **Sign in to GitHub**
+3. Your browser opens GitHub. Approve the app
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+How the sign-in finishes depends on who runs it:
 
-## Or paste a token
+- **The server's own app:** GitHub sends your browser back to the server and
+  the dialog notices by itself. Nothing to type
+- **Control Center Connect:** the browser page shows an 8-character code. Type
+  it into the dialog, or let the browser open Control Center through the
+  `control-center://` link and skip typing it
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Checkpoint: the **GitHub** row reads "Signed in as _your-username_".
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+The dialog refuses a code or link it did not start itself, with **Sign-in not
+started here**. If someone sends you a sign-in link, do not continue: completing
+it would connect your account to their server.
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Click **Disconnect** to remove your sign-in. Signing out of GitHub, or being
+removed from a workspace, also drops every token the server minted on your
+behalf.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+## Who your credential speaks for
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
-:::
+- **Anything you do** (opening the PR page, posting a review, approving, merging)
+  runs on **your** sign-in and nothing else. If you are not signed in, the app
+  says so and asks you to sign in. No other credential stands in for you
+- **Work with no one typing** (agent runs, pipelines, PR polling, bot replies,
+  clones) gets a token for one repository, minted from the server's GitHub App
+  or through Connect. It is limited to what an accountable member can do there:
+  the member who asked, else the workspace owner. A member who cannot push
+  bounds the token to read
+- **Automation never approves** a pull request. Approval is a person's act
 
 ## What the integration gives you
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects a read-only token as `GH_TOKEN` / `GITHUB_TOKEN`; pushes go through Control Center |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Feature             | How                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| PR list and detail  | The GitHub REST API, from the server, on your own sign-in                                                        |
+| Check runs          | The GitHub Checks API                                                                                            |
+| Review publishing   | A user-gated step that posts your review to the PR, as you                                                       |
+| Repo registration   | A checkout is accepted if its `origin` remote points at github.com, or at gitlab.com / bitbucket.org             |
+| Agent GitHub access | A token for the run's one repository as `GH_TOKEN` / `GITHUB_TOKEN`; pushes go through Control Center            |
+| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested"   |
+| User profiles       | Profile hover cards and per-author PR filtering                                                                  |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
+Some paths use the GraphQL API instead of REST where it is cheaper: branch
 activity for the compose-PR picker and the live review state that decides
 whether a review-requested notification is still pending.
 
 ## Watch for GitHub outages
 
 The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
+Claude, OpenAI and Kimi. **It is hidden while everything is healthy**: presence
 reports trouble, not its absence.
 
 Click the chip to open a flyout with each provider's state and a refresh button.
@@ -95,52 +89,56 @@ The statuses refresh on their own every two minutes.
 
 ## Know how agents act on GitHub
 
-- An agent working in a GitHub worktree always gets a read-only GitHub token.
-  A push goes through Control Center, which asks the **Push to a remote** rule
-  and then forwards it on a write token the agent never holds. See
+- An agent working in a GitHub worktree gets a token for that one repository.
+  It can read the code and comment on pull requests when the accountable member
+  can push, and only read when they cannot. A push goes through Control Center,
+  which asks the **Push to a remote** rule and then forwards it on a write token
+  the agent never holds. See
   [Configure sandbox policies](/en-GB/manual/guides/sandbox-policies/)
-- Agent commits always use the requester's Git identity as both author and committer. By default, a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer credits GitHub `@usectrl` as a co-author. **Settings → You → Commit attribution** can disable this co-author credit without changing your identity. A workspace override in **Settings → Workspace → General** takes precedence and locks that personal toggle. Claude Code's own attribution is always disabled. Commit signing still needs its own valid configuration
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token, which
-  cannot be narrowed to read-only: the push rule then binds `git push` but not
-  code that uses the token directly
-- The token is always the broker's, never the requesting member's own. The
-  server's token is withheld from a run acting for a member who is not the
-  owner and has not connected GitHub
+- Agent commits always use the requester's Git identity as both author and
+  committer. By default, a `Co-Authored-By: Control Center <hi@usectrl.dev>`
+  trailer credits GitHub `@usectrl` as a co-author. **Settings → You → Commit
+  attribution** can disable this co-author credit without changing your identity.
+  A workspace override in **Settings → Workspace → General** takes precedence
+  and locks that personal toggle. Claude Code's own attribution is always
+  disabled. Commit signing still needs its own valid configuration
+- A terminal you open on a rig gets your own sign-in, narrowed to the one
+  repository, so pushes there are yours
+- When no token can be minted (nobody accountable is signed in, the app is not
+  installed on the owner, or the installation is suspended), the run starts
+  without one and its notes say why. There is no fallback credential
 
 ## Troubleshooting
 
 ### The PR list is empty and says GitHub is not connected
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+You are not signed in to GitHub on this server. Click **Sign in to GitHub** under
+**Code hosting**. Repos on other forges are unaffected.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### The GitHub row says sign-in is not set up on this server
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/en-GB/manual/guides/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+The server has neither its own GitHub App nor Connect. The server owner picks
+one in **Settings → Server → Single sign-on**: **Create my GitHub App** takes
+about two minutes. See [Create the GitHub App](/en-GB/manual/guides/github-app/).
 
-### The sign-in dialog says the provider returned no device code
+### The dialog says the code does not match
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+Type the code exactly as the browser shows it: 8 letters and digits. Five wrong
+codes end the sign-in; start it again.
 
-### The row says "via this server's app" when I expected my own account
+### The sign-in says the app is not installed
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+The GitHub App has no installation on the account that owns the repository. A
+workspace admin installs it from **Settings → Workspace → General → GitHub App
+installations**. For an organisation on Control Center's shared App, an admin of
+that organisation may need to click **Authorise this server**. See
+[Create the GitHub App](/en-GB/manual/guides/github-app/#authorise-this-server-for-an-organisation).
 
-### A fine-grained PAT shows no merge button or check status
+### Everybody has to sign in to GitHub again
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+The server owner rotated the server's Connect key, switched Connect servers, or
+the data directory was restored onto another machine. Sign-ins through Connect
+are bound to the server that made them.
 
 ### Adding a repo is rejected
 
@@ -164,4 +162,4 @@ up to three times with exponential backoff, honouring `retry-after`.
 - [Manage API keys](/en-GB/manual/guides/api-keys/)
 - [Add repos to a workspace](/en-GB/manual/guides/add-repos/)
 - [Review and merge a PR](/en-GB/manual/guides/review-merge-pr/)
-- [Set up Slack integration](/en-GB/manual/guides/slack-integration/)
+- [Talk to Control Center from a GitHub PR](/en-GB/manual/guides/github-pr-conversations/)

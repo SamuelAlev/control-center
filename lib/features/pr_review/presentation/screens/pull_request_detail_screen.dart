@@ -22,6 +22,7 @@ import 'package:control_center/features/pr_review/presentation/review_artifact/p
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_chat_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_code_server_tab.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_detail_freshness.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_detail_states.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_environment_host.dart';
@@ -37,6 +38,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_mention_avatar_scope.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/review_timer_banner.dart';
 import 'package:control_center/features/pr_review/providers/pr_detail_polling_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_preview_deployments_provider.dart';
@@ -64,7 +66,6 @@ import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/providers/last_checked_provider.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/foundation.dart';
@@ -139,15 +140,8 @@ class _PullRequestDetailScreenState
     final prRef = _prRef;
     final prNumber = prRef.number;
     final prAsync = ref.watch(prDetailProvider(prRef));
-    // Stamp freshness on every successful (re)load — initial fetch and each
-    // poll/manual refresh — so the title row can report "Checked {time}".
-    ref.listen(prDetailProvider(prRef), (_, next) {
-      if (next is AsyncData && !next.isLoading) {
-        ref
-            .read(lastCheckedProvider.notifier)
-            .stamp('pr-detail:${prRef.repoFullName}#$prNumber');
-      }
-    });
+    listenForPrDetailFreshness(ref, prRef);
+    listenForPrEditSignIn(context, ref, prRef);
     // The list row the operator just clicked stands in for the detail until it
     // lands, so the page opens with its real title, author, branches, state and
     // counts instead of a skeleton waiting on the forge. Everything a seed

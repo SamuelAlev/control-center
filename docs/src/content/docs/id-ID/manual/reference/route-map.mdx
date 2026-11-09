@@ -2,16 +2,16 @@
 title: Peta rute
 description: Setiap rute yang didaftarkan Control Center, beserta layar dan parameter kuerinya.
 slug: id-ID/panduan-pengguna/referensi/peta-rute
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell aplikasi
 
-Shell aplikasi (`ControlCenterLayout`) membungkus setiap rute di dalam ruang kerja melalui `ShellRoute`. **Setiap tujuan di dalam shell diberi prefiks ruang kerja — `/workspaces/:workspaceId/…` — dan id ruang kerja di URL adalah satu-satunya sumber kebenaran untuk ruang kerja aktif.** Hanya permukaan pra-konteks yang tidak berprefiks: `/splash`, `/onboarding`, `/signed-out`, dan pemilih `/workspaces` kosong, semuanya layar penuh dan berada di luar shell.
+Shell aplikasi (`ControlCenterLayout`) membungkus setiap rute di dalam ruang kerja melalui `ShellRoute`. **Setiap tujuan di dalam shell diberi prefiks ruang kerja — `/workspaces/:workspaceId/…` — dan id ruang kerja di URL adalah satu-satunya sumber kebenaran untuk ruang kerja aktif.** Hanya permukaan pra-konteks yang tidak berprefiks: `/splash`, `/onboarding`, dan pemilih `/workspaces` kosong, semuanya layar penuh dan berada di luar shell.
 
 Gerbangnya selesai ketika setidaknya satu forge terhubung **untuk pengguna yang sudah masuk** dan setidaknya satu ruang kerja ada.
 
-Kredensial yang hilang dan penyiapan yang belum selesai adalah dua layar yang berbeda, dan pembedanya adalah `users.onboarding_finished_at` yang dibaca dari `identity.me` milik pemanggil itu sendiri — bukan "ruang kerja ada", yang langsung keliru begitu seseorang diundang ke ruang kerja yang tidak pernah ia buat. Tanpa forge yang terhubung, akun yang sudah menyelesaikan onboarding menuju `/signed-out` untuk autentikasi ulang; akun yang belum menuju `/onboarding`. Selama flag itu masih belum diketahui, penjaga menahan splash alih-alih menebak, karena ia tidak pernah mengalihkan kembali keluar dari onboarding.
+Kredensial yang hilang dan penyiapan yang belum selesai diperlakukan berbeda, dan pembedanya adalah `users.onboarding_finished_at` yang dibaca dari `identity.me` milik pemanggil itu sendiri — bukan "ruang kerja ada", yang langsung keliru begitu seseorang diundang ke ruang kerja yang tidak pernah ia buat. Tanpa forge yang terhubung, akun yang sudah menyelesaikan onboarding tetap berada di aplikasi, dan shell ruang kerja menampilkan peringatan dengan tautan ke Pengaturan → Ruang kerja → Profil dan identitas, tempat proses masuk berada; akun yang belum menuju `/onboarding`. Selama flag itu masih belum diketahui, penjaga menahan splash alih-alih menebak, karena ia tidak pernah mengalihkan kembali keluar dari onboarding.
 
 ## Rute tanpa prefiks
 
@@ -19,7 +19,6 @@ Kredensial yang hilang dan penyiapan yang belum selesai adalah dua layar yang be
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Splash awal yang menyelesaikan gerbang onboarding |
 | `/onboarding`              | Hubungkan forge, buat atau gabung ruang kerja, sandbox, adapter bawaan, lalu suara. Langkah ruang kerja dilewati jika akun sudah menjadi anggota salah satunya |
-| `/signed-out`              | Autentikasi ulang: kartu koneksi forge yang sama seperti yang dirender Pengaturan, tanpa bilah langkah dan tanpa tombol lanjutkan — router keluar sendiri begitu sebuah forge melapor |
 | `/workspaces`              | Daftar dan pemilih ruang kerja                   |
 | `/workspaces/:workspaceId` | Dialihkan ke `/workspaces/:workspaceId/inbox`    |
 

@@ -1,216 +1,178 @@
 ---
 title: Cipta GitHub App
-description: Daftarkan GitHub App untuk pelayan anda supaya ahli boleh log masuk, dan supaya kerja latar belakang berjalan sebagai apl itu dan bukan sebagai individu.
+description: Berikan pelayan anda GitHub App tersendiri dengan satu klik, pasangkannya di tempat repositori anda berada, dan benarkan pelayan untuk pemasangan organisasi.
 slug: ms-MY/manual-pengguna/panduan-cara/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Panduan ini menunjukkan cara memberikan pelayan anda identiti GitHub tersendiri.
-Ia mengambil masa kira-kira dua minit, hanya pemilik pelayan yang melakukannya,
-dan ia hanya perlu dilakukan sekali bagi setiap pelayan.
+Panduan ini menunjukkan cara memberikan pelayan anda GitHub App tersendiri. Ia mengambil masa kira-kira
+dua minit, hanya pemilik pelayan yang melakukannya, dan ia hanya perlu dilakukan sekali bagi setiap pelayan.
 
 :::note[Anda mungkin tidak memerlukannya]
-Binaan rasmi sudah menyertakan **ID klien** GitHub, jadi
-[Log masuk dengan GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/) berfungsi terus
-tanpa apa-apa yang perlu didaftarkan — aliran peranti mengesahkan dengan ID klien
-sahaja, jadi ia selamat untuk disertakan. Daftarkan apl anda sendiri apabila anda
-mahu PELAYAN bertindak sebagai dirinya sendiri (webhook, pengundian PR dan
-segerak tiket berjalan pada pemasangan apl dan bukan pada kelayakan seseorang),
-atau apabila anda membina daripada sumber.
+Dengan Control Center Connect dihidupkan, orang log masuk ke GitHub melalui app kongsi Control Center, atau melalui
+app yang digunakan oleh Connect organisasi anda. Daftarkan app anda sendiri apabila anda memilih **Gunakan aplikasi
+saya sendiri**, atau apabila akses GitHub pelayan anda sepatutnya melalui app yang anda kawal. Lihat
+[Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
 :::
 
-Untuk menyambungkan akaun anda sendiri selepas itu, lihat
+Untuk log masuk ke akaun anda sendiri selepas itu, lihat
 [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/).
 
-## Mengapa pelayan anda memerlukan apl tersendiri
+## Apa yang dilakukan app ini
 
-Dua tugasan berbeza terhasil daripada satu pendaftaran, dan apl itulah yang
-menjadikan kedua-duanya jujur:
+Satu pendaftaran menjawab dua tugasan yang berbeza:
 
-| Tugasan                 | Apa yang menjawabnya                            | Mengapa ia penting                                                                                                          |
-| ----------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Seseorang log masuk** | ID klien apl, melalui aliran peranti            | Anda mendapat kelayakan milik anda, pada pelayan, pada setiap peranti — tanpa token untuk ditampal atau diputar              |
-| **Pelayan bertindak**   | ID apl + kunci peribadi → token pemasangan      | Webhook, pengundian PR dan segerak tiket tidak lagi bergantung pada token seorang manusia yang masih sah                    |
+| Tugasan               | Apa yang menjawabnya                                    | Mengapa ia penting                                                                                |
+| --------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Seseorang log masuk** | ID klien dan rahsia klien app                         | Setiap orang mendapat kelayakan GitHub sendiri, pada pelayan, pada setiap peranti                  |
+| **Pelayan bertindak**   | ID app dan kunci peribadi                             | Ejen, pipeline, pengundi dan balasan bot menerima token untuk satu repositori pada satu masa        |
 
-Perhatikan apa yang **tidak** ada dalam jadual itu: rahsia klien. Aliran peranti
-GitHub mengesahkan dengan ID klien sahaja — kedua-dua permintaan kod peranti dan
-pengundian token — jadi tiada rahsia yang perlu disimpan untuk log masuk.
+Tugasan kedua tidak pernah meminjam kelayakan seseorang secara keseluruhan. Setiap token yang dicetak oleh pelayan
+hanya meliputi satu repositori dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana.
+Membaca repositori yang dipautkan hanya memerlukan app; apa-apa yang menulis memerlukan ahli yang boleh push.
+Automasi tidak pernah meluluskan pull request.
 
-Tanpa apl milik anda sendiri, yang pertama masih berfungsi melalui ID klien yang
-disertakan binaan; yang kedua berpaling kepada kelayakan pemilik pelayan, jadi
-kerja latar belakang bergantung pada sesiapa yang mula-mula mendaftar masuk.
-
-:::note[Tiada butang "pasang GitHub App Control Center"]
-GitHub App yang diedarkan bermakna satu rahsia klien dikongsi dan satu pemasangan
-dikongsi merentas pelayan semua orang, jadi akses repositori setiap ruang kerja
-akan mengalir melalui kelayakan yang tiada sesiapa dalam ruang kerja itu kawal.
-Oleh itu setiap pelayan memiliki aplnya sendiri — panduan ini menunjukkan betapa
-kecilnya kosnya.
-:::
+App pelayan hanya terpakai di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect Control Center atau Connect tersuai, Connect mengendalikan GitHub, dan app pelayan kekal disimpan tetapi tidak digunakan sehingga anda bertukar semula. App ruang kerja ([Berikan satu ruang kerja app yang berbeza](#berikan-satu-ruang-kerja-app-yang-berbeza)) terus terpakai dalam semua mod. Sebuah app yang sebahagian medannya
+hilang ialah ralat, bukan sandaran: log masuk GitHub ditolak sehingga setiap medan diisi.
 
 ## Prasyarat
 
-- Anda ialah **pemilik pelayan** — operasi `providerApps.*` hanya dibenarkan
-  kepadanya, dan kad itu tidak kelihatan kepada orang lain
-- Akaun GitHub, atau organisasi tempat anda boleh mencipta apl
-- Tiada apa-apa yang boleh dicapai secara awam: log masuk ialah **aliran
-  peranti**, jadi pelayan tidak memerlukan port masuk, terowong, URL panggil
-  balik atau domain
+- Anda ialah **pemilik pelayan**. Kad **Apl penyedia** tidak kelihatan kepada orang lain
+- Akaun GitHub. App dicipta di bawah akaun itu
+- Alamat pelayan yang boleh dicapai oleh pelayar anda. Alamat awam pelayan (atau loopback, untuk pelayan desktop
+  sendiri) ialah tempat GitHub menghantar anda kembali
 
-## Daftarkan apl
+## Cipta dengan satu klik
 
-1. Pergi ke [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (untuk organisasi: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — apa-apa sahaja; `Control Center (yourname)` pun boleh. Ia
-   muncul pada commit dan komen yang dibuat oleh pelayan
-3. **Homepage URL** — apa-apa sahaja, cth. `https://github.com/your-name`
-4. **Callback URL** — biarkan kosong. Aliran peranti tidak memerlukannya
-5. Tandakan **Enable Device Flow**. Inilah satu-satunya tetapan yang tanpanya log
-   masuk tidak dapat berfungsi
-6. Nyahpilih **Webhook → Active** melainkan anda menyambungkan webhook secara
-   berasingan
-7. Di bawah **Repository permissions**, berikan sekurang-kurangnya:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatori)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, jika anda menggunakan GitHub Issues untuk tiket,
-     dan untuk carian komen perbualan PR oleh bot
-     (lihat [Bercakap dengan Control Center dari PR GitHub](/ms-MY/manual-pengguna/panduan-cara/perbualan-pr-github/))
-   - **Checks**: Read-only, untuk keadaan CI pada halaman PR
-8. Di bawah **Where can this GitHub App be installed?**, pilih mana yang sesuai —
-   "Only on this account" sesuai untuk pelayan peribadi
-9. Klik **Create GitHub App**
+1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal** dan tatal ke kad **Apl penyedia**
+2. Pada blok **GitHub**, pilihan taip nama organisasi GitHub yang akan memiliki app itu dalam
+   **Organisasi (pilihan)**. Biarkan kosong untuk mencipta app di bawah akaun anda sendiri; mencipta di bawah
+   organisasi memerlukan anda menjadi pemilik organisasi tersebut
+3. Klik **Cipta aplikasi GitHub saya**
+4. Pelayar anda membuka GitHub dengan app yang sudah diisi. Klik **Create GitHub App**
+5. GitHub menghantar anda kembali ke pelayan, yang menyimpan id app, kunci peribadi, id klien dan rahsia klien,
+   kemudian membuka halaman pemasangan app
 
-## Kumpulkan tiga nilai
+Tiada apa-apa disalin secara manual, dan kod penukaran pergi terus dari GitHub ke pelayan anda. Pautan itu hanya
+berfungsi sekali dan tamat tempoh selepas sepuluh minit; jika tamat, klik **Cipta aplikasi GitHub saya** sekali lagi.
 
-Pada halaman apl, sejurus selepas penciptaan:
+App dinamakan `Control Center <code>` dan hanya meminta apa yang digunakan oleh Control Center:
 
-| Nilai           | Di mana                                           |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | Tab **General**, berhampiran bahagian atas        |
-| **Client ID**   | Tab **General**, di bawah "Client secrets"        |
-| **Private key** | **Generate a private key** — fail `.pem` dimuat turun |
+| Kebenaran                                  | Akses          |
+| ------------------------------------------ | -------------- |
+| Metadata                                   | Baca sahaja    |
+| Contents                                   | Baca dan tulis |
+| Pull requests                              | Baca dan tulis |
+| Issues                                     | Baca dan tulis |
+| Checks, Actions, Commit statuses           | Baca sahaja    |
+| Organization members                       | Baca sahaja    |
 
-Fail kunci peribadi dimuat turun sekali sahaja dan GitHub tidak menunjukkannya
-lagi. Simpan ia sehingga anda menampalnya; anda sentiasa boleh menjana yang lain.
+Webhook dimatikan: pelayan membuat pengundian. Untuk memindahkan app yang anda cipta di bawah akaun sendiri ke
+organisasi kemudian, gunakan **Transfer ownership** dalam tetapan lanjutan app di GitHub.
 
-**Rahsia klien** adalah pilihan dan hanya membeli satu perkara: jika anda
-membiarkan "Expire user authorization tokens" HIDUP, inilah yang memperbaharui
-token seseorang secara senyap daripada memintanya log masuk semula setiap lapan
-jam. Log masuk itu sendiri tidak pernah menggunakannya.
+Titik pemeriksaan: blok GitHub berbunyi "Pelayan boleh bertindak sebagai dirinya sendiri, dan orang boleh log masuk".
 
-Persediaan yang lebih mudah ialah mematikan tempoh luput itu, dan tiada rahsia
-diperlukan di mana-mana. Jika anda membiarkannya hidup, jana satu rahsia dan
-tampalkan dalam **Tetapan → Pelayan → Daftar masuk tunggal** (kad **Apl
-penyedia**) — tiada pemboleh ubah persekitaran untuknya, dan tiada yang dibakukan
-ke dalam binaan, jadi ia kekal pada pelayan anda.
+## Pasangkan di tempat repositori anda berada
 
-## Pasang pada akaun anda
+App yang didaftarkan tetapi tidak dipasang hanya boleh mendaftar masuk orang dan tidak boleh membaca apa-apa.
 
-Apl yang didaftarkan tetapi tidak dipasang boleh mengesahkan orang dan tidak
-membaca apa-apa.
+1. Pilih akaun atau organisasi yang memiliki repositori anda pada halaman pemasangan yang GitHub buka
+2. Pilih **All repositories**, atau pilih repositori yang perlu dilihat oleh pelayan ini
 
-1. Pada halaman apl, buka **Install App**
-2. Pasangkannya pada akaun atau organisasi anda
-3. Pilih **All repositories**, atau pilih repositori yang sepatutnya dilihat oleh
-   pelayan ini
+Untuk memasang pada akaun lain kemudian, pentadbir ruang kerja pergi ke **Tetapan → Ruang kerja → Umum**, mencari
+**Pemasangan aplikasi GitHub** pada kad identiti GitHub dan klik **Pasang aplikasi GitHub**. Senarai itu
+memaparkan setiap akaun tempat app dipasang dan menandakan pemasangan yang digantung.
 
-## Tampalkan ke dalam Control Center
+## Benarkan pelayan ini untuk sebuah organisasi
 
-1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal** dan tatal ke kad
-   **Apl penyedia**
-2. Pada blok **GitHub**, tetapkan setiap medan:
-   - **ID apl** — ID Apl berangka
-   - **Kunci peribadi** — tampalkan keseluruhan `.pem`, termasuk baris `BEGIN`
-     dan `END`
-   - **ID klien** — daripada halaman yang sama
-   - **Rahsia klien** — hanya jika anda menjananya (untuk pembaharuan token)
-3. Klik **Uji**
+Pada app kongsi Control Center, pemasangan sesebuah organisasi hanya berfungsi untuk pelayan yang pentadbirnya telah
+membenarkan. Memasang melalui **Pasang aplikasi GitHub** membenarkan pelayan yang memulakannya. Untuk pemasangan
+yang sudah wujud:
 
-Kunci itu dihuraikan semasa ia disimpan, jadi tampalan yang terpotong atau
-berformat salah ditolak serta-merta dan bukannya gagal pada permintaan latar
-belakang berjam-jam kemudian. **Uji** melangkah lebih jauh dan bertanya kepada
-GitHub pada akaun mana apl itu dipasang — "tersimpan" dan "berfungsi" ialah dua
-dakwaan yang berbeza, dan hanya yang kedua bermakna sesuatu akan berjalan.
+1. Seorang pentadbir organisasi itu log masuk ke GitHub pada pelayan ini
+2. Mereka membuka **Tetapan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**
+3. Baris organisasi itu menunjukkan **Belum diberi kuasa**. Mereka klik **Benarkan pelayan ini**
 
-Titik semak: blok GitHub berbunyi "Pelayan boleh bertindak sebagai dirinya, dan
-orang boleh log masuk", dan baris **GitHub** di bawah **Tetapan → Ruang kerja →
-Profil & identiti → Hos kod** kini menawarkan **Log masuk dengan GitHub**.
+Baris itu kemudian menunjukkan **Telah diberi kuasa**. App milik anda sendiri tidak memerlukan ini: setiap
+pemasangannya tergolong dalam pelayan anda.
 
-## Konfigurasikannya dengan pemboleh ubah persekitaran sebaliknya
+## Daftar secara manual sebagai gantinya
 
-Untuk pemasangan tanpa kepala atau berskrip, pelayan menyemai setiap medan
-daripada persekitaran kali pertama ia tiada nilai tersimpan:
+Kad **Apl penyedia** juga menerima nilai secara terus, untuk app yang anda daftarkan sendiri:
+
+| Kumpulan                      | Medan                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Bertindak sebagai pelayan** | **ID apl**, dan **Kunci peribadi** (keseluruhan `.pem`, termasuk baris `BEGIN` dan `END`)       |
+| **Memasukkan orang**          | **ID klien** dan **Rahsia klien**. **URL callback** memaparkan URL yang perlu didaftarkan, seperti sedia ada |
+| **Perbualan permintaan tarik** | **Log masuk bot**, diselesaikan apabila anda menguji sambungan                                  |
+
+Daftarkan URL callback `<server origin>/oauth/github/callback` tepat seperti yang dipaparkan kad, biarkan
+**Expire user authorization tokens** dihidupkan, dan berikan kebenaran dalam jadual di atas. Klik **Uji**:
+ia bertanya GitHub akaun mana app itu dipasang, supaya "disimpan" dan "berfungsi" tidak keliru.
+
+## Konfigurasi daripada `.env` pelayan
+
+Untuk pemasangan tanpa kepala atau berasaskan skrip, pelayan menyemai setiap medan daripada fail `.env`-nya
+kali pertama ia tidak mempunyai nilai yang disimpan:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Tiada bendera baris perintah untuk nilai-nilai ini — rahsia pada baris perintah
-boleh dibaca oleh setiap proses pada hos melalui `ps`. Persekitaran ialah
-satu-satunya tempat untuk mengkonfigurasinya, dan ia mengalahkan apa sahaja yang
-disertakan binaan. `.env.template` ialah senarai lengkapnya.
-
-Untuk pembangunan setempat, `.env` pada akar repositori membawa nilai yang sama
-dan aplikasi desktop memasukkannya ke dalam pelayan yang dilancarkannya. Letakkan
-kunci itu pada **satu baris** di sana: nilai `.env` ialah satu baris, dan `\n` di
-dalam tanda petik berganda dinyahkod menjadi baris baharu.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` dan `GITHUB_APP_PRIVATE_KEY` ialah nama yang sama yang sudah
-dibaca oleh broker token kotak pasir, jadi hos yang mengkonfigurasi token ejen
-berbutir halus mendapat lorong log masuk itu secara percuma. Penyemaian berlaku
-**sekali bagi setiap medan** — selepas itu nilai tersimpan yang menang, jadi
-suntingan dalam Tetapan tidak dibatalkan oleh mula semula seterusnya.
+Letakkan kunci pada **satu baris**: nilai `.env` ialah satu baris, dan `\n` di dalam tanda petik berganda
+dinyahkod menjadi baris baharu. Pelayan enggan bermula apabila `GITHUB_APP_PRIVATE_KEY` atau `GITHUB_CLIENT_SECRET`
+dieksport dalam persekitaran prosesnya, tempat setiap proses anak boleh membacanya; simpan dalam fail `.env`
+(dalam Docker, lekapkan pada `/app/bin/.env`). Penyemaian berlaku **sekali bagi setiap medan**, jadi suntingan
+dalam Tetapan tidak dibatalkan oleh permulaan semula.
 
-## Lakukan perkara yang sama untuk Linear
+## Berikan satu ruang kerja app yang berbeza
 
-Linear tiada aliran peranti, jadi log masuknya ialah perjalanan pergi balik dalam
-penyemak imbas dan ia memang memerlukan URL panggil balik — kad **Apl penyedia**
-menunjukkan kepada anda URL sebenar yang perlu didaftarkan.
+Sesebuah ruang kerja boleh menggunakan app milik sendiri dan bukannya app pelayan. Pentadbir ruang kerja pergi ke
+**Tetapan → Ruang kerja → Umum**, memilih **Gunakan GitHub App lain** pada kad **Identiti GitHub** dan memasukkan
+id, kunci peribadi, id klien dan rahsia klien app itu. Ahli kemudian log masuk ke app itu untuk ruang kerja ini.
+Ruang kerja pada app sendiri tidak pernah jatuh kembali kepada app pelayan atau Connect: sehingga medannya lengkap,
+kerja GitHubnya ditolak. Ini terpakai tanpa mengira cara pelayan mendaftar masuk orang, termasuk Connect.
 
-1. Cipta aplikasi OAuth di
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Tetapkan **Callback URL** kepada URL yang ditunjukkan oleh kad itu, secara
-   verbatim
-3. Tampalkan **ID klien** dan **Rahsia klien** ke dalam blok Linear
-4. Secara pilihan tambah **kunci API** ruang kerja — itulah kelayakan yang
-   digunakan oleh pelayan untuk menyegerakkan tiket apabila tiada manusia yang
-   meminta
+Kad **Apl penyedia** pada halaman yang sama melakukan perkara yang sama untuk Google Calendar, Linear dan carian GIF. Lihat [Berikan satu ruang kerja app Linear sendiri](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/#berikan-satu-ruang-kerja-app-linear-sendiri) dan [Berikan satu ruang kerja klien Google sendiri](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/#berikan-satu-ruang-kerja-klien-google-sendiri).
 
 ## Penyelesaian masalah
 
-### Dialog log masuk mengatakan penyedia tidak mengembalikan kod peranti
+### Cipta aplikasi GitHub saya memaklumkan pelayan tiada alamat
 
-**Enable Device Flow** dimatikan pada apl. Hidupkannya di bawah **General** dan
-cuba lagi.
+Pelayan tiada URL awam yang pelayar boleh kembali kepadanya. Tetapkan `CC_SERVER_PUBLIC_URL` (atau `--public-url`)
+dan cuba lagi.
 
-### Uji mengatakan kelayakan berfungsi tetapi apl tidak dipasang di mana-mana
+### GitHub memaklumkan pautan telah tamat tempoh
 
-Pendaftaran dan pemasangan ialah langkah yang berasingan. Buka **Install App**
-pada halaman apl dan pasangkannya.
+Halaman sekali guna telah digunakan, atau sepuluh minit telah berlalu. Mulakan semula dari Tetapan.
 
-### Uji mengatakan kunci peribadi tidak dapat dibaca
+### Uji memaklumkan kelayakan berfungsi tetapi app tidak dipasang di mana-mana
 
-Tampalkan keseluruhan fail `.pem`, termasuk baris `-----BEGIN` dan `-----END`.
-Kunci `ed25519` atau EC tidak boleh digunakan — GitHub Apps menandatangani dengan
-RSA.
+Pendaftaran dan pemasangan ialah langkah berasingan. Buka halaman pemasangan app, atau gunakan **Pasang aplikasi
+GitHub** dalam Ruang kerja → Umum.
 
-### Seorang ahli telah log masuk tetapi tidak melihat sebarang repositori
+### Uji memaklumkan kunci peribadi tidak dapat dibaca
 
-Apl itu tidak dipasang pada akaun yang memiliki repositori tersebut, atau
-pemasangannya memilih repositori yang berbeza. Log masuk ahli itu sendiri hanya
-memberikan apa yang dibenarkan untuk dilihat oleh apl.
+Tampal keseluruhan fail `.pem`, termasuk baris `-----BEGIN` dan `-----END`. Kunci `ed25519` atau EC tidak boleh
+digunakan: GitHub Apps menandatangani dengan RSA.
+
+### Seorang ahli telah log masuk tetapi tidak nampak repositori
+
+App tidak dipasang pada akaun yang memilikinya, atau pemasangannya memilih repositori yang berbeza. Log masuk
+hanya memberikan apa yang app dibenarkan lihat.
+
+### Ejen memaklumkan pemasangan GitHub App telah digantung
+
+Seseorang telah menggantung pemasangan itu di GitHub. Nyahgantungkannya dalam **Settings → Applications → Installed
+GitHub Apps** untuk akaun tersebut.
 
 ## Panduan berkaitan
 
 - [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
 - [Bercakap dengan Control Center dari PR GitHub](/ms-MY/manual-pengguna/panduan-cara/perbualan-pr-github/)
 - [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/)
+- [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)
 - [Urus kunci API](/ms-MY/manual-pengguna/panduan-cara/kunci-api/)
-- [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)

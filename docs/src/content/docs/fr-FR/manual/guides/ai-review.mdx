@@ -2,7 +2,7 @@
 title: Utiliser la revue assistée par IA
 description: Exécutez le pipeline pr_review sur une PR, lisez les remarques et le verdict, puis publiez la revue sur GitHub.
 slug: fr-FR/manuel/guides/revue-par-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Ce guide vous montre comment faire relire une pull request par des agents
@@ -122,15 +122,17 @@ ne publie rien sur GitHub.
 
 Control Center envoie **une seule** revue GitHub. Les remarques déjà résolues ou
 rejetées sont ignorées. Le bouton inclut toutes les remarques encore ouvertes et,
-sur **Ship**, soumet `APPROVE`. (L’outil MCP `publish_review_to_github` reste
-limité par défaut aux remarques confirmées par un pair et n’approuve pas, sauf
-si vous passez `approve_on_ship`.) Celles qui portent une ancre de fichier et de
+sur **Ship**, soumet `APPROVE`. (L’outil MCP `publish_review_to_github` se
+limite par défaut aux remarques confirmées par un pair et n’approuve jamais : il
+publie en tant qu’automatisation, si bien que `approve_on_ship` y est sans
+effet.) Celles qui portent une ancre de fichier et de
 ligne deviennent des commentaires en ligne ; tout le reste est replié dans le
 corps du résumé, chacune avec une signature « — Control Center AI
 review » pour que la source soit sans ambiguïté. Un verdict **Block** est
 soumis comme `REQUEST_CHANGES` ; **Hold** comme `COMMENT` ; **Ship** comme
 `APPROVE` depuis ce bouton. Une notification affiche alors **Publié**. La revue
-est publiée sous l’identité applicative du serveur.
+est publiée en votre nom, avec votre propre connexion GitHub : si vous n’êtes pas
+connecté à GitHub, la publication échoue et vous invite à vous connecter.
 
 Si GitHub rejette une ancre en ligne parce que la ligne ne fait pas partie du
 diff, toute la revue est renvoyée avec chaque remarque repliée dans le corps,

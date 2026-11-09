@@ -2,7 +2,7 @@
 title: Een pipeline-sjabloon maken
 description: Stel in de pipeline-editor een DAG-werkstroomsjabloon samen — voeg nodes toe, verbind ze, declareer invoer en maak het uitvoerbaar.
 slug: nl-NL/handleiding/gidsen/pipeline-maken
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipeline-sjablonen stel je samen in de werkruimte-instellingen. Het item
@@ -130,12 +130,21 @@ Voegt **Bash-script** toe. Er zijn geen velden voor werkmap of omgeving, omdat
 geen van beide configureerbaar is:
 
 - Elke bash-stap in een run deelt de cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` wordt geïnjecteerd uit de opslag voor inloggegevens, dus `gh` en
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` werken zonder verdere
-  configuratie.
+- Het script draait in de OS-sandbox van de host, net als de opdrachten van een
+  agent. Op een host zonder sandbox (Windows, of Linux zonder `bwrap`) mislukt de
+  stap in plaats van onbegrensd te draaien. De gegevensmap en het `.env`-bestand
+  van de server zijn van binnenuit niet leesbaar.
+- Git en `gh` zien geen hostconfiguratie: geen opgeslagen login, credential
+  helper of globale hooks.
+- Als de pipeline een GitHub-repo noemt die aan de werkruimte is gekoppeld
+  (`repo_full_name` in de state of de triggerpayload), bevatten `GH_TOKEN` en
+  `GITHUB_TOKEN` een token dat alleen die ene repo kan lezen, dus `gh` en
+  `git clone` werken daarop zonder verdere configuratie. Anders is er geen
+  GitHub-token.
+- Alleen een beheerder van de werkruimte kan een pipeline met een bash-stap
+  maken of bewerken.
 - Het script wordt gestart als het letterlijke uitvoerbare bestand `bash`, dus
-  `bash` moet in de `PATH` van de serverhost staan. Daar moet je op Windows
-  rekening mee houden.
+  `bash` moet in de `PATH` van de serverhost staan.
 
 ### Router
 

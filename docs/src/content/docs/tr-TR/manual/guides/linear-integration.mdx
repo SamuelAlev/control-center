@@ -1,31 +1,121 @@
 ---
 title: Linear entegrasyonunu kurma
-description: Ajanlar Linear’ı çağırabilsin diye sunucuda bir Linear API anahtarı saklayın ve yeni biletler için bilet sağlayıcısı olarak Linear’ı seçin.
+description: Linear’a oturum açın, bir çalışma alanının Linear otomasyonunu bağlayın ve yeni biletler için bilet sağlayıcısı olarak Linear’ı seçin.
 slug: tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Bir Linear API anahtarını, tıpkı bir forge bağlarken yaptığınız gibi, sunucuya
-kullanıcı kimliğinize bağlı olarak yapıştırın. Biletler, projeler, bağlantılar,
-ortak çalışanlar, devretme ve atama, harici bir hizmete gerek kalmadan Control
-Center’ın kendi veritabanı üzerinde çalışır — bkz. [Bilet oluşturma ve
+Linear’ın Control Center’da iki kimliği vardır ve ikisi de tarayıcıda oturum
+açmadır: yaptıklarınız için sizinki, ajanların ve pipeline’ların yaptıkları için
+ise çalışma alanının Control Center uygulaması. Biletler, projeler, bağlantılar,
+ortak çalışanlar, devretme ve atama hiçbir harici hizmet gerektirmeden Control
+Center’ın kendi veritabanında çalışır — bkz. [Bilet oluşturma ve
 yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/).
 
-## Linear anahtarınızı saklama
+## Önkoşullar
 
-**Bilet API anahtarı**, **Ayarlar → Çalışma alanı → Genel** altındaki Biletler
-kartında bulunur. Anahtarı sunucuda kullanıcı kimliğinize bağlı olarak saklar.
-Sunucunun gözetimsiz işler için kullandığı kendi anahtarı, `LINEAR_API_KEY` ya
-da **Sağlayıcı uygulamaları** kartından gelir. Bir ajanın sandbox'ına hiçbir
-biletleme anahtarı konmaz: ajanlar biletleri, önce **Harici takip sistemine
-yaz** kuralına soran Control Center'ın kendi araçlarıyla yazar.
+- Sunucu kişileri Linear’a oturum açtırabiliyor olmalı: Control Center Connect
+  üzerinden ya da sunucunun kendi Linear uygulamasıyla
+  ([Kendi Linear uygulamanızı kaydetme](#kendi-linear-uygulamanızı-kaydetme)).
+  Seçimi sunucu sahibi **Ayarlar → Sunucu → Tek oturum açma** bölümünde yapar
+- Linear’ı bilet sağlayıcısı olarak seçmek ve Linear otomasyonunu bağlamak için
+  bir çalışma alanı yöneticisi
 
-## Yeni biletleri Linear olarak işaretleme
+## Çalışma alanı için Linear’ı seçme
 
-**Bilet sağlayıcısı** (ilk kurulumun ilk adımı ve
-`/workspaces/<workspaceId>/api-keys`) `local` ve `linear` seçeneklerini sunar.
-`linear` seçildiğinde, o andan itibaren oluşturduğunuz biletlere
-`provider: linear` işaretlenir.
+1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Biletler** kartını
+   bulun
+2. **Bilet sağlayıcısı** değerini **Linear** olarak ayarlayın
+
+Bundan sonra oluşturduğunuz biletler `provider: linear` olarak işaretlenir.
+**Yerel**, biletleri bu sunucunun kendi veritabanında tutar ve Linear satırlarını
+gizler: kimlik doğrulanacak bir şey yoktur.
+
+## Linear’a oturum açma
+
+Aynı kartta **Linear** satırı size aittir:
+
+1. **Linear hesabıyla oturum aç**’a tıklayın
+2. Tarayıcınızda onaylayın
+3. Sunucunun kendi uygulamasıyla iletişim kutusu bunu kendiliğinden fark eder.
+   Connect üzerinden ise tarayıcının gösterdiği 8 karakterlik kodu yazın ya da
+   `control-center://` bağlantısıyla Control Center’ı açmasına izin verin
+
+Control Center’dan Linear’da yaptığınız her şey bu oturum açmayla ve başka hiçbir
+şeyle çalışmaz. Oturum açmadıysanız uygulama, başka biri olarak hareket etmek
+yerine oturum açmanızı ister.
+
+## Linear otomasyonunu bağlama
+
+**Linear otomasyonu** satırı, çalışma alanının Linear’daki Control Center
+uygulamasıdır. Bilet senkronizasyonu, pipeline’lar ve ajanlar onunla yazar;
+böylece otomatik issue’lar ve yorumlar bir kişi olarak değil, Control Center
+olarak görünür.
+
+1. Bir çalışma alanı yöneticisi **Otomasyon için Linear’ı bağla**’ya tıklar
+2. Uygulamayı yukarıdaki gibi tarayıcıda Linear çalışma alanı için onaylar
+
+Satır bundan sonra "_Linear çalışma alanınız_ ile bağlı" yazar. Onu yalnızca
+çalışma alanı yöneticileri bağlayabilir ya da bağlantısını kesebilir.
+
+Bir ajanın sandbox’ına hiçbir Linear kimlik bilgisi konmaz: ajanlar biletleri,
+önce **Harici takip sistemine yaz** kuralına soran Control Center’ın kendi
+araçlarıyla yazar.
+
+## Kendi Linear uygulamanızı kaydetme
+
+**Kendi uygulamalarımı kullan** seçeneğini seçtiyseniz kendi uygulamanızı
+kullanın. Sunucunun kendi uygulaması yalnızca o durumda kullanılır: Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, Linear dahil; sunucunun uygulaması ve servis API anahtarı kayıtlı kalır ama kullanılmaz. Çalışma alanının kendi uygulaması ([aşağıda](#bir-çalışma-alanına-kendi-linear-uygulamasını-verme)) her modda geçerlidir.
+
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+   adresinde bir OAuth uygulaması oluşturun
+2. **Ayarlar → Sunucu → Tek oturum açma → Sağlayıcı uygulamaları → Linear**
+   bölümünün **Geri çağırma URL’leri** altında gösterdiği iki geri çağırma
+   URL’sini de birebir ekleyin: `<server origin>/oauth/linear/callback` ve
+   `<server origin>/oauth/linear_app/callback`
+3. **İstemci id** değerini Linear bloğuna yapıştırın
+
+İstemci gizli anahtarı yoktur: sunucu PKCE ile oturum açar. Linear’ın yenileme
+token’ları 30 gün kullanılmazsa sona erer; bu yüzden sunucu 20 günden eski her
+Linear oturum açmasını günde bir kez yeniler.
+
+Aynı blok isteğe bağlı bir **Hizmet API anahtarı** alır. Bu, Linear otomasyonunu
+bağlamamış çalışma alanlarında otomasyon için sunucunun kendi Linear kimlik
+bilgisidir. Onu **Ayarlar**’da ya da sunucunun `.env` dosyasında `LINEAR_API_KEY`
+olarak tutun: `LINEAR_API_KEY` süreç ortamına dışa aktarıldığında sunucu
+başlamayı reddeder.
+
+## Bir çalışma alanına kendi Linear uygulamasını verme
+
+Bir çalışma alanı, Linear’a sunucunun uygulaması yerine kendi uygulaması üzerinden oturum açabilir. Bunu yalnızca bir çalışma alanı yöneticisi veya sahibi ayarlayabilir.
+
+1. Yukarıdaki adımlarda olduğu gibi bir Linear OAuth uygulaması oluşturun
+2. **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümüne gidin ve **Linear**’ı açın
+3. **Bu çalışma alanının kendi uygulamasını kullan**’ı seçin
+4. Satırın **Geri çağırma URL’leri** altında gösterdiği her iki callback URL’sini Linear uygulamasına birebir ekleyin
+5. Uygulamanın **İstemci id**’sini ve isteğe bağlı olarak bu çalışma alanının otomasyonu için bir **Hizmet API anahtarı**nı yapıştırın
+
+Çalışma alanının uygulaması, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu çalışma alanındaki her Linear oturum açmasını ve otomasyon isteğini yanıtlar. Sunucunun uygulamasına ya da Connect’e asla geri dönmez: bir istemci id’si ayarlanana kadar Linear bu çalışma alanında kapalıdır ve satır neyin eksik olduğunu söyler. Hizmet API anahtarı yalnızca burada kullanılır; anahtar yoksa senkronizasyon için **Otomasyon için Linear’ı bağla** gerekir.
+
+Sunucunun uygulamasıyla çalışma alanınınki arasında geçiş yapmak ya da çalışma alanının istemci id’sini değiştirmek, bu çalışma alanındaki herkesin Linear oturumunu kapatır ve otomasyonlarının bağlantısını keser. Yeni uygulama üzerinden yeniden oturum açarlar. **Bu sunucunun uygulamasını kullan** çalışma alanının kayıtlı alanlarını siler. Gizli anahtarlar yalnızca yazılabilir: satır yalnızca birinin kaydedilip kaydedilmediğini gösterir. Sunucudaki diğer çalışma alanları etkilenmez.
+
+## Sorun giderme
+
+### Linear satırı oturum açmanın ayarlanmadığını söylüyor
+
+Sunucunun ne kendi Linear uygulaması ne de Connect’i var. Sunucu sahibi
+**Ayarlar → Sunucu → Tek oturum açma** bölümünde birini seçer. Çalışma alanı kendi uygulamasını kullandığında satır bunun yerine kurulumunun tamamlanmadığını söyler: bir çalışma alanı yöneticisi istemci id’sini **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümünde ekler.
+
+### Bilet senkronizasyonu bir kimlik doğrulama hatasıyla başarısız oluyor
+
+Çalışma alanında bağlı bir Linear otomasyonu, sunucuda da hizmet API anahtarı
+yok; bu yüzden senkronizasyonun kimlik bilgisi yok. Bir çalışma alanı yöneticisi
+**Otomasyon için Linear’ı bağla**’ya tıklar.
+
+### Otomasyonu bağlarken Linear çalışma alanının başka bir yerde bağlı olduğu söyleniyor
+
+O Linear çalışma alanının Control Center uygulaması zaten başka bir Control
+Center sunucusuna bağlı.
 
 ## İlgili kılavuzlar
 

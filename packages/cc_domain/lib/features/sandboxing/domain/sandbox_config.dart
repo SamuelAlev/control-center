@@ -64,6 +64,21 @@ class SandboxConfig {
   /// home/runDir anchors and dangerous-path data they need for recursive
   /// mandatory-deny and move-blocking emission.
   final SandboxPolicySpec? policy;
+
+  /// A copy with [filesystem] replaced.
+  SandboxConfig copyWith({FilesystemConfig? filesystem}) => SandboxConfig(
+    sessionId: sessionId,
+    network: network,
+    filesystem: filesystem ?? this.filesystem,
+    denyExecutables: denyExecutables,
+    allowedExecutables: allowedExecutables,
+    allowedExecRoots: allowedExecRoots,
+    toolchainExecRoots: toolchainExecRoots,
+    allowAllUnixSockets: allowAllUnixSockets,
+    parentProxy: parentProxy,
+    skipMandatoryHomeRcDenies: skipMandatoryHomeRcDenies,
+    policy: policy,
+  );
 }
 
 /// Network access configuration for sandboxed execution.

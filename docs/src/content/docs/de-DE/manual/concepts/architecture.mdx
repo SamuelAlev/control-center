@@ -3,7 +3,7 @@ title: "Architektur"
 description: "Wie Control Center aufgebaut ist: Thin Client über einem Headless-Server, Clean Architecture nach Features sowie Ports und Adapter."
 dateModified: 2026-09-19
 slug: de-DE/handbuch/konzepte/architektur
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Überblick
@@ -113,9 +113,9 @@ Beide Datenbanken gehören `cc_persistence`, und nur `cc_server` öffnet sie. Ke
 **go_router**, mit einer Tatsache, die den Rest bestimmt: **jedes Ziel in der App trägt den Arbeitsbereich als Präfix**, in der Form `/workspaces/:workspaceId/…`. Die Arbeitsbereichs-ID in der URL ist die einzige Quelle der Wahrheit für den aktiven Arbeitsbereich. `activeWorkspaceIdProvider` folgt der Route, die Route folgt ihm nicht. Außerhalb einer Route mit diesem Präfix gibt es keine Quelle für die Arbeitsbereichs-ID, und arbeitsbereichsbezogene Daten lassen sich dort nicht lesen.
 
 - Route-Builder-_Funktionen_ in `router/routes.dart`. Jede nimmt die Arbeitsbereichs-ID als erstes Argument, keine String-Konstanten
-- Vier Routen vor dem Kontext haben kein Präfix: `/splash`, `/onboarding`, `/signed-out` und `/workspaces` (die Auswahl)
-- `ShellRoute` umschließt die App-Shell. Diese vier Flächen rendern außerhalb davon im Vollbild
-- Auth-Guard: Ein unvollständiges Setup führt nach `/onboarding`. Ein vollständiges Setup, dessen Zugangsdaten zum Code-Host fehlen, führt nach `/signed-out`. Vollständig heißt, dass für den angemeldeten User mindestens ein Code-Host verbunden ist und mindestens ein Arbeitsbereich existiert. GitHub ist dafür nicht vorgeschrieben, und die `gh`-CLI ist kein Authentifizierungsverfahren
+- Drei Routen vor dem Kontext haben kein Präfix: `/splash`, `/onboarding` und `/workspaces` (die Auswahl)
+- `ShellRoute` umschließt die App-Shell. Diese drei Flächen rendern außerhalb davon im Vollbild
+- Auth-Guard: Ein unvollständiges Setup führt nach `/onboarding`. Ein vollständiges Setup, dessen Zugangsdaten zum Code-Host fehlen, bleibt in der App: Die Arbeitsbereichs-Shell zeigt eine Warnung mit einem Link zur Anmeldung. Vollständig heißt, dass für den angemeldeten User mindestens ein Code-Host verbunden ist und mindestens ein Arbeitsbereich existiert. GitHub ist dafür nicht vorgeschrieben, und die `gh`-CLI ist kein Authentifizierungsverfahren
 - Das Onboarding-Gate liegt in `features/auth/providers/`
 
 ## Netzwerk (serverseitig)

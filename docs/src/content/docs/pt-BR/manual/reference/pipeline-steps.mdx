@@ -2,7 +2,7 @@
 title: Etapas de pipeline
 description: Referência dos tipos de etapa de pipeline, das chaves de corpo das etapas, da configuração e dos resultados das etapas.
 slug: pt-BR/manual/referencia/etapas-de-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Uma etapa de pipeline tem dois eixos independentes:
@@ -42,7 +42,7 @@ Etapa de shell sem agente (`bash -c`). Os placeholders `{{key}}` no script são 
 | `script`              | Comando de shell a executar (obrigatório)              |
 | `outputKey`           | Chave de estado que recebe o stdout aparado quando a saída é 0 |
 
-Executa com cwd `<cc_root>/pipelines/<pipelineRunId>/` (compartilhado por todas as etapas bash de uma execução) e com `GITHUB_TOKEN` no ambiente. Também grava `<stepId>_runDir` no estado. Uma saída diferente de zero faz a etapa falhar, com o trecho final do stderr.
+Executa dentro do sandbox do sistema operacional do host, com cwd `<cc_root>/pipelines/<pipelineRunId>/` (compartilhado por todas as etapas bash de uma execução); um host sem sandbox faz a etapa falhar. O diretório de dados do servidor e o arquivo `.env` dele não podem ser lidos, o git e o `gh` não veem nenhuma configuração do host, e `GH_TOKEN` / `GITHUB_TOKEN` contêm um token `read` de um único repositório só quando `repo_full_name` (estado ou payload do gatilho) indica um repo do GitHub vinculado ao espaço de trabalho. Criar ou editar um modelo com esta etapa exige um administrador do espaço de trabalho. Também grava `<stepId>_runDir` no estado. Uma saída diferente de zero faz a etapa falhar, com o trecho final do stderr.
 
 ### `conversation.promptAgent`
 

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/slack_api_client.dart';
 import 'package:cc_infra/src/slack/slack_socket.dart';
+import 'package:cc_infra/src/slack/slack_transport.dart';
 
 /// One inbound Socket Mode envelope.
 ///
@@ -91,7 +92,7 @@ typedef SlackEnvelopeHandler = Future<void> Function(SlackEnvelope envelope);
 /// Ack within 3s before handling (Slack redelivers unacked). `disconnect` with
 /// `refresh_requested` is routine — reconnect without escalating backoff.
 /// `invalid_auth` / `token_revoked` are terminal ([lastError], no retry loop).
-class SlackSocketModeClient {
+class SlackSocketModeClient implements SlackTransport {
   /// Creates a [SlackSocketModeClient].
   SlackSocketModeClient({
     required this.workspaceId,
@@ -129,22 +130,24 @@ class SlackSocketModeClient {
   ChatConnectionState _state = ChatConnectionState.disconnected;
   String? _lastError;
 
-  /// Live connection state, as the settings surface shows it.
+  @override
   ChatConnectionState get state => _state;
 
-  /// The last failure, or null when healthy.
+  @override
   String? get lastError => _lastError;
 
   /// Whether the socket is currently up.
   bool get isConnected => _state == ChatConnectionState.connected;
 
   /// Opens the connection and keeps it open until [stop].
+  @override
   Future<void> start() async {
     _stopped = false;
     await _connect();
   }
 
   /// Closes the connection for good. Safe to call twice.
+  @override
   Future<void> stop() async {
     _stopped = true;
     _reconnectTimer?.cancel();

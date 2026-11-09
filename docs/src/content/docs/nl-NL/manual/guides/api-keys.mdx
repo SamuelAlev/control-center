@@ -2,7 +2,7 @@
 title: API-sleutels beheren
 description: Waar elk inloggegeven staat — je gebruikersaccount op de server, de server zelf of een externe CLI — en hoe je het instelt, roteert en verwijdert.
 slug: nl-NL/handleiding/gidsen/api-sleutels
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Deze gids laat zien waar elk inloggegeven dat Control Center gebruikt wordt
@@ -14,27 +14,34 @@ of er een mens achter zit.
 
 | Inloggegeven                                 | Opgeslagen                                                      | Wie gebruikt het                                                    |
 | -------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Je forge-/ticketinginloggegevens             | Het geheimenbestand van de server met modus 0600, op je gebruikers-id | Alles wat je vraagt: het PR-oppervlak, je agentruns, je afbeeldingen |
-| De app-identiteit van de server              | Hetzelfde bestand, plus `server_settings` voor de niet-geheime waarden | Werk waar geen mens om vroeg: webhooks, PR-polling, ticketsynchronisatie |
+| Je forge-/ticketingaanmelding                | Het geheimenbestand van de server met modus 0600, op je gebruikers-id | Alles wat je doet: het PR-oppervlak, reviews, merges, je Linear-acties |
+| De provider-apps van de server               | Hetzelfde bestand, plus `server_settings` voor de niet-geheime waarden | Mensen aanmelden, en tokens voor één repository voor agenten, pipelines en polling |
+| De installatiesleutel voor Connect           | Hetzelfde bestand (`connect_install_key`)                        | Deze server identificeren bij Control Center Connect                 |
 | Sleutels van modelproviders en OAuth-tokens  | De eigen opslag van de server voor inloggegevens                 | De ingebouwde adapter, voor elke werkruimte op de installatie        |
-| Slack-bottokens                              | `<dataDir>/<workspaceId>/chat_credentials/` op de server          | De chatbrug voor die werkruimte                                     |
+| Slack-botgegevens                            | `<dataDir>/<workspaceId>/chat_credentials/` op de server          | De chatbrug voor die werkruimte: de tokens van je eigen app, of de verzegelde machtiging van de gedeelde app |
 | Inloggegevens van externe CLI's              | Wat die CLI ook gebruikt                                          | Claude Code, op de serverhost                                       |
 
-## Twee GitHub-inloggegevens, en ze beantwoorden verschillende vragen
+## GitHub: je aanmelding, en tokens voor één repository
 
-- **Die van jou**, van het aanmelden (device flow) of het plakken van een
-  token. Elk verzoek dat *namens jou* wordt gedaan, gebruikt die, dus een
-  reactie die voor jou wordt geplaatst, draagt je naam. Een ander lid kan hem
-  niet lezen en koppelt zijn eigen inloggegevens
-- **Die van de server**, van de GitHub App die de operator heeft
-  geregistreerd. Die beantwoordt alles zonder aanroeper — zodat toegang tot de
-  forge niet verdwijnt wanneer iemand weggaat of een token roteert
+- **Die van jou**, via **Inloggen bij GitHub**. Elk verzoek dat *namens jou*
+  wordt gedaan, gebruikt die, dus een review die voor jou wordt geplaatst, draagt
+  je naam. Een ander lid kan hem niet gebruiken en meldt zich zelf aan. Er is
+  geen GitHub-token om te plakken
+- **Werk waarbij niemand typt** (agenten, pipelines, polling, botantwoorden)
+  krijgt een token voor telkens één repository, uitgegeven via de GitHub App van
+  de server of via Control Center Connect, en beperkt tot wat een
+  verantwoordelijk lid daar mag doen. Het is nooit je volledige, doorgegeven
+  aanmelding
 
 Die van jou stel je in op de kaart **Codehosting** bij **Instellingen →
-Werkruimte → Profiel en identiteit**; die van de server op **Provider-apps**
+Werkruimte → Profiel en identiteit**; de app van de server op **Provider-apps**
 bij **Instellingen → Server → Single sign-on**. Zie
 [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/) en
 [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/).
+
+GitLab en Bitbucket nemen nog steeds een geplakt persoonlijk token, dat op
+dezelfde manier wordt opgeslagen. Zie
+[Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
 
 :::note[Er is ook een scherm dat alleen via de URL bereikbaar is]
 `/workspaces/<workspaceId>/api-keys` rendert dezelfde twee kaarten als de
@@ -72,50 +79,63 @@ Zie [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/).
 ## Een ticketingprovider verbinden
 
 De kaart **Tickets** bij **Instellingen → Werkruimte → Algemeen** bevat beide
-helften van één beslissing: bij welke leverancier je tickets staan, en de
-inloggegevens daarvoor. Als je **Lokaal** kiest, verdwijnt de rij met
-inloggegevens — lokale tickets staan in de eigen database van deze server en er
+helften van één beslissing: bij welke leverancier je tickets staan, en wie
+Control Center is wanneer het daarmee praat. Als je **Lokaal** kiest, verdwijnen
+de Linear-rijen — lokale tickets staan in de eigen database van deze server en er
 valt niets te authenticeren.
 
-Je sleutel wordt, net als die voor de forge, op de server bij je gebruikers-id
-opgeslagen. De server houdt zijn eigen Linear-sleutel apart (**Provider-apps**),
-en die wordt gebruikt voor ticketsynchronisatie wanneer geen mens erom vroeg.
-In de sandbox van een agent wordt geen ticketingsleutel geïnjecteerd; agenten
+Linear heeft twee aanmeldingen en geen geplakte sleutel: **Linear** is die van
+jou, voor wat jij doet, en **Linear-automatisering** is de Control Center-app van
+de werkruimte, verbonden door een beheerder, voor ticketsynchronisatie,
+pipelines en agenten. De server kan ook een **Service-API-sleutel**
+(**Provider-apps**) bewaren voor werkruimtes zonder verbonden automatisering. In
+de sandbox van een agent worden geen ticketinginloggegevens geïnjecteerd; agenten
 schrijven tickets via de tools van Control Center, die de regel **Naar een
 externe tracker schrijven** raadplegen. Zie
 [Linear-integratie instellen](/nl-NL/handleiding/gidsen/linear-integratie/).
 
 ## Roteren of intrekken
 
-- **Je GitHub-inloggegevens**: klik op **Loskoppelen**, meld je daarna opnieuw
-  aan of plak het nieuwe token. Trek het oude in bij GitHub
+- **Je GitHub-aanmelding**: klik op **Loskoppelen** en daarna opnieuw op
+  **Inloggen bij GitHub**. Loskoppelen laat ook elk token vervallen dat de server
+  namens jou heeft uitgegeven
+- **Een GitLab- of Bitbucket-token**: klik op **Token bijwerken** en plak het
+  nieuwe, en trek daarna het oude in bij de forge
 - **De app van de server**: genereer een nieuwe privésleutel of een nieuw
-  clientsecret op de GitHub-pagina van de app, plak die in **Provider-apps** en
+  clientsecret op de providerpagina van de app, plak die in **Provider-apps** en
   klik op **Testen**
+- **De installatiesleutel voor Connect**: **Sleutel vervangen** op de kaart
+  **Control Center Connect**, of `cc_server connect rotate-key --yes`. Iedereen
+  die zich via Connect heeft aangemeld, meldt zich opnieuw aan. Zie
+  [Control Center Connect](/nl-NL/handleiding/referentie/connect/)
 - **Een modelprovider**: meld je op zijn rij af (OAuth) of verwijder de sleutel,
   en maak daarna opnieuw verbinding
-- **Slack**: plak de tokens opnieuw in het verbindingsvenster. Zie
+- **Slack**: plak voor je eigen app de tokens opnieuw in het verbindingsvenster.
+  De gedeelde Control Center-app heeft geen token om te roteren: het bottoken
+  wordt via Connect vernieuwd, en **Verbinding verbreken** trekt het in en
+  verwijdert de bot uit Slack. Zie
   [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)
 
 ## Problemen oplossen
 
-### De PR-lijst is leeg, maar mijn token werkt in `curl`
+### Een GitLab- of Bitbucket-token werkt in `curl`, maar niet hier
 
-Controleer de ondertitel van de rij **Codehosting**. Als daar een andere bron
-staat ("via de app van deze server", "uit de omgeving"), dan is het
-inloggegeven dat je test niet degene die antwoordt — die van jou zijn niet
-opgeslagen.
+Controleer de ondertitel van de rij **Codehosting**. Als daar "uit de omgeving"
+staat, antwoorden de inloggegevens van de server, niet die van jou — die van jou
+zijn niet opgeslagen.
 
-### Het token wordt geaccepteerd, maar latere verzoeken mislukken
+### Een GitLab- of Bitbucket-token wordt geaccepteerd, maar latere verzoeken mislukken
 
 Het token wordt getest zoals het is opgeslagen, dus de rij noemt het account
 dat erachter zit — maar alleen het account, niet de scopes. Een token met te
 weinig scopes maakt verbinding en laat daarna afzonderlijke verzoeken
-mislukken. Controleer de scopes en de vervaldatum:
+mislukken. Controleer de scopes en de vervaldatum ervan bij de forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Een provider meldt dat aanmelden op deze server niet is ingesteld
+
+De server heeft voor die provider geen eigen app en ook geen Control Center
+Connect. De servereigenaar kiest er een in **Instellingen → Server → Single
+sign-on**.
 
 ## Gerelateerde gidsen
 

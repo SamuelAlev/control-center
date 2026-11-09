@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
@@ -1191,6 +1192,39 @@ void main() {
 
       expect(refused.isError, isTrue);
       expect(refused.text, contains('nothing on the clipboard'));
+    });
+  });
+
+  group('eval kernel attach', () {
+    test('a kernel attaches only to a read-scope exec rig', () {
+      final read = seed(id: 'exec-read', conversationId: 'c1', exec: true);
+      expect(RigService.admitsKernel(read), isTrue);
+
+      final write = Rig(
+        id: 'exec-write',
+        workspaceId: read.workspaceId,
+        surface: read.surface,
+        backend: read.backend,
+        status: read.status,
+        spec: RigSpec.exec(
+          conversationId: 'c1',
+          forgeTokenScope: ForgeTokenScope.write,
+        ),
+        createdBy: read.createdBy,
+        conversationId: 'c1',
+        createdAt: read.createdAt,
+        lastActivityAt: read.lastActivityAt,
+      );
+      expect(
+        RigService.admitsKernel(write),
+        isFalse,
+        reason:
+            'a write-scope rig is a human shell\'s; its push helper '
+            'must stay out of reach of a model-driven kernel',
+      );
+
+      final desktop = seed(id: 'desktop1', conversationId: 'c1');
+      expect(RigService.admitsKernel(desktop), isFalse);
     });
   });
 

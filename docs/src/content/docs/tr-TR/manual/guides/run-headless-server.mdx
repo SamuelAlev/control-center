@@ -1,9 +1,9 @@
 ---
 title: Headless bir sunucu çalıştırma
 description: cc_server headless ikilisini ya da Docker imajını çalıştırın, ona bir istemci eşleştirin ve tüm CLI bayrakları ile ortam değişkenleri yüzeyiyle yapılandırın.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Sürekli açık kalan bir makinede `cc_server` çalıştırın, ardından masaüstünüzden,
@@ -16,7 +16,9 @@ API çağrılarını yapar; istemciler yalnızca çizer.
 
 Her sürüm, dört GHCR imajından oluşan ve kendi sunucunuzda barındırabileceğiniz
 bir yığın yayımlar — arka uç, iki statik ince istemci ve isteğe bağlı eşleştirme
-aktarıcısı — ayrıca genel demo ana makinesi için ayrı bir `cc-server-demo` imajı.
+aktarıcısı — ayrıca isteğe bağlı `cc-connect` oturum açma hizmeti
+([Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/))
+ve genel demo ana makinesi için ayrı bir `cc-server-demo` imajı.
 Kendi sunucunuzda barındırılan bir kurulum, kaynak kodu kopyası gerektirmez. Bir
 sürüm etiketi sabitleyin (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ya da
 `latest` ile ilerleyin.
@@ -70,6 +72,13 @@ Bunlardan herhangi birini loopback dışına açmadan önce bilmeye değer şeyl
 - **Tek durum `/data` dizinidir.** SQLite veritabanları, eşleştirilmiş cihaz
   sırları, indirilen modeller ve toplantı sesleri hep bu birimde tutulur — onu
   yedekleyin, kapsayıcı gözden çıkarılabilir hale gelir.
+- **Sağlayıcı gizli anahtarları `-e` ile değil, bağlanmış bir `.env` dosyasında
+  durur.** `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` ya da bir `SLACK_*SECRET*`
+  süreç ortamında olduğunda sunucu başlamayı reddeder. Dosyayı salt okunur
+  olarak `/app/bin/.env` yoluna bağlayın
+  (`-v /secure/cc.env:/app/bin/.env:ro`) ya da uygulamaları Ayarlar’da
+  yapılandırın.
 - **İlk bağlantıdan önce imajın içinden bir istemci eşleştirin**; bu, [3.
   adımın](#3-adım-i̇lk-başlatmadan-önce-bir-istemci-eşleştirme) kapsayıcıdaki karşılığıdır:
 
@@ -280,22 +289,36 @@ rapor/komut geçidini genel bir proxy üzerinden açığa çıkarmayın. Hassas 
 istekleri reddedilir; kaynaklar kimliği doğrulanmış şifreli bir oturum gerektirir.
 
 
-## 6. Adım: Bir Google Calendar bağlama (isteğe bağlı)
+## 6. Adım: Kişilerin nasıl oturum açacağını seçme
 
-Bir çalışma alanının takvimini arayüz olmadan eşitlemek için cihaz kodu akışını
-kullanın:
+Sunucu sahibi olarak bağlanan ilk istemciye, bu sunucunun kişileri GitHub,
+Google Calendar ve Linear’a nasıl oturum açtıracağı sorulur: **Control Center’ın
+uygulamalarını kullan**, **Kendi uygulamalarımı kullan** ya da **Özel bir Connect
+sunucusu kullan**. Terminalden aynı seçim şöyledir:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Başka bir cihazda onaylamak için bir kod ve bir URL yazdırır, yenileme
-belirtecini sunucu tarafında saklar ve çıkar. Kaynak derlemesi bir Google
-istemcisi içermez, bu yüzden kimlik ve gizli anahtar ortam değişkenleri
-zorunludur — `--google-client-id` diye bir bayrak yoktur. Bkz. [Bir Google
-Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/).
+Bunun yerine sunucunun ortamındaki ya da `.env` dosyasındaki `CC_CONNECT_URL`
+(`hosted`, `off` ya da bir URL) seçimi sabitler. **Kendi uygulamalarımı kullan**
+ile her sağlayıcıyı **Ayarlar → Sunucu → Tek oturum açma → Sağlayıcı
+uygulamaları** altında kaydedin; **GitHub uygulamamı oluştur** GitHub’ı tek adımda
+kurar. Sağlayıcı gizli anahtarları dışa aktarılmış ortama değil, sunucunun `.env`
+dosyasına aittir. Bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)
+ve [Control Center Connect](/tr-TR/kilavuz/referans/connect/).
+
+Connect üzerinden yapılan oturum açmalar tarayıcının gösterdiği bir kodla biter;
+bu yüzden sunucunun bunlar için genel bir adrese ihtiyacı yoktur. Sunucunun kendi
+uygulamaları üzerinden yapılan oturum açmalar tarayıcıyı sunucunun genel URL’sine
+geri döndürür; bu yüzden `--public-url` değerini kişilerin tarayıcılarının
+ulaşabileceği bir adrese ayarlayın.
+
+Bu sunucudan diğer sunucular için Connect barındırmak üzere
+`CC_SERVER_CONNECT_HOST=on` ayarlayın; bkz.
+[Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/#cc_server-içinde-connect-çalıştırma).
 
 ## Yapılandırma
 
@@ -352,6 +375,7 @@ Portu loopback dışına açmadan önce bilmeniz gereken iki şey (tek başına 
 - [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)
 - [Bir filo worker’ı çalıştırma](/tr-TR/kilavuz/nasil-yapilir/filo-workeri-calistirma/)
 - [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+- [Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/)
 
 ## İlgili kavramlar
 

@@ -2,7 +2,7 @@
 title: Sandbox a zabezpečení
 description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Kam sandbox operačního systému sahá a kam ne]
@@ -128,10 +128,11 @@ zeptat nebo zakázat — a stejná pravidla platí bez ohledu na to, který adap
 agenta spouští.
 
 Push je akce, která musí vydržet i proti agentovi, který se snaží pravidlo
-obejít, takže se vynucuje tím, co agent drží, ne tím, co spouští. S
-nakonfigurovanou GitHub App dostane běh ve worktree GitHubu instalační token
-vázaný na repozitář, který umí číst obsah a pracovat s pull requesty, ale
-neumí pushovat. Konfigurace gitu běhu přepíše každou URL pro push na GitHub
+obejít, takže se vynucuje tím, co agent drží, ne tím, co spouští. Běh ve
+worktree GitHubu dostane token pro tento jediný repozitář, vydaný z GitHub App
+pracovního prostoru, z vlastní aplikace serveru nebo přes Control Center
+Connect. Umí číst obsah a, když odpovědný člen smí pushovat, komentovat pull
+requesty, ale pushovat neumí. Konfigurace gitu běhu přepíše každou URL pro push na GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) na **bránu
 běhů agentů**, loopback endpoint na `cc_server`. Brána přečte, které refy push
 aktualizuje, zeptá se pravidla **Odeslat na remote** — takže platí i pravidlo
@@ -158,12 +159,10 @@ balíček**; `curl` a `wget` jsou **Přístup k síti**. Pozná to běžný záp
 a agent odhodlaný ji schovat (`eval`, soubor se skriptem, přímé volání API) to
 dokáže. Push na tom nezávisí.
 
-:::caution[Bez GitHub App je pravidlo pro push jen doporučení]
-Bez nakonfigurované GitHub App sáhne broker po osobním přístupovém tokenu,
-který nejde omezit jen na čtení. Pravidlo pořád platí pro `git push`, protože
-git pošle push na bránu, ale kód, který token z prostředí použije přímo, může
-pushnout mimo ni.
-:::
+Každý token GitHubu, který běh dostane, je ohraničený dvakrát: na jeden
+repozitář a na to, co tam smí odpovědný člen (ten, kdo požádal, jinak vlastník
+pracovního prostoru). Žádné záložní pověření neexistuje. Když se token vydat
+nedá, běh nastartuje bez něj a jeho poznámky uvedou proč.
 
 Do sandboxu se nevkládá žádný API klíč ticketingu. Agenti zapisují tickety přes
 nástroje MCP v Control Center, které se ptají pravidla **Zápis do externího
@@ -172,9 +171,10 @@ trackeru**.
 Pravidlo **Přístup k síti** se přečte jednou, při startu běhu. Síť sandboxu je
 buď zapnutá, nebo vypnutá, takže zakázat ji vypne, zatímco povolit a nejdřív se
 zeptat ji nechají zapnutou; nástroje harnessu `web_fetch` a `web_search` se
-pořád ptají při každém volání. Při úklidu běhu se pověření odeberou spolu s
-každým zapisovacím tokenem, který brána vystavila, takže získaný údaj běh
-nepřežije.
+pořád ptají při každém volání. Při úklidu běhu se jeho odkazy na pověření
+uvolní. Tokeny za nimi se sdílejí podle člena a repozitáře a vyprší zhruba do
+hodiny; když se člen odhlásí z GitHubu nebo opustí pracovní prostor, všechny
+tokeny vydané jeho jménem najednou zaniknou.
 
 ## Co sandbox přidává a kde končí
 

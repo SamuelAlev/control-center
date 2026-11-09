@@ -2,7 +2,7 @@
 title: Tickets et délégation
 description: Pourquoi un ticket suit le travail sans le lancer, comment la délégation est encadrée et ce que le miroir du fournisseur gère ou non.
 slug: fr-FR/manuel/concepts/tickets
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Un ticket est l’unité de travail que Control Center suit. C’est délibérément un
@@ -148,9 +148,11 @@ uniquement** : un ticket adossé à un fournisseur que vous supprimez n’est
 pas supprimé dans l’outil de suivi et peut réapparaître à la prochaine
 synchronisation. Les collaborateurs et les tickets enfants suivent en cascade.
 
-Les identifiants d’adaptateur proviennent des magasins d’identifiants du serveur
-(une clé Linear ou un jeton GitHub collé dans Paramètres est pris en compte dès
-la requête suivante ; l’environnement ne fait qu’amorcer ces magasins).
+Les identifiants d’adaptateur sont résolus à chaque appel sur le serveur : la
+connexion Linear ou GitHub propre à une personne pour ce qu’elle fait, et
+l’automatisation Linear de l’espace de travail (ou la clé de service Linear du
+serveur) ou un jeton GitHub limité à un dépôt pour la synchronisation des
+tickets. Une nouvelle connexion est prise en compte dès la requête suivante.
 
 ## Tickets et pipelines
 

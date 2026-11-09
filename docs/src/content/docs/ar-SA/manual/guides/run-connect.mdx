@@ -1,0 +1,287 @@
+---
+title: تشغيل خادم Connect
+description: شغّل Control Center Connect الخاص بك من صورة Docker المسماة cc-connect، أو ضمّنه داخل cc_server، حتى تُدخِل خوادمك الناس عبر تطبيقات مزوّدين تسجّلها أنت.
+slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+يشغّل Control Center Connect تسجيلات الدخول لدى المزوّدين (GitHub وGoogle Calendar
+وLinear وSlack) للخوادم التي لم تسجّل تطبيقات خاصة بها. يبيّن هذا الدليل كيف تشغّل
+Connect الخاص بك، فتبقى تطبيقات المزوّدين وأسرارها وقائمة الخوادم المسموح لها
+باستخدامها كلها لديك.
+
+ما يستطيع Connect رؤيته وما لا يستطيع مذكور في
+[مرجع Connect](/ar-SA/دليل-المستخدم/مرجع/connect/). اقرأه أولًا إن كنت تقرّر هل
+تشغّل واحدًا.
+
+:::note[قد لا تحتاج إليه]
+يستطيع الخادم الواحد أن يسجّل تطبيقاته الخاصة بدلًا من ذلك: **الإعدادات ← الخادم ←
+تسجيل الدخول الموحّد ← تطبيقات الموفّرين**، حيث يُعِدّ **إنشاء تطبيق GitHub الخاص
+بي** GitHub في خطوة واحدة. تطبيقات الخادم الخاصة تُطبَّق فقط تحت **استخدام تطبيقاتي الخاصة**: مع Control Center أو Connect مخصص، يشغّل Connect كل مسار، بينما يبقى تطبيق مساحة العمل الخاص ساريًا. شغّل
+Connect حين ينبغي أن تتقاسم عدة خوادم مجموعة تطبيقات واحدة.
+:::
+
+## المتطلبات
+
+- عنوان **HTTPS** عام لـ Connect، مثل `https://connect.example.com`، خلف وكيل
+  ينهي TLS. لا يُقبل `http` العادي إلا على loopback
+- Docker، أو `cc_server` تستطيع إعادة تشغيله بمتغيرات بيئة إضافية
+- إذن بتسجيل التطبيقات لدى كل مزوّد تريد خدمته
+- الخوادم التي ستستخدمه، ومالكوها في متناولك: لكل خادم معرّف تثبيت تضيفه إلى قائمة
+  السماح في Connect
+
+## الخطوة 1: اختر العنوان
+
+اختر عنوان URL الآن واحتفظ به. `CONNECT_PUBLIC_URL` جزء من كل ما يفعله Connect:
+توقيعات الطلبات، وبيانات الاعتماد المختومة، وعناوين إعادة التوجيه لدى المزوّدين،
+ومعرّف التثبيت لكل خادم، كلها مربوطة به. تغييره لاحقًا يعني تسجيل عناوين إعادة
+التوجيه من جديد، وتسجيل دخول كل شخص من جديد.
+
+## الخطوة 2: سجّل تطبيقات المزوّدين
+
+لا تسجّل إلا المزوّدين الذين تريد خدمتهم. المزوّد الذي تنقصه بعض متغيراته يُستبعد من
+إعدادات Connect، وتراه الخوادم غير متاح. `<base>` أدناه هو `CONNECT_PUBLIC_URL` الخاص
+بك.
+
+| المزوّد | ما يُسجَّل | ما يُحتفظ به |
+| --- | --- | --- |
+| **GitHub App** | عنوان رد الاتصال `<base>/oauth/github/callback`. عنوان الإعداد `<base>/oauth/github/setup` مع تفعيل **Redirect on update**. اترك **Request user authorization (OAuth) during installation** معطّلًا: حين يكون مفعّلًا يتجاهل GitHub عنوان الإعداد. أبقِ **Expire user authorization tokens** مفعّلًا | معرّف التطبيق، والاسم المختصر (slug)، ومعرّف العميل، وسر العميل |
+| **Google** | عميل OAuth من نوع **Web application** بعنوان إعادة التوجيه `<base>/oauth/google/callback`، مع تفعيل Google Calendar API | معرّف العميل، وسر العميل |
+| **Linear** | تطبيق OAuth بعنوانَي رد الاتصال `<base>/oauth/linear/callback` و`<base>/oauth/linear_app/callback` | معرّف العميل فقط |
+| **Slack** | عنوانا إعادة التوجيه `<base>/oauth/slack_oidc/callback` و`<base>/oauth/slack/callback`. Event Subscriptions عند `<base>/v1/hooks/slack/events` (`app_mention`، `message.*`، `assistant_thread_*`، `app_uninstalled`، `tokens_revoked`). أوامر الشرطة المائلة عند `<base>/v1/hooks/slack/commands`. تدوير الرموز مفعّل | معرّف التطبيق، ومعرّف العميل، وسر العميل، وسر التوقيع |
+
+امنح GitHub App أذونات المستودع هذه: **Metadata** قراءة، و**Contents** قراءة وكتابة،
+و**Pull requests** قراءة وكتابة، و**Issues** قراءة وكتابة، و**Checks** و**Actions**
+و**Commit statuses** قراءة. وأضف **Members** في المؤسسة قراءةً لطلبات مراجعة الفرق.
+يمكن أن تبقى خطافات الويب معطّلة: الخوادم تستطلع.
+
+لا يحتاج Connect أبدًا إلى المفتاح الخاص لـ GitHub App. بل يسكّ رموزًا لمستودع واحد
+من تسجيل دخول الشخص نفسه. ولا يحتاج Linear إلى سر أيضًا: يعيد Connect الرمز إلى
+الخادم، فيُتمّ الخادم التبادل بنفسه.
+
+## الخطوة 3: اجمع معرّفات التثبيت
+
+لا يجيب Connect إلا الخوادم المدرجة في قائمة السماح لديه. على كل خادم، وجّهه إلى
+Connect الخاص بك، ثم اقرأ معرّف تثبيته:
+
+1. انتقل إلى **الإعدادات ← الخادم ← تسجيل الدخول الموحّد**، وافتح بطاقة **Control
+   Center Connect**، واختر **استخدام خادم Connect مخصص**
+2. أدخل عنوانك واحفظ. تعرض البطاقة **مُعرّف التثبيت** الخاص بالخادم
+
+ومن طرفية على مضيف الخادم، الأمر نفسه هو:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+يطبع `status` معرّف التثبيت. ويعرض `install_blocked` إلى أن تُنجَز الخطوة 5، وهذا
+متوقَّع.
+
+يُشتق معرّف التثبيت لكل عنوان Connect، فيكون للخادم نفسه معرّف مختلف لكل Connect
+يخاطبه. ولا يتغيّر إلا حين يدوّر مالكه المفتاح.
+
+## الخطوة 4: أنشئ مفتاح ختم
+
+يشفّر Connect كل بيانات اعتماد يعيدها بمفتاح ختم. أنشئ واحدًا واحتفظ به ملفَّ سرٍّ:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+فقدان مفتاح الختم يُخرج الجميع: لا يمكن فتح أي ختم من دونه.
+
+## الخطوة 5: شغّل الحاوية
+
+ينشر كل إصدار `ghcr.io/samuelalev/cc-connect` مع مصدر البناء (build provenance).
+ثبّت وسم إصدار في الإنتاج.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+وجّه الوكيل العكسي إلى المنفذ `8790`. تعمل الصورة بمستخدم غير ذي امتيازات، وتحفظ
+حالتها في وحدة التخزين `/data`، ولها فحص سلامة مدمج (`cc-connect --healthcheck`،
+الذي يسبر `/healthz`).
+
+يرفض Connect الإقلاع (رمز الخروج `78`) حين تكون إعداداته مفتوحة، أو غير آمنة، أو
+ناقصة، ويطبع أي متغير هو الخاطئ. غياب قائمة السماح، أو عنوان `http` خارج loopback،
+أو مفتاح ختم مشوّه، أو ضبط `NAME` و`NAME_FILE` معًا، كلها توقفه.
+
+نقطة تحقق: على كل خادم، تقرأ بطاقة Connect **يعمل**، ويسمّي **أين يجري كل تسجيل
+دخول** القيمة **Connect** لكل مزوّد سجّلته. ويطبع `cc_server connect status`
+`Health: ok` والمسارات نفسها.
+
+## تضمين Connect داخل cc_server
+
+يستطيع الخادم أن يستضيف Connect بنفسه بدل حاوية منفصلة. والخدمة المضمّنة هي الخدمة
+نفسها التي تشغّلها الصورة.
+
+1. ضع متغيرات `CONNECT_*` في ملف `.env` الخاص بالخادم (أو في بيئته)، كما في الخطوة 5
+2. أضف `CC_SERVER_CONNECT_HOST=on`
+3. أعد تشغيل الخادم. يطبع سجله `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+يُقدَّم Connect عندئذٍ عند `<server>/connect`:
+
+- القيمة الافتراضية لـ `CONNECT_PUBLIC_URL` هي أصل العنوان العام للخادم مضافًا إليه
+  `/connect`. اضبطه صراحة خلف وكيل. يجب أن يكون مساره `/connect` بالضبط، وأن يكون
+  HTTPS ما لم يكن loopback
+- لا تصل إلى الخدمة المضمّنة إلا متغيرات `CONNECT_*`، فلا تستعير أبدًا تطبيقات
+  المزوّدين الخاصة بالخادم
+- ما زال `CONNECT_ALLOWED_INSTALLS` مطلوبًا، بما في ذلك للخادم المستضيف نفسه
+- التضمين المضبوط ضبطًا خاطئًا يمنع الخادم من الإقلاع بدل أن يقدّم وسيطًا مفتوحًا
+- خادم العرض التجريبي لا يضمّنه أبدًا
+
+سجّل عناوين إعادة التوجيه لدى المزوّدين على `https://<server>/connect`، ثم وجّه
+الخوادم (والخادم المستضيف منها) إلى ذلك العنوان كما في الخطوة 3.
+
+## مرجع الإعدادات
+
+كل إعداد متغير بيئة. ويمكن لأي سر أن يأتي من ملف مربوط بدلًا من ذلك: اضبط `NAME_FILE`
+مكان `NAME`. يعيد Connect قراءة الملف مرة كل 30 ثانية على الأكثر، ويحتفظ بآخر قيمة
+سليمة. والأسرار الموسومة **مزدوج** تقبل أيضًا `NAME_PREVIOUS` (أو
+`NAME_PREVIOUS_FILE`) أثناء التدوير.
+
+### العنوان والوصول
+
+| المتغير | الافتراضي | المعنى |
+| --- | --- | --- |
+| `CONNECT_PUBLIC_URL` | مطلوب | عنوان URL العام القانوني. HTTPS، أو `http` على loopback فقط. وجود مسار يعني التضمين. بلا استعلام ولا جزء |
+| `CONNECT_ALLOWED_INSTALLS` | مطلوب | معرّفات تثبيت مفصولة بفواصل. لا يُقبل `*` إلا مع `CONNECT_SIGNED_CONFIG_FILE` |
+| `CONNECT_DENY_INSTALLS` | | معرّفات تثبيت تُرفض حتى لو كانت مسموحًا بها |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` | | معرّفات رقمية لمالكين على GitHub. حين يُضبط، لا تُسكّ رموز المستودعات إلا لمستودعات يملكونها |
+| `CONNECT_HOST`، `CONNECT_PORT` | `0.0.0.0`، `8790` | عنوان الربط والمنفذ |
+| `CONNECT_TRUST_PROXY` | `0` | عدد قفزات الوكلاء الموثوقة في `X-Forwarded-For` (من 0 إلى 8). لا يُستخدم إلا لحد المعدّل لكل عنوان |
+
+### مسارات المزوّدين
+
+| المتغير | الافتراضي | المعنى |
+| --- | --- | --- |
+| `CONNECT_GITHUB_APP_ID`، `CONNECT_GITHUB_APP_SLUG`، `CONNECT_GITHUB_CLIENT_ID` | | GitHub App |
+| `CONNECT_GITHUB_CLIENT_SECRET` | | سر، مزدوج |
+| `CONNECT_GOOGLE_CLIENT_ID`، `CONNECT_GOOGLE_CLIENT_SECRET` | | عميل Google. السر مزدوج |
+| `CONNECT_LINEAR_CLIENT_ID` | | تطبيق Linear. بلا سر |
+| `CONNECT_SLACK_APP_ID`، `CONNECT_SLACK_CLIENT_ID` | | تطبيق Slack |
+| `CONNECT_SLACK_CLIENT_SECRET`، `CONNECT_SLACK_SIGNING_SECRET` | | أسرار، مزدوجة |
+| `CONNECT_KLIPY_APP_KEY` | | مفتاح بحث GIF من Klipy. سر، مزدوج |
+| `CONNECT_KLIPY_MODE` | `proxy` | `proxy` يُبقي المفتاح في Connect؛ و`key` يسلّمه إلى الخوادم |
+| `CONNECT_<LANE>_SECRET_GENERATION` | `1` | GitHub وGoogle وSlack: الجيل المسجّل في الأختام الجديدة |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION` | `1` | GitHub وGoogle وSlack: الأختام الأقدم يجب أن تسجّل الدخول من جديد |
+| `CONNECT_<LANE>_ACCEPTS_NEW` | `true` | كل مسار: `false` يوقف تسجيلات الدخول الجديدة بينما تواصل القائمة تجددها |
+
+### الأختام والحالة والتخزين
+
+| المتغير | الافتراضي | المعنى |
+| --- | --- | --- |
+| `CONNECT_SEAL_BACKEND` | `local` | `local` أو `gcp-kms` |
+| `CONNECT_SEAL_KEYS` | | سر، مطلوب مع `local`. مدخلات `kid:key` مفصولة بفواصل، الأحدث أولًا؛ والمدخلات الأقدم ما زالت تفك التشفير |
+| `CONNECT_KMS_KEY` | | `projects/…/locations/…/keyRings/…/cryptoKeys/…`، مطلوب مع `gcp-kms` |
+| `CONNECT_STATE` | `memory` | `memory` لنسخة واحدة، و`redis` لعدة نسخ |
+| `CONNECT_REDIS_URL` | | سر. `redis://` أو `rediss://` |
+| `CONNECT_REDIS_CA_FILE` | | حزمة CA لـ `rediss://` |
+| `CONNECT_BINDINGS` | `file` | أين تعيش روابط تثبيت GitHub: `file` أو `firestore` |
+| `CONNECT_DATA_DIR` | `data` (`/data` في الصورة) | يحوي `bindings.json` |
+| `CONNECT_FIRESTORE_PROJECT`، `CONNECT_FIRESTORE_DATABASE` | قاعدة البيانات `(default)` | لـ `CONNECT_BINDINGS=firestore` |
+
+### الإعدادات والسجلات والحدود
+
+| المتغير | الافتراضي | المعنى |
+| --- | --- | --- |
+| `CONNECT_SIGNED_CONFIG_FILE` | | إعدادات موقّعة دون اتصال، تُقدَّم كما هي. يستخدمها Connect المستضاف من Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS` | | المفاتيح التي يجب أن تتحقق منها الإعدادات الموقّعة |
+| `CONNECT_CONFIG_EPOCH` | `1` | حقبة الإعدادات التي يولّدها Connect المستضاف ذاتيًا |
+| `CONNECT_LOG_HMAC_KEY` | عشوائي لكل عملية | سر. اضبطه لتبقى الوسوم التي تنوب عن معرّفات التثبيت ثابتة عبر إعادات التشغيل والنسخ |
+| `CONNECT_VERSION`، `CONNECT_IMAGE_DIGEST` | | يبلّغ عنهما `/v1/version` |
+| `CONNECT_RATE_INSTALL_PER_MINUTE` | `600` | الطلبات لكل تثبيت |
+| `CONNECT_RATE_IP_PER_MINUTE` | `300` | الطلبات لكل عنوان |
+| `CONNECT_RATE_GLOBAL_PER_SECOND` | `500` | الطلبات للخدمة كلها |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE` | `600` | أحداث Slack لكل فريق |
+| `CONNECT_RATE_KLIPY_PER_MINUTE` | `120` | عمليات بحث GIF لكل تثبيت |
+
+## تشغيل أكثر من نسخة
+
+نسخة واحدة بـ `CONNECT_STATE=memory` تكفي معظم المؤسسات. أما عدة نسخ خلف عنوان واحد
+فتحتاج إلى `CONNECT_STATE=redis`، وإلى `CONNECT_DATA_DIR` مشترك أو
+`CONNECT_BINDINGS=firestore`، حتى يكتمل على نسخة تسجيلُ دخول بدأ على نسخة أخرى.
+
+## تدوير سر مزوّد
+
+لا يخرج أحد:
+
+1. أنشئ السر الجديد لدى المزوّد واحتفظ بالقديم
+2. انقل القيمة القديمة إلى `NAME_PREVIOUS`، وضع الجديدة في `NAME`، وارفع
+   `CONNECT_<LANE>_SECRET_GENERATION`. تُلتقط الملفات المربوطة في غضون 30 ثانية
+3. انتظر حتى تتجدد تسجيلات الدخول، ثم احذف السر القديم لدى المزوّد وأزل
+   `NAME_PREVIOUS`
+
+ولتدوير مفتاح ختم، ضع مدخلًا جديدًا من `cc-connect-config seal-key` أولًا في
+`CONNECT_SEAL_KEYS`، واحتفظ بالمدخل القديم إلى أن تتجدد أختامه.
+
+## تغيير تطبيق
+
+تتذكّر الخوادم معرّفات التطبيق والعميل التي أعلنها Connect الخاص بك في أول مرة
+استخدمته. إن استبدلت تطبيقًا، تعرض بطاقة Connect في كل خادم **تغيّرت تطبيقات
+Connect**، وتتوقف تسجيلات الدخول عبر Connect إلى أن يضغط مالكه **الوثوق بالتطبيقات
+الجديدة**. أخبر مالكي الخوادم قبل التحويل، حتى يعرفوا أن التنبيه منك.
+
+## حظر خادم
+
+أضف معرّف تثبيته إلى `CONNECT_DENY_INSTALLS` وأعد التشغيل. يرى مالكه «حظر Connect
+مُعرّف التثبيت لهذا الخادم»، ويتوقف كل تسجيل دخول عبر Connect عليه.
+
+## استكشاف الأخطاء وإصلاحها
+
+### يقول خادم إن Connect حظره
+
+معرّف تثبيته ليس في `CONNECT_ALLOWED_INSTALLS`، أو هو في `CONNECT_DENY_INSTALLS`.
+يتغيّر المعرّف حين يدوّر مالكه المفتاح؛ فاطلب المعرّف الجديد.
+
+### يظهر مزوّد على أنه غير متاح
+
+ينقصه أحد متغيراته، فاستبعد Connect ذلك المسار. افحص سجل الإقلاع والجداول أعلاه.
+يحتاج GitHub إلى الأربعة كلها: معرّف التطبيق، والاسم المختصر، ومعرّف العميل، وسر
+العميل؛ ويحتاج Google إلى معرّف العميل وسرّه معًا.
+
+### تفشل تسجيلات الدخول بعدم تطابق إعادة التوجيه
+
+عنوان إعادة التوجيه المسجّل لدى المزوّد لا يطابق `CONNECT_PUBLIC_URL` تمامًا. قارن
+المخطط والمضيف والمنفذ، ومسار `/connect` في Connect المضمّن.
+
+### اضطر الجميع إلى تسجيل الدخول من جديد
+
+تغيّر مفتاح الختم أو فُقد، أو دوّر خادم مفتاحه، أو استُعيدت بيانات خادم على جهاز آخر.
+بيانات الاعتماد المختومة لا تُفتح إلا للتثبيت ولـ Connect اللذين أنشآها.
+
+## أدلة ذات صلة
+
+- [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
+- [ربط Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)
+
+## مرجع ذو صلة
+
+- [Control Center Connect](/ar-SA/دليل-المستخدم/مرجع/connect/)
+- [واجهة سطر أوامر `cc_server`](/ar-SA/دليل-المستخدم/مرجع/سطر-أوامر-cc-server/)

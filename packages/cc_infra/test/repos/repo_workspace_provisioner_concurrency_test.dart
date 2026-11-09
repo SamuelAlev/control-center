@@ -47,7 +47,7 @@ void main() {
           updatedAt: DateTime(2026),
         ),
       ]),
-      githubToken: () async => null,
+      githubToken: (_, _) async => null,
       branchTemplate: (_) async => '{type}/{key}',
     );
   });
@@ -61,16 +61,21 @@ void main() {
   String worktreePath() =>
       p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
 
-  Future<String> provision(String agentSlug) => provisioner.ensureSpaceWorkspace(
-    workspaceId: 'ws-1',
-    spaceId: 'sp-1',
-    agentSlug: agentSlug,
-    fallbackDir: '',
-    repoAllowlist: const {'repo-1'},
-  );
+  Future<String> provision(String agentSlug) =>
+      provisioner.ensureSpaceWorkspace(
+        workspaceId: 'ws-1',
+        spaceId: 'sp-1',
+        agentSlug: agentSlug,
+        fallbackDir: '',
+        repoAllowlist: const {'repo-1'},
+      );
 
   test('overlapping provisions of one space materialize the repo once', () async {
-    await Future.wait([provision('alice'), provision('bob'), provision('cara')]);
+    await Future.wait([
+      provision('alice'),
+      provision('bob'),
+      provision('cara'),
+    ]);
 
     expect(
       isolation.provisioned,
@@ -101,32 +106,29 @@ void main() {
     );
   });
 
-  test(
-    'a Retry is not refused by the stop it cleared while the stopped copy '
-    'is still finishing',
-    () async {
-      // A CoW copy does not observe the token, so the stopped run stays in
-      // flight until the copy lands. A Retry in that window used to share the
-      // stopped run's cancelled token and give up before starting — every
-      // press "failed" in a second with no worktree on disk.
-      final copy = Completer<void>();
-      isolation.holdNext = copy;
-      final stopped = provision('_pr');
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      provisioner.cancelSpaceProvisioning('ws-1', 'sp-1');
+  test('a Retry is not refused by the stop it cleared while the stopped copy '
+      'is still finishing', () async {
+    // A CoW copy does not observe the token, so the stopped run stays in
+    // flight until the copy lands. A Retry in that window used to share the
+    // stopped run's cancelled token and give up before starting — every
+    // press "failed" in a second with no worktree on disk.
+    final copy = Completer<void>();
+    isolation.holdNext = copy;
+    final stopped = provision('_pr');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    provisioner.cancelSpaceProvisioning('ws-1', 'sp-1');
 
-      // What the space banner's Retry does before provisioning again.
-      provisioner.clearSpaceProvisioningCancellation('ws-1', 'sp-1');
-      final retry = provision('_pr');
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      copy.complete();
+    // What the space banner's Retry does before provisioning again.
+    provisioner.clearSpaceProvisioningCancellation('ws-1', 'sp-1');
+    final retry = provision('_pr');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    copy.complete();
 
-      expect(await stopped, '', reason: 'the stopped run still reports stop');
-      expect(await retry, isNot(''));
-      expect(registry.rows, hasLength(1));
-      expect(Directory(worktreePath()).existsSync(), isTrue);
-    },
-  );
+    expect(await stopped, '', reason: 'the stopped run still reports stop');
+    expect(await retry, isNot(''));
+    expect(registry.rows, hasLength(1));
+    expect(Directory(worktreePath()).existsSync(), isTrue);
+  });
 
   test('different repos of one space still materialize in parallel', () async {
     // The lock is per repo, not per space: serializing a whole space would turn
@@ -147,7 +149,7 @@ void main() {
             updatedAt: DateTime(2026),
           ),
       ]),
-      githubToken: () async => null,
+      githubToken: (_, _) async => null,
       branchTemplate: (_) async => '{type}/{key}',
     );
 
@@ -185,7 +187,8 @@ class _RaceyIsolation implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,

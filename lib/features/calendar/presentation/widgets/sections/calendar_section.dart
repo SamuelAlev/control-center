@@ -3,6 +3,7 @@ import 'package:control_center/features/calendar/presentation/widgets/google_cal
 import 'package:control_center/features/calendar/providers/connect_account_provider.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -20,6 +21,7 @@ class CalendarSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final accounts =
         ref.watch(googleAccountsProvider).asData?.value ?? const [];
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
 
     return SectionCard(
       label: l10n.calendarSettingsTitle,
@@ -32,9 +34,13 @@ class CalendarSection extends ConsumerWidget {
               subtitle: l10n.calendarConnectedAs(account.accountEmail),
               trailing: CcButton(
                 variant: CcButtonVariant.secondary,
-                onPressed: () => ref
-                    .read(connectGoogleCalendarProvider.notifier)
-                    .disconnect(account.id),
+                onPressed: workspaceId == null
+                    ? null
+                    : () => disconnectGoogleCalendar(
+                        ref,
+                        workspaceId: workspaceId,
+                        accountId: account.id,
+                      ),
                 child: Text(l10n.calendarDisconnect),
               ),
             ),
@@ -50,7 +56,13 @@ class CalendarSection extends ConsumerWidget {
               variant: accounts.isEmpty
                   ? CcButtonVariant.primary
                   : CcButtonVariant.secondary,
-              onPressed: () => showGoogleCalendarConnectDialog(context),
+              onPressed: workspaceId == null
+                  ? null
+                  : () => showGoogleCalendarConnectDialog(
+                      context,
+                      ref,
+                      workspaceId: workspaceId,
+                    ),
               icon: AppIcons.calendarPlus,
               child: Text(
                 accounts.isEmpty

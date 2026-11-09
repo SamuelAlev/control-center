@@ -2,7 +2,7 @@
 title: Conectează un host de cod
 description: Conectează GitHub, GitLab sau Bitbucket pentru ca suprafața PR, înregistrarea repo-urilor și rulările agenților să funcționeze — un singur spațiu de lucru le poate folosi pe toate trei.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center funcționează cu trei hosturi de cod, numite **forge-uri** în toată aplicația: **GitHub**, **GitLab** și **Bitbucket Cloud**. Niciunul nu este implicit. Conectează unul și totul funcționează; conectează mai multe și un singur spațiu de lucru poate conține repo-uri din toate deodată.
@@ -13,9 +13,9 @@ Forge-ul este o proprietate a fiecărui **repo**, citită din remote-ul `origin`
 
 1. Deschide **Setări → Spațiu de lucru → Profil și identitate** (`/settings/workspace/profile`).
 2. Găsește cardul **Găzduire de cod**. Fiecare forge acceptat este listat, conectat sau nu.
-3. Apasă **Autentifică-te cu …** dacă rândul îl oferă, sau **Adaugă token** și lipește unul.
+3. Pe **GitHub**, apasă **Autentifică-te în GitHub**. Pe **GitLab** sau **Bitbucket**, apasă **Adaugă token** și lipește unul.
 
-**Autentificarea** apare pentru un forge pentru care serverul tău are o aplicație înregistrată — astăzi, acesta este GitHub, printr-un flux de dispozitiv (vezi [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)). Pentru orice altceva, tokenul se lipește, ceea ce este alternativa onestă, nu un buton care nu se poate finaliza.
+**GitHub funcționează doar prin autentificare.** Autentificarea rulează prin GitHub App proprie a serverului sau prin Control Center Connect, după cum a configurat proprietarul serverului (vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)); nu există niciun token GitHub de lipit. GitLab și Bitbucket primesc în continuare un token personal.
 
 În ambele cazuri, acreditarea este **a ta și se află pe server**, indexată după id-ul tău de utilizator: niciun token nu este stocat pe mașina pe care l-ai introdus, fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi. Ea intră în vigoare la **următoarea cerere** — nu este nimic de repornit, iar deconectarea oprește imediat trimiterea ei.
 
@@ -24,29 +24,28 @@ Fiecare rând îți spune de unde provine acreditarea sa, pentru că aceasta est
 | Subtitlu                                        | Semnificație                                                                       |
 | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `Signed in as octocat`                          | Se folosește propria ta acreditare                                                 |
-| `Signed in as octocat · via this server's app`  | Răspunde identitatea de aplicație a serverului — nu te-ai autentificat             |
-| `Signed in as octocat · from the environment`   | Răspunde o variabilă de mediu a serverului, nu acreditarea ta                      |
+| `Signed in as octocat · from the environment`   | Doar GitLab sau Bitbucket: răspunde o variabilă de mediu a serverului, nu tokenul tău |
 | `Not connected`                                 | Nu ai nicio acreditare pentru acest forge                                          |
+| `GitHub sign-in isn't set up on this server yet.` | Serverul nu are nici GitHub App proprie, nici Connect; proprietarul serverului configurează una dintre ele |
 
 ### Ce token cere fiecare forge
 
 | Forge         | Token                                                     | Unde îl creezi                                            |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Clasic: `repo` și `read:org`. Cu granularitate fină: Contents + Pull requests (citire/scriere), Checks + Actions (citire) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Un token de acces personal cu `api`                       | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Un token API Atlassian, plus adresa de e-mail a contului tău | id.atlassian.com → Security → API tokens                |
 
 Bitbucket se autentifică folosind **adresa de e-mail a contului ca nume de utilizator** și tokenul ca parolă. Setează `BITBUCKET_EMAIL` în mediul serverului, ca să știe cu ce adresă de e-mail să asocieze tokenul.
 
-### Sau folosește variabilele de mediu
+### Munca de fundal
 
-Pentru o instalare headless sau CI, serverul citește acestea:
+Munca fără niciun om în spate (rulări de agenți, pipeline-uri, interogarea periodică a PR-urilor) are și ea nevoie de o acreditare, iar fiecare forge răspunde diferit:
 
-- **GitHub** — `GITHUB_TOKEN`, apoi `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, apoi `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, apoi `BITBUCKET_TOKEN` (cu `BITBUCKET_EMAIL`)
+- **GitHub** — un token pentru câte un singur depozit, emis din GitHub App a serverului sau prin Connect și limitat la ce poate face acolo un membru responsabil. Nu este niciodată autentificarea unei persoane predată întreagă, iar nicio variabilă de mediu sau token lipit nu ține locul lui. Vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/#pentru-cine-vorbește-acreditarea-ta)
+- **GitLab** — tokenul lipit al proprietarului serverului, apoi `GITLAB_TOKEN`, apoi `CI_JOB_TOKEN`
+- **Bitbucket** — tokenul lipit al proprietarului serverului, apoi `BITBUCKET_API_TOKEN`, apoi `BITBUCKET_TOKEN` (cu `BITBUCKET_EMAIL`)
 
-Acestea sunt acreditările **serverului**, nu ale tale, iar distincția este esențială: o cerere făcută în numele tău folosește acreditarea ta și nimic altceva, așa că mediul nu te înlocuiește niciodată pe nesimțite. Munca fără niciun om în spate — webhook-uri, interogarea periodică a PR-urilor, sincronizarea tichetelor — rezolvă mai întâi identitatea de aplicație a serverului, apoi acreditarea proprietarului serverului, apoi mediul. Ordinea este fixă, astfel încât „m-am autentificat și nimic nu s-a schimbat” să nu fie niciodată un rezultat posibil.
+Variabilele de mediu GitLab și Bitbucket sunt acreditarea **serverului**, nu a ta: o cerere făcută în numele tău folosește tokenul tău și nimic altceva, așa că mediul nu te înlocuiește niciodată pe nesimțite.
 
 ## Ești o altă persoană pe fiecare forge
 
@@ -94,11 +93,11 @@ GitLab numește un pull request **merge request**. Control Center spune „pull 
 
 ### Lista de PR-uri este goală și spune că un forge nu este conectat
 
-Nu ai nicio acreditare pentru acel forge. Autentifică-te sau lipește un token în **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**. Repo-urile celorlalte forge-uri nu sunt afectate.
+Nu ai nicio acreditare pentru acel forge. Autentifică-te în GitHub sau lipește un token GitLab ori Bitbucket în **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**. Repo-urile celorlalte forge-uri nu sunt afectate.
 
 ### Am conectat un forge, dar repo-urile lui tot nu afișează nimic
 
-Verifică subtitlul rândului. Dacă scrie „via this server's app” sau „from the environment”, răspunde o altă acreditare decât cea la care te așteptai — acreditarea ta are prioritate pentru orice ceri tu, așa că, dacă scrie altfel, a ta nu a fost salvată.
+Verifică subtitlul rândului. Dacă un rând GitLab sau Bitbucket scrie „from the environment”, răspunde o altă acreditare decât cea la care te așteptai — tokenul tău are prioritate pentru orice ceri tu, așa că, dacă scrie altfel, al tău nu a fost salvat. Pe GitHub, verifică dacă GitHub App este instalată pe contul care deține repo-urile.
 
 ### Un repo nu se înregistrează
 

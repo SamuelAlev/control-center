@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Upper bound on `tailscale status --json`.
 const Duration kTailscaleStatusTimeout = Duration(seconds: 3);
 
@@ -113,7 +115,7 @@ Future<List<TailscalePeer>> listOnlineTailscalePeers({
   Duration timeout = kTailscaleStatusTimeout,
 }) async {
   try {
-    final result = await Process.run(resolveTailscaleCommand(), const [
+    final result = await ChildProcess.run(resolveTailscaleCommand(), const [
       'status',
       '--json',
     ]).timeout(timeout);

@@ -1,11 +1,11 @@
 ---
 title: Slack-integratie instellen
-description: Verbind een Slack-app met een Control Center-werkruimte zodat leden agenten vanuit Slack aansturen.
+description: Verbind Slack met een Control Center-werkruimte, via de gedeelde Control Center-app of een eigen app, zodat leden agenten vanuit Slack aansturen.
 slug: nl-NL/handleiding/gidsen/slack-integratie
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Deze gids laat je zien hoe je Slack met een Control Center-werkruimte verbindt, door Control Center de app te laten maken of door hem zelf te bouwen.
+Deze gids laat je zien hoe je Slack met een Control Center-werkruimte verbindt: door de gedeelde Control Center-app toe te voegen, of met een eigen app die Control Center voor je maakt of die je zelf bouwt.
 
 Voor een begeleide eerste kennismaking zie [Slack koppelen aan je werkruimte](/nl-NL/handleiding/zelfstudies/eerste-chatbrug/).
 
@@ -19,9 +19,37 @@ is geen implementatie voor Discord, Telegram, Teams of Matrix.
 
 - De rol `owner` of `admin` in de Control Center-werkruimte — een chat-app verbinden is een wijziging van de werkruimte-instellingen
 - De bevoegdheid om apps te maken en te installeren in de Slack-workspace
-- Niets hoeft publiek bereikbaar te zijn: de verbinding gaat naar buiten (Socket Mode), dus de server heeft geen inkomende poort, tunnel of domein nodig
+- Niets hoeft publiek bereikbaar te zijn: je eigen app maakt via Socket Mode een uitgaande verbinding, en de gebeurtenissen van de gedeelde app bereiken de server via een long poll naar Control Center Connect, dus de server heeft geen inkomende poort, tunnel of domein nodig
 
-## Drie manieren om de app te krijgen
+## Gedeelde app of je eigen app
+
+Een werkruimte draait altijd op precies één van beide.
+
+| Modus                          | Vereist                                                                                                        | Je krijgt                                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Gedeelde Control Center-app** | De server gebruikt Control Center Connect (**Instellingen → Server → Single sign-on**) en Connect bedient Slack | Eén klik en een Slack-aanmelding. Geen app om te maken, geen token om te plakken, niets om te roteren |
+| **Je eigen app**               | Een Slack-app in je Slack-workspace, gemaakt op een van de drie manieren hieronder                            | Je eigen botnaam, beschrijvingen en slash-commando, te bewerken vanuit Control Center         |
+
+### De gedeelde Control Center-app toevoegen
+
+1. Ga in Control Center naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+2. Zoek in het Slack-blok de rij **Control Center toevoegen aan Slack** en klik op **Toevoegen aan Slack**
+3. Je browser opent Slack. Meld je aan met Slack, kies de Slack-workspace en keur de installatie goed
+4. Toont de browser een code, voer die dan in in de dialoog die Control Center open liet staan. Stuurt de browser je zelf terug naar de app, dan hoef je niets te typen
+5. Een melding noemt de Slack-workspace waaraan de app is toegevoegd, en het Slack-blok toont dat de verbinding op de gedeelde Control Center-app draait
+
+Alleen een werkruimtebeheerder kan de app toevoegen. De rij zegt waarom hij niet kan starten als de server zijn eigen apps gebruikt in plaats van Connect, als je Connect geen Slack-app heeft, of als deze werkruimte al een eigen Slack-app heeft verbonden.
+
+Zo verschilt hij van je eigen app:
+
+- Slack stuurt de gebeurtenissen van de gedeelde app naar Connect. Connect houdt alleen een verwijzing bij (team, kanaal en bericht-ID) en gooit de berichttekst weg; de server vraagt via een long poll verwijzingen op bij Connect en leest elk bericht zelf uit Slack. De tekst van een slash-commando gaat wel door Connect, en daarom maakt [`/cc ticket`](#ticketconcepten-maken-vanuit-slack) alleen een concept
+- Het bottoken wordt voor deze server verzegeld en via Connect vernieuwd, dus er is geen token om te plakken of te roteren
+- De naam, beschrijvingen en het slash-commando van de bot zijn die van de gedeelde app. De Slack-rij zegt dat de verbinding op de gedeelde app draait en biedt geen **Bot aanpassen**
+- Een Slack-workspace is aan één Control Center-server tegelijk gebonden. Voeg je de app vanaf een andere server toe, dan verhuist hij daarheen en stopt de verbinding van deze server
+
+Om van modus te wisselen verbreek je de verbinding en verbind je op de andere manier.
+
+### Je eigen app: drie manieren om hem te krijgen
 
 | Weg                 | Jij levert                            | Control Center doet                                                                                                          |
 | ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ is geen implementatie voor Discord, Telegram, Teams of Matrix.
 
 Alleen het begeleide traject laat de app ook _beheerbaar_ vanuit Control Center, en dat is wat [De chatbot aanpassen](/nl-NL/handleiding/gidsen/chatbot-aanpassen/) mogelijk maakt. Een app die je via **Maken in Slack** hebt gemaakt, kun je later promoveren naar een beheerde app door een configuratietoken in het verbindingsdialoogvenster te plakken.
 
-Er is bewust geen knop “Control Centers Slack-app installeren”. Een gedistribueerde Slack-app installeren vereist een gedeeld client-secret (Slack heeft geen PKCE), en Socket Mode verdeelt de gebeurtenissen van een app willekeurig over zijn verbindingen — één gedeelde app zou de berichten van jouw werkruimte dus bij de servers van anderen afleveren. Elke werkruimte heeft daarom zijn eigen app, en bij deze drie trajecten gaat het erom hoe weinig werk dat je kost.
+De gebeurtenissen van je eigen app gaan nooit door Connect: Socket Mode levert ze rechtstreeks aan deze server.
 
 ## Optie A: Control Center de app laten maken
 
@@ -102,6 +130,8 @@ message.im
 
 ## Verbinden
 
+Zo bereiken de tokens van je eigen app Control Center. De gedeelde app heeft hier niets van nodig.
+
 1. Ga naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
 2. Klik in het Slack-blok op **Slack verbinden**
 3. Vul de velden in:
@@ -124,8 +154,8 @@ Zonder het optionele app-configuratietoken werkt de verbinding prima — je kunt
 
 ## Wat verbinden doet
 
-- Slaat de inloggegevens op in de eigen map van de werkruimte, naast zijn database, alleen leesbaar voor de eigenaar. Ze gaan nooit terug naar een client
-- Opent één Socket Mode-verbinding voor deze werkruimte en ontvangt vanaf dat moment vermeldingen, antwoorden in Slack-threads, DM's en slash-commando's
+- Slaat de inloggegevens op in de eigen map van de werkruimte, naast zijn database, alleen leesbaar voor de eigenaar. Ze gaan nooit terug naar een client. Voor de gedeelde app is dat de verzegelde machtiging; het kortlevende bottoken waarin die wordt vernieuwd, blijft in het geheugen
+- Ontvangt vanaf dat moment vermeldingen, antwoorden in Slack-threads, DM's en slash-commando's: via één Socket Mode-verbinding voor je eigen app, of via de ene long poll van de server naar Connect voor de gedeelde app
 - Herneemt elke Slack-thread die al aan de brug hing, zodat een nieuwe verbinding bestaande gesprekken voortzet in plaats van ze te laten stranden
 - Kost niets voor werkruimtes zonder chat-app: geen socket, geen timers, geen verkeer
 
@@ -142,8 +172,8 @@ Slack daar opnieuw verbindt.
 Toegang tot de brug is **lidmaatschap** van de werkruimte, nooit het bezit van
 een token. Een Slack-account moet gekoppeld zijn aan een Control Center-gebruiker
 die lid is met een schrijvende rol. Verbinden, de verbinding verbreken, de
-begeleide installatie, de installatielink en het aanpassen van de bot zijn
-allemaal alleen voor beheerders.
+installatie van de gedeelde app, de begeleide installatie, de installatielink en
+het aanpassen van de bot zijn allemaal alleen voor beheerders.
 :::
 
 ## Controleren
@@ -166,7 +196,25 @@ Redeneren als een lap tekst en de uitvoer van tools verlaten Control Center nooi
 
 Gebeurt er niets als je erop klikt, dan is de server die het bericht heeft verstuurd niet bereikbaar vanaf de machine waarop je hebt geklikt (een server die alleen op loopback luistert en waarop je vanaf een telefoon klikt, bijvoorbeeld), of Control Center draait daar niet. Een server zonder bereikbaar adres stuurt een kaart zonder knop in plaats van een knop die nergens heen leidt.
 
+## Ticketconcepten maken vanuit Slack
+
+Elk gekoppeld lid met een schrijvende rol kan vanuit Slack een ticket voorstellen:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+De tekst vóór de `|` is de titel, de tekst erna de beschrijving. De bot antwoordt dat hij een concept van het ticket heeft gemaakt. Er wordt nog niets aangemaakt en er gaat geen ticketautomatisering af: het concept wacht op je in **Instellingen → Werkruimte → Profiel en identiteit → Ticketconcepten uit de chat**, waar je de titel en beschrijving kunt corrigeren en daarna op **Ticket aanmaken** of **Negeren** klikt.
+
+- Alleen het lid dat het commando uitvoerde, ziet het concept
+- Een concept dat je laat liggen, wordt na een dag verwijderd. Concepten staan in het geheugen, dus een herstart van de server verwijdert ze ook
+- De kaart verschijnt alleen zolang je concepten hebt
+
+De tekst van een commando kan niet opnieuw uit Slack worden gelezen en is, bij de gedeelde app, door Connect gegaan. Pas als je het ticket in Control Center aanmaakt, wordt het van jou.
+
 ## Een token roteren
+
+Dit geldt voor je eigen app. De gedeelde app heeft geen token om te roteren.
 
 Plak de nieuwe waarde opnieuw in het verbindingsdialoogvenster en klik op **Verbinden**. Verbinden vervangt welke verbinding er ook voor deze werkruimte liep, dus de socket wordt met de nieuwe inloggegevens opnieuw opgezet.
 
@@ -174,7 +222,7 @@ De twee verplichte tokens moeten bij elke verbinding aanwezig zijn. Het optionel
 
 ## Verbinding verbreken
 
-Klik in de Slack-rij op **Verbinding verbreken** (alleen beheerders). De socket sluit en de inloggegevens worden vergeten.
+Klik in de Slack-rij op **Verbinding verbreken** (alleen beheerders). De verbinding sluit en de inloggegevens worden vergeten. Bij de gedeelde app verwijdert Control Center ook de bot uit de Slack-workspace en geeft het de binding met deze server vrij.
 
 Koppelingen van ruimtes en gebruikers blijven bewust bewaard: dezelfde app opnieuw verbinden herstelt elke Slack-thread die aan de brug hing. Het zijn rijen van de werkruimte zelf, dus het verwijderen van de werkruimte haalt ze toch weg.
 
@@ -211,7 +259,7 @@ De taakkaarten van Slack horen bij hetzelfde nieuwe oppervlak Agents & AI Apps a
 
 ### "Control Center heeft een app-configuratietoken nodig om de bot te bewerken"
 
-De rij **Bot aanpassen** is uitgeschakeld omdat de verbinding geen app-configuratietoken heeft. Dat is te verwachten bij een app die je handmatig hebt gemaakt of via **Maken in Slack** — Slack heeft Control Center nooit verteld welke app het is. Genereer een tokenpaar op api.slack.com/apps en verbind opnieuw met het refresh-token ingevuld.
+De rij **Bot aanpassen** is uitgeschakeld omdat de verbinding geen app-configuratietoken heeft. (Bij de gedeelde app is er helemaal geen rij **Bot aanpassen**: de bot is die van de gedeelde app.) Dat is te verwachten bij een app die je handmatig hebt gemaakt of via **Maken in Slack** — Slack heeft Control Center nooit verteld welke app het is. Genereer een tokenpaar op api.slack.com/apps en verbind opnieuw met het refresh-token ingevuld.
 
 ### Een lang antwoord wordt afgekapt
 

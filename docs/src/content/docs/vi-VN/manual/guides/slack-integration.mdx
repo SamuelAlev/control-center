@@ -1,11 +1,11 @@
 ---
 title: Thiết lập tích hợp Slack
-description: Kết nối một app Slack với không gian làm việc Control Center để thành viên có thể điều khiển agent ngay từ Slack.
+description: Kết nối Slack với một không gian làm việc Control Center, qua app dùng chung của Control Center hoặc một app riêng, để thành viên có thể điều khiển agent ngay từ Slack.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Hướng dẫn này chỉ cho bạn cách kết nối Slack với một không gian làm việc Control Center, hoặc bằng cách để Control Center tạo app, hoặc bằng cách tự bạn dựng lấy.
+Hướng dẫn này chỉ cho bạn cách kết nối Slack với một không gian làm việc Control Center: bằng cách thêm app dùng chung của Control Center, hoặc bằng một app riêng mà Control Center tạo giúp bạn hoặc tự bạn dựng lấy.
 
 Để có một lần chạy đầu tiên theo hướng dẫn, xem [Nối Slack với không gian làm việc của bạn](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/).
 
@@ -20,9 +20,37 @@ hay Matrix.
 
 - Vai trò `owner` hoặc `admin` trong không gian làm việc Control Center — kết nối một app chat là một thay đổi cài đặt không gian làm việc
 - Quyền tạo và cài app trong không gian làm việc Slack
-- Không cần gì truy cập được từ công khai: kết nối là hướng ra (Socket Mode), nên máy chủ không cần cổng vào, tunnel hay tên miền
+- Không cần gì truy cập được từ công khai: app riêng của bạn kết nối ra ngoài qua Socket Mode, còn sự kiện của app dùng chung đến máy chủ qua một long poll tới Control Center Connect, nên máy chủ không cần cổng vào, tunnel hay tên miền
 
-## Ba cách để có app
+## App dùng chung hay app của bạn
+
+Một không gian làm việc chỉ chạy trên một trong hai chế độ tại một thời điểm.
+
+| Chế độ                        | Cần                                                                                                      | Bạn nhận được                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **App dùng chung của Control Center** | Máy chủ dùng Control Center Connect (**Cài đặt → Máy chủ → Đăng nhập một lần**) và Connect phục vụ Slack | Một cú nhấp và một lần đăng nhập Slack. Không cần tạo app, không dán token, không có gì để xoay |
+| **App riêng của bạn**         | Một app Slack trong không gian Slack của bạn, được tạo theo một trong ba cách bên dưới                  | Tên bot, mô tả và lệnh slash của riêng bạn, có thể chỉnh từ Control Center            |
+
+### Thêm app dùng chung của Control Center
+
+1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+2. Trên khối Slack, tìm hàng **Thêm Control Center vào Slack** và nhấp **Thêm vào Slack**
+3. Trình duyệt của bạn mở Slack. Đăng nhập Slack, chọn không gian Slack và phê duyệt cài đặt
+4. Khi trình duyệt hiện một mã, hãy nhập nó vào hộp thoại mà Control Center vẫn để mở. Nếu trình duyệt tự đưa bạn quay lại ứng dụng, thì không cần gõ gì
+5. Một thông báo nổi nêu tên không gian Slack đã thêm app, và khối Slack hiển thị kết nối đang chạy trên app dùng chung của Control Center
+
+Chỉ quản trị viên không gian làm việc mới thêm được app. Hàng này nêu lý do khi không khởi động được: khi máy chủ dùng app riêng thay vì Connect, khi Connect của bạn không có app Slack, hoặc khi không gian làm việc này đã kết nối app Slack riêng.
+
+Khác với app riêng của bạn:
+
+- Slack gửi sự kiện của app dùng chung tới Connect. Connect chỉ giữ một tham chiếu (id team, kênh và tin nhắn) và bỏ nội dung tin nhắn; máy chủ long-poll Connect để lấy tham chiếu và tự đọc từng tin nhắn từ Slack. Văn bản của lệnh slash có đi qua Connect, đó là lý do [`/cc ticket`](#soạn-phiếu-từ-slack) chỉ soạn nháp
+- Token bot được niêm phong cho máy chủ này và được gia hạn qua Connect, nên không có token nào để dán hay xoay
+- Tên, mô tả và lệnh slash của bot là của app dùng chung. Dòng Slack ghi kết nối đang chạy trên app dùng chung và không có **Tùy chỉnh bot**
+- Một không gian Slack chỉ gắn với một máy chủ Control Center tại một thời điểm. Thêm app từ máy chủ khác sẽ chuyển nó sang đó và kết nối của máy chủ này sẽ dừng
+
+Để chuyển giữa các chế độ, hãy ngắt kết nối rồi kết nối theo chiều còn lại.
+
+### App riêng của bạn: ba cách để có nó
 
 | Cách                | Bạn cung cấp                           | Control Center làm                                                                                                        |
 | ------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +60,7 @@ hay Matrix.
 
 Cách theo hướng dẫn là cách duy nhất còn giúp app vẫn _quản lý được_ từ Control Center, và chính điều đó mở ra khả năng [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/). Một app **Tạo trên Slack** có thể được nâng thành app được quản lý sau đó bằng cách dán token cấu hình vào hộp thoại kết nối.
 
-Cố ý không có nút "cài app Slack của Control Center". Cài một app Slack phân tán đòi hỏi một client secret dùng chung (Slack không có PKCE), còn Socket Mode phân phối sự kiện của một app ngẫu nhiên qua các kết nối của nó — nên một app dùng chung sẽ chuyển tin nhắn của không gian làm việc bạn tới máy chủ của người khác. Vì vậy mỗi không gian làm việc sở hữu app riêng của mình, và ba cách trên nói về việc điều đó tốn của bạn ít công sức đến đâu.
+Sự kiện của app riêng bạn không bao giờ đi qua Connect: Socket Mode gửi chúng thẳng tới máy chủ này.
 
 ## Phương án A: để Control Center tạo app
 
@@ -103,6 +131,8 @@ message.im
 
 ## Kết nối
 
+Đây là cách các token của app riêng bạn đến được Control Center. App dùng chung không cần gì trong số này.
+
 1. Vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
 2. Trên khối Slack, nhấp vào **Kết nối Slack**
 3. Điền vào các trường:
@@ -125,8 +155,8 @@ Nếu không có token làm mới cấu hình app (tùy chọn), kết nối v�
 
 ## Việc kết nối làm gì
 
-- Lưu thông tin xác thực trong thư mục riêng của không gian làm việc, bên cạnh cơ sở dữ liệu của nó, chỉ chủ sở hữu đọc được. Chúng không bao giờ đi ngược về máy khách
-- Mở một kết nối Socket Mode cho không gian làm việc này và bắt đầu nhận các lượt nhắc, phản hồi trong luồng Slack, DM và lệnh slash
+- Lưu thông tin xác thực trong thư mục riêng của không gian làm việc, bên cạnh cơ sở dữ liệu của nó, chỉ chủ sở hữu đọc được. Chúng không bao giờ đi ngược về máy khách. Với app dùng chung, đó là niêm phong đã cấp; token bot ngắn hạn mà nó được gia hạn thành vẫn nằm trong bộ nhớ
+- Bắt đầu nhận các lượt nhắc, phản hồi trong luồng Slack, DM và lệnh slash: qua một kết nối Socket Mode cho app riêng của bạn, hoặc qua long poll Connect duy nhất của máy chủ cho app dùng chung
 - Trang bị lại mọi luồng Slack đã được nối trước đó, nên việc kết nối lại sẽ tiếp tục các cuộc hội thoại đang có thay vì bỏ mặc chúng
 - Không tốn gì cho những không gian làm việc không có app chat: không socket, không timer, không lưu lượng
 
@@ -167,7 +197,29 @@ Phần suy luận dưới dạng một bức tường chữ và đầu ra công 
 
 Nếu không có gì xảy ra khi bạn nhấp vào, nghĩa là máy chủ đã gửi tin nhắn không truy cập được từ máy bạn đang nhấp (ví dụ một máy chủ chỉ chạy trên loopback bị nhấp từ điện thoại), hoặc Control Center không chạy ở đó. Một máy chủ không có địa chỉ truy cập được sẽ gửi một thẻ không có nút, chứ không gửi một nút dẫn tới hư không.
 
+## Soạn phiếu từ Slack
+
+Bất kỳ thành viên đã liên kết nào có vai trò ghi cũng có thể đề xuất một phiếu từ Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Văn bản trước `|` là tiêu đề, văn bản sau đó là mô tả. Bot trả lời rằng nó đã soạn phiếu.
+Chưa có phiếu nào được tạo và không có tự động hóa phiếu nào được kích hoạt: bản nháp chờ
+bạn trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Bản nháp phiếu từ chat**,
+nơi bạn có thể sửa tiêu đề và mô tả, rồi nhấn **Tạo phiếu** hoặc **Hủy**.
+
+- Chỉ người đã chạy lệnh mới thấy bản nháp
+- Bản nháp bị bỏ dở sẽ bị loại sau một ngày. Bản nháp nằm trong bộ nhớ, nên khởi động lại máy chủ cũng làm mất chúng
+- Thẻ chỉ hiện khi bạn còn bản nháp
+
+Nội dung lệnh không thể đọc lại từ Slack và, trên app dùng chung, nó đã đi qua Connect.
+Việc tạo phiếu trong Control Center mới là điều biến nó thành của bạn.
+
 ## Xoay vòng token
+
+Mục này áp dụng cho app riêng của bạn. App dùng chung không có token nào để xoay vòng.
 
 Dán lại giá trị mới trong hộp thoại kết nối và nhấp vào **Kết nối**. Việc kết nối sẽ thay thế kết nối đang chạy cho không gian làm việc này, nên socket được quay số lại bằng thông tin xác thực mới.
 
@@ -175,7 +227,7 @@ Hai token bắt buộc phải có mặt trong mọi lần kết nối. Token là
 
 ## Ngắt kết nối
 
-Nhấp vào **Ngắt kết nối** trên dòng Slack (chỉ quản trị viên). Socket đóng lại và thông tin xác thực bị quên.
+Nhấp vào **Ngắt kết nối** trên dòng Slack (chỉ quản trị viên). Kết nối đóng lại và thông tin xác thực bị quên. Với app dùng chung, Control Center còn gỡ bot khỏi không gian Slack và giải phóng ràng buộc của nó với máy chủ này.
 
 Các liên kết space và người dùng cố ý được giữ lại: kết nối lại cùng một app sẽ khôi phục mọi luồng Slack đã được nối. Chúng là những hàng thuộc phạm vi không gian làm việc, nên xóa không gian làm việc thì chúng cũng bị xóa.
 
@@ -212,7 +264,7 @@ Thẻ công việc của Slack thuộc cùng bề mặt Agents & AI Apps mới n
 
 ### "Control Center cần token cấu hình app để chỉnh bot"
 
-Dòng **Tùy chỉnh bot** bị vô hiệu hóa vì kết nối không có token cấu hình app. Đây là điều dễ hiểu với một app làm thủ công hoặc tạo qua **Tạo trên Slack** — Slack chưa bao giờ cho Control Center biết đó là app nào. Hãy tạo một cặp token trên api.slack.com/apps và kết nối lại với token làm mới đã được điền.
+Dòng **Tùy chỉnh bot** bị vô hiệu hóa vì kết nối không có token cấu hình app. (Trên app dùng chung không có hàng **Tùy chỉnh bot** nào: bot thuộc về app dùng chung.) Đây là điều dễ hiểu với một app làm thủ công hoặc tạo qua **Tạo trên Slack** — Slack chưa bao giờ cho Control Center biết đó là app nào. Hãy tạo một cặp token trên api.slack.com/apps và kết nối lại với token làm mới đã được điền.
 
 ### Một câu trả lời dài bị cắt cụt
 

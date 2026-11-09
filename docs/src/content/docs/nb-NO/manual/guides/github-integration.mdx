@@ -2,7 +2,7 @@
 title: Sett opp GitHub-integrasjon
 description: Logg inn på GitHub slik at PR-flaten, repo-registreringen og agentkjøringer fungerer.
 slug: nb-NO/handbok/slik-gjor-du/github-integrasjon
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Denne veiledningen dekker de GitHub-spesifikke delene av oppsettet. GitHub er én
@@ -13,71 +13,68 @@ flere av dem samtidig.
 ## Forutsetninger
 
 - En GitHub-konto med tilgang til repoene du vil jobbe med
-- Enten en GitHub App registrert for serveren din (se
-  [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)) slik at du kan **logge inn**,
-  **eller** et personlig tilgangstoken med `repo` og `read:org` som du limer inn
+- En server som kan logge inn folk på GitHub: enten med sin egen GitHub App (se
+  [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)) eller med
+  Control Center Connect, valgt av servereieren under **Innstillinger → Server →
+  Enkel pålogging**
 
 :::note[Påloggingsinformasjonen ligger på serveren, knyttet til deg]
-Ingenting lagres på maskinen du skriver på. Påloggingsinformasjonen din holdes av
+Ingenting lagres på maskinen du skriver på. GitHub-påloggingen din holdes av
 `cc_server`-en din, knyttet til bruker-id-en din, og hver enhet du logger inn fra
 bruker den — skrivebord, nett og telefon. Et annet medlem av samme server kan
-ikke lese den, og å logge dem inn er noe de gjør selv.
+ikke bruke den, og å logge dem inn er noe de gjør selv.
 :::
 
-## Logg inn med GitHub
+## Logg inn på GitHub
 
-En **enhetsflyt**: GitHub viser deg en kort kode, du godkjenner den på
-github.com, og serveren mottar påloggingsinformasjonen — ingen callback-URL, ingen
-port, ingenting å eksponere. Tilgjengelig når serveren har en klient-id, noe et
-offisielt bygg allerede leverer.
+GitHub har bare pålogging: det finnes ikke noe token å lime inn.
 
 1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting** (eller det
    første trinnet i onboarding)
-2. På raden **GitHub**, klikk **Logg inn med GitHub**
-3. En dialog viser en kode på åtte tegn og åpner
-   [github.com/login/device](https://github.com/login/device) i nettleseren din.
-   Koden ligger allerede i utklippstavlen
-4. Lim den inn, godkjenn appen og kom tilbake. Raden endrer seg av seg selv til
-   «Logget inn som _ditt-brukernavn_»
+2. På raden **GitHub**, klikk **Logg inn på GitHub**
+3. Nettleseren din åpner GitHub. Godkjenn appen
 
-Dialogen kan lukkes mens du fullfører i nettleseren — serveren fortsetter å polle
-til koden utløper (omtrent 15 minutter), så innloggingen lander likevel.
+Hvordan påloggingen avsluttes, avhenger av hvem som kjører den:
 
-## Eller lim inn et token
+- **Serverens egen app:** GitHub sender nettleseren din tilbake til serveren, og
+  dialogen merker det selv. Ingenting å skrive inn
+- **Control Center Connect:** nettlesersiden viser en kode på 8 tegn. Skriv den
+  inn i dialogen, eller la nettleseren åpne Control Center via
+  `control-center://`-lenken og slipp å skrive den
 
-Reserveløsningen når serveren ikke har en app, når appen ikke er installert på en
-konto du trenger, eller når du rett og slett heller vil bruke en PAT.
+Sjekkpunkt: raden **GitHub** viser «Logget inn som _ditt-brukernavn_».
 
-1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**
-2. På raden **GitHub**, klikk **Legg til token**
-3. Lim inn et token med `repo` og `read:org` (klassisk) og lagre. Et **finkornet**
-   token trenger **Contents** og **Pull requests** (les og skriv) på repoet,
-   pluss **Checks** og **Actions** (les).
+Dialogen avviser en kode eller lenke den ikke startet selv, med **Påloggingen ble
+ikke startet her**. Hvis noen sender deg en påloggingslenke, må du ikke fortsette:
+å fullføre den ville koble kontoen din til serveren deres.
 
-Tokenet testes idet det lagres, slik at raden kan navngi kontoen det tilhører.
-Klikk **Koble fra** for å fjerne det.
+Klikk **Koble fra** for å fjerne påloggingen din. Å logge ut av GitHub, eller å
+bli fjernet fra et arbeidsområde, fjerner også alle tokener serveren har utstedt
+på dine vegne.
 
-Sjekkpunkt: raden **GitHub** viser «Logget inn som _ditt-brukernavn_». Et suffiks
-navngir kilden når påloggingsinformasjonen som svarer, ikke er din — «via denne
-serverens app» eller «fra miljøet».
+## Hvem påloggingsinformasjonen din taler for
 
-:::note[Rekkefølgen er fastsatt]
-En forespørsel som gjøres på dine vegne, bruker **din** påloggingsinformasjon og
-ingenting annet — miljøet er serverens påloggingsinformasjon, ikke din, så det
-stiller aldri opp i ditt sted. Arbeid uten et menneske bak seg (webhooker,
-PR-polling, sakssynkronisering) bruker serverens app-identitet, deretter
-servereierens påloggingsinformasjon, og til slutt miljøet.
-:::
+- **Alt du gjør** (åpne PR-siden, legge ut en gjennomgang, godkjenne, slå
+  sammen) kjører på **din** pålogging og ingenting annet. Hvis du ikke er logget
+  inn, sier appen det og ber deg logge inn. Ingen annen påloggingsinformasjon
+  stiller opp i ditt sted
+- **Arbeid der ingen skriver** (agentkjøringer, pipelines, PR-polling, botsvar,
+  kloninger) får et token for ett repo, utstedt fra serverens GitHub App eller
+  via Connect. Det er begrenset til det et ansvarlig medlem kan gjøre der:
+  medlemmet som spurte, ellers eieren av arbeidsområdet. Et medlem som ikke kan
+  pushe, begrenser tokenet til lesing
+- **Automatisering godkjenner aldri** en pull request. Å godkjenne er en persons
+  handling
 
 ## Hva integrasjonen gir deg
 
 | Funksjon                  | Hvordan                                                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR-liste og detaljer      | GitHub REST-API-et, fra serveren, på app-identiteten eller din egen påloggingsinformasjon                      |
+| PR-liste og detaljer      | GitHub REST-API-et, fra serveren, på din egen pålogging                                                        |
 | Check-kjøringer           | GitHub Checks-API-et                                                                                           |
-| Publisering av gjennomgang | Et trinn som krever en brukerhandling, og som legger gjennomgangen din ut på PR-en                            |
+| Publisering av gjennomgang | Et trinn som krever en brukerhandling, og som legger gjennomgangen din ut på PR-en, som deg                   |
 | Repo-registrering         | En checkout godtas hvis `origin`-remoteen peker på github.com — eller på gitlab.com / bitbucket.org             |
-| GitHub-tilgang for agenter | Brokeren for påloggingsinformasjon injiserer et token som bare kan lese, som `GH_TOKEN` / `GITHUB_TOKEN`; pusher går gjennom Control Center |
+| GitHub-tilgang for agenter | Et token for kjøringens ene repo som `GH_TOKEN` / `GITHUB_TOKEN`; pusher går gjennom Control Center           |
 | Varsler                   | En serverside poll av GitHub-varselinnboksen din utløser «Nevnt i pull request» og «Gjennomgang forespurt»     |
 | Brukerprofiler            | Profilkort ved hover og filtrering av PR-er per forfatter                                                      |
 
@@ -97,52 +94,53 @@ Klikk på merket for å åpne et panel med tilstanden til hver leverandør og en
 
 ## Slik handler agenter på GitHub
 
-- En agent som jobber i en GitHub-worktree, får alltid et GitHub-token som bare
-  kan lese. En push går gjennom Control Center, som spør regelen **Push til en
-  remote** og deretter sender den videre med et skrivetoken agenten aldri har.
-  Se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/)
+- En agent som jobber i en GitHub-worktree, får et token for det ene repoet. Det
+  kan lese koden og kommentere på pull requests når det ansvarlige medlemmet kan
+  pushe, og bare lese når vedkommende ikke kan. En push går gjennom Control
+  Center, som spør regelen **Push til en remote** og deretter sender den videre
+  med et skrivetoken agenten aldri har. Se
+  [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/)
 - Agentens commits bruker alltid Git-identiteten til den som ba om kjøringen, både som forfatter og committer. Som standard krediterer traileren `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medforfatter. Under **Innstillinger → Deg → Kreditering av commits** kan du slå av denne medforfatterkrediteringen uten å endre identiteten din. En overstyring under **Innstillinger → Arbeidsområde → Generelt** har forrang og låser den personlige bryteren. Claude Codes egen kreditering er alltid deaktivert. Commit-signering krever fortsatt sin egen gyldige konfigurasjon
-- Med en GitHub App konfigurert utsteder brokeren finkornede, repobegrensede
-  installasjonstokener med omtrent én times varighet per oppstart, i stedet for å
-  overlate et bredt token. Installasjonen løses fra **eieren** av repoet i
-  kjøringen, slik at én app installert på flere kontoer avgrenses riktig til den
-  kontoen kjøringen berører. Uten en app mottar agentene miljøtokenet, som ikke
-  kan begrenses til bare lesing: push-regelen binder da `git push`, men ikke
-  kode som bruker tokenet direkte
-- Tokenet er alltid brokerens, aldri det egne tokenet til medlemmet som ba om
-  kjøringen. Serverens token holdes tilbake fra en kjøring som handler for et
-  medlem som ikke er eieren og ikke har koblet til GitHub
+- En terminal du åpner på en rigg, får din egen pålogging, begrenset til det ene
+  repoet, så pusher derfra er dine
+- Når det ikke kan utstedes noe token (ingen ansvarlig er logget inn, appen er
+  ikke installert hos eieren, eller installasjonen er suspendert), starter
+  kjøringen uten, og notatene forklarer hvorfor. Det finnes ingen
+  reservelegitimasjon
 
 ## Feilsøking
 
 ### PR-listen er tom og sier at GitHub ikke er tilkoblet
 
-Du har ingen GitHub-påloggingsinformasjon på denne serveren. Logg inn eller lim
-inn et token under **Kodehosting**. Repoer på andre forger påvirkes ikke — bare
-GitHubs repoer bidrar ikke med noe.
+Du er ikke logget inn på GitHub på denne serveren. Klikk **Logg inn på GitHub**
+under **Kodehosting**. Repoer på andre forger påvirkes ikke.
 
-### Raden tilbyr «Legg til token», men ikke «Logg inn med GitHub»
+### Raden GitHub sier at påloggingen ikke er satt opp på denne serveren
 
-Serveren har ingen klient-id — noe som er normalt for et bygg fra kildekoden,
-siden påloggingsinformasjon bare bygges inn i offisielle bygg. Se
-[Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/): det tar omtrent to minutter,
-og bare servereieren trenger å gjøre det, én gang.
+Serveren har verken sin egen GitHub App eller Connect. Servereieren velger en av
+dem under **Innstillinger → Server → Enkel pålogging**: **Opprett min
+GitHub-app** tar omtrent to minutter. Se
+[Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/).
 
-### Innloggingsdialogen sier at leverandøren ikke returnerte noen enhetskode
+### Dialogen sier at koden ikke stemmer
 
-GitHub App-en finnes, men avmerkingsboksen **Device flow** er av. Slå den på i
-appens innstillinger (General → Device flow) og prøv igjen.
+Skriv inn koden nøyaktig slik nettleseren viser den: 8 bokstaver og sifre. Fem
+feil koder avslutter påloggingen; start den på nytt.
 
-### Raden sier «via denne serverens app» når jeg forventet min egen konto
+### Påloggingen sier at appen ikke er installert
 
-Du har ikke logget inn; det du ser, er serverens app-identitet som svarer. Klikk
-på **Logg inn med GitHub** på den raden.
+GitHub App-en har ingen installasjon på kontoen som eier repoet. En
+administrator i arbeidsområdet installerer den fra **Innstillinger →
+Arbeidsområde → Generelt → Installasjoner av GitHub-appen**. For en organisasjon
+på den delte appen til Control Center kan en administrator i den organisasjonen
+måtte klikke **Autoriser denne serveren**. Se
+[Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/#autoriser-denne-serveren-for-en-organisasjon).
 
-### En finkornet PAT viser ingen sammenslåingsknapp og ingen check-status
+### Alle må logge inn på GitHub på nytt
 
-Tokenet trenger **Contents** og **Pull requests** (les og skriv), pluss
-**Checks** og **Actions** (les). Når du har endret det, limer du det inn på nytt
-under **Kodehosting**.
+Servereieren har byttet serverens Connect-nøkkel, byttet Connect-server, eller
+datakatalogen ble gjenopprettet på en annen maskin. Pålogginger via Connect er
+bundet til serveren som opprettet dem.
 
 ### Å legge til et repo blir avvist
 
@@ -167,4 +165,4 @@ eksponentiell backoff, og `retry-after` respekteres.
 - [Administrer API-nøkler](/nb-NO/handbok/slik-gjor-du/api-nokler/)
 - [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)
 - [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
-- [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
+- [Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/)

@@ -248,4 +248,36 @@ void main() {
       expect(await open().environmentLeaseDao.all(), hasLength(1));
     });
   });
+  group('v7 -> v8: GitHub is App-only', () {
+    test("maps the deleted 'pat' mode to 'inherit'", () async {
+      final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+      await seeded.workspaceRegistryDao.upsertWorkspace(
+        WorkspacesTableCompanion.insert(id: 'ws-pat', name: 'Pat'),
+      );
+      await seeded.workspaceRegistryDao.upsertWorkspace(
+        WorkspacesTableCompanion.insert(
+          id: 'ws-app',
+          name: 'App',
+          githubAuthMode: const Value('app'),
+        ),
+      );
+      await seeded.close();
+      sqlite3.sqlite3.open(file.path)
+        ..execute(
+          "UPDATE workspaces SET github_auth_mode = 'pat' WHERE id = 'ws-pat'",
+        )
+        ..execute('PRAGMA user_version = 7')
+        ..close();
+
+      final migrated = open();
+      expect(
+        (await migrated.workspaceRegistryDao.getById('ws-pat'))!.githubAuthMode,
+        'inherit',
+      );
+      expect(
+        (await migrated.workspaceRegistryDao.getById('ws-app'))!.githubAuthMode,
+        'app',
+      );
+    });
+  });
 }

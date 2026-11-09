@@ -9,19 +9,32 @@ final _redactionPatterns = <RegExp>[
   RegExp(r'(--key\s+)\S+', caseSensitive: false),
   RegExp(r'(Authorization:\s*Bearer\s+)\S+', caseSensitive: false),
   RegExp(r'(Authorization:\s*Basic\s+)\S+', caseSensitive: false),
+  RegExp(r'(Authorization:\s*token\s+)\S+', caseSensitive: false),
+  // Basic credentials of `x-access-token:<token>` wherever they appear (the
+  // `http.extraHeader` value git carries in `GIT_CONFIG_PARAMETERS`, quoted or
+  // re-spelled): "x-access-token:" is 15 bytes, so its base64 is always this
+  // 20-character prefix.
+  RegExp(r'eC1hY2Nlc3MtdG9rZW46[A-Za-z0-9+/=]*'),
   RegExp(r'\bsk-[a-zA-Z0-9]{20,}\b'),
   // Anthropic keys and Claude Code setup tokens (`sk-ant-api03-…`,
   // `sk-ant-oat01-…`): the hyphens after `sk-` slip past the pattern above.
   RegExp(r'\bsk-ant-[a-zA-Z0-9_\-]{20,}'),
   RegExp(r'(CLAUDE_CODE_OAUTH_TOKEN\s*=\s*)\S+', caseSensitive: false),
-  RegExp(r'\bghp_[a-zA-Z0-9]{36,}\b'),
-  RegExp(r'\bgho_[a-zA-Z0-9]{36,}\b'),
-  // VULN-012: GitHub App server-to-server / user-to-server / refresh token
-  // prefixes — the shapes the fine-grained broker and GitHub App flows mint.
-  RegExp(r'\bghs_[a-zA-Z0-9]{36,}\b'),
-  RegExp(r'\bghu_[a-zA-Z0-9]{36,}\b'),
-  RegExp(r'\bghr_[a-zA-Z0-9]{36,}\b'),
+  // GitHub PAT, OAuth, App installation, user-to-server and refresh tokens.
+  // Installation tokens are now `ghs_<appId>_<JWT>` (~520 chars with
+  // underscores, dots and hyphens), so the body is not alphanumeric-only; it
+  // never ends on a dot, which keeps a sentence's full stop out of the match.
+  RegExp(r'\bgh[opsur]_[A-Za-z0-9_-][A-Za-z0-9._-]{34,}[A-Za-z0-9_-]'),
   RegExp(r'\bgithub_pat_[a-zA-Z0-9_]{22,}\b'),
+  // Slack bot/user/app-config tokens, rotating `xoxe.` access tokens, their
+  // `xoxe-1-` refresh tokens and app-level `xapp-` tokens.
+  RegExp(r'\bxoxe\.xox[abprs]-[A-Za-z0-9-]{8,}'),
+  RegExp(r'\bxox[abeoprs]-[A-Za-z0-9-]{8,}'),
+  RegExp(r'\bxapp-[A-Za-z0-9-]{8,}'),
+  // Google OAuth access (`ya29.`) and refresh (`1//`) tokens. The refresh
+  // shape must not start inside a URL path (`https://1//…` is not one).
+  RegExp(r'\bya29\.[A-Za-z0-9._-]{20,}'),
+  RegExp(r'(?<![A-Za-z0-9/:._-])1//[A-Za-z0-9_-]{20,}'),
   // VULN-010: a PAT embedded in a git/https URL — as git echoes on stderr
   // (`https://x-access-token:ghp_…@github.com/…`) when a clone/fetch fails.
   RegExp(r'(x-access-token:)[^@\s]+(@)', caseSensitive: false),
@@ -30,7 +43,8 @@ final _redactionPatterns = <RegExp>[
     caseSensitive: false,
   ),
   // Provider-specific token shapes (defense-in-depth secret scrubbing).
-  RegExp(r'\blin_api_[a-zA-Z0-9]{20,}\b'),
+  // Linear personal API keys and OAuth access/refresh tokens.
+  RegExp(r'\blin_(?:api|oauth)_[a-zA-Z0-9]{16,}\b'),
   RegExp(r'(TICKETING_API_KEY\s*=\s*)\S+', caseSensitive: false),
   RegExp(r'(GH_TOKEN\s*=\s*)\S+', caseSensitive: false),
   RegExp(r'(GITHUB_TOKEN\s*=\s*)\S+', caseSensitive: false),

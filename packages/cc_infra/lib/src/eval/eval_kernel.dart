@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_infra/src/eval/kernel_runners.dart';
 import 'package:cc_infra/src/eval/magics_transform.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Which interpreter a kernel runs.
@@ -148,19 +149,19 @@ class HostKernelLauncher implements KernelLauncher {
         ]) ??
         'python3';
     return switch (language) {
-      KernelLanguage.python => Process.start(
+      KernelLanguage.python => ChildProcess.start(
         python,
         // Unbuffered: the whole value of streaming a cell's output is losing
         // it to a 4KB buffer that only flushes when the cell ends.
         ['-u', runnerPath],
         workingDirectory: workingDirectory,
-        includeParentEnvironment: true,
+        toolchain: true,
       ),
-      KernelLanguage.javascript => Process.start(
+      KernelLanguage.javascript => ChildProcess.start(
         nodeExecutable ?? 'node',
         [runnerPath],
         workingDirectory: workingDirectory,
-        includeParentEnvironment: true,
+        toolchain: true,
       ),
     };
   }

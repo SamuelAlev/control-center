@@ -3,7 +3,7 @@ title: Arquitectura
 description: Cómo está estructurado Control Center con un modelo de servidor y cliente ligero, Clean Architecture centrada en funcionalidades y puertos y adaptadores.
 dateModified: 2026-09-19
 slug: es-MX/manual/conceptos/arquitectura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Resumen
@@ -256,13 +256,12 @@ trabajo fuera de una ruta con prefijo no tiene de dónde sacar su id.
 
 - _Funciones_ constructoras de rutas en `router/routes.dart`, cada una con el id
   del espacio de trabajo como primer argumento, no constantes de cadena
-- Cuatro rutas previas al contexto no llevan prefijo: `/splash`, `/onboarding`,
-  `/signed-out` y `/workspaces` (el selector)
-- `ShellRoute` envuelve el shell de la aplicación; esas cuatro superficies se
+- Tres rutas previas al contexto no llevan prefijo: `/splash`, `/onboarding` y
+  `/workspaces` (el selector)
+- `ShellRoute` envuelve el shell de la aplicación; esas tres superficies se
   representan a pantalla completa fuera de él
 - Guardia de autenticación: una configuración incompleta va a `/onboarding`; una
-  configuración completada cuya credencial de host de código haya desaparecido va
-  a `/signed-out`. «Completa» significa que hay al menos un host de código
+  configuración completada cuya credencial de host de código haya desaparecido se queda en la aplicación: el shell del espacio de trabajo muestra una advertencia con un enlace al inicio de sesión. «Completa» significa que hay al menos un host de código
   conectado para el usuario que inició sesión y que existe al menos un espacio de
   trabajo —no GitHub en concreto—, y el CLI `gh` no es un método de autenticación
 - Puerta de onboarding en `features/auth/providers/`

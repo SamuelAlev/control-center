@@ -23,10 +23,9 @@ class LocalGitPrDiffSource implements PrDiffSource {
   /// Creates a [LocalGitPrDiffSource] used when a PR exceeds a forge cap,
   /// falling back to a local blobless clone for diffs.
   ///
-  /// `githubTokenFor` resolves the fetch credential per clone, for the
-  /// request's workspace and repo owner: the workspace's GitHub identity mode
-  /// decides which token may read a private repo, and an installation token
-  /// captured once would expire within the hour.
+  /// `githubTokenFor` resolves the fetch credential per clone: a
+  /// one-repository read token for the request's workspace and repository,
+  /// resolved per call because such tokens expire.
   const LocalGitPrDiffSource({
     required this._git,
     required this._filesystem,
@@ -36,7 +35,7 @@ class LocalGitPrDiffSource implements PrDiffSource {
 
   final GitCommandPort _git;
   final WorkspaceFilesystemPort _filesystem;
-  final Future<String?> Function(String workspaceId, String owner)
+  final Future<String?> Function(String workspaceId, String owner, String repo)
   _githubTokenFor;
   final RiftClient? _rift;
 
@@ -44,7 +43,7 @@ class LocalGitPrDiffSource implements PrDiffSource {
   Stream<PrFilesLoad> watchFiles(PrSourceRequest req) async* {
     final manager = _buildManager(
       req,
-      githubToken: await _githubTokenFor(req.workspaceId, req.owner),
+      githubToken: await _githubTokenFor(req.workspaceId, req.owner, req.repo),
     );
 
     // 1. Ensure clone + fetch.
@@ -331,7 +330,7 @@ class LocalGitPrDiffSource implements PrDiffSource {
     final manager = _buildManager(
       req,
       githubToken: (githubToken == null || githubToken.isEmpty)
-          ? await _githubTokenFor(req.workspaceId, req.owner)
+          ? await _githubTokenFor(req.workspaceId, req.owner, req.repo)
           : githubToken,
     );
     var ran = false;

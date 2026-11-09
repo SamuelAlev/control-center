@@ -2,16 +2,16 @@
 title: Hartă de rute
 description: Fiecare rută pe care o înregistrează Control Center, cu ecranul și parametrii ei de interogare.
 slug: ro-RO/manual/referinta/harta-de-rute
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell-ul aplicației
 
-Shell-ul aplicației (`ControlCenterLayout`) învelește fiecare rută din interiorul unui spațiu de lucru printr-un `ShellRoute`. **Fiecare destinație din shell are prefixul spațiului de lucru — `/workspaces/:workspaceId/…` — iar id-ul spațiului de lucru din URL este singura sursă de adevăr pentru spațiul de lucru activ.** Doar suprafețele dinainte de context nu au prefix: `/splash`, `/onboarding`, `/signed-out` și selectorul simplu `/workspaces`, toate pe tot ecranul și în afara shell-ului.
+Shell-ul aplicației (`ControlCenterLayout`) învelește fiecare rută din interiorul unui spațiu de lucru printr-un `ShellRoute`. **Fiecare destinație din shell are prefixul spațiului de lucru — `/workspaces/:workspaceId/…` — iar id-ul spațiului de lucru din URL este singura sursă de adevăr pentru spațiul de lucru activ.** Doar suprafețele dinainte de context nu au prefix: `/splash`, `/onboarding` și selectorul simplu `/workspaces`, toate pe tot ecranul și în afara shell-ului.
 
 Poarta este completă atunci când cel puțin un forge este conectat **pentru utilizatorul autentificat** și există cel puțin un spațiu de lucru.
 
-O acreditare lipsă și o configurare lipsă sunt ecrane diferite, iar discriminatorul este `users.onboarding_finished_at`, citit din `identity.me` al apelantului — niciodată „există spații de lucru”, ceea ce este greșit din momentul în care cineva este invitat într-un spațiu de lucru pe care nu l-a creat. Fără niciun forge conectat, un cont care a trecut prin onboarding merge la `/signed-out` ca să se reautentifice; unul care nu a trecut merge la `/onboarding`. Cât timp indicatorul este încă necunoscut, garda ține splash-ul în loc să ghicească, pentru că nu redirecționează niciodată înapoi din onboarding.
+O acreditare lipsă și o configurare lipsă sunt tratate diferit, iar discriminatorul este `users.onboarding_finished_at`, citit din `identity.me` al apelantului — niciodată „există spații de lucru”, ceea ce este greșit din momentul în care cineva este invitat într-un spațiu de lucru pe care nu l-a creat. Fără niciun forge conectat, un cont care a trecut prin onboarding rămâne în aplicație: shell-ul spațiului de lucru afișează un avertisment cu un link către **Setări → Spațiu de lucru → Profil și identitate**, unde se află autentificarea. Unul care nu a trecut prin onboarding merge la `/onboarding`. Cât timp indicatorul este încă necunoscut, garda ține splash-ul în loc să ghicească, pentru că nu redirecționează niciodată înapoi din onboarding.
 
 ## Rute fără prefix
 
@@ -19,7 +19,6 @@ O acreditare lipsă și o configurare lipsă sunt ecrane diferite, iar discrimin
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Splash-ul de pornire care rezolvă poarta de onboarding |
 | `/onboarding`              | Conectează un forge, creează sau alătură-te unui spațiu de lucru, sandbox, adaptor implicit, apoi voce. Pasul de spațiu de lucru este omis atunci când contul aparține deja unuia |
-| `/signed-out`              | Reautentificare: același card de conexiuni la forge pe care îl afișează Setări, fără bară de pași și fără buton de continuare — routerul pleacă singur odată ce un forge raportează |
 | `/workspaces`              | Lista și selectorul de spații de lucru           |
 | `/workspaces/:workspaceId` | Redirecționează către `/workspaces/:workspaceId/inbox` |
 

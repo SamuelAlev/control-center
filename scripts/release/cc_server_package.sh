@@ -3,7 +3,7 @@
 # Packages standalone cc_server: ensure `dart build cli` bundle, stage/verify
 # REQUIRED natives into the OS-specific resolver path (macOS Frameworks, Linux
 # bin/lib, Windows beside exe), macOS Developer-ID sign + notarize, archive +
-# SHA-256. Credentials come from builtin_credentials.sh inject (not here).
+# SHA-256. The binary carries no provider credentials.
 # Usage: scripts/release/cc_server_package.sh <version> [macos|linux|windows] [x64|arm64]
 # (the architecture is Windows-only: x64 by default, arm64 for the native
 # Windows-on-Arm build, which must run on an Arm64 host — `dart build cli`

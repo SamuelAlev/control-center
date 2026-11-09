@@ -33,6 +33,11 @@ Future<void> _run(List<String> args) async {
   final CcServer server;
   try {
     server = await runCcServer(args: args, demoBuilder: buildDemoWiring);
+  } on ProviderSecretInEnvironmentException catch (e) {
+    // An exported provider secret is an operator mistake, not a crash: say
+    // what to do instead and end the process.
+    stderr.writeln(e.message);
+    exit(78);
   } on SocketException catch (e) {
     stderr.writeln(
       'cc_demo_server: cannot start — ${e.osError?.message ?? e.message} '

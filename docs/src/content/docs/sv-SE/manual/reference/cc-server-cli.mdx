@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Varje flagga, miljövariabel, underkommando och datakatalogsökväg hos headless-servern.
 slug: sv-SE/handbok/referens/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Varje processflagga styrs av en CLI-flagga eller en miljövariabel; flaggan vinner,
-sedan miljön och sist standardvärdet. Undantaget är autentiseringsuppgifter från
-tredje part – se nedan.
+sedan miljön och sist standardvärdet. Undantaget är leverantörernas
+autentiseringsuppgifter – se [Leverantörsappar och Connect](#leverantörsappar-och-connect).
 
 :::caution[Okända flaggor ignoreras tyst]
 Argumentparsern är handskriven och hoppar över allt den inte känner igen, så en
@@ -43,7 +43,7 @@ standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna e
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | oangivet                      | Förväntad SHA-256 för den binären, verifierad före varje start                                                                                               |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | tomt                          | Kommaseparerade extraargument för tunnelanropet                                                                                                              |
 
-## Indexering och autentiseringsuppgifter från tredje part
+## Indexering och körtid
 
 | Flagga                | Miljövariabel                    | Standard | Betydelse                                                                                                                                                    |
 | --------------------- | -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -53,15 +53,42 @@ standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna e
 | `--tool-deferral`     | `CC_SERVER_TOOL_DEFERRAL`        | `on`     | Om harnesskörningar skickar en liten resident verktygsuppsättning plus ett namnindex och läser in resten vid första användning. Se nedan                     |
 | `--credential-gate`   | `CC_SERVER_CREDENTIAL_GATE`      | `900`    | Sekunder som en körning parkeras i väntan på att en människa åtgärdar en autentiseringsuppgift som inte kan betjäna den (begränsat 0–3600). Se nedan         |
 
-Ett tomt värde för en autentiseringsuppgift läses som oangivet, så den inbyggda
-reservlösningen gäller fortfarande. Ett källkodsbygge bär inga inbyggda
-autentiseringsuppgifter alls.
+## Leverantörsappar och Connect
 
-Google Calendar och Klipy-GIF-väljaren är **endast miljövariabler** – det finns
-ingen flagga `--google-client-id` / `--klipy-app-key` (okända flaggor ignoreras).
-Sätt `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` och `KLIPY_APP_KEY` i
-miljön (eller i en `.env` bredvid servern). Tomt inaktiverar funktionen i stället
-för att få starten att misslyckas.
+Inget bygge innehåller leverantörernas autentiseringsuppgifter. Med Control Center Connect påslaget kör Connect alla leverantörer, och dessa egna appar
+förblir sparade men oanvända. Under **Använd mina egna appar** körs varje leverantör
+på serverns egen app när en är fullständigt konfigurerad, annars är den otillgänglig.
+En arbetsytas egna app vinner i båda fallen. Egna appar anges
+under **Inställningar → Server → Enkel inloggning → Leverantörsappar**, eller
+fylls i en gång från serverns `.env`-fil. Det finns inga flaggor för dem: en
+hemlighet på en kommandorad går att läsa via `ps`.
+
+| Variabel                       | Betydelse                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | ID för serverns GitHub-app                                                                    |
+| `GITHUB_APP_PRIVATE_KEY`       | Dess privata nyckel, på en rad med `\n`-escapes. **Endast `.env`**                            |
+| `GITHUB_CLIENT_ID`             | Dess klient-ID, för att logga in personer                                                     |
+| `GITHUB_CLIENT_SECRET`         | Dess klienthemlighet. **Endast `.env`**                                                       |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Serverns Google-klient av typen webbapplikation                                               |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Dess hemlighet. **Endast `.env`**                                                             |
+| `LINEAR_CLIENT_ID`             | Serverns Linear-applikation (PKCE, ingen hemlighet)                                           |
+| `LINEAR_API_KEY`               | En Linear-tjänstnyckel för automatisering. **Endast `.env`**                                  |
+| `KLIPY_APP_KEY`                | Serverns egen Klipy-nyckel för GIF-sökning, används bara under **Använd mina egna appar**           |
+| `CC_CONNECT_URL`               | `hosted`, `off` eller en Connect-URL. Låser Connect-valet; Inställningar kan då inte ändra det |
+| `CC_SERVER_CONNECT_HOST`       | `on` monterar Control Center Connect på `<server>/connect`, konfigurerad med `CONNECT_*`-variabler. Se [Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/#montera-connect-i-cc_server) |
+
+`.env`-filen läses från serverns arbetskatalog, bredvid den körbara filen, eller
+från en källkodsutcheckning ovanför den; i Docker monterar du den på
+`/app/bin/.env`. Servern **vägrar starta** (avslutningskod `78`) när
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+`LINEAR_API_KEY` eller någon `SLACK_*SECRET*` är exporterad i dess processmiljö,
+där varje underprocess skulle kunna läsa den. Ifyllningen från `.env` sker en
+gång per fält, så en senare ändring i Inställningar skrivs inte över vid en
+omstart. Ett tomt värde läses som oangivet.
+
+Bakgrundsarbete för GitLab och Bitbucket läser också `GITLAB_TOKEN` /
+`CI_JOB_TOKEN` och `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` med
+`BITBUCKET_EMAIL`. GitHub har ingen autentiseringsuppgift i miljön.
 
 ### `--sandbox`
 
@@ -114,7 +141,7 @@ autentiseringsuppgift avslutar turen precis som innan grinden fanns.
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Kör servern tills `SIGINT`/`SIGTERM`                                                                                                   |
 | `cc_server pair`                              | Provisionerar en enhet och skriver ut dess ID och parkopplingsnyckel. Säker mot en datakatalog som en server redan betjänar – den körande servern plockar upp enheten utan omstart |
-| `cc_server calendar connect --workspace <id>` | Ansluter ett Google-konto till en arbetsyta via enhetskodsflödet och avslutar sedan                                                   |
+| `cc_server connect <command>`                 | Visar eller ändrar vilken Control Center Connect den här servern använder, utan att starta den                                        |
 | `cc_server update`                            | Söker efter, hämtar och verifierar en nyare fristående release                                                                         |
 | `cc_server --version`                         | Skriver ut byggversionen och git-SHA:t – samma identitet som `/healthz` och RPC-handskakningen annonserar                              |
 
@@ -141,6 +168,25 @@ som skapas från parkopplingspanelen i appen – serverns fullständiga
 anslutningsbeskrivning plus en utgång. De två går inte att byta mot varandra – se
 [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/).
 :::
+
+### `connect`
+
+Läser och skriver samma inställningar som kortet **Control Center Connect** under
+**Inställningar → Server → Enkel inloggning**, från datakatalogen. En server som
+körs plockar upp en ändring inom 10 minuter eller vid omstart.
+
+| Kommando                        | Vad det gör                                                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Skriver ut läget, URL:en, om `CC_CONNECT_URL` låser den, installations-id:t, hälsan och varje spårs källa (`own`, `connect` eller `off`) |
+| `cc_server connect enable`      | Använder Control Centers hostade Connect                                                                         |
+| `cc_server connect enable --url <url>` | Använder en egen Connect på den URL:en (HTTPS, eller `http` på loopback)                                  |
+| `cc_server connect disable`     | Slutar använda Connect. Bara serverns egna appar loggar in personer                                              |
+| `cc_server connect rotate-key --yes` | Skapar en ny installationsnyckel och ett nytt installations-id. Alla som loggade in via Connect loggar in igen. Utan `--yes` varnar den bara och avslutar med `2` |
+
+`status` utan kommando är standard. Varje kommando accepterar `--data-dir`.
+`CC_CONNECT_URL` åsidosätter det som dessa lagrar. Ett okänt kommando avslutar
+med `64`. Se [Control Center Connect](/sv-SE/handbok/referens/connect/) för lägena,
+installationsidentiteten och statuskoderna.
 
 ### `update`
 
@@ -185,7 +231,7 @@ cwd används bara när ingen hem- eller appdatakatalog kan lösas upp.
 | `global.db`                       | Arbetsyteregistret, användare, parkopplade enheter, nyhetsflödet och fleet-kön   |
 | `<workspaceId>/workspace.db`      | En databas per arbetsyta – agenter, ytor, ärenden, minnet, kodgrafen             |
 | `<workspaceId>/chat_credentials/` | Chattbottokens, som ren JSON, så att de följer med arbetsytan                    |
-| `secrets.json`                    | Parkopplingsnycklar, leverantörens appidentitet, per-användar- och Google-tokens, SSO (`0600`) |
+| `secrets.json`                    | Parkopplingsnycklar, Connects installationsnyckel, leverantörsappar, personers inloggningar (förseglade när de görs via Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | En ögonblicksbild av installationen – `manifest.json`, `global.db` och en kopia av varje arbetsyta |
 | `backups/exports/`                | Exporter av enstaka arbetsytor, `<workspaceId>-<timestamp>.db`                   |
 | `backups/transfer/`               | Mellanlagring för ned- och uppladdning av säkerhetskopior; städas av rutten som skriver den |

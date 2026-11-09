@@ -1,0 +1,290 @@
+---
+title: اجرای سرور Connect
+description: Control Center Connect خودتان را از ایمیج Docker مربوط به cc-connect اجرا کنید، یا آن را درون cc_server سوار کنید، تا سرورهایتان مردم را از طریق برنامه‌های ارائه‌دهنده‌ای که ثبت کرده‌اید وارد کنند.
+slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect ورود به ارائه‌دهندگان (GitHub، Google Calendar، Linear و
+Slack) را برای سرورهایی اجرا می‌کند که برنامه‌های خودشان را ثبت نکرده‌اند. این راهنما
+نشان می‌دهد چگونه Connect خودتان را اجرا کنید، تا برنامه‌های ارائه‌دهنده، رازهای آنها و
+فهرست سرورهایی که اجازهٔ استفاده از آنها را دارند، نزد خودتان بماند.
+
+آنچه Connect می‌تواند و نمی‌تواند ببیند در [مرجع Connect](/fa-IR/راهنمای-کاربر/مرجع/connect/)
+آمده است. اگر دربارهٔ اجرای آن تصمیم می‌گیرید، ابتدا آن را بخوانید.
+
+:::note[شاید به آن نیاز نداشته باشید]
+یک سرور می‌تواند به جای آن برنامه‌های خودش را ثبت کند: **تنظیمات ← سرور ← ورود یکپارچه ←
+برنامه‌های ارائه‌دهنده**، که در آن **ساختن GitHub App من** یک‌باره GitHub را راه می‌اندازد.
+برنامه‌های خود سرور تنها تحت **استفاده از برنامه‌های خودم** اعمال می‌شوند: با Control Center یا Connect سفارشی، Connect هر مسیری را اجرا می‌کند، در حالی که برنامهٔ اختصاصی فضای کاری همچنان اعمال می‌شود. Connect را اجرا کنید
+وقتی چند سرور باید یک مجموعه برنامه را به اشتراک بگذارند.
+:::
+
+## پیش‌نیازها
+
+- یک نشانی عمومی **HTTPS** برای Connect، مانند `https://connect.example.com`، پشت یک
+  پروکسی که TLS را پایان می‌دهد. `http` ساده فقط روی loopback پذیرفته می‌شود
+- Docker، یا یک `cc_server` که بتوانید با متغیرهای محیطی اضافی دوباره راه‌اندازی‌اش کنید
+- اجازه برای ثبت برنامه نزد هر ارائه‌دهنده‌ای که می‌خواهید سرویس دهید
+- سرورهایی که از آن استفاده می‌کنند، با مالکانشان در دسترس: هر کدام یک شناسهٔ نصب
+  (install id) دارد که آن را به فهرست مجاز Connect اضافه می‌کنید
+
+## گام ۱: نشانی را انتخاب کنید
+
+همین حالا نشانی را انتخاب و نگه دارید. `CONNECT_PUBLIC_URL` در همه‌چیز Connect نقش دارد:
+امضای درخواست‌ها، مهرهای اعتبارنامه، نشانی‌های بازگشت ارائه‌دهنده و شناسهٔ نصب هر سرور همه
+به آن گره خورده‌اند. تغییر آن بعداً یعنی ثبت دوباره بازگشت‌ها و ورود دوبارهٔ همهٔ افراد.
+
+## گام ۲: برنامه‌های ارائه‌دهنده را ثبت کنید
+
+فقط ارائه‌دهندگانی را ثبت کنید که می‌خواهید سرویس دهید. ارائه‌دهنده‌ای که متغیرهایش ناقص
+است از پیکربندی Connect کنار گذاشته می‌شود و سرورها آن را غیرقابل‌دسترس می‌بینند. `<base>`
+در ادامه همان `CONNECT_PUBLIC_URL` شماست.
+
+| ارائه‌دهنده    | ثبت                                                                                                                                                                                                                                                                  | نگه دارید                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **GitHub App** | Callback URL ‏`<base>/oauth/github/callback`. Setup URL ‏`<base>/oauth/github/setup` با **Redirect on update** روشن. **Request user authorization (OAuth) during installation** را خاموش بگذارید: وقتی روشن باشد، GitHub نشانی setup را نادیده می‌گیرد. **Expire user authorization tokens** را روشن نگه دارید | App id، slug، client id، client secret    |
+| **Google**     | یک OAuth client از نوع **Web application** با redirect URI ‏`<base>/oauth/google/callback`، و Google Calendar API فعال                                                                                                                                                | Client id، client secret                 |
+| **Linear**     | یک برنامهٔ OAuth با callback URLs ‏`<base>/oauth/linear/callback` و `<base>/oauth/linear_app/callback`                                                                                                                                                             | فقط Client id                            |
+| **Slack**      | Redirect URLs ‏`<base>/oauth/slack_oidc/callback` و `<base>/oauth/slack/callback`. Event Subscriptions در ‏`<base>/v1/hooks/slack/events` (`app_mention`، `message.*`، `assistant_thread_*`، `app_uninstalled`، `tokens_revoked`). Slash commands در ‏`<base>/v1/hooks/slack/commands`. Token rotation روشن | App id، client id، client secret، signing secret |
+
+به GitHub App این مجوزهای مخزن را بدهید: **Metadata** با دسترسی خواندن، **Contents** با
+خواندن و نوشتن، **Pull requests** با خواندن و نوشتن، **Issues** با خواندن و نوشتن، و **Checks**،
+**Actions** و **Commit statuses** با دسترسی خواندن. برای درخواست‌های بازبینی تیمی، **Members**
+با دسترسی خواندن را به سازمان اضافه کنید. Webhooks می‌تواند خاموش بماند: سرورها نظرسنجی
+می‌کنند.
+
+Connect هرگز به کلید خصوصی GitHub App نیاز ندارد. در عوض، از ورود خود فرد، توکن‌های
+مخزنِ تک‌مخزنی صادر می‌کند. Linear هم به رازی نیاز ندارد: Connect کد را به سرور برمی‌گرداند
+و سرور تبادل را خودش کامل می‌کند.
+
+## گام ۳: شناسه‌های نصب را جمع کنید
+
+Connect فقط به سرورهایی پاسخ می‌دهد که در فهرست مجازش هستند. روی هر سرور، آن را به Connect
+خودتان متصل کنید و سپس شناسهٔ نصبش را بخوانید:
+
+۱. به **تنظیمات ← سرور ← ورود یکپارچه** بروید، کارت **Control Center Connect** را باز کنید و
+   **استفاده از سرور Connect سفارشی** را انتخاب کنید
+۲. نشانی خود را وارد و ذخیره کنید. کارت **Install id** سرور را نشان می‌دهد
+
+از ترمینال روی میزبان سرور، همین کار این‌گونه انجام می‌شود:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` شناسهٔ نصب را چاپ می‌کند. تا وقتی گام ۵ انجام نشده باشد `install_blocked` نشان
+می‌دهد، که طبیعی است.
+
+شناسهٔ نصب بر اساس نشانی هر Connect مشتق می‌شود، پس همان سرور برای هر Connect که با آن
+صحبت می‌کند شناسهٔ متفاوتی دارد. این شناسه فقط وقتی تغییر می‌کند که مالکش کلید را عوض کند.
+
+## گام ۴: یک کلید مهر بسازید
+
+Connect هر اعتبارنامه‌ای را که برمی‌گرداند با یک **کلید مهر** (seal key) رمزنگاری می‌کند.
+یکی بسازید و آن را به‌عنوان یک فایل محرمانه نگه دارید:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+از دست رفتن کلید مهر همه را خارج می‌کند: بدون آن هیچ مهری باز نمی‌شود.
+
+## گام ۵: کانتینر را راه‌اندازی کنید
+
+هر نسخه، `ghcr.io/samuelalev/cc-connect` را همراه با سوابق ساخت (build provenance) منتشر
+می‌کند. در محیط عملیاتی، یک برچسب نسخهٔ مشخص را پین کنید.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+پروکسی معکوس خود را به پورت `8790` وصل کنید. ایمیج با کاربری بدون دسترسی ویژه اجرا می‌شود،
+وضعیتش را در volume مربوط به `/data` نگه می‌دارد و بررسی سلامت داخلی دارد
+(`cc-connect --healthcheck`، که `/healthz` را می‌سنجد).
+
+Connect وقتی پیکربندی‌اش باز، ناامن یا نیمه‌کاره باشد از راه‌اندازی خودداری می‌کند (کد خروج
+`78`) و متغیر اشتباه را چاپ می‌کند. فهرست مجاز خالی، نشانی `http` غیر از loopback، کلید مهر
+نامعتبر، یا تنظیم هم‌زمان `NAME` و `NAME_FILE` هر کدام آن را متوقف می‌کند.
+
+نقطهٔ بازبینی: روی هر سرور، کارت Connect مقدار **Working** را نشان می‌دهد و **Where each
+sign-in runs** برای هر ارائه‌دهندهٔ ثبت‌شده، **Connect** را نام می‌برد. `cc_server connect status`
+خط `Health: ok` و همان مسیرها را چاپ می‌کند.
+
+## سوار کردن Connect درون cc_server
+
+یک سرور می‌تواند به جای کانتینر جدا، خودش Connect را میزبانی کند. سرویس سوارشده همان سرویسی
+است که ایمیج اجرا می‌کند.
+
+۱. متغیرهای `CONNECT_*` را در فایل `.env` سرور (یا محیط آن) بگذارید، مانند گام ۵
+۲. `CC_SERVER_CONNECT_HOST=on` را اضافه کنید
+۳. سرور را دوباره راه‌اندازی کنید. گزارش آن `embedded Connect at <url>` را چاپ می‌کند
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect آنگاه در `<server>/connect` سرویس داده می‌شود:
+
+- `CONNECT_PUBLIC_URL` به‌طور پیش‌فرض مبدأ نشانی عمومی سرور به‌علاوهٔ `/connect` است. پشت
+  پروکسی آن را صریح تنظیم کنید. مسیر باید دقیقاً `/connect` باشد و اگر loopback نباشد باید
+  HTTPS باشد
+- فقط متغیرهای `CONNECT_*` به سرویس سوارشده می‌رسند، بنابراین هرگز برنامه‌های ارائه‌دهندهٔ
+  خود سرور را قرض نمی‌گیرد
+- `CONNECT_ALLOWED_INSTALLS` همچنان لازم است، حتی برای خود سرور میزبان
+- یک سوار کردن نادرست، راه‌اندازی سرور را متوقف می‌کند، به‌جای آنکه یک واسطهٔ باز ارائه دهد
+- سرور دمو هرگز آن را سوار نمی‌کند
+
+ریدایرکت‌های ارائه‌دهنده را مقابل `https://<server>/connect` ثبت کنید، و سپس سرورها (از جمله
+میزبان) را مانند گام ۳ به همین نشانی وصل کنید.
+
+## مرجع پیکربندی
+
+هر تنظیم یک متغیر محیطی است. هر رازی می‌تواند از یک فایل سوارشده بیاید: به‌جای `NAME`،
+`NAME_FILE` را تنظیم کنید. Connect فایل را حداکثر هر ۳۰ ثانیه دوباره می‌خواند و آخرین مقدار
+معتبر را نگه می‌دارد. رازهایی که با **dual** مشخص شده‌اند، در زمان چرخش، `NAME_PREVIOUS` (یا
+`NAME_PREVIOUS_FILE`) را هم می‌پذیرند.
+
+### نشانی و دسترسی
+
+| متغیر                           | پیش‌فرض           | معنی                                                                                                                                           |
+| ------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | الزامی            | نشانی عمومی متعارف. HTTPS، یا `http` فقط روی loopback. مسیر به معنای سوار شدن است. بدون query یا fragment                                     |
+| `CONNECT_ALLOWED_INSTALLS`      | الزامی            | شناسه‌های نصب جداشده با کاما. `*` فقط همراه با `CONNECT_SIGNED_CONFIG_FILE` پذیرفته می‌شود                                                    |
+| `CONNECT_DENY_INSTALLS`         |                   | شناسه‌های نصبی که حتی وقتی مجاز باشند، رد می‌شوند                                                                                              |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |                   | شناسه‌های عددی مالک GitHub. وقتی تنظیم شود، توکن مخزن فقط برای مخزن‌هایی صادر می‌شود که آن مالک‌ها دارند                                        |
+| `CONNECT_HOST`، `CONNECT_PORT`  | `0.0.0.0`، `8790` | نشانی و پورت bind                                                                                                                              |
+| `CONNECT_TRUST_PROXY`           | `0`               | تعداد گام‌های پروکسی قابل‌اعتماد در `X-Forwarded-For` (۰ تا ۸). فقط برای محدودیت نرخ به‌ازای هر نشانی به کار می‌رود                              |
+
+### مسیرهای ارائه‌دهنده
+
+| متغیر                                                                       | پیش‌فرض | معنی                                                                        |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`، `CONNECT_GITHUB_APP_SLUG`، `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | راز، dual                                                                   |
+| `CONNECT_GOOGLE_CLIENT_ID`، `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | کلاینت Google. راز dual است                                                 |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | برنامهٔ Linear. بدون راز                                                    |
+| `CONNECT_SLACK_APP_ID`، `CONNECT_SLACK_CLIENT_ID`                           |         | برنامهٔ Slack                                                               |
+| `CONNECT_SLACK_CLIENT_SECRET`، `CONNECT_SLACK_SIGNING_SECRET`               |         | رازها، dual                                                                 |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | کلید جست‌وجوی GIF در Klipy. راز، dual                                       |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` کلید را در Connect نگه می‌دارد؛ `key` آن را به سرورها می‌دهد         |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub، Google و Slack: نسلی که در مهرهای جدید ثبت می‌شود                   |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub، Google و Slack: مهرهای قدیمی‌تر باید دوباره وارد شوند               |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | همهٔ مسیرها: `false` ورودهای جدید را متوقف می‌کند، در حالی که ورودهای موجود همچنان تازه می‌شوند |
+
+### مهرها، وضعیت و ذخیره‌سازی
+
+| متغیر                                                     | پیش‌فرض                    | معنی                                                                                                       |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` یا `gcp-kms`                                                                                       |
+| `CONNECT_SEAL_KEYS`                                       |                            | راز، برای `local` لازم است. ورودی‌های `kid:key` جداشده با کاما، جدیدترین اول؛ ورودی‌های قدیمی‌تر همچنان رمزگشایی می‌شوند |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`، برای `gcp-kms` لازم است                                  |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` برای یک نمونه، `redis` برای چند نمونه                                                             |
+| `CONNECT_REDIS_URL`                                       |                            | راز. `redis://` یا `rediss://`                                                                             |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | بستهٔ CA برای `rediss://`                                                                                  |
+| `CONNECT_BINDINGS`                                        | `file`                     | محل نگهداری اتصال‌های نصب GitHub: `file` یا `firestore`                                                    |
+| `CONNECT_DATA_DIR`                                        | `data` (در ایمیج `/data`)  | شامل `bindings.json`                                                                                       |
+| `CONNECT_FIRESTORE_PROJECT`، `CONNECT_FIRESTORE_DATABASE` | پایگاه‌داده `(default)`   | برای `CONNECT_BINDINGS=firestore`                                                                          |
+
+### پیکربندی، گزارش‌ها و محدودیت‌ها
+
+| متغیر                                    | پیش‌فرض             | معنی                                                                                                |
+| ---------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`             |                     | پیکربندی امضاشدهٔ آفلاین که همان‌طور که هست ارائه می‌شود. Connect میزبانی‌شدهٔ Control Center از آن استفاده می‌کند |
+| `CONNECT_CONFIG_PUBLIC_KEYS`             |                     | کلیدهایی که پیکربندی امضاشده باید با آنها تأیید شود                                                   |
+| `CONNECT_CONFIG_EPOCH`                   | `1`                 | epoch پیکربندی‌ای که یک Connect خودمیزبان تولید می‌کند                                               |
+| `CONNECT_LOG_HMAC_KEY`                   | تصادفی برای هر فرایند | راز. آن را تنظیم کنید تا برچسب‌هایی که جایگزین شناسه‌های نصب می‌شوند بین راه‌اندازی‌های مجدد و نمونه‌ها پایدار بمانند |
+| `CONNECT_VERSION`، `CONNECT_IMAGE_DIGEST` |                     | توسط `/v1/version` گزارش می‌شود                                                                      |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`        | `600`               | درخواست به‌ازای هر نصب                                                                               |
+| `CONNECT_RATE_IP_PER_MINUTE`             | `300`               | درخواست به‌ازای هر نشانی                                                                             |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`         | `500`               | درخواست برای کل سرویس                                                                                |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`     | `600`               | رویدادهای Slack به‌ازای هر تیم                                                                       |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`          | `120`               | جست‌وجوی GIF به‌ازای هر نصب                                                                          |
+
+## اجرای بیش از یک نمونه
+
+یک نمونه با `CONNECT_STATE=memory` برای بیشتر سازمان‌ها کافی است. چند نمونه پشت یک نشانی
+واحد به `CONNECT_STATE=redis` و همچنین یک `CONNECT_DATA_DIR` مشترک یا `CONNECT_BINDINGS=firestore`
+نیاز دارند، تا ورودی که روی یک نمونه شروع شده بتواند روی نمونهٔ دیگر تمام شود.
+
+## چرخش راز یک ارائه‌دهنده
+
+هیچ‌کس خارج نمی‌شود:
+
+۱. راز جدید را نزد ارائه‌دهنده بسازید و راز قدیمی را نگه دارید
+۲. مقدار قدیمی را به `NAME_PREVIOUS` منتقل کنید، مقدار جدید را در `NAME` بگذارید، و
+   `CONNECT_<LANE>_SECRET_GENERATION` را بالا ببرید. فایل‌های سوارشده ظرف ۳۰ ثانیه برداشته
+   می‌شوند
+۳. صبر کنید تا ورودها تازه شوند، سپس راز قدیمی را نزد ارائه‌دهنده حذف کنید و `NAME_PREVIOUS`
+   را بردارید
+
+برای چرخاندن یک کلید مهر، ابتدا یک ورودی جدید `cc-connect-config seal-key` را در ابتدای
+`CONNECT_SEAL_KEYS` بگذارید و ورودی قدیمی را تا زمانی نگه دارید که مهرهای آن تازه شده باشند.
+
+## تغییر یک برنامه
+
+سرورها شناسه‌های برنامه و کلاینتی را که Connect شما بار اول که استفاده شد اعلام کرده، به یاد
+دارند. اگر برنامه‌ای را جایگزین کنید، روی کارت Connect هر سرور **Connect's apps changed** ظاهر
+می‌شود و ورودها از طریق Connect متوقف می‌شوند تا مالکش **Trust new apps** را بزند. پیش از
+تغییر به مالکان سرور خبر دهید، تا بدانند این درخواست از طرف شماست.
+
+## مسدود کردن یک سرور
+
+شناسهٔ نصبش را به `CONNECT_DENY_INSTALLS` اضافه کنید و دوباره راه‌اندازی کنید. مالکش این پیام
+را می‌بیند: "Connect has blocked this server's install id" و هر ورود از طریق Connect روی آن
+متوقف می‌شود.
+
+## عیب‌یابی
+
+### یک سرور می‌گوید Connect آن را مسدود کرده است
+
+شناسهٔ نصبش در `CONNECT_ALLOWED_INSTALLS` نیست، یا در `CONNECT_DENY_INSTALLS` است. این شناسه
+وقتی مالکش کلید را عوض می‌کند تغییر می‌کند؛ شناسهٔ جدید را بخواهید.
+
+### یک ارائه‌دهنده غیرقابل‌دسترس نشان داده می‌شود
+
+یکی از متغیرهایش گم شده، پس Connect آن مسیر را کنار گذاشته است. گزارش راه‌اندازی و جدول‌های
+بالا را بررسی کنید. GitHub هر چهار مورد app id، slug، client id و client secret را لازم دارد؛
+Google هم client id و هم secret را لازم دارد.
+
+### ورودها با عدم تطابق بازگشت (redirect) شکست می‌خورند
+
+بازگشتی که نزد ارائه‌دهنده ثبت شده، دقیقاً با `CONNECT_PUBLIC_URL` تطابق ندارد. طرح، میزبان،
+پورت و مسیر `/connect` را برای Connect سوارشده مقایسه کنید.
+
+### همه باید دوباره وارد می‌شدند
+
+کلید مهر تغییر کرده یا از دست رفته، یک سرور کلیدش را چرخانده، یا داده‌های یک سرور روی دستگاه
+دیگری بازیابی شده است. یک اعتبارنامهٔ مهروموم‌شده فقط برای نصب و Connectی باز می‌شود که آن را
+ساخته‌اند.
+
+## راهنماهای مرتبط
+
+- [ساختن GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/)
+- [اجرای سرور بدون رابط](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
+- [اتصال تقویم Google](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
+
+## مرجع مرتبط
+
+- [Control Center Connect](/fa-IR/راهنمای-کاربر/مرجع/connect/)
+- [CLI مربوط به `cc_server`](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/)

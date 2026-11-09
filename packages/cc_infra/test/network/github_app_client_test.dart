@@ -90,12 +90,14 @@ void main() {
     ],
     '/app/installations/42/access_tokens': {
       'token': token,
+      'repository_selection': 'selected',
       'expires_at': (now ?? DateTime.now().toUtc())
           .add(expiresIn)
           .toIso8601String(),
     },
     '/app/installations/43/access_tokens': {
       'token': '$token-other',
+      'repository_selection': 'selected',
       'expires_at': (now ?? DateTime.now().toUtc())
           .add(expiresIn)
           .toIso8601String(),
@@ -202,71 +204,29 @@ void main() {
     });
   });
 
-  group('installation tokens', () {
-    test('resolve by owner', () async {
+  group('scoped installation tokens', () {
+    Future<String?> mint(GitHubAppClient client, String owner) async =>
+        (await client.mintScopedForOwner(
+          owner,
+          repositories: const ['widget'],
+          permissions: const {'contents': 'read'},
+        ))?.token;
+
+    test('resolve the installation by owner', () async {
       final built = build();
-      expect(await built.client.tokenForOwner('acme'), 'ghs_token');
-      expect(await built.client.tokenForOwner('other-org'), 'ghs_token-other');
+      expect(await mint(built.client, 'acme'), 'ghs_token');
+      expect(await mint(built.client, 'other-org'), 'ghs_token-other');
     });
 
     test('owner matching is case-insensitive', () async {
-      expect(await build().client.tokenForOwner('ACME'), 'ghs_token');
+      expect(await mint(build().client, 'ACME'), 'ghs_token');
     });
 
     test('an owner with no installation has no token', () async {
-      expect(await build().client.tokenForOwner('stranger'), isNull);
-    });
-
-    test('are cached until they are nearly expired', () async {
-      final built = build();
-      await built.client.tokenForOwner('acme');
-      await built.client.tokenForOwner('acme');
-      expect(
-        built.transport.paths.where(
-          (p) => p == '/app/installations/42/access_tokens',
-        ),
-        hasLength(1),
-      );
-    });
-
-    test('are re-minted once inside the five-minute margin', () async {
-      var now = DateTime.utc(2026, 1, 1, 12);
-      final built = build(
-        responses: responsesWith(
-          expiresIn: const Duration(minutes: 6),
-          now: now,
-        ),
-        now: () => now,
-      );
-      await built.client.tokenForInstallation(42);
-      now = now.add(const Duration(minutes: 2));
-      await built.client.tokenForInstallation(42);
-
-      expect(
-        built.transport.paths.where(
-          (p) => p == '/app/installations/42/access_tokens',
-        ),
-        hasLength(2),
-      );
-    });
-
-    test('invalidate drops every cached token', () async {
-      final built = build();
-      await built.client.tokenForInstallation(42);
-      built.client.invalidate();
-      await built.client.tokenForInstallation(42);
-
-      expect(
-        built.transport.paths.where(
-          (p) => p == '/app/installations/42/access_tokens',
-        ),
-        hasLength(2),
-      );
+      expect(await mint(build().client, 'stranger'), isNull);
     });
 
     test('a mint failure resolves to null rather than throwing', () async {
-      // The caller has other credential lanes; a broken app must not take
-      // the server's forge access down with it.
       final built = build(
         responses: {
           '/app/installations': [
@@ -277,7 +237,7 @@ void main() {
           ],
         },
       );
-      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await mint(built.client, 'acme'), isNull);
     });
 
     test('a suspended installation is not minted', () async {
@@ -293,7 +253,7 @@ void main() {
           '/app/installations/42/access_tokens': {'token': 'ghs_token'},
         },
       );
-      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await mint(built.client, 'acme'), isNull);
       expect(await built.client.isOwnerSuspended('acme'), isTrue);
       expect(await built.client.allInstallationsSuspended(), isTrue);
       expect(
@@ -321,8 +281,8 @@ void main() {
         },
         statusByPath: const {'/app/installations/42/access_tokens': 403},
       );
-      expect(await built.client.tokenForOwner('acme'), isNull);
-      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await mint(built.client, 'acme'), isNull);
+      expect(await mint(built.client, 'acme'), isNull);
       expect(
         built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
@@ -344,11 +304,12 @@ void main() {
         ],
         '/app/installations/42/access_tokens': {
           'token': 'ghs_resumed',
+          'repository_selection': 'selected',
           'expires_at': now.add(const Duration(hours: 1)).toIso8601String(),
         },
       };
       final built = build(responses: responses, now: () => now);
-      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await mint(built.client, 'acme'), isNull);
 
       responses['/app/installations'] = [
         {
@@ -357,7 +318,7 @@ void main() {
         },
       ];
       now = now.add(const Duration(minutes: 5));
-      expect(await built.client.tokenForOwner('acme'), 'ghs_resumed');
+      expect(await mint(built.client, 'acme'), 'ghs_resumed');
     });
   });
 }

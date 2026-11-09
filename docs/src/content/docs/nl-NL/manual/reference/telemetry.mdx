@@ -2,7 +2,7 @@
 title: Gebruiksstatistieken
 description: Wat Control Center vastlegt als gebruiksstatistieken aan staan, wie dat bepaalt en wat nooit wordt verzonden.
 slug: nl-NL/handleiding/referentie/gebruiksstatistieken
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center kan **gepseudonimiseerde gebruiksgebeurtenissen** naar een [Umami](https://umami.is)-instantie sturen. Gebruiksstatistieken staan **uit totdat de serverbeheerder ze aanzet**. De instelling hoort bij de server en geldt voor elke client die ermee verbonden is: de desktopapp, de webapp, de telefoon en de server zelf.
@@ -95,9 +95,12 @@ Vastgelegd door de desktopapp, de webapp en de telefoon voor dingen die iemand d
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Een mislukte run is opnieuw geprobeerd |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Een run is vanuit de app geannuleerd |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Een lopende stap is geforceerd beëindigd |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Een aanmeldpoging bij een agenda is afgerond |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true wanneer de aanmelding via Control Center Connect liep in plaats van via de eigen Google-client van de server), `duration_s` | Een aanmeldpoging bij een agenda is afgerond |
 | `calendar_disconnected` | `workspace_id` | Een agenda-account is ontkoppeld |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Er is op een uitnodiging gereageerd |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (aantal), `conference` | Er is een afspraak geboekt in Google Agenda |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Er is een afspraak verplaatst of van formaat veranderd in de agenda |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Er is een afspraak verwijderd uit Google Agenda | |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Er is een opname gestart vanuit een agenda-afspraak |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Er is een vergaderlink geopend (telefoon). Uit de link wordt alleen de aanbieder afgeleid |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Het meldingencentrum is gebruikt |

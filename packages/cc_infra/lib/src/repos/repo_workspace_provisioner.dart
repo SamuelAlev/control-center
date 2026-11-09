@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
@@ -89,7 +90,8 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   final RepoIsolationPort _isolation;
   final IsolatedRepoRepository _registry;
   final WorkspaceRepository _workspaces;
-  final Future<String?> Function() _githubToken;
+  /// A one-repository read token for [Repo] in a workspace, or null.
+  final Future<String?> Function(String workspaceId, Repo repo) _githubToken;
 
   /// Runs `provision` tasks after a fresh worktree is materialized and
   /// `archive` tasks before one is destroyed, and tears a space's environment
@@ -262,7 +264,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       final reposDir = Directory(p.join(spaceRoot, 'repos'));
       await reposDir.create(recursive: true);
 
-      final token = await _safeToken();
       for (final repo in repos) {
         // Checked per repo, not just per run: a cancel that lands during the
         // first clone must not be answered by starting the second.
@@ -280,7 +281,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
             ticketId: ticketId,
             repo: repo,
             reposDir: reposDir.path,
-            token: token,
+            token: await _safeToken(workspaceId, repo),
             ticketKey: ticketKey,
             ticketTitle: ticketTitle,
             branchType: branchType,
@@ -489,9 +490,8 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
 
     final name = slugify(repoName).isEmpty ? repo.id : slugify(repoName);
 
-    final authUrl = (repo.hasForgeRemote && token != null && token.isNotEmpty)
-        ? 'https://x-access-token:$token@github.com/'
-              '${repo.remoteOwner}/${repo.remoteName}.git'
+    final fetchUrl = repo.hasForgeRemote && repo.forge == ForgeHost.github
+        ? 'https://github.com/${repo.remoteOwner}/${repo.remoteName}.git'
         : null;
 
     // Past the reuse check, so ANY directory sitting at the destination is an
@@ -525,7 +525,8 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
         // "detect the default branch" default, so an unpinned repo behaves
         // exactly as before.
         baseRef: baseRef ?? '',
-        authUrl: authUrl,
+        fetchUrl: fetchUrl,
+        fetchToken: fetchUrl == null ? null : token,
         // PR-review space: fetch + check out the PR head ref (e.g.
         // refs/pull/42/head) so the worktree is the PR's proposed tree.
         headRef: headRef,
@@ -1044,9 +1045,13 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     }
   }
 
-  Future<String?> _safeToken() async {
+  Future<String?> _safeToken(String workspaceId, Repo repo) async {
+    if (!repo.hasForgeRemote || repo.forge != ForgeHost.github) {
+      return null;
+    }
     try {
-      return await _githubToken();
+      final token = await _githubToken(workspaceId, repo);
+      return token == null || token.isEmpty ? null : token;
     } catch (_) {
       return null;
     }

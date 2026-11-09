@@ -1,10 +1,14 @@
+import 'dart:async';
+
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart' show SignInLaneInfo, SignInLaneMode;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
-import 'package:control_center/features/auth/presentation/widgets/device_code_dialog.dart';
+import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
-
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -21,9 +25,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// two surfaces cannot drift apart.
 ///
 /// All supported forges are always shown, including the ones with no
-/// credential: an operator cannot connect a forge they cannot see, and a repo
-/// on an unconnected forge is exactly the case where they need to find this.
-/// Connecting one is enough — the app does not require GitHub.
+/// credential: an operator cannot connect a forge they cannot see. GitHub is
+/// sign-in only (the person's own App user token); GitLab and Bitbucket take a
+/// pasted token. Connecting one is enough — the app does not require GitHub.
 class ForgeConnectionsCard extends ConsumerWidget {
   /// Creates a [ForgeConnectionsCard].
   const ForgeConnectionsCard({super.key});
@@ -33,10 +37,8 @@ class ForgeConnectionsCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     // A demo server does not wire the credential port at all, so `forge.*` is
-    // absent from its op registry and `forgeConnectionsProvider` resolves to
-    // an ERROR. Rendering the rows anyway would offer sign-in buttons for a
-    // credential the demo cannot hold, each failing on press. Say what is
-    // actually true instead.
+    // absent from its op registry. Rendering the rows anyway would offer
+    // sign-in buttons for a credential the demo cannot hold.
     if (ref.watch(isDemoServerProvider)) {
       return SectionCard(
         label: l10n.forgeConnections,
@@ -54,7 +56,6 @@ class ForgeConnectionsCard extends ConsumerWidget {
     final byForge = {
       for (final c in async.value ?? const <ForgeConnection>[]) c.forge: c,
     };
-    final canSignIn = ref.watch(forgeSignInProvidersProvider);
 
     return SectionCard(
       label: l10n.forgeConnections,
@@ -69,7 +70,6 @@ class ForgeConnectionsCard extends ConsumerWidget {
               forge: ForgeHost.supported[i],
               connection: byForge[ForgeHost.supported[i]],
               loading: async.isLoading && byForge.isEmpty,
-              canSignIn: canSignIn.contains(ForgeHost.supported[i]),
             ),
           ],
         ],
@@ -79,13 +79,12 @@ class ForgeConnectionsCard extends ConsumerWidget {
 }
 
 /// One forge's row: who you are on it, and how to change that.
-class ForgeConnectionRow extends ConsumerStatefulWidget {
+class ForgeConnectionRow extends ConsumerWidget {
   /// Creates a [ForgeConnectionRow].
   const ForgeConnectionRow({
     required this.forge,
     required this.connection,
     required this.loading,
-    required this.canSignIn,
     super.key,
   });
 
@@ -98,81 +97,15 @@ class ForgeConnectionRow extends ConsumerStatefulWidget {
   /// Whether the connection list is still loading.
   final bool loading;
 
-  /// Whether this server can run a browser sign-in for the forge.
-  final bool canSignIn;
-
   @override
-  ConsumerState<ForgeConnectionRow> createState() => _ForgeConnectionRowState();
-}
-
-class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
-  bool _busy = false;
-
-  Future<void> _signIn() async {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    setState(() => _busy = true);
-    try {
-      final started = await signInToForge(ref, widget.forge);
-      if (!mounted) {
-        return;
-      }
-      switch (started) {
-        // A device flow puts the code on screen and waits there. The SERVER
-        // polls the provider, so closing the dialog does not cancel it.
-        case SignInDeviceCode():
-          await showDeviceCodeDialog(
-            context,
-            providerName: widget.forge.displayName,
-            prompt: started,
-          );
-        case SignInBrowserOpened(:final opened):
-          if (!opened) {
-            CcToastScope.of(
-              context,
-            ).show(l10n.couldNotOpenBrowser, variant: CcToastVariant.danger);
-            return;
-          }
-          final connected = await awaitSignIn(
-            () => isForgeConnected(ref, widget.forge),
-          );
-          if (mounted && !connected) {
-            // The sign-in is still valid server-side for a while, so this says
-            // the app stopped WATCHING rather than that the login failed.
-            CcToastScope.of(context).show(l10n.signInNotFinished);
-          }
-      }
-    } on Object catch (e) {
-      if (mounted) {
-        CcToastScope.of(
-          context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final connected = widget.connection?.authenticated ?? false;
-    final name = widget.forge.displayName;
-
-    final tokenButton = CcButton(
-      onPressed: () => showTokenDialog(
-        context,
-        title: l10n.forgeTokenTitle(name),
-        save: (token) => setForgeToken(ref, widget.forge, token),
-      ),
-      // A pasted token is the secondary path once the server can run a real
-      // sign-in, and the only path when it cannot.
-      variant: widget.canSignIn
-          ? CcButtonVariant.ghost
-          : CcButtonVariant.secondary,
-      child: Text(connected ? l10n.updateToken : l10n.addToken),
-    );
+    final lane = signInLaneForForge(forge);
+    final scope = ref.watch(githubSignInScopeProvider);
+    final laneInfo = lane == null
+        ? null
+        : ref.watch(oauthLanesProvider(scope)).value?[lane];
+    final connected = connection?.authenticated ?? false;
 
     final actions = Wrap(
       alignment: WrapAlignment.end,
@@ -180,27 +113,39 @@ class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        if (connected) ...[
+        if (connected)
           CcButton(
-            onPressed: () => clearForgeToken(ref, widget.forge),
+            onPressed: () => unawaited(_disconnect(context, ref, lane, scope)),
             variant: CcButtonVariant.ghost,
             child: Text(l10n.disconnect),
           ),
-        ],
-        if (!connected || !widget.canSignIn) tokenButton,
-        if (widget.canSignIn) ...[
+        if (lane != null)
           CcButton(
-            onPressed: _busy ? null : _signIn,
-            variant: CcButtonVariant.secondary,
-            child: _busy
-                ? const CcSpinner(size: 14)
-                : Text(
-                    connected
-                        ? l10n.signInAgain
-                        : l10n.signInWithProvider(name),
+            onPressed:
+                laneInfo == null || laneInfo.mode == SignInLaneMode.unavailable
+                ? null
+                : () => unawaited(
+                    showProviderSignInDialog(
+                      context,
+                      lane: lane,
+                      workspaceId: scope,
+                    ),
                   ),
+            variant: CcButtonVariant.secondary,
+            child: Text(
+              connected ? l10n.signInAgain : signInActionLabel(l10n, lane),
+            ),
+          )
+        else
+          CcButton(
+            onPressed: () => showTokenDialog(
+              context,
+              title: l10n.forgeTokenTitle(forge.displayName),
+              save: (token) => setForgeToken(ref, forge, token),
+            ),
+            variant: CcButtonVariant.secondary,
+            child: Text(connected ? l10n.updateToken : l10n.addToken),
           ),
-        ],
       ],
     );
     return LayoutBuilder(
@@ -208,9 +153,9 @@ class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
         final compact = constraints.maxWidth < 480;
         final row = SettingsRow(
           icon: AppIcons.gitBranch,
-          title: name,
-          subtitle: _subtitle(l10n),
-          subtitleWidget: widget.loading ? const SkeletonBar(width: 140) : null,
+          title: forge.displayName,
+          subtitle: _subtitle(l10n, laneInfo, lane),
+          subtitleWidget: loading ? const SkeletonBar(width: 140) : null,
           trailing: compact ? const SizedBox.shrink() : actions,
         );
         return compact
@@ -229,26 +174,62 @@ class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
     );
   }
 
+  Future<void> _disconnect(
+    BuildContext context,
+    WidgetRef ref,
+    ConnectOAuthLane? lane,
+    String? scope,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      if (lane != null) {
+        await disconnectProviderLane(ref, lane, workspaceId: scope);
+        ref.invalidate(forgeConnectionsProvider);
+      } else {
+        await clearForgeToken(ref, forge);
+      }
+    } on Object catch (e) {
+      if (context.mounted) {
+        CcToastScope.maybeOf(
+          context,
+        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      }
+    }
+  }
+
   /// The one line that has to carry both "is it working" and "why not", so an
   /// operator never has to guess whether a blank PR list is their setup or the
   /// forge being empty.
-  String _subtitle(AppLocalizations l10n) {
-    final c = widget.connection;
-    if (c == null) {
-      return widget.loading ? l10n.checkingConnection : l10n.notConnected;
-    }
-    if (!c.authenticated) {
-      return c.error.isNotEmpty ? c.error : l10n.notConnected;
+  String _subtitle(
+    AppLocalizations l10n,
+    SignInLaneInfo? laneInfo,
+    ConnectOAuthLane? lane,
+  ) {
+    final c = connection;
+    if (c == null || !c.authenticated) {
+      if (c == null && loading) {
+        return l10n.checkingConnection;
+      }
+      if (c != null && c.error.isNotEmpty) {
+        return c.error;
+      }
+      // A sign-in nobody can start must say why, not just grey out.
+      if (lane != null && laneInfo?.mode == SignInLaneMode.unavailable) {
+        return laneInfo!.error.isNotEmpty
+            ? laneInfo.error
+            : l10n.signInUnavailable(signInProviderName(lane));
+      }
+      return l10n.notConnected;
     }
     final who = c.username.isEmpty
         ? l10n.signedIn
         : l10n.signedInAs(c.username);
     return switch (c.source) {
-      // Naming the source matters: someone who pasted a token and still sees
-      // the wrong account needs to know an environment variable or the
-      // server's own app is what is answering — and which one.
-      ForgeCredentialSource.oauth || ForgeCredentialSource.settings => who,
-      ForgeCredentialSource.app => '$who · ${l10n.viaServerApp}',
+      // Naming the source matters: someone who sees the wrong account needs
+      // to know an environment variable is what is answering.
+      ForgeCredentialSource.oauth ||
+      ForgeCredentialSource.connect ||
+      ForgeCredentialSource.settings => who,
       ForgeCredentialSource.environment => '$who · ${l10n.fromEnvironment}',
       ForgeCredentialSource.none => l10n.notConnected,
     };

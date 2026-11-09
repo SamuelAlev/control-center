@@ -11,15 +11,23 @@ import 'package:rhttp/rhttp.dart';
 
 /// [TicketSyncAdapter] for Linear, over its GraphQL API. The only place that
 /// knows Linear specifics (status names, the GraphQL client, priority numbers,
-/// the required team id). Construct from an authorized [RhttpClient].
+/// the required team id).
+///
+/// [_httpClientFor] resolves the authorized client PER WORKSPACE: each
+/// workspace syncs as its own Linear app actor, never another workspace's.
 class LinearTicketSyncAdapter implements TicketSyncAdapter {
   /// Creates a [LinearTicketSyncAdapter]. [_defaultTeamId] is used as the create
   /// target when a config's `vendorProjectId` is empty.
-  LinearTicketSyncAdapter(RhttpClient httpClient, {this._defaultTeamId})
-    : _client = LinearGraphQlClient(httpClient);
+  LinearTicketSyncAdapter(this._httpClientFor, {this._defaultTeamId});
 
-  final LinearGraphQlClient _client;
+  final RhttpClient Function(String workspaceId) _httpClientFor;
   final String? _defaultTeamId;
+  final Map<String, LinearGraphQlClient> _clients = {};
+
+  LinearGraphQlClient _client(String workspaceId) => _clients.putIfAbsent(
+    workspaceId,
+    () => LinearGraphQlClient(_httpClientFor(workspaceId)),
+  );
 
   @override
   String get vendorId => 'linear';
@@ -33,7 +41,7 @@ class LinearTicketSyncAdapter implements TicketSyncAdapter {
     required String vendorProjectId,
     DateTime? since,
   }) async {
-    final issues = await _client.getAssignedIssues();
+    final issues = await _client(workspaceId).getAssignedIssues();
     return issues.map(_toDelta).toList();
   }
 
@@ -55,7 +63,7 @@ class LinearTicketSyncAdapter implements TicketSyncAdapter {
           'Linear requires a team id (config.vendorProjectId) to create an issue.',
         );
       }
-      final issue = await _client.createIssue(
+      final issue = await _client(workspaceId).createIssue(
         title: ticket.title,
         description: ticket.description ?? '',
         teamId: teamId,
@@ -73,16 +81,18 @@ class LinearTicketSyncAdapter implements TicketSyncAdapter {
 
     switch (changeType) {
       case TicketChangeType.statusChanged:
-        final states = await _client.getWorkflowStatesForIssue(externalId);
+        final states = await _client(
+          workspaceId,
+        ).getWorkflowStatesForIssue(externalId);
         for (final state in states) {
           if (normalizeVendorStatus(state.name) == ticket.status) {
-            await _client.updateIssueState(externalId, state.id);
+            await _client(workspaceId).updateIssueState(externalId, state.id);
             break;
           }
         }
       case TicketChangeType.updated:
       case TicketChangeType.created:
-        await _client.updateIssue(
+        await _client(workspaceId).updateIssue(
           externalId,
           title: ticket.title,
           description: ticket.description,

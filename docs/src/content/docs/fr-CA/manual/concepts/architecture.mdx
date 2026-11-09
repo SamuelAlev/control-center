@@ -3,7 +3,7 @@ title: "Architecture"
 description: "Comment Control Center est structuré : modèle de serveur à client léger, Clean Architecture « feature-first » et ports et adaptateurs."
 dateModified: 2026-09-19
 slug: fr-CA/manuel/concepts/architecture
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Vue d’ensemble
@@ -113,9 +113,9 @@ Les deux bases de données appartiennent à `cc_persistence` et ne sont ouvertes
 **go_router**, avec un fait qui régit tout le reste : **chaque destination dans l’application est préfixée par l’espace de travail** sous la forme `/workspaces/:workspaceId/…`. L’identifiant d’espace de travail présent dans l’URL est la source unique de vérité de l’espace de travail actif — `activeWorkspaceIdProvider` est dérivé de la route, et non l’inverse —, ce qui explique pourquoi la lecture de données propres à un espace de travail en dehors d’une route préfixée n’a nulle part où trouver son identifiant.
 
 - Des _fonctions_ de construction de routes dans `router/routes.dart`, chacune prenant l’identifiant d’espace de travail comme premier argument, et non des constantes de chaîne
-- Quatre routes hors contexte ne sont pas préfixées : `/splash`, `/onboarding`, `/signed-out` et `/workspaces` (le sélecteur)
-- `ShellRoute` enveloppe la coquille de l’application ; ces quatre surfaces s’affichent en plein écran à l’extérieur
-- Garde d’authentification : une configuration incomplète mène à `/onboarding` ; une configuration complète dont l’identifiant de forge a disparu mène à `/signed-out`. Complète signifie qu’au moins une forge est connectée pour l’utilisateur connecté et qu’au moins un espace de travail existe — pas GitHub en particulier — et l’interface de ligne de commande `gh` n’est pas une méthode d’authentification
+- Trois routes hors contexte ne sont pas préfixées : `/splash`, `/onboarding` et `/workspaces` (le sélecteur)
+- `ShellRoute` enveloppe la coquille de l’application ; ces trois surfaces s’affichent en plein écran à l’extérieur
+- Garde d’authentification : une configuration incomplète mène à `/onboarding` ; une configuration complète dont l’identifiant de forge a disparu reste dans l’application : la coquille de l’espace de travail affiche un avertissement assorti d’un lien vers la connexion. Complète signifie qu’au moins une forge est connectée pour l’utilisateur connecté et qu’au moins un espace de travail existe — pas GitHub en particulier — et l’interface de ligne de commande `gh` n’est pas une méthode d’authentification
 - Filtre d’intégration dans `features/auth/providers/`
 
 ## Réseau (côté serveur)

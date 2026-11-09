@@ -20,6 +20,7 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts;
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
@@ -125,11 +126,11 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     HarnessProviderFactory harnessProviderFactory =
         const HarnessProviderFactory(),
     AgentLoop agentLoop = const AgentLoopRunner(),
-    Future<({String name, String email})?> Function(
+    Future<AgentCommitIdentity?> Function(
       String? userId, {
       String? workspaceId,
     })?
-    resolveGitIdentity,
+    resolveCommitIdentity,
     Future<bool> Function(String? userId, {String? workspaceId})?
     resolveAgentAttribution,
     GitRepoInspectorPort? repoInspector,
@@ -181,7 +182,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          modelResolver: modelResolver,
          harnessProviderFactory: harnessProviderFactory,
          agentLoop: agentLoop,
-         resolveGitIdentity: resolveGitIdentity,
+         resolveCommitIdentity: resolveCommitIdentity,
          resolveAgentAttribution: resolveAgentAttribution,
          repoInspector: repoInspector,
          processControl: processControl,

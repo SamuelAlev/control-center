@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Referensi untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya, dan hasil langkah.
 slug: id-ID/panduan-pengguna/referensi/langkah-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Sebuah langkah pipeline memiliki dua sumbu yang independen:
@@ -42,7 +42,7 @@ Langkah shell tanpa agen (`bash -c`). Placeholder `{{key}}` di dalam skrip digan
 | `script`          | Perintah shell yang dijalankan (wajib) |
 | `outputKey`       | Kunci state yang menerima stdout yang dipangkas saat keluar dengan kode 0 |
 
-Dijalankan dengan cwd `<cc_root>/pipelines/<pipelineRunId>/` (dipakai bersama oleh semua langkah bash dalam satu eksekusi) dan `GITHUB_TOKEN` di environment. Juga menulis `<stepId>_runDir` ke state. Keluar dengan kode bukan nol menggagalkan langkah beserta ekor stderr.
+Berjalan di dalam sandbox OS host dengan cwd `<cc_root>/pipelines/<pipelineRunId>/` (dipakai bersama oleh semua langkah bash dalam satu eksekusi); host tanpa sandbox menggagalkan langkah. Direktori data dan berkas `.env` server tidak dapat dibaca, git dan `gh` tidak melihat konfigurasi host, dan `GH_TOKEN` / `GITHUB_TOKEN` hanya memegang token `read` satu-repositori ketika `repo_full_name` (di state atau payload pemicu) menamai repo GitHub yang tertaut ke ruang kerja. Membuat atau mengedit templat dengan langkah ini memerlukan admin ruang kerja. Juga menulis `<stepId>_runDir` ke state. Keluar dengan kode bukan nol menggagalkan langkah beserta ekor stderr.
 
 ### `conversation.promptAgent`
 

@@ -9,6 +9,8 @@ import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/agent_shell_file_output.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/host_shell_listeners.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
 import 'package:uuid/uuid.dart';
@@ -380,7 +382,7 @@ class AgentShellProcessService implements AgentShellProcessPort {
 
   static Future<String> _defaultPs() async {
     try {
-      final result = await Process.run('ps', [
+      final result = await ChildProcess.run('ps', [
         '-axww',
         '-o',
         'pid=,ppid=,etime=,command=',

@@ -2,7 +2,7 @@
 title: Bac à sable et sécurité
 description: Ce qui limite réellement un agent dans Control Center aujourd’hui, jusqu’où va le bac à sable du système d’exploitation et quelles frontières tiennent sur un hôte dépourvu de backend.
 slug: fr-CA/manuel/concepts/bac-a-sable-et-securite
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Jusqu’où le bac à sable du système d’exploitation va, et où il ne va pas]
@@ -152,9 +152,11 @@ exécute l’agent.
 
 Un push est l’action qui doit tenir même face à un agent qui cherche à
 contourner une règle : il est donc appliqué par ce que l’agent détient plutôt
-que par ce qu’il exécute. Avec une GitHub App configurée, une exécution dans un
-arbre de travail GitHub reçoit un jeton d’installation limité au dépôt, qui peut
-lire le contenu et travailler avec les pull requests mais pas pousser. La
+que par ce qu’il exécute. Une exécution dans un arbre de travail GitHub reçoit
+un jeton pour ce seul dépôt, émis à partir de la GitHub App de l’espace de
+travail, de l’app propre au serveur ou de Control Center Connect. Il peut lire
+le contenu et, lorsque le membre responsable peut pousser, commenter les pull
+requests, mais il ne peut pas pousser. La
 configuration git de l’exécution réécrit chaque URL de push GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) vers la
 **passerelle d’exécution d’agent**, un point de terminaison en boucle locale sur
@@ -185,13 +187,11 @@ installations de paquets de **Installer un paquet** ; `curl` et `wget` de
 agent déterminé à en cacher une (`eval`, un fichier de script, un appel d’API
 direct) y parvient. Les push n’en dépendent pas.
 
-:::caution[Sans GitHub App, la règle de push n’est qu’indicative]
-Sans GitHub App configurée, le courtier se rabat sur un jeton d’accès
-personnel, qu’il est impossible de restreindre à la lecture seule. La règle
-tient toujours pour `git push`, puisque git envoie le push à la passerelle,
-mais du code qui utilise directement le jeton de l’environnement peut pousser
-en la contournant.
-:::
+Chaque jeton GitHub que reçoit une exécution est borné deux fois : à un seul
+dépôt, et à ce que le membre responsable (celui qui a fait la demande, sinon le
+propriétaire de l’espace de travail) peut y faire. Il n’y a aucun identifiant de
+repli. Quand aucun jeton ne peut être émis, l’exécution démarre sans jeton et
+ses notes expliquent pourquoi.
 
 Aucune clé d’API de tickets n’est placée dans un bac à sable. Les agents
 écrivent les tickets via les outils MCP de Control Center, qui interrogent
@@ -201,9 +201,11 @@ La règle **Accéder au réseau** est lue une seule fois, au démarrage de
 l’exécution. Le réseau d’un bac à sable est soit activé, soit désactivé : un
 refus le désactive, tandis qu’autoriser et demander d’abord le laissent
 activé ; les outils `web_fetch` et `web_search` du harnais continuent de
-demander à chaque appel. Les identifiants sont révoqués au démontage de
-l’exécution, avec tout jeton d’écriture émis par la passerelle, si bien
-qu’aucune référence ne survit à l’exécution.
+demander à chaque appel. Les références d’identifiants de l’exécution sont
+libérées à son démontage. Les jetons qui se trouvent derrière sont partagés par
+membre et par dépôt et expirent en une heure environ ; un membre qui se
+déconnecte de GitHub ou quitte l’espace de travail invalide d’un coup tous les
+jetons émis en son nom.
 
 ## Ce que le bac à sable ajoute et où il s’arrête
 

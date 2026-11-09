@@ -1,9 +1,9 @@
 ---
 title: Chạy máy chủ không giao diện
 description: Chạy tệp nhị phân không giao diện cc_server hoặc ảnh Docker của nó, ghép nối một máy khách với nó và cấu hình nó với toàn bộ bề mặt cờ CLI và biến môi trường.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Chạy `cc_server` trên một chiếc máy luôn bật, rồi kết nối tới nó từ máy tính,
@@ -15,8 +15,9 @@ ngoài; các máy khách chỉ dựng giao diện.
 ## Chạy trong Docker (các ảnh dựng sẵn)
 
 Mỗi bản phát hành công bố một bộ ngăn xếp tự lưu trữ gồm bốn ảnh GHCR — backend,
-hai máy khách mỏng tĩnh và bộ chuyển tiếp ghép nối tùy chọn — cùng một ảnh
-`cc-server-demo` riêng cho máy chủ demo công khai. Một bản cài đặt tự lưu trữ không
+hai máy khách mỏng tĩnh và bộ chuyển tiếp ghép nối tùy chọn — cùng dịch vụ đăng nhập
+`cc-connect` tùy chọn ([Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/))
+và một ảnh `cc-server-demo` riêng cho máy chủ demo công khai. Một bản cài đặt tự lưu trữ không
 cần checkout mã nguồn. Hãy ghim một thẻ phiên bản
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) hoặc dùng `latest`.
 
@@ -68,6 +69,11 @@ loopback:
 - **`/data` là trạng thái duy nhất.** Các cơ sở dữ liệu SQLite, bí mật của thiết bị
   đã ghép nối, mô hình đã tải về và âm thanh cuộc họp đều nằm trong volume — hãy
   sao lưu nó và container trở nên có thể vứt bỏ.
+- **Bí mật nhà cung cấp đặt trong `.env` được gắn vào, không bao giờ qua `-e`.** Máy chủ
+  từ chối khởi động khi `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` hoặc `SLACK_*SECRET*` có trong môi trường
+  tiến trình của nó. Hãy gắn tệp ở chế độ chỉ đọc tại `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), hoặc cấu hình các ứng dụng trong Cài đặt.
 - **Ghép nối một máy khách từ bên trong ảnh** trước kết nối đầu tiên, tương đương
   với [bước 3](#bước-3-ghép-nối-một-máy-khách-trước-lần-khởi-động-đầu-tiên) trong container:
 
@@ -272,21 +278,33 @@ soạn thảo do máy chủ khởi chạy qua một proxy công khai. Các yêu 
 nhạy cảm bị từ chối; tài nguyên yêu cầu một phiên đã mã hóa và đã xác thực.
 
 
-## Bước 6: Kết nối một Google Calendar (tùy chọn)
+## Bước 6: Chọn cách người dùng đăng nhập
 
-Để đồng bộ lịch của một không gian làm việc mà không cần giao diện, hãy dùng luồng
-mã thiết bị:
+Máy khách đầu tiên kết nối với tư cách chủ máy chủ sẽ được hỏi cách máy chủ này đăng nhập
+người dùng vào GitHub, Google Calendar và Linear: **Dùng ứng dụng của Control Center**,
+**Dùng ứng dụng của riêng tôi**, hoặc **Dùng máy chủ Connect tùy chỉnh**. Từ terminal, cùng
+lựa chọn đó là:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Nó in ra một mã và một URL để phê duyệt trên thiết bị khác, lưu refresh token ở
-phía máy chủ rồi thoát. Một bản dựng từ mã nguồn không kèm máy khách Google nào, nên
-các biến môi trường id và secret là bắt buộc — không có cờ `--google-client-id`. Xem
-[Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
+`CC_CONNECT_URL` (`hosted`, `off` hoặc một URL) trong môi trường hoặc `.env` của máy chủ thay
+vào đó sẽ khóa lựa chọn. Với **Dùng ứng dụng của riêng tôi**, hãy đăng ký từng nhà cung cấp
+trong **Cài đặt → Máy chủ → Đăng nhập một lần → Ứng dụng nhà cung cấp**; **Tạo ứng dụng GitHub
+của tôi** thiết lập GitHub chỉ trong một bước. Bí mật của nhà cung cấp thuộc về tệp `.env` của
+máy chủ, không bao giờ là môi trường đã export. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+và [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
+
+Đăng nhập qua Connect hoàn tất bằng một mã mà trình duyệt hiển thị, nên máy chủ không cần địa
+chỉ công khai cho chúng. Đăng nhập qua ứng dụng riêng của máy chủ đưa trình duyệt quay về URL
+công khai của máy chủ, nên hãy đặt `--public-url` thành một địa chỉ mà trình duyệt của người
+dùng có thể truy cập.
+
+Để lưu trữ Connect cho các máy chủ khác từ máy chủ này, hãy đặt `CC_SERVER_CONNECT_HOST=on`; xem
+[Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/#gắn-connect-bên-trong-cc_server).
 
 ## Cấu hình
 
@@ -342,6 +360,7 @@ Hai điều cần biết trước khi bạn để lộ cổng ra ngoài loopback
 - [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
 - [Chạy một worker đội máy](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-worker-doi-may/)
 - [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
+- [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/)
 
 ## Khái niệm liên quan
 

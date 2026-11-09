@@ -1,3 +1,6 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_data/cc_data.dart'
+    show ProviderConnection, SignInLaneInfo, SignInLaneMode;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
@@ -7,12 +10,16 @@ import 'package:control_center/features/auth/presentation/widgets/api_keys_panel
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
-import 'package:control_center/features/ticketing/providers/ticketing_connection_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+const _githubOwn = SignInLaneInfo(
+  lane: ConnectOAuthLane.github,
+  mode: SignInLaneMode.own,
+);
 
 void main() {
   late AppPreferences prefs;
@@ -23,15 +30,15 @@ void main() {
 
   Widget wrap({
     List<ForgeConnection> connections = const [],
-    Map<String, SignInProvider> signIn = const {},
-    Map<TicketProvider, TicketingConnection> ticketing = const {},
+    Map<ConnectOAuthLane, SignInLaneInfo> lanes = const {},
+    Map<ConnectOAuthLane, ProviderConnection> grants = const {},
     TicketProvider vendor = TicketProvider.local,
   }) => ProviderScope(
     overrides: [
       appPreferencesProvider.overrideWithValue(prefs),
       forgeConnectionsProvider.overrideWith((ref) async => connections),
-      signInProvidersProvider.overrideWith((ref) async => signIn),
-      ticketingConnectionsProvider.overrideWith((ref) async => ticketing),
+      oauthLanesProvider.overrideWith((ref, workspaceId) async => lanes),
+      oauthConnectionsProvider.overrideWith((ref, workspaceId) async => grants),
       // The vendor is a WORKSPACE setting, so the fixture is the settings map
       // rather than a local preference.
       workspaceSettingsProvider.overrideWith(
@@ -53,11 +60,11 @@ void main() {
     ),
   );
 
+  CcButton button(WidgetTester tester, String label) =>
+      tester.widget<CcButton>(find.widgetWithText(CcButton, label));
+
   group('structure', () {
     testWidgets('is two cards: code hosting and ticketing', (tester) async {
-      // It used to be four — a `gh` CLI card, a PAT card, a ticketing
-      // provider card and a ticketing key card — which split each decision
-      // across two places.
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
 
@@ -79,20 +86,22 @@ void main() {
       }
     });
 
-    testWidgets('the action sits to the RIGHT of the row it belongs to', (
+    testWidgets('the action sits to the end of the row it belongs to', (
       tester,
     ) async {
-      await tester.pumpWidget(wrap());
+      await tester.pumpWidget(
+        wrap(lanes: const {ConnectOAuthLane.github: _githubOwn}),
+      );
       await tester.pumpAndSettle();
 
       final title = tester.getTopRight(find.text('GitHub'));
       final action = tester.getTopLeft(
-        find.widgetWithText(CcButton, 'Add token').first,
+        find.widgetWithText(CcButton, 'Sign in to GitHub'),
       );
       expect(action.dx, greaterThan(title.dx));
     });
 
-    testWidgets('the ticketing provider and its credential live in ONE card', (
+    testWidgets('the ticketing provider and its sign-in live in ONE card', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(vendor: TicketProvider.linear));
@@ -103,8 +112,11 @@ void main() {
         matching: find.byType(SectionCard),
       );
       expect(
-        find.descendant(of: card, matching: find.text('Linear')),
-        findsWidgets,
+        find.descendant(
+          of: card,
+          matching: find.widgetWithText(CcButton, 'Sign in to Linear'),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -114,49 +126,52 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(CcButton, 'Add key'), findsNothing);
+      expect(find.widgetWithText(CcButton, 'Sign in to Linear'), findsNothing);
     });
   });
 
-  group('the sign-in affordance', () {
-    testWidgets('is a token paste when the server has no app', (tester) async {
+  group('the GitHub affordance', () {
+    testWidgets('is a sign-in, never a token paste', (tester) async {
+      await tester.pumpWidget(
+        wrap(lanes: const {ConnectOAuthLane.github: _githubOwn}),
+      );
+      await tester.pumpAndSettle();
+
+      expect(button(tester, 'Sign in to GitHub').onPressed, isNotNull);
+      // GitLab and Bitbucket keep their pasted token; GitHub never takes one.
+      expect(
+        find.widgetWithText(CcButton, 'Add token'),
+        findsNWidgets(ForgeHost.supported.length - 1),
+      );
+    });
+
+    testWidgets('is disabled, with the reason, when the lane is unavailable', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          lanes: const {
+            ConnectOAuthLane.github: SignInLaneInfo(
+              lane: ConnectOAuthLane.github,
+              mode: SignInLaneMode.unavailable,
+              error: 'This server has no GitHub App yet.',
+            ),
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(button(tester, 'Sign in to GitHub').onPressed, isNull);
+      expect(find.text('This server has no GitHub App yet.'), findsOneWidget);
+    });
+
+    testWidgets('is disabled while the server has not answered', (
+      tester,
+    ) async {
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Sign in with'), findsNothing);
-      expect(find.widgetWithText(CcButton, 'Add token'), findsWidgets);
-    });
-
-    testWidgets('is a sign-in when the server has one', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          signIn: const {
-            'github': SignInProvider(id: 'github', flow: SignInFlow.device),
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.widgetWithText(CcButton, 'Sign in with GitHub'),
-        findsOneWidget,
-      );
-      // The paste path stays available — it is the only way in for someone
-      // whose account the app is not installed for.
-      expect(find.widgetWithText(CcButton, 'Add token'), findsWidgets);
-    });
-
-    testWidgets('only for the forges the server advertises', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          signIn: const {
-            'github': SignInProvider(id: 'github', flow: SignInFlow.device),
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Sign in with GitLab'), findsNothing);
+      expect(button(tester, 'Sign in to GitHub').onPressed, isNull);
     });
   });
 
@@ -164,6 +179,7 @@ void main() {
     testWidgets('names the account, and offers to disconnect', (tester) async {
       await tester.pumpWidget(
         wrap(
+          lanes: const {ConnectOAuthLane.github: _githubOwn},
           connections: const [
             ForgeConnection(
               forge: ForgeHost.github,
@@ -178,28 +194,29 @@ void main() {
 
       expect(find.text('Signed in as octocat.'), findsOneWidget);
       expect(find.widgetWithText(CcButton, 'Disconnect'), findsOneWidget);
+      expect(find.widgetWithText(CcButton, 'Sign in again'), findsOneWidget);
     });
 
     testWidgets('says WHICH credential is answering when it is not yours', (
       tester,
     ) async {
-      // An operator seeing the wrong account needs to know the server's own
-      // app is what is answering, not a token they pasted.
+      // An operator seeing the wrong account needs to know an environment
+      // variable is what is answering, not their own token.
       await tester.pumpWidget(
         wrap(
           connections: const [
             ForgeConnection(
-              forge: ForgeHost.github,
+              forge: ForgeHost.gitlab,
               authenticated: true,
               username: 'octocat',
-              source: ForgeCredentialSource.app,
+              source: ForgeCredentialSource.environment,
             ),
           ],
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining("via this server's app"), findsOneWidget);
+      expect(find.textContaining('from the environment'), findsOneWidget);
     });
 
     testWidgets('surfaces a rejected credential as its own reason', (

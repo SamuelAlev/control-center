@@ -10,6 +10,7 @@ import 'package:cc_infra/src/slack/slack_socket.dart';
 import 'package:cc_infra/src/slack/slack_socket_mode_client.dart';
 import 'package:cc_infra/src/slack/slack_task_card.dart';
 import 'package:cc_infra/src/slack/slack_text.dart';
+import 'package:cc_infra/src/slack/slack_transport.dart';
 
 /// What the Slack API can do for the bridge.
 ///
@@ -30,13 +31,13 @@ const slackChatCapabilities = ChatProviderCapabilities(
 
 /// Slack's implementation of [ChatProviderAdapter].
 ///
-/// Everything Slack-shaped about the bridge lives here: Socket Mode as the
-/// transport (which is what lets the whole feature work from a laptop with no
+/// Everything Slack-shaped about the bridge lives here: the transport (Socket
+/// Mode for an own app, the Connect relay for the shared one — neither needs a
 /// public endpoint), the Web API calls, the mrkdwn codec and the envelope
 /// normalization — including two details that would otherwise leak into the
 /// generic core:
 ///
-///  * **A space mention arrives twice**, once as `app_mention` and once as
+///  * **A channel mention arrives twice**, once as `app_mention` and once as
 ///    `message`. `app_mention` wins; the plain copy is dropped here, so the core
 ///    never has to know that Slack double-delivers.
 ///  * **Subtypes are mostly chrome.** Joins, edits, deletions and thread
@@ -45,41 +46,56 @@ const slackChatCapabilities = ChatProviderCapabilities(
 class SlackChatAdapter implements ChatProviderAdapter {
   /// Creates a [SlackChatAdapter] for one workspace's Slack app.
   ///
-  /// [api] must already be authorized with the app's bot token; [appToken] is the
-  /// app-level (`xapp-`) token Socket Mode dials with.
+  /// The api client must already be authorized with the app's bot token; [transport]
+  /// builds how events arrive. [botId] and [botUserId] are the identity the
+  /// token was saved with: [start] refuses a token that `auth.test` reports as
+  /// some other bot.
   SlackChatAdapter({
     required this.workspaceId,
-    required SlackApiClient api,
-    required String appToken,
+    required this._api,
+    required SlackTransportFactory transport,
     required this.botUserId,
     required this.botName,
     required this.teamId,
-    SlackSocketConnector? connector,
-    bool debugReconnects = false,
-  }) : _api = api {
-    _client = SlackSocketModeClient(
-      workspaceId: workspaceId,
-      appToken: appToken,
-      api: api,
-      connector: connector,
-      debugReconnects: debugReconnects,
+    this.botId = '',
+  }) {
+    _client = transport(
       onEnvelope: handleEnvelope,
-      onStateChanged: (state, error) {
-        CcInfraLog.info(
-          'Slack($workspaceId): ${state.wire}${error == null ? '' : ' ($error)'}',
-        );
-        if (!_status.isClosed) {
-          _status.add(ChatTransportStatus(state: state, error: error));
-        }
-      },
+      onStateChanged: _onTransportState,
     );
   }
+
+  /// A Socket Mode transport factory for an own app's app-level ([appToken],
+  /// `xapp-`) token.
+  static SlackTransportFactory socketMode({
+    required String workspaceId,
+    required SlackApiClient api,
+    required String appToken,
+    SlackSocketConnector? connector,
+    bool debugReconnects = false,
+  }) =>
+      ({required onEnvelope, required onStateChanged}) => SlackSocketModeClient(
+        workspaceId: workspaceId,
+        appToken: appToken,
+        api: api,
+        connector: connector,
+        debugReconnects: debugReconnects,
+        onEnvelope: onEnvelope,
+        onStateChanged: onStateChanged,
+      );
 
   /// The Control Center workspace this adapter serves.
   final String workspaceId;
 
+  /// The bot integration id (`B…`) the token was saved with, or empty when
+  /// unknown.
+  final String botId;
+
   final SlackApiClient _api;
-  late final SlackSocketModeClient _client;
+  late final SlackTransport _client;
+
+  /// Set when [start] refused the token; overrides the transport's state.
+  String? _identityError;
 
   final _events = StreamController<ChatInboundEvent>.broadcast();
   final _status = StreamController<ChatTransportStatus>.broadcast();
@@ -108,10 +124,11 @@ class SlackChatAdapter implements ChatProviderAdapter {
   final String teamId;
 
   @override
-  ChatConnectionState get state => _client.state;
+  ChatConnectionState get state =>
+      _identityError != null ? ChatConnectionState.error : _client.state;
 
   @override
-  String? get lastError => _client.lastError;
+  String? get lastError => _identityError ?? _client.lastError;
 
   @override
   Stream<ChatInboundEvent> get events => _events.stream;
@@ -119,8 +136,56 @@ class SlackChatAdapter implements ChatProviderAdapter {
   @override
   Stream<ChatTransportStatus> get status => _status.stream;
 
+  /// Proves the token is still the bot it was saved as, then opens the
+  /// transport.
+  ///
+  /// `auth.test` must name the same team, bot user and bot id that were
+  /// recorded when the token was stored. A token for any other bot — a swapped
+  /// credentials file, a reinstall into another app — opens nothing. A Slack
+  /// outage is not a refusal: the transport starts and proves itself.
   @override
-  Future<void> start() => _client.start();
+  Future<void> start() async {
+    _identityError = null;
+    try {
+      final identity = await _api.authTest();
+      final mismatch =
+          (teamId.isNotEmpty && identity.teamId != teamId) ||
+          (botUserId.isNotEmpty && identity.userId != botUserId) ||
+          (botId.isNotEmpty && identity.botId != botId);
+      if (mismatch) {
+        _refuse('bot_identity_mismatch');
+        return;
+      }
+    } on SlackApiException catch (e) {
+      if (e.isAuthFailure) {
+        _refuse(e.error);
+        return;
+      }
+      CcInfraLog.warning('Slack($workspaceId): auth.test failed: $e');
+    } on Object catch (e) {
+      CcInfraLog.warning('Slack($workspaceId): auth.test failed: $e');
+    }
+    await _client.start();
+  }
+
+  void _refuse(String error) {
+    _identityError = error;
+    CcInfraLog.warning('Slack($workspaceId): refusing the bot token ($error)');
+    if (!_status.isClosed) {
+      _status.add(
+        ChatTransportStatus(state: ChatConnectionState.error, error: error),
+      );
+    }
+  }
+
+  void _onTransportState(ChatConnectionState state, String? error) {
+    CcInfraLog.info(
+      'Slack($workspaceId): ${state.wire}${error == null ? '' : ' ($error)'}',
+    );
+    if (!_status.isClosed) {
+      _status.add(ChatTransportStatus(state: state, error: error));
+    }
+  }
 
   @override
   Future<void> stop() async {
@@ -181,13 +246,13 @@ class SlackChatAdapter implements ChatProviderAdapter {
       return;
     }
     final slackUserId = event['user'] as String?;
-    final space = event['channel'] as String?;
+    final channel = event['channel'] as String?;
     final ts = event['ts'] as String?;
     if (slackUserId == null ||
         slackUserId.isEmpty ||
         slackUserId == botUserId ||
-        space == null ||
-        space.isEmpty ||
+        channel == null ||
+        channel.isEmpty ||
         ts == null ||
         ts.isEmpty) {
       return;
@@ -195,7 +260,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
 
     final raw = event['text'] as String? ?? '';
     final addressesBot = SlackText.mentionsBot(raw, botUserId);
-    // The `message` copy of a space mention is a duplicate of the
+    // The `message` copy of a channel mention is a duplicate of the
     // `app_mention` that will arrive (or already has) with the same event id in a
     // different envelope, so it is dropped here rather than deduped downstream.
     if (!viaMention && addressesBot) {
@@ -206,14 +271,15 @@ class SlackChatAdapter implements ChatProviderAdapter {
       ChatMessageEvent(
         dedupeKey: envelope.dedupeKey,
         externalTeamId: _team(event),
-        externalChannelId: space,
+        externalChannelId: channel,
         externalThreadId: event['thread_ts'] as String?,
         externalMessageId: ts,
         externalUserId: slackUserId,
         text: SlackText.toMarkdown(raw, botUserId: botUserId),
         viaMention: viaMention,
         isDm:
-            (event['channel_type'] as String?) == 'im' || space.startsWith('D'),
+            (event['channel_type'] as String?) == 'im' ||
+            channel.startsWith('D'),
       ),
     );
   }
@@ -230,19 +296,21 @@ class SlackChatAdapter implements ChatProviderAdapter {
     if (slackUserId.isEmpty) {
       return;
     }
-    final space = text.indexOf(' ');
+    final gap = text.indexOf(' ');
+    final responseUrl = payload['response_url'] as String? ?? '';
     _emit(
       ChatCommandEvent(
         dedupeKey: envelope.dedupeKey,
         externalTeamId: payload['team_id'] as String? ?? teamId,
-        externalChannelId: payload['space_id'] as String? ?? '',
+        externalChannelId: payload['channel_id'] as String? ?? '',
         externalUserId: slackUserId,
         command: (payload['command'] as String? ?? '').trim(),
-        verb: (space == -1 ? text : text.substring(0, space)).toLowerCase(),
-        rest: space == -1 ? '' : text.substring(space + 1).trim(),
-        // Slack's pre-authorized reply space: it works in a conversation the
+        verb: (gap == -1 ? text : text.substring(0, gap)).toLowerCase(),
+        rest: gap == -1 ? '' : text.substring(gap + 1).trim(),
+        // Slack's pre-authorized reply channel: it works in a conversation the
         // bot is not a member of, where `chat.postEphemeral` fails outright.
-        replyHandle: payload['response_url'] as String?,
+        // Only Slack's own hooks host is ever trusted with a reply.
+        replyHandle: isSlackHooksUrl(responseUrl) ? responseUrl : null,
       ),
     );
   }
@@ -263,7 +331,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
   }) {
     final text = SlackText.toMrkdwn(markdown);
     return _api.postMessage(
-      space: conversationId,
+      channel: conversationId,
       // With blocks, `text` is what a push notification and a screen reader
       // read, so it stays the whole reply either way.
       text: text,
@@ -314,7 +382,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
     required String markdown,
     String? threadId,
   }) => _api.postEphemeral(
-    space: conversationId,
+    channel: conversationId,
     user: userId,
     text: SlackText.toMrkdwn(markdown),
     threadTs: threadId,
@@ -335,9 +403,9 @@ class SlackChatAdapter implements ChatProviderAdapter {
     final withMode = withTaskCard && _taskDisplayModeAccepted != false;
     try {
       final handle = await _api.startStream(
-        space: conversationId,
+        channel: conversationId,
         threadTs: threadId,
-        // Required to stream into a space: without them Slack answers
+        // Required to stream into a channel: without them Slack answers
         // `missing_recipient_user_id` / `missing_recipient_team_id` and the reply
         // degrades to a single post. A DM does not need them and passing them
         // there is harmless.
@@ -465,7 +533,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
     required String threadId,
     required String status,
   }) => _api.setThreadStatus(
-    space: conversationId,
+    channel: conversationId,
     threadTs: threadId,
     status: status,
   );
@@ -476,7 +544,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
     required String threadId,
     required String title,
   }) => _api.setThreadTitle(
-    space: conversationId,
+    channel: conversationId,
     threadTs: threadId,
     title: title,
   );
@@ -488,7 +556,7 @@ class SlackChatAdapter implements ChatProviderAdapter {
     ChatTaskCard? card,
   }) async {
     final responseUrl = replyHandle is String ? replyHandle : '';
-    if (responseUrl.isEmpty) {
+    if (!isSlackHooksUrl(responseUrl)) {
       return false;
     }
     await _api.respondToCommand(
@@ -518,6 +586,8 @@ class SlackChatAdapter implements ChatProviderAdapter {
       email: profile.email,
       isBot: profile.isBot,
       teamId: profile.teamId,
+      fullMember: profile.isFullMemberOf(teamId),
+      emailConfirmed: profile.emailConfirmed,
     );
   }
 

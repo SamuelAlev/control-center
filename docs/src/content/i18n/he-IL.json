@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "חיבור Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "שרת ופריסה",
   "docs.sidebar.guidesRunHeadlessServer": "הפעלת שרת ללא ממשק",
+  "docs.sidebar.guidesRunConnect": "הפעלת שרת Connect",
   "docs.sidebar.guidesConnectRemoteServer": "התחברות לשרת מרוחק",
   "docs.sidebar.guidesRunFleetWorker": "הפעלת worker בצי",
   "docs.sidebar.guidesBackUpAndRestore": "גיבוי ושחזור",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "קיצורי מקלדת",
   "docs.sidebar.referenceRouteMap": "מפת נתיבים",
   "docs.sidebar.referenceCcServerCli": "CLI של cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "גיבוי, ייצוא וייבוא",
   "docs.sidebar.referenceTelemetry": "נתוני שימוש",
   "docs.sidebar.referenceGlossary": "מילון מונחים"

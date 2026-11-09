@@ -5,7 +5,9 @@ import 'package:cc_server_core/src/identity/provider_token.dart';
 
 /// Per-user forge/ticketing credentials on the server (never on clients).
 ///
-/// Lives in [FileSecretsStore] under `user_forge_*` / workspace overlay keys. Write-only to clients.
+/// Lives in [FileSecretsStore] under `user_forge_*` / workspace overlay keys.
+/// Write-only to clients. A Connect-sealed credential stores only its seal;
+/// see [ProviderToken].
 class UserCredentialsStore {
   /// Creates a store over the server's shared secrets file.
   UserCredentialsStore(this._secrets);
@@ -28,8 +30,30 @@ class UserCredentialsStore {
     return '${base}_$workspaceId';
   }
 
-  static String _ticketKey(TicketProvider provider, String userId) =>
-      'user_ticket_${provider.name}_$userId';
+  /// Secrets-file key for [userId]'s ticketing [provider] credential: the
+  /// person's global slot, or with [workspaceId] the slot of a workspace that
+  /// signs people in to its own app.
+  static String ticketKey(
+    TicketProvider provider,
+    String userId, {
+    String? workspaceId,
+  }) => workspaceId == null || workspaceId.isEmpty
+      ? 'user_ticket_${provider.name}_$userId'
+      : '${_workspaceTicketPrefix(provider)}$workspaceId:$userId';
+
+  static String _workspaceTicketPrefix(TicketProvider provider) =>
+      'workspace_ticket_${provider.name}:';
+
+  /// True when [key] is a member's ticketing credential in [workspaceId]'s
+  /// own slot.
+  static bool isWorkspaceTicketKey(String key, String workspaceId) {
+    for (final provider in TicketProvider.values) {
+      if (key.startsWith('${_workspaceTicketPrefix(provider)}$workspaceId:')) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /// [userId]'s credential for [forge], or null when they have none.
   ///
@@ -51,7 +75,7 @@ class UserCredentialsStore {
     ProviderToken token, {
     String? workspaceId,
   }) async {
-    if (token.accessToken.isEmpty) {
+    if (!token.isSealed && token.accessToken.isEmpty) {
       await clearForgeToken(userId, forge, workspaceId: workspaceId);
       return;
     }
@@ -78,48 +102,99 @@ class UserCredentialsStore {
       (await forgeToken(userId, forge, workspaceId: workspaceId)) != null;
 
   /// [userId]'s credential for the ticketing [provider], or null.
+  ///
+  /// A non-empty [workspaceId] reads that workspace's own slot only; it never
+  /// falls back to the global one.
   Future<ProviderToken?> ticketToken(
     String userId,
-    TicketProvider provider,
-  ) async => ProviderToken.tryParse(
-    await _secrets.readPsk(_ticketKey(provider, userId)),
+    TicketProvider provider, {
+    String? workspaceId,
+  }) async => ProviderToken.tryParse(
+    await _secrets.readPsk(
+      ticketKey(provider, userId, workspaceId: workspaceId),
+    ),
   );
 
   /// Stores [token] as [userId]'s credential for the ticketing [provider].
   Future<void> setTicketToken(
     String userId,
     TicketProvider provider,
-    ProviderToken token,
-  ) async {
-    if (token.accessToken.isEmpty) {
-      await clearTicketToken(userId, provider);
+    ProviderToken token, {
+    String? workspaceId,
+  }) async {
+    if (!token.isSealed && token.accessToken.isEmpty) {
+      await clearTicketToken(userId, provider, workspaceId: workspaceId);
       return;
     }
-    await _secrets.writePsk(_ticketKey(provider, userId), token.encode());
+    await _secrets.writePsk(
+      ticketKey(provider, userId, workspaceId: workspaceId),
+      token.encode(),
+    );
   }
 
   /// Removes [userId]'s credential for the ticketing [provider].
-  Future<void> clearTicketToken(String userId, TicketProvider provider) =>
-      _secrets.deletePsk(_ticketKey(provider, userId));
-
-  /// Whether [userId] has a credential for the ticketing [provider].
-  Future<bool> hasTicketToken(String userId, TicketProvider provider) async =>
-      (await ticketToken(userId, provider)) != null;
-
-  /// Stores a pasted GitHub token for [userId]. An empty token deletes the
-  /// entry (the member reverts to the server's app credential).
-  Future<void> setGitHubToken(
+  Future<void> clearTicketToken(
     String userId,
-    String token, {
+    TicketProvider provider, {
     String? workspaceId,
-  }) => setForgeToken(
-    userId,
-    ForgeHost.github,
-    ProviderToken(accessToken: token),
-    workspaceId: workspaceId,
+  }) => _secrets.deletePsk(
+    ticketKey(provider, userId, workspaceId: workspaceId),
   );
 
-  /// Whether [userId] has a GitHub token configured.
-  Future<bool> hasGitHubToken(String userId, {String? workspaceId}) =>
-      hasForgeToken(userId, ForgeHost.github, workspaceId: workspaceId);
+  /// Whether [userId] has a credential for the ticketing [provider].
+  Future<bool> hasTicketToken(
+    String userId,
+    TicketProvider provider, {
+    String? workspaceId,
+  }) async =>
+      (await ticketToken(userId, provider, workspaceId: workspaceId)) != null;
+
+  /// Every user holding a global credential for the ticketing [provider].
+  Future<List<String>> ticketUsers(TicketProvider provider) async {
+    final prefix = 'user_ticket_${provider.name}_';
+    return [
+      for (final key in await _secrets.keysMatching(
+        (key) => key.startsWith(prefix),
+      ))
+        key.substring(prefix.length),
+    ];
+  }
+
+  /// Every `(workspace, user)` holding a credential for the ticketing
+  /// [provider] in a workspace's own slot.
+  Future<List<({String workspaceId, String userId})>> workspaceTicketSlots(
+    TicketProvider provider,
+  ) async {
+    final prefix = _workspaceTicketPrefix(provider);
+    return [
+      for (final key in await _secrets.keysMatching(
+        (key) => key.startsWith(prefix),
+      ))
+        if (key.indexOf(':', prefix.length) case final colon when colon > 0)
+          (
+            workspaceId: key.substring(prefix.length, colon),
+            userId: key.substring(colon + 1),
+          ),
+    ];
+  }
+
+  /// Deletes every member's [provider] credential in [workspaceId]'s own slot
+  /// and returns the tokens removed, so the caller can revoke them.
+  Future<List<ProviderToken>> clearWorkspaceTicketTokens(
+    String workspaceId,
+    TicketProvider provider,
+  ) async {
+    final prefix = '${_workspaceTicketPrefix(provider)}$workspaceId:';
+    final removed = <ProviderToken>[];
+    for (final key in await _secrets.keysMatching(
+      (key) => key.startsWith(prefix),
+    )) {
+      final token = ProviderToken.tryParse(await _secrets.readPsk(key));
+      if (token != null) {
+        removed.add(token);
+      }
+      await _secrets.deletePsk(key);
+    }
+    return removed;
+  }
 }

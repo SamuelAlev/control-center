@@ -2,7 +2,7 @@
 title: パイプラインステップ
 description: パイプラインステップの種類、ステップボディのキー、その設定とステップ結果についてのリファレンス。
 slug: ja-JP/マニュアル/リファレンス/パイプラインステップ
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 パイプラインのステップには、互いに独立した 2 つの軸があります:
@@ -42,7 +42,7 @@ sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 | `script`     | 実行するシェルコマンド（必須）              |
 | `outputKey`  | 終了コード 0 のときにトリム済みの stdout を受け取るステートキー |
 
-cwd を `<cc_root>/pipelines/<pipelineRunId>/`（実行内のすべての bash ステップで共有）とし、環境変数に `GITHUB_TOKEN` を設定して実行されます。また、`<stepId>_runDir` をステートに書き込みます。ゼロ以外の終了コードは、stderr の末尾とともにステップを失敗させます。
+ホストの OS サンドボックス内で、cwd を `<cc_root>/pipelines/<pipelineRunId>/`（実行内のすべての bash ステップで共有）として実行されます。サンドボックスのないホストではステップが失敗します。サーバーのデータディレクトリと `.env` ファイルは読み取れず、git と `gh` にはホストの設定が一切見えません。`GH_TOKEN` / `GITHUB_TOKEN` には、`repo_full_name`（ステートまたはトリガーのペイロード）がワークスペースにリンクされた GitHub リポジトリを指す場合にのみ、1 つのリポジトリ用の `read` トークンが入ります。このステップを含むテンプレートの作成や編集にはワークスペース管理者の権限が必要です。また、`<stepId>_runDir` をステートに書き込みます。ゼロ以外の終了コードは、stderr の末尾とともにステップを失敗させます。
 
 ### `conversation.promptAgent`
 

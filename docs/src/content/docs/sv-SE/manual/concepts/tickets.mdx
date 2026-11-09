@@ -2,7 +2,7 @@
 title: Ärenden och delegering
 description: Varför ett ärende spårar arbete utan att starta det, hur delegering skyddas och vad leverantörsspeglingen äger och inte äger.
 slug: sv-SE/handbok/koncept/arenden
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Ett ärende är den arbetsenhet som Control Center spårar. Det är medvetet en _dum_
@@ -137,9 +137,11 @@ så ett leverantörsstött ärende du tar bort tas inte bort i
 ärendehanteringssystemet och kan dyka upp igen vid nästa synkning. Medarbetare och
 barnärenden kaskaderar.
 
-Adaptrarnas inloggningsuppgifter hämtas från serverns lager för
-inloggningsuppgifter (en Linear-nyckel eller GitHub-token som klistras in i
-Inställningar plockas upp vid nästa förfrågan; miljön såddar bara de lagren).
+Adaptrarnas inloggningsuppgifter hämtas per anrop på servern: en persons egen
+Linear- eller GitHub-inloggning för det personen gör, och arbetsytans
+Linear-automatisering (eller serverns Linear-tjänstnyckel) eller en GitHub-token
+för ett enda repo för ärendesynk. En ny inloggning plockas upp vid nästa
+förfrågan.
 
 ## Ärenden och pipelines
 

@@ -2,7 +2,7 @@
 title: لغت
 description: Control Center میں پوری جگہ استعمال ہونے والی کلیدی اصطلاحات کی تعریفیں۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/لغت
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['پائپ لائن', 'DAG پر مبنی ورک فلو جو قدموں (ایجنٹ ڈسپیچ، اسکرپٹس، شرطیں) کو زنجیر کی طرح جوڑتا ہے۔ ٹیمپلیٹس سے تعریف ہوتا ہے؛ رنز کے طور پر عمل میں آتا ہے۔'],
 ['میٹنگ', 'مقامی طور پر ریکارڈ شدہ اور ٹرانسکرائب شدہ میٹنگ سیشن۔ مائیکروفون اور سسٹم آڈیو پکڑتا ہے، ڈیوائس پر منتخب ASR ماڈل سے ٹرانسکرائب کرتا ہے (بطور ڈیفالٹ Parakeet TDT v3؛ Parakeet TDT v2، Whisper large-v3-turbo اور Whisper base.en متبادل ہیں)، مقررین کی ڈائرائزیشن کرتا ہے اور نوٹس، ایکشن آئٹمز اور فیصلوں میں خلاصہ کرتا ہے۔ منتخب ASR ماڈل بوٹ پر زبردستی انسٹال ہوتا ہے اور ایک ری اسٹارٹ کے بعد ریکارڈنگ آپریشنز روشن ہو جاتے ہیں۔ ورک اسپیس تک محدود۔'],
 ['CalendarEvent', 'ورک اسپیس اور منسلک اکاؤنٹ تک محدود سنک شدہ Google Calendar اندراج۔ میٹنگ سے مختلف: ایونٹ ایک طے شدہ وعدہ ہے، میٹنگ ایک ریکارڈ شدہ سیشن۔'],
-['CalendarAccount', 'ایک منسلک Google اکاؤنٹ، فی ورک اسپیس اور ای میل۔ OAuth ریفریش ٹوکنز سرور کی جانب ڈیٹا ڈائریکٹری کے اندر secrets.json فائل میں google_* کیز کے طور پر محفوظ ہوتے ہیں اور کسی کلائنٹ تک کبھی نہیں پہنچتے؛ ایک authExpiredAt فلیگ دوبارہ منسلک کرنے کا بینر چلاتا ہے۔'],
+['CalendarAccount', 'ایک منسلک Google اکاؤنٹ، فی ورک اسپیس، رکن اور ای میل۔ اس کا کریڈینشل سرور پر فائل secrets.json میں `google_*` کلید کے طور پر محفوظ ہوتا ہے اور کبھی کلائنٹ تک نہیں پہنچتا؛ Connect کے ذریعے sign-in صرف ایک credential seal محفوظ کرتا ہے۔ authExpiredAt فلیگ reconnect بینر کو چلاتا ہے۔'],
 ['AgentRole', 'متعین کردار (CEO، coder، reviewer، QA، designer، security، devops، PM، general)۔ شخصیت، میموری تک رسائی اور درجہ بندی طے کرتا ہے۔'],
 ['AgentSkills', 'مہارت کے شناخت کنندگان کا ایسا مجموعہ جو چھوٹے بڑے حروف میں فرق نہیں کرتا اور ڈسپیچ کے وقت پرامپٹس میں متعلقہ سیاق داخل کرتا ہے۔'],
 ['مہارت کا ماخذ', 'فی ورک اسپیس مہارت کیٹلاگ کے طور پر رجسٹرڈ GitHub ریپوزٹری۔ بنیادی طور پر غیر معتبر: ریپوزٹری کا میٹا ڈیٹا صرف دکھانے کے لیے ہے اور ہر انسٹال، مواد کے ڈسک یا پرامپٹ تک پہنچنے سے پہلے fail-closed اسکین گیٹ سے گزرتا ہے۔'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'ایک ایجنٹ رن کے لیے ٹوکن/لاگت کا حساب (اِن پٹ ٹوکنز، آؤٹ پٹ ٹوکنز، سینٹس میں تخمینی لاگت)۔'],
 ['WakeReason', 'ایجنٹ کیوں ڈسپیچ ہوا۔ چھ اقدار: صارف کا پیغام، ٹکٹ تفویض، ناکامی کے بعد ریکوری دوبارہ ڈسپیچ، چائلڈ ٹکٹ مکمل، شیڈول شدہ پیروی ہارٹ بیٹ اور پائپ لائن قدم۔'],
 ['SandboxPort', 'سینڈ باکس لائف سائیکل کا انتظام کرتا ہے (پروب، لانچ، ایونٹس، exec، ڈسٹرائے)۔'],
-['CredentialBrokerPort', 'سینڈ باکس لانچ کے لیے محدود دائرے والی اسناد جاری کرتا ہے (ایجنٹ کے ماحول میں صرف پڑھنے والی، لکھنے کی رسائی صرف سرور کی جانب پش پاتھ کے لیے) اور ٹیئر ڈاؤن پر انہیں منسوخ کرتا ہے۔'],
+['CredentialBrokerPort', 'سینڈ باکس لانچ کے لیے محدود اسناد جاری کرتا ہے (ایجنٹ کے ماحول کے لیے ایک ریپو تک محدود ٹوکن، اور صرف سرور کے پش راستے میں لکھنا)، اور ٹیئر ڈاؤن پر انہیں جاری (release) کرتا ہے۔'],
 ['GitRepoInspectorPort', 'مقامی Git ریپو پاتھ سے میٹا ڈیٹا (مالک، ریپو، برانچ) نکالتا ہے۔'],
 ['EmbeddingPort', 'سیمنٹک سرچ کے لیے یونٹ نارم ٹیکسٹ ایمبیڈنگ ویکٹرز بناتا ہے۔'],
 ['NotificationPort', 'زمرہ/روٹ گیٹنگ کا لحاظ رکھتے ہوئے نیٹو ڈیسک ٹاپ اطلاعات دکھاتا ہے۔'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['ریویو فیصلہ', 'ship، hold یا block۔ کوئی بھی P0 نتیجہ جس کا اعتماد >= 0.7 ہو، بلاک کرتا ہے؛ کوئی اور P0 یا کوئی بھی P1 روکتا ہے؛ ورنہ ship۔ کوئی گیٹڈ ناکام محور بلاک کو لازم کر دیتا ہے اور نتائج اسے ووٹوں سے ہرا نہیں سکتے۔'],
 ['SessionRecording', 'ایک رن کے لیے ریکارڈ شدہ ایونٹ اسٹریم کے ساتھ HTTP/LLM کیسیٹس اور ٹول I/O، جو ایک AgentConfigHash کے ساتھ جوڑا جاتا ہے۔'],
 ['گولڈن سیشن', 'ایک منظور شدہ SessionRecording جو فی ایجنٹ یا پلے بک پن ہوتی ہے۔'],
+['Control Center Connect', 'ایک اختیاری سروس جو ان سرورز کے لیے provider sign-ins (GitHub، Google، Linear) چلاتی ہے جن کی اپنی apps نہیں۔ Control Center کی میزبانی کردہ، خود میزبان، یا بند۔ credential seals اور ایک ریپو والے GitHub ٹوکنز واپس دیتی ہے، اور کبھی ریپو کے مواد کو نہیں دیکھتی۔'],
+['Credential seal', 'ایک انکرپٹڈ credential جسے صرف وہی Connect کھول سکتا ہے جس نے اسے بنایا، جو provider، Connect کے پتے، install id، workspace، account، app اور secret generation سے منسلک ہے۔ سرور seal کو محفوظ رکھتا ہے؛ access tokens memory میں رہتے ہیں۔'],
+['Install id', 'ایک Connect پتے کے سامنے ایک سرور کی شناخت، جو اس کی install key سے اخذ ہوتی ہے۔ Connect سرورز کو install id کے ذریعے allowlist کرتا ہے؛ key rotate کرنے سے یہ بدل جاتا ہے اور سب Connect lanes سے sign out ہو جاتے ہیں۔'],
+['Install binding', 'Connect کا وہ ریکارڈ کہ کون سے سرورز shared App کے GitHub installation کو استعمال کر سکتے ہیں۔ organization installation کے لیے ہر سرور کو admin کی منظوری چاہیے۔'],
+['Sign-in lane', 'ایک provider کا browser sign-in: github، google، linear، linear_app یا slack۔ ہر lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل ہو، ورنہ Connect کے ذریعے، ورنہ غیر دستیاب۔'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: سینڈ باکس لائف سائیکل کا انتظام کرتا ہے (پروب، لانچ، ایونٹس، exec، ڈسٹرائے)۔
 
-**CredentialBrokerPort**: سینڈ باکس لانچ کے لیے محدود دائرے والی اسناد جاری کرتا ہے — ایجنٹ کے ماحول میں صرف پڑھنے والی، لکھنے کی رسائی صرف سرور کی جانب پش پاتھ کے لیے — اور ٹیئر ڈاؤن پر انہیں منسوخ کرتا ہے۔
+**CredentialBrokerPort**: سینڈ باکس لانچ کے لیے محدود اسناد جاری کرتا ہے — ایجنٹ کے ماحول کے لیے ایک ریپو تک محدود ٹوکن، اور صرف سرور کے پش راستے میں لکھنا — اور ٹیئر ڈاؤن پر انہیں جاری کرتا ہے۔
 
 **GitRepoInspectorPort**: مقامی Git ریپو پاتھ سے میٹا ڈیٹا (مالک، ریپو، برانچ) نکالتا ہے۔
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: ورک اسپیس اور منسلک اکاؤنٹ تک محدود سنک شدہ Google Calendar اندراج۔ میٹنگ سے مختلف: ایونٹ ایک طے شدہ وعدہ ہے؛ میٹنگ ایک ریکارڈ شدہ سیشن۔ `MeetingCalendarLink` کے ذریعے ایک سے ایک لنک ہوتا ہے۔
 
-**CalendarAccount**: ایک منسلک Google اکاؤنٹ، فی ورک اسپیس اور ای میل۔ OAuth ریفریش ٹوکنز سرور کی جانب `<dataDir>/secrets.json` میں `google_*` کیز کے طور پر محفوظ ہوتے ہیں اور کسی کلائنٹ تک کبھی نہیں پہنچتے؛ ڈیوائس کوڈ فلو سرور پر مکمل ہوتا ہے۔ ایک `authExpiredAt` فلیگ دوبارہ منسلک کرنے کا بینر چلاتا ہے۔
+**CalendarAccount**: ایک منسلک Google اکاؤنٹ، فی ورک اسپیس، رکن اور ای میل (`google:<workspaceId>:<userId>:<email>`)۔ اس کا کریڈینشل سرور پر `<dataDir>/secrets.json` میں `google_*` کلید کے طور پر محفوظ ہوتا ہے اور کبھی کلائنٹ تک نہیں پہنچتا؛ براؤزر sign-in سرور پر ختم ہوتا ہے۔ Connect کے ذریعے sign-in صرف ایک credential seal محفوظ کرتا ہے۔ `authExpiredAt` فلیگ reconnect بینر کو چلاتا ہے۔
 
 ## آرکیٹیکچر کی اصطلاحات
 
@@ -274,6 +279,17 @@ export const glossaryTerms = [
 **cc_remote**: فون کا تھن کلائنٹ — ایک Flutter ویب PWA جو بروکرڈ ریلے کے ذریعے فلیٹ کو ریموٹ کنٹرول کرتا ہے، ڈیفالٹ ڈینی ٹول پالیسی کے ساتھ۔
 
 **cc_signaling_server**: ایک اسٹیٹ لیس WebSocket ریلے بروکر جو دعوت گیٹڈ کمرے میزبانی کرتا ہے — ایک سادہ ریلے جو صرف اینڈ ٹو اینڈ سیل شدہ فریمز آگے بھیجتا ہے، کوئی ایپ ڈیٹا نہیں رکھتا اور پیئرنگ PSK کبھی نہیں دیکھتا۔
+
+**Control Center Connect**: ایک اختیاری سروس جو ان سرورز کے لیے provider sign-ins (GitHub، Google Calendar، Linear) چلاتی ہے جنہوں نے اپنی apps رجسٹر نہیں کیں: Control Center کا میزبانی کردہ Connect، ایک جو کوئی تنظیم چلاتی ہے (`cc-connect`، یا `cc_server` میں `/connect` پر mount)، یا کوئی نہیں۔ یہ credential seals اور ایک ریپو والے GitHub ٹوکنز واپس دیتی ہے، اور کبھی ریپو کے مواد کو نہیں دیکھتی۔ دیکھیں [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
+
+**Credential seal**: ایک انکرپٹڈ credential (`credential_seal`) جسے صرف وہی Connect کھول سکتا ہے جس نے اسے بنایا، جو provider، Connect کے پتے، install id، workspace، account، app اور secret generation سے منسلک ہے۔ سرور seal اور وہ install id محفوظ کرتا ہے جس کے لیے یہ بنایا گیا؛ access tokens memory میں رہتے ہیں۔ جس seal کا install id اب مطابقت نہ رکھے وہ حذف ہو جاتا ہے، اور اس کا مالک دوبارہ sign in کرتا ہے۔
+
+**Install id**: ایک Connect پتے کے سامنے سرور کی شناخت (`install_id`)، جو اس کی secrets فائل میں install key سے اخذ ہوتی ہے۔ Connect سرورز کو install id سے allowlist کرتا ہے۔ key rotate کرنے سے نیا id بنتا ہے اور سب Connect lanes سے sign out ہو جاتے ہیں۔
+
+**Install binding**: Connect کا ریکارڈ (`install_binding`) کہ کون سے سرورز shared App کا GitHub installation استعمال کر سکتے ہیں۔ ایک سرور کے ذریعے installation اسے bind کرتی ہے؛ organization admin کا **Authorize this server** دوسرا سرور bind کرتا ہے۔
+
+**Sign-in lane**: ایک provider کا browser sign-in — `github`، `google`، `linear`، `linear_app` یا `slack`۔ lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل ہو، ورنہ Connect کے ذریعے، ورنہ غیر دستیاب؛ جزوی طور پر ترتیب شدہ اپنی app ایک خرابی ہے، کبھی fallback نہیں۔
+
 
 ## مزید دیکھیں
 

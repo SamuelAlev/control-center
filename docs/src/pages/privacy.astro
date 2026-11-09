@@ -2,7 +2,7 @@
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import LegalDoc from '../components/legal/LegalDoc.astro';
 
-const lastUpdated = '27 October 2026';
+const lastUpdated = '8 November 2026';
 const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
 
 const sections = [
@@ -13,6 +13,7 @@ const sections = [
   { id: 'website-analytics', title: 'Website analytics' },
   { id: 'usage-analytics', title: 'App usage analytics' },
   { id: 'integrations', title: 'Connected services' },
+  { id: 'connect', title: 'Control Center Connect' },
   { id: 'ai', title: 'AI agents and your code' },
   { id: 'meetings', title: 'Meeting capture and transcription' },
   { id: 'diagnostics', title: 'Diagnostics and crash reporting' },
@@ -113,15 +114,29 @@ const sections = [
 
     <section id="integrations">
       <h2>Connected services</h2>
-      <p>The app only contacts a third-party service when a feature you use requires it. You authenticate with each service using your own credentials, which are stored on your self-hosted <code>cc_server</code> (an owner-only secrets file, keyed by your user id) — not in a client keychain, and not on any Control Center-operated server. What is shared with each service:</p>
+      <p>The app only contacts a third-party service when a feature you use requires it. You sign in to each service yourself, and the resulting credentials are stored on your self-hosted <code>cc_server</code> (an owner-only secrets file, keyed by your user id), never in a client keychain. Sign-in runs either through your server's own registered apps or, if your server's owner chose it, through <a href="#connect">Control Center Connect</a>. What is shared with each service:</p>
       <h3>GitHub</h3>
-      <p>Used for pull-request and repository features. The server sends repository names, pull-request numbers, file diffs, commit and review data and requests for user-profile details. Authentication uses a personal access token you paste, or a token from GitHub's device flow when the server has a GitHub App registered. The <code>gh</code> CLI is not an authentication method.</p>
+      <p>Used for pull-request and repository features. The server sends repository names, pull-request numbers, file diffs, commit and review data and requests for user-profile details. You sign in through your browser to a GitHub App: your server's own, or Control Center's shared app through Connect. Personal access tokens are not accepted. Automated work uses short-lived tokens limited to one repository, and when it posts for you through the shared app the post is labelled as Control Center acting for you. The <code>gh</code> CLI is not an authentication method.</p>
       <h3>Google Calendar</h3>
-      <p>Used for the calendar feature. With your consent through Google's OAuth device-code flow, the app reads your calendar list and event details (titles, times, attendees, recurrence). It requests the <code>calendar.readonly</code> scope plus <code>openid</code> and <code>email</code> to identify the account. It does not request <code>calendar.events</code>, so RSVP writes fail. Access is per-workspace and can be revoked at any time from your Google account settings.</p>
+      <p>Used for the calendar feature. With your consent through Google's browser sign-in, the app reads your calendar list and event details (titles, times, attendees, recurrence). It requests the <code>calendar.readonly</code> scope plus <code>openid</code> and <code>email</code> to identify the account. It does not request <code>calendar.events</code>, so RSVP writes fail. Calendar data goes straight from your server to Google. Access is per-workspace and can be revoked at any time from your Google account settings.</p>
       <h3>Linear</h3>
-      <p>Used for the ticketing integration. The app sends issue data — title, description, team, priority, assignee, labels and state changes — to Linear's API, authenticated with a Linear API key you provide.</p>
+      <p>Used for the ticketing integration. The app sends issue data — title, description, team, priority, assignee, labels and state changes — to Linear's API. You sign in through your browser; your server exchanges Linear's sign-in code itself, so Linear tokens never pass through Connect. A workspace admin can also connect Linear's app actor, or the server owner can set a Linear API key, for ticket sync that has no person behind it.</p>
+      <h3>Slack</h3>
+      <p>Used by the chat bridge, when a workspace admin connects a Slack workspace. The server reads the messages and slash commands addressed to the bot, looks up the profiles of people who write to it and posts replies. A workspace either runs its own Slack app, which talks to Slack directly, or uses Control Center's shared Slack app, whose events reach your server through Connect without their message text; your server then reads the message from Slack itself.</p>
       <h3>Newsfeed and other requests</h3>
-      <p>The newsfeed fetches the RSS/Atom feed URLs you subscribe to (only the feed URL is contacted; no personal data is sent) and downloads public ad-blocking filter lists used to strip trackers from feed content. The GIF picker used in pull-request reactions sends your search terms to a third-party GIF service using a shared application key that is not tied to your identity.</p>
+      <p>The newsfeed fetches the RSS/Atom feed URLs you subscribe to (only the feed URL is contacted; no personal data is sent) and downloads public ad-blocking filter lists used to strip trackers from feed content. The GIF picker used in pull-request reactions sends your search terms to a third-party GIF service (Klipy), with an application key that is not tied to your identity: your server's own key, or Control Center's through Connect. GIF images load directly from that service.</p>
+    </section>
+
+    <section id="connect">
+      <h2>Control Center Connect</h2>
+      <p>Connect is a small open-source service that runs provider sign-ins for servers that have not registered their own GitHub, Google, Linear or Slack apps. Your server's owner chooses whether to use Control Center's hosted Connect at <code>connect.usectrl.dev</code>, a Connect their organization runs, or none. With none, no request reaches Connect.</p>
+      <ul>
+        <li><strong>What Connect sees.</strong> Your server's install id and request signatures; the provider account that signs in, during the sign-in; the repository a one-repository GitHub token is minted for; the GitHub installations and Slack teams bound to your server; GIF search terms when it proxies the GIF service; and Slack event references (team, channel and message id) and slash-command text.</li>
+        <li><strong>What Connect never sees.</strong> Source code, repository contents, diffs and pull-request text; calendar events; tickets, transcripts or anything else in a workspace database; Slack message text, which it drops on arrival; Linear tokens; passwords, pairing keys and model-provider keys.</li>
+        <li><strong>Sealed credentials.</strong> Long-lived refresh tokens are encrypted by Connect into seals bound to your server, and only your server stores them. Connect decrypts a seal in memory for a single request, and holds no key that can read your repositories on its own.</li>
+        <li><strong>Retention.</strong> Staged sign-ins, nonces and caches last at most 15 minutes. Connect's only lasting records are installation bindings — which servers may use which GitHub installation, and which server each Slack team is bound to. Logs record install ids only as keyed hashes, sign-in codes are kept out of request logs, and IP addresses are truncated.</li>
+      </ul>
+      <p>The manual's <a href="/manual/reference/connect/">Connect reference</a> lists every request Connect accepts, and <a href="/manual/guides/run-connect/">Run a Connect server</a> explains how to host your own.</p>
     </section>
 
     <section id="ai">
@@ -165,7 +180,7 @@ const sections = [
         <li><strong>Default local bind.</strong> A desktop-spawned <code>cc_server</code> listens on loopback (<code>127.0.0.1</code>) by default. Binding a non-loopback address requires TLS (or an explicit <code>--insecure</code> behind a terminating proxy).</li>
         <li><strong>Sandboxed agents.</strong> Agents run in operating-system sandboxes, with credentials passed through scoped environment variables rather than embedded in prompts.</li>
         <li><strong>Workspace isolation.</strong> Data is partitioned by workspace as a hard design boundary, so one workspace's data does not surface in another.</li>
-        <li><strong>OAuth best practice.</strong> Google Calendar sign-in uses an industry-standard device-code OAuth flow with a public client; the server stores the resulting tokens for that user and never returns them to a client.</li>
+        <li><strong>OAuth best practice.</strong> GitHub, Google, Linear and Slack sign-ins use browser OAuth with PKCE; the server stores the resulting tokens for that user and never returns them to a client. Agents and automation receive short-lived tokens scoped to the repository they work on.</li>
         <li><strong>Transport security.</strong> Network requests to third-party services use HTTPS and authentication headers are never written to logs.</li>
       </ul>
       <p>As noted above, the database and files (other than the server secrets file and the client pairing credential) are not encrypted by the app. Securing the server host — with full-disk encryption, a strong account password and timely deletion of data you no longer need — is an important part of protecting this data.</p>

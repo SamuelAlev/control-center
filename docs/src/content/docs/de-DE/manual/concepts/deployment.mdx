@@ -2,7 +2,7 @@
 title: Bereitstellung und Clients
 description: Wie die Thin-Client-Architektur von Control Center einen Headless-Server von Desktop-, Web- und Smartphone-Clients trennt.
 slug: de-DE/handbuch/konzepte/bereitstellung
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center ist kein einzelnes Programm. Es ist eine **Thin-Client-Architektur**:
@@ -212,7 +212,7 @@ statt zu laufen. Befristet zugewiesene Jobs führt derzeit nur ein echter
 | Agentenausführung                                  | führt sie aus (oder vergibt sie per Lease) | führt zugewiesene Jobs aus | —              | —                                                 |
 | Oberflächendarstellung                             | —                                 | —                            | vollständig    | vollständig (Web) / überwiegend lesend (Smartphone) |
 | Besprechungsaufnahme (Mikrofon + Besprechungston)  | —                                 | —                            | nativ          | nur Web, über den Ton der Bildschirmfreigabe      |
-| Kalender-OAuth (Google)                            | speichert Tokens                  | —                            | —              | —                                                 |
+| Anbieter-Anmeldungen (GitHub, Google, Linear)      | führt sie aus und speichert sie   | —                            | —              | —                                                 |
 
 Die beiden Ebenen setzen die Sandbox nicht gleich ein. `cc_server` hüllt die
 Läufe, die er selbst ausführt, in die OS-Sandbox des Hosts, wo ein Backend
@@ -226,6 +226,13 @@ bekommen hat. Arbeit per Lease nach außen zu geben verlagert die Ausführung
 damit aus der Sandbox, auch auf einem Host, der eine hat. Was einen Lauf im
 jeweiligen Fall begrenzt, steht unter
 [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
+
+Anbieter-Anmeldungen werden auf dem Server abgeschlossen, über seine eigenen
+Apps oder über [Control Center Connect](/de-DE/handbuch/referenz/connect/),
+einen optionalen Dienst, der das OAuth der Anbieter für Server ohne eigene Apps
+ausführt. Connect gibt ein Zugangsdatum zurück, das nur dieser Server nutzen
+kann, und sieht nie Repository-Inhalte. Clients öffnen nur den Browser und
+geben bei einer Anmeldung über Connect den Code zurück, den es anzeigt.
 
 Die Besprechungsaufnahme läuft auf einem Client, weil sie ein Mikrofon und den
 Ton der Besprechung braucht. Ein Server im Schrank kann dein Gespräch nicht

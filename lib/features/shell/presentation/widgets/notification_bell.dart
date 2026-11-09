@@ -106,11 +106,13 @@ class _NotificationPanel extends ConsumerWidget {
           const CcDivider(),
           if (entries.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              // Compact: the title-sized default message outweighs the 14px
+              // panel header above it.
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               child: CcEmptyState(
                 icon: AppIcons.bellOff,
                 message: l10n.notificationsEmpty,
-                iconSize: 28,
+                size: CcEmptyStateSize.sm,
               ),
             )
           else

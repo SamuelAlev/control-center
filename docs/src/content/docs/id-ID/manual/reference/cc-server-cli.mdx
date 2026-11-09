@@ -2,12 +2,12 @@
 title: CLI cc_server
 description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
-lalu variabel lingkungan, lalu nilai bawaan. Kredensial pihak ketiga adalah
-pengecualiannya — lihat di bawah.
+lalu variabel lingkungan, lalu nilai bawaan. Kredensial penyedia adalah
+pengecualiannya — lihat [Aplikasi penyedia dan Connect](#aplikasi-penyedia-dan-connect).
 
 :::caution[Flag yang tidak dikenal diabaikan secara diam-diam]
 Parser argumen dibuat sendiri dan melewati apa pun yang tidak dikenali, sehingga salah ketik
@@ -43,7 +43,7 @@ bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | belum disetel                 | SHA-256 yang diharapkan dari biner itu, diverifikasi sebelum setiap spawn                                                                                      |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | kosong                        | Argumen tambahan yang dipisahkan koma untuk pemanggilan tunnel                                                                                                 |
 
-## Pengindeksan dan kredensial pihak ketiga
+## Pengindeksan dan runtime
 
 | Flag                     | Env                             | Bawaan                                | Arti                                                                                                                         |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -53,14 +53,38 @@ bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Apakah run harness mengirim kumpulan alat residen yang kecil plus indeks nama, lalu memuat sisanya saat pertama dipakai. Lihat di bawah |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Detik sebuah run diparkir menunggu manusia memperbaiki kredensial yang tidak dapat melayaninya (dibatasi 0–3600). Lihat di bawah |
 
-Nilai kosong untuk sebuah kredensial dibaca sebagai belum disetel, sehingga fallback
-bawaan tetap berlaku. Build dari sumber sama sekali tidak membawa kredensial bawaan.
+## Aplikasi penyedia dan Connect
 
-Google Calendar dan pemilih GIF Klipy **hanya dapat diatur lewat variabel lingkungan** —
-tidak ada flag `--google-client-id` / `--klipy-app-key` (flag yang tidak dikenal
-diabaikan). Setel `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, dan
-`KLIPY_APP_KEY`, di lingkungan (atau `.env` di samping server). Nilai kosong
-menonaktifkan fitur itu alih-alih menggagalkan boot.
+Tidak ada build yang membawa kredensial penyedia. Jika Control Center Connect aktif, Connect menjalankan setiap
+penyedia dan app milik sendiri tetap tersimpan tetapi tidak digunakan. Di bawah **Gunakan aplikasi saya sendiri**,
+setiap penyedia berjalan di app milik server ketika app itu sudah dikonfigurasi lengkap, jika tidak tidak
+tersedia. App ruang kerja berlaku di kedua kasus. App milik sendiri diatur di **Pengaturan → Server → Single sign-on →
+Aplikasi penyedia**, atau disemai sekali dari berkas `.env` server. Tidak ada flag untuk itu: rahasia
+di baris perintah dapat dibaca lewat `ps`.
+
+| Variabel                       | Arti                                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Id GitHub App milik server                                                                    |
+| `GITHUB_APP_PRIVATE_KEY`       | Kunci privatnya, dalam satu baris dengan escape `\n`. **Hanya `.env`**                         |
+| `GITHUB_CLIENT_ID`             | Id klien-nya, untuk memasukkan orang                                                          |
+| `GITHUB_CLIENT_SECRET`         | Rahasia klien-nya. **Hanya `.env`**                                                           |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Klien Google Web application milik server                                                     |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Rahasianya. **Hanya `.env`**                                                                  |
+| `LINEAR_CLIENT_ID`             | App Linear milik server (PKCE, tanpa rahasia)                                                 |
+| `LINEAR_API_KEY`               | Kunci layanan Linear untuk otomatisasi. **Hanya `.env`**                                      |
+| `KLIPY_APP_KEY`                | Kunci Klipy milik server untuk pencarian GIF. Hanya dipakai di bawah **Gunakan aplikasi saya sendiri** |
+| `CC_CONNECT_URL`               | `hosted`, `off`, atau URL Connect. Mengunci pilihan Connect; Pengaturan tidak dapat mengubahnya |
+| `CC_SERVER_CONNECT_HOST`       | `on` memasang Control Center Connect di `<server>/connect`, dikonfigurasi oleh variabel `CONNECT_*`. Lihat [Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/#pasang-connect-di-dalam-cc_server) |
+
+Berkas `.env` dibaca dari direktori kerja server, di samping executable, atau dari checkout sumber di
+atasnya; di Docker, pasang di `/app/bin/.env`. Server **menolak mulai** (kode keluar `78`) ketika
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY`, atau
+`SLACK_*SECRET*` mana pun diekspor di lingkungan prosesnya, tempat setiap proses anak dapat
+membacanya. Penyemaian dari `.env` terjadi sekali per kolom, sehingga penyuntingan di Pengaturan
+nanti tidak dibatalkan oleh mulai ulang. Nilai kosong dibaca sebagai belum disetel.
+
+Pekerjaan latar belakang GitLab dan Bitbucket juga membaca `GITLAB_TOKEN` / `CI_JOB_TOKEN` dan
+`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` dengan `BITBUCKET_EMAIL`. GitHub tidak memiliki kredensial lingkungan.
 
 ### `--sandbox`
 
@@ -112,7 +136,7 @@ kredensial buruk mengakhiri giliran persis seperti sebelum gerbang ini ada.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Menjalankan server hingga `SIGINT`/`SIGTERM`                                                        |
 | `cc_server pair`                              | Menyediakan perangkat dan mencetak id serta kunci pairing-nya. Aman terhadap direktori data yang sudah disajikan server — server yang berjalan akan mengenali perangkat itu tanpa perlu dimulai ulang |
-| `cc_server calendar connect --workspace <id>` | Menghubungkan akun Google ke ruang kerja melalui alur kode perangkat, lalu keluar                   |
+| `cc_server connect <command>`                 | Menampilkan atau mengubah Control Center Connect mana yang dipakai server ini, tanpa menjalankannya |
 | `cc_server update`                            | Memeriksa, mengunduh, dan memverifikasi rilis mandiri yang lebih baru                               |
 | `cc_server --version`                         | Mencetak versi build dan SHA git — identitas yang sama yang diiklankan `/healthz` dan handshake RPC |
 
@@ -138,6 +162,24 @@ dan kunci di fragmen URL). Ponsel dipasangkan dengan payload berbeda yang dibuat
 panel pemasangan di dalam aplikasi — deskriptor koneksi lengkap server plus masa
 kedaluwarsa. Keduanya tidak dapat saling ditukar — lihat [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 :::
+
+### `connect`
+
+Membaca dan menulis pengaturan yang sama dengan kartu **Control Center Connect** di **Pengaturan → Server →
+Single sign-on**, dari direktori data. Server yang sedang berjalan menerima perubahan dalam 10 menit atau
+saat dimulai ulang.
+
+| Perintah                                | Yang dilakukannya                                                                                                                       |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`              | Mencetak mode, URL, apakah `CC_CONNECT_URL` mengunci, id instalasi, kesehatan, dan sumber setiap jalur (`own`, `connect`, atau `off`)     |
+| `cc_server connect enable`              | Memakai Control Center Connect yang dihosting Control Center                                                                             |
+| `cc_server connect enable --url <url>`  | Memakai Connect kustom di URL itu (HTTPS, atau `http` di loopback)                                                                       |
+| `cc_server connect disable`             | Berhenti memakai Connect. Hanya app milik server yang memasukkan orang                                                                   |
+| `cc_server connect rotate-key --yes`    | Membuat kunci instalasi dan id instalasi baru. Semua orang yang masuk melalui Connect harus masuk lagi. Tanpa `--yes` hanya memberi peringatan dan keluar dengan kode `2` |
+
+`status` tanpa perintah adalah bawaan. Setiap perintah menerima `--data-dir`. `CC_CONNECT_URL` menimpa apa pun
+yang disimpan perintah-perintah ini. Perintah yang tidak dikenal keluar dengan kode `64`. Lihat
+[Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/) untuk mode, identitas instalasi, dan kode status.
 
 ### `update`
 
@@ -183,7 +225,7 @@ ditentukan.
 | `global.db`                       | Registri ruang kerja, pengguna, perangkat yang dipasangkan, umpan berita, dan antrean fleet |
 | `<workspaceId>/workspace.db`      | Satu basis data per ruang kerja — agen, space, tiket, memori, graf kode          |
 | `<workspaceId>/chat_credentials/` | Token bot chat, sebagai JSON biasa, sehingga ikut bersama ruang kerja            |
-| `secrets.json`                    | Kunci pairing, identitas aplikasi penyedia, token per pengguna dan Google, SSO (`0600`) |
+| `secrets.json`                    | Kunci pairing, kunci instalasi Connect, aplikasi penyedia, proses masuk pengguna (tersegel bila dibuat lewat Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Satu snapshot instalasi — `manifest.json`, `global.db`, dan salinan setiap ruang kerja |
 | `backups/exports/`                | Ekspor satu ruang kerja, `<workspaceId>-<timestamp>.db`                          |
 | `backups/transfer/`               | Area penampungan untuk unduhan dan unggahan cadangan; dibersihkan oleh rute yang menulisnya |

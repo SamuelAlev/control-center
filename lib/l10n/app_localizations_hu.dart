@@ -1148,6 +1148,100 @@ class AppLocalizationsHu extends AppLocalizations {
   String get calendarRsvpFailed => 'Nem sikerült frissíteni a válaszát';
 
   @override
+  String get calendarNewEvent => 'Új esemény';
+
+  @override
+  String get calendarComposerTitleHint => 'Cím megadása';
+
+  @override
+  String get calendarComposerStarts => 'Kezdés';
+
+  @override
+  String get calendarComposerEnds => 'Befejezés';
+
+  @override
+  String get calendarComposerDate => 'Dátum';
+
+  @override
+  String get calendarComposerEndDate => 'Utolsó nap';
+
+  @override
+  String get calendarComposerGuestsHint => 'Vendégek hozzáadása e-mail-címmel';
+
+  @override
+  String get calendarComposerMeet => 'Google Meet-hivatkozás hozzáadása';
+
+  @override
+  String get calendarComposerLocationHint => 'Helyszín hozzáadása';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Leírás hozzáadása';
+
+  @override
+  String get calendarComposerCalendar => 'Naptár';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Az esemény mentéséhez adjon meg címet';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Az egyik vendég e-mail-címe érvénytelen';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Az eseménynek a kezdési időpontja után kell befejeződnie';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Az eseményt nem sikerült létrehozni. Próbálja újra.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'A vendégek e-mailes meghívót kapnak a Google-tól.';
+
+  @override
+  String get calendarDeleteEvent => 'Esemény törlése';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Törli a(z) „$title” eseményt?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody =>
+      'Eltávolításra kerül a Google Calendar-ból.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Eltávolításra kerül a Google Calendar-ból, és minden vendég értesítést kap a lemondásáról.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Csak az Ön naptárából kerül eltávolításra. A szervező és a többi vendég megtartja.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Csak ez az előfordulás törlődik; a sorozat többi része megmarad.';
+
+  @override
+  String get calendarDeleteFailed =>
+      'Az eseményt nem sikerült törölni. Próbálja újra.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Az eseményt nem sikerült áthelyezni. Visszakerült az eredeti helyére.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Naptáreseményt hozott létre';
+
+  @override
+  String get activityMovedCalendarEvent => 'Naptáreseményt helyezett át';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Naptáreseményt törölt';
+
+  @override
   String get calendarAddAccount => 'Naptárfiók hozzáadása';
 
   @override
@@ -1156,9 +1250,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get calendarSettingsDescription =>
       'Csatlakoztass Google-fiókot az események szinkronizálásához ebbe a munkaterületbe. Ezek a naptárak itt a tieid.';
-
-  @override
-  String get calendarConnecting => 'Csatlakozás…';
 
   @override
   String get calendarSyncNow => 'Szinkronizálás most';
@@ -1170,33 +1261,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get calendarConnectError =>
       'Nem sikerült csatlakoztatni a Google Calendar naptárat';
-
-  @override
-  String get calendarClientIdLabel => 'Kliens-ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Kliens titok';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Adja meg a projekt Google OAuth eszközkódos kliens-ID-ját és titkát. A szerver futtatja a kapcsolatot és a szinkront — a böngésző soha nem tartja a tokeneket.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Nyissa meg az ellenőrző oldalt bármely eszközön, jelentkezzen be, és adja meg ezt a kódot:';
-
-  @override
-  String get calendarConnectOpenPage => 'Ellenőrző oldal megnyitása';
-
-  @override
-  String get calendarConnectWaiting => 'Várakozás a jóváhagyásra…';
-
-  @override
-  String get calendarConnectDenied =>
-      'A felhatalmazást elutasították. Próbálja újra.';
-
-  @override
-  String get calendarConnectExpired => 'A kód lejárt. Próbálja újra.';
 
   @override
   String get notificationMeetingStartsSoon => 'Hamarosan kezdődő megbeszélés';
@@ -2419,9 +2483,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Tag tároló-hozzáférésének módosítása';
 
   @override
-  String get activityUpdatedGitHubToken => 'GitHub-token frissítve';
-
-  @override
   String get activityRefreshedWeather => 'Időjárás-előrejelzés frissítve';
 
   @override
@@ -2456,9 +2517,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'Válasz az eseménymeghívóra';
-
-  @override
-  String get activityStartedCalendarConnect => 'Naptárcsatlakozás elindítva';
 
   @override
   String get activityDisconnectedCalendar => 'Naptár leválasztva';
@@ -4761,7 +4819,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get searchGifs => 'GIF-ek keresése';
 
   @override
-  String get searchGifsHint => 'GIF-ek keresése...';
+  String get searchGifsHint => 'Keresés a KLIPY-n';
 
   @override
   String get searchInDiffHint => 'Keresés a diffben…';
@@ -5246,9 +5304,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Névtelen ügynök';
-
-  @override
-  String get updateKey => 'Kulcs frissítése';
 
   @override
   String get updateLabel => 'Frissítés';
@@ -6308,7 +6363,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'bash -c-vel fut. A GITHUB_TOKEN be van állítva. A helyőrzők a végrehajtás előtt helyettesítődnek.';
+      'bash -c-vel fut az operációs rendszer sandboxában. A GH_TOKEN és a GITHUB_TOKEN csak olvasható tokent tartalmaz a csatolt tárolóhoz. A helyőrzők a végrehajtás előtt idézőjelbe kerülnek és helyettesítődnek.';
 
   @override
   String get nodeConfigRouteKeys => 'Útvonalkulcsok';
@@ -6987,7 +7042,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
+      'Jelentkezzen be a GitHubra itt: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -11958,7 +12013,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Említse a botot a(z) $provider felületen, hogy ügynököt tegyen valamire, vagy nyisson jegyeket a(z) $command paranccsal.';
+    return 'Említse a botot a(z) $provider felületen, hogy ügynököt tegyen valamire, vagy készítsen jegyvázlatokat a(z) $command paranccsal.';
   }
 
   @override
@@ -12045,7 +12100,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Küldje ezt a parancsot a botnak a(z) $provider felületen. Egyszer használható, és 15 perc múlva lejár.';
+    return 'Küldje el ezt a kódot a(z) $provider botnak közvetlen üzenetben. Egyszer használható, és 15 perc múlva lejár.';
   }
 
   @override
@@ -12212,21 +12267,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → másolja a bot user OAuth tokent.';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'A Control Center Google-alkalmazásának használata';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Hagyja jóvá a Google-fiókjával. Semmit sem kell beállítani a Google Cloudon.';
-
-  @override
-  String get calendarUseOwnClient => 'Saját Google Cloud kliens használata';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Adjon meg egy OAuth-klienst a saját Google Cloud projektjéből.';
 
   @override
   String get aboutTitle => 'Névjegy';
@@ -12923,18 +12963,15 @@ class AppLocalizationsHu extends AppLocalizations {
   String get signInAgain => 'Bejelentkezés újra';
 
   @override
-  String get signInNotFinished =>
-      'A bejelentkezés még nem tért vissza. Fejezze be a böngészőjében, majd ellenőrizze újra.';
+  String get forgeSignInBannerTitle =>
+      'A kódtárhely nincs csatlakoztatva ebben a munkaterületben';
 
   @override
-  String get signedOutTitle => 'Ki van jelentkezve';
+  String get forgeSignInBannerBody =>
+      'Egy bejelentkezés lejárt vagy visszavonták, vagy ez a munkaterület saját GitHub Appot használ. A pull requestek, az átnézések és a tárolók szinkronizálása szünetel, amíg be nem jelentkezel.';
 
   @override
-  String get signedOutSubtitle =>
-      'A kódtárhely-kapcsolata már nem érvényes — a token lejárt, vagy a hozzáférését visszavonták. Semmi más nem változott: jelentkezzen be újra, és minden ott van, ahol hagyta.';
-
-  @override
-  String get viaServerApp => 'ennek a szervernek az alkalmazásán keresztül';
+  String get forgeSignInBannerAction => 'Bejelentkezés';
 
   @override
   String get ticketing => 'Jegykezelés';
@@ -12952,14 +12989,11 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ticketProviderLocal => 'Helyi';
 
   @override
-  String get addKey => 'Kulcs hozzáadása';
-
-  @override
   String get providerApps => 'Szolgáltatói alkalmazások';
 
   @override
   String get providerAppsDescription =>
-      'A munkaterületek öröklik ezt a GitHub Appot, hacsak nem másik Appot vagy személyes tokent választanak. A háttérmunka — webhookok, lekérdezés, szinkron — az app-on fut, soha egy személy tokenjén.';
+      'Alkalmazások, amelyeket ez a szerver maga regisztrált az egyes szolgáltatóknál. Az emberek ezeken keresztül jelentkeznek be, és a háttérmunka, például a webhookok, a lekérdezés és a szinkronizálás ezeken fut, sosem egy személy bejelentkezésén.';
 
   @override
   String get providerAppId => 'Alkalmazás-ID';
@@ -12972,9 +13006,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Kliens titok';
-
-  @override
-  String get providerApiKey => 'API-kulcs';
 
   @override
   String get providerCallbackUrl => 'Callback URL';
@@ -12995,17 +13026,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'A hitelesítő adatok működnek. Telepítve: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Adja meg ezt a kódot a(z) $provider oldalon, amely épp megnyílt. A vágólapra másolódott.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Várakozás, hogy befejezze a böngészőben…';
-
-  @override
-  String get copyCodeAndOpen => 'Kód másolása és megnyitás';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13353,7 +13373,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Azok a munkaterületek, amelyek öröklik az installáció GitHub Appját. Saját App vagy PAT a Munkaterület → Általános alatt állítható.';
+      'Azok a munkaterületek használják, amelyek öröklik ennek a telepítésnek a GitHub-alkalmazását. A saját alkalmazással rendelkező munkaterület itt állítja be: Munkaterület → Általános.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request beszélgetések';
@@ -14911,7 +14931,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Hogyan hitelesül a háttérbeli GitHub-munka ebben a munkaterületen. Az installáció Appjának öröklése, másik App, vagy csak személyes hozzáférési token.';
+      'Hogyan hitelesít a munkaterület háttérben futó GitHub-munkája: ennek a telepítésnek az alkalmazásával vagy a munkaterület saját alkalmazásával.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -14921,28 +14941,12 @@ class AppLocalizationsHu extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Másik GitHub App használata';
 
   @override
-  String get workspaceGitHubModePat => 'Csak személyes hozzáférési token';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'A GitHub Appot a Szerver → Szolgáltatói alkalmazások alatt használja.';
 
   @override
   String get workspaceGitHubAppHint =>
       'A munkaterület bot- és lekérdezési identitása. A tagok a Te felületen ezen az App-on keresztül jelentkeznek be.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Háttértoken';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Lekérdezéshez és ügynökökhöz ebben a munkaterületen. Nem egy tag profiltokenje.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Háttértoken van tárolva.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Nincs háttértoken tárolva.';
 
   @override
   String get profileOverlayHint =>
@@ -16809,4 +16813,540 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Munkaterület váltása';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Bejelentkezés: $provider';
+  }
+
+  @override
+  String get linearConnectAutomation =>
+      'Linear csatlakoztatása automatizáláshoz';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '$provider megnyitása a böngészőben…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Hagyd jóvá a kérést a(z) $provider oldalán a böngészőben. Ez az ablak magától észreveszi, ha végeztél.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Várakozás erre: $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'A bejelentkezés nem fejeződött be';
+
+  @override
+  String get signInReopenPage => 'Bejelentkezési oldal újbóli megnyitása';
+
+  @override
+  String get signInCodePrompt => 'Írd be a böngészőben látható kódot';
+
+  @override
+  String get signInCodeMalformed =>
+      'Ez nem bejelentkezési kódnak tűnik. A kódok 8 betűből és számjegyből állnak.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Ha a böngésző felajánlja a Control Center megnyitását, engedélyezd, és nem kell begépelned a kódot.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Bejelentkezve: $provider, $account néven';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Bejelentkezve: $provider';
+  }
+
+  @override
+  String get signInErrorExpired => 'Ez a bejelentkezés lejárt. Kezdd újra.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'A(z) $provider bejelentkezést megszakították vagy elutasították.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return 'A(z) $provider kevesebb engedélyt adott, mint amennyire a Control Centernek szüksége van. Jelentkezz be újra, és hagyd jóvá az összes engedélyt.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return 'A(z) $provider most nem válaszol. Próbáld újra néhány perc múlva.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return 'A(z) $provider elfogadta a bejelentkezést, de a szerver nem tudta befejezni. Próbáld újra.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'A szerver $provider-alkalmazása hibásan van beállítva. Kérd meg a szerver tulajdonosát, hogy ellenőrizze: Beállítások → Szerver → Egyszeri bejelentkezés.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'A(z) $provider bejelentkezésed lejárt. Jelentkezz be újra, hogy továbbra is a saját nevedben dolgozhass.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'A(z) $provider-alkalmazás nincs telepítve ott, ahol szükség van rá. Telepítsd, majd próbáld újra.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Ez a GitHub-alkalmazástelepítés már egy másik Control Center-szerverhez van engedélyezve.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Ez a Linear-munkaterület már egy másik Control Center-szerverhez csatlakozik.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Egy Slack-munkaterületet először csak annak egy adminisztrátora vagy tulajdonosa csatlakoztathat a Control Centerhez. Kérje meg valamelyiküket, hogy adja hozzá az alkalmazást.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'A(z) $provider-alkalmazás fel van függesztve. Szüntesd meg a felfüggesztést itt: $provider, majd próbáld újra.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'A Control Center Connect letiltotta ezt a szervert. Fordulj a Connect-szervered üzemeltetőjéhez.';
+
+  @override
+  String get signInErrorUnknown =>
+      'A bejelentkezés olyan okból hiúsult meg, amelyet a szerver nem jelzett. Próbáld újra.';
+
+  @override
+  String get signInPhishingTitle => 'A bejelentkezést nem innen indították';
+
+  @override
+  String get signInPhishingBody =>
+      'Ezt a bejelentkezést nem ebből az alkalmazásból indították. Ha valaki elküldte neked ezt a linket, ne folytasd.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Semmi nem lett elküldve. Egy más által indított bejelentkezés befejezése az ő szerveréhez kapcsolná a fiókodat.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '$provider bejelentkezés szükséges';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Ez a te nevedben fut itt: $provider, és nem vagy bejelentkezve. Jelentkezz be, majd próbáld újra.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Nem vagy bejelentkezve ide: $provider. Minden, amit itt teszel, a te nevedben fut, ezért előbb jelentkezz be.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'A(z) $provider bejelentkezés még nincs beállítva ezen a szerveren.';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub-alkalmazás telepítései';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Hol van telepítve a GitHub-alkalmazás, azok a fiókok között, amelyekhez ennek a munkaterületnek a tárolói tartoznak. Egy szervezet telepítése csak azokon a szervereken működik, amelyeket az adminisztrátorai engedélyeznek.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'A GitHub-alkalmazás egyetlen olyan fiókon sincs telepítve, amelyhez ennek a munkaterületnek a tárolói tartoznak.';
+
+  @override
+  String get githubInstallApp => 'GitHub-alkalmazás telepítése';
+
+  @override
+  String get githubAuthorizeServer => 'A szerver engedélyezése';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Ez a szerver mostantól használhatja a(z) $account telepítését.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Felfüggesztve';
+
+  @override
+  String get githubInstallationAuthorized => 'Engedélyezve';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Nincs engedélyezve';
+
+  @override
+  String get linearAutomationTitle => 'Linear-automatizálás';
+
+  @override
+  String get linearAutomationHint =>
+      'Lehetővé teszi, hogy a munkaterület ügynökei és folyamatai alkalmazásként, nem személyként dolgozzanak a Linearben. A munkaterület adminisztrátorai csatlakoztatják.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Csatlakoztatva: $account';
+  }
+
+  @override
+  String get connectModeHosted => 'A Control Center alkalmazásainak használata';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'A bejelentkezések a Control Center Connecten keresztül futnak. A Connect minden bejelentkezést lepecsétel, hogy csak ez a szerver nyithassa meg, egyetlen tárolóra korlátozott GitHub-tokeneket ad ki, nem tárol tárolókulcsot, és soha nem kapja meg a forráskódodat.';
+
+  @override
+  String get connectModeOwn => 'Saját alkalmazások használata';
+
+  @override
+  String get connectModeOwnHint =>
+      'Regisztráld magad a GitHub-, Google- és Linear-alkalmazásokat itt: Beállítások → Szerver → Egyszeri bejelentkezés, az egyes munkaterületek saját Slack-alkalmazását pedig azok beállításaiban kapcsold be. A „Saját GitHub-alkalmazás létrehozása” egy lépésben beállítja a GitHubot.';
+
+  @override
+  String get connectModeCustom => 'Egyéni Connect-szerver használata';
+
+  @override
+  String get connectModeCustomHint =>
+      'A szervezeted saját Connect-szervert üzemeltet. A bejelentkezések oda futnak a Control Centeré helyett.';
+
+  @override
+  String get connectModeUnset => 'Még nincs beállítva';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect-szerver URL-je';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Adj meg egy HTTPS-címet, például https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'A sima HTTP csak az ezen a gépen futó Connectet éri el. Hálózaton mindenhez HTTPS-t használjon.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'A Control Center hosztolt alkalmazásai ebben a buildben még nem érhetők el. Használj saját alkalmazásokat vagy egyéni Connect-szervert.';
+
+  @override
+  String get connectErrorSignature =>
+      'A Connect konfigurációja nem ment át az aláírás-ellenőrzésen. A Connecten keresztüli bejelentkezések szünetelnek, amíg újra nem ellenőrizhető.';
+
+  @override
+  String get connectErrorRollback =>
+      'A Connect régebbi konfigurációt adott, mint amit ez a szerver már látott, ezért elutasította. A Connecten keresztüli bejelentkezések szünetelnek.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Ez a szerver most nem éri el a Connectet. Az azt használó bejelentkezések sikertelenek lesznek, amíg vissza nem tér.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'A Connect letiltotta a szerver telepítési azonosítóját. Fordulj a Connect-szervered üzemeltetőjéhez.';
+
+  @override
+  String get connectErrorPinsChanged => 'A Connect alkalmazásai megváltoztak';
+
+  @override
+  String get connectErrorProtocol =>
+      'A Connect olyan módon válaszolt, amelyet ez a szerver nem ért. Frissítsd a szervert, vagy ellenőrizd a Connect URL-jét.';
+
+  @override
+  String get connectErrorUnknown =>
+      'A Connect magyarázat nélkül jelzett hibát. Futtass tesztet az újrapróbáláshoz.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'A Connect-szervered most más GitHub-, Google-, Linear- vagy Slack-alkalmazásokat nevez meg, mint amelyeket ez a szerver az első használatkor rögzített. Csak akkor bízz meg bennük, ha az üzemeltetője előre szólt erről.';
+
+  @override
+  String get connectConfirmPins => 'Új alkalmazások elfogadása';
+
+  @override
+  String get connectStale =>
+      'A használt konfiguráció a vártnál régebbi. Futtass tesztet a frissítéséhez.';
+
+  @override
+  String get connectLaneSourceOwn => 'Saját alkalmazás';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Ki';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Kinek az alkalmazásait használja ez a szerver a GitHubhoz, a Google Calendarhoz, a Linearhez, a Slackhez és a GIF-kereséshez.';
+
+  @override
+  String get connectFactMode => 'Bejelentkezési alkalmazások';
+
+  @override
+  String get connectFactHealth => 'Állapot';
+
+  @override
+  String get connectFactEpoch => 'Konfiguráció verziója';
+
+  @override
+  String get connectHealthOff => 'Nincs használatban';
+
+  @override
+  String get connectHealthOk => 'Működik';
+
+  @override
+  String get connectHealthDown => 'Nem működik';
+
+  @override
+  String get connectLocked =>
+      'Ezt a szerver környezetében lévő CC_CONNECT_URL határozza meg. Ott módosítsd, és indítsd újra a szervert.';
+
+  @override
+  String get connectLanesTitle => 'Hol fut az egyes bejelentkezés';
+
+  @override
+  String get connectLanesDescription =>
+      'A saját alkalmazás a szolgáltatójánál mindig elsőbbséget élvez a Connecttel szemben.';
+
+  @override
+  String get connectServerGroup => 'Ez a szerver';
+
+  @override
+  String get connectInstallId => 'Telepítési azonosító';
+
+  @override
+  String get connectInstallIdHint =>
+      'Azonosítja ezt a szervert a Connect felé. Add meg annak a szervezeti tulajdonosnak vagy Connect-üzemeltetőnek, aki kéri.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Akkor jön létre, amikor ez a szerver először használja a Connectet.';
+
+  @override
+  String get connectTestOk => 'A Connect működik.';
+
+  @override
+  String get connectRotateKey => 'Kulcs cseréje';
+
+  @override
+  String get connectRotateKeyTitle => 'Lecseréled a szerver Connect-kulcsát?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'A szerver új kulcsot és új telepítési azonosítót kap. Minden Connecten keresztüli bejelentkezés megszűnik, és mindenkinek újra be kell jelentkeznie. A saját alkalmazásaidon keresztüli bejelentkezéseket ez nem érinti.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Kulcs lecserélve. Mindenkinek, aki a Connecten keresztül jelentkezett be, újra be kell jelentkeznie.';
+
+  @override
+  String get connectCliLabel => 'Terminálból';
+
+  @override
+  String get onboardingStepSignIn => 'Bejelentkezés';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Válaszd ki, hogyan jelentkeznek be az emberek';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'A Control Center az egyes szolgáltatóknál regisztrált alkalmazásokon keresztül működik együtt a GitHubbal, a Google Calendarral, a Linearrel, a Slackkel és a GIF-kereséssel. Válaszd ki, kinek az alkalmazásait használja ez a szerver. Később módosíthatod itt: Beállítások → Szerver → Egyszeri bejelentkezés.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Hozz létre most egy GitHub-alkalmazást ehhez a szerverhez, vagy add hozzá később az alkalmazásaidat itt: Beállítások → Szerver → Egyszeri bejelentkezés.';
+
+  @override
+  String get providerServiceApiKey => 'Szolgáltatási API-kulcs';
+
+  @override
+  String get providerAppPartial => 'A beállítás nincs kész';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Még hiányzik: $fields. Amíg minden mező nincs kitöltve, a szolgáltató bejelentkezéseit a rendszer elutasítja, ahelyett hogy a Connecten keresztül irányítaná.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'Az ügyfél-azonosító jelentkezteti be a tagokat. A szolgáltatási API-kulccsal ez a szerver önállóan olvashat és írhat a Linearben.';
+
+  @override
+  String get providerCallbackUrls => 'Visszahívási URL-ek';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Pontosan így regisztráld a szolgáltatónál.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'GitHub-alkalmazás létrehozása';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'A GitHub regisztrál egy alkalmazást a megfelelő engedélyekkel és visszahívással, majd átadja a hitelesítő adatait ennek a szervernek. Semmit sem kell kézzel másolni.';
+
+  @override
+  String get providerAppCreateGitHub => 'Saját GitHub-alkalmazás létrehozása';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Szervezet (nem kötelező)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Hagyd üresen, ha a saját GitHub-fiókod alatt szeretnéd létrehozni az alkalmazást. Szervezet alatt csak a szervezet tulajdonosa hozhatja létre.';
+
+  @override
+  String get providerAppSignInReady => 'Az emberek be tudnak jelentkezni.';
+
+  @override
+  String get chatLinkWaiting => 'Várakozás a közvetlen üzenetére…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Ez az Ön $provider-fiókja?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Ez a fiók küldte el a kódját a botnak. Csak akkor erősítse meg, ha az Öné: az összekapcsolás után mindaz, amit a(z) $provider felületen küld, az Ön nevében jár el ebben a munkaterületben.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Elutasítás';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Semmi sem lett összekapcsolva. Kérjen új kódot, ha még mindig össze szeretné kapcsolni a(z) $provider-fiókját.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Új kód kérése';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'A Control Center hozzáadása ide: $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'A Control Center hozzá lett adva ehhez: $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Telepíti a közös Control Center-alkalmazást a(z) $provider-munkaterületére. Nem kell alkalmazást létrehozni, sem tokent beilleszteni.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Hozzáadás ide: $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'A közös Control Center-alkalmazáson fut, így itt nincs kezelendő token vagy botbeállítás.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Csevegésből készült jegyvázlatok';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'A vázlat csak akkor lesz jegy a backlogban, ha itt létrehozza. A félbehagyott vázlatok egy nap után törlődnek.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Forrás: $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Jegy létrehozása';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return 'Létrehozva: $key';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Szolgáltatói alkalmazások';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Hogy a munkaterület a Google Calendar, a Linear és a Klipy melyik alkalmazását használja. Alapértelmezés szerint a szerver alkalmazásait vagy a Control Center Connectet használja. A saját alkalmazással rendelkező munkaterület soha nem tér vissza ezekhez.';
+
+  @override
+  String get workspaceProviderAppModeInherit =>
+      'A szerver alkalmazásának használata';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'A bejelentkezések és a kérések a szerver saját alkalmazását vagy a Control Center Connectet használják.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'A munkaterület saját alkalmazásának használata';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Csak a munkaterület alkalmazása használatos. Amíg hiányos, ez a szolgáltató itt ki van kapcsolva, és nem tér vissza más alkalmazáshoz.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'A szerver alkalmazása';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Saját alkalmazás';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Még hiányzik: $fields. Amíg minden mező nincs kitöltve, ez a szolgáltató ki van kapcsolva ebben a munkaterületen. Nem tér vissza a szerver alkalmazásához.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Az alkalmazás módosítása kijelentkezteti a munkaterület összes tagját. Az új alkalmazással kell újra bejelentkezniük.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Alkalmazáskulcs';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'A GIF-keresés ebben a munkaterületen ezt a kulcsot használja.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Váltja a(z) $provider alkalmazást?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'A munkaterületen a szerver alkalmazásán keresztül $provider-fiókhoz kapcsolódóknak újra be kell jelentkezniük a munkaterület alkalmazásával.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Ez törli a munkaterület $provider-hitelesítő adatait. A munkaterület alkalmazásán keresztül kapcsolódóknak újra be kell jelentkezniük.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Alkalmazás váltása';
 }

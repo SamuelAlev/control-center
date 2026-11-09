@@ -3,7 +3,7 @@ title: Arsitektur
 description: Bagaimana Control Center disusun dengan model server klien tipis, Clean Architecture yang mengutamakan fitur, serta port dan adapter.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/konsep/arsitektur
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Ringkasan
@@ -113,9 +113,9 @@ Kedua basis data dimiliki oleh `cc_persistence` dan hanya dibuka oleh `cc_server
 **go_router**, dengan satu fakta yang mengatur sisanya: **setiap tujuan di dalam aplikasi diberi prefiks ruang kerja** sebagai `/workspaces/:workspaceId/…`. Id ruang kerja di URL adalah satu-satunya sumber kebenaran untuk ruang kerja aktif — `activeWorkspaceIdProvider` digerakkan dari rute, bukan sebaliknya — itulah sebabnya membaca data bercakupan ruang kerja di luar rute berprefiks tidak punya tempat untuk mendapatkan id-nya.
 
 - _Fungsi_ pembangun rute di `router/routes.dart`, masing-masing menerima id ruang kerja sebagai argumen pertamanya, bukan konstanta string
-- Empat rute pra-konteks tidak berprefiks: `/splash`, `/onboarding`, `/signed-out`, dan `/workspaces` (pemilih)
-- `ShellRoute` membungkus shell aplikasi; keempat permukaan tersebut dirender layar penuh di luarnya
-- Penjaga autentikasi: penyiapan yang belum selesai dialihkan ke `/onboarding`; penyiapan yang sudah selesai tetapi kredensial forge-nya hilang dialihkan ke `/signed-out`. Selesai berarti setidaknya satu forge terhubung untuk pengguna yang sudah masuk dan setidaknya satu ruang kerja ada — bukan khusus GitHub, dan CLI `gh` bukanlah metode autentikasi
+- Tiga rute pra-konteks tidak berprefiks: `/splash`, `/onboarding`, dan `/workspaces` (pemilih)
+- `ShellRoute` membungkus shell aplikasi; ketiga permukaan tersebut dirender layar penuh di luarnya
+- Penjaga autentikasi: penyiapan yang belum selesai dialihkan ke `/onboarding`. Penyiapan yang sudah selesai tetapi kredensial forge-nya hilang tetap berada di aplikasi, dan shell ruang kerja menampilkan peringatan yang menautkan ke proses masuk. Selesai berarti setidaknya satu forge terhubung untuk pengguna yang sudah masuk dan setidaknya satu ruang kerja ada — bukan khusus GitHub, dan CLI `gh` bukanlah metode autentikasi
 - Gerbang onboarding di `features/auth/providers/`
 
 ## Jaringan (sisi server)

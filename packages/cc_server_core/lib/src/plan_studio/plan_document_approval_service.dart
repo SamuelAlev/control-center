@@ -29,6 +29,7 @@ class PlanDocumentApprovalService {
       required String workspaceId,
       required String orchestrationId,
       Set<String>? approvedNodeKeys,
+      String? approvedByUserId,
     })
     approveOrchestration,
     this._onApproved,
@@ -43,6 +44,7 @@ class PlanDocumentApprovalService {
     required String workspaceId,
     required String orchestrationId,
     Set<String>? approvedNodeKeys,
+    String? approvedByUserId,
   })
   _approve;
 
@@ -79,6 +81,7 @@ class PlanDocumentApprovalService {
     required String planId,
     Set<String>? approvedNodeKeys,
     int? maxCostCents,
+    String? approvedByUserId,
   }) async {
     final doc = await _plans.getById(workspaceId, planId);
     if (doc == null) {
@@ -174,6 +177,7 @@ class PlanDocumentApprovalService {
       workspaceId: workspaceId,
       orchestrationId: orchestrationId,
       approvedNodeKeys: approvedNodeKeys,
+      approvedByUserId: approvedByUserId,
     );
     return {'orchestration_id': orchestrationId};
   }

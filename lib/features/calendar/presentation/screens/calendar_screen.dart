@@ -2,15 +2,17 @@ import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart'
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
+import 'package:control_center/features/calendar/presentation/providers/calendar_event_write_provider.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
-import 'package:control_center/features/calendar/presentation/providers/record_and_link_provider.dart';
 import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart';
 import 'package:control_center/features/calendar/presentation/widgets/agenda_panel.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_composer_layer.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_connect_prompts.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_event_actions.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_event_detail_panel.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_header_actions.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_kalender_host.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_sidebar.dart';
-import 'package:control_center/features/calendar/presentation/widgets/google_calendar_connect_dialog.dart';
-import 'package:control_center/features/calendar/providers/calendar_sync_providers.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -48,7 +50,6 @@ class CalendarScreen extends ConsumerWidget {
     // emitted its first value on the very first build. Treating that initial
     // loading window as "no accounts" is what flashed the connect CTA before
     // the stream resolved — so only show it once we KNOW there are none.
-    //
     // `unwrapPrevious()` strips the value Riverpod carries over during a
     // dependency-driven reload: switching workspace recomputes this provider,
     // and without the strip the gate (and the reauth banner below) would read
@@ -63,7 +64,7 @@ class CalendarScreen extends ConsumerWidget {
       return const _LoadingState();
     }
     if (accountsAsync.requireValue.isEmpty) {
-      return const _ConnectState();
+      return CalendarConnectState(workspaceId: workspaceId);
     }
 
     // Lazily fetch events for the framed range as the user navigates months.
@@ -90,6 +91,9 @@ class CalendarScreen extends ConsumerWidget {
               )
               .toList(growable: false);
     final calendarColors = ref.watch(calendarColorsProvider);
+    final writable = ref.watch(writableCalendarsProvider);
+    final composer = ref.read(calendarComposerProvider.notifier);
+    final canCreate = !ref.watch(isDemoServerProvider) && writable.isNotEmpty;
 
     return ColoredBox(
       color: t.canvas,
@@ -101,7 +105,7 @@ class CalendarScreen extends ConsumerWidget {
           final main = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _ReauthBanner(),
+              CalendarReauthBanner(workspaceId: workspaceId),
               const _Header(),
               Container(height: 1, color: t.borderSecondary),
               Expanded(
@@ -112,10 +116,23 @@ class CalendarScreen extends ConsumerWidget {
                   events: events,
                   calendarColors: calendarColors,
                   selectedEventId: selectedEventId,
-                  onOpenEvent: (e) => context.go(
-                    calendarDetailRoute(context.currentWorkspaceId!, e.id),
+                  onOpenEvent: (e) {
+                    composer.close();
+                    context.go(calendarDetailRoute(workspaceId, e.id));
+                  },
+                  onCreate: canCreate ? composer.open : null,
+                  canMove: canCreate
+                      ? (e) => canMoveCalendarEvent(e, writable)
+                      : null,
+                  onMove: (e, to) => moveCalendarEvent(context, ref, e, to),
+                  composing: ref.watch(calendarComposerProvider),
+                  draft: composerDraft(
+                    ref,
+                    workspaceId: workspaceId,
+                    title: l10n.calendarNewEvent,
                   ),
-                  onStartRecording: (e) => _startRecording(context, ref, e),
+                  onStartRecording: (e) =>
+                      startCalendarRecording(context, ref, e),
                 ),
               ),
             ],
@@ -138,35 +155,6 @@ class CalendarScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Future<void> _startRecording(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarEvent event,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    final ws = context.currentWorkspaceId!;
-    // Calendar-to-meeting linking is deliberately closed on public demo
-    // workspaces. Only the Meetings page starts the safe scripted session.
-    if (ref.read(isDemoServerProvider)) {
-      CcToastScope.of(context).show(l10n.demoUnavailableTitle);
-      return;
-    }
-    final result = await ref
-        .read(calendarRecordAndLinkProvider)
-        .startRecordingForEvent(event);
-    if (!context.mounted) {
-      return;
-    }
-    if (result.meetingId != null) {
-      context.go(meetingsRecordRoute(ws));
-    } else {
-      CcToastScope.of(context).show(
-        result.error ?? l10n.calendarConnectError,
-        variant: CcToastVariant.danger,
-      );
-    }
-  }
 }
 
 class _Body extends StatelessWidget {
@@ -179,6 +167,11 @@ class _Body extends StatelessWidget {
     required this.selectedEventId,
     required this.onOpenEvent,
     required this.onStartRecording,
+    required this.onCreate,
+    required this.composing,
+    required this.canMove,
+    required this.onMove,
+    required this.draft,
   });
 
   final String workspaceId;
@@ -189,29 +182,41 @@ class _Body extends StatelessWidget {
   final String? selectedEventId;
   final ValueChanged<CalendarEvent> onOpenEvent;
   final ValueChanged<CalendarEvent> onStartRecording;
+  final ValueChanged<CalendarSlot>? onCreate;
+  final CalendarSlot? composing;
+  final bool Function(CalendarEvent event)? canMove;
+  final Future<bool> Function(CalendarEvent event, CalendarSlot to) onMove;
+  final CalendarEvent? Function(CalendarSlot slot) draft;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final Widget main = switch (viewMode) {
-      CalendarViewMode.agenda => AgendaPanel(
-        events: events,
-        now: now,
-        calendarColors: calendarColors,
-        onOpenEvent: onOpenEvent,
-        onStartRecording: onStartRecording,
-      ),
-      CalendarViewMode.month ||
-      CalendarViewMode.week ||
-      CalendarViewMode.day => CalendarKalenderHost(
-        mode: viewMode,
-        focusedDate: selectedDate,
-        events: events,
-        now: now,
-        calendarColors: calendarColors,
-        onOpenEvent: onOpenEvent,
-      ),
-    };
+    final main = CalendarComposerLayer(
+      child: switch (viewMode) {
+        CalendarViewMode.agenda => AgendaPanel(
+          events: events,
+          now: now,
+          calendarColors: calendarColors,
+          onOpenEvent: onOpenEvent,
+          onStartRecording: onStartRecording,
+        ),
+        CalendarViewMode.month ||
+        CalendarViewMode.week ||
+        CalendarViewMode.day => CalendarKalenderHost(
+          mode: viewMode,
+          focusedDate: selectedDate,
+          events: events,
+          now: now,
+          calendarColors: calendarColors,
+          onOpenEvent: onOpenEvent,
+          onCreate: onCreate,
+          composing: composing,
+          canMove: canMove,
+          onMove: onMove,
+          draft: draft,
+        ),
+      },
+    );
 
     final detail = CalendarEventDetailPanel(
       key: ValueKey(selectedEventId),
@@ -323,7 +328,13 @@ class _Header extends ConsumerWidget {
           const Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [_ViewMenu(), SizedBox(width: 8), _SyncButton()],
+              children: [
+                CalendarNewEventButton(),
+                SizedBox(width: 8),
+                _ViewMenu(),
+                SizedBox(width: 8),
+                CalendarSyncButton(),
+              ],
             ),
           ),
         ],
@@ -384,114 +395,7 @@ class _PeriodNav extends ConsumerWidget {
   }
 }
 
-/// A banner shown above the calendar when one or more connected accounts have a
-/// dead OAuth token and need the user to reconnect. Hidden (zero-height) while
-/// every account is healthy. The synced events stay visible underneath — we
-/// only block on a full disconnect, not on a stale token.
-class _ReauthBanner extends ConsumerWidget {
-  const _ReauthBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stale = ref.watch(accountsNeedingReauthProvider);
-    if (stale.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    // Name the account when exactly one is stale; otherwise stay generic.
-    final subtitle = stale.length == 1 && stale.first.accountEmail.isNotEmpty
-        ? l10n.notificationCalendarAuthExpiredBody(stale.first.accountEmail)
-        : l10n.notificationCalendarAuthExpiredBodyNoEmail;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: t.bgWarningPrimary,
-        border: Border(bottom: BorderSide(color: t.bgWarningSecondary)),
-      ),
-      child: Row(
-        children: [
-          Icon(AppIcons.calendarX, size: 18, color: t.textWarningPrimary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.notificationCalendarAuthExpiredTitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 12, color: t.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          CcButton(
-            size: CcButtonSize.sm,
-            onPressed: () => showGoogleCalendarConnectDialog(context),
-            icon: AppIcons.refreshCw,
-            child: Text(l10n.calendarReconnect),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// The sync-now action, with an in-flight spinner.
-class _SyncButton extends ConsumerStatefulWidget {
-  const _SyncButton();
-
-  @override
-  ConsumerState<_SyncButton> createState() => _SyncButtonState();
-}
-
-class _SyncButtonState extends ConsumerState<_SyncButton> {
-  bool _syncing = false;
-
-  Future<void> _sync() async {
-    if (_syncing) {
-      return;
-    }
-    setState(() => _syncing = true);
-    try {
-      await ref.read(calendarSyncServiceProvider).refreshNow();
-    } finally {
-      if (mounted) {
-        setState(() => _syncing = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    if (_syncing) {
-      return Padding(
-        padding: const EdgeInsets.all(6),
-        child: CcSpinner(size: 16, color: t.accent),
-      );
-    }
-    return CcIconButton(
-      icon: AppIcons.refreshCw,
-      variant: CcButtonVariant.ghost,
-      size: CcButtonSize.sm,
-      tooltip: l10n.calendarSyncNow,
-      semanticLabel: l10n.calendarSyncNow,
-      onPressed: _sync,
-    );
-  }
-}
-
 /// Compact view selector: a chip showing the active view that opens a popover
 /// menu of the four views. Replaces the wide segmented toggle so the header
 /// stays quiet on the right.
@@ -582,57 +486,6 @@ class _ViewMenuButton extends StatelessWidget {
 
   Color _iconColor(BuildContext context) =>
       (context.designSystem ?? DesignSystemTokens.light()).textTertiary;
-}
-
-class _ConnectState extends StatelessWidget {
-  const _ConnectState();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-
-    return ColoredBox(
-      color: t.canvas,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.calendar, size: 40, color: t.textTertiary),
-              const SizedBox(height: 16),
-              Text(
-                l10n.calendarSettingsTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: t.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.calendarConnectDescription,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.4,
-                  color: t.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              CcButton(
-                size: CcButtonSize.sm,
-                onPressed: () => showGoogleCalendarConnectDialog(context),
-                icon: AppIcons.calendarPlus,
-                child: Text(l10n.calendarConnectGoogle),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Shown while the connected-accounts stream resolves its first value. It is a

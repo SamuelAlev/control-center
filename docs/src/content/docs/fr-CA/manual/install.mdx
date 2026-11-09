@@ -2,7 +2,7 @@
 title: Installer
 description: Utilisez Control Center dans le navigateur ou installez l’application de bureau, configurez un backend d’agent et choisissez où s’exécute son serveur.
 slug: fr-CA/manuel/installer
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center s’exécute de deux façons : comme **application Web** à l’adresse
@@ -172,16 +172,10 @@ identifiant d’utilisateur — et non dans le trousseau du système d’exploit
 Chaque appareil depuis lequel vous vous connectez utilise le même, et aucun autre membre
 ne peut le lire.
 
-Si le serveur a une GitHub App enregistrée ([Créer la GitHub App](/fr-CA/manuel/guides/github-app/)), **Paramètres → Espace de travail → Profil et identité → Hébergement de code** propose **Se connecter avec GitHub** (un flux d’appareil exécuté par le serveur). Sinon, collez un jeton d’accès personnel :
+Pour GitHub, on ne fait que se connecter : **Paramètres → Espace de travail → Profil et identité → Hébergement de code** propose **Se connecter à GitHub**, et il n’y a aucun jeton à coller. La connexion passe par la GitHub App propre au serveur ([Créer la GitHub App](/fr-CA/manuel/guides/github-app/)) ou par Control Center Connect, selon le choix du propriétaire du serveur. Avec l’app propre au serveur, le navigateur revient de lui-même au serveur ; par Connect, vous tapez le code de 8 caractères qu’affiche le navigateur, ou vous le laissez ouvrir Control Center. Consultez [Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/).
 
-- Classique : `repo` et `read:org`
-- À granularité fine : **Contents** et **Pull requests** (lecture et écriture), **Checks**
-  et **Actions** (lecture)
-
-Créez-en un dans [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Le serveur vérifie le jeton pour obtenir le nom du compte tel qu’il est stocké, de sorte que la ligne peut indiquer “Connecté en tant que …” ; une vérification échouée enregistre quand même le jeton, et une faute de frappe ou une portée manquante se manifestera plus tard par une requête échouée.
-
-La première étape de l’intégration est cette connexion. Par la suite, la même carte sert à
-la remplacer ou à l’effacer. GitLab et Bitbucket utilisent la même carte ; consultez
+L’intégration initiale demande cette connexion. Par la suite, la même carte sert à
+vous reconnecter ou à vous déconnecter. GitLab et Bitbucket utilisent la même carte, avec un jeton personnel collé ; consultez
 [Connecter un hébergeur de code](/fr-CA/manuel/guides/connecter-hebergeur-de-code/).
 
 ## Choisir où s’exécute le serveur

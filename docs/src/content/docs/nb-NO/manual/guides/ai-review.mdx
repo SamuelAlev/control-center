@@ -2,7 +2,7 @@
 title: Bruk AI-drevet gjennomgang
 description: Kjør pr_review-pipelinen på en PR, les funnene og vedtaket, og publiser deretter gjennomgangen til GitHub.
 slug: nb-NO/handbok/slik-gjor-du/ai-gjennomgang
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Denne guiden viser deg hvordan du lar reviewer-agenter gjennomgå en pull request,
@@ -118,14 +118,15 @@ ut på GitHub.
 
 Control Center sender **én** GitHub-gjennomgang. Funn som allerede er løst eller
 avvist, hoppes over. Knappen tar med hvert gjenstående åpne funn og sender
-`APPROVE` ved **Ship**. (MCP-verktøyet `publish_review_to_github` bruker fortsatt
-bare funn bekreftet av andre reviewere som standard, og godkjenner ikke med mindre
-du oppgir `approve_on_ship`.) De som har et fil- og linjefeste, blir innebygde
+`APPROVE` ved **Ship**. (MCP-verktøyet `publish_review_to_github` bruker
+bare funn bekreftet av andre reviewere som standard og godkjenner aldri: det
+publiserer som automatisering, så `approve_on_ship` har ingen virkning der.) De som har et fil- og linjefeste, blir innebygde
 kommentarer; alt annet legges inn i sammendragsteksten, hver med en
 «— Control Center AI review»-footer, slik at kilden er entydig. Et **Block**-vedtak
 sendes som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som `APPROVE` fra
 denne knappen. Et varsel viser deretter **Publisert**. Gjennomgangen legges ut
-under serverens appidentitet.
+som deg, med din egen GitHub-pålogging: hvis du ikke er logget inn på GitHub,
+feiler publiseringen og ber deg logge inn.
 
 Hvis GitHub avviser et innebygd feste fordi linjen ikke er en del av diffen,
 sendes hele gjennomgangen på nytt med hvert funn lagt inn i teksten, slik at

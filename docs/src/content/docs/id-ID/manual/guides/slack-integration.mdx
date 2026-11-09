@@ -1,11 +1,11 @@
 ---
 title: Siapkan integrasi Slack
-description: Hubungkan aplikasi Slack ke ruang kerja Control Center agar anggota dapat menjalankan agen dari Slack.
+description: Hubungkan Slack ke ruang kerja Control Center, melalui app bersama Control Center atau salah satu app milik Anda, agar anggota dapat menjalankan agen dari Slack.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Panduan ini menunjukkan cara menghubungkan Slack ke ruang kerja Control Center, baik dengan membiarkan Control Center membuat aplikasinya maupun dengan membuatnya sendiri.
+Panduan ini menunjukkan cara menghubungkan Slack ke ruang kerja Control Center: dengan menambahkan app bersama Control Center, atau dengan app milik Anda yang dibuat Control Center untuk Anda atau yang Anda bangun sendiri.
 
 Untuk percobaan pertama yang terpandu, lihat [Jembatani Slack ke ruang kerja Anda](/id-ID/panduan-pengguna/tutorial/jembatan-chat-pertama/).
 
@@ -19,9 +19,37 @@ adapter yang ada. Tidak ada implementasi Discord, Telegram, Teams, atau Matrix.
 
 - Peran `owner` atau `admin` di ruang kerja Control Center — menghubungkan aplikasi chat adalah perubahan pengaturan ruang kerja
 - Izin untuk membuat dan menginstal aplikasi di ruang kerja Slack
-- Tidak ada yang perlu dijangkau publik: koneksinya keluar (Socket Mode), jadi server tidak memerlukan port masuk, tunnel, atau domain
+- Tidak ada yang perlu dijangkau publik: app milik Anda terhubung keluar melalui Socket Mode, dan peristiwa app bersama sampai ke server melalui long poll ke Control Center Connect, jadi server tidak memerlukan port masuk, tunnel, atau domain
 
-## Tiga cara untuk mendapatkan aplikasi
+## App bersama atau app Anda
+
+Satu ruang kerja hanya berjalan pada salah satu dari dua mode ini dalam satu waktu.
+
+| Mode                          | Memerlukan                                                                                               | Yang Anda dapatkan                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **App bersama Control Center** | Server memakai Control Center Connect (**Pengaturan → Server → Single sign-on**) dan Connect melayani Slack | Satu klik dan satu proses masuk Slack. Tidak perlu membuat app, tidak perlu menempel token, tidak ada yang perlu dirotasi |
+| **App Anda sendiri**          | Sebuah app Slack di ruang kerja Slack Anda, dibuat dengan salah satu dari tiga cara di bawah              | Nama bot, deskripsi, dan perintah slash Anda sendiri, dapat diedit dari Control Center |
+
+### Tambahkan app bersama Control Center
+
+1. Di Control Center, buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+2. Pada blok Slack, cari baris **Tambahkan Control Center ke Slack** dan klik **Tambahkan ke Slack**
+3. Peramban Anda membuka Slack. Masuk dengan Slack, pilih ruang kerja Slack, dan setujui pemasangan
+4. Ketika peramban menampilkan kode, masukkan ke dialog yang tetap dibiarkan terbuka oleh Control Center. Jika peramban mengembalikan Anda ke aplikasi dengan sendirinya, tidak ada yang perlu diketik
+5. Sebuah notifikasi menyebut nama ruang kerja Slack tempat app ditambahkan, dan blok Slack menampilkan koneksi sebagai berjalan di app bersama Control Center
+
+Hanya admin ruang kerja yang dapat menambahkan app. Baris itu menyebutkan alasannya ketika tidak dapat dimulai: ketika server memakai app sendiri alih-alih Connect, ketika Connect Anda tidak punya app Slack, atau ketika ruang kerja ini sudah memiliki app Slack sendiri yang terhubung.
+
+Berbeda dari app Anda sendiri:
+
+- Slack mengirim peristiwa app bersama ke Connect. Connect hanya menyimpan referensi (id team, kanal, dan pesan) dan membuang teks pesan; server melakukan long-poll ke Connect untuk referensi dan membaca setiap pesan dari Slack sendiri. Teks perintah slash ikut melewati Connect, itulah sebabnya [`/cc ticket`](#kirim-tiket-dari-slack) hanya membuat draf
+- Token bot dienkripsi untuk server ini dan diperbarui melalui Connect, sehingga tidak ada token untuk ditempel atau dirotasi
+- Nama, deskripsi, dan perintah slash bot adalah milik app bersama. Baris Slack menyatakan koneksi berjalan di app bersama dan tidak menawarkan **Sesuaikan bot**
+- Sebuah ruang kerja Slack hanya terikat ke satu server Control Center dalam satu waktu. Menambahkan app dari server lain akan memindahkannya ke sana dan koneksi server ini berhenti
+
+Untuk berpindah antar-mode, putuskan koneksi lalu hubungkan dengan arah sebaliknya.
+
+### App Anda sendiri: tiga cara untuk mendapatkannya
 
 | Jalur               | Yang Anda sediakan                    | Yang dilakukan Control Center                                                                                              |
 | ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ adapter yang ada. Tidak ada implementasi Discord, Telegram, Teams, atau Matrix.
 
 Jalur terpandu adalah satu-satunya yang juga membuat aplikasi tetap _dapat dikelola_ dari Control Center, dan itulah yang memungkinkan [Sesuaikan bot chat](/id-ID/panduan-pengguna/panduan-praktis/sesuaikan-bot-chat/). Aplikasi **Buat di Slack** dapat ditingkatkan menjadi aplikasi terkelola nanti dengan menempelkan token konfigurasi di dialog koneksi.
 
-Memang sengaja tidak ada tombol "instal aplikasi Slack milik Control Center". Menginstal aplikasi Slack yang didistribusikan memerlukan client secret bersama (Slack tidak punya PKCE) dan Socket Mode menyebarkan peristiwa sebuah aplikasi secara acak ke seluruh koneksinya — jadi satu aplikasi bersama akan mengirimkan pesan ruang kerja Anda ke server orang lain. Karena itu, setiap ruang kerja memiliki aplikasinya sendiri, dan ketiga jalur ini ada agar Anda hanya perlu sedikit usaha.
+Peristiwa app Slack milik Anda tidak pernah melewati Connect: Socket Mode mengirimkannya langsung ke server ini.
 
 ## Opsi A: biarkan Control Center membuat aplikasinya
 
@@ -102,6 +130,8 @@ message.im
 
 ## Hubungkan
 
+Inilah cara token app milik Anda sampai ke Control Center. App bersama tidak memerlukan apa pun dari ini.
+
 1. Buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
 2. Pada blok Slack, klik **Hubungkan Slack**
 3. Isi kolom-kolomnya:
@@ -124,8 +154,8 @@ Tanpa token konfigurasi aplikasi yang opsional ini, koneksinya tetap berfungsi �
 
 ## Apa yang dilakukan saat menghubungkan
 
-- Menyimpan kredensial di direktori ruang kerja itu sendiri, di samping databasenya, dan hanya bisa dibaca pemilik. Kredensial tidak pernah dikirim kembali ke klien
-- Membuka satu koneksi Socket Mode untuk ruang kerja ini dan mulai menerima sebutan, balasan thread Slack, DM, dan perintah slash
+- Menyimpan kredensial di direktori ruang kerja itu sendiri, di samping databasenya, dan hanya bisa dibaca pemilik. Kredensial tidak pernah dikirim kembali ke klien. Untuk app bersama, itu adalah hibah tersegel; token bot jangka pendek yang diperbarui darinya tetap berada di memori
+- Mulai menerima sebutan, balasan thread Slack, DM, dan perintah slash: melalui satu koneksi Socket Mode untuk app Anda sendiri, atau melalui satu long poll Connect milik server untuk app bersama
 - Menyiapkan ulang setiap thread Slack yang pernah dijembatani sebelumnya, sehingga koneksi ulang melanjutkan percakapan yang ada alih-alih menelantarkannya
 - Tidak memakan biaya untuk ruang kerja yang tidak punya aplikasi chat: tidak ada socket, tidak ada timer, tidak ada lalu lintas
 
@@ -141,8 +171,8 @@ kerja di tempat lain berarti menghubungkan ulang Slack di sana.
 
 Akses ke jembatan adalah **keanggotaan** ruang kerja, bukan kepemilikan token.
 Akun Slack harus ditautkan ke pengguna Control Center yang merupakan anggota
-dengan peran yang bisa menulis. Menghubungkan, memutuskan, penyiapan terpandu,
-tautan penyiapan, dan penyesuaian bot semuanya dibatasi admin.
+dengan peran yang bisa menulis. Menghubungkan, memutuskan, pemasangan app bersama,
+penyiapan terpandu, tautan penyiapan, dan penyesuaian bot semuanya dibatasi admin.
 :::
 
 ## Verifikasi
@@ -165,7 +195,29 @@ Penalaran berupa dinding teks dan keluaran alat tidak pernah keluar dari Control
 
 Jika tidak terjadi apa-apa saat Anda mengkliknya, server yang mengirim pesan itu tidak dapat dijangkau dari mesin tempat Anda mengklik (misalnya server yang hanya loopback diklik dari ponsel), atau Control Center tidak berjalan di sana. Server tanpa alamat yang dapat dijangkau mengirim kartu tanpa tombol, bukan tombol yang tidak menuju ke mana pun.
 
+## Kirim tiket dari Slack
+
+Anggota mana pun yang sudah tertaut dengan peran tulis dapat mengusulkan tiket dari Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Teks sebelum `|` adalah judulnya, teks sesudahnya deskripsinya. Bot membalas bahwa ia telah membuat
+drafnya. Belum ada tiket yang dibuat dan tidak ada otomatisasi tiket yang terpicu: draf menunggu Anda
+di **Pengaturan → Ruang kerja → Profil & identitas → Draf tiket dari chat**, tempat Anda dapat
+memperbaiki judul dan deskripsi, lalu mengklik **Buat tiket** atau **Buang**.
+
+- Hanya anggota yang menjalankan perintah yang melihat draf
+- Draf yang Anda biarkan akan dihapus setelah sehari. Draf disimpan di memori, sehingga memulai ulang server juga menghapusnya
+- Kartunya hanya muncul selama Anda masih memiliki draf
+
+Teks perintah tidak dapat dibaca ulang dari Slack dan, pada app bersama, teks itu telah melewati Connect.
+Membuat tiket di Control Center adalah yang menjadikannya milik Anda.
+
 ## Merotasi token
+
+Ini berlaku untuk app milik Anda. App bersama tidak memiliki token untuk dirotasi.
 
 Tempel kembali nilai baru di dialog koneksi dan klik **Hubungkan**. Menghubungkan akan menggantikan koneksi apa pun yang sedang berjalan untuk ruang kerja ini, jadi socket dipanggil ulang dengan kredensial baru.
 
@@ -173,7 +225,7 @@ Dua token yang wajib harus ada pada setiap penghubungan. Token konfigurasi aplik
 
 ## Memutuskan
 
-Klik **Putuskan** pada baris Slack (hanya admin). Socket ditutup dan kredensialnya dilupakan.
+Klik **Putuskan** pada baris Slack (hanya admin). Koneksi ditutup dan kredensialnya dilupakan. Untuk app bersama, Control Center juga menghapus bot dari ruang kerja Slack dan melepaskan ikatannya dengan server ini.
 
 Tautan space dan pengguna sengaja dipertahankan: menghubungkan kembali aplikasi yang sama akan memulihkan setiap thread Slack yang dijembatani. Itu adalah baris dengan cakupan ruang kerja, jadi menghapus ruang kerja tetap menghapusnya.
 
@@ -210,7 +262,7 @@ Kartu tugas Slack adalah bagian dari permukaan Agents & AI Apps baru yang sama d
 
 ### "Control Center memerlukan token konfigurasi aplikasi untuk mengedit bot"
 
-Baris **Sesuaikan bot** dinonaktifkan karena koneksinya tidak punya token konfigurasi aplikasi. Ini wajar untuk aplikasi yang dibuat secara manual atau melalui **Buat di Slack** — Slack tidak pernah memberi tahu Control Center aplikasi mana itu. Buat pasangan token di api.slack.com/apps dan hubungkan kembali dengan token refresh yang sudah diisi.
+Baris **Sesuaikan bot** dinonaktifkan karena koneksinya tidak punya token konfigurasi aplikasi. (Pada app bersama tidak ada baris **Sesuaikan bot** sama sekali: bot adalah milik app bersama.) Ini wajar untuk aplikasi yang dibuat secara manual atau melalui **Buat di Slack** — Slack tidak pernah memberi tahu Control Center aplikasi mana itu. Buat pasangan token di api.slack.com/apps dan hubungkan kembali dengan token refresh yang sudah diisi.
 
 ### Jawaban panjang terpotong
 

@@ -4,6 +4,8 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dar
 import 'package:cc_domain/features/dispatch/domain/prompts/output_contract_prompt.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
+    show kPipelineRequestedByKey;
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_step_resume_listener.dart'
@@ -208,6 +210,12 @@ Future<StepResult> dispatchConversationStep({
       workspaceId: workspaceId,
       pipelineRunId: ctx.pipelineRunId,
       pipelineStepId: ctx.stepId,
+      // The member the run acts for, from the engine-written trigger payload
+      // only (never step state, which an agent's output can write).
+      requestedByUserId: switch (ctx.triggerPayload?[kPipelineRequestedByKey]) {
+        final String id when id.isNotEmpty => id,
+        _ => null,
+      },
       conversationId: targetConversationId,
       expectedOutputSchema: outputSchema,
       outputContractMode: outputContractMode,

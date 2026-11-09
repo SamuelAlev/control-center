@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "เชื่อมต่อ Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "เซิร์ฟเวอร์และการปรับใช้",
   "docs.sidebar.guidesRunHeadlessServer": "รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ",
+  "docs.sidebar.guidesRunConnect": "รันเซิร์ฟเวอร์ Connect",
   "docs.sidebar.guidesConnectRemoteServer": "เชื่อมต่อเซิร์ฟเวอร์ระยะไกล",
   "docs.sidebar.guidesRunFleetWorker": "รันวอร์กเกอร์ของฟลีต",
   "docs.sidebar.guidesBackUpAndRestore": "สำรองและกู้คืน",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "ทางลัดแป้นพิมพ์",
   "docs.sidebar.referenceRouteMap": "แผนที่เส้นทาง",
   "docs.sidebar.referenceCcServerCli": "CLI ของ cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "สำรอง นำออก และนำเข้า",
   "docs.sidebar.referenceTelemetry": "การวิเคราะห์การใช้งาน",
   "docs.sidebar.referenceGlossary": "อภิธานศัพท์"

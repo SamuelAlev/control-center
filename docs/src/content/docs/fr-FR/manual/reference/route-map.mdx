@@ -2,16 +2,16 @@
 title: Carte des routes
 description: Toutes les routes que Control Center enregistre, avec leur écran et ses paramètres de requête.
 slug: fr-FR/manuel/reference/carte-des-routes
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Coquille de l’application
 
-La coquille de l’application (`ControlCenterLayout`) enveloppe chaque route d’espace de travail via un `ShellRoute`. **Chaque destination interne à la coquille est préfixée par l’espace de travail — `/workspaces/:workspaceId/…` — et l’identifiant d’espace de travail présent dans l’URL est la source unique de vérité de l’espace de travail actif.** Seules les surfaces hors contexte n’ont pas de préfixe : `/splash`, `/onboarding`, `/signed-out` et le sélecteur `/workspaces` seul, toutes en plein écran et en dehors de la coquille.
+La coquille de l’application (`ControlCenterLayout`) enveloppe chaque route d’espace de travail via un `ShellRoute`. **Chaque destination interne à la coquille est préfixée par l’espace de travail — `/workspaces/:workspaceId/…` — et l’identifiant d’espace de travail présent dans l’URL est la source unique de vérité de l’espace de travail actif.** Seules les surfaces hors contexte n’ont pas de préfixe : `/splash`, `/onboarding` et le sélecteur `/workspaces` seul, toutes en plein écran et en dehors de la coquille.
 
 La porte est franchie lorsqu’au moins une forge est connectée **pour l’utilisateur connecté** et qu’au moins un espace de travail existe.
 
-L’absence d’identifiant et l’absence de configuration correspondent à deux écrans différents, et le discriminant est `users.onboarding_finished_at`, lu sur le `identity.me` de l’appelant lui-même — jamais « des espaces de travail existent », ce qui devient faux dès que quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans forge connectée, un compte qui a terminé son onboarding va vers `/signed-out` pour se réauthentifier ; un compte qui ne l’a pas terminé va vers `/onboarding`. Tant que l’indicateur reste inconnu, le garde retient l’écran de démarrage plutôt que de deviner, car il ne redirige jamais en arrière hors de l’onboarding.
+L’absence d’identifiant et l’absence de configuration sont traitées différemment, et le discriminant est `users.onboarding_finished_at`, lu sur le `identity.me` de l’appelant lui-même — jamais « des espaces de travail existent », ce qui devient faux dès que quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans forge connectée, un compte qui a terminé son onboarding reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Espace de travail → Profil et identité, où se trouve la connexion. Un compte qui ne l’a pas terminé va vers `/onboarding`. Tant que l’indicateur reste inconnu, le garde retient l’écran de démarrage plutôt que de deviner, car il ne redirige jamais en arrière hors de l’onboarding.
 
 ## Routes sans préfixe
 
@@ -19,7 +19,6 @@ L’absence d’identifiant et l’absence de configuration correspondent à deu
 | -------------------------- | ------------------------------------------------- |
 | `/splash`                  | Écran de démarrage qui résout la porte d’onboarding |
 | `/onboarding`              | Connectez une forge, créez ou rejoignez un espace de travail, le bac à sable, l’adaptateur par défaut, puis la voix. L’étape d’espace de travail est ignorée lorsque le compte appartient déjà à un espace |
-| `/signed-out`              | Réauthentification : la même carte de connexions aux forges que celle qu’affiche Paramètres, sans barre d’étapes ni bouton Continuer — le routeur quitte l’écran de lui-même dès qu’une forge répond |
 | `/workspaces`              | Liste des espaces de travail et sélecteur         |
 | `/workspaces/:workspaceId` | Redirige vers `/workspaces/:workspaceId/inbox`    |
 

@@ -13,6 +13,27 @@ void main() {
       expect(user.avatarUrl, 'https://avatars.githubusercontent.com/u/1?v=4');
     });
 
+    test('the numeric account id round-trips and is part of equality', () {
+      final user = GitHubUser.fromJson(<String, dynamic>{
+        'id': 583231,
+        'login': 'octocat',
+        'avatar_url': '',
+      });
+      expect(user.id, 583231);
+      expect(GitHubUser.fromJson(user.toJson()), user);
+      // Same login, different account: not the same person.
+      expect(
+        user == const GitHubUser(login: 'octocat', avatarUrl: '', id: 9),
+        isFalse,
+      );
+      // Sources without an id (GraphQL, older caches) read as 0 and omit it.
+      expect(GitHubUser.fromJson(const {'login': 'x'}).id, 0);
+      expect(
+        const GitHubUser(login: 'x', avatarUrl: '').toJson().containsKey('id'),
+        isFalse,
+      );
+    });
+
     test('fromJson handles missing fields with defaults', () {
       final json = <String, dynamic>{};
       final user = GitHubUser.fromJson(json);

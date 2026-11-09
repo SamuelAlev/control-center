@@ -2,7 +2,7 @@
 title: Einen Code-Host verbinden
 description: Verbinde GitHub, GitLab oder Bitbucket, damit PR-Oberfläche, Repo-Registrierung und Agentenläufe funktionieren — ein Arbeitsbereich kann alle drei nutzen.
 slug: de-DE/handbuch/anleitungen/code-host-verbinden
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center arbeitet mit drei Code-Hosts — in der App heißen sie genau so: **GitHub**, **GitLab** und **Bitbucket Cloud**. Keiner davon ist die Vorgabe. Verbindest du einen, funktioniert alles; verbindest du mehrere, kann ein einzelner Arbeitsbereich Repos von allen gleichzeitig halten.
@@ -13,9 +13,9 @@ Der Code-Host ist eine Eigenschaft jedes **Repos** und wird beim Registrieren au
 
 1. Öffne **Einstellungen → Arbeitsbereich → Profil und Identität** (`/settings/workspace/profile`).
 2. Finde die Karte **Code-Hosting**. Jeder unterstützte Code-Host steht dort, verbunden oder nicht.
-3. Drücke **Mit … anmelden**, wenn die Zeile das anbietet, oder **Token hinzufügen** und füge eines ein.
+3. Drücke bei **GitHub** auf **Bei GitHub anmelden**. Drücke bei **GitLab** oder **Bitbucket** auf **Token hinzufügen** und füge eines ein.
 
-**Mit … anmelden** erscheint bei einem Code-Host, für den dein Server eine App registriert hat — heute ist das GitHub, über einen Device-Flow (siehe [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)). Alles andere ist ein eingefügtes Token, weil sich eine Schaltfläche hier nicht zu Ende führen ließe.
+**Bei GitHub gibt es nur die Anmeldung.** Sie läuft über die eigene GitHub App des Servers oder über Control Center Connect, je nachdem, was der Server-Eigentümer eingerichtet hat (siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)); ein GitHub-Token zum Einfügen gibt es nicht. GitLab und Bitbucket nehmen weiterhin ein persönliches Token.
 
 So oder so ist das Zugangsdatum **deins und liegt auf dem Server**, gebunden an deine Benutzer-ID: Auf dem Rechner, auf dem du es eintippst, liegt kein Token, jedes Gerät, von dem du dich anmeldest, nutzt dasselbe, und kein anderes Mitglied kann es lesen. Es gilt ab der **nächsten Anfrage** — neu starten musst du nichts, und trennst du die Verbindung, wird es sofort nicht mehr gesendet.
 
@@ -24,29 +24,28 @@ Jede Zeile sagt, woher ihr Zugangsdatum kommt. Daran scheiden sich „mein Token
 | Untertitel                                             | Bedeutung                                                              |
 | ------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `Angemeldet als octocat`                               | Dein eigenes Zugangsdatum wird verwendet                               |
-| `Angemeldet als octocat · über die App dieses Servers` | Die App-Identität des Servers antwortet — du bist nicht angemeldet    |
-| `Angemeldet als octocat · aus der Umgebung`            | Eine Umgebungsvariable des Servers antwortet, nicht dein Zugangsdatum |
+| `Angemeldet als octocat · aus der Umgebung`            | Nur GitLab oder Bitbucket: Eine Umgebungsvariable des Servers antwortet, nicht dein Token |
 | `Nicht verbunden`                                      | Du hast für diesen Code-Host kein Zugangsdatum                         |
+| `Die Anmeldung bei GitHub ist auf diesem Server noch nicht eingerichtet.` | Der Server hat weder eine eigene GitHub App noch Connect; der Server-Eigentümer richtet eins davon ein |
 
 ### Welches Token welcher Code-Host braucht
 
 | Code-Host     | Token                                                                                                              | Wo du es anlegst                                       |
 | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| **GitHub**    | Classic: `repo` und `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read)       | github.com → Settings → Developer settings → Tokens    |
 | **GitLab**    | Ein persönliches Zugriffstoken mit `api`                                                                           | gitlab.com → User settings → Access tokens             |
 | **Bitbucket** | Ein Atlassian-API-Token plus die E-Mail deines Kontos                                                              | id.atlassian.com → Security → API tokens               |
 
 Bitbucket authentifiziert mit deiner **Konto-E-Mail als Benutzername** und dem Token als Passwort. Setze `BITBUCKET_EMAIL` in der Umgebung des Servers, damit er weiß, welche E-Mail zum Token gehört.
 
-### Oder die Umgebung nutzen
+### Hintergrundarbeit
 
-Bei einer Headless- oder CI-Installation liest der Server diese Werte:
+Arbeit ohne Menschen dahinter (Agentenläufe, Pipelines, PR-Polling) braucht ebenfalls ein Zugangsdatum, und jeder Code-Host löst das anders:
 
-- **GitHub** — `GITHUB_TOKEN`, dann `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, dann `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, dann `BITBUCKET_TOKEN` (mit `BITBUCKET_EMAIL`)
+- **GitHub** — ein Token für jeweils ein Repository, ausgestellt über die GitHub App des Servers oder über Connect und begrenzt auf das, was ein verantwortliches Mitglied dort tun darf. Es ist nie die vollständig weitergereichte Anmeldung einer Person, und keine Umgebungsvariable und kein eingefügtes Token springt dafür ein. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/#für-wen-dein-zugangsdatum-spricht)
+- **GitLab** — das eingefügte Token des Server-Eigentümers, dann `GITLAB_TOKEN`, dann `CI_JOB_TOKEN`
+- **Bitbucket** — das eingefügte Token des Server-Eigentümers, dann `BITBUCKET_API_TOKEN`, dann `BITBUCKET_TOKEN` (mit `BITBUCKET_EMAIL`)
 
-Das sind die Zugangsdaten **des Servers**, nicht deine, und daran hängt, wer antwortet: Eine Anfrage in deinem Auftrag nutzt dein Zugangsdatum und sonst nichts. Die Umgebung springt also nie still für dich ein. Arbeit ohne Menschen dahinter — Webhooks, PR-Polling, Ticket-Sync — löst zuerst die App-Identität des Servers auf, dann das Zugangsdatum des Server-Eigentümers, dann die Umgebung. Die Reihenfolge steht fest, damit „Ich habe mich angemeldet und nichts hat sich geändert“ nie ein unterstütztes Ergebnis ist.
+Die Umgebungsvariablen für GitLab und Bitbucket sind die Zugangsdaten **des Servers**, nicht deine: Eine Anfrage in deinem Auftrag nutzt dein Token und sonst nichts. Die Umgebung springt also nie still für dich ein.
 
 ## Auf jedem Code-Host bist du eine andere Person
 
@@ -94,11 +93,11 @@ GitLab nennt einen Pull Request **Merge Request**. Control Center sagt im eigene
 
 ### Die PR-Liste ist leer und meldet, ein Code-Host sei nicht verbunden
 
-Du hast für diesen Code-Host kein Zugangsdatum. Melde dich an oder füge unter **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** ein Token ein. Die Repos der anderen Code-Hosts bleiben unberührt.
+Du hast für diesen Code-Host kein Zugangsdatum. Melde dich unter **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** bei GitHub an oder füge dort ein Token für GitLab oder Bitbucket ein. Die Repos der anderen Code-Hosts bleiben unberührt.
 
 ### Ich habe einen Code-Host verbunden, seine Repos zeigen aber nichts
 
-Prüfe den Untertitel der Zeile. Steht dort „über die App dieses Servers“ oder „aus der Umgebung“, antwortet ein anderes Zugangsdatum als das, das du erwartest. Für alles, was du anfragst, gewinnt dein eigenes. Steht dort also etwas anderes, wurde deins nicht gespeichert.
+Prüfe den Untertitel der Zeile. Steht bei einer GitLab- oder Bitbucket-Zeile „aus der Umgebung“, antwortet ein anderes Zugangsdatum als das, das du erwartest. Für alles, was du anfragst, gewinnt dein eigenes Token. Steht dort also etwas anderes, wurde deins nicht gespeichert. Prüfe bei GitHub, ob die GitHub App auf dem Konto installiert ist, dem die Repos gehören.
 
 ### Ein Repo lässt sich nicht registrieren
 

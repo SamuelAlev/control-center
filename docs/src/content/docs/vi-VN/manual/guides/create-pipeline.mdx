@@ -2,7 +2,7 @@
 title: Tạo mẫu quy trình
 description: Soạn một mẫu quy trình DAG trong trình chỉnh sửa quy trình — thêm nút, nối chúng, khai báo đầu vào và làm cho mẫu chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Mẫu quy trình được soạn trong cài đặt không gian làm việc. Mục **Pipelines**
@@ -126,11 +126,20 @@ hai đều không cấu hình được:
 
 - Mọi bước bash trong một lần chạy dùng chung thư mục làm việc
   `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` được tiêm vào từ kho thông tin xác thực, nên `gh` và
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` hoạt động mà không cần
-  thiết lập.
+- Script chạy trong sandbox hệ điều hành của máy chủ, giống các lệnh của agent. Một
+  máy chủ không có sandbox (Windows, hoặc Linux không có `bwrap`) sẽ làm bước thất bại
+  thay vì chạy nó không bị giới hạn. Thư mục dữ liệu và tệp `.env` của máy chủ không
+  đọc được từ bên trong.
+- Git và `gh` không thấy cấu hình nào của máy chủ: không có đăng nhập đã lưu, không có
+  credential helper hay hook toàn cục.
+- Khi pipeline nêu một kho GitHub đã liên kết với không gian làm việc
+  (`repo_full_name` trong trạng thái hoặc payload kích hoạt), `GH_TOKEN` và
+  `GITHUB_TOKEN` giữ một token chỉ đọc được đúng kho đó, nên `gh` và
+  `git clone` vào kho đó hoạt động mà không cần thiết lập. Nếu không thì không có token
+  GitHub nào.
+- Chỉ quản trị viên không gian làm việc mới tạo hoặc sửa được pipeline có bước bash.
 - Script được khởi chạy như đúng tệp thực thi `bash`, nên `bash` phải có trong
-  `PATH` của máy chủ. Đây là một lưu ý trên Windows.
+  `PATH` của máy chủ.
 
 ### Router
 

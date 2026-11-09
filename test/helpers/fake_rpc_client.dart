@@ -54,8 +54,9 @@ class FakeRpcHost implements RemoteRpcChannelPort {
   int _subCounter = 0;
 
   /// Optional per-op handler for `repo/call`. Returns the `data` map for a
-  /// successful response; throw to simulate a JSON-RPC error (caught and
-  /// reported as a generic internal error).
+  /// successful response; throw to simulate a JSON-RPC error. A thrown
+  /// [RemoteRpcException] is reported with its own code, message and data;
+  /// anything else as a generic internal error.
   Map<String, dynamic> Function(String op, Map<String, dynamic> args)? onCall;
 
   @override
@@ -112,6 +113,18 @@ class FakeRpcHost implements RemoteRpcChannelPort {
           'jsonrpc': '2.0',
           'id': id,
           'result': {'data': data},
+        });
+      } on RemoteRpcException catch (e) {
+        // A structured refusal keeps its code and data, so a test can fake
+        // the server's typed errors (e.g. `needs_sign_in`).
+        _incoming.add({
+          'jsonrpc': '2.0',
+          'id': id,
+          'error': {
+            'code': e.code,
+            'message': e.message,
+            if (e.data != null) 'data': e.data,
+          },
         });
       } catch (e) {
         _incoming.add({

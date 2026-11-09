@@ -6,6 +6,7 @@ import 'package:control_center/features/changelog/presentation/widgets/changelog
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_space_auto_open.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_shell_overlay.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_overlay.dart';
+import 'package:control_center/features/forge/presentation/widgets/forge_sign_in_banner.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_recording_hud.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_overlay.dart';
 import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
@@ -128,6 +129,10 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                       onGoForward: historyNotifier.goForward,
                     ),
                   ),
+                  // No code host answers for this workspace: warn in place
+                  // with the sign-in one click away, rather than gating the
+                  // whole app on it.
+                  const ForgeSignInBanner(),
                   Expanded(child: _buildPanes(showSpacesSubSidebar)),
                 ],
               ),

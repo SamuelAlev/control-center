@@ -1,37 +1,76 @@
 ---
 title: Einen Google Calendar verbinden
-description: Verbinde Google Calendar mit einem Arbeitsbereich, verwalte mehrere Konten und verbinde ein Konto erneut, wenn ein Token abläuft.
+description: Verbinde Google Calendar mit einem Arbeitsbereich, verwalte mehrere Konten und verbinde ein Konto erneut, wenn eine Anmeldung abläuft.
 slug: de-DE/handbuch/anleitungen/kalender-verbinden
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Diese Anleitung zeigt, wie du Google Calendar mit einem Arbeitsbereich
-verbindest. Die Verbindung gilt pro Arbeitsbereich: Sie synchronisiert die
-Termine dieses Arbeitsbereichs schreibgeschützt nach Control Center. Wie das
+verbindest. Die Verbindung gilt pro Arbeitsbereich und pro Mitglied: Sie
+synchronisiert deine Termine für diesen Arbeitsbereich nach Control Center,
+wo du Einladungen beantworten, neue Termine buchen, verschieben und löschen kannst. Wie das
 zusammenhängt, steht unter
 [Kalender und Terminplanung](/de-DE/handbuch/konzepte/kalender/).
+
+## Voraussetzungen
+
+- Der Server kann Personen bei Google anmelden: entweder über Control Center
+  Connect oder mit dem eigenen Google-Client des Servers
+  ([Einen eigenen Google-Client mitbringen](#einen-eigenen-google-client-mitbringen)).
+  Der Server-Eigentümer wählt das unter **Einstellungen → Server → Single
+  sign-on**
+- Ein geöffneter Arbeitsbereich: Ein Kalenderkonto gehört immer zu einem
 
 ## Ein Konto verbinden
 
 1. Öffne **Kalender** in der Seitenleiste.
 2. Klicke in der Kalender-Seitenleiste auf **Kalenderkonto hinzufügen**. (Dieselbe Stelle liegt unter **Einstellungen → Arbeitsbereich → Profil und Identität**, bei **Google Calendar**.)
-3. Wähle, wie du autorisierst:
-   - **Google-App von Control Center verwenden** — nichts einzurichten. Das ist die Vorgabe, wenn dein Build eine mitliefert.
-   - **Eigenen Google-Cloud-Client verwenden** — füge eine Client-ID und ein Secret aus deinem eigenen Projekt ein (siehe [Einen eigenen Google-Client mitbringen](#einen-eigenen-google-client-mitbringen-forks-und-self-hosting)).
-4. Klicke auf **Google Calendar verbinden**. Der Dialog zeigt einen kurzen Code und einen Link zu Googles Geräteseite.
-5. Öffne diese Seite auf einem beliebigen Gerät, gib den Code ein und genehmige den angeforderten Zugriff. Der Dialog schließt sich von selbst, und die Synchronisierung deiner Termine beginnt.
+3. Klicke auf **Google Calendar verbinden**. Dein Browser öffnet die Zustimmungsseite von Google.
+4. Wähle das Konto und genehmige den Zugriff auf deine Termine und die Kalenderliste.
 
-Den Austausch führt der Server aus, nicht dein Gerät, und er behält das
-daraus entstehende Refresh-Token — deshalb bestätigst du den Code auf einem
-„beliebigen Gerät“ und nicht speziell in dieser App.
+Wie es endet, hängt davon ab, wer die Anmeldung ausführt:
 
-Das Konto ist **nur mit dem aktiven Arbeitsbereich** verbunden. Wechselst du
-den Arbeitsbereich, siehst du die Kalender dieses Arbeitsbereichs.
+- **Der eigene Google-Client des Servers:** Google schickt deinen Browser zum
+  Server zurück, und der Dialog schließt sich von selbst
+- **Control Center Connect:** Die Browserseite zeigt einen 8-stelligen Code.
+  Tippe ihn in den Dialog ein, oder lass den Browser Control Center über den
+  Link `control-center://` öffnen und spar dir das Eintippen
 
-Der Verbindungsablauf fordert `calendar.readonly` plus deine E-Mail an —
-dieselben Scopes für die eingebaute App und für einen Client, den du einfügst.
-Control Center liest Termine. Es legt nichts an, bearbeitet nichts, löscht
-nichts und beantwortet keine Einladungen bei Google.
+Die Synchronisierung deiner Termine beginnt sofort. Den Austausch schließt der
+Server ab, nicht dein Gerät, und er behält das Zugangsdatum.
+
+Das Konto ist **nur mit dem aktiven Arbeitsbereich** verbunden, und es gehört
+dir: Verbinden zwei Mitglieder dieselbe Google-Adresse, bekommen sie getrennte
+Konten. Wechselst du den Arbeitsbereich, siehst du die Kalender dieses
+Arbeitsbereichs.
+
+Der Verbindungsablauf fordert `calendar.events` und `calendar.calendarlist.readonly`
+plus `openid email` an, gleich welcher Client ihn ausführt. Ein Konto, das vor
+Schreibzugriff verbunden wurde, hat nur den schreibgeschützten Scope: Es fordert
+dich auf, es erneut zu verbinden, und die neue Anmeldung gewährt den Rest.
+
+## Termine buchen, verschieben, beantworten und löschen
+
+- **Termin buchen:** In der Wochen- oder Tagesansicht ziehst du über das
+  Zeitraster, um den Zeitraum festzulegen (in der Monatsansicht ziehst du über
+  Tage, für einen ganztägigen Termin). Neben dem Zeitraum öffnet sich eine Karte
+  mit Titel, Zeiten, Gästen, einem Google-Meet-Link, Ort, Beschreibung und dem
+  Kalender, in dem gebucht wird. **Speichern** bucht den Termin bei Google und
+  öffnet ihn. Der Button **+** in der Kalenderkopfzeile öffnet dieselbe Karte
+  für das nächste freie Viertelstunden-Intervall. Mit Escape verwirfst du sie
+- **Termin verschieben:** Ziehe ihn auf eine andere Uhrzeit oder einen anderen Tag, oder ziehe an seinem unteren Rand, um das Ende zu ändern. Er öffnet sich, sobald Google die neue Zeit hat; lehnt Google ab, springt er an seinen alten Platz zurück. Du kannst deine eigenen Termine und die, die du organisierst, verschieben; eine Einladung bleibt dort, wo ihr Organisator sie gesetzt hat
+- **Auf eine Einladung antworten:** Öffne den Termin und wähle **Ja**,
+  **Vielleicht** oder **Nein**
+- **Termin löschen:** Öffne ihn und klicke auf das Papierkorb-Symbol. Die
+  Bestätigung nennt, wer betroffen ist: Gäste erfahren, dass ein Termin, den du
+  organisierst, abgesagt wird, während das Löschen einer Einladung sie nur aus
+  deinem Kalender entfernt. Das Löschen eines einzelnen Vorkommens eines
+  wiederkehrenden Termins lässt den Rest der Serie bestehen
+
+Gäste erhalten Googles eigene E-Mail-Einladung, Aktualisierung oder Absage, und das Verschieben eines einzelnen Vorkommens eines wiederkehrenden Termins lässt den Rest der Serie bestehen. Du
+kannst nur in Kalendern buchen, in die dein Konto schreiben darf, und nur mit
+deinen eigenen Konten: Der verbundene Kalender eines anderen Mitglieds wird nie
+angeboten.
 
 ## So funktioniert die Synchronisierung
 
@@ -47,9 +86,11 @@ sich geändert hat. Genau das macht einen Takt von zwei Minuten tragbar. Das
 Fenster wird alle 24 Stunden und immer dann, wenn Google das Token ungültig
 macht, mit einer vollständigen Synchronisierung neu verankert.
 
-Refresh-Tokens liegen serverseitig in `secrets.json` im Datenverzeichnis des
+Zugangsdaten liegen serverseitig in `secrets.json` im Datenverzeichnis des
 Servers, nur für den Eigentümer geschrieben (`0600`) — nicht im Schlüsselbund
-des Betriebssystems und nie auf einem Client-Gerät.
+des Betriebssystems und nie auf einem Client-Gerät. Eine Anmeldung über Connect
+speichert nur ein versiegeltes Zugangsdatum, das Connect allein für diesen
+Server öffnen kann; ihr Access-Token bleibt im Arbeitsspeicher des Servers.
 
 ## Mehrere Konten verbinden
 
@@ -61,76 +102,95 @@ einzeln trennen.
 
 ## Ein abgelaufenes Konto erneut verbinden
 
-Erklärt Google das Token eines Kontos dauerhaft für ungültig (eine
+Erklärt Google die Anmeldung eines Kontos dauerhaft für ungültig (eine
 widerrufene oder lange abgelaufene Sitzung), stoppt die Synchronisierung.
 Control Center zeigt auf dem Kalender ein Banner **Erneut verbinden** und
-eine Desktop-Benachrichtigung. Klicke auf **Erneut verbinden** und bestätige
-einen neuen Code; das Banner verschwindet bei der nächsten erfolgreichen
+eine Desktop-Benachrichtigung. Klicke auf **Erneut verbinden** und melde dich
+erneut an; das Banner verschwindet bei der nächsten erfolgreichen
 Synchronisierung.
+
+Dasselbe Banner erscheint, wenn dieser Server die Anmeldung nicht mehr nutzen
+kann: Der Server-Eigentümer hat den Connect-Server gewechselt oder den
+Connect-Schlüssel rotiert, der eigene Google-Client des Servers hat sich
+geändert, oder das Datenverzeichnis wurde auf einer anderen Maschine
+wiederhergestellt.
 
 ## Ein Konto trennen
 
 Klicke in der Kalender-Seitenleiste (oder unter **Einstellungen →
 Arbeitsbereich → Profil und Identität**) beim Konto auf **Trennen**. Das
-löscht die synchronisierten Termine und entfernt die gespeicherten Tokens auf
-dem Server.
+löscht die synchronisierten Termine und entfernt das gespeicherte Zugangsdatum
+auf dem Server.
 
-## Von einem Headless-Server aus verbinden
+## Einen eigenen Google-Client mitbringen
 
-Ein Server ohne angeschlossene Oberfläche verbindet dasselbe Konto über sein
-eigenes Terminal:
+Betreibe einen eigenen Google-Client, wenn du **Eigene Apps verwenden** gewählt
+hast. Der Client des Servers gilt nur dann: Mit der App von Control Center oder
+einem eigenen Connect läuft jede Spur über Connect, Google eingeschlossen, und
+der Client des Servers bleibt gespeichert, aber ungenutzt. Damit der
+Zustimmungsbildschirm dein eigenes Projekt nennt, während der Server Connect
+verwendet, gib dem Arbeitsbereich einen eigenen Client
+([unten](#einem-arbeitsbereich-einen-eigenen-google-client-geben)). Das gilt in
+jedem Modus.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. Aktiviere in der [Google Cloud Console](https://console.cloud.google.com/apis/credentials) die **Google Calendar API** und richte den **OAuth-Zustimmungsbildschirm** ein. Füge die Scopes `calendar.events`, `calendar.calendarlist.readonly`, `openid` und `email` hinzu. Solange die App nicht verifiziert ist, trag dich als **Testnutzer** ein.
+2. Lege eine **OAuth-Client-ID** vom Anwendungstyp **Webanwendung** an.
+3. Füge den autorisierten Redirect-URI `<server origin>/oauth/google/callback` hinzu. **Einstellungen → Server → Single sign-on → Anbieter-Apps → Google** zeigt die genaue URL unter **Callback-URLs**; kopiere sie wörtlich.
+4. Füge **Client-ID** und **Client-Secret** in denselben Google-Block ein, oder trag sie als `GOOGLE_OAUTH_CLIENT_ID` und `GOOGLE_OAUTH_CLIENT_SECRET` in die `.env`-Datei des Servers ein.
 
-Er gibt einen Code und eine URL aus, wartet auf die Bestätigung, speichert
-dann die Tokens und synchronisiert beim nächsten Durchlauf.
+Der Server verweigert den Start, wenn `GOOGLE_OAUTH_CLIENT_SECRET` in seiner
+Prozessumgebung exportiert ist; bewahre es in der `.env`-Datei auf (in Docker
+eingehängt unter `/app/bin/.env`). Das Secret verlässt den Server nie: Keine
+RPC-Antwort enthält es. Eine Client-ID ohne ihr Secret ist eine unfertige
+Einrichtung, und Google-Anmeldungen werden abgelehnt, bis beide gesetzt sind.
 
-Ein Build aus dem Quellcode bringt **keinen** Google-Client mit, deshalb sind
-ID und Secret erforderlich — setze `GOOGLE_OAUTH_CLIENT_ID` und
-`GOOGLE_OAUTH_CLIENT_SECRET`. Ein Flag `--google-client-id` gibt es nicht
-(unbekannte Flags werden ignoriert). Ohne das Paar in der Umgebung beendet
-sich der Befehl mit einem Fehler, weil der Client fehlt.
+Der Wechsel zu einem anderen Client meldet alle von Google Calendar ab: Eine
+Anmeldung gehört dem Client, der sie ausgestellt hat.
 
-## Einen eigenen Google-Client mitbringen (Forks und Self-Hosting)
+## Einem Arbeitsbereich einen eigenen Google-Client geben
 
-Release-Builds bringen einen Google-Client mit, deshalb kommen die meisten
-damit nie in Berührung. Bring deinen eigenen mit, wenn du aus dem Quellcode
-baust, einen eigenen Server betreibst oder der Zustimmungsbildschirm dein
-eigenes Projekt nennen soll.
+Ein Arbeitsbereich kann Google Calendar über einen eigenen Client verbinden statt
+über den des Servers. Nur ein Administrator oder Eigentümer des Arbeitsbereichs
+kann das einrichten.
 
-1. Aktiviere in der [Google Cloud Console](https://console.cloud.google.com/apis/credentials) die **Google Calendar API** und richte den **OAuth-Zustimmungsbildschirm** ein. Füge die Scopes `calendar.readonly`, `openid` und `email` hinzu. Solange die App nicht verifiziert ist, trag dich als **Testnutzer** ein. `calendar.events` auf dem Zustimmungsbildschirm schaltet keine Zu- oder Absage frei — Control Center fordert diesen Scope nie an.
-2. Lege eine **OAuth-Client-ID** vom Anwendungstyp **TVs and limited input devices** an und kopiere Client-ID und Client-Secret.
-3. Gib sie entweder pro Verbindung an (wähle im Dialog **Eigenen Google-Cloud-Client verwenden**) oder serverweit mit `GOOGLE_OAUTH_CLIENT_ID` und `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Lege einen Google-Client vom Typ **Webanwendung** an, wie in den Schritten 1
+   und 2 oben
+2. Geh zu **Einstellungen → Arbeitsbereich → Allgemein → Anbieter-Apps** und öffne
+   **Google Calendar**
+3. Wähle **Eigene App dieses Workspace verwenden**
+4. Trag den Redirect-URI, den die Zeile unter **Callback-URL** zeigt, wörtlich im
+   Client ein
+5. Füge **Client id** und **Client-Secret** ein
 
-Ein serverweites Paar ersetzt das eingebaute überall, auch hinter der Option
-„Google-App von Control Center verwenden“ — auf deinem eigenen Server ist
-diese Option deine App.
+Die Kalenderkonten, die in diesem Arbeitsbereich verbunden werden, laufen dann
+über diesen Client, egal auf welchem Weg der Server Personen anmeldet. Er fällt
+nie auf den Client des Servers oder auf Connect zurück: Solange beide Felder
+nicht gesetzt sind, ist Google Calendar in diesem Arbeitsbereich aus, und die
+Zeile sagt, was fehlt. Das Secret verlässt den Server nie.
 
-Das Client-Secret verlässt den Server nie: Keine RPC-Antwort enthält es, und
-ein Konto, das über den eigenen Client des Servers verbunden wurde, speichert
-eine Markierung statt einer Kopie des Paars. Zum Rotieren reicht ein Neustart
-mit dem neuen Wert.
+Der Wechsel zwischen dem Client des Servers und dem des Arbeitsbereichs oder eine
+geänderte Client-ID des Arbeitsbereichs markiert jedes Google-Konto in diesem
+Arbeitsbereich zur erneuten Verbindung. **App dieses Servers verwenden** löscht
+die gespeicherten Felder des Arbeitsbereichs. Andere Arbeitsbereiche auf dem
+Server sind nicht betroffen.
 
-### Fehlerbehebung
+## Fehlerbehebung
 
-| Symptom                                             | Wahrscheinliche Ursache                                                                                                                               |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Der Dialog bietet keine eingebaute Option           | Dieser Build bringt keinen Google-Client mit (ein Quellcode-Build), oder der Server wurde nur mit einer Hälfte des Paars gestartet. ID und Secret sind beide erforderlich |
-| `invalid_scope` beim Start des Ablaufs              | Calendar ist für einen Device-Code-Client in diesem Cloud-Projekt nicht erlaubt. Nimm stattdessen ein Projekt mit Loopback- oder Web-Client           |
-| `invalid_client` von Google                         | Der Client ist kein Client vom Typ **TVs and limited input devices**, oder ID und Secret stammen von verschiedenen Clients                             |
-| Die Bestätigung gelingt, die Synchronisierung bleibt leer | Dein Konto ist auf dem Zustimmungsbildschirm kein **Testnutzer**, oder `calendar.readonly` wurde nicht gewährt                                   |
-| Der Code läuft ab, bevor du ihn bestätigst          | Device-Codes sind kurzlebig. Starte die Verbindung erneut, um einen neuen zu bekommen                                                                 |
-| „Antwort konnte nicht aktualisiert werden“ bei einer Zu- oder Absage | Erwartet: Der Verbindungsablauf fordert `calendar.events` nie an                                                                       |
-| Die Synchronisierung stoppt mit einer Warnung beim Token-Refresh im Serverprotokoll | Das Konto wurde mit einem Client verbunden, der nicht mehr konfiguriert ist. Verbinde das Konto erneut, oder setze diese Client-ID und dieses Secret wieder |
+| Symptom                                             | Wahrscheinliche Ursache                                                                                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Google Calendar verbinden** meldet, dass die Anmeldung nicht eingerichtet ist | Der Server hat weder einen eigenen Google-Client noch Connect. Der Server-Eigentümer wählt eins davon unter **Einstellungen → Server → Single sign-on** |
+| Google zeigt `redirect_uri_mismatch`                | Der beim Client registrierte Redirect stimmt nicht genau mit dem Wert unter **Callback-URLs** überein, oder die öffentliche URL des Servers hat sich geändert |
+| `invalid_client` von Google                         | ID und Secret stammen von verschiedenen Clients, oder der Client wurde gelöscht                                                      |
+| Die Bestätigung gelingt, die Synchronisierung bleibt leer | Dein Konto ist auf dem Zustimmungsbildschirm kein **Testnutzer**, oder einer der angeforderten Scopes wurde nicht gewährt                  |
+| Der Dialog meldet, dass der Code nicht passt        | Tippe die 8 Zeichen genau so ein, wie der Browser sie zeigt. Fünf falsche Codes beenden die Anmeldung; fang neu an                   |
+| „Antwort konnte nicht aktualisiert werden“, oder Buchen, Verschieben oder Löschen schlägt fehl | Das Konto wurde mit dem alten schreibgeschützten Scope verbunden. Verbinde es erneut; ein Kalender, der dir nur schreibgeschützt geteilt wurde, lehnt Schreibzugriffe ebenfalls ab |
+| Alle müssen sich erneut verbinden                   | Der Google-Client des Servers oder des Arbeitsbereichs hat sich geändert, oder die Connect-Wahl oder der Schlüssel des Servers. Siehe [Ein abgelaufenes Konto erneut verbinden](#ein-abgelaufenes-konto-erneut-verbinden) |
 
 ## Verwandte Anleitungen
 
 - [Eine Besprechung aufzeichnen und zusammenfassen](/de-DE/handbuch/anleitungen/besprechung-aufzeichnen/): aus einem Termin eine Aufnahme machen
-- [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/): wo die Tokens und der Zeitplan der Synchronisierung liegen
-- [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)
+- [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/): wo die Zugangsdaten und der Zeitplan der Synchronisierung liegen
+- [Einen Connect-Server betreiben](/de-DE/handbuch/anleitungen/connect-server-betreiben/)
 
 ## Verwandte Konzepte
 

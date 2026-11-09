@@ -2587,6 +2587,27 @@ class AppLocalizationsHu extends AppLocalizations {
       'Várakozás a böngészőben történő engedélyezésre…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Írd be a böngészőben látható kódot';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Ez nem bejelentkezési kódnak tűnik. A kódok 8 betűből és számjegyből állnak.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'A(z) $provider bejelentkezés még nincs beállítva ezen a szerveren.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'A szerver bejelentkezési visszahívási címe telefonról nem érhető el biztonságosan. Jelentkezz be az asztali alkalmazásban, vagy kérd meg a szerver tulajdonosát, hogy állítson be nyilvános HTTPS-címet.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'A bejelentkezés lejárt. Indítson új bejelentkezést.';
 
@@ -2607,10 +2628,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Bejelentkezés befejezése';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'A szerver böngészős visszahívása nem érhető el biztonságosan telefonról. Kérje meg a szerver tulajdonosát egy nyilvános HTTPS-visszahívás beállítására, vagy adjon hozzá tokent.';
 
   @override
   String get credentialsUpdateToken => 'Token frissítése';

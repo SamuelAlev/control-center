@@ -2,7 +2,7 @@
 title: 설치
 description: 브라우저에서 Control Center를 사용하거나 데스크톱 앱을 설치하고, 에이전트 백엔드를 설정하며 서버가 실행될 위치를 선택합니다.
 slug: ko-KR/매뉴얼/설치
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center는 두 가지 방식으로 실행됩니다. [app.usectrl.dev](https://app.usectrl.dev)에서
@@ -169,22 +169,15 @@ GitHub 자격 증명은 **본인의 것이며 서버에 저장**되고 사용자
 클라이언트 OS 키체인에는 저장되지 않습니다. 로그인하는 모든 기기에서 같은 자격 증명을
 사용하며, 다른 구성원은 이를 읽을 수 없습니다.
 
-서버에 GitHub App이 등록되어 있다면
-([GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)), **설정 → 워크스페이스 →
-프로필 및 신원 → 코드 호스팅**에서 **GitHub로 로그인**(서버가 실행하는 기기 흐름)을
-제공합니다. 그렇지 않으면 개인 액세스 토큰을 붙여 넣으세요.
+GitHub는 로그인 방식만 지원합니다. **설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅**에는
+**GitHub에 로그인**이 있으며, 붙여 넣을 토큰은 없습니다. 로그인은 서버 소유자가 선택한 방식에
+따라 서버 자체 GitHub App([GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/))이나
+Control Center Connect를 거쳐 진행됩니다. 서버 자체 앱을 쓰면 브라우저가 알아서 서버로
+돌아옵니다. Connect를 거치면 브라우저에 표시되는 8자리 코드를 입력하거나, 브라우저가
+Control Center를 열도록 둡니다. [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)을 참고하세요.
 
-- 클래식: `repo` 및 `read:org`
-- 세분화된 토큰: **Contents** 및 **Pull requests**(읽기/쓰기), **Checks** 및
-  **Actions**(읽기)
-
-토큰은 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)에서
-만들 수 있습니다. 서버는 토큰을 저장할 때 계정 이름을 조회하므로 해당 행에
-"…(으)로 로그인했습니다"라고 표시될 수 있습니다. 조회에 실패해도 토큰은 저장되며, 오타나
-누락된 범위는 나중에 실패한 요청으로 드러납니다.
-
-온보딩의 첫 단계가 이 연결입니다. 그 이후에는 같은 카드에서 자격 증명을 교체하거나
-삭제할 수 있습니다. GitLab과 Bitbucket도 같은 카드를 사용합니다.
+온보딩에서 이 연결을 요청합니다. 그 이후에는 같은 카드에서 다시 로그인하거나 연결을
+해제할 수 있습니다. GitLab과 Bitbucket도 같은 카드에서 개인 토큰을 붙여 넣어 사용합니다.
 [코드 호스트 연결](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)을 참고하세요.
 
 ## 서버 실행 위치 선택

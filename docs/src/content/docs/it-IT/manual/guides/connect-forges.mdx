@@ -2,7 +2,7 @@
 title: Collega un host di codice
 description: Collega GitHub, GitLab o Bitbucket per far funzionare la superficie delle PR, la registrazione dei repo e le esecuzioni degli agenti — un unico spazio di lavoro può usarli tutti e tre.
 slug: it-IT/manuale/guide/collega-host-di-codice
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center funziona con tre host di codice, chiamati **forge** in tutta l'app: **GitHub**, **GitLab** e **Bitbucket Cloud**. Nessuno di essi è quello predefinito. Collegane uno e tutto funziona; collegali tutti e un unico spazio di lavoro può ospitare contemporaneamente repo di ciascuno di essi.
@@ -13,9 +13,9 @@ Il forge è una proprietà di ogni **repo**, letto dal suo remote `origin` quand
 
 1. Apri **Impostazioni → Spazio di lavoro → Profilo e identità** (`/settings/workspace/profile`).
 2. Trova la scheda **Hosting del codice**. Ogni forge supportato è elencato, connesso o no.
-3. Premi **Accedi con …** se la riga lo offre, oppure **Aggiungi token** e incollane uno.
+3. Su **GitHub**, premi **Accedi a GitHub**. Su **GitLab** o **Bitbucket**, premi **Aggiungi token** e incollane uno.
 
-**Accedi** compare per un forge per cui il tuo server ha un'app registrata — oggi è GitHub, tramite un device flow (vedi [Crea la GitHub App](/it-IT/manuale/guide/github-app/)). Tutto il resto è un token incollato, che è l'affordance onesta invece di un pulsante che non può portare a termine l'operazione.
+**GitHub prevede solo l'accesso.** L'accesso passa dalla GitHub App del server o da Control Center Connect, a seconda di cosa ha configurato il proprietario del server (vedi [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/)); non c'è alcun token GitHub da incollare. GitLab e Bitbucket accettano ancora un token personale.
 
 In ogni caso la credenziale è **tua e risiede sul server**, indicizzata per il tuo id utente: nessun token viene memorizzato sulla macchina su cui l'hai digitato, ogni dispositivo da cui accedi usa lo stesso, e nessun altro membro può leggerlo. Ha effetto dalla **richiesta successiva** — non c'è nulla da riavviare, e la disconnessione ne interrompe immediatamente l'invio.
 
@@ -23,30 +23,29 @@ Ogni riga ti dice da dove proviene la sua credenziale, perché è la differenza 
 
 | Sottotitolo                      | Significato                                                        |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Viene usata la tua credenziale                                      |
-| `Signed in as octocat · via this server's app` | Risponde l'identità applicativa del server — tu non hai effettuato l'accesso |
-| `Signed in as octocat · from the environment` | Risponde una variabile d'ambiente del server, non la tua credenziale |
-| `Not connected`                  | Non hai alcuna credenziale per questo forge                         |
+| `Autenticato come octocat`       | Viene usata la tua credenziale                                      |
+| `Autenticato come octocat · dall'ambiente` | Solo GitLab o Bitbucket: risponde una variabile d'ambiente del server, non il tuo token |
+| `Non connesso`                   | Non hai alcuna credenziale per questo forge                         |
+| `L'accesso a GitHub non è ancora configurato su questo server.` | Il server non ha né una propria GitHub App né Connect; il proprietario del server ne configura uno |
 
 ### Quale token vuole ogni forge
 
 | Forge         | Token                                                     | Dove crearlo                                              |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classico: `repo` e `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Un personal access token con `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Un token API Atlassian, più l'email del tuo account        | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket si autentica con la tua **email dell'account come nome utente** e il token come password. Imposta `BITBUCKET_EMAIL` nell'ambiente del server, così sa quale email abbinare al token.
 
-### Oppure usa l'ambiente
+### Lavoro in background
 
-Per un'installazione headless o CI, il server legge queste:
+Anche il lavoro senza un umano dietro (esecuzioni degli agenti, pipeline, polling delle PR) ha bisogno di una credenziale, e ogni forge risponde in modo diverso:
 
-- **GitHub** — `GITHUB_TOKEN`, poi `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, poi `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, poi `BITBUCKET_TOKEN` (con `BITBUCKET_EMAIL`)
+- **GitHub** — un token per un repository alla volta, emesso dalla GitHub App del server o tramite Connect e limitato a ciò che un membro responsabile può fare lì. Non è mai l'accesso di una persona consegnato per intero, e nessuna variabile d'ambiente o token incollato ne fa le veci. Vedi [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/#per-chi-parla-la-tua-credenziale)
+- **GitLab** — il token incollato dal proprietario del server, poi `GITLAB_TOKEN`, poi `CI_JOB_TOKEN`
+- **Bitbucket** — il token incollato dal proprietario del server, poi `BITBUCKET_API_TOKEN`, poi `BITBUCKET_TOKEN` (con `BITBUCKET_EMAIL`)
 
-Queste sono credenziali **del server**, non tue, e la distinzione è determinante: una richiesta fatta a tuo nome usa la tua credenziale e nient'altro, così l'ambiente non ti sostituisce mai di nascosto. Il lavoro senza un umano dietro — webhook, polling delle PR, sincronizzazione dei ticket — risolve prima l'identità applicativa del server, poi la credenziale del proprietario del server, infine l'ambiente. L'ordine è fisso, così «ho effettuato l'accesso e non è cambiato nulla» non è mai un esito ammesso.
+Le variabili d'ambiente di GitLab e Bitbucket sono credenziali **del server**, non tue: una richiesta fatta a tuo nome usa il tuo token e nient'altro, così l'ambiente non ti sostituisce mai di nascosto.
 
 ## Sei una persona diversa su ogni forge
 
@@ -94,11 +93,11 @@ GitLab chiama la pull request **merge request**. Control Center dice «pull requ
 
 ### L'elenco delle PR è vuoto e dice che un forge non è connesso
 
-Non hai alcuna credenziale per quel forge. Accedi o incolla un token in **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice**. I repo degli altri forge non sono interessati.
+Non hai alcuna credenziale per quel forge. Accedi a GitHub, o incolla un token GitLab o Bitbucket, in **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice**. I repo degli altri forge non sono interessati.
 
 ### Ho collegato un forge ma i suoi repo non mostrano ancora nulla
 
-Controlla il sottotitolo della riga. Se dice «tramite l'app di questo server» o «dall'ambiente», sta rispondendo una credenziale diversa da quella che ti aspettavi — la tua credenziale vince per qualunque cosa tu chieda, quindi se dice altrimenti la tua non è stata salvata.
+Controlla il sottotitolo della riga. Se una riga GitLab o Bitbucket dice «dall'ambiente», sta rispondendo una credenziale diversa da quella che ti aspettavi — il tuo token vince per qualunque cosa tu chieda, quindi se dice altrimenti il tuo non è stato salvato. Su GitHub, verifica che la GitHub App sia installata sull'account proprietario dei repo.
 
 ### Un repo non si registra
 

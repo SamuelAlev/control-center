@@ -7,8 +7,9 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
-import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
 
 /// The exit code reported for a command that overran its deadline, the same
@@ -147,9 +148,11 @@ class EnvironmentCommandHandle {
 /// [startArgv] and [runArgv] take a literal argv, for CC's own calls (`docker`)
 /// where a `{` in an argument means a `{`.
 ///
-/// The environment is the sanitized server environment under the caller's
-/// variables, so the caller's `NODE_OPTIONS` survives while an inherited
-/// `DYLD_INSERT_LIBRARIES` does not.
+/// The environment is [environmentProcessVariables]: the caller's variables
+/// over an allowlisted host environment, so the caller's `NODE_OPTIONS`
+/// survives while an inherited `DYLD_INSERT_LIBRARIES` or `GH_TOKEN` does not.
+/// A literal `git` argv runs isolated ([IsolatedGit]): a definition read from
+/// a repo's default branch never sees the operator's git config.
 class EnvironmentCommandRunner {
   /// Creates an [EnvironmentCommandRunner].
   EnvironmentCommandRunner({
@@ -296,14 +299,14 @@ class EnvironmentCommandRunner {
         workingDirectory: workingDirectory,
         resolver: _binaryResolver,
       );
+      final isGit = p.basenameWithoutExtension(argv.first) == 'git';
       process = await _starter(
         executable,
-        argv.sublist(1),
+        isGit ? IsolatedGit.args(argv.sublist(1)) : argv.sublist(1),
         workingDirectory: workingDirectory,
-        environment: environmentProcessVariables(
-          environment,
-          executable: executable,
-        ),
+        environment: isGit
+            ? IsolatedGit.environmentFor(environment: environment)
+            : environmentProcessVariables(environment, executable: executable),
       );
     } on EnvironmentDriverException catch (e) {
       return EnvironmentCommandResult(
@@ -517,14 +520,13 @@ class EnvironmentCommandRunner {
     List<String> arguments, {
     String? workingDirectory,
     Map<String, String>? environment,
-  }) => Process.start(
+  }) => ChildProcess.start(
     executable,
     arguments,
     workingDirectory: workingDirectory,
     environment: environment,
-    // The environment is already complete. Inheriting would put back exactly
-    // what the sanitizer took out.
-    includeParentEnvironment: false,
+    // The environment is already complete ([environmentProcessVariables]).
+    inheritBase: false,
   );
 
   /// Signals the direct children of [pid], found by exact parent pid.
@@ -532,7 +534,7 @@ class EnvironmentCommandRunner {
     if (Platform.isWindows) {
       return;
     }
-    final result = await Process.run('ps', ['-A', '-o', 'pid=,ppid=']);
+    final result = await ChildProcess.run('ps', ['-A', '-o', 'pid=,ppid=']);
     for (final line in const LineSplitter().convert('${result.stdout}')) {
       final parts = line.trim().split(RegExp(r'\s+'));
       if (parts.length == 2 && int.tryParse(parts[1]) == pid) {
@@ -545,7 +547,28 @@ class EnvironmentCommandRunner {
   }
 }
 
-/// [variables] over the sanitized server environment.
+/// Host variables a definition's tools find the operator's Docker, Compose,
+/// Kubernetes and cloud sessions through. An environment definition runs as
+/// the operator by design (SECURITY.md, Host environments); provider secrets
+/// and GitHub tokens are still stripped (`ChildEnvironment`).
+const List<String> environmentOperatorKeys = [
+  'KUBECONFIG',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+  'GOOGLE_CLOUD_PROJECT',
+  'AZURE_CONFIG_DIR',
+];
+
+/// Prefix families of [environmentOperatorKeys].
+const List<String> environmentOperatorPrefixes = [
+  'DOCKER_',
+  'COMPOSE_',
+  'BUILDKIT_',
+  'AWS_',
+  'CLOUDSDK_',
+];
+
+/// [variables] over the allowlisted host environment: the base set, the
+/// toolchain and display groups, and [environmentOperatorKeys].
 ///
 /// [executable], when absolute, adds its directory to the end of `PATH`. A
 /// server started from a launcher has a minimal `PATH`, and a resolved `tool`
@@ -555,10 +578,13 @@ Map<String, String> environmentProcessVariables(
   Map<String, String> variables, {
   String? executable,
 }) {
-  final merged = {
-    ...const EnvSanitizer().harden(Platform.environment),
-    ...variables,
-  };
+  final merged = ChildProcess.environmentFor(
+    environment: variables,
+    toolchain: true,
+    display: true,
+    inherit: environmentOperatorKeys,
+    inheritPrefixes: environmentOperatorPrefixes,
+  );
   if (executable != null && p.isAbsolute(executable)) {
     final directory = p.dirname(executable);
     final path = merged['PATH'] ?? '';

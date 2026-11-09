@@ -2,7 +2,7 @@
 title: Nastavte politiky sandboxu
 description: Co omezuje běh agenta, jak poznáš, jestli ho obaluje sandbox operačního systému, a jak pravidla akcí rozhodují, co agent smí pushnout nebo kam dosáhnout.
 slug: cs-CZ/prirucka/navody/politiky-sandboxu
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Jestli běh agenta běží v sandboxu, rozhoduje se na serveru při startu
@@ -72,9 +72,9 @@ dostaneš žádost o schválení s repozitářem a refy; u **Zakázat** git vyp�
 
 Jak se jednotlivá pravidla dostanou k běhu:
 
-- **Push** se vynucuje tím, co běh drží. Jeho token GitHub je instalační token
-  GitHub App jen pro čtení, který umí číst obsah a pracovat s pull requesty.
-  Jeho konfigurace gitu posílá každý push na GitHub na loopback bránu na
+- **Push** se vynucuje tím, co běh drží. Jeho token GitHub pokrývá jediný
+  repozitář běhu a pushovat neumí: umí číst obsah a, když odpovědný člen smí
+  pushovat, komentovat pull requesty. Jeho konfigurace gitu posílá každý push na GitHub na loopback bránu na
   `cc_server`, která se zeptá pravidla a teprve pak push předá se zapisovacím
   tokenem, který agent nikdy neuvidí. Brána předává jen do vlastního
   repozitáře worktree nebo do repozitáře na GitHubu propojeného s pracovním
@@ -91,16 +91,13 @@ Jak se jednotlivá pravidla dostanou k běhu:
   každém volání. Dokud je síť zapnutá, je GitHub vždycky na seznamu povoleného
   odchozího provozu.
 
-:::caution[Bez GitHub App je pravidlo pro push jen doporučení]
-Bez nakonfigurované GitHub App dostane běh záložní osobní přístupový token,
-který nejde omezit jen na čtení. `git push` pořád jde přes bránu a pravidlo,
-ale kód, který token použije přímo, může pushnout mimo ně. Nakonfiguruj GitHub
-App, aby pravidlo bylo závazné.
-
-Přihlašovací údaj GitHubu u běhu je vždycky jen ten od brokera — token
-instalace GitHub App vázaný na repozitář, nebo záložní PAT — nikdy vlastní
-uložený token člena, který o běh požádal. PAT serveru se odepře běhu, který
-jedná za člena, jenž není vlastník a nemá připojený GitHub.
+:::note[Odkud se bere token GitHubu pro běh]
+Token se pro běh vydá z GitHub App pracovního prostoru, z vlastní aplikace
+serveru nebo přes Control Center Connect a je omezený na to, co smí v daném
+repozitáři odpovědný člen (ten, kdo požádal, jinak vlastník pracovního
+prostoru). Nikdy to není celé předané přihlášení člena a žádný záložní token
+neexistuje: když se žádný vydat nedá, běh nastartuje bez něj a jeho poznámky
+uvedou proč.
 :::
 
 ## Zkontroluj, jestli jsou běhy agenta v sandboxu

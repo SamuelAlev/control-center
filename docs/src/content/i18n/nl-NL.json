@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Een Google Calendar verbinden",
   "docs.sidebar.guidesServerAndDeployment": "Server en deployment",
   "docs.sidebar.guidesRunHeadlessServer": "Een headless server draaien",
+  "docs.sidebar.guidesRunConnect": "Een Connect-server draaien",
   "docs.sidebar.guidesConnectRemoteServer": "Verbinden met een externe server",
   "docs.sidebar.guidesRunFleetWorker": "Een fleet-worker draaien",
   "docs.sidebar.guidesBackUpAndRestore": "Back-uppen en herstellen",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Sneltoetsen",
   "docs.sidebar.referenceRouteMap": "Routekaart",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Backup, export en import",
   "docs.sidebar.referenceTelemetry": "Gebruiksstatistieken",
   "docs.sidebar.referenceGlossary": "Verklarende woordenlijst"

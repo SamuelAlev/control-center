@@ -2,7 +2,7 @@
 title: Connecter un hébergeur de code
 description: Connectez GitHub, GitLab ou Bitbucket pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent — un même espace de travail peut utiliser les trois.
 slug: fr-CA/manuel/guides/connecter-hebergeur-de-code
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center fonctionne avec trois hébergeurs de code, appelés **forges** dans toute l’application : **GitHub**, **GitLab** et **Bitbucket Cloud**. Aucun d’eux n’est celui par défaut. Connectez-en un et tout fonctionne ; connectez-en plusieurs et un même espace de travail peut contenir à la fois des dépôts des trois.
@@ -13,9 +13,9 @@ La forge est une propriété de chaque **dépôt**, lue dans son dépôt distant
 
 1. Ouvrez **Paramètres → Espace de travail → Profil et identité** (`/settings/workspace/profile`).
 2. Repérez la carte **Hébergement de code**. Toutes les forges prises en charge y sont listées, connectées ou non.
-3. Appuyez sur **Se connecter avec …** si la ligne l’offre, ou sur **Ajouter un jeton**, puis collez-en un.
+3. Sur **GitHub**, appuyez sur **Se connecter à GitHub**. Sur **GitLab** ou **Bitbucket**, appuyez sur **Ajouter un jeton**, puis collez-en un.
 
-**Se connecter** apparaît pour une forge pour laquelle votre serveur a une application enregistrée — aujourd’hui, c’est GitHub, au moyen d’un flux d’appareil (voir [Créer la GitHub App](/fr-CA/manuel/guides/github-app/)). Tout le reste est un jeton collé, ce qui est l’affordance honnête plutôt qu’un bouton qui ne peut pas aboutir.
+**Pour GitHub, on ne fait que se connecter.** La connexion passe par la GitHub App propre au serveur ou par Control Center Connect, selon ce que le propriétaire du serveur a configuré (voir [Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/)) ; il n’y a aucun jeton GitHub à coller. GitLab et Bitbucket acceptent encore un jeton personnel.
 
 Dans un cas comme dans l’autre, l’identifiant est **le vôtre et réside sur le serveur**, indexé par votre identifiant d’utilisateur : aucun jeton n’est stocké sur la machine où vous l’avez saisi, tous les appareils à partir desquels vous vous connectez utilisent le même, et aucun autre membre ne peut le lire. Il prend effet à la **prochaine requête** — il n’y a rien à redémarrer, et la déconnexion met fin immédiatement à son envoi.
 
@@ -24,29 +24,28 @@ Chaque ligne vous indique d’où provient son identifiant, car c’est la diff�
 | Sous-titre                                                    | Signification                                                          |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `Connecté en tant que octocat`                                | Votre propre identifiant est utilisé                                   |
-| `Connecté en tant que octocat · via l’application de ce serveur` | L’identité applicative du serveur répond — vous n’êtes pas connecté |
-| `Connecté en tant que octocat · depuis l’environnement`       | Une variable d’environnement du serveur répond, pas votre identifiant  |
+| `Connecté en tant que octocat · depuis l’environnement`       | GitLab ou Bitbucket seulement : une variable d’environnement du serveur répond, pas votre jeton |
 | `Non connecté`                                                | Vous n’avez aucun identifiant pour cette forge                         |
+| `La connexion à GitHub n'est pas encore configurée sur ce serveur.` | Le serveur n’a ni sa propre GitHub App ni Connect ; le propriétaire du serveur en configure un |
 
 ### Le jeton que chaque forge demande
 
 | Forge         | Jeton                                                                                                              | Où le créer                                            |
 | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| **GitHub**    | Classique : `repo` et `read:org`. À granularité fine : Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Un jeton d’accès personnel avec `api`                                                                              | gitlab.com → User settings → Access tokens             |
 | **Bitbucket** | Un jeton d’API Atlassian, plus le courriel de votre compte                                                         | id.atlassian.com → Security → API tokens               |
 
 Bitbucket s’authentifie avec le **courriel de votre compte comme nom d’utilisateur** et le jeton comme mot de passe. Définissez `BITBUCKET_EMAIL` dans l’environnement du serveur pour qu’il sache quel courriel associer au jeton.
 
-### Ou utiliser l’environnement
+### Travail en arrière-plan
 
-Pour une installation sans interface ou en CI, le serveur lit les suivantes :
+Le travail sans humain derrière (exécutions d’agents, pipelines, interrogation des PR) a lui aussi besoin d’un identifiant, et chaque forge y répond différemment :
 
-- **GitHub** — `GITHUB_TOKEN`, puis `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, puis `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, puis `BITBUCKET_TOKEN` (avec `BITBUCKET_EMAIL`)
+- **GitHub** — un jeton pour un seul dépôt à la fois, émis à partir de la GitHub App du serveur ou par Connect, et limité à ce qu’un membre responsable peut y faire. Ce n’est jamais la connexion d’une personne remise telle quelle, et aucune variable d’environnement ni aucun jeton collé ne le remplace. Voir [Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/#pour-qui-parle-votre-identifiant)
+- **GitLab** — le jeton collé par le propriétaire du serveur, puis `GITLAB_TOKEN`, puis `CI_JOB_TOKEN`
+- **Bitbucket** — le jeton collé par le propriétaire du serveur, puis `BITBUCKET_API_TOKEN`, puis `BITBUCKET_TOKEN` (avec `BITBUCKET_EMAIL`)
 
-Ce sont les identifiants **du serveur**, et non les vôtres, et la distinction est déterminante : une requête faite en votre nom utilise votre identifiant et rien d’autre, de sorte que l’environnement ne vous remplace jamais discrètement. Le travail sans humain derrière — webhooks, interrogation des PR, synchronisation des tickets — résout d’abord l’identité applicative du serveur, puis l’identifiant du propriétaire du serveur, puis l’environnement. L’ordre est fixe, afin que « je me suis connecté et rien n’a changé » ne soit jamais un résultat pris en charge.
+Les variables d’environnement de GitLab et de Bitbucket sont les identifiants **du serveur**, et non les vôtres : une requête faite en votre nom utilise votre jeton et rien d’autre, de sorte que l’environnement ne vous remplace jamais discrètement.
 
 ## Vous êtes une personne différente sur chaque forge
 
@@ -94,11 +93,11 @@ GitLab appelle une demande de tirage une **merge request**. Control Center dit �
 
 ### La liste des PR est vide et indique qu’une forge n’est pas connectée
 
-Vous n’avez aucun identifiant pour cette forge. Connectez-vous ou collez un jeton dans **Paramètres → Espace de travail → Profil et identité → Hébergement de code**. Les dépôts des autres forges ne sont pas touchés.
+Vous n’avez aucun identifiant pour cette forge. Connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket, dans **Paramètres → Espace de travail → Profil et identité → Hébergement de code**. Les dépôts des autres forges ne sont pas touchés.
 
 ### J’ai connecté une forge, mais ses dépôts n’affichent toujours rien
 
-Vérifiez le sous-titre de la ligne. S’il indique « via l’application de ce serveur » ou « depuis l’environnement », c’est un autre identifiant que celui attendu qui répond — votre propre identifiant l’emporte pour tout ce que vous demandez, donc si le sous-titre dit autre chose, le vôtre n’a pas été enregistré.
+Vérifiez le sous-titre de la ligne. Si une ligne GitLab ou Bitbucket indique « depuis l’environnement », c’est un autre identifiant que celui attendu qui répond — votre propre jeton l’emporte pour tout ce que vous demandez, donc si le sous-titre dit autre chose, le vôtre n’a pas été enregistré. Pour GitHub, vérifiez que la GitHub App est installée sur le compte propriétaire des dépôts.
 
 ### Un dépôt refuse de s’enregistrer
 

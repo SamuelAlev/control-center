@@ -1,10 +1,12 @@
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/cc_infra.dart' show ForgeHttpClientFactory;
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
+import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
@@ -35,7 +37,7 @@ class _ActorForgeClient {
   final String? _userId;
 
   late final ForgeHttpClientFactory _factory = ForgeHttpClientFactory(
-    tokenLookup: (forge) => _creds.tokenForActor(forge, _userId),
+    tokenLookup: (forge) => _creds.tokenFor(forge, userId: _userId),
     bitbucketUsername: () => _creds.bitbucketEmail,
     buildClient: (baseUrl, settings, interceptors) {
       _interceptors = interceptors;
@@ -64,9 +66,18 @@ class _ActorForgeClient {
   }
 }
 
+ProviderToken _signIn(String access) => ProviderToken(
+  accessToken: access,
+  refreshToken: 'ghr_refresh',
+  expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
+  source: ForgeCredentialSource.oauth,
+  appId: 'Iv1.app',
+);
+
 void main() {
   group('per-actor forge identity', () {
     late Directory dir;
+    late UserCredentialsStore users;
     late ForgeCredentials creds;
 
     const alice = 'user-alice';
@@ -74,37 +85,37 @@ void main() {
 
     setUp(() {
       dir = Directory.systemTemp.createTempSync('cc_forge_actor_');
-      final secrets = FileSecretsStore(dataDir: dir.path);
+      users = UserCredentialsStore(FileSecretsStore(dataDir: dir.path));
       creds = ForgeCredentials(
         env: (name) => const {'GITHUB_TOKEN': 'server-env-token'}[name],
-        users: UserCredentialsStore(secrets),
+        users: users,
       );
     });
 
     tearDown(() => dir.deleteSync(recursive: true));
 
-    test('two members carry two identities, never each other\'s', () async {
-      await creds.setToken(ForgeHost.github, 'alice-token', userId: alice);
-      await creds.setToken(ForgeHost.github, 'bob-token', userId: bob);
+    test("two members carry two identities, never each other's", () async {
+      await creds.storeSignIn(ForgeHost.github, alice, _signIn('ghu_alice'));
+      await creds.storeSignIn(ForgeHost.github, bob, _signIn('ghu_bob'));
 
       expect(
         await _ActorForgeClient(creds, alice).authorizationForGetUser(),
-        'Bearer alice-token',
+        'Bearer ghu_alice',
       );
       expect(
         await _ActorForgeClient(creds, bob).authorizationForGetUser(),
-        'Bearer bob-token',
+        'Bearer ghu_bob',
       );
     });
 
     test(
-      'background work with no actor stays on the server credential',
+      'no actor sends no GitHub credential (never the host token)',
       () async {
-        await creds.setToken(ForgeHost.github, 'alice-token', userId: alice);
+        await creds.storeSignIn(ForgeHost.github, alice, _signIn('ghu_alice'));
 
         expect(
           await _ActorForgeClient(creds, null).authorizationForGetUser(),
-          'Bearer server-env-token',
+          isNull,
         );
       },
     );
@@ -114,13 +125,13 @@ void main() {
       // The runtime memoizes one factory per actor. That is only safe because
       // the credential is read per request, never captured at construction.
       final client = _ActorForgeClient(creds, alice);
-      expect(await client.authorizationForGetUser(), 'Bearer server-env-token');
+      expect(await client.authorizationForGetUser(), isNull);
 
-      await creds.setToken(ForgeHost.github, 'alice-token', userId: alice);
-      expect(await client.authorizationForGetUser(), 'Bearer alice-token');
+      await creds.storeSignIn(ForgeHost.github, alice, _signIn('ghu_alice'));
+      expect(await client.authorizationForGetUser(), 'Bearer ghu_alice');
 
       await creds.clearToken(ForgeHost.github, userId: alice);
-      expect(await client.authorizationForGetUser(), 'Bearer server-env-token');
+      expect(await client.authorizationForGetUser(), isNull);
     });
   });
 }

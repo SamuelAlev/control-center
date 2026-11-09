@@ -2,7 +2,7 @@
 title: Sambungkan hos kod
 description: Sambungkan GitHub, GitLab atau Bitbucket supaya permukaan PR, pendaftaran repositori dan larian ejen berfungsi — satu ruang kerja boleh menggunakan ketiga-tiganya.
 slug: ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center berfungsi dengan tiga hos kod, yang dipanggil **forge** sepanjang apl: **GitHub**, **GitLab** dan **Bitbucket Cloud**. Tiada satu pun daripadanya menjadi lalai. Sambungkan satu dan semuanya berfungsi; sambungkan beberapa dan satu ruang kerja boleh memegang repositori daripada kesemuanya sekali gus.
@@ -13,9 +13,9 @@ Forge ialah sifat bagi setiap **repo**, dibaca daripada remote `origin`-nya apab
 
 1. Buka **Tetapan → Ruang kerja → Profil & identiti** (`/settings/workspace/profile`).
 2. Cari kad **Hos kod**. Setiap forge yang disokong disenaraikan, sama ada disambungkan atau tidak.
-3. Tekan **Log masuk dengan …** jika baris itu menawarkannya, atau **Tambah token** dan tampal satu.
+3. Pada **GitHub**, tekan **Log masuk ke GitHub**. Pada **GitLab** atau **Bitbucket**, tekan **Tambah token** dan tampal satu.
 
-**Log masuk** muncul untuk forge yang pelayan anda mempunyai apl berdaftar baginya — pada masa ini iaitu GitHub, melalui aliran peranti (lihat [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)). Selebihnya ialah token yang ditampal, yang merupakan afordans yang jujur dan bukannya butang yang tidak boleh diselesaikan.
+**GitHub hanya menggunakan log masuk.** Log masuk berjalan melalui GitHub App pelayan itu sendiri atau melalui Control Center Connect, bergantung pada persediaan pemilik pelayan (lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)); tiada token GitHub untuk ditampal. GitLab dan Bitbucket masih menerima token peribadi.
 
 Sama ada cara, kelayakan itu **milik anda dan berada pada pelayan**, dikunci mengikut id pengguna anda: tiada token disimpan pada mesin yang anda taipkannya, setiap peranti yang anda daftar masuk menggunakannya yang sama, dan tiada ahli lain boleh membacanya. Ia berkuat kuasa pada **permintaan seterusnya** — tiada apa yang perlu dimulakan semula, dan memutuskan sambungan menghentikannya dihantar serta-merta.
 
@@ -24,29 +24,28 @@ Setiap baris memberitahu anda dari mana kelayakannya datang, kerana itulah perbe
 | Subtajuk                                      | Maksud                                                                          |
 | --------------------------------------------- | ------------------------------------------------------------------------------- |
 | `Log masuk sebagai octocat`                   | Kelayakan anda sendiri sedang digunakan                                          |
-| `Log masuk sebagai octocat · melalui apl pelayan ini` | Identiti apl pelayan yang menjawab — anda belum daftar masuk              |
-| `Log masuk sebagai octocat · dari persekitaran` | Pemboleh ubah persekitaran pelayan yang menjawab, bukan kelayakan anda        |
+| `Log masuk sebagai octocat · dari persekitaran` | Hanya GitLab atau Bitbucket: pemboleh ubah persekitaran pelayan yang menjawab, bukan token anda |
 | `Tidak disambungkan`                          | Anda tiada kelayakan untuk forge ini                                             |
+| `Log masuk GitHub belum disediakan pada pelayan ini.` | Pelayan tiada GitHub App sendiri mahupun Connect; pemilik pelayan menyediakan salah satu |
 
 ### Token yang dikehendaki oleh setiap forge
 
 | Forge         | Token                                                     | Di mana menciptanya                                        |
 | ------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` dan `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Token akses peribadi dengan `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Token API Atlassian, serta e-mel akaun anda              | id.atlassian.com → Security → API tokens                   |
 
 Bitbucket mengesahkan dengan **e-mel akaun anda sebagai nama pengguna** dan token sebagai kata laluan. Tetapkan `BITBUCKET_EMAIL` dalam persekitaran pelayan supaya ia tahu e-mel mana yang perlu dipasangkan dengan token itu.
 
-### Atau gunakan persekitaran
+### Kerja latar belakang
 
-Untuk pemasangan tanpa kepala atau CI, pelayan membaca yang berikut:
+Kerja tanpa manusia di belakangnya (larian ejen, pipeline, pengundian PR) juga memerlukan kelayakan, dan setiap forge menjawabnya secara berbeza:
 
-- **GitHub** — `GITHUB_TOKEN`, kemudian `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, kemudian `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, kemudian `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
+- **GitHub** — satu token bagi satu repositori pada satu masa, dicetak daripada GitHub App pelayan atau melalui Connect dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana. Ia tidak pernah log masuk seseorang yang diserahkan sepenuhnya, dan tiada pemboleh ubah persekitaran atau token yang ditampal yang menggantikannya. Lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/#siapa-yang-diwakili-kelayakan-anda)
+- **GitLab** — token yang ditampal oleh pemilik pelayan, kemudian `GITLAB_TOKEN`, kemudian `CI_JOB_TOKEN`
+- **Bitbucket** — token yang ditampal oleh pemilik pelayan, kemudian `BITBUCKET_API_TOKEN`, kemudian `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
 
-Ini ialah kelayakan **pelayan**, bukan milik anda, dan perbezaan itu penting: permintaan yang dibuat bagi pihak anda menggunakan kelayakan anda dan tiada yang lain, jadi persekitaran tidak pernah diam-diam menggantikan anda. Kerja tanpa manusia di belakangnya — webhook, pengundian PR, segerak tiket — meleraikan identiti apl pelayan dahulu, kemudian kelayakan pemilik pelayan, kemudian persekitaran. Susunannya tetap supaya "saya daftar masuk dan tiada apa yang berubah" tidak pernah menjadi hasil yang disokong.
+Pemboleh ubah persekitaran GitLab dan Bitbucket ialah kelayakan **pelayan**, bukan milik anda: permintaan yang dibuat bagi pihak anda hanya menggunakan token anda, jadi persekitaran tidak pernah diam-diam menggantikan anda.
 
 ## Anda ialah orang yang berbeza pada setiap forge
 
@@ -94,11 +93,11 @@ GitLab memanggil pull request sebagai **merge request**. Control Center menyebut
 
 ### Senarai PR kosong dan menyatakan sesuatu forge tidak disambungkan
 
-Anda tiada kelayakan untuk forge itu. Daftar masuk atau tampal token dalam **Tetapan → Ruang kerja → Profil & identiti → Hos kod**. Repositori forge lain tidak terjejas.
+Anda tiada kelayakan untuk forge itu. Log masuk ke GitHub, atau tampal token GitLab atau Bitbucket, dalam **Tetapan → Ruang kerja → Profil & identiti → Hos kod**. Repositori forge lain tidak terjejas.
 
 ### Saya menyambungkan forge tetapi repositorinya masih tidak menunjukkan apa-apa
 
-Semak subtajuk baris itu. Jika ia berbunyi "melalui apl pelayan ini" atau "dari persekitaran", kelayakan yang berbeza daripada yang anda jangkakan sedang menjawab — kelayakan anda sendiri menang untuk apa sahaja yang anda minta, jadi jika ia menyatakan sebaliknya, milik anda tidak disimpan.
+Semak subtajuk baris itu. Jika baris GitLab atau Bitbucket berbunyi "dari persekitaran", kelayakan lain sedang menjawab — token anda sendiri menang untuk apa sahaja yang anda minta, jadi jika ia menyatakan sebaliknya, milik anda tidak disimpan. Pada GitHub, pastikan GitHub App telah dipasang pada akaun pemilik repositori tersebut.
 
 ### Sesuatu repo tidak boleh didaftarkan
 

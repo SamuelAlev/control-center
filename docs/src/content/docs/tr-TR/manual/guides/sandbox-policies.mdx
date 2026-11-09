@@ -2,7 +2,7 @@
 title: Sandbox politikalarını yapılandırma
 description: Bir ajan çalıştırmasını neyin kısıtladığı, işletim sistemi sandbox'ının onu sarıp sarmadığını nasıl anlayacağınız ve eylem kurallarının bir ajanın neyi push edebileceğine ya da nereye erişebileceğine nasıl karar verdiği.
 slug: tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Bir ajan çalıştırmasının sandbox'a alınıp alınmadığına sunucu, açılışta karar
@@ -73,9 +73,10 @@ ve ref'leri adlandıran bir onay alırsınız; **Reddet** ile git şunu yazdır�
 
 Her kural çalıştırmaya nasıl ulaşır:
 
-- **Push**, çalıştırmanın elinde ne tuttuğuyla uygulanır. GitHub token'ı, içerik
-  okuyabilen ve pull request'lerle çalışabilen salt okunur bir GitHub App
-  kurulum token'ıdır. Git yapılandırması her GitHub push'unu `cc_server`
+- **Push**, çalıştırmanın elinde ne tuttuğuyla uygulanır. GitHub token'ı
+  çalıştırmanın tek deposunu kapsar ve push edemez: içerik okuyabilir ve hesap
+  verebilir üye push edebiliyorsa pull request'lere yorum yapabilir. Git
+  yapılandırması her GitHub push'unu `cc_server`
   üzerindeki bir loopback ağ geçidine gönderir; ağ geçidi kurala sorar ve ancak
   ondan sonra push'u ajanın hiç görmediği bir yazma token'ıyla iletir. Ağ geçidi
   yalnızca çalışma ağacının kendi deposuna ya da çalışma alanına bağlı bir
@@ -91,17 +92,13 @@ Her kural çalıştırmaya nasıl ulaşır:
   harness'ın `web_fetch` ve `web_search` araçları her çağrıda sormaya devam
   eder. Ağ açık olduğu sürece GitHub her zaman çıkış izin listesindedir.
 
-:::caution[GitHub App olmadan push kuralı yalnızca tavsiye niteliğindedir]
-GitHub App yapılandırılmadığında çalıştırma, salt okunura daraltılamayan yedek
-kişisel erişim token'ını alır. `git push` yine ağ geçidinden ve kuraldan geçer,
-ama token'ı doğrudan kullanan kod onu atlayarak push edebilir. Kuralı bağlayıcı
-kılmak için GitHub App'i yapılandırın.
-
-Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca broker'ın kimlik
-bilgisidir — depo kapsamlı bir GitHub App kurulum token'ı ya da PAT yedeği —
-asla isteği yapan üyenin kendi saklı token'ı değildir. Sunucu PAT'ı, sahibi
-olmayan ve GitHub'ı bağlamamış bir üye adına hareket eden bir çalıştırmadan
-esirgenir.
+:::note[Çalıştırmanın GitHub token'ı nereden gelir]
+Token, çalıştırma için çalışma alanının GitHub App'inden, sunucunun kendi
+uygulamasından ya da Control Center Connect'ten üretilir ve hesap verebilir
+üyenin (isteyen kişi, değilse çalışma alanı sahibi) o depoda yapabilecekleriyle
+sınırlıdır. Asla bir üyenin bütünüyle devredilmiş kendi oturum açması değildir
+ve yedek bir token yoktur: hiçbiri üretilemediğinde çalıştırma token'sız başlar
+ve notları nedenini belirtir.
 :::
 
 ## Ajan çalıştırmalarınızın sandbox'a alınıp alınmadığını denetleme

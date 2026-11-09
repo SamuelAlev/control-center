@@ -41,7 +41,7 @@ void main() {
         updatedAt: DateTime(2026),
       ),
     ]),
-    githubToken: () async => null,
+    githubToken: (_, _) async => null,
     branchTemplate: (_) async => '{type}/{key}',
     worktreeTasks: tasks,
   );
@@ -118,7 +118,8 @@ void main() {
     expect(
       lines.last,
       'Could not prepare shop-ui: Bad state: install failed',
-      reason: 'the output is in the log already; the reason should not be '
+      reason:
+          'the output is in the log already; the reason should not be '
           'followed by a second copy of it',
     );
   });
@@ -153,44 +154,38 @@ void main() {
     );
   });
 
-  test(
-    'no provision task means no run and no progress callback',
-    () async {
-      tasks.hasSetup = false;
-      var stepFired = false;
-      final provisioner = buildProvisioner();
-      await provisioner.ensureSpaceWorkspace(
-        workspaceId: 'ws-1',
-        spaceId: 'sp-1',
-        agentSlug: 'alice',
-        fallbackDir: '',
-        repoAllowlist: const {'repo-1'},
-        onRepoProvisionTasks: (_) => stepFired = true,
-      );
+  test('no provision task means no run and no progress callback', () async {
+    tasks.hasSetup = false;
+    var stepFired = false;
+    final provisioner = buildProvisioner();
+    await provisioner.ensureSpaceWorkspace(
+      workspaceId: 'ws-1',
+      spaceId: 'sp-1',
+      agentSlug: 'alice',
+      fallbackDir: '',
+      repoAllowlist: const {'repo-1'},
+      onRepoProvisionTasks: (_) => stepFired = true,
+    );
 
-      expect(tasks.setupCalls, isEmpty);
-      expect(stepFired, isFalse, reason: 'the step would flash a wrong label');
-    },
-  );
+    expect(tasks.setupCalls, isEmpty);
+    expect(stepFired, isFalse, reason: 'the step would flash a wrong label');
+  });
 
-  test(
-    'the setup progress callback fires only when a task will run',
-    () async {
-      tasks.hasSetup = true;
-      final subjects = <String>[];
-      final provisioner = buildProvisioner();
-      await provisioner.ensureSpaceWorkspace(
-        workspaceId: 'ws-1',
-        spaceId: 'sp-1',
-        agentSlug: 'alice',
-        fallbackDir: '',
-        repoAllowlist: const {'repo-1'},
-        onRepoProvisionTasks: subjects.add,
-      );
+  test('the setup progress callback fires only when a task will run', () async {
+    tasks.hasSetup = true;
+    final subjects = <String>[];
+    final provisioner = buildProvisioner();
+    await provisioner.ensureSpaceWorkspace(
+      workspaceId: 'ws-1',
+      spaceId: 'sp-1',
+      agentSlug: 'alice',
+      fallbackDir: '',
+      repoAllowlist: const {'repo-1'},
+      onRepoProvisionTasks: subjects.add,
+    );
 
-      expect(subjects, ['shop-ui']);
-    },
-  );
+    expect(subjects, ['shop-ui']);
+  });
 
   test('a failed provision task tears the unit down and propagates', () async {
     tasks
@@ -263,7 +258,8 @@ class _FakeTaskPort implements WorktreeTaskPort {
       hasSetup;
 
   @override
-  Future<Set<String>> reposWithEnvironments(String workspaceId) async => const {};
+  Future<Set<String>> reposWithEnvironments(String workspaceId) async =>
+      const {};
 
   @override
   Future<void> runProvision(
@@ -314,7 +310,8 @@ class _RecordingIsolation implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,

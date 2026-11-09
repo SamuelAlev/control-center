@@ -15,6 +15,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart'
     show RigLaunchException, RigToolException;
 import 'package:crypto/crypto.dart';
@@ -223,7 +225,7 @@ subjectAltName = DNS:*.test, DNS:*.localhost, DNS:localhost, IP:127.0.0.1
     if (openssl == null) {
       throw const RigLaunchException('openssl is not installed.');
     }
-    final result = await Process.run(openssl, [
+    final result = await ChildProcess.run(openssl, [
       'pkey',
       '-in',
       _leafKeyPath,
@@ -277,7 +279,7 @@ subjectAltName = DNS:*.test, DNS:*.localhost, DNS:localhost, IP:127.0.0.1
   }) async {
     final ProcessResult result;
     try {
-      result = await Process.run(executable ?? tool, arguments);
+      result = await ChildProcess.run(executable ?? tool, arguments);
     } on Object catch (e) {
       throw RigToolException(
         tool: tool,
@@ -297,18 +299,5 @@ subjectAltName = DNS:*.test, DNS:*.localhost, DNS:localhost, IP:127.0.0.1
     }
   }
 
-  static Future<String?> _which(String binary) async {
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        binary,
-      ]);
-      if (result.exitCode != 0) {
-        return null;
-      }
-      final path = '${result.stdout}'.split('\n').first.trim();
-      return path.isEmpty ? null : path;
-    } on Object {
-      return null;
-    }
-  }
+  static Future<String?> _which(String binary) => ChildProcess.which(binary);
 }

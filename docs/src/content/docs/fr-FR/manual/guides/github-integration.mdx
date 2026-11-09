@@ -2,11 +2,11 @@
 title: Configurer l’intégration GitHub
 description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-FR/manuel/guides/integration-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Ce guide couvre les aspects de la configuration propres à GitHub. GitHub est l’un
-des trois hébergeurs de code pris en charge — consultez
+des trois hébergeurs de code pris en charge. Consultez
 [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/)
 pour connecter GitLab ou Bitbucket, et pour savoir comment un espace de travail
 combine les trois.
@@ -14,92 +14,84 @@ combine les trois.
 ## Prérequis
 
 - Un compte GitHub ayant accès aux dépôts sur lesquels vous voulez travailler
-- Soit une GitHub App enregistrée pour votre serveur (voir
-  [Créer la GitHub App](/fr-FR/manuel/guides/github-app/)) afin de pouvoir **vous
-  connecter**, **soit** un jeton d’accès personnel disposant de `repo` et
-  `read:org` à coller
+- Un serveur capable de connecter les personnes à GitHub : soit avec sa propre
+  GitHub App (voir [Créer la GitHub App](/fr-FR/manuel/guides/github-app/)), soit
+  avec Control Center Connect, au choix du propriétaire du serveur dans
+  **Paramètres → Serveur → Authentification unique**
 
 :::note[Les identifiants résident sur le serveur, rattachés à vous]
-Rien n’est stocké sur la machine depuis laquelle vous tapez. Votre identifiant est
-détenu par votre `cc_server`, indexé par votre ID utilisateur, et chaque appareil
-depuis lequel vous vous connectez l’utilise — ordinateur, web et téléphone. Un
-autre membre du même serveur ne peut pas le lire, et se connecter est une chose
-qu’il fait lui-même.
+Rien n’est stocké sur la machine depuis laquelle vous tapez. Votre connexion
+GitHub est détenue par votre `cc_server`, indexée par votre ID utilisateur, et
+chaque appareil depuis lequel vous vous connectez l’utilise : ordinateur, web et
+téléphone. Un autre membre du même serveur ne peut pas l’utiliser, et se
+connecter est une chose qu’il fait lui-même.
 :::
 
-## Se connecter avec GitHub
+## Se connecter à GitHub
 
-Un **flux d’appareil** : GitHub vous affiche un code court, vous l’approuvez sur
-github.com, et le serveur reçoit l’identifiant — aucune URL de rappel, aucun port,
-rien à exposer. Disponible dès que le serveur dispose d’un ID client, ce qu’un
-build officiel embarque déjà.
+Pour GitHub, il n’y a que la connexion : aucun jeton à coller.
 
 1. Accédez à **Paramètres → Espace de travail → Profil et identité → Hébergement
    de code** (ou à la première étape de la configuration initiale)
-2. Sur la ligne **GitHub**, cliquez sur **Se connecter avec GitHub**
-3. Une boîte de dialogue affiche un code de huit caractères et ouvre
-   [github.com/login/device](https://github.com/login/device) dans votre
-   navigateur. Le code est déjà dans votre presse-papiers
-4. Collez-le, approuvez l’application, puis revenez. La ligne passe d’elle-même à
-   « Connecté en tant que _your-username_ »
+2. Sur la ligne **GitHub**, cliquez sur **Se connecter à GitHub**
+3. Votre navigateur ouvre GitHub. Approuvez l’application
 
-La boîte de dialogue peut être fermée pendant que vous terminez dans le
-navigateur — le serveur continue ses requêtes jusqu’à l’expiration du code
-(environ 15 minutes), la connexion aboutit donc quand même.
+La façon dont la connexion se termine dépend de qui l’exécute :
 
-## Ou coller un jeton
-
-La solution de repli lorsque le serveur n’a pas d’application, lorsque
-l’application n’est pas installée sur un compte dont vous avez besoin, ou lorsque
-vous préférez tout simplement utiliser un PAT.
-
-1. Accédez à **Paramètres → Espace de travail → Profil et identité → Hébergement
-   de code**
-2. Sur la ligne **GitHub**, cliquez sur **Ajouter un jeton**
-3. Collez un jeton disposant de `repo` et `read:org` (classique) et enregistrez.
-   Un jeton **à granularité fine** a besoin des permissions de dépôt **Contents**
-   et **Pull requests** (lecture et écriture), plus **Checks** et **Actions**
-   (lecture).
-
-Le jeton est testé au moment de son enregistrement, ce qui permet à la ligne de
-nommer le compte auquel il appartient. Cliquez sur **Déconnecter** pour le
-supprimer.
+- **L’application propre au serveur :** GitHub renvoie votre navigateur vers le
+  serveur et la boîte de dialogue le remarque d’elle-même. Rien à saisir
+- **Control Center Connect :** la page du navigateur affiche un code de
+  8 caractères. Saisissez-le dans la boîte de dialogue, ou laissez le navigateur
+  ouvrir Control Center via le lien `control-center://` pour éviter de le saisir
 
 Point de contrôle : la ligne **GitHub** affiche « Connecté en tant que
-_your-username_ ». Un suffixe indique la source lorsque l’identifiant qui répond
-n’est pas le vôtre — « via l’application de ce serveur » ou « depuis
-l’environnement ».
+_your-username_ ».
 
-:::note[L’ordre de priorité est fixe]
-Une requête faite en votre nom utilise **vos** identifiants, et rien d’autre —
-l’environnement correspond aux identifiants du serveur, pas aux vôtres, il ne
-peut donc jamais vous remplacer. Le travail sans humain derrière (webhooks,
-interrogation périodique des PR, synchronisation des tickets) utilise l’identité
-applicative du serveur, puis l’identifiant du propriétaire du serveur, puis
-l’environnement.
-:::
+La boîte de dialogue refuse un code ou un lien qu’elle n’a pas lancé elle-même,
+avec **Connexion non lancée d’ici**. Si quelqu’un vous envoie un lien de
+connexion, ne continuez pas : aller au bout connecterait votre compte à son
+serveur.
+
+Cliquez sur **Déconnecter** pour supprimer votre connexion. Vous déconnecter de
+GitHub, ou être retiré d’un espace de travail, invalide aussi tous les jetons que
+le serveur a émis en votre nom.
+
+## Pour qui parle votre identifiant
+
+- **Tout ce que vous faites** (ouvrir la page de la PR, publier une revue,
+  approuver, fusionner) s’exécute avec **votre** connexion et rien d’autre. Si
+  vous n’êtes pas connecté, l’application vous le signale et vous invite à vous
+  connecter. Aucun autre identifiant ne vous remplace
+- **Le travail sans personne au clavier** (exécutions d’agents, pipelines,
+  interrogation périodique des PR, réponses du bot, clones) reçoit un jeton
+  limité à un seul dépôt, émis à partir de la GitHub App du serveur ou via
+  Connect. Il est borné à ce qu’un membre responsable peut y faire : le membre
+  qui a demandé, sinon le propriétaire de l’espace de travail. Un membre qui ne
+  peut pas pousser restreint le jeton à la lecture
+- **L’automatisation n’approuve jamais** une pull request. L’approbation est un
+  acte humain
 
 ## Ce que l’intégration vous apporte
 
 | Fonctionnalité            | Fonctionnement                                                                                                        |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Liste et détail des PR    | L’API REST GitHub, depuis le serveur, sous l’identité de l’application ou vos propres identifiants                    |
+| Liste et détail des PR    | L’API REST GitHub, depuis le serveur, avec votre propre connexion                                                     |
 | Exécutions de vérification | L’API GitHub Checks                                                                                                  |
-| Publication des revues    | Une étape soumise à une action de l’utilisateur, qui publie votre revue sur la PR                                     |
-| Enregistrement des dépôts | Un checkout est accepté si son dépôt distant `origin` pointe vers github.com — ou vers gitlab.com / bitbucket.org     |
-| Accès GitHub des agents   | Le courtier d’identifiants injecte un jeton en lecture seule sous forme de `GH_TOKEN` / `GITHUB_TOKEN` ; les push passent par Control Center |
+| Publication des revues    | Une étape soumise à une action de l’utilisateur, qui publie votre revue sur la PR, en votre nom                       |
+| Enregistrement des dépôts | Un checkout est accepté si son dépôt distant `origin` pointe vers github.com, ou vers gitlab.com / bitbucket.org      |
+| Accès GitHub des agents   | Un jeton limité à l’unique dépôt de l’exécution, sous forme de `GH_TOKEN` / `GITHUB_TOKEN` ; les push passent par Control Center |
 | Signaux de notification   | Une interrogation côté serveur de votre boîte de réception GitHub déclenche « Mentionné dans une pull request » et « Revue demandée » |
 | Profils utilisateur       | Cartes de profil au survol et filtrage des PR par auteur                                                              |
 
 Certains chemins passent par l’API GraphQL plutôt que REST lorsque c’est moins
-coûteux — l’activité des branches pour le sélecteur de composition de PR et
+coûteux : l’activité des branches pour le sélecteur de composition de PR et
 l’état de revue en direct qui détermine si une notification de revue demandée est
 encore en attente.
 
 ## Surveiller les pannes de GitHub
 
 La barre de titre affiche une pastille d’état lorsqu’un fournisseur est dégradé,
-pour GitHub, Claude, OpenAI et Kimi. **Elle est masquée tant que tout va bien** —
+pour GitHub, Claude, OpenAI et Kimi. **Elle est masquée tant que tout va bien** :
 c’est la présence qui signale un problème, pas son absence.
 
 Cliquez sur la pastille pour ouvrir un volet indiquant l’état de chaque
@@ -108,54 +100,55 @@ toutes les deux minutes.
 
 ## Savoir comment les agents agissent sur GitHub
 
-- Un agent qui travaille dans un arbre de travail GitHub reçoit toujours un
-  jeton GitHub en lecture seule. Un push passe par Control Center, qui
-  interroge la règle **Pousser vers un dépôt distant** puis le transmet avec un
-  jeton d’écriture que l’agent ne détient jamais. Voir
+- Un agent qui travaille dans un arbre de travail GitHub reçoit un jeton limité à
+  ce seul dépôt. Il peut lire le code et commenter les pull requests lorsque le
+  membre responsable peut pousser, et seulement lire dans le cas contraire. Un
+  push passe par Control Center, qui interroge la règle **Pousser vers un dépôt
+  distant** puis le transmet avec un jeton d’écriture que l’agent ne détient
+  jamais. Voir
   [Configurer les politiques de bac à sable](/fr-FR/manuel/guides/politiques-de-bac-a-sable/)
 - Les commits des agents utilisent toujours l'identité Git de la personne à l'origine de la demande comme auteur et comme committer. Par défaut, la ligne `Co-Authored-By: Control Center <hi@usectrl.dev>` crédite le compte GitHub `@usectrl` comme coauteur. Dans **Paramètres → Vous → Attribution des commits**, désactivez cette mention de coauteur sans modifier votre identité. La règle de **Paramètres → Espace de travail → Général** prévaut et verrouille le bouton personnel. L'attribution propre à Claude Code est toujours désactivée. La signature des commits nécessite toujours sa propre configuration valide
-- Avec une GitHub App configurée, le courtier génère à chaque lancement des jetons
-  d’installation à granularité fine, limités au dépôt et d’une durée d’environ une
-  heure, au lieu de transmettre un jeton large. L’installation est résolue à
-  partir du **propriétaire** du dépôt de l’exécution, de sorte qu’une application
-  installée sur plusieurs comptes s’applique correctement à celui que l’exécution
-  touche. Sans application, les agents reçoivent le jeton de l’environnement,
-  qu’il est impossible de restreindre à la lecture seule : la règle de push
-  contraint alors `git push`, mais pas le code qui utilise directement le jeton
-- Le jeton est toujours celui du courtier, jamais celui du membre demandeur. Le
-  jeton du serveur est retenu pour une exécution qui agit pour un membre qui
-  n’est pas propriétaire et n’a pas connecté GitHub
+- Un terminal que vous ouvrez sur un rig reçoit votre propre connexion,
+  restreinte à ce seul dépôt : les push qui en partent sont donc les vôtres
+- Lorsqu’aucun jeton ne peut être émis (personne de responsable n’est connecté,
+  l’application n’est pas installée sur le propriétaire, ou l’installation est
+  suspendue), l’exécution démarre sans jeton et ses notes en donnent la raison.
+  Il n’existe aucun identifiant de repli
 
 ## Dépannage
 
 ### La liste des PR est vide et indique que GitHub n’est pas connecté
 
-Vous n’avez aucun identifiant GitHub sur ce serveur. Connectez-vous ou collez un
-jeton dans **Hébergement de code**. Les dépôts des autres forges ne sont pas
-touchés — seuls ceux de GitHub n’apportent rien.
+Vous n’êtes pas connecté à GitHub sur ce serveur. Cliquez sur **Se connecter à
+GitHub** dans **Hébergement de code**. Les dépôts des autres forges ne sont pas
+touchés.
 
-### La ligne propose « Ajouter un jeton » mais pas « Se connecter avec GitHub »
+### La ligne GitHub indique que la connexion n’est pas configurée sur ce serveur
 
-Le serveur n’a pas d’ID client — ce qui est normal pour un build depuis les
-sources, les identifiants n’étant intégrés qu’aux builds officiels. Voir
-[Créer la GitHub App](/fr-FR/manuel/guides/github-app/) : cela prend environ deux
-minutes et seul le propriétaire du serveur doit s’en charger, une fois.
+Le serveur n’a ni GitHub App propre ni Connect. Le propriétaire du serveur
+choisit l’un ou l’autre dans **Paramètres → Serveur → Authentification
+unique** : **Créer mon application GitHub** prend environ deux minutes. Voir
+[Créer la GitHub App](/fr-FR/manuel/guides/github-app/).
 
-### La boîte de dialogue de connexion indique que le fournisseur n’a renvoyé aucun code d’appareil
+### La boîte de dialogue indique que le code ne correspond pas
 
-La GitHub App existe, mais sa case **Device flow** est décochée. Activez-la dans
-les paramètres de l’application (General → Device flow) et réessayez.
+Saisissez le code exactement tel que le navigateur l’affiche : 8 lettres et
+chiffres. Cinq codes erronés mettent fin à la connexion ; relancez-la.
 
-### La ligne indique « via l’application de ce serveur » alors que j’attendais mon propre compte
+### La connexion indique que l’application n’est pas installée
 
-Vous n’êtes pas connecté ; ce que vous voyez, c’est l’identité applicative du
-serveur qui répond. Cliquez sur **Se connecter avec GitHub** sur cette ligne.
+La GitHub App n’a aucune installation sur le compte propriétaire du dépôt. Un
+administrateur de l’espace de travail l’installe depuis **Paramètres → Espace de
+travail → Général → Installations de l’application GitHub**. Pour une
+organisation sur l’App partagée de Control Center, un administrateur de cette
+organisation peut devoir cliquer sur **Autoriser ce serveur**. Voir
+[Créer la GitHub App](/fr-FR/manuel/guides/github-app/#autoriser-ce-serveur-pour-une-organisation).
 
-### Un PAT à granularité fine n’affiche ni bouton de fusion ni état des vérifications
+### Tout le monde doit se reconnecter à GitHub
 
-Le jeton a besoin de **Contents** et **Pull requests** (lecture et écriture), plus
-**Checks** et **Actions** (lecture). Après l’avoir modifié, collez-le à nouveau
-dans **Hébergement de code**.
+Le propriétaire du serveur a renouvelé la clé Connect du serveur, changé de
+serveur Connect, ou le répertoire de données a été restauré sur une autre
+machine. Les connexions via Connect sont liées au serveur qui les a établies.
 
 ### Un dépôt refuse de s’enregistrer
 
@@ -182,4 +175,4 @@ respectant `retry-after`.
 - [Gérer les clés API](/fr-FR/manuel/guides/cles-api/)
 - [Ajouter des dépôts à un espace de travail](/fr-FR/manuel/guides/ajouter-des-depots/)
 - [Examiner et fusionner une PR](/fr-FR/manuel/guides/examiner-et-fusionner-pr/)
-- [Configurer l’intégration Slack](/fr-FR/manuel/guides/integration-slack/)
+- [Parler à Control Center depuis une PR GitHub](/fr-FR/manuel/guides/conversations-pr-github/)

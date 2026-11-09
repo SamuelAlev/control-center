@@ -1,9 +1,9 @@
 ---
 title: Jalankan server headless
 description: Jalankan biner headless cc_server atau image Docker-nya, pasangkan klien ke sana, dan konfigurasikan dengan seluruh permukaan flag CLI dan variabel lingkungannya.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Jalankan `cc_server` di mesin yang tetap menyala, lalu hubungkan ke sana dari
@@ -16,8 +16,9 @@ API eksternal; klien hanya merender.
 
 Setiap rilis menerbitkan stack yang dihosting sendiri berisi empat image GHCR —
 backend, dua klien tipis statis, dan relay pairing opsional — plus image
-`cc-server-demo` terpisah untuk host demo publik. Instalasi yang dihosting
-sendiri tidak memerlukan checkout sumber. Pin tag versi
+`cc-server-demo` terpisah untuk host demo publik. Setiap rilis juga menerbitkan layanan
+proses masuk opsional `cc-connect` ([Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/)).
+Instalasi yang dihosting sendiri tidak memerlukan checkout sumber. Pin tag versi
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) atau pakai `latest`.
 
 | Image                                             | Apa itu                                      | Memublikasikan   |
@@ -68,6 +69,11 @@ Hal-hal yang perlu diketahui sebelum Anda mengekspos semua ini di luar loopback:
 - **`/data` adalah satu-satunya state.** Basis data SQLite, rahasia perangkat
   yang dipasangkan, model yang diunduh, dan audio rapat semuanya berada di
   volume — cadangkan volumenya dan kontainer menjadi dapat dibuang.
+- **Rahasia penyedia masuk ke `.env` yang dipasang, tidak pernah lewat `-e`.** Server
+  menolak mulai ketika `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY`, atau `SLACK_*SECRET*` berada di
+  lingkungan prosesnya. Pasang berkas itu hanya-baca di `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), atau konfigurasikan app di Pengaturan.
 - **Pasangkan klien dari dalam image** sebelum koneksi pertama, padanan
   kontainer dari [langkah 3](#langkah-3-pasangkan-klien-sebelum-mulai-pertama-kali):
 
@@ -276,22 +282,31 @@ editor yang dijalankan server melalui proxy publik. Permintaan HTTP publik yang
 sensitif ditolak; sumber daya memerlukan sesi terenkripsi yang terautentikasi.
 
 
-## Langkah 6: Hubungkan Google Calendar (opsional)
+## Langkah 6: Pilih cara pengguna masuk
 
-Untuk menyinkronkan kalender ruang kerja tanpa GUI terpasang, gunakan alur kode
-perangkat:
+Klien pertama yang terhubung sebagai pemilik server ditanya bagaimana server ini memasukkan pengguna
+ke GitHub, Google Calendar, dan Linear: **Gunakan aplikasi Control Center**, **Gunakan aplikasi saya
+sendiri**, atau **Gunakan server Connect kustom**. Dari terminal, pilihan yang sama adalah:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Perintah ini mencetak kode dan URL untuk disetujui di perangkat lain, menyimpan
-token penyegaran di sisi server, lalu keluar. Build dari sumber tidak
-menyertakan klien Google, jadi variabel lingkungan id dan secret wajib diisi —
-tidak ada flag `--google-client-id`. Lihat
-[Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/).
+`CC_CONNECT_URL` (`hosted`, `off`, atau sebuah URL) di lingkungan atau `.env` server menguncinya
+sebagai gantinya. Dengan **Gunakan aplikasi saya sendiri**, daftarkan setiap penyedia di **Pengaturan →
+Server → Single sign-on → Aplikasi penyedia**; **Buat aplikasi GitHub saya** menyiapkan GitHub hanya
+dalam satu langkah. Rahasia penyedia termasuk dalam berkas `.env` server, tidak pernah lingkungan yang
+diekspor. Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/) dan
+[Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/).
+
+Proses masuk melalui Connect selesai dengan kode yang ditampilkan peramban, sehingga server tidak
+memerlukan alamat publik untuk itu. Proses masuk melalui app server sendiri mengembalikan peramban ke
+URL publik server, jadi atur `--public-url` ke alamat yang dapat dijangkau peramban pengguna.
+
+Untuk menjadi host Connect bagi server lain dari server ini, atur `CC_SERVER_CONNECT_HOST=on`; lihat
+[Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/#pasang-connect-di-dalam-cc_server).
 
 ## Konfigurasi
 
@@ -348,6 +363,7 @@ Dua hal yang perlu diketahui sebelum Anda mengekspos port di luar loopback (TLS 
 - [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/)
 - [Jalankan pekerja fleet](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pekerja-fleet/)
 - [Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
+- [Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/)
 
 ## Konsep terkait
 

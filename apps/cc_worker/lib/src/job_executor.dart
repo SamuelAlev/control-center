@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/fleet/domain/value_objects/job_spec.dart';
 import 'package:cc_domain/features/fleet/domain/value_objects/lease_protocol.dart';
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 import 'package:cc_worker/src/fleet_client.dart';
 import 'package:path/path.dart' as p;
 
@@ -184,14 +185,26 @@ class JobExecutor {
     }
   }
 
+  /// What every child of this job sees: the host's allowlisted variables
+  /// (toolchains included — jobs build code) plus the lease's own, never the
+  /// worker's whole environment.
+  Map<String, String> get _childEnvironment => ChildEnvironment.build(
+    Platform.environment,
+    toolchain: true,
+    overrides: lease.env,
+  );
+
   /// Runs `git` quietly (output not streamed), throwing on a non-zero exit.
+  /// Never through a shell on POSIX: the remote and SHA come from the lease.
   Future<void> _git(List<String> args, String cwd) async {
     final result = await Process.run(
       'git',
       args,
       workingDirectory: cwd,
-      environment: lease.env,
-      runInShell: true,
+      environment: _childEnvironment,
+      includeParentEnvironment: false,
+      // On Windows `git` is often a `.cmd` shim bare Process.run cannot run.
+      runInShell: Platform.isWindows,
     );
     if (result.exitCode != 0) {
       throw ProcessException('git', args, 'git ${args.first} failed', result.exitCode);
@@ -321,7 +334,8 @@ class JobExecutor {
       executable,
       args,
       workingDirectory: workDir,
-      environment: lease.env,
+      environment: _childEnvironment,
+      includeParentEnvironment: false,
       runInShell: runInShell,
     );
     _process = process;

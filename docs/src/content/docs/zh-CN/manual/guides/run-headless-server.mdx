@@ -1,16 +1,16 @@
 ---
 title: 运行无界面服务器
 description: 运行 cc_server 无界面二进制文件或其 Docker 镜像，将客户端与它配对，并用完整的 CLI 标志与环境变量对其进行配置。
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: zh-CN/手册/操作指南/运行无界面服务器
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 在一台常开的机器上运行 `cc_server`，然后从桌面端、浏览器或手机连接它。该服务器是纯 Dart 原生二进制文件——不含 Flutter 引擎——因此可在 macOS、Linux 或 Windows 上无界面运行。它掌控数据库、运行智能体，并发出所有外部 API 调用；客户端只负责渲染。
 
 ## 用 Docker 运行（预构建镜像）
 
-每个版本都会发布一套自托管技术栈，共四个 GHCR 镜像——后端、两个静态瘦客户端以及可选的配对中继——外加一个用于公共演示主机的独立 `cc-server-demo` 镜像。自托管安装无需检出源代码。请固定版本标签（`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`），或跟随 `latest`。
+每个版本都会发布一套自托管技术栈，共四个 GHCR 镜像——后端、两个静态瘦客户端以及可选的配对中继——外加可选的 `cc-connect` 登录服务（[运行 Connect 服务器](/zh-CN/手册/操作指南/运行-connect-服务器/)）以及一个用于公共演示主机的独立 `cc-server-demo` 镜像。自托管安装无需检出源代码。请固定版本标签（`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`），或跟随 `latest`。
 
 | 镜像                                             | 它是什么                                   | 发布端口        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
@@ -51,6 +51,7 @@ volumes:
   才能接收发布端口的流量）。请在可信网络上使用终止 TLS 的反向代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel，或者挂载证书并设置 `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`（然后取消设置
   `CC_SERVER_INSECURE`）。此设置只控制服务器的外层 HTTP/WebSocket 监听器。它绝不会禁用强制性的端到端加密客户端会话。TLS 仍然保护登录/引导流量、连接元数据、公开端点以及 Web 客户端的投递。这一切都可以用 `docker run -e …` 或 compose 的 `environment:` 块覆盖。
 - **`/data` 是唯一的状态。** SQLite 数据库、已配对设备的密钥、下载的模型和会议音频全都存放在该卷中——只要备份它，容器就可以随时丢弃。
+- **提供商密钥放在挂载的 `.env` 中，绝不使用 `-e`。** 当 `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、`LINEAR_API_KEY` 或任何 `SLACK_*SECRET*` 出现在它的进程环境中时，服务器会拒绝启动。请把该文件以只读方式挂载到 `/app/bin/.env`（`-v /secure/cc.env:/app/bin/.env:ro`），或在设置中配置应用。
 - **在首次连接之前，从镜像内部配对客户端**，这相当于容器版的[第 3 步](#第-3-步在首次启动前配对客户端)：
 
   ```bash
@@ -205,18 +206,21 @@ node tool/stage_resource_assets.mjs build/web
 编辑器扩展的私有环回上报/命令网关。敏感的公开 HTTP 请求会被拒绝；资源需要
 已认证的加密会话。
 
-## 第 6 步：连接 Google Calendar（可选）
+## 第 6 步：选择人们如何登录
 
-要在没有图形界面的情况下同步某个工作区的日历，请使用设备代码流程：
+第一个以服务器所有者身份连接的客户端，会被询问此服务器如何为 GitHub、Google Calendar 和 Linear 处理人们的登录：**使用 Control Center 的应用**、**使用我自己的应用**，或**使用自定义 Connect 服务器**。在终端中，同样的选择如下：
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-它会打印一个代码和一个 URL，供你在另一台设备上批准，把刷新令牌保存在服务器端，然后退出。从源代码构建的版本不自带 Google 客户端，因此必须提供 id 和 secret 这两个环境变量——不存在 `--google-client-id`
-标志。参见[连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)。
+服务器环境或 `.env` 中的 `CC_CONNECT_URL`（`hosted`、`off` 或一个 URL）会锁定这一选择。选择**使用我自己的应用**时，请在 **设置 → 服务器 → 单点登录 → 提供商应用** 中为每个提供商注册应用；**创建我的 GitHub 应用**能一步完成 GitHub 设置。提供商密钥应放在服务器的 `.env` 文件中，而不是导出的环境变量里。参见[创建 GitHub App](/zh-CN/手册/操作指南/github-app/)和 [Control Center Connect](/zh-CN/手册/参考/connect/)。
+
+通过 Connect 的登录会以浏览器显示的代码完成，因此服务器不需要公开地址。通过服务器自有应用的登录会把浏览器送回服务器的公开 URL，因此请把 `--public-url` 设置为人们的浏览器能够访问的地址。
+
+要为其他服务器代管 Connect，请设置 `CC_SERVER_CONNECT_HOST=on`；参见[运行 Connect 服务器](/zh-CN/手册/操作指南/运行-connect-服务器/#在-cc_server-内挂载-connect)。
 
 ## 配置
 
@@ -259,6 +263,7 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
 - [配对设备](/zh-CN/手册/操作指南/配对设备/)
 - [运行机群工作进程](/zh-CN/手册/操作指南/运行机群工作进程/)
 - [连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)
+- [运行 Connect 服务器](/zh-CN/手册/操作指南/运行-connect-服务器/)
 
 ## 相关概念
 

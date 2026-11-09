@@ -548,6 +548,7 @@ extension _DispatchSessionHarness on DispatchSession {
     final hooks = runConfig.hasHooks
         ? ShellAgentLoopHooks(
             cwd: agentDirHostPath,
+            environment: ChildProcess.environmentFor(toolchain: true),
             sessionStartScript: runConfig.hookSessionStart,
             preToolScript: runConfig.hookPreTool,
             postToolScript: runConfig.hookPostTool,

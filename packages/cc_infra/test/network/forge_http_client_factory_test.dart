@@ -71,6 +71,22 @@ void main() {
       },
     );
 
+    test('a guard runs before auth and an observer after it', () {
+      final recorder = _Recorder();
+      ForgeHttpClientFactory(
+        tokenLookup: (_) async => 'token',
+        requestGuard: (_, _, _, _) => null,
+        onResponse: (_, _, _) {},
+        buildClient: recorder.build,
+      ).of(ForgeHost.github);
+
+      expect(recorder.interceptors.single.map((i) => i.runtimeType), [
+        ForgeRequestGuardInterceptor,
+        ForgeAuthInterceptor,
+        ForgeResponseObserverInterceptor,
+      ]);
+    });
+
     test('the client for a forge is built once and reused; forges do not '
         'share one', () {
       final recorder = _Recorder();
@@ -239,5 +255,85 @@ void main() {
         expect(cancelled.value, isNull);
       },
     );
+  });
+  group('ForgeRequestGuardInterceptor', () {
+    test('a refused request fails before it is sent', () async {
+      final seen = <(String, String, Object?)>[];
+      final guard = ForgeRequestGuardInterceptor(
+        forge: ForgeHost.github,
+        guard: (forge, method, url, body) {
+          seen.add((method, url, body));
+          return body is Map && body['event'] == 'APPROVE' ? 'no' : null;
+        },
+      );
+      final approve = HttpRequest(
+        method: HttpMethod.post,
+        url: '/repos/o/r/pulls/1/reviews',
+        body: const HttpBody.json({'event': 'APPROVE'}),
+      );
+
+      await expectLater(
+        guard.beforeRequest(approve),
+        throwsA(
+          isA<ForgeRequestRefused>().having((e) => e.reason, 'reason', 'no'),
+        ),
+      );
+      expect(seen.single.$1, 'POST');
+      expect(seen.single.$3, {'event': 'APPROVE'});
+
+      final comment = HttpRequest(
+        method: HttpMethod.post,
+        url: '/repos/o/r/pulls/1/reviews',
+        body: HttpBody.text(jsonEncode({'event': 'COMMENT'})),
+      );
+      final result = await guard.beforeRequest(comment);
+      expect(result.value, isNull, reason: 'passed through unchanged');
+      expect(seen.last.$3, {'event': 'COMMENT'});
+    });
+  });
+
+  group('ForgeResponseObserverInterceptor', () {
+    test('sees successes and status failures, and never alters them', () async {
+      final seen = <(int, Map<String, String>)>[];
+      final observer = ForgeResponseObserverInterceptor(
+        forge: ForgeHost.github,
+        observer: (_, status, headers) => seen.add((status, headers)),
+      );
+
+      final ok = await observer.afterResponse(
+        httpTextResponse(
+          _request(),
+          '{}',
+          headers: const {'x-ratelimit-remaining': '4999'},
+        ),
+      );
+      final failure = await observer.onError(
+        RhttpStatusCodeException(
+          request: _request(),
+          statusCode: 403,
+          headers: const [('x-ratelimit-remaining', '0')],
+          body: '{}',
+        ),
+      );
+
+      expect(ok.value, isNull);
+      expect(failure.value, isNull);
+      expect(seen.map((e) => e.$1), [200, 403]);
+      expect(seen.first.$2['x-ratelimit-remaining'], '4999');
+      expect(seen.last.$2['x-ratelimit-remaining'], '0');
+    });
+
+    test('a throwing observer does not fail the call', () async {
+      final observer = ForgeResponseObserverInterceptor(
+        forge: ForgeHost.github,
+        observer: (_, _, _) => throw StateError('broken'),
+      );
+
+      final result = await observer.afterResponse(
+        httpTextResponse(_request(), '{}'),
+      );
+
+      expect(result.value, isNull);
+    });
   });
 }

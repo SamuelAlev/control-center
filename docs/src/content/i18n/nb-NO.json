@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Koble til en Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Server og drift",
   "docs.sidebar.guidesRunHeadlessServer": "Kjør en headless server",
+  "docs.sidebar.guidesRunConnect": "Kjør en Connect-server",
   "docs.sidebar.guidesConnectRemoteServer": "Koble til en ekstern server",
   "docs.sidebar.guidesRunFleetWorker": "Kjør en flåteworker",
   "docs.sidebar.guidesBackUpAndRestore": "Sikkerhetskopier og gjenopprett",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Tastatursnarveier",
   "docs.sidebar.referenceRouteMap": "Rutekart",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Sikkerhetskopi, eksport og import",
   "docs.sidebar.referenceTelemetry": "Bruksanalyse",
   "docs.sidebar.referenceGlossary": "Ordliste"

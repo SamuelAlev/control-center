@@ -2,7 +2,7 @@
 title: 사용 분석
 description: 사용 분석이 켜져 있을 때 Control Center가 기록하는 내용, 누가 결정하는지, 그리고 절대 전송되지 않는 항목.
 slug: ko-KR/매뉴얼/레퍼런스/사용-분석
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center는 **가명 처리된 사용 이벤트**를 [Umami](https://umami.is) 인스턴스로 보낼 수 있습니다. 사용 분석은 **서버 운영자가 켜기 전까지 꺼져 있습니다**. 이 설정은 서버에 속하며 서버에 연결된 모든 클라이언트, 즉 데스크톱 앱, 웹 앱, 휴대폰, 그리고 서버 자체에 적용됩니다.
@@ -95,9 +95,12 @@ Umami는 이 밖에도 요청의 IP 주소(주소를 저장하지 않고 국가�
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | 실패한 실행을 다시 시도했을 때 |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | 앱에서 실행을 취소했을 때 |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | 실행 중인 단계를 강제 종료했을 때 |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | 캘린더 로그인 시도가 끝났을 때 |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`(서버 자체 Google 클라이언트가 아니라 Control Center Connect를 통해 로그인했을 때 true), `duration_s` | 캘린더 로그인 시도가 끝났을 때 |
 | `calendar_disconnected` | `workspace_id` | 캘린더 계정의 연결을 해제했을 때 |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | 초대에 응답했을 때 |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests`(개수), `conference` | Google Calendar에 일정을 예약했을 때 |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | 캘린더 그리드에서 일정을 이동하거나 크기를 조정했을 때 |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Google Calendar에서 일정을 삭제했을 때 |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | 캘린더 이벤트에서 녹음을 시작했을 때 |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | 회의 링크를 열었을 때(휴대폰). 링크에서는 제공업체만 추출합니다 |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | 알림 센터를 사용했을 때 |

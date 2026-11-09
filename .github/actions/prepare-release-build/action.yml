@@ -1,11 +1,12 @@
 name: Prepare release build
 description: >
-  Codegen, natives, built-in credentials, and the build-identity stamp shared
-  by the macOS, Windows, and Linux release jobs.
+  Codegen, natives, and the build-identity stamp shared by the macOS,
+  Windows, and Linux release jobs. Builds carry no provider credentials:
+  those come from Control Center Connect or the operator's own app.
 
-# Order is load-bearing: credentials and staged natives before any
-# `dart build cli` (no -D flag; the build hook bundles build/natives and fails
-# when it is empty), then the identity stamp (BuildInfo is compiled in).
+# Order is load-bearing: staged natives before any `dart build cli` (the build
+# hook bundles build/natives and fails when it is empty), then the identity
+# stamp (BuildInfo is compiled in).
 
 inputs:
   os:
@@ -20,24 +21,6 @@ inputs:
   version:
     description: The release version, used for the build-identity stamp.
     required: true
-  google-client-id:
-    required: false
-    default: ""
-    description: CC_BUILTIN_GOOGLE_CLIENT_ID secret.
-  google-client-secret:
-    required: false
-    default: ""
-    description: CC_BUILTIN_GOOGLE_CLIENT_SECRET secret.
-  klipy-app-key:
-    required: false
-    default: ""
-    description: CC_BUILTIN_KLIPY_APP_KEY secret.
-  github-client-id:
-    required: false
-    default: ""
-    description: >
-      Public GitHub App client id for device-flow sign-in. The private key
-      is never baked in.
   fetch-code-server:
     description: >
       Fetch the pinned code-server archive. Skipped on Windows (no native host).
@@ -92,16 +75,6 @@ runs:
         source scripts/lib/common.sh
         source scripts/lib/media.sh
         cc_media_verify build/natives/media "$OS" "$ARCH"
-
-    # Missing secrets are not an error; the build ships no baked credentials.
-    - name: Inject built-in app credentials
-      shell: bash
-      env:
-        CC_BUILTIN_GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
-        CC_BUILTIN_GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
-        CC_BUILTIN_KLIPY_APP_KEY: ${{ inputs.klipy-app-key }}
-        CC_BUILTIN_GITHUB_CLIENT_ID: ${{ inputs.github-client-id }}
-      run: bash scripts/release/builtin_credentials.sh inject
 
     - name: Stamp build identity
       shell: bash

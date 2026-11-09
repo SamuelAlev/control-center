@@ -3,7 +3,7 @@ title: Arquitetura
 description: Como o Control Center é estruturado com um modelo de servidor de cliente fino, Clean Architecture orientada a features e portas e adaptadores.
 dateModified: 2026-09-19
 slug: pt-BR/manual/conceitos/arquitetura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Visão geral
@@ -113,9 +113,9 @@ Ambos os bancos de dados pertencem a `cc_persistence` e são abertos somente pel
 **go_router**, com um fato que governa todo o resto: **todo destino dentro do app tem o prefixo do espaço de trabalho**, no formato `/workspaces/:workspaceId/…`. O id do espaço de trabalho na URL é a única fonte de verdade do espaço de trabalho ativo — o `activeWorkspaceIdProvider` é determinado pela rota, e não o contrário — por isso ler dados com escopo de espaço de trabalho fora de uma rota com prefixo não tem de onde tirar o id.
 
 - _Funções_ construtoras de rota em `router/routes.dart`, cada uma recebendo o id do espaço de trabalho como primeiro argumento, e não constantes de string
-- Quatro rotas anteriores ao contexto não têm prefixo: `/splash`, `/onboarding`, `/signed-out` e `/workspaces` (o seletor)
-- O `ShellRoute` envolve o shell do app; essas quatro superfícies são renderizadas em tela cheia fora dele
-- Guarda de autenticação: uma configuração incompleta vai para `/onboarding`; uma configuração concluída cuja credencial de forge sumiu vai para `/signed-out`. Concluída significa que pelo menos um forge está conectado para o usuário autenticado e que existe pelo menos um espaço de trabalho — não especificamente o GitHub — e o CLI `gh` não é um método de autenticação
+- Três rotas anteriores ao contexto não têm prefixo: `/splash`, `/onboarding` e `/workspaces` (o seletor)
+- O `ShellRoute` envolve o shell do app; essas três superfícies são renderizadas em tela cheia fora dele
+- Guarda de autenticação: uma configuração incompleta vai para `/onboarding`. Uma configuração concluída cuja credencial de forge sumiu continua no app, e o shell do espaço de trabalho mostra um aviso com link para o login. Concluída significa que pelo menos um forge está conectado para o usuário autenticado e que existe pelo menos um espaço de trabalho — não especificamente o GitHub — e o CLI `gh` não é um método de autenticação
 - Portão de onboarding em `features/auth/providers/`
 
 ## Rede (lado do servidor)

@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referens för pipeline-stegtyper, kroppsnycklar för steg, deras konfiguration och stegresultat.
 slug: sv-SE/handbok/referens/pipeline-steg
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Ett pipelinesteg har två oberoende axlar:
@@ -42,7 +42,7 @@ Shellsteg utan agent (`bash -c`). Platshållare av typen `{{key}}` i skriptet er
 | `script`           | Shellkommando att köra (obligatoriskt)           |
 | `outputKey`        | Tillståndsnyckel som tar emot trimmad stdout vid exit 0 |
 
-Körs med cwd `<cc_root>/pipelines/<pipelineRunId>/` (delas av alla bash-steg i en körning) och `GITHUB_TOKEN` i miljön. Skriver även `<stepId>_runDir` till tillståndet. En exit-kod som inte är noll får steget att misslyckas med slutet av stderr som felmeddelande.
+Körs i värdens OS-sandlåda med cwd `<cc_root>/pipelines/<pipelineRunId>/` (delas av alla bash-steg i en körning); en värd utan sandlåda låter steget misslyckas. Serverns datakatalog och `.env`-fil går inte att läsa, git och `gh` ser ingen värdkonfiguration, och `GH_TOKEN` / `GITHUB_TOKEN` innehåller en `read`-token för ett enda repo bara när `repo_full_name` (tillstånd eller utlösarens nyttolast) namnger ett GitHub-repo som är länkat till arbetsytan. Att skapa eller redigera en mall med det här steget kräver en administratör i arbetsytan. Skriver även `<stepId>_runDir` till tillståndet. En exit-kod som inte är noll får steget att misslyckas med slutet av stderr som felmeddelande.
 
 ### `conversation.promptAgent`
 

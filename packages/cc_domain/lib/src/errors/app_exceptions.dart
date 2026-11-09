@@ -74,49 +74,6 @@ class ConcurrencyConflictException extends AppException {
   const ConcurrencyConflictException(super.message, {super.code});
 }
 
-/// Why a Google OAuth authorization attempt failed.
-///
-/// Lets the presentation layer distinguish a user cancelling the flow (benign,
-/// no error UI) from a genuine failure (consent denied, timeout, token
-/// exchange error, or a missing client id that needs configuring).
-enum GoogleOAuthFailureKind {
-  /// The user closed the consent window / cancelled before authorizing.
-  userCancelled,
-
-  /// The consent screen returned `error=access_denied`.
-  consentDenied,
-
-  /// No callback arrived on the loopback server within the timeout.
-  timedOut,
-
-  /// The `state` parameter echoed back did not match (possible CSRF).
-  stateMismatch,
-
-  /// The authorization code could not be exchanged for tokens.
-  tokenExchangeFailed,
-
-  /// Google returned `error=invalid_grant` on a refresh: the refresh token is
-  /// expired or revoked, so it can never mint another access token. This is
-  /// terminal — the only recovery is interactive re-consent. Distinguished from
-  /// [tokenExchangeFailed] (transient: network, 5xx, rate limit) so the app can
-  /// prompt the user to reconnect instead of silently retrying forever.
-  invalidGrant,
-
-  /// No installed-app client id is configured (`GOOGLE_OAUTH_CLIENT_ID`).
-  missingClientId,
-}
-
-/// Thrown by the Google OAuth loopback flow when authorization or token
-/// refresh fails. The [kind] classifies the failure so the UI can react
-/// (e.g. silently ignore [GoogleOAuthFailureKind.userCancelled]).
-class GoogleOAuthException extends AppException {
-  /// Creates a [GoogleOAuthException].
-  const GoogleOAuthException(super.message, {this.kind, super.code});
-
-  /// The classified reason the flow failed, when known.
-  final GoogleOAuthFailureKind? kind;
-}
-
 /// Thrown when an operation targets an entity that belongs to a different
 /// workspace than the one the caller supplied.
 ///

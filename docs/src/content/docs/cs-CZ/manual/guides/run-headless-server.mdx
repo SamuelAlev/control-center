@@ -1,9 +1,9 @@
 ---
 title: Spusťte headless server
 description: Spusť headless binárku cc_server nebo její obraz pro Docker, spáruj s ní klienta a nastav ji přes celou plochu příznaků CLI a proměnných prostředí.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: cs-CZ/prirucka/navody/spusteni-headless-serveru
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Spusť `cc_server` na stroji, který zůstane zapnutý, a připoj se k němu z počítače,
@@ -14,8 +14,9 @@ spouští agenty a dělá každé volání externího API. Klienti jen vykresluj
 ## Spuštění v Dockeru (předpřipravené obrazy)
 
 Každé vydání publikuje sestavu čtyř obrazů na GHCR pro vlastní hosting: backend, dva
-statické tenké klienty a volitelné relé párování, plus samostatný obraz
-`cc-server-demo` pro veřejného hostitele dema. Instalace s vlastním hostingem
+statické tenké klienty a volitelné relé párování, plus volitelnou přihlašovací
+službu `cc-connect` ([Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/))
+a samostatný obraz `cc-server-demo` pro veřejného hostitele dema. Instalace s vlastním hostingem
 nepotřebuje checkout zdrojů. Připni tag verze
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`), nebo jeď na `latest`.
 
@@ -67,6 +68,11 @@ Než cokoli z toho vystavíš mimo loopback, vyplatí se vědět:
 - **`/data` je jediný stav.** Databáze SQLite, tajemství spárovaných zařízení,
   stažené modely i zvuk schůzek žijí ve svazku. Zálohuj ho a kontejner je na
   odpis.
+- **Tajemství poskytovatelů patří do připojeného `.env`, nikdy do `-e`.** Server
+  odmítne nastartovat, když je `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` nebo některé `SLACK_*SECRET*`
+  v prostředí jeho procesu. Připoj soubor jen pro čtení na `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), nebo aplikace nastav v Nastavení.
 - **Klienta spáruj zevnitř obrazu** ještě před prvním připojením, ekvivalent
   kontejneru ke [kroku 3](#krok-3-spáruj-klienta-před-prvním-startem):
 
@@ -271,21 +277,35 @@ rozšíření editoru spouštěné serverem, nevystavuj přes veřejnou proxy. C
 veřejné HTTP požadavky se odmítají; prostředky vyžadují ověřenou šifrovanou
 relaci.
 
-## Krok 6: Připoj Google Calendar (volitelné)
+## Krok 6: Zvol, jak se lidé přihlašují
 
-Kalendář pracovního prostoru bez připojeného rozhraní synchronizuješ tokem kódu
-zařízení:
+Prvního klienta, který se připojí jako vlastník serveru, se server zeptá, jak
+má přihlašovat lidi ke GitHubu, Google Calendar a Linear: **Použít aplikace
+Control Center**, **Použít vlastní aplikace** nebo **Použít vlastní server
+Connect**. Z terminálu je stejná volba:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Vypíše kód a URL ke schválení na jiném zařízení, refresh token uloží na serveru
-a skončí. Sestavení ze zdrojů žádného klienta Google neveze, takže proměnné
-prostředí s id a secretem jsou povinné. Příznak `--google-client-id` neexistuje.
-Viz [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
+`CC_CONNECT_URL` (`hosted`, `off` nebo URL) v prostředí serveru nebo v `.env`
+volbu místo toho napevno určí. S **Použít vlastní aplikace** zaregistruj každého
+poskytovatele v **Nastavení → Server → Jednotné přihlášení → Aplikace
+poskytovatelů**; **Vytvořit moji aplikaci GitHub** nastaví GitHub v jednom
+kroku. Tajemství poskytovatelů patří do souboru `.env` serveru, nikdy do
+exportovaného prostředí. Viz [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)
+a [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/).
+
+Přihlášení přes Connect končí kódem, který ukáže prohlížeč, takže server pro
+ně nepotřebuje veřejnou adresu. Přihlášení přes vlastní aplikace serveru vrací
+prohlížeč na veřejnou URL serveru, takže nastav `--public-url` na adresu,
+na kterou prohlížeče lidí dosáhnou.
+
+Chceš-li z tohoto serveru hostovat Connect pro jiné servery, nastav
+`CC_SERVER_CONNECT_HOST=on`; viz
+[Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/#vestav-connect-do-cc_server).
 
 ## Konfigurace
 
@@ -340,6 +360,7 @@ spárovanému klientovi šifrování od konce ke konci ani neautorizuje prostře
 - [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/)
 - [Spusťte worker flotily](/cs-CZ/prirucka/navody/spusteni-workeru-flotily/)
 - [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
+- [Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)
 
 ## Související koncepty
 

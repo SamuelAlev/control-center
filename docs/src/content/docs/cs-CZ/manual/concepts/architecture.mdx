@@ -3,7 +3,7 @@ title: Architektura
 description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Přehled
@@ -113,9 +113,9 @@ Obě databáze vlastní `cc_persistence` a otevírá je jen `cc_server`. Žádn�
 **go_router** a jedna skutečnost, která řídí zbytek: **každá destinace v aplikaci má prefix pracovního prostoru** ve tvaru `/workspaces/:workspaceId/…`. Id pracovního prostoru v URL je jediný zdroj pravdy pro aktivní pracovní prostor. `activeWorkspaceIdProvider` vychází z trasy, trasa z něj ne. Čtení dat vázaných na pracovní prostor mimo trasu s prefixem proto nemá odkud id vzít.
 
 - _Funkce_ pro stavbu tras v `router/routes.dart`. Každá bere id pracovního prostoru jako první argument, ne řetězcové konstanty
-- Čtyři trasy před kontextem jsou bez prefixu: `/splash`, `/onboarding`, `/signed-out` a `/workspaces` (výběr)
-- `ShellRoute` obaluje shell aplikace; ty čtyři plochy se kreslí přes celou obrazovku mimo něj
-- Stráž autentizace: nedokončené nastavení jde na `/onboarding`; dokončené nastavení, kterému zmizel přihlašovací údaj forge, jde na `/signed-out`. Dokončené znamená, že přihlášený uživatel má připojenou aspoň jednu forge a že existuje aspoň jeden pracovní prostor. GitHub to být nemusí a CLI `gh` není způsob autentizace
+- Tři trasy před kontextem jsou bez prefixu: `/splash`, `/onboarding` a `/workspaces` (výběr)
+- `ShellRoute` obaluje shell aplikace; ty tři plochy se kreslí přes celou obrazovku mimo něj
+- Stráž autentizace: nedokončené nastavení jde na `/onboarding`; dokončené nastavení, kterému zmizel přihlašovací údaj forge, zůstává v aplikaci: shell pracovního prostoru ukáže varování s odkazem na přihlášení. Dokončené znamená, že přihlášený uživatel má připojenou aspoň jednu forge a že existuje aspoň jeden pracovní prostor. GitHub to být nemusí a CLI `gh` není způsob autentizace
 - Brána onboardingu v `features/auth/providers/`
 
 ## Síť (na straně serveru)

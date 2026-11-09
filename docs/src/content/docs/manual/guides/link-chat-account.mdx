@@ -15,30 +15,39 @@ An unlinked member who mentions the bot gets a reply in that Slack thread explai
 
 ## Link with a code
 
+Linking takes both sides: sending a code from Slack proves the Slack account, and confirming it in Control Center proves that account is yours.
+
 1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
    accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+2. On the Slack block, click **Link my Slack account**. The dialog shows a one-time code, for example:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+3. In Slack, send that code to the bot in a **direct message**: just the code, nothing else
+4. The bot replies "Got it. Confirm this Slack account in Control Center to finish linking." and the dialog you left open shows the Slack profile that sent the code: its name and Slack member id
+5. If it is your account, click **Confirm**. The link is made, the dialog says so and the bot confirms in the same direct message
+6. If it is not yours, click **Decline**. Nothing is linked and the code stops working; click **Get a new code** to try again
+
+Closing the dialog does not lose a claim. A code that arrives later waits on the **Link my Slack account** row of your profile page, with the same **Confirm** and **Decline**.
+
+Why the confirmation step: a code read over your shoulder and sent from somebody else's Slack account would otherwise make that account act as you. Only you can confirm, and only the exact profile that sent the code.
 
 The code:
 
 - Is single-use and expires **15 minutes** after it is minted
 - Is always minted for _you_, never for a teammate
+- Works only in a direct message to the bot. In a channel it is just a message
+- Can only be claimed by a full member of the Slack workspace the bot is installed in, not by a guest or someone from another organization
 - Replaces any code you already hold, so pressing the button again invalidates the previous one
 - Lives in memory only, so a server restart invalidates outstanding codes — press the button again
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+A code that is unknown, expired, declined or minted for a different workspace fails the same indistinguishable way: "That code is not valid (or has expired)."
 
 ## Automatic linking by email
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+If your Slack profile carries a confirmed email that matches the verified email of a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
 
 Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
 
@@ -55,8 +64,9 @@ Your own state is on your profile page: the **Link my Slack account** row reads
 "Linked to _your-slack-id_" once you are linked and tells you to link when you
 are not.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+The roster and the claim are live subscriptions, because the change happens on the
+other side: you send the code in Slack, so no request from the app can carry the
+answer back.
 
 ## Unlink
 
@@ -78,9 +88,13 @@ Your Slack account is linked to a Control Center user, but that user holds no me
 
 `viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
 
-### The slash command is not recognized
+### The bot says the code is not valid
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+The code expired, was already used, was declined, or was replaced by a newer one. Click **Link my Slack account** again and send the new code.
+
+### The bot treats my code as a request
+
+You sent it in a channel, or your Slack account is already linked. Codes are only taken in a direct message, and a code-shaped message from a linked account is an ordinary request.
 
 ## Related guides
 

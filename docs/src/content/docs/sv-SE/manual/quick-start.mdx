@@ -2,7 +2,7 @@
 title: Snabbstart
 description: Installera Control Center, konfigurera en agent och se den arbeta i ditt repo.
 slug: sv-SE/handbok/snabbstart
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Det här är den kortaste kompletta vägen från noll till en agent som körs mot din egen kod. Följ den i ordning; varje steg bygger på det föregående.
@@ -21,18 +21,19 @@ funktioner. En webbläsarflik kan dock inte vara värd för servern, så du får
 tillhandahålla en — kör `cc_server` lokalt och anslut till `ws://localhost:9030`, eller
 peka den mot en server på en annan maskin. Den här snabbstarten tar skrivbordsvägen
 eftersom den inte kräver någon serverkonfiguration; se
-[Installera](/sv-SE/handbok/installera/#use-it-in-your-browser) för webbläsarvägen.
+[Installera](/sv-SE/handbok/installera/#använd-den-i-webbläsaren) för webbläsarvägen.
 :::
 
 ## Steg 2: Gå igenom onboardingen
 
-Onboardingen har fem steg som körs i ordning — det går inte att hoppa framåt.
+Onboardingen kör sina steg i ordning — det går inte att hoppa framåt. Det första visas bara för serverägaren, vilket på ett skrivbord som kör sin egen server är du.
 
-1. **Anslut**: logga in med GitHub eller klistra in en personlig åtkomsttoken med `repo` och `read:org`. Inloggningsuppgiften lagras på servern och knyts till ditt konto.
-2. **Arbetsyta**: namnge din första arbetsyta och välj eventuellt en logotyp. När du skapar den seedas fem agenter — en CEO plus `qa`, `architect`, `engineer` och `librarian` — och de inbyggda pipelinemallarna.
-3. **Sandlåda**: registrerar en sandlådeinställning. Båda valen låter dig fortsätta.
-4. **Adapter**: välj den adapter och modell som agenter ska använda som standard. Välj **Control Center (built-in)** och använd sedan leverantörsväljaren som visas för att logga in hos en modellleverantör — modellistan förblir tom tills en är ansluten. När du slutför det här steget skrivs även adaptern och modellen in på arbetsytans CEO-agent.
-5. **Röst (valfritt)**: installera en talmodell på enheten för diktering, eller hoppa över steget.
+1. **Inloggning** (bara serverägaren): välj hur den här servern loggar in personer på GitHub, Google Calendar och Linear — **Använd Control Centers appar**, **Använd mina egna appar** eller **Använd en egen Connect-server**. Med egna appar konfigurerar **Skapa min GitHub-app** GitHub i ett steg. Du kan ändra detta senare under **Inställningar → Server → Enkel inloggning**.
+2. **Anslut**: logga in på GitHub, eller klistra in en GitLab- eller Bitbucket-token. Inloggningsuppgiften lagras på servern och knyts till ditt konto.
+3. **Arbetsyta**: namnge din första arbetsyta och välj eventuellt en logotyp. När du skapar den seedas fem agenter — en CEO plus `qa`, `architect`, `engineer` och `librarian` — och de inbyggda pipelinemallarna.
+4. **Sandlåda**: registrerar en sandlådeinställning. Båda valen låter dig fortsätta.
+5. **Adapter**: välj den adapter och modell som agenter ska använda som standard. Välj **Control Center (built-in)** och använd sedan leverantörsväljaren som visas för att logga in hos en modellleverantör — modellistan förblir tom tills en är ansluten. När du slutför det här steget skrivs även adaptern och modellen in på arbetsytans CEO-agent.
+6. **Röst (valfritt)**: installera en talmodell på enheten för diktering, eller hoppa över steget.
 
 Control Center öppnar sedan inkorgen för din arbetsyta.
 

@@ -1,22 +1,21 @@
 ---
 title: Lịch và lên lịch
-description: Cách Control Center đồng bộ Google Calendar trên máy chủ, vì sao đăng nhập dùng cấp quyền bằng mã thiết bị và phạm vi chỉ đọc bao gồm những gì.
+description: Cách Control Center đồng bộ Google Calendar trên máy chủ, cách đăng nhập qua trình duyệt đến được máy chủ headless và những gì nó có thể thay đổi trên Google.
 slug: vi-VN/so-tay/khai-niem/lich
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center kết nối với Google Calendar để ngày làm việc của bạn nằm cạnh
 đội máy của bạn. Nó đồng bộ sự kiện, hiển thị chúng ở chế độ xem tháng, tuần,
-ngày và lịch trình, cảnh báo bạn trước khi một cuộc họp bắt đầu và biến bất kỳ
+ngày và lịch trình, cho phép bạn tạo, dời, trả lời và xóa sự kiện, cảnh báo bạn trước khi một cuộc họp bắt đầu và biến bất kỳ
 sự kiện nào thành một [cuộc họp](/vi-VN/so-tay/khai-niem/cuoc-hop/) đã được ghi
 lại và tóm tắt.
 
 ## Nó thay đổi những gì trên Google
 
-Gần như không gì cả. Tích hợp này kéo sự kiện về và hiển thị chúng. Nó không
-tạo, sửa, xóa hay phản hồi lời mời. Mọi kết nối bằng mã thiết bị, dù là loại
-tích hợp sẵn hay do bạn tự cung cấp, đều yêu cầu `calendar.readonly` cùng
-`openid email`.
+Chỉ những gì bạn tự làm. Bạn có thể phản hồi lời mời, đặt một sự kiện (kéo qua lưới thời gian hoặc nút **+**) và xóa một sự kiện. Mỗi thay đổi do máy chủ thực hiện bằng đăng nhập của chính tài khoản bạn, trên lịch của bạn, và máy chủ từ chối một sự kiện trên tài khoản của thành viên khác hoặc trên một lịch được chia sẻ chỉ đọc với bạn. Google gửi email cho khách, như khi làm từ Google Calendar. Xóa một lần xuất hiện của sự kiện lặp lại sẽ giữ nguyên phần còn lại của chuỗi. Bạn có thể dời hoặc kéo dài một sự kiện trên lưới; chỉ sự kiện của chính bạn và các sự kiện bạn tổ chức được dời.
+
+Mọi kết nối, qua Connect hoặc qua máy khách Google của chính máy chủ, đều yêu cầu `calendar.events` (đọc và thay đổi sự kiện) và `calendar.calendarlist.readonly` (xem các lịch mà tài khoản có) cùng `openid email`. Máy chủ từ chối một đăng nhập trả về với tập phạm vi khác, nên tài khoản đã kết nối với phạm vi chỉ đọc trước đó phải được kết nối lại.
 
 Sự kiện được đồng bộ vào cơ sở dữ liệu riêng của không gian làm việc **trên máy
 chủ** (`<dataDir>/<workspaceId>/workspace.db`) và được mọi máy khách hiển thị
@@ -25,45 +24,52 @@ qua RPC. Không máy khách nào giữ thông tin xác thực Google.
 ## Tài khoản theo từng không gian làm việc
 
 Tài khoản lịch thuộc phạm vi không gian làm việc, giống mọi thứ khác trong
-Control Center. Mỗi [không gian làm việc](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
-kết nối tài khoản Google riêng của mình (hoặc nhiều tài khoản), và sự kiện cùng
-token của một không gian làm việc không bao giờ hiển thị được từ không gian
-khác. Chuyển không gian làm việc là chuyển những lịch bạn nhìn thấy.
+Control Center, và mỗi tài khoản thuộc về thành viên đã kết nối nó. Mỗi
+[không gian làm việc](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) kết nối các
+tài khoản Google riêng của mình, và sự kiện cùng thông tin xác thực của một không
+gian làm việc không bao giờ hiển thị được từ không gian khác. Hai thành viên cùng
+kết nối một địa chỉ Google sẽ có hai tài khoản. Chuyển không gian làm việc là
+chuyển những lịch bạn nhìn thấy.
 
 Một không gian làm việc có thể kết nối **nhiều** tài khoản Google, chẳng hạn
 một tài khoản công việc và một tài khoản cá nhân, và sự kiện của chúng được gộp
 vào cùng các chế độ xem.
 
-## Vì sao đăng nhập dùng mã thiết bị
+## Đăng nhập đi tới máy chủ như thế nào
 
-`cc_server` không giao diện không có trình duyệt để bắt chuyển hướng OAuth. Nên
-nó không dùng cách đó: nó ủy quyền bằng **cấp quyền mã thiết bị** (RFC 8628).
-Máy chủ hiển thị một mã người dùng ngắn và một URL Google, bạn phê duyệt trên
-bất kỳ thiết bị nào có trình duyệt và máy chủ sẽ thăm dò cho đến khi bạn làm
-vậy. Một bản cài không giao diện có thể kết nối tài khoản chính là vì không có
-endpoint chuyển hướng nào để lưu trữ.
+Kết nối là một lần đăng nhập qua trình duyệt, và máy chủ là bên hoàn tất nó. Máy
+khách nào chạy luồng này là lựa chọn của chủ máy chủ:
 
-Hệ quả cần biết trước khi bạn tự cung cấp thông tin xác thực: loại máy khách
-phải là "TV and Limited Input devices" của Google. Google chỉ cấp một tập phạm
-vi nằm trong danh sách cho phép cho loại máy khách đó, và một dự án không được
-phép dùng Calendar cho loại máy khách này sẽ thất bại với `invalid_scope` — khi
-đó bạn cần dùng máy khách loopback hoặc web.
+- **Máy khách Google riêng của máy chủ.** Một máy khách Web application được đăng
+  ký với chuyển hướng `<server origin>/oauth/google/callback`. Google đưa trình
+  duyệt quay thẳng về máy chủ, nên trình duyệt phải truy cập được tới máy chủ
+- **Control Center Connect.** Google đưa trình duyệt quay về Connect, và Connect
+  hiển thị một mã 8 ký tự cùng một liên kết `control-center://`. Bạn gõ mã vào
+  ứng dụng, hoặc nhấp liên kết, và máy chủ nhận đăng nhập bằng mã đó. Máy chủ
+  không cần địa chỉ công khai cho việc này, và đó là cách một máy chủ không giao
+  diện trong mạng riêng kết nối được lịch
 
-Token không bao giờ rời khỏi máy chủ. Chúng được ghi vào `secrets.json` của máy
-chủ trong thư mục dữ liệu của nó, với khóa
-`google_google:<workspaceId>:<email>`, nằm cạnh các cơ sở dữ liệu và trong cùng
-ranh giới tin cậy của hệ thống tệp máy chủ. Máy chủ tự động làm mới quyền truy
-cập và, khi Google vô hiệu hóa vĩnh viễn một tài khoản (phiên bị thu hồi hoặc
-hết hạn từ lâu), nó phát `CalendarAuthExpired` và hiện banner **kết nối lại**
-thay vì thất bại âm thầm.
+Máy khách riêng luôn được ưu tiên hơn. Một client id thiếu secret là một thiết
+lập chưa hoàn tất và sẽ từ chối đăng nhập thay vì quay về Connect.
 
-Bản dựng từ mã nguồn **không** kèm thông tin xác thực Google nào — bạn tự cung
-cấp client id và secret của mình. Các bản phát hành chính thức nhúng sẵn một máy
-khách mã thiết bị không bí mật để luồng kết nối chạy được ngay; máy chủ chỉ lưu
-một dấu tham chiếu tới nó, không bao giờ lưu bản sao.
-`GOOGLE_OAUTH_CLIENT_ID` (và secret của nó) trong môi trường luôn được ưu tiên
-hơn cặp nhúng sẵn. Cố ý không có cờ `--google-client-id`: các cờ không rõ bị bỏ
-qua, và một secret trên dòng lệnh có thể bị đọc qua `ps`.
+Thông tin xác thực không bao giờ rời khỏi máy chủ. Chúng được ghi vào
+`secrets.json` của máy chủ trong thư mục dữ liệu của nó, với khóa
+`google_google:<workspaceId>:<userId>:<email>`, nằm cạnh các cơ sở dữ liệu và
+trong cùng ranh giới tin cậy của hệ thống tệp máy chủ. Một đăng nhập bằng máy khách
+riêng lưu access token và refresh token. Một đăng nhập qua Connect chỉ lưu một
+thông tin xác thực đã được niêm phong mà Connect mở cho riêng máy chủ này; access
+token chỉ nằm trong bộ nhớ. Máy chủ tự động làm mới quyền truy cập và, khi Google
+vô hiệu hóa vĩnh viễn một tài khoản (phiên bị thu hồi hoặc hết hạn từ lâu), nó
+phát `CalendarAuthExpired` và hiện banner **kết nối lại** thay vì thất bại âm
+thầm. Một đăng nhập mà máy chủ này không còn dùng được (do một máy khách riêng
+khác cấp, hoặc được niêm phong cho một bản cài hay một Connect khác) sẽ bị xóa ở
+lần đọc tiếp theo và hiện cùng banner đó.
+
+Không bản dựng nào mang thông tin xác thực Google. Máy khách của máy chủ đến từ
+**Cài đặt → Máy chủ → Đăng nhập một lần → Ứng dụng nhà cung cấp** hoặc tệp `.env`
+của máy chủ (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`). Cố ý không
+có cờ dòng lệnh: một secret trên dòng lệnh có thể bị đọc qua `ps`, và máy chủ từ
+chối khởi động khi secret được export trong môi trường tiến trình của nó.
 
 Để chạy dự án Google của riêng bạn, xem
 [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
@@ -125,7 +131,7 @@ hoạt động trong trình duyệt.
 
 :::note[Agent không thể đọc lịch của bạn]
 Không có công cụ MCP nào dành cho lịch. Agent không thể liệt kê sự kiện, đọc chi
-tiết một sự kiện hay RSVP thay bạn; bề mặt `calendar.*` chỉ là RPC dành cho máy
+tiết một sự kiện, đặt, dời hoặc xóa sự kiện hay RSVP thay bạn; bề mặt `calendar.*` chỉ là RPC dành cho máy
 khách con người.
 :::
 

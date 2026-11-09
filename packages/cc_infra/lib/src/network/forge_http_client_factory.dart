@@ -8,6 +8,29 @@ import 'package:rhttp/rhttp.dart';
 /// configured.
 typedef ForgeTokenLookup = Future<String?> Function(ForgeHost forge);
 
+/// Resolves the credential for one request, given its method and URL (which
+/// may be relative to the forge's API base). Lets a client pick a
+/// per-repository token per call.
+typedef ForgeRequestTokenLookup =
+    Future<String?> Function(ForgeHost forge, String method, String url);
+
+/// Observes the status and headers of every response (and status failure) a
+/// forge client receives, e.g. to track `x-ratelimit-*` budgets. Must not
+/// throw; it cannot change the response.
+typedef ForgeResponseObserver =
+    void Function(ForgeHost forge, int statusCode, Map<String, String> headers);
+
+/// Inspects one outgoing request (method, URL, decoded JSON body) and returns
+/// why it must not be sent, or null to let it through. A refusal fails the
+/// call with [ForgeRequestRefused] before any credential is looked up.
+typedef ForgeRequestGuard =
+    String? Function(
+      ForgeHost forge,
+      String method,
+      String url,
+      Object? jsonBody,
+    );
+
 /// Builds the client for one forge. Defaults to [createHttpClient]; injectable
 /// so tests can exercise authentication without a native transport.
 typedef ForgeHttpClientBuilder =
@@ -35,6 +58,9 @@ class ForgeHttpClientFactory {
   /// (its account email); it is read lazily for the same reason as the token.
   ForgeHttpClientFactory({
     required this._tokenLookup,
+    this._requestTokenLookup,
+    this._onResponse,
+    this._requestGuard,
     String Function()? bitbucketUsername,
     this._timeout = const Duration(seconds: 12),
     ForgeHttpClientBuilder? buildClient,
@@ -42,6 +68,15 @@ class ForgeHttpClientFactory {
        _buildClient = buildClient ?? _createHttpClient;
 
   final ForgeTokenLookup _tokenLookup;
+
+  /// When set, wins over the per-forge lookup.
+  final ForgeRequestTokenLookup? _requestTokenLookup;
+
+  /// Sees every response's status and headers, when set.
+  final ForgeResponseObserver? _onResponse;
+
+  /// Refuses requests this client must never send, when set.
+  final ForgeRequestGuard? _requestGuard;
   final String Function() _bitbucketUsername;
 
   /// Longest a forge call may take, connection included.
@@ -68,11 +103,17 @@ class ForgeHttpClientFactory {
         ),
       ),
       [
+        // The guard runs first so a refused request never mints a token.
+        if (_requestGuard case final guard?)
+          ForgeRequestGuardInterceptor(forge: forge, guard: guard),
         ForgeAuthInterceptor(
           forge: forge,
           tokenLookup: _tokenLookup,
+          requestTokenLookup: _requestTokenLookup,
           bitbucketUsername: _bitbucketUsername,
         ),
+        if (_onResponse case final observer?)
+          ForgeResponseObserverInterceptor(forge: forge, observer: observer),
       ],
     );
   }
@@ -95,6 +136,7 @@ class ForgeAuthInterceptor extends Interceptor {
     required this.forge,
     required this.tokenLookup,
     required this.bitbucketUsername,
+    this.requestTokenLookup,
   });
 
   /// The forge every request through this interceptor is authenticated for.
@@ -103,6 +145,9 @@ class ForgeAuthInterceptor extends Interceptor {
   /// Resolves the credential for [forge] on EVERY request, so a token pasted
   /// (or cleared) in Settings applies to the next call with no rebuild.
   final ForgeTokenLookup tokenLookup;
+
+  /// Per-request credential, when the client picks one per call.
+  final ForgeRequestTokenLookup? requestTokenLookup;
 
   /// The username half of Bitbucket's basic auth, read lazily for the same
   /// reason as [tokenLookup].
@@ -113,7 +158,10 @@ class ForgeAuthInterceptor extends Interceptor {
     HttpRequest request,
   ) async {
     var headers = request.headers;
-    final token = await tokenLookup(forge);
+    final perRequest = requestTokenLookup;
+    final token = perRequest != null
+        ? await perRequest(forge, request.method.value, request.url)
+        : await tokenLookup(forge);
     if (token != null && token.isNotEmpty) {
       headers = (headers ?? HttpHeaders.empty).copyWithRaw(
         name: 'Authorization',
@@ -156,6 +204,102 @@ class ForgeAuthInterceptor extends Interceptor {
     ForgeHost.github => const {'X-GitHub-Api-Version': '2022-11-28'},
     _ => const {},
   };
+}
+
+/// Why a [ForgeRequestGuard] refused a request. Thrown from the interceptor
+/// chain before the request is sent.
+class ForgeRequestRefused extends RhttpException {
+  /// Creates the refusal for [request].
+  const ForgeRequestRefused(super.request, this.reason);
+
+  /// What the guard said.
+  final String reason;
+
+  @override
+  String toString() => 'ForgeRequestRefused: $reason (${request.url})';
+}
+
+/// Fails requests a [ForgeRequestGuard] refuses.
+class ForgeRequestGuardInterceptor extends Interceptor {
+  /// Creates the guard interceptor for [forge].
+  ForgeRequestGuardInterceptor({required this.forge, required this.guard});
+
+  /// The forge the guarded client talks to.
+  final ForgeHost forge;
+
+  /// Decides per request.
+  final ForgeRequestGuard guard;
+
+  @override
+  Future<InterceptorResult<HttpRequest>> beforeRequest(
+    HttpRequest request,
+  ) async {
+    final body = request.body;
+    final reason = guard(
+      forge,
+      request.method.value,
+      request.url,
+      switch (body) {
+        HttpBodyJson(:final json) => json,
+        HttpBodyText(:final text) => _tryDecode(text),
+        _ => null,
+      },
+    );
+    if (reason != null) {
+      throw ForgeRequestRefused(request, reason);
+    }
+    return Interceptor.next();
+  }
+
+  static Object? _tryDecode(String text) {
+    try {
+      return jsonDecode(text);
+    } on FormatException {
+      return null;
+    }
+  }
+}
+
+/// Reports every response's status and headers, success or status failure,
+/// to a [ForgeResponseObserver]. Never alters the outcome.
+class ForgeResponseObserverInterceptor extends Interceptor {
+  /// Creates the observer interceptor for [forge].
+  ForgeResponseObserverInterceptor({
+    required this.forge,
+    required this.observer,
+  });
+
+  /// The forge the observed client talks to.
+  final ForgeHost forge;
+
+  /// Receives each response.
+  final ForgeResponseObserver observer;
+
+  @override
+  Future<InterceptorResult<HttpResponse>> afterResponse(
+    HttpResponse response,
+  ) async {
+    _report(response.statusCode, response.headerMap);
+    return Interceptor.next();
+  }
+
+  @override
+  Future<InterceptorResult<RhttpException>> onError(
+    RhttpException exception,
+  ) async {
+    if (exception is RhttpStatusCodeException) {
+      _report(exception.statusCode, exception.headerMap);
+    }
+    return Interceptor.next();
+  }
+
+  void _report(int status, Map<String, String> headers) {
+    try {
+      observer(forge, status, headers);
+    } on Object {
+      // Observation is advisory; a broken observer must not fail the call.
+    }
+  }
 }
 
 /// Whether [headers] carries [name], case-insensitively.

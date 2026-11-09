@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/github_installations_group.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/forge/providers/workspace_github_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_app_fields.dart';
@@ -13,8 +15,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → Workspace → General: how this workspace authenticates to GitHub.
 ///
-/// Admin-only. Inherit workspaces use the install App from Server → Provider
-/// apps; a different App or a PAT lives here. Secrets stay on the server.
+/// Admin-only. Inherit workspaces use this server's GitHub lane (its own App
+/// from Server → Provider apps, or Control Center Connect); a workspace with
+/// an App of its own configures it here. There is no token mode: people act
+/// through their own App user token, automation through one-repository App
+/// tokens. Secrets stay on the server.
 class WorkspaceGitHubIdentityCard extends ConsumerWidget {
   /// Creates a [WorkspaceGitHubIdentityCard].
   const WorkspaceGitHubIdentityCard({super.key});
@@ -61,8 +66,10 @@ class _WorkspaceGitHubIdentityBodyState
         updatedAt: DateTime.now(),
       ),
     );
-    ref.invalidate(workspaceGitHubStatusProvider);
-    ref.invalidate(signInProvidersProvider);
+    ref
+      ..invalidate(workspaceGitHubStatusProvider)
+      ..invalidate(oauthLanesProvider)
+      ..invalidate(forgeConnectionsProvider);
   }
 
   Future<void> _setAppId(String appId) async {
@@ -131,13 +138,6 @@ class _WorkspaceGitHubIdentityBodyState
             hint: l10n.workspaceGitHubAppHint,
             onSelected: _setMode,
           ),
-          _ModeOption(
-            mode: GithubAuthMode.pat,
-            selected: mode,
-            title: l10n.workspaceGitHubModePat,
-            hint: l10n.workspaceGitHubPatDescription,
-            onSelected: _setMode,
-          ),
           if (mode == GithubAuthMode.app) ...[
             const SizedBox(height: AppSpacing.lg),
             SettingsGroup(
@@ -200,24 +200,8 @@ class _WorkspaceGitHubIdentityBodyState
               ],
             ),
           ],
-          if (mode == GithubAuthMode.pat) ...[
-            const SizedBox(height: AppSpacing.lg),
-            ProviderAppSecretField(
-              title: l10n.workspaceGitHubPatLabel,
-              configured: status.hasBackgroundPat,
-              secret: true,
-              onSet: (v) => setWorkspaceGitHubPat(ref, v),
-            ),
-            Text(
-              status.hasBackgroundPat
-                  ? l10n.workspaceGitHubHasPat
-                  : l10n.workspaceGitHubNoPat,
-              style: CcTypography.caption.copyWith(
-                color: (context.designSystem ?? DesignSystemTokens.light())
-                    .textSecondary,
-              ),
-            ),
-          ],
+          const SizedBox(height: AppSpacing.lg),
+          GitHubInstallationsGroup(workspaceId: widget.workspace.id),
           if (status.app.error.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(

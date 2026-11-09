@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
+    show kPipelineRequestedByKey;
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
@@ -13,13 +15,20 @@ import 'package:cc_infra/cc_infra.dart';
 /// findings scattered as messages, the PR's review tab had no verdict to show
 /// and the Publish button had nothing to publish.
 ///
-/// [githubPrClientFor] resolves the client `prReview.comment` posts on: the
-/// run's workspace background identity for the repo's owner, so the comment
-/// follows that workspace's GitHub identity mode.
+/// [githubPrClientFor] resolves the client `prReview.comment` posts on: a
+/// one-repository token for the repo's owner, bounded by the person who
+/// started the run (the run's requester) or else the workspace's accountable
+/// human. [automatedAttribution] names Control Center in the comment when
+/// that token posts under a person's account.
 void registerPrReviewBodies(
   PipelineBodyRegistry registry, {
-  required GitHubPrClient Function(String workspaceId, String owner)
+  required GitHubPrClient Function(
+    String workspaceId,
+    String owner, {
+    String? actingUserId,
+  })
   githubPrClientFor,
+  AutomatedReviewAttribution? automatedAttribution,
   Future<Map<String, dynamic>> Function({
     required String workspaceId,
     required String spaceId,
@@ -82,16 +91,28 @@ void registerPrReviewBodies(
       return StepResult.failed('Invalid repo_full_name: $repoFullName');
     }
 
-    final review = await githubPrClientFor(
-      ctx.workspaceId,
-      parts[0],
-    ).submitReview(
-      parts[0],
-      parts[1],
-      prNumber: prNumber,
-      event: 'COMMENT',
-      body: findings,
+    // Only the engine writes the requester; a payload cannot name one.
+    final requester = switch (ctx.triggerPayload?[kPipelineRequestedByKey]) {
+      final String id when id.isNotEmpty => id,
+      _ => null,
+    };
+    final attribute = await automatedAttribution?.call(
+      workspaceId: ctx.workspaceId,
+      owner: parts[0],
+      actingUserId: requester,
     );
+    final review =
+        await githubPrClientFor(
+          ctx.workspaceId,
+          parts[0],
+          actingUserId: requester,
+        ).submitReview(
+          parts[0],
+          parts[1],
+          prNumber: prNumber,
+          event: 'COMMENT',
+          body: attribute == null ? findings : attribute(findings),
+        );
 
     return StepResult.terminal(
       mutatedState: {

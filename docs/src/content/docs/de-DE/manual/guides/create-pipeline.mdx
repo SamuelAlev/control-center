@@ -2,7 +2,7 @@
 title: Eine Pipeline-Vorlage erstellen
 description: Lege im Pipeline-Editor eine DAG-Vorlage an. Füge Knoten hinzu, verbinde sie, deklariere Eingaben und mach sie ausführbar.
 slug: de-DE/handbuch/anleitungen/pipeline-erstellen
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipeline-Vorlagen entstehen in den Einstellungen des Arbeitsbereichs. Der Eintrag
@@ -135,10 +135,21 @@ Ergänzt **Bash-Skript**. Felder für das Arbeitsverzeichnis oder die Umgebung
 gibt es nicht, weil beides fest ist:
 
 - Jeder Bash-Schritt eines Laufs teilt sich das cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` kommt aus dem Zugangsdatenspeicher, deshalb funktionieren `gh` und
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` ohne weitere Einrichtung.
+- Das Skript läuft in der OS-Sandbox des Hosts, wie die Befehle eines Agenten. Auf
+  einem Host ohne Sandbox (Windows oder Linux ohne `bwrap`) schlägt der Schritt fehl,
+  statt uneingeschränkt zu laufen. Das Datenverzeichnis und die `.env`-Datei des
+  Servers sind von innen nicht lesbar.
+- Git und `gh` sehen keine Konfiguration des Hosts: keine gespeicherte Anmeldung,
+  keinen Credential-Helper und keine globalen Hooks.
+- Nennt die Pipeline ein mit dem Arbeitsbereich verknüpftes GitHub-Repo
+  (`repo_full_name` im Zustand oder in der Nutzlast des Triggers), enthalten
+  `GH_TOKEN` und `GITHUB_TOKEN` ein Token, das nur dieses eine Repo lesen kann,
+  deshalb funktionieren `gh` und `git clone` dagegen ohne weitere Einrichtung.
+  Andernfalls gibt es kein GitHub-Token.
+- Nur ein Administrator des Arbeitsbereichs kann eine Pipeline mit einem
+  Bash-Schritt anlegen oder bearbeiten.
 - Das Skript wird als das ausführbare Programm `bash` gestartet, deshalb muss `bash` auf
-  dem `PATH` des Server-Hosts liegen. Das gilt es unter Windows zu bedenken.
+  dem `PATH` des Server-Hosts liegen.
 
 ### Router
 

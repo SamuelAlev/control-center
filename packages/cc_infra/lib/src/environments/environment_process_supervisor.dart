@@ -13,6 +13,8 @@ import 'package:cc_infra/src/environments/environment_log_ring.dart';
 import 'package:cc_infra/src/environments/environment_probes.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Which rules a supervised command follows.
@@ -256,7 +258,11 @@ class HostProcessGroups implements EnvironmentProcessGroups {
     if (Platform.isWindows) {
       return await startTime(group) == null ? const [] : [group];
     }
-    final result = await Process.run('ps', ['-A', '-o', 'pid=,pgid=,stat=']);
+    final result = await ChildProcess.run('ps', [
+      '-A',
+      '-o',
+      'pid=,pgid=,stat=',
+    ]);
     if (result.exitCode != 0) {
       return const [];
     }
@@ -285,7 +291,12 @@ class HostProcessGroups implements EnvironmentProcessGroups {
     if (Platform.isWindows) {
       return null;
     }
-    final result = await Process.run('ps', ['-o', 'lstart=', '-p', '$pid']);
+    final result = await ChildProcess.run('ps', [
+      '-o',
+      'lstart=',
+      '-p',
+      '$pid',
+    ]);
     final text = '${result.stdout}'.trim();
     return result.exitCode == 0 && text.isNotEmpty ? text : null;
   }

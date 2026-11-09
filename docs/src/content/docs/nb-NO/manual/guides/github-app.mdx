@@ -1,213 +1,202 @@
 ---
 title: Opprett GitHub App
-description: Registrer en GitHub App for serveren din, slik at medlemmer kan logge inn, og slik at bakgrunnsarbeid kjører som appen i stedet for som en person.
+description: Gi serveren din sin egen GitHub App med ett klikk, installer den der repoene dine ligger, og autoriser serveren for installasjonen til en organisasjon.
 slug: nb-NO/handbok/slik-gjor-du/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Denne veiledningen viser deg hvordan du gir serveren din sin egen
-GitHub-identitet. Det tar omtrent to minutter, bare servereieren gjør det, og det
-må bare gjøres én gang per server.
+Denne veiledningen viser deg hvordan du gir serveren din sin egen GitHub App. Det
+tar omtrent to minutter, bare servereieren gjør det, og det må bare gjøres én
+gang per server.
 
 :::note[Du trenger den kanskje ikke]
-Et offisielt bygg leveres allerede med en GitHub-**client id**, så
-[Logg inn med GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/) fungerer
-med en gang uten at noe er registrert — en enhetsflyt autentiserer med client
-id-en alene, så det er trygt å levere. Registrer din egen app når du vil at
-SERVEREN skal opptre som seg selv (webhooks, PR-polling og sakssynkronisering som
-kjører på en appinstallasjon i stedet for på en persons påloggingsinformasjon),
-eller når du bygger fra kildekode.
+Når Control Center Connect er slått på, logger folk inn på GitHub via den delte
+appen til Control Center, eller via appen som organisasjonens Connect bruker.
+Registrer din egen når du har valgt **Bruk mine egne apper**: serverens egen app gjelder bare da. Se
+[Control Center Connect](/nb-NO/handbok/referanse/connect/).
 :::
 
-For å koble til din egen konto etterpå, se
+For å logge inn på din egen konto etterpå, se
 [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
 
-## Hvorfor serveren din trenger sin egen app
+## Hva appen gjør
 
-To forskjellige oppgaver kommer ut av én registrering, og appen er det som gjør
-begge troverdige:
+Én registrering løser to forskjellige oppgaver:
 
-| Oppgave                    | Hva som svarer                                | Hvorfor det betyr noe                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **En person logger inn**  | Appens client id, via enhetsflyten      | Du får påloggingsinformasjon som er din, på serveren, på hver enhet — uten et token å lime inn eller rotere |
-| **Serveren opptrer**    | Appens id + private key → installasjonstoken | Webhooks, PR-polling og sakssynkronisering slutter å avhenge av at én persons token fortsatt er gyldig            |
+| Oppgave                   | Hva som svarer                                | Hvorfor det betyr noe                                                                       |
+| ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **En person logger inn**  | Appens client id og client secret             | Alle får sin egen GitHub-påloggingsinformasjon, på serveren, på hver enhet                  |
+| **Serveren opptrer**      | Appens id og private key                      | Agenter, pipelines, pollere og botsvar får tokener for ett repo om gangen                   |
 
-Legg merke til hva som **ikke** står i den tabellen: en client secret. GitHubs
-enhetsflyt autentiserer med client id-en alene — både forespørselen om
-enhetskode og token-pollingen — så det finnes ingen secret å ta vare på for
-pålogging.
+Den andre oppgaven låner aldri en persons påloggingsinformasjon i sin helhet.
+Hvert token serveren utsteder, dekker ett repo og er begrenset til det et
+ansvarlig medlem kan gjøre der. Å lese et tilkoblet repo krever bare appen; alt
+som skriver, krever et medlem som kan pushe. Automatisering godkjenner aldri en
+pull request.
 
-Uten din egen app fungerer det første fortsatt gjennom client id-en bygget
-leverer; det andre faller tilbake til servereierens påloggingsinformasjon, så
-bakgrunnsarbeid hviler på den som satte opp serveren først.
-
-:::note[Det finnes ingen «installer Control Centers GitHub App»-knapp]
-En distribuert GitHub App ville bety én delt client secret og én delt
-installasjon på tvers av alles servere, så hvert arbeidsområdes tilgang til
-repoer ville gå gjennom påloggingsinformasjon som ingen i det arbeidsområdet
-kontrollerer. Hver server eier derfor sin egen app — denne veiledningen handler
-om hvor lite det koster.
-:::
+Serverens egen app gjelder bare under **Bruk mine egne apper**. Med Control Centers eller en egendefinert Connect håndterer Connect GitHub, og serverens app forblir lagret, men ubrukt til du bytter tilbake. Arbeidsområdets egen app ([Gi ett arbeidsområde en annen app](#gi-ett-arbeidsområde-en-annen-app)) gjelder i alle moduser. En app der noen av
+feltene mangler, er en feil, ikke en reserveløsning: GitHub-pålogginger avvises
+til hvert felt er satt.
 
 ## Forutsetninger
 
-- Du er **servereier** — `providerApps.*`-operasjonene er forbeholdt denne
-  rollen, og kortet er usynlig for alle andre
-- En GitHub-konto, eller en organisasjon der du kan opprette apper
-- Ingenting offentlig tilgjengelig: påloggingen er en **enhetsflyt**, så
-  serveren trenger ingen inngående port, tunnel, callback-URL eller domene
+- Du er **servereier**. Kortet **Leverandørapper** er usynlig for alle andre
+- En GitHub-konto. Appen opprettes under den
+- En serveradresse nettleseren din kan nå. Serverens offentlige URL (eller
+  loopback, for skrivebordets egen server) er der GitHub sender deg tilbake
 
-## Registrer appen
-
-1. Gå til [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for en organisasjon: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — hva som helst; `Control Center (yourname)` går fint.
-   Navnet vises på commits og kommentarer serveren legger inn
-3. **Homepage URL** — hva som helst, f.eks. `https://github.com/your-name`
-4. **Callback URL** — la den stå tom. Enhetsflyten bruker ingen
-5. Hak av for **Enable Device Flow**. Dette er den ene innstillingen
-   påloggingen ikke kan fungere uten
-6. Fjern haken for **Webhook → Active** med mindre du setter opp webhooks
-   separat
-7. Under **Repository permissions** gir du minst:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, hvis du bruker GitHub Issues som saker, og for
-     botens kommentarsøk i PR-samtaler
-     (se [Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/))
-   - **Checks**: Read-only, for CI-status på PR-siden
-8. Under **Where can this GitHub App be installed?** velger du det som passer —
-   «Only on this account» er riktig for en personlig server
-9. Klikk **Create GitHub App**
-
-## Hent ut de tre verdiene
-
-På appens side, rett etter at den er opprettet:
-
-| Verdi           | Hvor                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | **General**-fanen, nær toppen                 |
-| **Client ID**   | **General**-fanen, under «Client secrets»       |
-| **Privat nøkkel** | **Generate a private key** — en `.pem` lastes ned   |
-
-Filen med den private nøkkelen lastes ned én gang, og GitHub viser den aldri
-igjen. Ta vare på den til du har limt den inn; du kan alltids generere en ny.
-
-En **client secret** er valgfri og gir deg nøyaktig én ting: hvis du lar «Expire
-user authorization tokens» stå PÅ, er det denne som fornyer noens token i det
-stille i stedet for å be dem logge inn på nytt hver åttende time. Selve
-påloggingen bruker den aldri.
-
-Det enkleste oppsettet er å slå den utløpsinnstillingen AV, og da trengs ingen
-secret noe sted. Hvis du beholder den på, genererer du en secret og limer den
-inn i **Innstillinger → Server → Enkel pålogging** (kortet **Leverandørapper**)
-— det finnes ingen miljøvariabel for den, og ingen er bakt inn i et bygg, så den
-blir værende på serveren din.
-
-## Installer den på kontoen din
-
-En app som er registrert, men ikke installert, kan autentisere folk, men ikke
-lese noe.
-
-1. På appens side åpner du **Install App**
-2. Installer den på kontoen eller organisasjonen din
-3. Velg **All repositories**, eller velg de repoene denne serveren skal se
-
-## Lim den inn i Control Center
+## Opprett den med ett klikk
 
 1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til kortet
    **Leverandørapper**
-2. I **GitHub**-blokken fyller du ut hvert felt:
-   - **App-id** — det numeriske App ID
-   - **Privat nøkkel** — lim inn hele `.pem`-en, inkludert `BEGIN`- og
-     `END`-linjene
-   - **Client id** — fra samme side
-   - **Client secret** — bare hvis du genererte en (for tokenfornying)
-3. Klikk **Test**
+2. I **GitHub**-blokken kan du skrive inn GitHub-organisasjonen som skal eie
+   appen, i **Organisasjon (valgfritt)**. La feltet stå tomt for å opprette appen
+   under din egen konto; å opprette den under en organisasjon krever en eier av
+   den organisasjonen
+3. Klikk **Opprett min GitHub-app**
+4. Nettleseren din åpner GitHub med appen allerede utfylt. Klikk
+   **Create GitHub App**
+5. GitHub sender deg tilbake til serveren, som lagrer app-id-en, den private
+   nøkkelen, client id-en og client secret-en, og deretter åpner appens
+   installasjonsside
 
-Nøkkelen analyseres idet den lagres, så en avkuttet eller feilformatert
-innliming avvises der og da i stedet for å feile på en bakgrunnsforespørsel
-flere timer senere. **Test** går lenger og spør GitHub hvilke kontoer appen er
-installert på — «lagret» og «virker» er forskjellige påstander, og bare den
-andre betyr at noe faktisk vil kjøre.
+Ingenting kopieres for hånd, og konverteringskoden går rett fra GitHub til
+serveren din. Lenken fungerer én gang og utløper etter ti minutter; hvis den
+utløper, klikker du **Opprett min GitHub-app** igjen.
+
+Appen heter `Control Center <code>` og ber om nøyaktig det Control Center
+bruker:
+
+| Tillatelse                                 | Tilgang          |
+| ------------------------------------------ | ---------------- |
+| Metadata                                   | Les              |
+| Contents                                   | Les og skriv     |
+| Pull requests                              | Les og skriv     |
+| Issues                                     | Les og skriv     |
+| Checks, Actions, Commit statuses           | Les              |
+| Organization members                       | Les              |
+
+Webhooks er av: serveren poller. For senere å flytte en app du opprettet under
+din egen konto til en organisasjon, bruker du **Transfer ownership** i appens
+avanserte innstillinger på GitHub.
 
 Sjekkpunkt: GitHub-blokken viser «Serveren kan opptre som seg selv, og folk kan
-logge inn», og **GitHub**-raden under **Innstillinger → Arbeidsområde → Profil og
-identitet → Kodehosting** tilbyr nå **Logg inn med GitHub**.
+logge inn».
 
-## Konfigurer den med miljøvariabler i stedet
+## Installer den der repoene dine ligger
+
+En app som er registrert, men ikke installert, kan logge inn folk og leser
+ingenting.
+
+1. Velg kontoen eller organisasjonen som eier repoene dine, på
+   installasjonssiden GitHub åpnet
+2. Velg **All repositories**, eller velg de repoene denne serveren skal se
+
+For å installere den på en annen konto senere går en administrator i
+arbeidsområdet til **Innstillinger → Arbeidsområde → Generelt**, finner
+**Installasjoner av GitHub-appen** på kortet for GitHub-identitet og klikker
+**Installer GitHub-appen**. Listen viser alle kontoer appen er installert på,
+og markerer en suspendert installasjon.
+
+## Autoriser denne serveren for en organisasjon
+
+På den delte appen til Control Center betjener en organisasjons installasjon
+bare de serverne administratorene har autorisert. En installasjon via
+**Installer GitHub-appen** autoriserer serveren som startet den. For en
+installasjon som allerede finnes:
+
+1. En administrator i den organisasjonen logger inn på GitHub på denne serveren
+2. Vedkommende åpner **Innstillinger → Arbeidsområde → Generelt → Installasjoner
+   av GitHub-appen**
+3. Organisasjonens rad sier **Ikke autorisert**. Vedkommende klikker
+   **Autoriser denne serveren**
+
+Raden viser deretter **Autorisert**. Din egen app trenger ikke noe av dette:
+hver installasjon av den tilhører serveren din.
+
+## Registrer den for hånd i stedet
+
+Kortet **Leverandørapper** tar også imot verdiene direkte, for en app du har
+registrert selv:
+
+| Gruppe                       | Felter                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Opptre som serveren**      | **App-id** og **Privat nøkkel** (hele `.pem`-en, inkludert `BEGIN`- og `END`-linjene)           |
+| **Logge inn folk**           | **Client id** og **Client secret**. **Callback-URL-er** viser URL-en som skal registreres, ordrett |
+| **Pull request-samtaler**    | **Bot-innlogging**, løst opp når du tester tilkoblingen                                         |
+
+Registrer callback-URL-en `<server origin>/oauth/github/callback` nøyaktig slik
+kortet viser den, la **Expire user authorization tokens** stå på, og gi
+tillatelsene i tabellen over. Klikk **Test**: den spør GitHub hvilke kontoer
+appen er installert på, så «lagret» og «virker» ikke blandes sammen.
+
+## Konfigurer den fra serverens `.env`
 
 For en headless- eller skriptbasert installasjon fyller serveren hvert felt fra
-miljøet første gang det ikke har en lagret verdi:
+`.env`-filen første gang det ikke har en lagret verdi:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Det finnes ingen kommandolinjeflagg for disse — en secret på en kommandolinje
-kan leses av alle prosesser på verten gjennom `ps`. Miljøet er det eneste stedet
-å konfigurere dem, og det overstyrer det bygget måtte levere. `.env.template` er
-den komplette listen.
-
-For lokal utvikling har `.env` i repo-roten de samme verdiene, og
-skrivebordsappen sender dem videre til serveren den starter. Legg nøkkelen på
-**én linje** der: en `.env`-verdi er én linje, og `\n` inne i doble
-anførselstegn dekodes til et linjeskift.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` og `GITHUB_APP_PRIVATE_KEY` er de samme navnene som sandkassens
-tokenmegler allerede leser, så en vert som har konfigurert finkornede
-agenttokens, får påloggingsbanen gratis. Fylling fra miljøet skjer **én gang per
-felt** — etter det vinner den lagrede verdien, så redigeringer i Innstillinger
-blir ikke overskrevet ved neste omstart.
+Legg nøkkelen på **én linje**: en `.env`-verdi er én linje, og `\n` inne i doble
+anførselstegn dekodes til et linjeskift. Serveren nekter å starte når
+`GITHUB_APP_PRIVATE_KEY` eller `GITHUB_CLIENT_SECRET` er eksportert i
+prosessmiljøet, der hver underprosess kunne lese dem; hold dem i `.env`-filen (i
+Docker monterer du den på `/app/bin/.env`). Fyllingen skjer **én gang per
+felt**, så redigeringer i Innstillinger blir ikke overskrevet ved neste omstart.
 
-## Gjør det samme for Linear
+## Gi ett arbeidsområde en annen app
 
-Linear har ingen enhetsflyt, så påloggingen der er en runde i nettleseren, og
-den trenger en callback-URL — kortet **Leverandørapper** viser deg nøyaktig
-hvilken du skal registrere.
+Et arbeidsområde kan bruke sin egen app i stedet for serverens. En
+administrator i arbeidsområdet går til **Innstillinger → Arbeidsområde →
+Generelt**, velger **Bruk en annen GitHub-app** på kortet **GitHub-identitet** og
+legger inn appens id, private nøkkel, client id og client secret. Medlemmene
+logger da inn på den appen for dette arbeidsområdet. Et arbeidsområde med egen
+app faller aldri tilbake på serverens app eller på Connect: til feltene er
+fullstendige, avvises GitHub-arbeidet. Dette gjelder uansett hvordan serveren logger folk inn, Connect inkludert.
 
-1. Opprett en OAuth-applikasjon på
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Sett **Callback URL** til URL-en kortet viser, ordrett
-3. Lim inn **Client ID** og **Client secret** i Linear-blokken
-4. Legg eventuelt til en **API-nøkkel** for arbeidsområdet — det er
-   påloggingsinformasjonen serveren bruker til å synkronisere saker når ingen har
-   bedt om det
+Kortet **Leverandørapper** på samme side gjør det samme for Google Calendar, Linear og GIF-søk. Se [Gi ett arbeidsområde en egen Linear-applikasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/#gi-ett-arbeidsområde-en-egen-linear-applikasjon) og [Gi ett arbeidsområde en egen Google-klient](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/#gi-ett-arbeidsområde-en-egen-google-klient).
 
 ## Feilsøking
 
-### Påloggingsdialogen sier at leverandøren ikke returnerte noen enhetskode
+### Opprett min GitHub-app sier at serveren ikke har noen adresse
 
-**Enable Device Flow** er slått av for appen. Slå den på under **General** og
-prøv igjen.
+Serveren har ingen offentlig URL som en nettleser kan komme tilbake til. Sett
+`CC_SERVER_PUBLIC_URL` (eller `--public-url`) og prøv igjen.
+
+### GitHub sier at lenken har utløpt
+
+Engangssiden er allerede brukt, eller det har gått ti minutter. Start på nytt
+fra Innstillinger.
 
 ### Test sier at påloggingsinformasjonen virker, men at appen ikke er installert noe sted
 
-Registrering og installasjon er to separate steg. Åpne **Install App** på appens
-side og installer den.
+Registrering og installasjon er separate trinn. Åpne appens installasjonsside,
+eller bruk **Installer GitHub-appen** under Arbeidsområde → Generelt.
 
 ### Test sier at den private nøkkelen ikke kunne leses
 
 Lim inn hele `.pem`-filen, inkludert linjene `-----BEGIN` og `-----END`. En
-`ed25519`- eller EC-nøkkel kan ikke brukes — GitHub Apps signerer med RSA.
+`ed25519`- eller EC-nøkkel kan ikke brukes: GitHub Apps signerer med RSA.
 
 ### Et medlem logget inn, men ser ingen repoer
 
-Appen er ikke installert på kontoen som eier dem, eller installasjonen omfatter
-andre repoer. Medlemmets egen pålogging gir bare tilgang til det appen har lov
-til å se.
+Appen er ikke installert på kontoen som eier dem, eller installasjonen velger
+andre repoer. En pålogging gir bare det appen har lov til å se.
+
+### Agenter sier at installasjonen av GitHub App er suspendert
+
+Noen har suspendert installasjonen på GitHub. Opphev suspensjonen under kontoens
+**Settings → Applications → Installed GitHub Apps**.
 
 ## Relaterte veiledninger
 
 - [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
 - [Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/)
 - [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/)
+- [Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)
 - [Administrer API-nøkler](/nb-NO/handbok/slik-gjor-du/api-nokler/)
-- [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)

@@ -2603,6 +2603,26 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se așteaptă autorizarea în browser…';
 
   @override
+  String get credentialsConnectCodePrompt => 'Introdu codul afișat în browser';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Nu pare un cod de autentificare. Codurile au 8 litere și cifre.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Autentificarea în $provider nu este încă configurată pe acest server.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Adresa de revenire pentru autentificare a acestui server nu poate fi accesată în siguranță de pe telefon. Conectează-te din aplicația desktop sau cere proprietarului serverului să configureze o adresă HTTPS publică.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Autentificarea a expirat. Începe o nouă încercare.';
 
@@ -2623,10 +2643,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Finalizează autentificarea';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Callback-ul browserului de pe acest server nu poate fi accesat în siguranță de pe telefon. Cere proprietarului serverului să configureze un callback HTTPS public sau adaugă un token.';
 
   @override
   String get credentialsUpdateToken => 'Actualizează tokenul';

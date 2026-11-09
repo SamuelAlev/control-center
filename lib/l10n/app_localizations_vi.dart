@@ -1144,6 +1144,98 @@ class AppLocalizationsVi extends AppLocalizations {
   String get calendarRsvpFailed => 'Không thể cập nhật phản hồi của bạn';
 
   @override
+  String get calendarNewEvent => 'Sự kiện mới';
+
+  @override
+  String get calendarComposerTitleHint => 'Thêm tiêu đề';
+
+  @override
+  String get calendarComposerStarts => 'Bắt đầu';
+
+  @override
+  String get calendarComposerEnds => 'Kết thúc';
+
+  @override
+  String get calendarComposerDate => 'Ngày';
+
+  @override
+  String get calendarComposerEndDate => 'Ngày cuối';
+
+  @override
+  String get calendarComposerGuestsHint => 'Thêm khách mời bằng email';
+
+  @override
+  String get calendarComposerMeet => 'Thêm liên kết Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Thêm địa điểm';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Thêm mô tả';
+
+  @override
+  String get calendarComposerCalendar => 'Lịch';
+
+  @override
+  String get calendarComposerTitleRequired => 'Thêm tiêu đề để lưu sự kiện';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Một email khách mời không hợp lệ';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Sự kiện phải kết thúc sau khi bắt đầu';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Không thể tạo sự kiện. Vui lòng thử lại.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Khách mời sẽ nhận email lời mời từ Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Xóa sự kiện';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Xóa “$title”?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody =>
+      'Sự kiện sẽ bị xóa khỏi Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Sự kiện sẽ bị xóa khỏi Google Calendar, và mọi khách mời sẽ được thông báo rằng sự kiện đã bị hủy.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Sự kiện chỉ bị xóa khỏi lịch của bạn. Người tổ chức và các khách mời khác vẫn giữ sự kiện.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Chỉ xóa lần diễn ra này; phần còn lại của chuỗi được giữ nguyên.';
+
+  @override
+  String get calendarDeleteFailed => 'Không thể xóa sự kiện. Vui lòng thử lại.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Không thể di chuyển sự kiện. Sự kiện đã trở lại vị trí cũ.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Đã tạo sự kiện lịch';
+
+  @override
+  String get activityMovedCalendarEvent => 'Đã di chuyển sự kiện lịch';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Đã xóa sự kiện lịch';
+
+  @override
   String get calendarAddAccount => 'Thêm tài khoản lịch';
 
   @override
@@ -1154,9 +1246,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Kết nối tài khoản Google để đồng bộ sự kiện vào không gian này. Các lịch này là của bạn ở đây.';
 
   @override
-  String get calendarConnecting => 'Đang kết nối…';
-
-  @override
   String get calendarSyncNow => 'Đồng bộ ngay';
 
   @override
@@ -1164,32 +1253,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Không thể kết nối Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Nhập client ID và secret OAuth device-code của Google cho dự án của bạn. Máy chủ thực hiện kết nối và đồng bộ — trình duyệt không bao giờ giữ token.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Mở trang xác minh trên bất kỳ thiết bị nào, đăng nhập và nhập mã này:';
-
-  @override
-  String get calendarConnectOpenPage => 'Mở trang xác minh';
-
-  @override
-  String get calendarConnectWaiting => 'Đang chờ phê duyệt…';
-
-  @override
-  String get calendarConnectDenied => 'Ủy quyền bị từ chối. Vui lòng thử lại.';
-
-  @override
-  String get calendarConnectExpired => 'Mã đã hết hạn. Vui lòng thử lại.';
 
   @override
   String get notificationMeetingStartsSoon => 'Cuộc họp sắp bắt đầu';
@@ -2407,9 +2470,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã thay đổi quyền truy cập kho lưu trữ của thành viên';
 
   @override
-  String get activityUpdatedGitHubToken => 'Đã cập nhật token GitHub';
-
-  @override
   String get activityRefreshedWeather => 'Đã làm mới dự báo thời tiết';
 
   @override
@@ -2445,9 +2505,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'Đã phản hồi lời mời sự kiện';
-
-  @override
-  String get activityStartedCalendarConnect => 'Đã bắt đầu kết nối lịch';
 
   @override
   String get activityDisconnectedCalendar => 'Đã ngắt kết nối lịch';
@@ -4742,7 +4799,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get searchGifs => 'Tìm GIF';
 
   @override
-  String get searchGifsHint => 'Tìm GIF...';
+  String get searchGifsHint => 'Tìm trên KLIPY';
 
   @override
   String get searchInDiffHint => 'Tìm trong diff…';
@@ -5221,9 +5278,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Agent chưa đặt tên';
-
-  @override
-  String get updateKey => 'Cập nhật khóa';
 
   @override
   String get updateLabel => 'Cập nhật';
@@ -6277,7 +6331,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Chạy bằng bash -c. GITHUB_TOKEN được thiết lập. Placeholder được thay thế trước khi thực thi.';
+      'Chạy bằng bash -c trong sandbox của hệ điều hành. GH_TOKEN và GITHUB_TOKEN chứa token chỉ đọc cho kho mã đã liên kết. Placeholder được đặt trong dấu nháy và thay thế trước khi thực thi.';
 
   @override
   String get nodeConfigRouteKeys => 'Khóa định tuyến';
@@ -6951,7 +7005,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Đăng nhập GitHub hoặc thêm token trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Code hosting';
+      'Đăng nhập GitHub trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Code hosting';
 
   @override
   String get connectGitHubToLoadPrs => 'Kết nối GitHub để tải pull requests';
@@ -11899,7 +11953,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Nhắc bot trong $provider để giao việc cho agent, hoặc tạo phiếu bằng $command.';
+    return 'Nhắc bot trong $provider để giao việc cho agent, hoặc soạn bản nháp phiếu bằng $command.';
   }
 
   @override
@@ -11986,7 +12040,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Gửi lệnh này cho bot trong $provider. Chỉ dùng được một lần và hết hạn sau 15 phút.';
+    return 'Gửi mã này cho bot $provider bằng tin nhắn trực tiếp. Chỉ dùng được một lần và hết hạn sau 15 phút.';
   }
 
   @override
@@ -12151,20 +12205,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → sao chép bot user OAuth token.';
-
-  @override
-  String get calendarUseBuiltinApp => 'Dùng app Google của Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Phê duyệt bằng tài khoản Google. Không cần thiết lập gì trên Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Dùng client Google Cloud của tôi';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Nhập OAuth client từ dự án Google Cloud của bạn.';
 
   @override
   String get aboutTitle => 'Giới thiệu';
@@ -12856,18 +12896,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get signInAgain => 'Đăng nhập lại';
 
   @override
-  String get signInNotFinished =>
-      'Đăng nhập chưa hoàn tất. Hoàn tất trên trình duyệt, rồi kiểm tra lại.';
+  String get forgeSignInBannerTitle =>
+      'Lưu trữ mã chưa được kết nối trong không gian làm việc này';
 
   @override
-  String get signedOutTitle => 'Bạn đã đăng xuất';
+  String get forgeSignInBannerBody =>
+      'Một phiên đăng nhập đã hết hạn hoặc bị thu hồi, hoặc không gian làm việc này dùng GitHub App riêng. Pull request, đánh giá và đồng bộ kho mã tạm dừng cho đến khi bạn đăng nhập.';
 
   @override
-  String get signedOutSubtitle =>
-      'Kết nối lưu trữ mã không còn hợp lệ — token đã hết hạn hoặc quyền truy cập bị thu hồi. Không có gì khác thay đổi: đăng nhập lại và mọi thứ vẫn như bạn để lại.';
-
-  @override
-  String get viaServerApp => 'qua ứng dụng của máy chủ này';
+  String get forgeSignInBannerAction => 'Đăng nhập';
 
   @override
   String get ticketing => 'Phiếu';
@@ -12885,14 +12922,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ticketProviderLocal => 'Cục bộ';
 
   @override
-  String get addKey => 'Thêm khóa';
-
-  @override
   String get providerApps => 'Ứng dụng nhà cung cấp';
 
   @override
   String get providerAppsDescription =>
-      'Không gian kế thừa GitHub App này trừ khi chọn App khác hoặc mã thông báo truy cập cá nhân. Công việc nền — webhook, thăm dò, đồng bộ — chạy trên app, không bao giờ trên mã thông báo của một người.';
+      'Các ứng dụng mà chính máy chủ này đã đăng ký với từng nhà cung cấp. Mọi người đăng nhập qua chúng, và các tác vụ nền như webhook, thăm dò và đồng bộ chạy trên chúng, không bao giờ trên phiên đăng nhập của một người.';
 
   @override
   String get providerAppId => 'Id ứng dụng';
@@ -12905,9 +12939,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Bí mật client';
-
-  @override
-  String get providerApiKey => 'Khóa API';
 
   @override
   String get providerCallbackUrl => 'URL callback';
@@ -12928,17 +12959,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Thông tin xác thực hoạt động. Đã cài trên: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Nhập mã này trên trang $provider vừa mở. Mã đã được sao chép vào clipboard.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Đang chờ bạn hoàn tất trong trình duyệt…';
-
-  @override
-  String get copyCodeAndOpen => 'Sao chép mã và mở';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13281,7 +13301,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Cho không gian kế thừa GitHub App của bản cài này. Không gian có App hoặc PAT riêng được cấu hình trong Không gian làm việc → Chung.';
+      'Được dùng bởi các không gian làm việc kế thừa ứng dụng GitHub của bản cài đặt này. Không gian làm việc có ứng dụng riêng sẽ cấu hình trong Không gian làm việc → Chung.';
 
   @override
   String get providerAppsGroupPrConversations => 'Hội thoại pull request';
@@ -14829,7 +14849,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Cách công việc GitHub nền xác thực trong không gian làm việc này. Kế thừa App của bản cài, dùng App khác, hoặc chỉ mã thông báo truy cập cá nhân.';
+      'Cách công việc GitHub chạy nền trong không gian làm việc này xác thực: bằng ứng dụng của bản cài đặt này, hoặc bằng ứng dụng riêng của không gian làm việc.';
 
   @override
   String get workspaceGitHubModeInherit => 'Dùng GitHub App của bản cài này';
@@ -14838,28 +14858,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Dùng GitHub App khác';
 
   @override
-  String get workspaceGitHubModePat => 'Chỉ mã thông báo truy cập cá nhân';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Dùng GitHub App trong Máy chủ → Ứng dụng nhà cung cấp.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Danh tính bot và thăm dò của không gian này. Thành viên đăng nhập ở Bạn qua App này.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Mã thông báo nền';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Cho thăm dò và tác nhân trong không gian này. Không phải mã thông báo hồ sơ của thành viên.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Đã lưu mã thông báo nền.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Không có mã thông báo nền.';
 
   @override
   String get profileOverlayHint =>
@@ -16721,4 +16725,538 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Chuyển không gian làm việc';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Đăng nhập vào $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Kết nối Linear để tự động hóa';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Đang mở $provider trong trình duyệt…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Phê duyệt yêu cầu trên trang $provider trong trình duyệt. Cửa sổ này tự nhận biết khi bạn hoàn tất.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Đang chờ $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Đăng nhập chưa hoàn tất';
+
+  @override
+  String get signInReopenPage => 'Mở lại trang đăng nhập';
+
+  @override
+  String get signInCodePrompt => 'Nhập mã hiển thị trong trình duyệt';
+
+  @override
+  String get signInCodeMalformed =>
+      'Đây có vẻ không phải mã đăng nhập. Mã gồm 8 chữ cái và chữ số.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Nếu trình duyệt đề nghị mở Control Center, hãy cho phép và bạn không cần gõ mã.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Đã đăng nhập vào $provider với tên $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Đã đăng nhập vào $provider';
+  }
+
+  @override
+  String get signInErrorExpired =>
+      'Phiên đăng nhập này đã hết hạn. Hãy bắt đầu lại.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Đăng nhập vào $provider đã bị hủy hoặc bị từ chối.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider cấp ít quyền hơn mức Control Center cần. Hãy đăng nhập lại và phê duyệt tất cả các quyền.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Mã này không khớp với lần đăng nhập này. Hãy kiểm tra rồi thử lại.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider hiện không phản hồi. Hãy thử lại sau vài phút.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider đã chấp nhận đăng nhập nhưng máy chủ không thể hoàn tất. Hãy thử lại.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Ứng dụng $provider của máy chủ này bị cấu hình sai. Hãy nhờ chủ sở hữu máy chủ kiểm tra Cài đặt → Máy chủ → Đăng nhập một lần.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Phiên đăng nhập $provider của bạn đã hết hạn. Hãy đăng nhập lại để tiếp tục làm việc với tư cách của mình.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'Ứng dụng $provider chưa được cài ở nơi cần dùng. Hãy cài đặt rồi thử lại.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Bản cài đặt ứng dụng GitHub này đã được ủy quyền cho một máy chủ Control Center khác.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Không gian làm việc Linear này đã được kết nối với một máy chủ Control Center khác.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Chỉ quản trị viên hoặc chủ sở hữu workspace Slack mới có thể kết nối nó với Control Center lần đầu. Hãy nhờ một trong số họ thêm ứng dụng.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'Ứng dụng $provider đang bị tạm ngưng. Hãy bỏ tạm ngưng trên $provider rồi thử lại.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect đã chặn máy chủ này. Hãy liên hệ người vận hành máy chủ Connect của bạn.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Đăng nhập thất bại vì một lý do mà máy chủ không báo. Hãy thử lại.';
+
+  @override
+  String get signInPhishingTitle => 'Đăng nhập không bắt đầu từ đây';
+
+  @override
+  String get signInPhishingBody =>
+      'Lần đăng nhập này không được bắt đầu từ ứng dụng này. Nếu ai đó gửi liên kết này cho bạn, đừng tiếp tục.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Không có gì được gửi đi. Hoàn tất một lần đăng nhập do người khác bắt đầu sẽ kết nối tài khoản của bạn với máy chủ của họ.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Cần đăng nhập $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Thao tác này chạy với tư cách của bạn trên $provider, nhưng bạn chưa đăng nhập. Hãy đăng nhập rồi thử lại.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Bạn chưa đăng nhập vào $provider. Mọi việc bạn làm ở đây đều chạy với tư cách của bạn, vì vậy hãy đăng nhập trước.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Máy chủ này chưa thiết lập đăng nhập $provider.';
+  }
+
+  @override
+  String get githubInstallations => 'Các bản cài đặt ứng dụng GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Nơi ứng dụng GitHub được cài đặt, trong số các tài khoản mà kho lưu trữ của không gian làm việc này thuộc về. Bản cài đặt của một tổ chức chỉ hoạt động trên các máy chủ mà quản trị viên của tổ chức đó ủy quyền.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'Ứng dụng GitHub chưa được cài trên tài khoản nào mà kho lưu trữ của không gian làm việc này thuộc về.';
+
+  @override
+  String get githubInstallApp => 'Cài ứng dụng GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Ủy quyền máy chủ này';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Máy chủ này giờ có thể dùng bản cài đặt trên $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Đã tạm ngưng';
+
+  @override
+  String get githubInstallationAuthorized => 'Đã ủy quyền';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Chưa ủy quyền';
+
+  @override
+  String get linearAutomationTitle => 'Tự động hóa Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Cho phép các tác tử và pipeline của không gian làm việc này hoạt động trong Linear với tư cách ứng dụng thay vì một người. Quản trị viên không gian làm việc sẽ kết nối.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Đã kết nối với $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Dùng ứng dụng của Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Đăng nhập đi qua Control Center Connect. Connect niêm phong mỗi lần đăng nhập để chỉ máy chủ này mở được, cấp token GitHub giới hạn trong một kho mã, không giữ khóa kho mã nào và không bao giờ nhận mã nguồn của bạn.';
+
+  @override
+  String get connectModeOwn => 'Dùng ứng dụng của riêng tôi';
+
+  @override
+  String get connectModeOwnHint =>
+      'Tự đăng ký ứng dụng GitHub, Google và Linear trong Cài đặt → Máy chủ → Đăng nhập một lần, và kết nối ứng dụng Slack riêng của từng không gian làm việc trong phần cài đặt của nó. “Tạo ứng dụng GitHub của tôi” thiết lập GitHub chỉ trong một bước.';
+
+  @override
+  String get connectModeCustom => 'Dùng máy chủ Connect tùy chỉnh';
+
+  @override
+  String get connectModeCustomHint =>
+      'Tổ chức của bạn tự vận hành máy chủ Connect. Đăng nhập sẽ đi đến đó thay vì đến máy chủ của Control Center.';
+
+  @override
+  String get connectModeUnset => 'Chưa thiết lập';
+
+  @override
+  String get connectCustomUrlLabel => 'URL máy chủ Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Nhập một địa chỉ HTTPS, ví dụ https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'HTTP thường chỉ tới được Connect trên máy này. Hãy dùng HTTPS cho mọi thứ trên mạng.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Các ứng dụng được lưu trữ của Control Center chưa có trong bản dựng này. Hãy dùng ứng dụng của riêng bạn hoặc máy chủ Connect tùy chỉnh.';
+
+  @override
+  String get connectErrorSignature =>
+      'Cấu hình của Connect không vượt qua kiểm tra chữ ký. Đăng nhập qua Connect tạm dừng cho đến khi được xác minh lại.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect cung cấp cấu hình cũ hơn cấu hình máy chủ này đã thấy, nên đã bị từ chối. Đăng nhập qua Connect đang tạm dừng.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Máy chủ này hiện không kết nối được với Connect. Các lần đăng nhập dùng Connect sẽ thất bại cho đến khi nó hoạt động lại.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect đã chặn ID cài đặt của máy chủ này. Hãy liên hệ người vận hành máy chủ Connect của bạn.';
+
+  @override
+  String get connectErrorPinsChanged => 'Ứng dụng của Connect đã thay đổi';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect phản hồi theo cách máy chủ này không hiểu. Hãy cập nhật máy chủ hoặc kiểm tra URL của Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect báo một sự cố mà không giải thích. Hãy chạy kiểm tra để thử lại.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Máy chủ Connect của bạn giờ nêu các ứng dụng GitHub, Google, Linear hoặc Slack khác với những ứng dụng máy chủ này đã ghim ở lần dùng đầu tiên. Chỉ tin tưởng chúng nếu người vận hành đã báo trước cho bạn.';
+
+  @override
+  String get connectConfirmPins => 'Tin tưởng ứng dụng mới';
+
+  @override
+  String get connectStale =>
+      'Cấu hình đang dùng cũ hơn dự kiến. Hãy chạy kiểm tra để làm mới.';
+
+  @override
+  String get connectLaneSourceOwn => 'Ứng dụng riêng';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Tắt';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Máy chủ này dùng ứng dụng của ai cho GitHub, Google Calendar, Linear, Slack và tìm kiếm GIF.';
+
+  @override
+  String get connectFactMode => 'Ứng dụng đăng nhập';
+
+  @override
+  String get connectFactHealth => 'Trạng thái';
+
+  @override
+  String get connectFactEpoch => 'Phiên bản cấu hình';
+
+  @override
+  String get connectHealthOff => 'Không dùng';
+
+  @override
+  String get connectHealthOk => 'Đang hoạt động';
+
+  @override
+  String get connectHealthDown => 'Không hoạt động';
+
+  @override
+  String get connectLocked =>
+      'CC_CONNECT_URL trong môi trường của máy chủ này quyết định thiết lập này. Hãy đổi ở đó rồi khởi động lại máy chủ.';
+
+  @override
+  String get connectLanesTitle => 'Mỗi kiểu đăng nhập chạy ở đâu';
+
+  @override
+  String get connectLanesDescription =>
+      'Ứng dụng riêng luôn được ưu tiên hơn Connect cho nhà cung cấp của nó.';
+
+  @override
+  String get connectServerGroup => 'Máy chủ này';
+
+  @override
+  String get connectInstallId => 'ID cài đặt';
+
+  @override
+  String get connectInstallIdHint =>
+      'Định danh máy chủ này với Connect. Hãy đưa cho chủ sở hữu tổ chức hoặc người vận hành Connect khi họ yêu cầu.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Được cấp khi máy chủ này dùng Connect lần đầu.';
+
+  @override
+  String get connectTestOk => 'Connect đang hoạt động.';
+
+  @override
+  String get connectRotateKey => 'Xoay vòng khóa';
+
+  @override
+  String get connectRotateKeyTitle => 'Xoay vòng khóa Connect của máy chủ này?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Máy chủ này sẽ nhận khóa và ID cài đặt mới. Mọi lần đăng nhập qua Connect sẽ ngừng hoạt động và mọi người phải đăng nhập lại. Đăng nhập qua ứng dụng của riêng bạn không bị ảnh hưởng.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Đã xoay vòng khóa. Mọi người đã đăng nhập qua Connect cần đăng nhập lại.';
+
+  @override
+  String get connectCliLabel => 'Từ terminal';
+
+  @override
+  String get onboardingStepSignIn => 'Đăng nhập';
+
+  @override
+  String get onboardingConnectTitle => 'Chọn cách mọi người đăng nhập';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center làm việc với GitHub, Google Calendar, Linear, Slack và tìm kiếm GIF thông qua các ứng dụng đã đăng ký với từng nhà cung cấp. Hãy chọn máy chủ này dùng ứng dụng của ai. Bạn có thể đổi sau trong Cài đặt → Máy chủ → Đăng nhập một lần.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Tạo ngay một ứng dụng GitHub cho máy chủ này, hoặc thêm ứng dụng của bạn sau trong Cài đặt → Máy chủ → Đăng nhập một lần.';
+
+  @override
+  String get providerServiceApiKey => 'Khóa API dịch vụ';
+
+  @override
+  String get providerAppPartial => 'Chưa thiết lập xong';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Vẫn còn thiếu: $fields. Cho đến khi điền đủ mọi trường, các lần đăng nhập cho nhà cung cấp này sẽ bị từ chối thay vì chuyển qua Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'Client ID dùng để thành viên đăng nhập. Khóa API dịch vụ cho phép máy chủ này tự đọc và ghi trong Linear.';
+
+  @override
+  String get providerCallbackUrls => 'URL gọi lại';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Đăng ký với nhà cung cấp đúng y như hiển thị.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Tạo ứng dụng GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub đăng ký một ứng dụng với quyền và URL gọi lại phù hợp, rồi chuyển thông tin xác thực cho máy chủ này. Không cần sao chép thủ công.';
+
+  @override
+  String get providerAppCreateGitHub => 'Tạo ứng dụng GitHub của tôi';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Tổ chức (không bắt buộc)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Để trống để tạo ứng dụng trong tài khoản GitHub của riêng bạn. Muốn tạo trong một tổ chức thì cần chủ sở hữu của tổ chức đó.';
+
+  @override
+  String get providerAppSignInReady => 'Mọi người có thể đăng nhập.';
+
+  @override
+  String get chatLinkWaiting => 'Đang chờ tin nhắn trực tiếp của bạn…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Đây có phải tài khoản $provider của bạn không?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Tài khoản này đã gửi mã của bạn cho bot. Chỉ xác nhận nếu đó là tài khoản của bạn: sau khi liên kết, những gì nó gửi trong $provider sẽ hành động với tư cách là bạn trong không gian làm việc này.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Từ chối';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Chưa có gì được liên kết. Hãy lấy mã mới nếu bạn vẫn muốn liên kết tài khoản $provider của mình.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Lấy mã mới';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Thêm Control Center vào $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Đã thêm Control Center vào $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Cài ứng dụng Control Center dùng chung vào không gian làm việc $provider của bạn. Không cần tạo ứng dụng, cũng không cần dán token.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Thêm vào $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Chạy trên ứng dụng Control Center dùng chung, nên ở đây không có token hay cài đặt bot nào để quản lý.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Bản nháp phiếu từ chat';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Bản nháp chỉ trở thành phiếu trong backlog khi bạn tạo nó ở đây. Bản nháp bị bỏ lại sẽ bị xóa sau một ngày.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Từ $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Tạo phiếu';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return 'Đã tạo $key';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Ứng dụng nhà cung cấp';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Ứng dụng Google Calendar, Linear và Klipy mà không gian làm việc này sử dụng. Mặc định, không gian làm việc dùng ứng dụng của máy chủ này hoặc Control Center Connect. Không gian làm việc có ứng dụng riêng sẽ không chuyển sang các ứng dụng đó.';
+
+  @override
+  String get workspaceProviderAppModeInherit => 'Dùng ứng dụng của máy chủ này';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Đăng nhập và yêu cầu sẽ dùng ứng dụng của máy chủ này hoặc Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Dùng ứng dụng riêng của không gian làm việc này';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Chỉ dùng ứng dụng của không gian làm việc này. Khi chưa cấu hình xong, nhà cung cấp này bị tắt ở đây và không chuyển sang ứng dụng khác.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Ứng dụng của máy chủ';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Ứng dụng riêng';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Còn thiếu: $fields. Cho đến khi điền đủ mọi trường, nhà cung cấp này bị tắt trong không gian làm việc này. Không chuyển sang ứng dụng của máy chủ này.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Đổi ứng dụng sẽ đăng xuất mọi người trong không gian làm việc này. Họ cần đăng nhập lại bằng ứng dụng mới.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Khóa ứng dụng';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Tìm kiếm GIF trong không gian làm việc này sử dụng khóa này.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Chuyển ứng dụng $provider?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Mọi người đã kết nối $provider trong không gian làm việc này qua ứng dụng của máy chủ này phải đăng nhập lại bằng ứng dụng của không gian làm việc.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Thao tác này xóa thông tin xác thực $provider của không gian làm việc. Mọi người đã kết nối qua ứng dụng của không gian làm việc phải đăng nhập lại.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Chuyển ứng dụng';
 }

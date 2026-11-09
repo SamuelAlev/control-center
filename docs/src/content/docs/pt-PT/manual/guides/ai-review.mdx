@@ -2,7 +2,7 @@
 title: Usar revisão com IA
 description: Execute o pipeline pr_review numa PR, leia as constatações e o veredicto e publique depois a revisão no GitHub.
 slug: pt-PT/manual/guias/revisao-com-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Este guia mostra como pôr agentes revisores a rever uma pull request e como
@@ -120,14 +120,16 @@ pipeline `pr_review` mantém a revisão no Control Center; não a publica no Git
 O Control Center envia **uma** revisão do GitHub. As constatações já resolvidas ou
 descartadas são ignoradas. O botão inclui todas as constatações abertas restantes
 e, com **Ship**, submete `APPROVE`. (A ferramenta MCP `publish_review_to_github`
-continua a usar por predefinição apenas constatações confirmadas por pares e não
-aprova, a menos que passe `approve_on_ship`.) As que têm uma âncora de ficheiro e
+usa por predefinição apenas constatações confirmadas por pares e nunca aprova:
+publica como automação, pelo que `approve_on_ship` não tem efeito aí.) As que têm
+uma âncora de ficheiro e
 linha tornam-se comentários em linha; tudo o resto é integrado no corpo do resumo,
 cada uma com um rodapé "— Control Center AI review" para que a origem seja
 inequívoca. Um veredicto **Block** é submetido como `REQUEST_CHANGES`; **Hold**
 como `COMMENT`; **Ship** como `APPROVE` a partir deste botão. Surge então uma
-notificação **Publicada**. A revisão é publicada sob a identidade da aplicação do
-servidor.
+notificação **Publicada**. A revisão é publicada em seu nome, com o seu próprio
+início de sessão no GitHub: se não tiver sessão iniciada no GitHub, a
+publicação falha e pede-lhe que inicie sessão.
 
 Se o GitHub rejeitar uma âncora em linha por a linha não fazer parte do diff, toda
 a revisão é reenviada com cada constatação integrada no corpo, para que nada seja

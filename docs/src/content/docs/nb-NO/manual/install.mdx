@@ -2,7 +2,7 @@
 title: Installer
 description: Bruk Control Center i nettleseren eller installer skrivebordsappen, sett opp en agentbackend og velg hvor serveren skal kjøre.
 slug: nb-NO/handbok/installer
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center kjører på to måter: som en **nettapp** på
@@ -124,14 +124,9 @@ Modellister betjenes direkte av hver tilkoblet leverandør; [models.dev](https:/
 
 En GitHub-legitimasjon er **din og ligger på serveren**, knyttet til bruker-id-en din — ikke i klientoperativsystemets nøkkelring. Hver enhet du logger inn fra, bruker den samme, og ingen andre medlemmer kan lese den.
 
-Hvis serveren har en GitHub App registrert ([Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)), tilbyr **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting** **Logg inn med GitHub** (en enhetsflyt serveren kjører). Ellers limer du inn et personlig tilgangstoken:
+GitHub har bare pålogging: **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting** tilbyr **Logg inn på GitHub**, og det finnes ikke noe token å lime inn. Påloggingen går via serverens egen GitHub App ([Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)) eller via Control Center Connect, avhengig av hva servereieren valgte. Med serverens egen app kommer nettleseren tilbake til serveren av seg selv; via Connect skriver du inn koden på 8 tegn som nettleseren viser, eller lar den åpne Control Center. Se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
 
-- Klassisk: `repo` og `read:org`
-- Finkornet: **Contents** og **Pull requests** (les og skriv), **Checks** og **Actions** (les)
-
-Opprett ett på [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Serveren sonderer tokenet for kontonavnet slik det lagres, så raden kan si «logget inn som …»; en mislykket sondering lagrer likevel tokenet, og en skrivefeil eller et manglende omfang dukker opp som en mislykket forespørsel senere.
-
-Første steg i oppstartsveiledningen er denne tilkoblingen. Etterpå er det samme kortet stedet der du bytter ut eller fjerner den. GitLab og Bitbucket bruker samme kort; se [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/).
+Oppstartsveiledningen ber om denne tilkoblingen. Etterpå er det samme kortet stedet der du logger inn på nytt eller kobler fra. GitLab og Bitbucket bruker samme kort med et innlimt personlig token; se [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/).
 
 ## Velg hvor serveren skal kjøre
 

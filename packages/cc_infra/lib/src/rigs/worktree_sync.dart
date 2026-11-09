@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
 
 /// Single-quotes [value] for a POSIX shell inside a guest.
@@ -170,12 +172,15 @@ class SshWorktreeTransport implements WorktreeTransport {
   List<String> get requiredHostTools => const ['ssh'];
 
   @override
-  Future<Process> start(String command) =>
-      Process.start('ssh', [..._sshOptions, '$guestUser@127.0.0.1', command]);
+  Future<Process> start(String command) => ChildProcess.start('ssh', [
+    ..._sshOptions,
+    '$guestUser@127.0.0.1',
+    command,
+  ]);
 
   @override
   Future<WorktreeCommandResult> capture(String command) async {
-    final result = await Process.run('ssh', [
+    final result = await ChildProcess.run('ssh', [
       ..._sshOptions,
       '$guestUser@127.0.0.1',
       command,
@@ -232,7 +237,7 @@ class SmolvmWorktreeTransport implements WorktreeTransport {
   List<String> get requiredHostTools => const [];
 
   @override
-  Future<Process> start(String command) => Process.start(smolvmPath, [
+  Future<Process> start(String command) => ChildProcess.start(smolvmPath, [
     ..._execPrefix,
     '-i',
     '--',
@@ -243,7 +248,7 @@ class SmolvmWorktreeTransport implements WorktreeTransport {
 
   @override
   Future<WorktreeCommandResult> capture(String command) async {
-    final result = await Process.run(smolvmPath, [
+    final result = await ChildProcess.run(smolvmPath, [
       ..._execPrefix,
       '--',
       'sh',
@@ -385,7 +390,7 @@ class WorktreeSync {
     await _capture('mkdir -p ${shellQuoteForGuest(guestPath)}');
 
     onProgress?.call('Copying the worktree into the rig');
-    final tarProcess = await Process.start(tar!, [
+    final tarProcess = await ChildProcess.start(tar!, [
       '-C',
       hostPath,
       for (final pattern in worktreeSyncExcludes) ...['--exclude', pattern],
@@ -507,8 +512,7 @@ class WorktreeSync {
             'hyphens and underscores only.',
       );
     }
-    final git = await _which('git');
-    if (git == null) {
+    if (await _which('git') == null) {
       return const WorktreeSyncResult(
         ok: false,
         message: 'git is required to carry work back from a rig.',
@@ -577,7 +581,7 @@ class WorktreeSync {
       }
 
       onProgress?.call('Fetching into the host repository');
-      final fetch = await _runHost(git, [
+      final fetch = await _runHostGit([
         '-C',
         hostPath,
         'fetch',
@@ -599,7 +603,7 @@ class WorktreeSync {
       // the fetch just wrote, which subtracts the rig's own commits and
       // reports 0 forever.
       final branch = head.stdout.trim();
-      final counted = await _runHost(git, [
+      final counted = await _runHostGit([
         '-C',
         hostPath,
         'rev-list',
@@ -662,12 +666,11 @@ class WorktreeSync {
   /// kills it on expiry. `git fetch` from a local bundle is fast, but it can
   /// block on a repository lock another process holds, and an operator's
   /// write-back must fail rather than hang.
-  static Future<WorktreeCommandResult> _runHost(
-    String binary,
+  static Future<WorktreeCommandResult> _runHostGit(
     List<String> args, {
     Duration timeout = _transferTimeout,
   }) async {
-    final process = await Process.start(binary, args);
+    final process = await IsolatedGit.start(args);
     final stdoutFuture = process.stdout.transform(utf8.decoder).join();
     final stderrFuture = process.stderr.transform(utf8.decoder).join();
     try {
@@ -685,7 +688,7 @@ class WorktreeSync {
         exitCode: 124,
         stdout: '',
         stderr:
-            '$binary ${args.join(' ')} did not finish within '
+            'git ${args.join(' ')} did not finish within '
             '${timeout.inMinutes} minutes and was cancelled.',
       );
     }
@@ -694,20 +697,7 @@ class WorktreeSync {
   /// What a rig id may contain when it is interpolated into a path or a ref.
   static final RegExp _safeRigId = RegExp(r'^[A-Za-z0-9_-]{1,128}$');
 
-  static Future<String?> _which(String binary) async {
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        binary,
-      ]);
-      if (result.exitCode != 0) {
-        return null;
-      }
-      final path = '${result.stdout}'.split('\n').first.trim();
-      return path.isEmpty ? null : path;
-    } on Object {
-      return null;
-    }
-  }
+  static Future<String?> _which(String binary) => ChildProcess.which(binary);
 
   static String _humanBytes(int bytes) {
     if (bytes < 1024) {

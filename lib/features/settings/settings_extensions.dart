@@ -21,6 +21,11 @@ enum SettingsSlot {
 
   /// Settings → Workspace → General, after the built-in workspace cards.
   workspaceGeneral,
+
+  /// Settings → Server → Single sign-on, after the SSO card: how this server
+  /// signs people in to providers (Connect, then its own provider apps).
+  /// Server-owner only, like the page.
+  serverSignIn,
 }
 
 /// One feature's section card on a [SettingsSlot] page.

@@ -30,11 +30,13 @@ workspace:
   - packages/cc_mcp
   - packages/cc_mcp_client
   - packages/cc_server_core
+  - packages/cc_connect_core
   - apps/cc_gallery
   - apps/cc_remote
   - apps/cc_demo_server
   - apps/cc_server
   - apps/cc_signaling_server
+  - apps/cc_connect
   - apps/cc_worker
 
 dependencies:
@@ -81,6 +83,10 @@ dependencies:
   # cc_rpc client. Every client (desktop LOCAL/REMOTE, web, phone) uses these.
   cc_data:
     path: packages/cc_data
+  # Pure-Dart Connect contract: sign-in lanes, the `oauth-done` deep link
+  # parser and the KLIPY CDN host check. Web-safe (no dart:io/FFI).
+  cc_connect_core:
+    path: packages/cc_connect_core
   # Analytics provider adapters (web-safe): the Umami sink behind cc_domain's
   # Analytics facade. Shared with cc_remote and the server.
   cc_analytics:

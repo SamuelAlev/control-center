@@ -17,23 +17,14 @@ enum OnboardingGate {
 
   /// Onboarding has not been completed.
   incomplete,
-
-  /// Onboarding WAS completed and the forge credential has since gone: the
-  /// operator has workspaces but no forge answers for them any more (a token
-  /// expired, was revoked, or the app's authorization was removed).
-  ///
-  /// Distinct from [incomplete] because nothing is missing except the
-  /// credential — there is no workspace to create, no sandbox to configure and
-  /// no model to pick, so the first-run flow would ask for work already done.
-  signedOut,
 }
 
 /// Guards routes based on whether first-run onboarding has been completed.
 ///
 /// Onboarding is complete when at least one forge is connected AND the user has
 /// registered at least one workspace. Losing the forge credential later is NOT
-/// the same as never having onboarded — that case routes to [signedOutRoute],
-/// which asks only for the sign-in.
+/// the same as never having onboarded and gates nothing: the workspace shell
+/// warns about it in place, where the sign-in is one click away.
 ///
 /// [landingWorkspaceId] resolves the workspace to land in once onboarding is
 /// complete (the persisted last-active workspace, or the first one). Every
@@ -51,7 +42,6 @@ String? onboardingGuard(
   final loc = state.matchedLocation;
   final isSplash = loc == splashRoute;
   final isOnboarding = loc.startsWith(onboardingRoute);
-  final isSignedOut = loc == signedOutRoute;
 
   if (gate == OnboardingGate.loading) {
     return isSplash ? null : splashRoute;
@@ -63,25 +53,7 @@ String? onboardingGuard(
   }
 
   if (isSplash) {
-    return switch (gate) {
-      OnboardingGate.complete => landing(),
-      OnboardingGate.signedOut => signedOutRoute,
-      _ => onboardingRoute,
-    };
-  }
-
-  // Signing back in is one action with no steps after it, so this screen —
-  // unlike onboarding below — IS left automatically the moment the credential
-  // lands. Leaving the operator on it would read as a sign-in that failed.
-  if (isSignedOut && gate == OnboardingGate.complete) {
-    return landing();
-  }
-
-  // Onboarding still wins while it is on screen: a credential that expires
-  // mid-flow must not eject the user into the re-auth screen and strand the
-  // steps after it, and step 1 already carries the same forge card.
-  if (gate == OnboardingGate.signedOut && !isSignedOut && !isOnboarding) {
-    return signedOutRoute;
+    return gate == OnboardingGate.complete ? landing() : onboardingRoute;
   }
 
   if (gate == OnboardingGate.incomplete && !isOnboarding) {

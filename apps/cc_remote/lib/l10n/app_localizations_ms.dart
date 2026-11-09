@@ -2572,6 +2572,27 @@ class AppLocalizationsMs extends AppLocalizations {
       'Menunggu kebenaran dalam pelayar anda…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Masukkan kod yang dipaparkan dalam pelayar';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Itu tidak kelihatan seperti kod log masuk. Kod terdiri daripada 8 huruf dan digit.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Kod itu tidak sepadan dengan log masuk ini. Semak dan cuba lagi.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Log masuk ke $provider belum disediakan pada pelayan ini.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Alamat panggilan balik log masuk pelayan ini tidak boleh dicapai dengan selamat dari telefon. Log masuk daripada aplikasi desktop, atau minta pemilik pelayan menyediakan alamat HTTPS awam.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Sesi log masuk telah luput. Mulakan percubaan log masuk baharu.';
 
@@ -2591,10 +2612,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Lengkapkan log masuk';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Panggil balik pelayar pelayan ini tidak dapat dicapai dengan selamat daripada telefon. Minta pemilik pelayan menetapkan panggil balik HTTPS awam atau tambah token sebagai ganti.';
 
   @override
   String get credentialsUpdateToken => 'Kemas kini token';

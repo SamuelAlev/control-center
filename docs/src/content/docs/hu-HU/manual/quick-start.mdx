@@ -2,7 +2,7 @@
 title: Gyors kezdés
 description: Telepítse a Control Centert, konfiguráljon egy ügynököt, és nézze, ahogy a repóján dolgozik.
 slug: hu-HU/kezikonyv/gyors-kezdes
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Ez a legrövidebb teljes út attól, hogy semmije sincs, odáig, hogy egy ügynök a saját kódján dolgozik. Kövesse sorrendben; minden lépés az előzőre épül.
@@ -21,13 +21,14 @@ Ugyanez az alkalmazás ugyanazokkal a funkciókkal fut böngészőben az [app.us
 
 ## 2. lépés: A bevezető végigvitele
 
-A bevezető öt lépésből áll, és ezek sorrendben futnak le — nincs lehetőség előreugrani.
+A bevezető lépései sorrendben futnak le — nincs lehetőség előreugrani. Az első csak a szerver tulajdonosának jelenik meg, ami a saját szerverét futtató asztali gépen Ön.
 
-1. **Csatlakozás**: jelentkezzen be GitHubbal, vagy illesszen be egy személyes hozzáférési tokent a `repo` és `read:org` jogosultsággal. A hitelesítő adat a szerveren tárolódik, a fiókjához csatolva.
-2. **Munkaterület**: adjon nevet az első munkaterületének, és igény szerint válasszon logót. Létrehozásakor öt ügynök jön létre — egy CEO, valamint `qa`, `architect`, `engineer` és `librarian` —, továbbá a beépített pipeline-sablonok.
-3. **Homokozó**: rögzít egy homokozóra vonatkozó beállítást. Bármelyik választással folytathatja.
-4. **Adapter**: válassza ki, melyik adapter és modell legyen az ügynökök alapértelmezése. Válassza a **Control Center (built-in)** lehetőséget, majd a megjelenő szolgáltatóválasztóval jelentkezzen be egy modellszolgáltatóhoz — a modellista üresen marad, amíg nincs csatlakoztatva szolgáltató. A lépés befejezése az adaptert és a modellt a munkaterület CEO ügynökére is ráírja.
-5. **Hang (opcionális)**: telepítsen egy eszközön futó beszédfelismerő modellt a diktáláshoz, vagy hagyja ki.
+1. **Bejelentkezés** (csak a szerver tulajdonosának): válassza ki, hogyan jelentkeztesse be ez a szerver az embereket a GitHubra, a Google Calendarba és a Linearbe — **A Control Center alkalmazásainak használata**, **Saját alkalmazások használata** vagy **Egyéni Connect-szerver használata**. Saját alkalmazásokkal a **Saját GitHub-alkalmazás létrehozása** egy lépésben beállítja a GitHubot. Ezt később a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen módosíthatja.
+2. **Csatlakozás**: jelentkezzen be a GitHubra, vagy illesszen be egy GitLab- vagy Bitbucket-tokent. A hitelesítő adat a szerveren tárolódik, a fiókjához csatolva.
+3. **Munkaterület**: adjon nevet az első munkaterületének, és igény szerint válasszon logót. Létrehozásakor öt ügynök jön létre — egy CEO, valamint `qa`, `architect`, `engineer` és `librarian` —, továbbá a beépített pipeline-sablonok.
+4. **Homokozó**: rögzít egy homokozóra vonatkozó beállítást. Bármelyik választással folytathatja.
+5. **Adapter**: válassza ki, melyik adapter és modell legyen az ügynökök alapértelmezése. Válassza a **Control Center (built-in)** lehetőséget, majd a megjelenő szolgáltatóválasztóval jelentkezzen be egy modellszolgáltatóhoz — a modellista üresen marad, amíg nincs csatlakoztatva szolgáltató. A lépés befejezése az adaptert és a modellt a munkaterület CEO ügynökére is ráírja.
+6. **Hang (opcionális)**: telepítsen egy eszközön futó beszédfelismerő modellt a diktáláshoz, vagy hagyja ki.
 
 Ezután a Control Center megnyitja a munkaterület beérkező üzeneteit.
 

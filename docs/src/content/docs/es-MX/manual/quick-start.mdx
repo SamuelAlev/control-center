@@ -2,7 +2,7 @@
 title: Inicio rápido
 description: Instala Control Center, configura un agente y míralo trabajar en tu repositorio.
 slug: es-MX/manual/inicio-rapido
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Esta es la ruta completa más corta desde cero hasta tener un agente trabajando sobre tu propio código. Síguela en orden; cada paso depende del anterior.
@@ -25,13 +25,14 @@ necesita configurar ningún servidor; consulta [Instalar](/es-MX/manual/instalar
 
 ## Paso 2: Completar la incorporación inicial
 
-La incorporación inicial tiene cinco pasos y se ejecutan en orden: no se puede saltar ninguno.
+La incorporación inicial ejecuta sus pasos en orden: no se puede saltar ninguno. El primero solo aparece para el propietario del servidor, que en un escritorio que ejecuta su propio servidor eres tú.
 
-1. **Conectar**: inicia sesión con GitHub o pega un token de acceso personal con `repo` y `read:org`. La credencial se guarda en el servidor, asociada a tu cuenta.
-2. **Espacio de trabajo**: ponle nombre a tu primer espacio de trabajo y, si quieres, elige un logotipo. Al crearlo se siembran cinco agentes —un CEO más `qa`, `architect`, `engineer` y `librarian`— y las plantillas de pipeline integradas.
-3. **Entorno aislado**: registra una preferencia de aislamiento. Cualquiera de las dos opciones te permite continuar.
-4. **Adaptador**: elige el adaptador y el modelo que los agentes deben usar de forma predeterminada. Selecciona **Control Center (built-in)** y luego usa el selector de proveedores que aparece para iniciar sesión en un proveedor de modelos: la lista de modelos permanece vacía hasta que haya uno conectado. Completar este paso también fija el adaptador y el modelo en el agente CEO del espacio de trabajo.
-5. **Voz (opcional)**: instala un modelo de voz en el dispositivo para el dictado, u omítelo.
+1. **Inicio de sesión** (solo el propietario del servidor): elige cómo inicia este servidor la sesión de las personas en GitHub, Google Calendar y Linear: **Usar las apps de Control Center**, **Usar mis propias apps** o **Usar un servidor Connect propio**. Con tus propias apps, **Crear mi app de GitHub** configura GitHub en un solo paso. Puedes cambiarlo después en **Ajustes → Servidor → Inicio de sesión único**.
+2. **Conectar**: inicia sesión en GitHub, o pega un token de GitLab o Bitbucket. La credencial se guarda en el servidor, asociada a tu cuenta.
+3. **Espacio de trabajo**: ponle nombre a tu primer espacio de trabajo y, si quieres, elige un logotipo. Al crearlo se siembran cinco agentes —un CEO más `qa`, `architect`, `engineer` y `librarian`— y las plantillas de pipeline integradas.
+4. **Entorno aislado**: registra una preferencia de aislamiento. Cualquiera de las dos opciones te permite continuar.
+5. **Adaptador**: elige el adaptador y el modelo que los agentes deben usar de forma predeterminada. Selecciona **Control Center (built-in)** y luego usa el selector de proveedores que aparece para iniciar sesión en un proveedor de modelos: la lista de modelos permanece vacía hasta que haya uno conectado. Completar este paso también fija el adaptador y el modelo en el agente CEO del espacio de trabajo.
+6. **Voz (opcional)**: instala un modelo de voz en el dispositivo para el dictado, u omítelo.
 
 Después, Control Center abre la bandeja de entrada de tu espacio de trabajo.
 

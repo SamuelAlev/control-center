@@ -2,16 +2,16 @@
 title: Routekaart
 description: Elke route die Control Center registreert, met het bijbehorende scherm en de queryparameters.
 slug: nl-NL/handleiding/referentie/routekaart
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## App-shell
 
-De app-shell (`ControlCenterLayout`) omvat elke route binnen een werkruimte via een `ShellRoute`. **Elke bestemming binnen de shell heeft een werkruimteprefix — `/workspaces/:workspaceId/…` — en het werkruimte-id in de URL is de enige bron van waarheid voor de actieve werkruimte.** Alleen de oppervlakken vóór de context hebben geen prefix: `/splash`, `/onboarding`, `/signed-out` en de kale `/workspaces`-kiezer, allemaal schermvullend en buiten de shell.
+De app-shell (`ControlCenterLayout`) omvat elke route binnen een werkruimte via een `ShellRoute`. **Elke bestemming binnen de shell heeft een werkruimteprefix — `/workspaces/:workspaceId/…` — en het werkruimte-id in de URL is de enige bron van waarheid voor de actieve werkruimte.** Alleen de oppervlakken vóór de context hebben geen prefix: `/splash`, `/onboarding` en de kale `/workspaces`-kiezer, allemaal schermvullend en buiten de shell.
 
 De poort is compleet wanneer minstens één forge is gekoppeld **voor de aangemelde gebruiker** en er minstens één werkruimte bestaat.
 
-Ontbrekende inloggegevens en een ontbrekende configuratie zijn verschillende schermen, en het onderscheidende criterium is `users.onboarding_finished_at`, uitgelezen uit de eigen `identity.me` van de aanroeper — nooit “er bestaan werkruimtes”, wat fout is op het moment dat iemand wordt uitgenodigd in een werkruimte die hij nooit heeft gemaakt. Zonder gekoppelde forge gaat een account dat de onboarding heeft afgerond naar `/signed-out` om opnieuw te authenticeren; een account dat dat niet heeft gedaan gaat naar `/onboarding`. Zolang de vlag nog onbekend is, houdt de guard het splashscherm vast in plaats van te gokken, want hij verwijst nooit terug weg uit de onboarding.
+Ontbrekende inloggegevens en een ontbrekende configuratie worden verschillend behandeld, en het onderscheidende criterium is `users.onboarding_finished_at`, uitgelezen uit de eigen `identity.me` van de aanroeper — nooit “er bestaan werkruimtes”, wat fout is op het moment dat iemand wordt uitgenodigd in een werkruimte die hij nooit heeft gemaakt. Zonder gekoppelde forge gaat een account dat de onboarding heeft afgerond blijft in de app, en de werkruimte-shell toont een waarschuwing met een link naar Instellingen → Werkruimte → Profiel en identiteit, waar de aanmelding staat; een account dat dat niet heeft gedaan gaat naar `/onboarding`. Zolang de vlag nog onbekend is, houdt de guard het splashscherm vast in plaats van te gokken, want hij verwijst nooit terug weg uit de onboarding.
 
 ## Routes zonder prefix
 
@@ -19,7 +19,6 @@ Ontbrekende inloggegevens en een ontbrekende configuratie zijn verschillende sch
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Opstartsplash die de onboardingpoort bepaalt |
 | `/onboarding`              | Een forge koppelen, een werkruimte maken of erbij komen, sandbox, standaardadapter en dan spraak. De werkruimtestap vervalt wanneer het account al bij een werkruimte hoort |
-| `/signed-out`              | Opnieuw authenticeren: dezelfde kaart met forge-verbindingen die Instellingen toont, zonder stappenbalk en zonder knop Doorgaan — de router vertrekt vanzelf zodra een forge zich meldt |
 | `/workspaces`              | Werkruimtelijst en -kiezer                        |
 | `/workspaces/:workspaceId` | Verwijst door naar `/workspaces/:workspaceId/inbox`    |
 

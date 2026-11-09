@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Подключить Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Сервер и развёртывание",
   "docs.sidebar.guidesRunHeadlessServer": "Запустить headless-сервер",
+  "docs.sidebar.guidesRunConnect": "Запустить сервер Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Подключиться к удалённому серверу",
   "docs.sidebar.guidesRunFleetWorker": "Запустить воркер флота",
   "docs.sidebar.guidesBackUpAndRestore": "Резервное копирование и восстановление",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Сочетания клавиш",
   "docs.sidebar.referenceRouteMap": "Карта маршрутов",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Резервное копирование, экспорт и импорт",
   "docs.sidebar.referenceTelemetry": "Статистика использования",
   "docs.sidebar.referenceGlossary": "Глоссарий"

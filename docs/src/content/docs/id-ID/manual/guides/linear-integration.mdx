@@ -1,31 +1,122 @@
 ---
 title: Siapkan integrasi Linear
-description: Simpan kunci API Linear di server agar agen dapat memanggil Linear, dan pilih Linear sebagai penyedia ticketing untuk tiket baru.
+description: Masuk ke Linear, hubungkan otomatisasi Linear ruang kerja, dan pilih Linear sebagai penyedia ticketing untuk tiket baru.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Tempelkan kunci API Linear di server yang dikaitkan dengan pengguna Anda, sama
-seperti saat Anda menghubungkan host kode. Tiket, proyek, tautan, kolaborator,
-delegasi, dan penugasan semuanya bekerja pada basis data Control Center sendiri
-tanpa memerlukan layanan eksternal — lihat
-[Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/).
+Linear memiliki dua identitas di Control Center, dan keduanya berupa proses masuk peramban:
+milik Anda, untuk apa yang Anda lakukan, dan app Control Center ruang kerja, untuk apa yang
+dilakukan agen dan pipeline. Tiket, proyek, tautan, kolaborator, delegasi, dan penugasan
+semuanya bekerja pada basis data Control Center sendiri tanpa memerlukan layanan eksternal —
+lihat [Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/).
 
-## Simpan kunci Linear Anda
+## Prasyarat
 
-**Kunci API ticketing** berada di **Pengaturan → Ruang kerja → Umum**, pada
-kartu **Tiket**. Kunci ini disimpan di server dan dikaitkan dengan id pengguna
-Anda. Kunci milik server untuk pekerjaan tanpa pengawasan berasal dari
-`LINEAR_API_KEY` atau kartu **Aplikasi penyedia**. Tidak ada kunci ticketing
-yang ditaruh di sandbox agen: agen menulis tiket melalui alat milik Control
-Center sendiri, yang lebih dulu menanyakan aturan **Tulis ke pelacak
-eksternal**.
+- Server dapat memasukkan orang ke Linear: melalui Control Center Connect, atau dengan app Linear
+  milik server itu sendiri ([Daftarkan app Linear Anda sendiri](#daftarkan-app-linear-anda-sendiri)).
+  Pemilik server memilih di **Pengaturan → Server → Single sign-on**
+- Seorang admin ruang kerja, untuk memilih Linear sebagai penyedia tiket dan menghubungkan otomatisasi Linear
 
-## Tandai tiket baru sebagai Linear
+## Pilih Linear untuk ruang kerja
 
-**Penyedia ticketing** (langkah pertama onboarding, dan
-`/workspaces/<workspaceId>/api-keys`) menawarkan `local` dan `linear`. Memilih
-`linear` menandai tiket yang Anda buat sejak saat itu dengan `provider: linear`.
+1. Buka **Pengaturan → Ruang kerja → Umum** dan temukan kartu **Tiket**
+2. Setel **Penyedia ticketing** ke **Linear**
+
+Tiket yang Anda buat sejak saat itu akan diberi tanda `provider: linear`. **Lokal** menyimpan tiket di
+basis data server ini dan menyembunyikan baris Linear: tidak ada yang perlu diautentikasi.
+
+## Masuk ke Linear
+
+Pada kartu yang sama, baris **Linear** adalah milik Anda:
+
+1. Klik **Masuk ke Linear**
+2. Setujui di peramban Anda
+3. Dengan app Linear milik server, dialog mendeteksinya sendiri. Melalui Connect, ketik kode 8
+   karakter yang ditampilkan peramban, atau biarkan peramban membuka Control Center melalui tautan
+   `control-center://`
+
+Apa pun yang Anda lakukan di Linear dari Control Center berjalan dengan proses masuk ini dan tidak
+dengan yang lain. Jika Anda belum masuk, aplikasi meminta Anda masuk alih-alih bertindak atas nama
+orang lain.
+
+## Hubungkan otomatisasi Linear
+
+Baris **Otomatisasi Linear** adalah app Control Center ruang kerja di Linear. Sinkronisasi tiket,
+pipeline, dan agen menulis dengan app ini, sehingga issue dan komentar otomatis muncul sebagai
+Control Center alih-alih sebagai seseorang.
+
+1. Seorang admin ruang kerja mengklik **Hubungkan Linear untuk otomatisasi**
+2. Mereka menyetujui app untuk ruang kerja Linear di peramban, seperti di atas
+
+Baris tersebut kemudian menampilkan "Terhubung ke _ruang kerja Linear Anda_". Hanya admin ruang kerja
+yang dapat menghubungkan atau memutuskannya.
+
+Tidak ada kredensial Linear yang ditaruh di sandbox agen: agen menulis tiket melalui alat milik
+Control Center sendiri, yang lebih dulu menanyakan aturan **Tulis ke pelacak eksternal**.
+
+## Daftarkan app Linear Anda sendiri
+
+Gunakan app milik sendiri ketika Anda memilih **Gunakan aplikasi saya sendiri**. App server hanya berlaku
+dalam kasus itu: dengan Connect milik Control Center atau Connect kustom, Connect menangani setiap jalur
+termasuk Linear, dan app server serta Kunci API layanannya tetap tersimpan tetapi tidak digunakan. App
+ruang kerja ([di bawah](#berikan-satu-ruang-kerja-aplikasi-linear-miliknya)) tetap berlaku di semua mode.
+
+1. Buat aplikasi OAuth di
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Tambahkan kedua URL callback yang ditampilkan **Pengaturan → Server → Single sign-on → Aplikasi
+   penyedia → Linear** di bawah **Callback URLs**, persis apa adanya:
+   `<server origin>/oauth/linear/callback` dan `<server origin>/oauth/linear_app/callback`
+3. Tempel **Client id** ke blok Linear
+
+Tidak ada client secret: server masuk dengan PKCE. Refresh token Linear kedaluwarsa setelah 30 hari
+tidak dipakai, sehingga server memperbarui setiap proses masuk Linear yang lebih dari 20 hari sekali
+sehari.
+
+Blok yang sama menerima **Kunci API layanan** secara opsional. Itu adalah kredensial Linear milik server
+untuk otomatisasi di ruang kerja yang belum menghubungkan otomatisasi Linear. Simpan di **Pengaturan**
+atau di berkas `.env` server sebagai `LINEAR_API_KEY`: server menolak mulai ketika `LINEAR_API_KEY`
+diekspor di lingkungan prosesnya.
+
+## Berikan satu ruang kerja aplikasi Linear miliknya
+
+Ruang kerja dapat masuk ke Linear lewat aplikasi miliknya sendiri, bukan aplikasi server. Hanya admin atau
+pemilik ruang kerja yang dapat mengaturnya.
+
+1. Buat aplikasi OAuth Linear seperti pada langkah di atas
+2. Buka **Pengaturan → Ruang kerja → Umum → Aplikasi penyedia** dan buka **Linear**
+3. Pilih **Gunakan aplikasi ruang kerja ini**
+4. Tambahkan kedua URL callback yang ditampilkan baris itu di bawah **URL callback** ke aplikasi Linear, persis apa adanya
+5. Tempel **Id klien**, dan secara opsional **Kunci API layanan** untuk otomatisasi ruang kerja ini
+
+Aplikasi ruang kerja melayani setiap proses masuk dan permintaan otomatisasi Linear di ruang kerja ini, apa pun
+cara server menjalankan proses masuk. Tidak pernah kembali ke aplikasi server atau Connect: sampai id klien diisi,
+Linear nonaktif di ruang kerja ini dan baris itu menyebutkan apa yang kurang. Kunci API layanannya hanya dipakai di
+sini; tanpa itu, sinkronisasi memerlukan **Hubungkan Linear untuk otomatisasi**.
+
+Berpindah antara aplikasi server dan aplikasi ruang kerja, atau mengubah id klien ruang kerja, akan mengeluarkan
+semua orang di ruang kerja ini dari Linear dan memutus otomatisasinya. Mereka masuk lagi lewat aplikasi baru.
+**Gunakan aplikasi server ini** menghapus kolom ruang kerja yang tersimpan. Secret hanya dapat ditulis: baris itu
+hanya menampilkan apakah sebuah secret tersimpan. Ruang kerja lain di server tidak terpengaruh.
+
+## Pemecahan masalah
+
+### Baris Linear menyatakan proses masuk belum disiapkan
+
+Server tidak memiliki app Linear sendiri maupun Connect. Pemilik server memilih salah satunya di
+**Pengaturan → Server → Single sign-on**. Jika ruang kerja memakai aplikasinya sendiri, baris itu
+sebaliknya menyatakan penyiapannya belum selesai: admin ruang kerja menambahkan id klien di
+**Pengaturan → Ruang kerja → Umum → Aplikasi penyedia**.
+
+### Sinkronisasi tiket gagal dengan galat autentikasi
+
+Ruang kerja belum menghubungkan otomatisasi Linear dan server tidak memiliki kunci API layanan, sehingga
+sinkronisasi tidak punya kredensial. Seorang admin ruang kerja mengklik **Hubungkan Linear untuk
+otomatisasi**.
+
+### Menghubungkan otomatisasi menyatakan ruang kerja Linear sudah terhubung di tempat lain
+
+App Control Center untuk ruang kerja Linear itu sudah terhubung ke server Control Center lain.
 
 ## Panduan terkait
 

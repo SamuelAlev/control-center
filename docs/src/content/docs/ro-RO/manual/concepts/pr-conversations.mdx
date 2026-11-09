@@ -2,19 +2,19 @@
 title: Conversații PR
 description: Cum devine un comentariu pe un PR GitHub un tur de agent fără webhook, ce îl autorizează pe autor și cui este atribuită fiecare parte a conversației.
 slug: ro-RO/manual/concepte/conversatii-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Un pull request este deja locul unde se petrece conversația despre cod.
 Conversațiile PR îl transformă într-o suprafață a unui spațiu de lucru Control
 Center, la fel cum o [punte de chat](/ro-RO/manual/concepte/punti-de-chat/)
-transformă Slack într-una: menționează cu @ botul GitHub App al serverului pe un
-PR, răspunde în firele lui de revizuire sau adaugă eticheta `ai-review`, iar
-munca se desfășoară în spațiul de revizuire al PR-ului — sub aceeași atribuire
-și aceleași guardrail-uri ca orice text tastat în aplicație. Un comentariu este
-și el condiționat de apartenență; eticheta nu este, pentru că nu are autor.
-Răspunsurile botului se întorc pe GitHub, în firul în care a fost pusă
-întrebarea.
+transformă Slack într-una: menționează `@usectrl` (sau botul GitHub App al
+spațiului de lucru) pe un PR, răspunde în firele lui de revizuire sau adaugă
+eticheta `ai-review`, iar munca se desfășoară în spațiul de revizuire al
+PR-ului — sub aceeași atribuire și aceleași guardrail-uri ca orice text tastat
+în aplicație. Un comentariu și o etichetă sunt condiționate la fel: de membrul
+care l-a scris sau a adăugat-o. Răspunsurile se întorc pe GitHub, în firul în
+care a fost pusă întrebarea.
 
 Trei decizii modelează funcționalitatea și fiecare este aceeași decizie pe care
 puntea de chat a luat-o pentru chat, reformulată pentru un host de cod: **în ce
@@ -25,17 +25,21 @@ exterior** și **cui este atribuită fiecare parte**.
 
 Singurul canal push al GitHub pentru o aplicație este un webhook, iar un webhook
 are nevoie de un URL de intrare — exact lucrul de care această suprafață nu are
-niciodată nevoie, în mod deliberat. Așa că descoperirea este o scanare: la
-aproximativ un minut, câte o căutare aliasată per instalare a aplicației cere de
-la GitHub PR-urile care menționează botul (sau slug-ul lui scurt) și PR-urile
-deschise care poartă eticheta de revizuire, PR-urilor care au deja un spațiu de
-revizuire li se citesc firele de comentarii, iar totul este comparat după id-ul
-comentariului cu ce s-a văzut la scanarea anterioară.
+niciodată nevoie, în mod deliberat. Așa că descoperirea este o scanare: câte
+o căutare aliasată per instalare a aplicației cere de la GitHub PR-urile care
+menționează botul (sau slug-ul lui scurt) și PR-urile deschise care poartă
+eticheta de revizuire, PR-urilor care au deja un spațiu de revizuire li se citesc
+firele de comentarii, iar totul este comparat după id-ul comentariului cu ce s-a
+văzut la scanarea anterioară. O aplicație proprie scanează în fiecare minut cel
+mult 25 de PR-uri. Prin Connect, apelurile folosesc cota GitHub proprie a
+membrilor, așa că scanarea rulează la fiecare două minute peste cel mult 10, iar
+un spațiu de lucru sub 15% din cota lui este sărit până se reface. Connect însuși
+nu vede niciodată conținutul PR-urilor.
 
 Consecințele de design merită numite:
 
 - **Latența este un interval de scanare, nu un eveniment.** Confirmarea 👀 apare
-  în circa un minut. Nimic urgent nu depinde de ea.
+  în decurs de o scanare. Nimic urgent nu depinde de ea.
 - **Exact o dată, per comentariu.** Id-urile comentariilor sunt unice în tot
   GitHub; fiecare este înregistrat în momentul în care este clasificat ca
   eligibil, înainte ca ceva să acționeze asupra lui. O cădere poate pierde
@@ -52,54 +56,65 @@ Consecințele de design merită numite:
   scanare; o mențiune este calea de re-rulare.
 
 Căutarea rulează o dată per cont de instalare, pe clientul propriu al acelui
-proprietar, pentru că un token de instalare vede doar repository-urile propriei
+proprietar, pentru că un token vede doar repository-urile propriei
 instalări — o singură acreditare la nivel de server ar rata în silențiu fiecare
 PR aflat sub celelalte instalări ale aplicației.
 
 ## Apartenența autorizează, nu comentariul
 
-Un comentariu pe un PR sosește purtând nu mult mai mult decât loginul unui autor
-— o identitate externă neautentificată până la proba contrarie. Botul îl
-rezolvă printr-un index invers al membrilor spațiului de lucru și al conturilor
-GitHub conectate ale acestora, reconstruit pe baza unui TTL, pentru că oamenii se
-autentifică și sunt invitați cât timp serverul rulează.
+Un comentariu pe un PR sosește purtând un autor — o identitate externă
+neautentificată până la proba contrarie. Serverul rezolvă id-ul numeric imuabil
+al contului GitHub al autorului (niciodată loginul, care poate fi redenumit și
+refolosit) prin autentificările GitHub ale membrilor spațiului de lucru,
+reconstruite pe baza unui TTL, pentru că oamenii se autentifică și sunt invitați
+cât timp serverul rulează. Pentru eticheta `ai-review`, persoana rezolvată este
+cea care a adăugat-o cel mai recent.
 
-Eșecul închis arată ca o scară, iar fiecare treaptă răspunde în firul în care a
-refuzat:
+Trei verificări, în ordine, iar eșecul oricăreia este tăcut — nu se postează
+nimic:
 
-- **Un login necunoscut** — nelegat sau legat de cineva care nu este membru al
-  acestui spațiu de lucru — este îndemnat să se autentifice și să se asigure că
-  aparține spațiului
-- **Un membru cu acces doar în citire** (`viewer` sau `guest`) este informat că
-  rolul lui nu poate porni muncă
+- **Un membru autentificat.** Contul trebuie să aparțină unui membru al
+  _acestui_ spațiu de lucru care s-a autentificat în GitHub pe acest server
+- **Un rol de scriere.** `viewer` și `guest` nu pot porni muncă
+- **Acces de push.** Răspunsurile folosesc un token `bot` limitat la accesul
+  acelui membru la repozitoriu. Dacă serverul nu poate emite unul, nu merge mai
+  departe
 
-Cele două cazuri de login necunoscut împart un singur răspuns: indexul invers
-returnează doar un membru al _acestui_ spațiu de lucru, așa că un cont nelegat
-și un non-membru legat sunt aceeași ratare. Niciunul nu merge mai departe. Un
-comentariu nu este niciodată atribuit cuiva care nu l-a trimis, iar vorbele unui
-străin nu intră niciodată într-un spațiu de lucru pe care nu îl poate vedea.
+Fiecare verificare rulează înaintea oricărei confirmări, așa că un străin nu
+primește nicio reacție și niciun răspuns. Un comentariu nu este niciodată
+atribuit cuiva care nu l-a trimis, iar vorbele unui străin nu intră niciodată
+într-un spațiu de lucru pe care nu îl poate vedea.
 
-Eticheta `ai-review` nu are niciun autor de rezolvat, așa că nu urcă această
-scară. Adăugarea ei pornește revizuirea în spațiul de lucru care are deja
-repository-ul legat.
+### Revendicarea
+
+Ultimul pas înaintea oricărei munci este o reacție 👀, adăugată cu autentificarea
+GitHub proprie a autorului. GitHub răspunde `201` pentru o reacție nouă și `200`
+pentru una care există deja, așa că reacția servește și ca blocare: când aceeași
+persoană este autentificată pe două servere care leagă amândouă repozitoriul,
+doar primul care reacționează face munca. Un comentariu pe care îl văd mai multe
+spații de lucru de pe același server este oferit fiecăruia, iar aceeași
+revendicare decide.
 
 ## Două identități, în mod deliberat
 
 Fiecare parte a conversației poartă o identitate diferită, iar diferența este
 chiar funcționalitatea:
 
-- **Pe GitHub, botul este serverul.** Fiecare comentariu, reacție și răspuns
-  publicat de punte călărește tokenul de instalare al aplicației. Nimeni nu a dat
-  clic pe nimic într-un client, deci nimic nu împrumută contul unei persoane —
-  aceeași regulă care ține webhook-urile și interogarea periodică departe de
-  acreditările umane.
+- **Pe GitHub, răspunsul este automatizare în numele tău.** Fiecare răspuns
+  folosește un token `bot` pentru acel singur depozit, limitat la accesul
+  membrului care întreabă. Pe o aplicație proprie, autorul este contul `[bot]`
+  al aplicației. Prin Connect, un token pentru aplicația partajată este un token
+  de utilizator, așa că răspunsul este scris de contul membrului care întreabă,
+  acționând prin aplicație. În ambele cazuri, fiecare răspuns începe cu
+  `**Control Center** (for @login):`, care spune cine a întrebat și servește și
+  ca protecție anti-buclă.
 - **În spațiu, întrebarea este a ta.** Mesajul este atribuit membrului în care
   s-a rezolvat autorul, iar rularea agentului se execută în numele lui:
   commit-urile îl trec ca coautor, iar setarea de autonomie a spațiului și
   guardrail-urile de acțiune se aplică exact cum se aplică unui mesaj tastat în
-  aplicație. Scrierile către host-ul de cod făcute de rulare ies tot sub
-  identitatea aplicației — aceeași regulă ca la punctul de mai sus — nu pe
-  tokenul personal al membrului.
+  aplicație. Scrierile către host-ul de cod făcute de rulare folosesc tokenuri
+  pentru un singur depozit, limitate de acel membru, niciodată autentificarea
+  lui predată întreagă.
 
 Publicarea constatărilor de revizuire înapoi pe GitHub rămâne decizia unei
 persoane, luată în Control Center. O mențiune poate _începe_ o revizuire; doar
@@ -109,9 +124,10 @@ un om o publică.
 
 Tot ce este scris de un cont de bot este eliminat înainte ca vreo poartă să
 ruleze — în mod specific al nostru și orice sufix `[bot]`, așa că nici botul de
-revizuire al unei alte aplicații nu îl poate trezi pe al nostru. Fără asta,
-propriile răspunsuri ale botului ar sosi ca comentarii noi și l-ar declanșa la
-nesfârșit.
+revizuire al unei alte aplicații nu îl poate trezi pe al nostru — și la fel orice
+comentariu care începe cu prefixul `**Control Center** (for @`, pentru că un
+răspuns prin Connect este scris de contul unei persoane. Fără asta, răspunsurile
+ar sosi ca comentarii noi și ar declanșa puntea la nesfârșit.
 
 Sufixul `[bot]` este și motivul pentru care există forma scurtă. GitHub fixează
 loginul unui cont de aplicație la `<slug>[bot]`, nu oferă autocomplete pentru el
@@ -127,7 +143,10 @@ Numele distinctive de aplicații fac coliziunea ipotetică.
 - **Fără publicare automată.** Constatările ajung în spațiul de revizuire;
   publicarea pe GitHub este o acțiune separată, umană
 - **Fără identitate aproximativă.** Autorul se rezolvă la exact un membru sau
-  este refuzat — nu există atribuire bazată pe presupuneri
+  este ignorat — nu există atribuire bazată pe presupuneri
+- **Fără aprobare automată.** Automatizarea poate comenta și cere modificări, dar
+  o revizuire `APPROVE` este refuzată înainte de a fi trimisă. Aprobarea este
+  actul unei persoane
 - **Fără webhook de GitHub App.** Această suprafață nu înregistrează niciodată
   unul, așa că nu există niciun URL de intrare de expus pentru comentariile de
   PR. Alte webhook-uri de produs (pipeline-uri, sincronizare de tichete) sunt o
@@ -140,7 +159,7 @@ Numele distinctive de aplicații fac coliziunea ipotetică.
 - [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/): aceleași trei decizii,
   luate pentru chat
 - [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): de unde vine
-  identitatea botului
+  identitatea de bot a unei aplicații proprii
 - [Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/):
   principalii și rolurile prin care se rezolvă un login
 - [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): ce are voie să facă

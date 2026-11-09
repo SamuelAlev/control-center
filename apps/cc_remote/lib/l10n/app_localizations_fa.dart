@@ -2560,6 +2560,27 @@ class AppLocalizationsFa extends AppLocalizations {
   String get credentialsWaitingForLogin => 'در انتظار مجوزدهی در مرورگر شما…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'کدی را که در مرورگر نمایش داده شده وارد کنید';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'این شبیه کد ورود نیست. کدها ۸ حرف و رقم دارند.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'این کد با این ورود جور نیست. آن را بررسی کنید و دوباره امتحان کنید.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'ورود به $provider هنوز روی این سرور تنظیم نشده است.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'نشانی بازگشت ورود این سرور از تلفن به‌صورت امن در دسترس نیست. از برنامهٔ رومیزی وارد شوید یا از مالک سرور بخواهید یک نشانی HTTPS عمومی تنظیم کند.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'مهلت ورود به پایان رسید. دوباره برای ورود تلاش کنید.';
 
@@ -2579,10 +2600,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'تکمیل ورود';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'دسترسی امن از تلفن به نشانی بازگشت مرورگر این سرور ممکن نیست. از مالک سرور بخواهید نشانی بازگشت عمومی HTTPS تنظیم کند یا به‌جای آن توکنی اضافه کنید.';
 
   @override
   String get credentialsUpdateToken => 'به‌روزرسانی توکن';

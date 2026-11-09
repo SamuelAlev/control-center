@@ -49,12 +49,10 @@ class PrCloneProgress {
 /// pr_clones directory. The same clone is reused across PRs; only the PR's
 /// base + head refs are fetched on demand (incremental).
 ///
-/// Credentials are injected via the remote URL (`https://x-access-token:TOKEN@…`)
-/// for maximum compatibility (works with any git version, any credential
-/// helper configuration). The token is never persisted: for clone, the remote
-/// URL is immediately reset to the clean HTTPS URL after the clone completes;
-/// for fetch, the auth URL is passed as a positional argument and is never
-/// written to `.git/config`.
+/// The remote is always the clean HTTPS URL. The token rides an
+/// `http.https://github.com/.extraHeader` Authorization header set through
+/// the process environment, so it is never in a URL, an argument or
+/// `.git/config`.
 class PrCloneManager {
   /// Creates a [PrCloneManager] for the given repository.
   PrCloneManager({

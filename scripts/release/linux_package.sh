@@ -31,8 +31,7 @@ stage_natives "$NATIVES" "$BUNDLE/lib" so
 # over loopback RPC — it owns the database. Stage the server's own native deps
 # under the server bundle's lib/ so its <exeDir>/lib loader finds them.
 #
-# Whatever `builtin_credentials.sh inject` wrote is compiled in here, so that
-# step has to precede this one (a bundle built earlier is reused as-is).
+# A bundle built earlier is reused as-is.
 CC_SERVER_BUNDLE="$(ensure_cc_server_bundle linux)"
 log "bundling cc_server backend"
 rm -rf "$BUNDLE/cc_server"

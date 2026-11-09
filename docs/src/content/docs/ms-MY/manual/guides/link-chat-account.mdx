@@ -1,81 +1,121 @@
 ---
 title: Pautkan akaun Slack anda
-description: Buktikan bahawa identiti Slack itu milik anda supaya ejen bertindak ke atas mesej anda dan kerja anda diatribusikan kepada anda.
+description: Buktikan identiti Slack ini milik anda supaya ejen bertindak atas mesej anda dan kerja anda diatribusikan kepada anda.
 slug: ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
-Panduan ini menunjukkan cara memautkan identiti sembang anda kepada pengguna Control Center anda dan cara menyahpautnya.
+Panduan ini menunjukkan cara memautkan identiti sembang anda kepada pengguna Control Center anda dan cara
+membatalkan pautan itu.
 
-Setiap ahli melakukan ini sekali bagi setiap penyedia sembang. Ia berasingan daripada menyambungkan aplikasi: sambungan itu menjadikan bot boleh dicapai untuk seluruh ruang kerja, manakala pautan itu menjadikan _anda_ boleh dikenali di dalamnya.
+Setiap ahli melakukannya sekali bagi setiap pembekal sembang. Ini berasingan daripada menyambungkan apl:
+sambungan membolehkan bot dicapai oleh seluruh ruang kerja, manakala pautan membolehkan _anda_ dikenali di dalamnya.
 
-## Mengapa pautan diperlukan
+## Mengapa pemautan diperlukan
 
-Jambatan enggan bertindak bagi akaun sembang yang tidak dapat dipadankannya dengan ahli ruang kerja. Itu memang disengajakan — tanpa pautan, setiap mesej daripada Slack terpaksa diatribusikan kepada sesiapa sahaja yang memasang aplikasi itu, dan jejak audit, had kadar per Principal serta pelapor tiket semuanya akan menamakan orang yang salah.
+Jambatan enggan bertindak bagi akaun sembang yang tidak dapat dipetakannya kepada ahli ruang kerja. Ini
+disengajakan — tanpa pautan, setiap mesej daripada Slack perlu diatribusikan kepada sesiapa sahaja yang
+memasang apl itu, dan jejak audit, had kadar setiap prinsipal dan pelapor tiket semuanya akan menamakan
+orang yang salah.
 
-Ahli yang belum dipautkan dan menyebut bot akan menerima balasan dalam utas Slack itu yang menerangkan cara memautkan. Tiada apa-apa dihantar.
+Ahli yang belum memautkan akaun dan menyebut bot akan menerima balasan dalam benang Slack itu yang menerangkan
+cara memautkan. Tiada apa lain yang dihantar.
 
 ## Pautkan dengan kod
 
+Pemautan memerlukan kedua-dua pihak: menghantar kod dari Slack membuktikan akaun Slack, dan mengesahkannya dalam
+Control Center membuktikan akaun itu milik anda.
+
 1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti** dan tatal ke kad **Akaun sembang dipautkan**
-2. Pada blok Slack, klik **Pautkan akaun Slack saya**
-3. Salin perintah yang ditunjukkannya, sebagai contoh:
+2. Pada blok Slack, klik **Pautkan akaun Slack saya**. Dialog memaparkan kod sekali guna, contohnya:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Dalam Slack, hantar perintah itu kepada bot — DM ialah tempat yang paling mudah
-5. Bot mengesahkan pengguna Control Center yang kini anda pautkan, dan dialog yang anda biarkan terbuka dikemas kini untuk menyatakannya pada saat yang sama — anda tidak perlu menutupnya dan menyemak semula
+3. Dalam Slack, hantar kod itu kepada bot dalam **mesej langsung**: hanya kodnya, tiada yang lain
+4. Bot membalas "Got it. Confirm this Slack account in Control Center to finish linking." dan dialog yang anda
+   biarkan terbuka memaparkan profil Slack yang menghantar kod itu: namanya dan id ahli Slack
+5. Jika itu akaun anda, klik **Sahkan**. Pautan dibuat, dialog memaklumkannya dan bot mengesahkan dalam mesej
+   langsung yang sama
+6. Jika itu bukan akaun anda, klik **Tolak**. Tiada apa yang dipautkan dan kod itu berhenti berfungsi; klik
+   **Dapatkan kod baharu** untuk mencuba semula
 
-Kod itu:
+Menutup dialog tidak menghilangkan tuntutan. Kod yang tiba kemudian menunggu pada baris **Pautkan akaun Slack saya**
+pada halaman profil anda, dengan **Sahkan** dan **Tolak** yang sama.
 
-- Boleh digunakan sekali sahaja dan luput **15 minit** selepas dijana
-- Sentiasa dijana untuk _anda_, tidak pernah untuk rakan sepasukan
-- Menggantikan sebarang kod yang anda sudah pegang, jadi menekan butang itu lagi membatalkan kod sebelumnya
-- Hanya wujud dalam memori, jadi but semula pelayan membatalkan kod yang belum digunakan — tekan butang itu lagi
+Sebab langkah pengesahan: kod yang dibaca oleh orang lain dan dihantar dari akaun Slack mereka akan menjadikan akaun
+itu bertindak sebagai anda. Hanya anda boleh mengesahkan, dan hanya profil yang tepat menghantar kod itu.
 
-Kod yang tidak dikenali, telah luput, atau dijana untuk ruang kerja yang lain gagal dengan cara yang sama tidak dapat dibezakan: "kod itu tidak sah (atau telah luput)".
+Kod ini:
 
-## Pautan automatik melalui e-mel
+- Hanya boleh digunakan sekali dan tamat tempoh **15 minit** selepas dijana
+- Sentiasa dijana untuk _anda_, tidak pernah untuk rakan sekerja
+- Hanya diterima dalam mesej langsung kepada bot. Dalam saluran, ia hanyalah mesej biasa
+- Hanya boleh dituntut oleh ahli penuh ruang kerja Slack tempat bot dipasang, bukan tetamu atau orang dari organisasi lain
+- Menggantikan sebarang kod yang sudah anda pegang, jadi menekan butang sekali lagi membatalkan yang sebelumnya
+- Hanya disimpan dalam memori, jadi memulakan semula pelayan membatalkan kod yang belum digunakan — tekan butang sekali lagi
 
-Jika profil Slack anda membawa e-mel disahkan yang sepadan dengan pengguna Control Center yang **sudah menjadi ahli ruang kerja ini**, jambatan memautkan anda pada kali pertama anda bercakap dengannya. Tiada kod diperlukan.
+Kod yang tidak dikenali, sudah tamat tempoh, ditolak atau dijana untuk ruang kerja lain akan gagal dengan cara
+yang sama dan tidak dapat dibezakan: "That code is not valid (or has expired)."
 
-Kedua-dua bahagian itu penting: padanan e-mel membuktikan identiti, tetapi hanya keahlian memberikan akses, jadi orang asing yang e-melnya kebetulan wujud pada pelayan itu tidak dipautkan kepada apa-apa. Senarai itu menunjukkan bagaimana setiap pautan dibuat ("dipadankan mengikut e-mel" atau "dipautkan dengan kod").
+## Pemautan automatik melalui e-mel
 
-Pautan automatik memerlukan skop `users:read.email`. Tanpanya, Slack tidak akan mendedahkan alamat itu dan aliran kod ialah satu-satunya jalan.
+Jika profil Slack anda membawa e-mel yang telah disahkan dan sepadan dengan e-mel yang disahkan bagi pengguna Control
+Center yang **sudah menjadi ahli ruang kerja ini**, jambatan akan memautkan anda kali pertama anda bercakap dengannya.
+Tiada kod diperlukan.
+
+Kedua-dua bahagian penting: padanan e-mel membuktikan identiti, tetapi hanya keahlian memberikan akses, jadi orang
+asing yang e-melnya kebetulan wujud pada pelayan tidak akan memautkan kepada apa-apa. Senarai ahli menunjukkan
+bagaimana setiap pautan dibuat ("dipadankan melalui e-mel" atau "dipautkan dengan kod").
+
+Pemautan automatik memerlukan skop `users:read.email`. Tanpanya, Slack tidak akan mendedahkan alamat itu dan
+aliran kod menjadi satu-satunya laluan.
 
 ## Lihat siapa yang dipautkan
 
-Senarai itu ialah pentadbiran ruang kerja, jadi ia berada pada separuh permukaan yang satu lagi: **Tetapan → Ruang kerja → Umum → Jambatan sembang → Akaun dipautkan**. Ia menyenaraikan setiap ahli ruang kerja yang dipautkan, bersama akaun Slack yang dipetakan kepada setiap satu dan cara pautan itu dibuat.
+Senarai ahli tergolong dalam pentadbiran ruang kerja, jadi ia terletak pada bahagian lain permukaan:
+**Tetapan → Ruang kerja → Umum → Jambatan sembang → Akaun dipautkan**. Ia menyenaraikan setiap ahli ruang kerja
+yang dipautkan, bersama akaun Slack yang dipetakan kepada setiap seorang dan bagaimana pautan itu dibuat.
 
-Keadaan anda sendiri berada pada halaman profil anda: baris **Pautkan akaun Slack saya** berbunyi "Dipautkan ke _id-slack-anda_" sebaik sahaja anda dipautkan dan memberitahu anda untuk memautkan apabila anda belum dipautkan.
+Status anda sendiri terdapat pada halaman profil anda: baris **Pautkan akaun Slack saya** memaparkan "Dipautkan
+kepada _your-slack-id_" setelah anda dipautkan, dan meminta anda memautkan apabila anda belum.
 
-Senarai itu ialah langganan langsung, kerana perubahan itu berlaku di sisi yang satu lagi — anda menaip kod itu dalam Slack, jadi tiada permintaan daripada aplikasi boleh membawa jawapannya kembali.
+Senarai ahli dan pengesahan ialah langganan langsung, kerana perubahan berlaku di sisi yang lain: anda menghantar
+kod dalam Slack, jadi tiada permintaan daripada apl yang boleh membawa jawapan itu kembali.
 
-## Nyahpaut
+## Nyahpautkan
 
-Klik **Nyahpaut** pada baris dalam senarai ruang kerja.
+Klik **Nyahpaut** pada baris dalam senarai ahli ruang kerja.
 
-- Sesiapa sahaja boleh menyahpaut dirinya sendiri
+- Sesiapa sahaja boleh menyahpaut akaunnya sendiri
 - Hanya pentadbir boleh menyahpaut ahli lain
-- Menyahpaut juga membatalkan sebarang kod pautan ahli itu yang belum digunakan
+- Menyahpaut juga menarik balik sebarang kod pemautan yang masih aktif bagi ahli itu
 
-Selepas dinyahpaut, akaun Slack itu tidak lagi boleh memacu ejen sehingga ia dipautkan semula. Ruang, transkrip dan tiket yang sedia ada mengekalkan atribusi asalnya — menyahpaut bukan penarikan balik kerja lampau.
+Selepas dinyahpaut, akaun Slack itu tidak lagi boleh memacu ejen sehingga dipautkan semula. Ruang, transkrip dan
+tiket sedia ada mengekalkan atribusi asalnya — menyahpaut bukan penarikan balik kerja yang telah dilakukan.
 
 ## Penyelesaian masalah
 
-### Bot mengatakan saya bukan ahli ruang kerja ini
+### Bot memberitahu saya bukan ahli ruang kerja ini
 
-Akaun Slack anda dipautkan kepada pengguna Control Center, tetapi pengguna itu tidak memegang sebarang keahlian dalam ruang kerja ini. Minta pentadbir menjemput anda; lihat [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/).
+Akaun Slack anda dipautkan kepada pengguna Control Center, tetapi pengguna itu tiada keahlian dalam ruang kerja
+ini. Minta pentadbir menjemput anda; lihat [Berbilang pemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/).
 
-### Bot mengatakan peranan saya hanya baca
+### Bot memberitahu peranan saya baca sahaja
 
-Peranan `viewer` dan `guest` tidak boleh memulakan kerja. Pentadbir perlu menaikkan peranan anda kepada `member` atau lebih tinggi.
+Peranan `viewer` dan `guest` tidak boleh memulakan kerja. Pentadbir perlu menaikkan peranan anda kepada `member`
+atau lebih tinggi.
 
-### Perintah slash tidak dikenali
+### Bot memberitahu kod itu tidak sah
 
-Semak bahawa perintah slash itu wujud dalam Slack dan bahawa anda menghantar perintah yang ditunjukkan oleh dialog tetapan kepada anda — pentadbir mungkin telah menamakannya semula, dan dalam kes itu dialog menunjukkan nama semasa.
+Kod itu telah tamat tempoh, telah digunakan, telah ditolak atau telah digantikan dengan yang lebih baharu. Klik
+**Pautkan akaun Slack saya** sekali lagi dan hantar kod baharu.
+
+### Bot menganggap kod saya sebagai permintaan
+
+Anda menghantarnya dalam saluran, atau akaun Slack anda sudah dipautkan. Kod hanya diterima dalam mesej langsung,
+dan mesej berbentuk kod daripada akaun yang sudah dipautkan ialah permintaan biasa.
 
 ## Panduan berkaitan
 
@@ -86,4 +126,4 @@ Semak bahawa perintah slash itu wujud dalam Slack dan bahawa anda menghantar per
 ## Konsep berkaitan
 
 - [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/)
-- [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/)
+- [Berbilang pemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/)

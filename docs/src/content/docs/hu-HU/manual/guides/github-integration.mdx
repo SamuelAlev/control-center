@@ -2,11 +2,11 @@
 title: GitHub-integráció beállítása
 description: Jelentkezzen be a GitHubra, hogy a PR-felület, a repóregisztráció és az ügynökfuttatások működjenek.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Ez az útmutató a beállítás GitHub-specifikus részeit tárgyalja. A GitHub a három
-támogatott kódhoszt egyike — a GitLab vagy a Bitbucket csatlakoztatásáról,
+támogatott kódhoszt egyike. A GitLab vagy a Bitbucket csatlakoztatásáról,
 illetve arról, hogyan használ egy munkaterület egyszerre többet, lásd a
 [Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
 oldalt.
@@ -14,82 +14,75 @@ oldalt.
 ## Előfeltételek
 
 - Egy GitHub-fiók, amely hozzáfér azokhoz a repókhoz, amelyeken dolgozni szeretne
-- Vagy egy GitHub App, amely a szerveréhez van regisztrálva (lásd a
-  [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt), hogy **be tudjon
-  jelentkezni**, **vagy** egy személyes hozzáférési token a `repo` és a
-  `read:org` jogosultsággal, amelyet beilleszthet
+- Egy szerver, amely be tudja jelentkeztetni az embereket a GitHubra: vagy a
+  saját GitHub Appjával (lásd a
+  [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt), vagy a
+  Control Center Connecttel; ezt a szerver tulajdonosa választja ki a
+  **Beállítások → Szerver → Egyszeri bejelentkezés** helyen
 
 :::note[A hitelesítő adatok a szerveren élnek, Önhöz rendelve]
-Semmi nem tárolódik azon a gépen, amelyen éppen gépel. A hitelesítő adatát a
-`cc_server` tárolja, az Ön felhasználói azonosítójához rendelve, és minden
-eszköz, amelyről bejelentkezik, ugyanazt használja — asztali gép, web és
-telefon. Ugyanazon szerver egy másik tagja nem tudja kiolvasni, és a
+Semmi nem tárolódik azon a gépen, amelyen éppen gépel. A GitHub-bejelentkezését
+a `cc_server` tárolja, az Ön felhasználói azonosítójához rendelve, és minden
+eszköz, amelyről bejelentkezik, ugyanazt használja: asztali gép, web és
+telefon. Ugyanazon szerver egy másik tagja nem tudja használni, és a
 bejelentkeztetése olyan dolog, amelyet ők maguk végeznek el.
 :::
 
 ## Bejelentkezés a GitHubra
 
-Egy **device flow**: a GitHub mutat egy rövid kódot, Ön jóváhagyja a github.com
-oldalon, és a szerver megkapja a hitelesítő adatot — nincs visszahívási URL,
-nincs port, nincs semmi, amit ki kellene tennie. Akkor érhető el, ha a
-szerverhez tartozik Kliens-ID, amellyel egy hivatalos build már eleve
-rendelkezik.
+A GitHub kizárólag bejelentkezéssel működik: nincs beillesztendő token.
 
 1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely**
    oldalt (vagy a bevezető első lépését)
-2. A **GitHub** sorban kattintson a **Bejelentkezés ezzel: GitHub** elemre
-3. A párbeszédablak egy nyolckarakteres kódot mutat, és megnyitja a
-   [github.com/login/device](https://github.com/login/device) oldalt a
-   böngészőjében. A kód már a vágólapján van
-4. Illessze be, hagyja jóvá az alkalmazást, majd térjen vissza. A sor magától
-   erre vált: „Bejelentkezve mint _your-username_”
+2. A **GitHub** sorban kattintson a **Bejelentkezés: GitHub** elemre
+3. A böngészője megnyitja a GitHubot. Hagyja jóvá az alkalmazást
 
-A párbeszédablak bezárható, amíg a böngészőben befejezi a műveletet — a szerver
-addig kérdezgeti a szolgáltatót, amíg a kód le nem jár (körülbelül 15 perc),
-így a bejelentkezés akkor is célba ér.
+A bejelentkezés befejezése attól függ, ki futtatja:
 
-## Vagy illesszen be egy tokent
-
-Ez a tartalék megoldás, ha a szerveren nincs alkalmazás, ha az alkalmazás nincs
-telepítve egy szükséges fiókra, vagy ha egyszerűen inkább PAT-ot szeretne
-használni.
-
-1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** oldalt
-2. A **GitHub** sorban kattintson a **Token hozzáadása** elemre
-3. Illesszen be egy `repo` és `read:org` jogosultságú tokent (classic), és
-   mentse el. A **fine-grained** tokenhez a tárolónál a **Contents** és a
-   **Pull requests** (read and write), valamint a **Checks** és az **Actions**
-   (read) szükséges.
-
-A tokent a rendszer a mentés pillanatában ellenőrzi, így a sor meg tudja
-nevezni a hozzá tartozó fiókot. Az eltávolításához kattintson a **Leválasztás**
-elemre.
+- **A szerver saját alkalmazása:** a GitHub visszaküldi a böngészőt a szerverre,
+  és a párbeszédablak ezt magától észreveszi. Nem kell semmit beírnia
+- **Control Center Connect:** a böngészőoldal egy 8 karakteres kódot mutat. Írja
+  be a párbeszédablakba, vagy hagyja, hogy a böngésző a `control-center://`
+  hivatkozáson keresztül megnyissa a Control Centert, és hagyja ki a beírást
 
 Ellenőrzőpont: a **GitHub** sor ezt írja: „Bejelentkezve mint _your-username_”.
-Ha nem az Ön hitelesítő adata válaszol, egy utótag nevezi meg a forrást —
-„ennek a szervernek az alkalmazásán keresztül” vagy „a környezetből”.
 
-:::note[A sorrend rögzített]
-Az Ön nevében indított kérés az **Ön** hitelesítő adatát használja, és semmi
-mást — a környezet a szerver hitelesítő adata, nem az Öné, ezért soha nem lép a
-helyébe. A mögötte ember nélkül futó munka (webhookok, PR-lekérdezés,
-jegyszinkronizálás) a szerver alkalmazásidentitását használja, majd a
-szervertulajdonos hitelesítő adatát, végül a környezetet.
-:::
+A párbeszédablak elutasítja azt a kódot vagy hivatkozást, amelyet nem ő maga
+indított, ezzel az üzenettel: **A bejelentkezést nem innen indították**. Ha valaki
+bejelentkezési hivatkozást küld Önnek, ne folytassa: a befejezése az Ön fiókját
+az ő szerveréhez kapcsolná.
+
+A bejelentkezés eltávolításához kattintson a **Leválasztás** elemre. Ha
+kijelentkezik a GitHubról, vagy eltávolítják egy munkaterületről, azzal minden
+olyan token is megszűnik, amelyet a szerver az Ön nevében állított ki.
+
+## Kinek a nevében szól a hitelesítő adata
+
+- **Bármi, amit Ön tesz** (a PR-oldal megnyitása, átnézés közzététele,
+  jóváhagyás, összefésülés), az **Ön** bejelentkezésén fut, és semmi máson. Ha
+  nincs bejelentkezve, az alkalmazás ezt jelzi, és bejelentkezést kér. Semmilyen
+  más hitelesítő adat nem lép az Ön helyébe
+- **Az a munka, amelynél senki sem gépel** (ügynökfutások, pipeline-ok,
+  PR-lekérdezés, botválaszok, klónozás), egyetlen repóra szóló tokent kap,
+  amelyet a szerver GitHub Appja vagy a Connect állít ki. Ez arra korlátozódik,
+  amit egy felelős tag ott megtehet: aki kérte, egyébként a munkaterület
+  tulajdonosa. Az a tag, aki nem pusholhat, olvasásra korlátozza a tokent
+- **Az automatizálás soha nem hagy jóvá** pull requestet. A jóváhagyás egy
+  személy cselekedete
 
 ## Mit ad az integráció
 
 | Funkció | Hogyan |
 | --- | --- |
-| PR-lista és részletek | A GitHub REST API a szerverről, az alkalmazásidentitással vagy az Ön saját hitelesítő adatával |
+| PR-lista és részletek | A GitHub REST API a szerverről, az Ön saját bejelentkezésével |
 | Check-futtatások | A GitHub Checks API |
-| Átnézés közzététele | Felhasználó által indított lépés, amely közzéteszi az átnézését a PR-ben |
-| Repóregisztráció | Egy checkout akkor fogadható el, ha az `origin` remote-ja a github.com-ra mutat — vagy a gitlab.com / bitbucket.org oldalra |
-| Ügynök GitHub-hozzáférése | A hitelesítőadat-bróker csak olvasásra jogosult tokent injektál `GH_TOKEN` / `GITHUB_TOKEN` néven; a pushok a Control Centeren mennek át |
+| Átnézés közzététele | Felhasználó által indított lépés, amely közzéteszi az átnézését a PR-ben, az Ön nevében |
+| Repóregisztráció | Egy checkout akkor fogadható el, ha az `origin` remote-ja a github.com-ra mutat, vagy a gitlab.com / bitbucket.org oldalra |
+| Ügynök GitHub-hozzáférése | Egy token a futtatás egyetlen repójára `GH_TOKEN` / `GITHUB_TOKEN` néven; a pushok a Control Centeren mennek át |
 | Értesítési jelzések | A GitHub-értesítési postaládájának szerveroldali lekérdezése „Említve egy pull requestben” és „Átnézést kértek” értesítéseket vált ki |
 | Felhasználói profilok | Profilkártyák rámutatáskor és a PR-ek szerző szerinti szűrése |
 
-Egyes útvonalak a REST helyett a GraphQL API-t használják, ahol az olcsóbb — az
+Egyes útvonalak a REST helyett a GraphQL API-t használják, ahol az olcsóbb: az
 ágak tevékenységét a PR-összeállító választóhoz, és az élő átnézési állapotot,
 amely eldönti, hogy egy „átnézést kértek” értesítés még függőben van-e.
 
@@ -97,7 +90,7 @@ amely eldönti, hogy egy „átnézést kértek” értesítés még függőben 
 
 A címsor állapotjelvényt mutat, ha egy szolgáltató csökkentett szolgáltatással
 üzemel; ez a GitHubra, a Claude-ra, az OpenAI-ra és a Kimira terjed ki.
-**Mindaddig rejtve marad, amíg minden egészséges** — a jelenlét problémát jelez,
+**Mindaddig rejtve marad, amíg minden egészséges**: a jelenlét problémát jelez,
 nem annak hiányát.
 
 Kattintson a jelvényre egy lenyíló panel megnyitásához, amely minden szolgáltató
@@ -106,55 +99,54 @@ kétpercenként.
 
 ## Hogyan lépnek fel az ügynökök a GitHubon
 
-- Egy GitHub-worktree-ben dolgozó ügynök mindig csak olvasásra jogosult
-  GitHub-tokent kap. A push a Control Centeren megy át, amely megkérdezi a
+- Egy GitHub-worktree-ben dolgozó ügynök erre az egy repóra szóló tokent kap.
+  Olvashatja a kódot, és megjegyzést fűzhet a pull requestekhez, ha a felelős
+  tag pusholhat, ha pedig nem, csak olvashat. A push a Control Centeren megy át, amely megkérdezi a
   **Küldés távoli tárolóra** szabályt, majd egy olyan írási tokennel továbbítja,
   amely soha nincs az ügynök birtokában. Lásd a
   [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalt
 - Az ügynök commitjai mindig a kérő Git-identitását használják szerzőként és commitolóként is. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. A **Beállítások → Ön → Commit-hozzárendelés** oldalon kikapcsolhatja ezt a társszerzői elismerést az identitása megváltoztatása nélkül. A **Beállítások → Munkaterület → Általános** oldalon megadott felülírás elsőbbséget élvez, és zárolja a személyes kapcsolót. A Claude Code saját szerzőségi jelölése mindig ki van kapcsolva. A commitok aláírásához továbbra is külön érvényes konfiguráció szükséges
-- Ha GitHub App van beállítva, a bróker indításonként szűk hatókörű, a repóra
-  korlátozott, körülbelül egyórás telepítési tokent állít ki a széles token
-  átadása helyett. A telepítést a futtatás repójának **tulajdonosa** alapján
-  oldja fel, így egy több fiókra telepített alkalmazás pontosan arra a fiókra
-  korlátozódik, amelyet a futtatás érint. Alkalmazás nélkül az ügynökök a
-  környezeti tokent kapják, amelyet nem lehet csak olvasásra korlátozni: a
-  push-szabály ekkor a `git push`-ra érvényes, de a tokent közvetlenül használó
-  kódra nem
-- A token mindig a brókeré, soha nem a kérő tag sajátja. A szerver tokenjét a
-  bróker visszatartja attól a futtatástól, amely olyan tag nevében jár el, aki
-  nem a tulajdonos, és nem csatlakoztatta a GitHubot
+- Egy állomáson megnyitott terminál az Ön saját bejelentkezését kapja, erre az
+  egy repóra szűkítve, így az onnan indított pushok az Önéi
+- Ha nem állítható ki token (senki felelős nincs bejelentkezve, az alkalmazás
+  nincs telepítve a tulajdonosnál, vagy a telepítés fel van függesztve), a futás
+  token nélkül indul, és a jegyzetei megmondják, miért. Nincs tartalék
+  hitelesítő adat
 
 ## Hibakeresés
 
 ### A PR-lista üres, és azt írja, hogy a GitHub nincs csatlakoztatva
 
-Nincs GitHub-hitelesítő adata ezen a szerveren. Jelentkezzen be, vagy illesszen
-be egy tokent a **Kódtárhely** alatt. A más kódhosztokon lévő repók érintetlenek
-— csak a GitHub repói nem járulnak hozzá semmivel.
+Nincs bejelentkezve a GitHubra ezen a szerveren. Kattintson a **Bejelentkezés:
+GitHub** elemre a **Kódtárhely** alatt. A más kódhosztokon lévő repók
+érintetlenek.
 
-### A sor felkínálja a „Token hozzáadása” elemet, de a „Bejelentkezés ezzel: GitHub” elemet nem
+### A GitHub sor azt írja, hogy a bejelentkezés nincs beállítva ezen a szerveren
 
-A szerverhez nem tartozik Kliens-ID — ez a forrásból készült build normál
-állapota, mivel a hitelesítő adatok csak a hivatalos buildekbe vannak beépítve.
-Lásd a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt: körülbelül
-két percet vesz igénybe, és csak a szervertulajdonosnak kell egyszer elvégeznie.
+A szervernek nincs sem saját GitHub Appja, sem Connectje. A szerver tulajdonosa
+a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen választja ki az
+egyiket: a **Saját GitHub-alkalmazás létrehozása** körülbelül két percet vesz
+igénybe. Lásd a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt.
 
-### A bejelentkezési párbeszédablak azt írja, hogy a szolgáltató nem adott vissza device-kódot
+### A párbeszédablak azt írja, hogy a kód nem egyezik
 
-A GitHub App létezik, de a **Device flow** jelölőnégyzet ki van kapcsolva.
-Kapcsolja be az alkalmazás beállításaiban (General → Device flow), és próbálja
-újra.
+Írja be a kódot pontosan úgy, ahogy a böngésző mutatja: 8 betű és számjegy. Öt
+hibás kód lezárja a bejelentkezést; kezdje újra.
 
-### A sor „ennek a szervernek az alkalmazásán keresztül” feliratot mutat, pedig a saját fiókomat vártam
+### A bejelentkezés azt írja, hogy az alkalmazás nincs telepítve
 
-Nem jelentkezett be; amit lát, az a szerver alkalmazásidentitása, amely
-válaszol. Kattintson ebben a sorban a **Bejelentkezés ezzel: GitHub** elemre.
+A GitHub Appnak nincs telepítése azon a fiókon, amely a repó tulajdonosa. Egy
+munkaterület-adminisztrátor a **Beállítások → Munkaterület → Általános →
+GitHub-alkalmazás telepítései** helyen telepíti. A Control Center megosztott
+Appját használó szervezetnél előfordulhat, hogy a szervezet egyik
+adminisztrátorának a **A szerver engedélyezése** gombra kell kattintania. Lásd:
+[GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#a-szerver-engedélyezése-egy-szervezet-számára).
 
-### Egy fine-grained PAT nem mutat összefésülés gombot vagy check-állapotot
+### Mindenkinek újra be kell jelentkeznie a GitHubra
 
-A tokenhez a **Contents** és a **Pull requests** (read and write), valamint a
-**Checks** és az **Actions** (read) szükséges. Módosítás után illessze be újra a
-**Kódtárhely** alatt.
+A szerver tulajdonosa lecserélte a szerver Connect-kulcsát, Connect-szervert
+váltott, vagy az adatkönyvtárat egy másik gépre állították vissza. A Connecten
+keresztüli bejelentkezések ahhoz a szerverhez kötődnek, amely létrehozta őket.
 
 ### Egy repó hozzáadása elutasításra kerül
 
@@ -179,4 +171,4 @@ mélyíti tovább a korlátot. Az átmeneti hibákat legfeljebb háromszor prób
 - [API-kulcsok kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
 - [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
 - [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Beszélgetés a Control Centerrel GitHub PR-ből](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek/)

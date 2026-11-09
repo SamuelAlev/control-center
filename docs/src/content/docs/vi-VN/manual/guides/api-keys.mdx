@@ -2,7 +2,7 @@
 title: Quản lý khóa API
 description: Mỗi thông tin xác thực nằm ở đâu — tài khoản người dùng của bạn trên máy chủ, chính máy chủ, hay một CLI bên ngoài — và cách đặt, xoay vòng và gỡ bỏ nó.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Hướng dẫn này cho bạn biết mỗi thông tin xác thực mà Control Center dùng được
@@ -14,27 +14,32 @@ con người đứng sau yêu cầu đó hay không.
 
 | Thông tin xác thực                  | Nơi lưu                                                   | Ai dùng                                                          |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Thông tin xác thực forge / phiếu của bạn | Tệp secret 0600 của máy chủ, khóa theo id người dùng của bạn | Mọi thứ bạn yêu cầu: bề mặt PR, các lượt chạy agent, hình ảnh của bạn |
-| Danh tính ứng dụng của máy chủ      | Cùng tệp đó, cộng thêm `server_settings` cho các phần không phải secret | Công việc không do con người yêu cầu: webhook, polling PR, đồng bộ phiếu |
+| Đăng nhập forge / phiếu của bạn      | Tệp secret 0600 của máy chủ, khóa theo id người dùng của bạn | Mọi việc bạn làm: bề mặt PR, đánh giá, merge, các hành động Linear của bạn |
+| Ứng dụng nhà cung cấp của máy chủ    | Cùng tệp đó, cộng thêm `server_settings` cho các phần không phải secret | Đăng nhập người dùng, và token một kho mã cho agent, pipeline và polling |
+| Khóa cài đặt Connect                 | Cùng tệp đó (`connect_install_key`)                       | Nhận diện máy chủ này với Control Center Connect                 |
 | Khóa nhà cung cấp mô hình và token OAuth | Kho thông tin xác thực riêng của máy chủ                | Adapter tích hợp sẵn, cho mọi không gian làm việc trên bản cài đặt |
-| Token bot Slack                     | `<dataDir>/<workspaceId>/chat_credentials/` trên máy chủ | Cầu chat cho không gian làm việc đó                              |
+| Thông tin xác thực bot Slack        | `<dataDir>/<workspaceId>/chat_credentials/` trên máy chủ | Cầu chat cho không gian làm việc đó: token của app riêng bạn, hoặc khoản cấp đã niêm phong của app dùng chung |
 | Thông tin xác thực của CLI bên ngoài | Bất cứ thứ gì CLI đó dùng                                 | Claude Code, trên máy chạy máy chủ                               |
 
-## Hai thông tin xác thực GitHub, và chúng trả lời những câu hỏi khác nhau
+## GitHub: đăng nhập của bạn, và token cho một kho mã
 
-- **Của bạn**, từ việc đăng nhập (luồng thiết bị) hoặc dán một token. Đó là thứ
-  mà mọi yêu cầu được thực hiện *thay mặt bạn* dùng, nên một bình luận đăng cho
-  bạn sẽ mang tên bạn. Thành viên khác không thể đọc nó, và họ tự kết nối thông
-  tin xác thực của riêng mình
-- **Của máy chủ**, từ GitHub App mà người vận hành đã đăng ký. Nó đáp ứng mọi
-  thứ không có người gọi — nhờ đó quyền truy cập forge không biến mất khi một
-  người rời đi hoặc xoay vòng token
+- **Của bạn**, từ **Đăng nhập vào GitHub**. Đó là thứ mà mọi yêu cầu được thực hiện
+  *thay mặt bạn* dùng, nên một đánh giá đăng cho bạn sẽ mang tên bạn. Thành viên
+  khác không thể dùng nó, và họ tự đăng nhập. Không có token GitHub nào để dán
+- **Công việc không có ai gõ** (agent, pipeline, polling, câu trả lời của bot) nhận
+  một token cho một kho mã tại một thời điểm, được cấp từ GitHub App của máy chủ
+  hoặc qua Control Center Connect, và giới hạn trong những gì một thành viên chịu
+  trách nhiệm được làm ở đó. Đó không bao giờ là đăng nhập của bạn được chuyển
+  nguyên vẹn
 
-Cái của bạn được đặt trong thẻ **Lưu trữ mã** tại **Cài đặt → Không gian làm
-việc → Hồ sơ & danh tính**; còn của máy chủ trong **Ứng dụng nhà cung cấp** tại
+Của bạn được đặt trong thẻ **Lưu trữ mã** tại **Cài đặt → Không gian làm việc → Hồ sơ
+& danh tính**; còn ứng dụng của máy chủ nằm trong **Ứng dụng nhà cung cấp** tại
 **Cài đặt → Máy chủ → Đăng nhập một lần**. Xem
 [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
 và [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
+
+GitLab và Bitbucket vẫn nhận một token cá nhân được dán vào, được lưu theo cách tương
+tự. Xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
 
 :::note[Còn có một màn hình chỉ truy cập được bằng URL]
 `/workspaces/<workspaceId>/api-keys` hiển thị cùng hai thẻ như bước đầu tiên của
@@ -72,46 +77,55 @@ máy chủ đọc bản sao của riêng nó và không có gì nối hai bên l
 ## Kết nối một nhà cung cấp phiếu
 
 Thẻ **Phiếu** tại **Cài đặt → Không gian làm việc → Chung** chứa cả hai nửa của
-một quyết định: phiếu của bạn nằm ở nhà cung cấp nào, và thông tin xác thực cho
-nó. Chọn **Cục bộ** sẽ ẩn dòng thông tin xác thực — phiếu cục bộ nằm trong cơ sở
-dữ liệu riêng của máy chủ này và không có gì để xác thực.
+một quyết định: phiếu của bạn nằm ở nhà cung cấp nào, và máy chủ là ai khi nói
+chuyện với nhà cung cấp đó. Chọn **Cục bộ** sẽ ẩn các dòng Linear — phiếu cục bộ
+nằm trong cơ sở dữ liệu riêng của máy chủ này và không có gì để xác thực.
 
-Khóa của bạn được lưu trên máy chủ gắn với id người dùng của bạn, giống như khóa
-forge. Máy chủ giữ khóa Linear riêng của nó một cách tách biệt (**Ứng dụng nhà
-cung cấp**), và đó là thứ mà việc đồng bộ phiếu dùng khi không có con người yêu
-cầu. Không có khóa phiếu nào được chèn vào sandbox của agent; agent ghi phiếu qua
-các công cụ của Control Center, vốn hỏi quy tắc **Ghi vào tracker bên ngoài**.
-Xem [Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
+Linear có hai đăng nhập và không có khóa dán vào: **Linear** là của bạn, cho những
+việc bạn làm, còn **Tự động hóa Linear** là ứng dụng Control Center của không gian
+làm việc, do một quản trị viên kết nối, dành cho đồng bộ phiếu, pipeline và agent.
+Máy chủ cũng có thể giữ một **Khóa API dịch vụ** (**Ứng dụng nhà cung cấp**) cho các
+không gian làm việc chưa kết nối tự động hóa. Không có thông tin xác thực phiếu nào
+được chèn vào sandbox của agent; agent ghi phiếu qua các công cụ của Control Center,
+vốn hỏi quy tắc **Ghi vào tracker bên ngoài**. Xem
+[Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
 
 ## Xoay vòng hoặc thu hồi
 
-- **Thông tin xác thực GitHub của bạn**: nhấn **Ngắt kết nối**, rồi đăng nhập
-  lại hoặc dán token mới. Hãy thu hồi token cũ trên GitHub
-- **Ứng dụng của máy chủ**: tạo một khóa riêng tư hoặc client secret mới trên
-  trang GitHub của ứng dụng, dán vào **Ứng dụng nhà cung cấp** và nhấn **Kiểm thử**
+- **Đăng nhập GitHub của bạn**: nhấn **Ngắt kết nối**, rồi **Đăng nhập vào GitHub**
+  lại. Ngắt kết nối cũng hủy mọi token mà máy chủ đã cấp thay mặt bạn
+- **Token GitLab hoặc Bitbucket**: nhấn **Cập nhật token** và dán token mới, rồi thu
+  hồi token cũ trên forge
+- **Ứng dụng của máy chủ**: tạo một khóa riêng tư hoặc client secret mới trên trang
+  nhà cung cấp của ứng dụng, dán vào **Ứng dụng nhà cung cấp** và nhấn **Kiểm thử**
+- **Khóa cài đặt Connect**: **Xoay vòng khóa** trên thẻ **Control Center Connect**,
+  hoặc `cc_server connect rotate-key --yes`. Mọi người đã đăng nhập qua Connect sẽ
+  phải đăng nhập lại. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/)
 - **Một nhà cung cấp mô hình**: trên dòng của nó, đăng xuất (OAuth) hoặc gỡ khóa,
   rồi kết nối lại
-- **Slack**: dán lại các token trong hộp thoại kết nối. Xem
-  [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- **Slack**: với app riêng của bạn, dán lại các token trong hộp thoại kết nối. App
+  Slack dùng chung của Control Center không có token nào để xoay vòng: token bot của
+  nó được gia hạn qua Connect, và **Ngắt kết nối** sẽ thu hồi nó và gỡ bot khỏi Slack.
+  Xem [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
 
 ## Xử lý sự cố
 
-### Danh sách PR trống nhưng token của tôi vẫn hoạt động trong `curl`
+### Token GitLab hoặc Bitbucket chạy được trong `curl` nhưng không chạy ở đây
 
-Kiểm tra phụ đề của dòng **Lưu trữ mã**. Nếu nó nêu một nguồn khác ("qua ứng
-dụng của máy chủ này", "từ môi trường"), thì thông tin xác thực bạn đang kiểm
-tra không phải là cái đang đáp ứng — cái của bạn đã không được lưu.
+Kiểm tra phụ đề của dòng **Lưu trữ mã**. Nếu nó ghi "từ môi trường", thì thông tin
+xác thực đang đáp ứng là của máy chủ, không phải của bạn — của bạn đã không được lưu.
 
-### Token được chấp nhận nhưng các yêu cầu sau đó thất bại
+### Token GitLab hoặc Bitbucket được chấp nhận nhưng các yêu cầu sau đó thất bại
 
 Token được kiểm tra ngay khi được lưu, nên dòng đó nêu tên tài khoản đứng sau nó
 — nhưng chỉ tài khoản, không phải các scope. Một token có quá ít scope sẽ kết
-nối được rồi sau đó thất bại ở từng yêu cầu riêng lẻ. Hãy kiểm tra các scope và
-thời điểm hết hạn:
+nối được rồi sau đó thất bại ở từng yêu cầu riêng lẻ. Hãy kiểm tra scope và thời
+điểm hết hạn trên forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Một nhà cung cấp báo rằng đăng nhập chưa được thiết lập trên máy chủ này
+
+Máy chủ không có ứng dụng riêng cho nhà cung cấp đó cũng không có Control Center
+Connect. Chủ máy chủ chọn một trong hai trong **Cài đặt → Máy chủ → Đăng nhập một lần**.
 
 ## Hướng dẫn liên quan
 

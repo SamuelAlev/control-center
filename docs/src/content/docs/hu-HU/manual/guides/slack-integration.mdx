@@ -1,11 +1,11 @@
 ---
 title: Slack-integráció beállítása
-description: Csatlakoztasson egy Slack-alkalmazást egy Control Center-munkaterülethez, hogy a tagok a Slackből vezérelhessék az ügynököket.
+description: Csatlakoztassa a Slacket egy Control Center-munkaterülethez a megosztott Control Center-alkalmazással vagy egy saját alkalmazással, hogy a tagok a Slackből vezérelhessék az ügynököket.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Ez az útmutató bemutatja, hogyan kapcsolhatja össze a Slacket egy Control Center-munkaterülettel, akár úgy, hogy a Control Center hozza létre az alkalmazást, akár úgy, hogy Ön építi fel saját maga.
+Ez az útmutató bemutatja, hogyan kapcsolhatja össze a Slacket egy Control Center-munkaterülettel: a megosztott Control Center-alkalmazás hozzáadásával, vagy egy saját alkalmazással, amelyet a Control Center hoz létre Önnek, vagy Ön épít fel saját maga.
 
 Az első, vezetett végigpróbáláshoz lásd: [Slack összekötése a munkaterülettel](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/).
 
@@ -19,9 +19,37 @@ Nincs Discord-, Telegram-, Teams- vagy Matrix-implementáció.
 
 - Az `owner` vagy `admin` szerepkör a Control Center-munkaterületen — egy csevegőalkalmazás összekapcsolása a munkaterület beállításainak módosítása
 - Jogosultság alkalmazások létrehozásához és telepítéséhez a Slack-munkaterületen
-- Semmi nyilvánosan elérhető: a kapcsolat kifelé indul (Socket Mode), így a szervernek nem kell bejövő port, alagút vagy domain
+- Semmi nyilvánosan elérhető: a saját alkalmazás a Socket Mode-on keresztül kifelé kapcsolódik, a megosztott alkalmazás eseményei pedig a Control Center Connect felé irányuló hosszú lekérdezéssel (long poll) érik el a szervert, így a szervernek nem kell bejövő port, alagút vagy domain
 
-## Három mód az alkalmazás megszerzésére
+## Megosztott vagy saját alkalmazás
+
+Egy munkaterület egyszerre pontosan az egyiken fut.
+
+| Mód                           | Amire szükség van                                                                                        | Amit kap                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Megosztott Control Center-alkalmazás** | A szerver a Control Center Connectet használja (**Beállítások → Szerver → Egyszeri bejelentkezés**), és a Connect kiszolgálja a Slacket | Egy kattintás és egy Slack-bejelentkezés. Nincs létrehozandó alkalmazás, beillesztendő token vagy cserélendő elem |
+| **Saját alkalmazás**          | Egy Slack-alkalmazás a Slack-munkaterületén, az alábbi három mód egyikével létrehozva                    | Saját botnév, leírások és slash-parancs, a Control Centerből szerkeszthetően         |
+
+### A megosztott Control Center-alkalmazás hozzáadása
+
+1. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+2. A Slack blokkon keresse meg **A Control Center hozzáadása ide: Slack** sort, és kattintson a **Hozzáadás ide: Slack** elemre
+3. A böngészője megnyitja a Slacket. Jelentkezzen be a Slackkel, válassza ki a Slack-munkaterületet, és hagyja jóvá a telepítést
+4. Amikor a böngésző egy kódot mutat, írja be abba a párbeszédablakba, amelyet a Control Center nyitva hagyott. Ha a böngésző magától visszaadja Önt az alkalmazásnak, nincs mit beírni
+5. Egy értesítés megnevezi a Slack-munkaterületet, amelyhez az alkalmazást hozzáadták, a Slack blokk pedig azt mutatja, hogy a kapcsolat a megosztott Control Center-alkalmazáson fut
+
+Az alkalmazást csak munkaterület-adminisztrátor adhatja hozzá. A sor megmondja, miért nem indítható el, ha a szerver a Connect helyett saját alkalmazásokat használ, ha az Ön Connectjének nincs Slack-alkalmazása, vagy ha ehhez a munkaterülethez már saját Slack-alkalmazás van csatlakoztatva.
+
+Miben különbözik a saját alkalmazástól:
+
+- A Slack a megosztott alkalmazás eseményeit a Connectnek küldi. A Connect csak egy hivatkozást tart meg (csapat-, csatorna- és üzenetazonosító), az üzenet szövegét eldobja; a szerver hosszú lekérdezéssel kéri le a hivatkozásokat a Connecttől, és minden üzenetet maga olvas ki a Slackből. A slash-parancs szövege viszont áthalad a Connecten, ezért a [`/cc ticket`](#jegyvázlatok-a-slackből) csak vázlatot készít
+- A bottoken ehhez a szerverhez van lepecsételve, és a Connecten keresztül újul meg, így nincs beillesztendő vagy cserélendő token
+- A bot neve, leírásai és slash-parancsa a megosztott alkalmazáséi. A Slack sor jelzi, hogy a kapcsolat a megosztott alkalmazáson fut, és nem kínál **Bot testreszabása** lehetőséget
+- Egy Slack-munkaterület egyszerre egyetlen Control Center-szerverhez kötődik. Ha egy másik szerverről adja hozzá az alkalmazást, az odakerül, és ennek a szervernek a kapcsolata megszűnik
+
+A módok közötti váltáshoz válassza le, majd csatlakoztassa a másik módon.
+
+### Saját alkalmazás: három mód a megszerzésére
 
 | Útvonal                        | Amit Ön biztosít                       | Amit a Control Center végez                                                                                                 |
 | ------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ Nincs Discord-, Telegram-, Teams- vagy Matrix-implementáció.
 
 A vezetett útvonal az egyetlen, amely azt is eléri, hogy az alkalmazás a Control Centerből _kezelhető_ legyen, és ez teszi lehetővé a [Csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/) funkciót. Egy **Létrehozás a(z) Slack felületen** módon készült alkalmazás később kezelt alkalmazássá léptethető elő, ha beilleszt egy alkalmazáskonfigurációs tokent a csatlakozási párbeszédablakban.
 
-Szándékosan nincs „a Control Center Slack-alkalmazásának telepítése” gomb. Egy megosztott Slack-alkalmazás telepítéséhez közös client secret kell (a Slacknek nincs PKCE-je), a Socket Mode pedig egy alkalmazás eseményeit véletlenszerűen osztja el a kapcsolatai között — így egyetlen közös alkalmazás a munkaterülete üzeneteit mások szervereire kézbesítené. Ezért minden munkaterület a saját alkalmazásával rendelkezik, és ez a három útvonal arról szól, hogy ez mennyire kevés munkájába kerül Önnek.
+A saját alkalmazás eseményei soha nem haladnak át a Connecten: a Socket Mode közvetlenül erre a szerverre kézbesíti őket.
 
 ## A. lehetőség: hagyja, hogy a Control Center hozza létre az alkalmazást
 
@@ -102,6 +130,8 @@ A `message.channels` és a `message.groups` teszi lehetővé, hogy egy _válasz_
 
 ## Csatlakoztatás
 
+Így jutnak el a saját alkalmazás tokenjei a Control Centerhez. A megosztott alkalmazásnak ezek közül semmire nincs szüksége.
+
 1. Lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
 2. A Slack blokkon kattintson a **Slack csatlakoztatása** elemre
 3. Töltse ki a mezőket:
@@ -124,8 +154,8 @@ Az opcionális alkalmazáskonfigurációs token nélkül a kapcsolat jól műkö
 
 ## Mit tesz a csatlakoztatás
 
-- A hitelesítő adatokat a munkaterület saját könyvtárában tárolja, az adatbázisa mellett, csak a tulajdonos által olvasható módon. Soha nem jutnak vissza egy klienshez
-- Egy Socket Mode-kapcsolatot nyit ehhez a munkaterülethez, és elkezdi fogadni az említéseket, a Slack-szálválaszokat, a közvetlen üzeneteket és a slash-parancsokat
+- A hitelesítő adatokat a munkaterület saját könyvtárában tárolja, az adatbázisa mellett, csak a tulajdonos által olvasható módon. Soha nem jutnak vissza egy klienshez. A megosztott alkalmazásnál ez a lepecsételt engedély; a rövid élettartamú bottoken, amellyé megújul, a memóriában marad
+- Elkezdi fogadni az említéseket, a Slack-szálválaszokat, a közvetlen üzeneteket és a slash-parancsokat: saját alkalmazásnál egyetlen Socket Mode-kapcsolaton, megosztott alkalmazásnál a szerver egyetlen Connect felé irányuló hosszú lekérdezésén keresztül
 - Újra előkészíti az összes korábban áthidalt Slack-szálat, így az újracsatlakozás folytatja a meglévő beszélgetéseket, ahelyett hogy magukra hagyná őket
 - Semmibe nem kerül azoknak a munkaterületeknek, amelyeknek nincs csevegőalkalmazásuk: nincs socket, nincs időzítő, nincs forgalom
 
@@ -142,8 +172,9 @@ visszaállítása azt jelenti, hogy ott újra csatlakoztatni kell a Slacket.
 A hídhoz való hozzáférés a munkaterület **tagsága**, soha nem egy token
 birtoklása. Egy Slack-fiókot egy olyan Control Center-felhasználóhoz kell
 kapcsolni, aki tag, és írási jogosultságú szerepkörrel rendelkezik. A
-csatlakoztatás, a leválasztás, a vezetett beállítás, a beállítási hivatkozás és a
-bot testreszabása mind adminisztrátori jogosultsághoz kötött.
+csatlakoztatás, a leválasztás, a megosztott alkalmazás telepítése, a vezetett
+beállítás, a beállítási hivatkozás és a bot testreszabása mind adminisztrátori
+jogosultsághoz kötött.
 :::
 
 ## Ellenőrzés
@@ -166,7 +197,25 @@ A gondolkodás szövegfalként és az eszközkimenet soha nem hagyja el a Contro
 
 Ha a kattintáskor semmi nem történik, akkor az üzenetet küldő szerver nem érhető el arról a gépről, amelyen kattintott (például egy csak loopbacken elérhető szerver, amelyre telefonról kattintott), vagy a Control Center nem fut ott. Egy elérhető címmel nem rendelkező szerver gomb nélküli kártyát küld, nem olyat, amely sehová sem vezet.
 
+## Jegyvázlatok a Slackből
+
+Bármely összekapcsolt, írási jogosultságú szerepkörrel rendelkező tag javasolhat jegyet a Slackből:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+A `|` előtti szöveg a cím, az utána következő a leírás. A bot azt válaszolja, hogy elkészítette a jegy vázlatát. Még semmi nem jön létre, és semmilyen jegyautomatizálás nem indul el: a vázlat a **Beállítások → Munkaterület → Profil és identitás → Csevegésből készült jegyvázlatok** helyen várja Önt, ahol javíthatja a címet és a leírást, majd a **Jegy létrehozása** vagy az **Elvetés** elemre kattinthat.
+
+- A vázlatot csak az a tag látja, aki a parancsot futtatta
+- A magára hagyott vázlat egy nap után törlődik. A vázlatok a memóriában élnek, így a szerver újraindítása is törli őket
+- A kártya csak akkor jelenik meg, ha vannak vázlatai
+
+A parancs szövege nem olvasható ki újra a Slackből, és a megosztott alkalmazásnál áthaladt a Connecten. Attól lesz az Öné, hogy a jegyet a Control Centerben hozza létre.
+
 ## Token rotálása
+
+Ez a saját alkalmazásra vonatkozik. A megosztott alkalmazásnak nincs cserélendő tokenje.
 
 Illessze be újra az új értéket a csatlakozási párbeszédablakban, és kattintson a **Csatlakozás** elemre. A csatlakoztatás lecseréli a munkaterülethez éppen futó kapcsolatot, így a socket az új hitelesítő adatokkal tárcsázódik újra.
 
@@ -174,7 +223,7 @@ A két kötelező tokennek minden csatlakozáskor jelen kell lennie. Az opcioná
 
 ## Leválasztás
 
-Kattintson a **Leválasztás** elemre a Slack sorban (csak adminok). A socket bezárul, és a hitelesítő adatok feledésbe merülnek.
+Kattintson a **Leválasztás** elemre a Slack sorban (csak adminok). A kapcsolat bezárul, és a hitelesítő adatok feledésbe merülnek. A megosztott alkalmazásnál a Control Center ezenkívül eltávolítja a botot a Slack-munkaterületről, és feloldja annak ehhez a szerverhez való kötését.
 
 A tér- és felhasználóhivatkozások szándékosan megmaradnak: ugyanazon alkalmazás újracsatlakoztatása visszaállít minden áthidalt Slack-szálat. Ezek munkaterület-hatókörű sorok, így a munkaterület törlése úgyis eltávolítja őket.
 
@@ -211,7 +260,7 @@ A Slack feladatkártyái ugyanannak az új Agents & AI Apps felületnek a része
 
 ### „A Control Centernek alkalmazáskonfigurációs tokenre van szüksége a bot szerkesztéséhez”
 
-A **Bot testreszabása** sor le van tiltva, mert a kapcsolatnak nincs alkalmazáskonfigurációs tokenje. Ez egy kézzel vagy a **Létrehozás a(z) Slack felületen** lehetőséggel készült alkalmazásnál várható — a Slack soha nem mondta meg a Control Centernek, melyik alkalmazásról van szó. Hozzon létre egy tokenpárt az api.slack.com/apps oldalon, és csatlakozzon újra kitöltött refresh tokennel.
+A **Bot testreszabása** sor le van tiltva, mert a kapcsolatnak nincs alkalmazáskonfigurációs tokenje. (A megosztott alkalmazásnál egyáltalán nincs **Bot testreszabása** sor: a bot a megosztott alkalmazásé.) Ez egy kézzel vagy a **Létrehozás a(z) Slack felületen** lehetőséggel készült alkalmazásnál várható — a Slack soha nem mondta meg a Control Centernek, melyik alkalmazásról van szó. Hozzon létre egy tokenpárt az api.slack.com/apps oldalon, és csatlakozzon újra kitöltött refresh tokennel.
 
 ### Egy hosszú válasz levágódik
 

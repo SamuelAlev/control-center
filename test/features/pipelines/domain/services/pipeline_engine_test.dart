@@ -13,6 +13,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_statu
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
+    show kPipelineRequestedByKey;
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
@@ -521,6 +523,82 @@ void main() {
 
       expect(capturedPayload, isNotNull);
       expect(capturedPayload!['repo'], 'acme/app');
+    });
+  });
+
+  group('requester', () {
+    Future<Map<String, dynamic>?> payloadOf(
+      Future<PipelineRun?> Function() start,
+    ) async {
+      final run = await start();
+      await _waitFor(
+        () => runRepo.runs[run!.id]?.status == PipelineRunStatus.completed,
+      );
+      return runRepo.runs[run!.id]!.triggerPayload;
+    }
+
+    setUp(() {
+      templateRepo.seed(_linearDefinition());
+      bodies
+        ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+        ..registerBody('bodyA', (_) async => StepResult.ok())
+        ..registerBody('bodyB', (_) async => StepResult.ok());
+    });
+
+    test('is recorded from the argument', () async {
+      final payload = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerPayload: {'repo': 'acme/app'},
+          requestedByUserId: 'alice',
+        ),
+      );
+      expect(payload![kPipelineRequestedByKey], 'alice');
+      expect(payload['repo'], 'acme/app');
+    });
+
+    test('a payload cannot name a requester', () async {
+      // A trigger's inputs, a webhook body or a client argument must never
+      // choose whose access a run borrows.
+      final payload = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerPayload: {kPipelineRequestedByKey: 'owner', 'repo': 'x'},
+        ),
+      );
+      expect(payload!.containsKey(kPipelineRequestedByKey), isFalse);
+
+      final overridden = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerPayload: {kPipelineRequestedByKey: 'owner'},
+          requestedByUserId: 'bob',
+        ),
+      );
+      expect(overridden![kPipelineRequestedByKey], 'bob');
+    });
+
+    test("a sub-pipeline inherits its parent's requester", () async {
+      final parent = await engine.start(
+        'tpl',
+        workspaceId: 'ws',
+        requestedByUserId: 'alice',
+      );
+      await _waitFor(
+        () => runRepo.runs[parent!.id]?.status == PipelineRunStatus.completed,
+      );
+      final payload = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          parentPipelineRunId: parent!.id,
+          parentStepId: 'a',
+        ),
+      );
+      expect(payload![kPipelineRequestedByKey], 'alice');
     });
   });
 

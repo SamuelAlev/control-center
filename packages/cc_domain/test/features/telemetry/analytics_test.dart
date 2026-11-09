@@ -230,6 +230,22 @@ void main() {
           response: 'accepted',
           previousResponse: 'needsAction',
         ),
+        AnalyticsEvents.calendarEventCreated(
+          workspaceId: 'w',
+          allDay: false,
+          guests: 2,
+          conference: true,
+        ),
+        AnalyticsEvents.calendarEventMoved(
+          workspaceId: 'w',
+          calendarEventId: 'e',
+          hadGuests: false,
+        ),
+        AnalyticsEvents.calendarEventDeleted(
+          workspaceId: 'w',
+          calendarEventId: 'e',
+          hadGuests: true,
+        ),
         AnalyticsEvents.calendarMeetingJoined(
           provider: AnalyticsEvents.meetingProvider(
             'https://meet.google.com/abc-defg-hij',

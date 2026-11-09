@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Anslut en Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Server och driftsättning",
   "docs.sidebar.guidesRunHeadlessServer": "Kör en headless-server",
+  "docs.sidebar.guidesRunConnect": "Kör en Connect-server",
   "docs.sidebar.guidesConnectRemoteServer": "Anslut till en fjärrserver",
   "docs.sidebar.guidesRunFleetWorker": "Kör en fleet-worker",
   "docs.sidebar.guidesBackUpAndRestore": "Säkerhetskopiera och återställ",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Tangentbordsgenvägar",
   "docs.sidebar.referenceRouteMap": "Routkarta",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Säkerhetskopia, export och import",
   "docs.sidebar.referenceTelemetry": "Användningsstatistik",
   "docs.sidebar.referenceGlossary": "Ordlista"

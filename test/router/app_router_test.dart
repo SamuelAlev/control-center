@@ -294,17 +294,14 @@ void main() {
   });
 
   group('OnboardingGate enum', () {
-    test('has four values', () {
-      expect(OnboardingGate.values, hasLength(4));
-    });
-
-    test('values are loading, complete, incomplete, signedOut', () {
-      expect(OnboardingGate.values, contains(OnboardingGate.loading));
-      expect(OnboardingGate.values, contains(OnboardingGate.complete));
-      expect(OnboardingGate.values, contains(OnboardingGate.incomplete));
-      // A lapsed credential is its own state, not a flavour of `incomplete`:
-      // it routes to the re-auth screen instead of the first-run flow.
-      expect(OnboardingGate.values, contains(OnboardingGate.signedOut));
+    test('is loading, complete or incomplete', () {
+      // A lapsed forge credential is not a gate state: the workspace shell
+      // warns about it in place.
+      expect(OnboardingGate.values, [
+        OnboardingGate.loading,
+        OnboardingGate.complete,
+        OnboardingGate.incomplete,
+      ]);
     });
   });
 

@@ -2,7 +2,7 @@
 title: Jegyek és delegálás
 description: Miért követi nyomon a jegy a munkát anélkül, hogy elindítaná, hogyan őrzik a delegálást, és mit birtokol – és mit nem – a szállítói tükör.
 slug: hu-HU/kezikonyv/fogalmak/jegyek
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 A jegy a munka egysége, amelyet a Control Center nyomon követ. Szándékosan egy
@@ -146,9 +146,11 @@ A Control Center jegye az elsődleges. Egy jegy törlése **csak helyben** tört
 követőrendszerben, és a következő szinkronizáláskor újra megjelenhet. A
 közreműködők és a gyermekjegyek kaszkádolódnak.
 
-Az adapter hitelesítő adatai a szerver hitelesítőadattáraiból oldódnak fel (a
-Beállításokban beillesztett Linear-kulcsot vagy GitHub-tokent a következő kérés
-veszi fel; a környezet csak kezdeti értékkel tölti fel ezeket a tárakat).
+Az adapter hitelesítő adatai a szerveren, hívásonként oldódnak fel: amit valaki
+maga tesz, ahhoz a saját Linear- vagy GitHub-bejelentkezése, a jegyszinkronizáláshoz
+pedig a munkaterület Linear-automatizálása (vagy a szerver Linear-szolgáltatáskulcsa)
+vagy egy egyetlen repóra szóló GitHub-token. Az új bejelentkezést a következő
+kérés veszi fel.
 
 ## Jegyek és pipeline-ok
 

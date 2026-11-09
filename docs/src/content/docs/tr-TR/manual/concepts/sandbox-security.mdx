@@ -2,7 +2,7 @@
 title: Sandbox ve güvenlik
 description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
@@ -137,9 +137,10 @@ geçerlidir.
 
 Push, bir kuralı aşmaya çalışan bir ajana karşı bile ayakta kalması gereken
 eylemdir; bu yüzden ajanın ne çalıştırdığıyla değil, elinde ne tuttuğuyla
-uygulanır. Bir GitHub App yapılandırıldığında, bir GitHub çalışma ağacındaki
-çalıştırma depo kapsamlı bir kurulum token'ı alır; bu token içerik okuyabilir
-ve pull request'lerle çalışabilir ama push edemez. Çalıştırmanın git
+uygulanır. Bir GitHub çalışma ağacındaki çalıştırma, çalışma alanının GitHub
+App'inden, sunucunun kendi uygulamasından ya da Control Center Connect'ten o tek
+depo için üretilen bir token alır. Bu token içerik okuyabilir ve hesap verebilir
+üye push edebiliyorsa pull request'lere yorum yapabilir, ama push edemez. Çalıştırmanın git
 yapılandırması her GitHub push URL'sini (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) **ajan çalıştırma ağ geçidine**,
 yani `cc_server` üzerindeki bir loopback uç noktasına yeniden yazar. Ağ geçidi
@@ -169,12 +170,10 @@ yazımını tanır; bir eylemi gizlemeye kararlı bir ajan (`eval`, bir betik
 dosyası, doğrudan bir API çağrısı) bunu başarabilir. Push'lar buna bağlı
 değildir.
 
-:::caution[GitHub App olmadan push kuralı yalnızca tavsiye niteliğindedir]
-GitHub App yapılandırılmadığında broker, salt okunura daraltılamayan bir
-kişisel erişim token'ına geri düşer. Kural `git push` için yine geçerlidir,
-çünkü git push'u ağ geçidine gönderir; ama ortamdaki token'ı doğrudan kullanan
-kod onu atlayarak push edebilir.
-:::
+Bir çalıştırmanın aldığı her GitHub token'ı iki kez sınırlanır: tek bir depoyla
+ve hesap verebilir üyenin (isteyen kişi, değilse çalışma alanı sahibi) orada
+yapabilecekleriyle. Yedek bir kimlik bilgisi yoktur. Hiçbir token
+üretilemediğinde çalıştırma token'sız başlar ve notları nedenini belirtir.
 
 Sandbox'a hiçbir biletleme API anahtarı konmaz. Ajanlar biletleri, **Harici
 takip sistemine yaz** kuralına soran Control Center MCP araçlarıyla yazar.
@@ -182,9 +181,11 @@ takip sistemine yaz** kuralına soran Control Center MCP araçlarıyla yazar.
 **Ağa eriş** kuralı, çalıştırma başlarken bir kez okunur. Bir sandbox'ın ağı ya
 açıktır ya kapalıdır; bu yüzden reddet onu kapatır, izin ver ve önce sor ise
 açık bırakır; harness'ın `web_fetch` ve `web_search` araçları her çağrıda
-sormaya devam eder. Çalıştırma yıkıldığında kimlik bilgileri, ağ geçidinin
-ürettiği tüm yazma token'larıyla birlikte iptal edilir; böylece bir tutamaç
-çalıştırmadan daha uzun yaşamaz.
+sormaya devam eder. Çalıştırmanın kimlik bilgisi tutamaçları, çalıştırma
+yıkıldığında serbest bırakılır. Arkalarındaki token'lar üye ve depo başına
+paylaşılır ve yaklaşık bir saat içinde sona erer; GitHub oturumunu kapatan ya da
+çalışma alanından ayrılan bir üye, kendi adına üretilmiş tüm token'ları bir anda
+geçersiz kılar.
 
 ## Sandbox neyi ekler ve nerede durur
 

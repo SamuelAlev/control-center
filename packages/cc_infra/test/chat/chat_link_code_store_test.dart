@@ -4,11 +4,11 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provide
 import 'package:cc_infra/cc_infra.dart';
 import 'package:test/test.dart';
 
-/// [ChatLinkCodeStore] is the fallback path that binds a chat identity to a
-/// Control Center user when email matching is unavailable, so a code is a
-/// short-lived bearer credential for somebody's account. The properties below are
-/// what keep it from being an account-takeover primitive: one use, a hard expiry,
-/// and no reach across workspaces or providers.
+/// [ChatLinkCodeStore] binds a chat identity to a Control Center user: the
+/// member sends the code to the bot, then confirms the profile that sent it.
+/// The properties below are what keep it from being an account-takeover
+/// primitive: first claim wins, confirmation names the profile, one use, a hard
+/// expiry, and no reach across workspaces or providers.
 void main() {
   const slack = ChatProvider.slack;
   var now = DateTime.utc(2026, 8, 13, 12);
@@ -23,34 +23,84 @@ void main() {
     );
   });
 
-  test('a code redeems once, for the user it was minted for', () {
+  ChatLinkClaim claimBy(String externalUserId, {String team = 'T1'}) =>
+      ChatLinkClaim(
+        externalTeamId: team,
+        externalUserId: externalUserId,
+        label: externalUserId,
+        conversationId: 'D-$externalUserId',
+        claimedAt: now,
+      );
+
+  test('a claimed code is taken once, for the profile that claimed it', () {
     final minted = store.mint(
       workspaceId: 'ws-1',
       provider: slack,
       userId: 'user-1',
     );
 
-    final redeemed = store.consume('ws-1', minted.code, provider: slack);
-    expect(redeemed?.userId, 'user-1');
-    expect(redeemed?.provider, slack);
-    // Replay is refused: a code sent into a chat space is readable by everyone
-    // in it.
-    expect(store.consume('ws-1', minted.code, provider: slack), isNull);
+    final claimed = store.claim(
+      'ws-1',
+      minted.code,
+      provider: slack,
+      claim: claimBy('U1'),
+    );
+    expect(claimed?.claim?.externalUserId, 'U1');
+    // Claiming links nothing: the member still has to confirm, and only the
+    // profile they saw.
+    expect(
+      store.takeClaimed('ws-1', 'user-1', provider: slack, externalUserId: 'U2'),
+      isNull,
+    );
+    final taken = store.takeClaimed(
+      'ws-1',
+      'user-1',
+      provider: slack,
+      externalUserId: 'U1',
+    );
+    expect(taken?.userId, 'user-1');
+    // Replay is refused.
+    expect(
+      store.takeClaimed('ws-1', 'user-1', provider: slack, externalUserId: 'U1'),
+      isNull,
+    );
   });
 
-  test('a code is typed by a human, so case and padding are forgiven', () {
+  test('the first claim wins; a second sender cannot re-point the code', () {
     final minted = store.mint(
       workspaceId: 'ws-1',
       provider: slack,
       userId: 'user-1',
     );
 
+    store.claim('ws-1', minted.code, provider: slack, claim: claimBy('U1'));
+
     expect(
-      store
-          .consume('ws-1', '  ${minted.code.toLowerCase()} ', provider: slack)
-          ?.userId,
-      'user-1',
+      store.claim('ws-1', minted.code, provider: slack, claim: claimBy('U2')),
+      isNull,
     );
+    // The same sender sending it twice is not a second claim.
+    expect(
+      store.claim('ws-1', minted.code, provider: slack, claim: claimBy('U1')),
+      isNotNull,
+    );
+    expect(
+      store.pendingFor('ws-1', 'user-1', provider: slack)?.claim?.externalUserId,
+      'U1',
+    );
+  });
+
+  test('a code is typed by a human, so case, padding and ticks are forgiven', () {
+    final minted = store.mint(
+      workspaceId: 'ws-1',
+      provider: slack,
+      userId: 'user-1',
+    );
+    final sloppy = ' `${minted.code.toLowerCase()}` ';
+
+    expect(ChatLinkCodeStore.looksLikeCode(sloppy), isTrue);
+    expect(store.lookup('ws-1', sloppy, provider: slack)?.userId, 'user-1');
+    expect(ChatLinkCodeStore.looksLikeCode('summarize the PRs'), isFalse);
   });
 
   test('an expired code is refused', () {
@@ -62,11 +112,15 @@ void main() {
 
     now = now.add(const Duration(minutes: 15, seconds: 1));
 
-    expect(store.consume('ws-1', minted.code, provider: slack), isNull);
+    expect(
+      store.claim('ws-1', minted.code, provider: slack, claim: claimBy('U1')),
+      isNull,
+    );
+    expect(store.pendingFor('ws-1', 'user-1', provider: slack), isNull);
     expect(minted.expiresAt, DateTime.utc(2026, 8, 13, 12, 15));
   });
 
-  test('a code cannot be redeemed from another workspace', () {
+  test('a code cannot be claimed from another workspace or provider', () {
     final minted = store.mint(
       workspaceId: 'ws-1',
       provider: slack,
@@ -75,8 +129,12 @@ void main() {
 
     // Two workspaces may each have a chat app; a code minted in one must not
     // link an identity in the other.
-    expect(store.consume('ws-2', minted.code, provider: slack), isNull);
-    expect(store.consume('ws-1', minted.code, provider: slack), isNotNull);
+    expect(
+      store.claim('ws-2', minted.code, provider: slack, claim: claimBy('U1')),
+      isNull,
+    );
+    expect(store.lookup('ws-2', minted.code, provider: slack), isNull);
+    expect(store.lookup('ws-1', minted.code, provider: slack), isNotNull);
   });
 
   test('minting again invalidates the code the user was shown before', () {
@@ -85,6 +143,7 @@ void main() {
       provider: slack,
       userId: 'user-1',
     );
+    store.claim('ws-1', first.code, provider: slack, claim: claimBy('U1'));
     final second = store.mint(
       workspaceId: 'ws-1',
       provider: slack,
@@ -92,23 +151,32 @@ void main() {
     );
 
     expect(second.code, isNot(first.code));
-    expect(store.consume('ws-1', first.code, provider: slack), isNull);
-    expect(
-      store.consume('ws-1', second.code, provider: slack)?.userId,
-      'user-1',
-    );
+    expect(store.lookup('ws-1', first.code, provider: slack), isNull);
+    // The new code starts unclaimed: a claim never carries over.
+    expect(store.pendingFor('ws-1', 'user-1', provider: slack)?.claim, isNull);
   });
 
-  test('revoking drops the outstanding code without redeeming it', () {
+  test('revoking (a decline) drops the code and its claim', () async {
+    final changes = <ChatLinkCodeChange>[];
+    final sub = store.changes.listen(changes.add);
     final minted = store.mint(
       workspaceId: 'ws-1',
       provider: slack,
       userId: 'user-1',
     );
+    store.claim('ws-1', minted.code, provider: slack, claim: claimBy('U1'));
 
     store.revokeForUser('ws-1', 'user-1');
 
-    expect(store.consume('ws-1', minted.code, provider: slack), isNull);
+    expect(
+      store.takeClaimed('ws-1', 'user-1', provider: slack, externalUserId: 'U1'),
+      isNull,
+    );
+    await pumpEventQueue();
+    await sub.cancel();
+    // Minted, claimed, revoked: each reaches a watcher.
+    expect(changes, hasLength(3));
+    expect(changes.every((c) => c.userId == 'user-1'), isTrue);
   });
 
   test('codes avoid glyphs that are misread off a screen', () {

@@ -2,16 +2,16 @@
 title: Mappa delle route
 description: Ogni route registrata da Control Center, con la sua schermata e i suoi parametri di query.
 slug: it-IT/manuale/riferimento/mappa-delle-route
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell dell'app
 
-Il shell dell'app (`ControlCenterLayout`) avvolge ogni route interna allo spazio di lavoro tramite una `ShellRoute`. **Ogni destinazione interna al shell è prefissata dallo spazio di lavoro — `/workspaces/:workspaceId/…` — e l'id dello spazio di lavoro nell'URL è l'unica fonte di verità per lo spazio di lavoro attivo.** Solo le superfici che precedono il contesto non hanno prefisso: `/splash`, `/onboarding`, `/signed-out` e il semplice selettore `/workspaces`, tutte a schermo intero e fuori dal shell.
+Il shell dell'app (`ControlCenterLayout`) avvolge ogni route interna allo spazio di lavoro tramite una `ShellRoute`. **Ogni destinazione interna al shell è prefissata dallo spazio di lavoro — `/workspaces/:workspaceId/…` — e l'id dello spazio di lavoro nell'URL è l'unica fonte di verità per lo spazio di lavoro attivo.** Solo le superfici che precedono il contesto non hanno prefisso: `/splash`, `/onboarding` e il semplice selettore `/workspaces`, tutte a schermo intero e fuori dal shell.
 
 Il gate è completo quando è collegata almeno una forge **per l'utente che ha effettuato l'accesso** ed esiste almeno uno spazio di lavoro.
 
-Una credenziale mancante e una configurazione mancante sono schermate diverse, e il discriminante è `users.onboarding_finished_at`, letto sul `identity.me` del chiamante stesso — mai «esistono spazi di lavoro», che è sbagliato nel momento in cui qualcuno viene invitato in uno spazio di lavoro che non ha creato. Senza alcuna forge collegata, un account che ha completato l'onboarding va a `/signed-out` per riautenticarsi; uno che non l'ha completato va a `/onboarding`. Finché il flag è ancora sconosciuto, la guardia trattiene lo splash invece di tirare a indovinare, perché non reindirizza mai fuori dall'onboarding.
+Una credenziale mancante e una configurazione mancante sono trattate in modo diverso, e il discriminante è `users.onboarding_finished_at`, letto sul `identity.me` del chiamante stesso — mai «esistono spazi di lavoro», che è sbagliato nel momento in cui qualcuno viene invitato in uno spazio di lavoro che non ha creato. Senza alcuna forge collegata, un account che ha completato l'onboarding resta nell'app, e lo shell dello spazio di lavoro mostra un avviso con un collegamento a Impostazioni → Spazio di lavoro → Profilo e identità, dove si trova l'accesso; uno che non l'ha completato va a `/onboarding`. Finché il flag è ancora sconosciuto, la guardia trattiene lo splash invece di tirare a indovinare, perché non reindirizza mai fuori dall'onboarding.
 
 ## Route senza prefisso
 
@@ -19,7 +19,6 @@ Una credenziale mancante e una configurazione mancante sono schermate diverse, e
 | -------------------------- | ----------------------------------------------- |
 | `/splash`                  | Splash di avvio che risolve il gate di onboarding |
 | `/onboarding`              | Collega una forge, crea o unisciti a uno spazio di lavoro, sandbox, adapter predefinito, poi voce. Il passaggio dello spazio di lavoro viene saltato quando l'account appartiene già a uno |
-| `/signed-out`              | Riautenticazione: la stessa scheda Hosting del codice che mostra Impostazioni, senza barra dei passaggi e senza pulsante di continuazione — il router esce da solo quando una forge risponde |
 | `/workspaces`              | Elenco e selettore degli spazi di lavoro        |
 | `/workspaces/:workspaceId` | Reindirizza a `/workspaces/:workspaceId/inbox`  |
 

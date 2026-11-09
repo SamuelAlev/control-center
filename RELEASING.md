@@ -19,7 +19,7 @@ CI and release workflows use GitHub's [native background steps](https://github.b
 | Windows ARM64 | `Control-Center-<v>-arm64-setup.exe` (per-user installer); `Control-Center-<v>-windows-arm64.zip` (portable) | `cc_server-<v>-windows-arm64.zip` (unsigned) |
 | Linux x86_64 | `Control-Center-<v>-x86_64.AppImage` (with its `.zsync`) and `.tar.gz` | `cc_server-<v>-linux-x64.tar.gz` |
 
-`appcast.xml`, `appcast-windows.xml` (x64) and `appcast-windows-arm64.xml` (ARM64) are signed update feeds. The `containers` job publishes GHCR `cc-server`, `cc-webapp` and `cc-remote` images with SLSA attestations. [`scripts/lib/artifact_names.sh`](scripts/lib/artifact_names.sh) defines the exact artifact set; `make_release.sh` refuses to draft a partial set.
+`appcast.xml`, `appcast-windows.xml` (x64) and `appcast-windows-arm64.xml` (ARM64) are signed update feeds. The `containers` job publishes GHCR `cc-server`, `cc-server-demo`, `cc-webapp`, `cc-remote`, `cc-signaling-server` and `cc-connect` images with SLSA attestations ([Control Center Connect](#control-center-connect)). [`scripts/lib/artifact_names.sh`](scripts/lib/artifact_names.sh) defines the exact artifact set; `make_release.sh` refuses to draft a partial set.
 
 **Windows ARM64** is a native build, not the x64 one under emulation. `build-windows` is a two-leg matrix: x64 on `windows-latest`, ARM64 on GitHub's `windows-11-arm` runner, each compiling the app and every native for its own host (Flutter cannot cross-compile Windows, and `windows_natives.sh` asserts that cargo's host triple, the MSVC environment and its own `x64|arm64` argument agree). The ARM64 leg uploads `windows-arm64` / `cc_server-windows-arm64`; natives.yml seeds a separate ARM64 cache. Its sherpa-onnx archive is the `win-arm64-static-MT-Release-lib` asset (`SHERPA_ONNX_LIB_SHA256_WIN_ARM64`), the tree-sitter grammars and CMake build target ARM64 explicitly, LAME comes from vcpkg's `arm64-windows-static`, and webrtc-audio-processing is compiled with `clang-cl` because its ARM64 denormal code is GCC-style inline assembly that MSVC cannot compile. media-kit's minimal audio libmpv is x86_64-only, so `patches/media_kit_libs_windows_audio@1.0.9.patch` makes the ARM64 build fetch media-kit's aarch64 `libmpv-win32-video-cmake` build instead (LGPL, SHA-256 pinned); only the ARM64 notices list it (`desktop-windows-arm64` role in `gen_third_party_licenses.sh`). `windows_natives.sh`, `verify_natives.sh --arch`, `windows_package.sh` and `cc_server_package.sh` check every PE image's machine type, so an x64 DLL can never satisfy the ARM64 set by name. One Inno script builds both installers (`/DTargetArch=x64|arm64`); they share the AppId and install directory, so the ARM64 installer upgrades an emulated x64 install in place.
 
@@ -211,18 +211,77 @@ The script writes git-ignored `Signing.local.xcconfig` for automatic signing. Xc
 
 **Windows Authenticode (optional):** `WINDOWS_CERT` (base64 `.pfx`) and `WINDOWS_CERT_PWD` sign the installer. Otherwise it ships unsigned and SmartScreen warns.
 
-## Built-in app credentials
+## Provider credentials
 
-The release optionally injects `CC_BUILTIN_GOOGLE_CLIENT_ID` and `CC_BUILTIN_GOOGLE_CLIENT_SECRET` (both or neither; one fails the build) for the server's Google device-code OAuth option, plus `CC_BUILTIN_KLIPY_APP_KEY` for GIF search. Forks/local builds without them ask for the user's Google app or hide GIF search. Use a Google OAuth client of type **TVs and limited input devices**, a published verified consent screen (`calendar.readonly` is sensitive), and a production Klipy key/agreement (test keys cap at 100 calls/hour). Do **not** inject a Slack client secret. Google installed-app secrets and the Klipy URL-path app key are vendor-documented non-confidential; user refresh tokens remain on the server.
+Release builds carry no provider credentials: no Google client, Klipy key or GitHub App id is compiled into any binary. Each lane (GitHub, Google Calendar, Linear, Slack, Klipy) comes from Control Center Connect (hosted or self-hosted) or from the operator's own app, configured in the server's Settings or its `.env` (`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, `KLIPY_APP_KEY`, the GitHub App fields). A build needs no credential secrets. The only Connect material compiled in is the public `hostedConfigRootKeys` (see [Signing `/v1/config`](#signing-v1config)).
 
-`scripts/release/builtin_credentials.sh inject` rewrites tracked `packages/cc_server_core/lib/src/builtin_credentials.dart` before **any** build because `dart build cli` cannot take `-D`. The committed constants are empty. Release runners are disposable; locally always restore the pristine source:
+Every build job proves it: `scripts/release/check_no_bundled_secrets.sh` scans the finished desktop bundles, the standalone `cc_server`/`cc_demo_server` bundles and both web builds for the full shape of a GitHub token or App client id, a Google client id, secret or API key, a Slack or Linear token, and the removed `CC_BUILTIN_*`/`builtin*Credential` plumbing, and fails the release on a match. It matches shapes, not prefixes, so the redaction regexes compiled into the server do not trip it. Each job runs `--self-test` first, which plants one synthetic credential of each kind and fails if any goes unnoticed. Run it locally on any build output: `bash scripts/release/check_no_bundled_secrets.sh apps/cc_server/build/cli`.
+
+## Control Center Connect
+
+[`apps/cc_connect`](apps/cc_connect/README.md) ships only as a container image. Releasing it has three parts: the image (every release), the hosted deploy, and the offline-signed `/v1/config` the hosted deploy serves.
+
+### The image
+
+The `containers` job builds `apps/cc_connect/Dockerfile` with the shared contract as a named build context and pushes `ghcr.io/<owner>/cc-connect:<version>` and `:latest`, then attests it with `actions/attest-build-provenance` like the other images (buildx provenance is off). To reproduce it locally from the repository root:
 
 ```bash
-export CC_BUILTIN_GOOGLE_CLIENT_ID=… CC_BUILTIN_GOOGLE_CLIENT_SECRET=… CC_BUILTIN_KLIPY_APP_KEY=…
-bash scripts/release/builtin_credentials.sh inject
-# build
-bash scripts/release/builtin_credentials.sh restore
+docker buildx build --build-context core=packages/cc_connect_core \
+  -t cc-connect apps/cc_connect
 ```
+
+The Dockerfile is a standalone build: it synthesizes minimal pubspecs for `cc_connect_core` and `cc_connect` instead of resolving the whole workspace, so its pinned `crypto`, `cryptography` and `meta` versions must match `pubspec.lock`, and `DART_SDK_VERSION` must match `apps/cc_connect/pubspec.yaml`. Update them together when Renovate bumps either. The runtime is `debian:trixie-slim` plus CA certificates, runs as uid 10001 with `/data` as a 0700 volume, exposes 8790, health-checks with `cc-connect --healthcheck`, and also carries `cc-connect-config`. The image does not stamp a version; set `CONNECT_VERSION` and `CONNECT_IMAGE_DIGEST` at deploy so `/v1/version` reports them.
+
+Before publishing, run its tests (`cd apps/cc_connect && fvm dart test --concurrency=2`) and the purity check in `packages/cc_connect_core`.
+
+### Hosted deploy
+
+There is no deploy workflow; the hosted Connect at `https://connect.usectrl.dev` is deployed by hand from a released, attested tag. The topology and its settings are in the README's [hosted operation](apps/cc_connect/README.md#hosted-operation) section.
+
+1. Verify the image: `gh attestation verify oci://ghcr.io/<owner>/cc-connect:<version> --owner <owner>`. Deploy by digest, not by tag.
+2. Deploy it to the `cc-connect` service with `CONNECT_VERSION=<version>`, `CONNECT_IMAGE_DIGEST=<digest>`, `CONNECT_ALLOWED_INSTALLS=*` and the current `CONNECT_SIGNED_CONFIG_FILE` mount. Every secret comes from a `*_FILE` mount; never pass one as a plain variable.
+3. Check `GET /healthz` and `GET /v1/version` on the public URL, then run `cc_server connect status` against a test server in hosted mode: `Health: ok` and every expected lane on `connect`.
+
+A config error exits 78 and the old revision keeps serving. `checkSignedConfigMatches` refuses to start when the signed config's lanes disagree with the credentials the service was given, so change the two together.
+
+### Signing `/v1/config`
+
+Servers trust the hosted configuration only when it verifies against `hostedConfigRootKeys` (`packages/cc_connect_core/lib/src/connect_config.dart`) and its epoch is not lower than one they have already seen. With that list empty, every server refuses hosted mode (`hosted_unprovisioned`); a new key reaches servers only in a release. Keep the seed with the other release signing keys, offline.
+
+One-time setup, on the offline signing machine:
+
+```bash
+cd apps/cc_connect
+fvm dart run cc_connect:config_tool keygen --out connect-config.seed
+```
+
+`keygen` writes the seed with mode 0600, refuses to overwrite, and prints the base64url public key. Add that key to `hostedConfigRootKeys` and ship it in a release; the deployed service also accepts it through `CONNECT_CONFIG_PUBLIC_KEYS`.
+
+Each configuration change:
+
+1. Write `payload.json` with the next `epoch` and the lanes the service serves. `protocol` and `issued_at` are filled in when absent. A `slack` block (`app_id`, `client_id` and the same two generation fields) is added the same way when the service serves Slack:
+
+   ```json
+   {
+     "epoch": 7,
+     "github": { "app_id": 123456, "app_slug": "control-center", "client_id": "Iv23…", "min_seal_generation": 1, "accepts_new_authorizations": true },
+     "google": { "client_id": "….apps.googleusercontent.com", "min_seal_generation": 1, "accepts_new_authorizations": true },
+     "linear": { "client_id": "…", "min_seal_generation": 1, "accepts_new_authorizations": true },
+     "klipy": { "mode": "proxy" }
+   }
+   ```
+
+2. Sign and check it:
+
+   ```bash
+   fvm dart run cc_connect:config_tool sign --seed connect-config.seed \
+     --payload payload.json --out signed.json
+   fvm dart run cc_connect:config_tool verify --key <public key> signed.json
+   ```
+
+3. Replace the `CONNECT_SIGNED_CONFIG_FILE` secret with `signed.json`. The service re-reads it within 30 seconds and ignores a file whose epoch is lower than the one it serves. On a host that cannot mount files, put the JSON in `CONNECT_SIGNED_CONFIG` instead; it is read at boot, so changing it means a redeploy.
+
+Raise the epoch for every change. Replacing an app, or recovering from an incident, also raises `min_seal_generation` so affected sign-ins start over; stopping new sign-ins sets `accepts_new_authorizations: false`. Servers remember the highest epoch they have seen, so a signed file can never be rolled back once published. The incident procedure is in the README's runbook.
 
 ## Crash symbols and source maps
 
@@ -275,7 +334,7 @@ The workflow delegates to locally runnable scripts. Keep **every** `scripts/rele
 | `scripts/release/windows_natives.sh` | Windows MSVC DLL builds |
 | `scripts/release/dry_run.sh` | Full local pipeline for one platform |
 | `scripts/release/verify_natives.sh` | Required-native bundle check |
-| `scripts/release/builtin_credentials.sh` | Inject/restore optional built-in credentials |
+| `scripts/release/check_no_bundled_secrets.sh` | Fails when a release artifact carries a credential (`--self-test` proves the scanner) |
 | `scripts/release/sentry_upload.sh` | Pinned Sentry CLI uploads for native debug files and web source maps |
 | `scripts/release/fetch_code_server.sh` | Fetch pinned code-server |
 | `scripts/release/macos_package.sh`, `scripts/release/linux_package.sh`, `scripts/release/windows_package.sh` | Desktop staging, validation and packaging |
@@ -290,7 +349,7 @@ The workflow delegates to locally runnable scripts. Keep **every** `scripts/rele
 
 ## Local dry run
 
-`scripts/release/dry_run.sh` executes CI's order: build/stage natives → inject credentials → stamp build identity → `fvm flutter build` → package desktop and server → compare against `scripts/lib/artifact_names.sh`. Use the script, not a hand-copied partial recipe:
+`scripts/release/dry_run.sh` executes CI's order: build/stage natives → stamp build identity → `fvm flutter build` → package desktop and server → compare against `scripts/lib/artifact_names.sh`. Use the script, not a hand-copied partial recipe:
 
 ```bash
 bash scripts/release/dry_run.sh --os macos --version 1.2.3

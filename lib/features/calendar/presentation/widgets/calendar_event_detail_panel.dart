@@ -3,9 +3,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_rsvp_provider.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
+import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart'
+    show formatDurationShort;
 import 'package:control_center/features/calendar/presentation/utils/html_description.dart';
 import 'package:control_center/features/calendar/presentation/widgets/agenda_panel.dart'
     show unawaitedLaunch;
+import 'package:control_center/features/calendar/presentation/widgets/calendar_event_actions.dart';
 import 'package:control_center/features/calendar/presentation/widgets/link_meeting_sheet.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -87,7 +90,7 @@ class CalendarEventDetailPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _HeaderBar(label: l10n.calendarEventLabel),
+          _HeaderBar(label: l10n.calendarEventLabel, event: event),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -114,9 +117,10 @@ class CalendarEventDetailPanel extends ConsumerWidget {
                     const _SectionBreak(),
                     _ParticipantsSection(event: event, l10n: l10n),
                   ],
-                  if (CalendarRsvpService.canRespond(event)) ...[
+                  if (CalendarRsvpService.canRespond(event) &&
+                      isOwnCalendarEvent(ref, event)) ...[
                     const SizedBox(height: 14),
-                    _RsvpControls(event: event),
+                    CalendarRsvpControls(event: event),
                   ],
                   const _SectionBreak(),
                   _MeetingNoteAction(
@@ -186,9 +190,10 @@ class CalendarEventDetailPanel extends ConsumerWidget {
 /// The fixed top bar: a mono "EVENT" eyebrow and a close affordance that
 /// deselects the event (returns to the bare calendar).
 class _HeaderBar extends StatelessWidget {
-  const _HeaderBar({required this.label});
+  const _HeaderBar({required this.label, required this.event});
 
   final String label;
+  final CalendarEvent event;
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +219,7 @@ class _HeaderBar extends StatelessWidget {
               ),
             ),
           ),
+          CalendarDeleteEventButton(event: event),
           CcIconButton(
             icon: AppIcons.x,
             variant: CcButtonVariant.ghost,
@@ -287,7 +293,7 @@ class _WhenBlock extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _DurationTag(label: _durationLabel(end.difference(start))),
+          _DurationTag(label: formatDurationShort(end.difference(start))),
         ],
       );
     }
@@ -731,92 +737,6 @@ class _MeetingNoteAction extends StatelessWidget {
   }
 }
 
-/// Yes / No / Maybe RSVP control for an invitation, highlighting the user's
-/// current response. Surfaces a snackbar if the write fails (e.g. the account
-/// was connected before the write scope was added).
-class _RsvpControls extends ConsumerStatefulWidget {
-  const _RsvpControls({required this.event});
-
-  final CalendarEvent event;
-
-  @override
-  ConsumerState<_RsvpControls> createState() => _RsvpControlsState();
-}
-
-class _RsvpControlsState extends ConsumerState<_RsvpControls> {
-  bool _busy = false;
-
-  Future<void> _respond(RsvpResponse response) async {
-    if (_busy) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context);
-    final toaster = CcToastScope.of(context);
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(calendarRsvpServiceProvider)
-          .respond(widget.event, response);
-    } on Object {
-      toaster.show(l10n.calendarRsvpFailed, variant: CcToastVariant.danger);
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final current = CalendarRsvpService.currentResponse(widget.event);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          l10n.calendarRsvpGoing,
-          style: TextStyle(fontSize: 13, color: t.textSecondary),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: IgnorePointer(
-              ignoring: _busy,
-              child: Opacity(
-                opacity: _busy ? 0.5 : 1.0,
-                child: CcSegmentedToggle<String>(
-                  value: current ?? '',
-                  onChanged: (response) {
-                    switch (response) {
-                      case 'accepted':
-                        _respond(RsvpResponse.accepted);
-                      case 'declined':
-                        _respond(RsvpResponse.declined);
-                      case 'tentative':
-                        _respond(RsvpResponse.tentative);
-                    }
-                  },
-                  segments: [
-                    CcSegment(value: 'accepted', label: l10n.calendarRsvpYes),
-                    CcSegment(value: 'declined', label: l10n.calendarRsvpNo),
-                    CcSegment(
-                      value: 'tentative',
-                      label: l10n.calendarRsvpMaybe,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Renders a (usually HTML) event description as readable text plus tappable
 /// link rows.
 class _Description extends StatelessWidget {
@@ -1007,20 +927,6 @@ String _statusLabel(String? responseStatus, AppLocalizations l10n) {
     default:
       return l10n.calendarRsvpAwaiting;
   }
-}
-
-/// A compact, machine-styled duration: `45m`, `1h`, `1h 30m`.
-String _durationLabel(Duration d) {
-  final mins = d.inMinutes;
-  if (mins <= 0) {
-    return '0m';
-  }
-  if (mins < 60) {
-    return '${mins}m';
-  }
-  final hours = mins ~/ 60;
-  final rem = mins % 60;
-  return rem == 0 ? '${hours}h' : '${hours}h ${rem}m';
 }
 
 /// The local UTC offset as a `GMT±H[:MM]` label — the zone the times render in.

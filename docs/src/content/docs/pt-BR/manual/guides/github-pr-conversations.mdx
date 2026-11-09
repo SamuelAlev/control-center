@@ -1,35 +1,39 @@
 ---
 title: Falar com o Control Center a partir de uma PR do GitHub
-description: Peça ao bot do GitHub App do servidor uma revisão ou faça uma pergunta pela própria conversa da PR, sem webhook nem URL pública.
+description: Peça ao Control Center uma revisão ou faça uma pergunta pela própria conversa da PR, sem webhook nem URL pública.
 slug: pt-BR/manual/guias/conversas-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Este guia mostra como trabalhar com o Control Center sem sair do GitHub: peça
 uma revisão com IA na página da PR, faça uma pergunta ao bot em um comentário e
 continue a conversa nas threads de revisão dela.
 
-O bot é o [GitHub App](/pt-BR/manual/guias/github-app/) do seu próprio servidor
-— o mesmo que já autentica as pessoas e executa trabalho em segundo plano. Nada
-novo é registrado, e nada precisa estar acessível pela internet: o servidor
-descobre o que foi dito no GitHub por polling, então um notebook atrás de um NAT
-se comporta exatamente como uma implantação pública.
+As respostas chegam pela faixa do GitHub do espaço de trabalho: o
+[GitHub App](/pt-BR/manual/guias/github-app/) do seu próprio servidor, ou o App
+compartilhado do Control Center pelo Connect. Nada novo é registrado, e nada
+precisa estar acessível pela internet: o servidor descobre o que foi dito no
+GitHub por polling, então um notebook atrás de um NAT se comporta exatamente
+como uma implantação pública.
 
 ## Pré-requisitos
 
-- O GitHub App do servidor está [registrado e
-  instalado](/pt-BR/manual/guias/github-app/), com **Pull requests: read and write**
-  (para comentários, threads e reações) e **Issues: read** (para a busca de
-  comentários). Os dois já estão na lista de permissões daquele guia
+- O espaço de trabalho tem uma faixa do GitHub: o GitHub App do próprio servidor
+  ou o Connect, com o app
+  [instalado](/pt-BR/manual/guias/github-app/#instalar-onde-estão-os-seus-repositórios)
+  na conta dona do repositório. Um app próprio precisa de **Pull requests** e
+  **Issues** com leitura e gravação, que **Criar meu app do GitHub** já concede
 - O repositório está vinculado a um espaço de trabalho no Control Center
+- Você [entrou no GitHub](/pt-BR/manual/guias/integracao-github/) neste servidor
+  e pode fazer push no repositório
 - Sem URL de webhook, sem túnel, sem callback — não há nada a configurar do
   lado da rede
 
 ## Descubra o nome do seu bot
 
-Mencione `@usectrl`, a conta dedicada do Control Center no GitHub. Esse é o acionamento padrão; o GitHub App configurado no seu servidor continua processando a solicitação e publicando as respostas. Você não precisa das credenciais da conta `usectrl`.
+Mencione `@usectrl`, a conta dedicada do Control Center no GitHub. Esse é o acionamento padrão; a faixa do GitHub do seu espaço de trabalho continua processando a solicitação e publicando as respostas. Você não precisa das credenciais da conta `usectrl`.
 
-O login do próprio App, `<appslug>[bot]`, e a forma curta `@appslug` também funcionam. Para consultar esse alias opcional:
+O login do próprio App, `<appslug>[bot]`, e a forma curta `@appslug` também funcionam. Para consultar esse alias opcional no seu próprio app:
 
 1. Acesse **Configurações → Servidor → Início de sessão único** e role até o
    cartão **Apps do fornecedor**
@@ -53,11 +57,11 @@ botão **Ask AI** inicia:
 
 - **Adicione o rótulo `ai-review`** à PR. É o mais próximo que o GitHub oferece
   de atribuir o bot como revisor — contas de app não podem ocupar a vaga nativa
-  de revisor solicitado. Não há comentário ao qual reagir, então nada é
-  publicado no GitHub; a revisão começa no Control Center
-- **Comente `@usectrl review`** (ou apenas `@usectrl`) na conversa da PR. O bot
-  reage com 👀 e então responde quando a revisão tiver começado (ou que uma já
-  está em execução)
+  de revisor solicitado. A sua conta reage à PR com 👀 e a revisão começa no
+  Control Center; nenhum comentário é publicado
+- **Comente `@usectrl review`** (ou apenas `@usectrl`) na conversa da PR. Um 👀
+  aparece no seu comentário e, em seguida, uma resposta diz que a revisão
+  começou (ou que uma já está em execução)
 
 Os revisores trabalham no espaço de revisão da PR; leia e publique os achados
 como em [Usar revisão com IA](/pt-BR/manual/guias/revisao-com-ia/). Publicar de
@@ -78,11 +82,12 @@ Comente na conversa da PR:
 
 O que acontece, em ordem:
 
-1. O bot reage com 👀 para você saber que o comentário foi visto
+1. Um 👀 aparece no seu comentário, vindo da sua própria conta, para você saber
+   que o comentário foi visto
 2. A pergunta é publicada no espaço de revisão da PR **como você** — a mesma
    atribuição de se você a tivesse digitado no Control Center
-3. Um agente responde no espaço, e a resposta é publicada de volta na PR como um
-   comentário que menciona você com @
+3. Um agente responde no espaço, e a resposta é publicada de volta na PR. Toda
+   resposta começa com `**Control Center** (for @your-login):`
 
 Uma pergunta em uma PR que ainda não tem revisão desperta o agente CEO do espaço
 de trabalho; depois que uma revisão já rodou, o agente que falou por último
@@ -109,35 +114,47 @@ nível superior, então ainda precisa de uma menção com @.
 
 ## Com quem o bot fala
 
-Um comentário do GitHub chega como pouco mais que um login, então o bot resolve
-o autor antes de fazer qualquer coisa:
+O servidor resolve o autor de um comentário, ou quem adicionou o rótulo
+`ai-review`, antes de fazer qualquer coisa:
 
-- **Sua conta do GitHub precisa estar vinculada à sua identidade** no Control
-  Center — [entre com o GitHub](/pt-BR/manual/guias/integracao-github/), ou cole um token,
-  em **Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código**
-- **Você precisa ser um membro com um papel de escrita** (`member`, `admin` ou
-  `owner`) no espaço de trabalho que vincula o repositório
+- **A conta do GitHub precisa ter entrado** neste servidor. A correspondência é
+  feita pelo id numérico da conta no GitHub, nunca pelo login. Entre em
+  **Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de
+  código**
+- **A pessoa precisa ser um membro com um papel de escrita** (`member`, `admin`
+  ou `owner`) no espaço de trabalho que vincula o repositório
+- **A pessoa precisa poder fazer push** no repositório no GitHub. As respostas
+  usam um token limitado ao acesso dessa pessoa, então quem só pode ler não
+  recebe resposta
 
-Qualquer outra pessoa recebe uma única resposta educada explicando o que falta —
-um login desconhecido (não vinculado, ou vinculado mas que não é membro aqui) e
-um papel somente leitura são os dois casos — e as palavras dela nunca entram no
-espaço de trabalho. O rótulo `ai-review` não passa por esse controle: ele não
-tem autor, então inicia a revisão no espaço de trabalho que já vincula o
-repositório.
+Qualquer outra pessoa é ignorada em silêncio: nada é publicado, e as palavras
+dela nunca entram no espaço de trabalho. Comentários de bots, e as próprias
+respostas do Control Center, nunca são tratados como perguntas.
+
+### Dois servidores, uma PR
+
+O 👀 também é a forma de os servidores combinarem quem responde. Ele é
+adicionado com o próprio login do autor, e o GitHub informa ao servidor se essa
+reação é nova. Se você tiver entrado em dois servidores do Control Center que
+vinculam o repositório, o primeiro a reagir responde e o outro fica em
+silêncio. O mesmo vale para o rótulo.
 
 ## O que esperar
 
 | Item                 | Comportamento                                                             |
 | -------------------- | ------------------------------------------------------------------------- |
-| Confirmação de recebimento | 👀 em um comentário em cerca de um minuto — o intervalo de varredura. O rótulo `ai-review` não tem comentário ao qual reagir |
-| Respostas            | Publicadas como o bot (o app), no mesmo canal em que a pergunta foi feita |
+| Confirmação de recebimento | 👀 da sua conta no comentário (ou na PR, no caso do rótulo), dentro de uma varredura |
+| Respostas            | Publicadas no mesmo canal em que a pergunta foi feita, começando com `**Control Center** (for @your-login):`. Com um app próprio, o autor é o bot do app; pelo Connect, é a sua conta, agindo pelo App compartilhado |
 | Atribuição no espaço | A pergunta é sua; o agente roda em seu nome, sob as configurações de autonomia do espaço |
 | Revisões             | Os achados chegam ao espaço de revisão; publicar no GitHub é manual       |
 
-A latência de cerca de um minuto é o preço por não precisar de nenhum acesso de
-rede de entrada. Nada na varredura é urgente, e nada se perde enquanto o
-servidor está offline — um comentário que chega durante uma parada é capturado
-na próxima varredura.
+Uma varredura roda a cada minuto com um app próprio e verifica até 25 pull
+requests; pelo Connect, ela roda a cada dois minutos e verifica até 10, porque
+essas chamadas compartilham a cota do GitHub de cada membro. Um espaço de
+trabalho com menos de 15% da cota do GitHub é pulado até se recuperar. A
+latência é o preço por não precisar de nenhum acesso de rede de entrada. Nada
+se perde enquanto o servidor está offline — um comentário que chega durante uma
+parada é capturado na próxima varredura.
 
 ## Solução de problemas
 
@@ -146,18 +163,23 @@ na próxima varredura.
 - O app está **instalado** na conta que é dona do repo, e o repo está
   **vinculado** a um espaço de trabalho? Um repo não vinculado é ignorado antes
   de qualquer coisa ser registrada, então vinculá-lo depois ainda entrega
-- Sua conta do GitHub está vinculada, e você é um membro com um papel de
-  escrita? Procure na PR a resposta de recusa do bot — ela diz qual dos casos é
+- Você entrou no GitHub neste servidor, é um membro com um papel de escrita e
+  pode fazer push no repo? O servidor ignora qualquer outra pessoa sem
+  responder
+- No App compartilhado do Control Center, a instalação da organização está
+  autorizada para este servidor? Veja
+  [Autorizar este servidor para uma organização](/pt-BR/manual/guias/github-app/#autorizar-este-servidor-para-uma-organização)
 - Ainda nada? O log do servidor nomeia a varredura e a PR quando algo falha;
   procure por `pr_conversation:` (o mecanismo de polling) e
   `github_pr_conversation:` (a ponte)
 
 **O rótulo não inicia uma revisão.**
 
-Ele dispara uma vez por PR. Se uma revisão já rodou, ou o rótulo foi adicionado
-antes de o servidor sequer ver a PR (a primeira varredura registra o acúmulo em
-silêncio, em vez de disparar tudo de uma vez), mencione o bot — `@myapp review`
-sempre inicia uma, a menos que já haja uma revisão em andamento.
+Ele dispara uma vez por PR, e quem o adicionou passa pelas mesmas verificações
+que o autor de um comentário. Se uma revisão já rodou, ou o rótulo foi
+adicionado antes de o servidor sequer ver a PR (a primeira varredura registra o
+acúmulo em silêncio, em vez de disparar tudo de uma vez), mencione o bot —
+`@usectrl review` sempre inicia uma, a menos que já haja uma revisão em andamento.
 
 **A resposta do bot nunca chegou ao GitHub.**
 

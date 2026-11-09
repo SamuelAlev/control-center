@@ -38,6 +38,7 @@ import 'package:cc_server_core/src/pr_review/pr_cache_codec.dart';
 import 'package:rhttp/rhttp.dart';
 
 part 'pr_review/pr_cache_state.dart';
+part 'pr_review/withheld_patches.dart';
 
 /// SWR-cached [PrReviewRepository] for one fixed `(workspace, owner, repo)` ([WorkspaceDatabase] at construction).
 ///
@@ -46,6 +47,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Creates a new `CachedPrReviewRepository` over one workspace's database.
   CachedPrReviewRepository({
     required this._db,
+    required this._cacheMemberId,
     required ForgePrClient forgeClient,
     required this._owner,
     required this._repo,
@@ -89,14 +91,27 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   String get _repoFullName => '$_owner/$_repo';
 
+  /// Null when the repo is linked to the workspace: its cached rows are shared
+  /// by every member (each call is still gated by the member's repo grant).
+  /// Otherwise the member these rows belong to — a private PR one member's
+  /// credential fetched is never served to another member.
+  final String? _cacheMemberId;
+
+  /// The repo part of every cache key: `owner/repo`, or `u:<member>|owner/repo`
+  /// when the rows are one member's ([_cacheMemberId]).
+  String get _cacheRepo => switch (_cacheMemberId) {
+    null => _repoFullName,
+    final member => 'u:$member|$_repoFullName',
+  };
+
   /// Cache key for PR-scoped kinds. Carries the repo so two linked repos with
   /// the same PR number can never collide inside one workspace's cache (the
   /// caches table is keyed `(workspaceId, kind, key)` with no repo dimension).
-  String _prKey(int prNumber) => '$_repoFullName#$prNumber';
+  String _prKey(int prNumber) => '$_cacheRepo#$prNumber';
 
   /// Cache key for SHA-scoped kinds (check runs, commit files), repo-prefixed
   /// for the same collision-safety reason as [_prKey].
-  String _shaKey(String sha) => '$_repoFullName|$sha';
+  String _shaKey(String sha) => '$_cacheRepo|$sha';
 
   /// Publishes a change signal for [prNumber] so every open watch stream for
   /// it (this or any other subscriber's) re-runs its SWR pass.
@@ -1040,42 +1055,6 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
   }
 
-  /// Whether the forge reported changed lines for [f] but sent no patch — the
-  /// shape a file takes when its diff exceeded the forge's per-file cap. A
-  /// pure rename (no changed lines) has no patch to withhold.
-  static bool _isPatchWithheld(PrFile f) =>
-      f.patch.isEmpty && (f.additions + f.deletions) > 0;
-
-  static int _totalChurn(List<PrFile> files) =>
-      files.fold(0, (n, f) => n + f.additions + f.deletions);
-
-  /// Splices [sections] onto files whose patch the forge withheld.
-  ///
-  /// Returns null when nothing could be filled so the caller keeps the list
-  /// it already has instead of re-emitting it unchanged.
-  static List<PrFile>? _applyWithheldPatches(
-    List<PrFile> files,
-    Map<String, String> sections,
-  ) {
-    var filled = 0;
-    final out = <PrFile>[];
-    for (final f in files) {
-      final patch = _isPatchWithheld(f)
-          ? (sections[f.filename] ?? sections[f.previousFilename ?? ''])
-          : null;
-      if (patch == null || patch.isEmpty) {
-        out.add(f);
-        continue;
-      }
-      filled++;
-      out.add(f.copyWith(patch: patch));
-    }
-    if (filled == 0) {
-      return null;
-    }
-    return List<PrFile>.unmodifiable(out);
-  }
-
   /// Fills withheld patches from the PR's raw unified diff, then from a
   /// local clone of the PR ref when that diff is unavailable (GitHub 406s
   /// past 20 000 lines). Keeps the API file tree on screen while the clone
@@ -1149,23 +1128,6 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
   }
 
-  static List<PrFile>? _spliceWithheldPatches(
-    List<PrFile> files,
-    List<PrFile> localFiles,
-  ) {
-    if (localFiles.isEmpty) {
-      return null;
-    }
-    final patches = <String, String>{
-      for (final f in localFiles)
-        if (f.patch.isNotEmpty) f.filename: f.patch,
-    };
-    if (patches.isEmpty) {
-      return null;
-    }
-    return _applyWithheldPatches(files, patches);
-  }
-
   /// Refills the patches the forge withheld from [files], reading them out of
   /// the PR's raw unified diff.
   ///
@@ -1218,7 +1180,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Stream<String> watchFileContent(String path, String ref) {
     return _swr<String>(
       kind: _Kind.prFileContent,
-      key: '$_repoFullName|$path|$ref',
+      key: '$_cacheRepo|$path|$ref',
       decode: (raw) => raw,
       fetch: (token) => _client.getFileContent(path, ref, cancelToken: token),
       encode: (fresh) => fresh,
@@ -1238,7 +1200,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
       return ImageDiffResolution.empty;
     }
     final key =
-        '$_repoFullName|$path|${previousPath ?? ''}|$baseRef|$headRef|${status.name}';
+        '$_cacheRepo|$path|${previousPath ?? ''}|$baseRef|$headRef|${status.name}';
     final cached = await _cache.read(_workspaceId, _Kind.prImageDiff, key);
     if (cached != null && cached.isNotEmpty) {
       final map = await _decodeJsonMap(cached);
@@ -2541,12 +2503,12 @@ class CachedPrReviewRepository implements PrReviewRepository {
   @override
   Future<List<PrLabel>> listLabels() async {
     _requireLabels();
-    final cached = await _readEnvelope(_Kind.repoLabels, _repoFullName);
+    final cached = await _readEnvelope(_Kind.repoLabels, _cacheRepo);
     if (cached != null) {
       return [for (final row in cached) ?PrCacheCodec.labelFromCache(row)];
     }
     final labels = await _client.listLabels();
-    await _writeEnvelope(_Kind.repoLabels, _repoFullName, [
+    await _writeEnvelope(_Kind.repoLabels, _cacheRepo, [
       for (final label in labels) PrCacheCodec.labelToCache(label),
     ]);
     return labels;
@@ -2701,7 +2663,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Lists users who can be assigned to PRs in this repository.
   @override
   Future<List<PrUser>> listAssignableUsers() async {
-    final cached = await _readEnvelope(_Kind.assignableUsers, _repoFullName);
+    final cached = await _readEnvelope(_Kind.assignableUsers, _cacheRepo);
     if (cached != null) {
       return cached.map(_prUserFromEnvelope).toList(growable: false);
     }
@@ -2709,7 +2671,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     final items = <Map<String, dynamic>>[
       for (final u in users) _prUserToEnvelope(u),
     ];
-    await _writeEnvelope(_Kind.assignableUsers, _repoFullName, items);
+    await _writeEnvelope(_Kind.assignableUsers, _cacheRepo, items);
     return items.map(_prUserFromEnvelope).toList(growable: false);
   }
 
@@ -2717,7 +2679,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// repository, TTL-cached like the assignable-user list.
   @override
   Future<List<PrReviewerCandidate>> listRequestableReviewers() async {
-    final cached = await _readEnvelope(_Kind.requestableTeams, _repoFullName);
+    final cached = await _readEnvelope(_Kind.requestableTeams, _cacheRepo);
     if (cached != null) {
       return cached.map(_candidateFromEnvelope).toList(growable: false);
     }
@@ -2731,7 +2693,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
           if (c.avatarUrl != null) 'avatar_url': c.avatarUrl,
         },
     ];
-    await _writeEnvelope(_Kind.requestableTeams, _repoFullName, items);
+    await _writeEnvelope(_Kind.requestableTeams, _cacheRepo, items);
     return items.map(_candidateFromEnvelope).toList(growable: false);
   }
 

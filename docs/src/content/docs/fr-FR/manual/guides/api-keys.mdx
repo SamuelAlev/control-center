@@ -2,7 +2,7 @@
 title: Gérer les clés API
 description: Où vit chaque identifiant — votre compte d’utilisateur sur le serveur, le serveur lui-même ou une CLI externe — et comment le définir, le faire tourner ou le supprimer.
 slug: fr-FR/manuel/guides/cles-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Ce guide indique où est stocké chaque identifiant utilisé par Control Center et
@@ -14,27 +14,33 @@ ou non d’un humain derrière elle.
 
 | Identifiant                          | Stockage                                                  | Qui l’utilise                                                   |
 | ------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------- |
-| Votre identifiant de forge ou de tickets | Le fichier de secrets en 0600 du serveur, indexé par votre identifiant d’utilisateur | Tout ce que vous demandez : la surface des PR, vos exécutions d’agents, vos images |
-| L’identité d’application du serveur  | Le même fichier, plus `server_settings` pour les éléments non secrets | Le travail que personne n’a demandé : webhooks, interrogation périodique des PR, synchronisation des tickets |
+| Votre connexion de forge ou de tickets | Le fichier de secrets en 0600 du serveur, indexé par votre identifiant d’utilisateur | Tout ce que vous faites : la surface des PR, les revues, les fusions, vos actions Linear |
+| Les applications fournisseur du serveur | Le même fichier, plus `server_settings` pour les éléments non secrets | La connexion des personnes, et les jetons limités à un dépôt pour les agents, les pipelines et l’interrogation périodique |
+| La clé d’installation Connect        | Le même fichier (`connect_install_key`)                   | Identifier ce serveur auprès de Control Center Connect          |
 | Clés de fournisseurs de modèles et jetons OAuth | Le magasin d’identifiants propre au serveur      | L’adaptateur intégré, pour chaque espace de travail de l’installation |
-| Jetons de robot Slack                | `<dataDir>/<workspaceId>/chat_credentials/` sur le serveur | La passerelle de chat de cet espace de travail                  |
+| Identifiants du robot Slack          | `<dataDir>/<workspaceId>/chat_credentials/` sur le serveur | La passerelle de chat de cet espace de travail : les jetons de votre propre application, ou l’autorisation scellée de l’application partagée |
 | Identifiants de CLI externe          | Ce que cette CLI utilise                                  | Claude Code, sur l’hôte du serveur                              |
 
-## Deux identifiants GitHub, qui répondent à des questions différentes
+## GitHub : votre connexion, et des jetons limités à un dépôt
 
-- **Le vôtre**, obtenu en vous connectant (octroi par code d’appareil) ou en
-  collant un jeton. C’est lui qu’utilise chaque requête faite *en votre nom*, de
-  sorte qu’un commentaire publié pour vous porte votre nom. Un autre membre ne
-  peut pas le lire et connecte le sien
-- **Celui du serveur**, issu de la GitHub App enregistrée par l’opérateur. Il
-  répond à tout ce qui n’a pas d’appelant — l’accès à la forge ne disparaît donc
-  pas quand une personne part ou effectue la rotation d’un jeton
+- **La vôtre**, issue de **Se connecter à GitHub**. C’est elle qu’utilise
+  chaque requête faite *en votre nom*, de sorte qu’une revue publiée pour vous
+  porte votre nom. Un autre membre ne peut pas l’utiliser et se connecte
+  lui-même. Il n’y a aucun jeton GitHub à coller
+- **Le travail sans personne au clavier** (agents, pipelines, interrogation
+  périodique, réponses du bot) reçoit un jeton limité à un seul dépôt à la fois,
+  émis à partir de la GitHub App du serveur ou via Control Center Connect, et
+  borné à ce qu’un membre responsable peut y faire. Ce n’est jamais votre
+  connexion transmise telle quelle
 
-Le vôtre se définit dans la carte **Hébergement de code** sous **Paramètres →
-Espace de travail → Profil et identité** ; celui du serveur, dans
+La vôtre se définit dans la carte **Hébergement de code** sous **Paramètres →
+Espace de travail → Profil et identité** ; l’application du serveur, dans
 **Applications fournisseur** sous **Paramètres → Serveur → Authentification
 unique**. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/)
 et [Créer la GitHub App](/fr-FR/manuel/guides/github-app/).
+
+GitLab et Bitbucket acceptent toujours un jeton personnel collé, stocké de la
+même façon. Voir [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/).
 
 :::note[Il existe aussi un écran accessible uniquement par URL]
 `/workspaces/<workspaceId>/api-keys` affiche les deux mêmes cartes que la
@@ -75,50 +81,63 @@ rien ne relie les deux. Voir
 
 La carte **Tickets** sous **Paramètres → Espace de travail → Général** regroupe
 les deux volets d’une même décision : chez quel fournisseur vivent vos tickets,
-et l’identifiant correspondant. Choisir **Local** masque la ligne d’identifiant —
-les tickets locaux vivent dans la base de données de ce serveur et n’ont rien à
-authentifier.
+et qui est Control Center lorsqu’il s’adresse à lui. Choisir **Local** masque
+les lignes Linear — les tickets locaux vivent dans la base de données de ce
+serveur et n’ont rien à authentifier.
 
-Votre clé est stockée sur le serveur en fonction de votre identifiant
-d’utilisateur, comme celle de la forge. Le serveur conserve séparément sa propre
-clé Linear (**Applications fournisseur**), et c’est elle que la synchronisation
-des tickets utilise quand aucun humain n’a rien demandé. Aucune clé de tickets
-n’est injectée dans le bac à sable d’un agent ; les agents écrivent les tickets
+Linear propose deux connexions et aucune clé à coller : **Linear** est la
+vôtre, pour ce que vous faites, et **Automatisation Linear** est l’application
+Control Center de l’espace de travail, connectée par un administrateur, pour la
+synchronisation des tickets, les pipelines et les agents. Le serveur peut aussi
+détenir une **Clé API de service** (**Applications fournisseur**) pour les
+espaces de travail sans automatisation connectée. Aucun identifiant de tickets
+n’est injecté dans le bac à sable d’un agent ; les agents écrivent les tickets
 via les outils de Control Center, qui interrogent la règle **Écrire dans un
 outil de suivi externe**. Voir
 [Configurer l’intégration Linear](/fr-FR/manuel/guides/integration-linear/).
 
 ## Faire tourner ou révoquer
 
-- **Votre identifiant GitHub** : appuyez sur **Déconnecter**, puis
-  reconnectez-vous ou collez le nouveau jeton. Révoquez l’ancien sur GitHub
+- **Votre connexion GitHub** : appuyez sur **Déconnecter**, puis de nouveau sur
+  **Se connecter à GitHub**. La déconnexion invalide aussi tous les jetons que
+  le serveur a émis en votre nom
+- **Un jeton GitLab ou Bitbucket** : appuyez sur **Mettre à jour le jeton** et
+  collez le nouveau, puis révoquez l’ancien sur la forge
 - **L’application du serveur** : générez une nouvelle clé privée ou un nouveau
-  secret client sur la page GitHub de l’application, collez-le dans
+  secret client sur la page de l’application chez le fournisseur, collez-le dans
   **Applications fournisseur** et appuyez sur **Tester**
+- **La clé d’installation Connect** : **Renouveler la clé** sur la carte
+  **Control Center Connect**, ou `cc_server connect rotate-key --yes`. Toutes
+  les personnes qui se sont connectées via Connect doivent se reconnecter. Voir
+  [Control Center Connect](/fr-FR/manuel/reference/connect/)
 - **Un fournisseur de modèles** : sur sa ligne, déconnectez-vous (OAuth) ou
   supprimez la clé, puis reconnectez-vous
-- **Slack** : recollez les jetons dans la boîte de dialogue de connexion. Voir
+- **Slack** : pour votre propre application, recollez les jetons dans la boîte
+  de dialogue de connexion. L’application Control Center partagée n’a aucun
+  jeton à renouveler : son jeton de robot est renouvelé via Connect, et
+  **Déconnecter** le révoque et désinstalle le robot de Slack. Voir
   [Configurer l’intégration Slack](/fr-FR/manuel/guides/integration-slack/)
 
 ## Dépannage
 
-### La liste des PR est vide mais mon jeton fonctionne dans `curl`
+### Un jeton GitLab ou Bitbucket fonctionne dans `curl` mais pas ici
 
-Vérifiez le sous-titre de la ligne **Hébergement de code**. S’il nomme une autre
-source (« via l’application de ce serveur », « depuis l’environnement »),
-l’identifiant que vous testez n’est pas celui qui répond — le vôtre n’a pas été
-enregistré.
+Vérifiez le sous-titre de la ligne **Hébergement de code**. S’il indique
+« depuis l’environnement », l’identifiant qui répond est celui du serveur, pas
+le vôtre — le vôtre n’a pas été enregistré.
 
-### Le jeton est accepté mais les requêtes suivantes échouent
+### Un jeton GitLab ou Bitbucket est accepté mais les requêtes suivantes échouent
 
 Le jeton est testé tel qu’il est stocké, donc la ligne nomme le compte derrière
 lui — mais seulement le compte, pas les portées. Un jeton ayant trop peu de
-portées se connecte, puis échoue à des requêtes individuelles. Vérifiez les
-portées et la date d’expiration :
+portées se connecte, puis échoue à des requêtes individuelles. Vérifiez ses
+portées et sa date d’expiration sur la forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Un fournisseur indique que la connexion n’est pas configurée sur ce serveur
+
+Le serveur n’a ni application propre pour ce fournisseur ni Control Center
+Connect. Le propriétaire du serveur choisit l’une ou l’autre dans **Paramètres →
+Serveur → Authentification unique**.
 
 ## Guides connexes
 

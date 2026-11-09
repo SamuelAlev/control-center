@@ -3,7 +3,7 @@ title: "Architektúra"
 description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Áttekintés
@@ -113,9 +113,9 @@ Mindkét adatbázis a `cc_persistence` tulajdona, és csak a `cc_server` nyitja 
 **go_router**, egyetlen ténnyel, amely az egészet meghatározza: **minden alkalmazáson belüli cél útvonal munkaterület-előtagot kap**, `/workspaces/:workspaceId/…` formában. Az URL-ben szereplő munkaterület-azonosító az aktív munkaterület egyetlen igazságforrása — az `activeWorkspaceIdProvider` az útvonalból vezetődik le, nem fordítva —, ezért a munkaterület-hatókörű adatok beolvasásának egy előtagolt útvonalon kívül nincs honnan megkapnia az azonosítóját.
 
 - Útvonalépítő _függvények_ a `router/routes.dart`-ban, mindegyik az első argumentumként kapja a munkaterület-azonosítót, nem sztringkonstansként
-- Négy, kontextus előtti útvonal előtag nélküli: `/splash`, `/onboarding`, `/signed-out` és `/workspaces` (a választó)
-- A `ShellRoute` az alkalmazás héját csomagolja; ez a négy felület teljes képernyőn jelenik meg azon kívül
-- Hitelesítési őr: a befejezetlen beállítás a `/onboarding`-ra megy; a befejezett beállítás, amelynek a kódhoszt-hitelesítő adata eltűnt, a `/signed-out`-ra. A „befejezett” legalább egy, a bejelentkezett felhasználóhoz csatlakoztatott kódhosztot és legalább egy létező munkaterületet jelent — nem kifejezetten a GitHubot, és a `gh` CLI nem hitelesítési mód
+- Három, kontextus előtti útvonal előtag nélküli: `/splash`, `/onboarding` és `/workspaces` (a választó)
+- A `ShellRoute` az alkalmazás héját csomagolja; ez a három felület teljes képernyőn jelenik meg azon kívül
+- Hitelesítési őr: a befejezetlen beállítás a `/onboarding`-ra megy. A befejezett beállítás, amelynek a kódhoszt-hitelesítő adata eltűnt, az alkalmazásban marad, a munkaterület-héj pedig egy figyelmeztetést jelenít meg a bejelentkezéshez vezető hivatkozással. A „befejezett” legalább egy, a bejelentkezett felhasználóhoz csatlakoztatott kódhosztot és legalább egy létező munkaterületet jelent — nem kifejezetten a GitHubot, és a `gh` CLI nem hitelesítési mód
 - Bevezetési kapu a `features/auth/providers/`-ben
 
 ## Hálózat (szerveroldal)

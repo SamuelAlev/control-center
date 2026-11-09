@@ -1,23 +1,29 @@
 ---
 title: Kalendar dan penjadualan
-description: Bagaimana Control Center menyegerakkan Google Calendar pada pelayan, mengapa daftar masuk ialah pemberian kod peranti dan apa yang diliputi oleh skop baca sahaja.
+description: Bagaimana Control Center menyegerakkan Google Calendar pada pelayan, cara log masuk pelayar mencapai pelayan tanpa antara muka dan apa yang boleh diubahnya pada Google.
 slug: ms-MY/manual-pengguna/konsep/kalendar
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center bersambung ke Google Calendar supaya hari anda berada
 bersebelahan armada anda. Ia menyegerakkan acara anda, memaparkannya dalam
-paparan bulan, minggu, hari dan agenda, memberi amaran kepada anda sebelum
+paparan bulan, minggu, hari dan agenda, membolehkan anda menempah, memindahkan, menjawab dan memadam acara, memberi amaran kepada anda sebelum
 mesyuarat bermula dan menukar mana-mana acara menjadi
 [mesyuarat](/ms-MY/manual-pengguna/konsep/mesyuarat/) yang dirakam dan
 diringkaskan.
 
 ## Apa yang diubahnya pada Google
 
-Hampir tiada apa-apa. Integrasi ini menarik masuk acara dan memaparkannya. Ia
-tidak mencipta, menyunting, memadam atau menjawab jemputan. Setiap sambungan
-kod peranti, sama ada terbina dalam atau bawa sendiri, meminta
-`calendar.readonly` serta `openid email`.
+Hanya apa yang anda lakukan sendiri. Anda boleh menjawab jemputan, menempah acara (dengan menyeret pada grid masa,
+atau butang **+**), mengalih atau mengubah saiz acara pada grid, dan memadam acara. Hanya acara anda sendiri dan acara yang anda anjurkan yang boleh dialih: jika seorang tetamu mengalihkannya, semua orang lain kekal pada masa lama. Setiap perubahan dibuat oleh pelayan dengan log masuk akaun anda sendiri, pada
+kalendar anda sendiri, dan pelayan menolak acara pada akaun ahli lain atau pada kalendar yang dikongsi kepada anda
+secara baca sahaja. Google menghantar e-mel kepada tetamu, seperti daripada Google Calendar. Mengalih atau memadam satu kejadian
+acara berulang tidak memadam baki siri itu.
+
+Setiap sambungan, melalui Connect atau melalui klien Google pelayan itu sendiri, meminta `calendar.events` (membaca
+dan menukar acara) dan `calendar.calendarlist.readonly` (melihat kalendar yang dimiliki akaun) serta `openid email`.
+Pelayan menolak log masuk yang kembali dengan set skop yang berbeza, maka akaun yang disambungkan dengan skop baca
+sahaja yang terdahulu mesti disambungkan semula.
 
 Acara disegerakkan ke dalam pangkalan data ruang kerja itu sendiri **pada
 pelayan** (`<dataDir>/<workspaceId>/workspace.db`) dan dipaparkan oleh setiap
@@ -26,46 +32,28 @@ klien melalui RPC. Tiada klien memegang kelayakan Google.
 ## Akaun bagi setiap ruang kerja
 
 Akaun kalendar berlingkup ruang kerja, seperti semua yang lain dalam Control
-Center. Setiap [ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/)
-menyambungkan akaun Google sendiri (atau beberapa) dan acara serta token satu
-ruang kerja tidak pernah kelihatan daripada ruang kerja lain. Menukar ruang
-kerja menukar kalendar yang anda lihat.
+Center, dan setiap akaun dimiliki oleh ahli yang menyambungkannya. Setiap
+[ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/) menyambungkan akaun
+Google sendiri (atau beberapa) dan acara serta kelayakan satu ruang kerja tidak
+pernah kelihatan daripada ruang kerja lain. Dua ahli yang menyambungkan alamat
+Google yang sama akan mendapat dua akaun. Menukar ruang kerja menukar kalendar
+yang anda lihat.
 
 Satu ruang kerja boleh menyambungkan **beberapa** akaun Google, seperti akaun
 kerja dan akaun peribadi, dan acaranya digabungkan ke dalam paparan yang sama.
 
-## Mengapa daftar masuk menggunakan kod peranti
+## Bagaimana log masuk sampai ke pelayan
 
-`cc_server` tanpa kepala tiada pelayar untuk menangkap ubah hala OAuth. Jadi ia
-tidak menggunakannya: ia memberi kebenaran dengan **pemberian kod peranti**
-(RFC 8628). Pelayan menunjukkan kod pengguna yang pendek dan URL Google, anda
-meluluskannya pada mana-mana peranti yang mempunyai pelayar dan pelayan
-meninjau secara berkala sehingga anda berbuat demikian. Pemasangan tanpa kepala
-boleh menyambungkan akaun justeru kerana tiada titik akhir ubah hala yang perlu
-dihoskan.
+Sambungan ialah log masuk pelayar, dan pelayan yang melengkapkannya. Klien mana yang menjalankan aliran ini ialah pilihan pemilik pelayan:
 
-Kesannya yang perlu anda tahu sebelum membawa kelayakan sendiri: jenis klien
-mestilah "TV and Limited Input devices" milik Google. Google hanya memberikan
-set skop yang dibenarkan kepada jenis klien itu dan projek yang tidak
-membenarkan Calendar untuknya akan gagal dengan `invalid_scope` — anda perlu
-menggunakan klien loopback atau klien web sebaliknya.
+- **Klien Google sendiri pelayan.** Klien Web application yang didaftarkan dengan ubah hala `<server origin>/oauth/google/callback`. Google menghantar pelayar anda kembali terus ke pelayan, jadi pelayar mesti boleh mencapai pelayan
+- **Control Center Connect.** Google menghantar pelayar kembali ke Connect, yang memaparkan kod 8 aksara dan pautan `control-center://`. Anda menaip kod itu ke dalam apl, atau mengikut pautan, dan pelayan mengklaim log masuk dengan kod itu. Pelayan tidak memerlukan alamat awam untuk ini, dan inilah cara pelayan tanpa antara muka dalam rangkaian persendirian menyambungkan kalendar
 
-Token tidak pernah meninggalkan pelayan. Ia ditulis ke `secrets.json` pelayan
-dalam direktori datanya, dengan kunci `google_google:<workspaceId>:<email>`,
-bersebelahan pangkalan data dan di bawah sempadan kepercayaan sistem fail hos
-yang sama. Pelayan menyegarkan akses secara automatik dan, apabila Google
-membatalkan sesuatu akaun secara kekal (sesi yang ditarik balik atau lama
-luput), menerbitkan `CalendarAuthExpired` dan memaparkan banner **Sambung
-semula** dan bukannya gagal secara senyap.
+Klien sendiri sentiasa diutamakan. Client id tanpa secret ialah persediaan yang belum siap dan akan menolak log masuk, bukan kembali ke Connect.
 
-Binaan daripada sumber tidak menyertakan **sebarang** kelayakan Google — anda
-membekalkan id klien dan rahsia anda sendiri. Binaan keluaran rasmi menanam
-klien kod peranti yang tidak sulit supaya aliran sambungan berfungsi terus;
-pelayan hanya menyimpan penanda yang merujuknya, tidak pernah salinannya.
-`GOOGLE_OAUTH_CLIENT_ID` (dan rahsianya) dalam persekitaran sentiasa diutamakan
-berbanding pasangan yang ditanam. Secara sengaja tiada bendera
-`--google-client-id`: bendera yang tidak dikenali diabaikan, dan rahsia pada
-baris arahan boleh dibaca melalui `ps`.
+Kelayakan tidak pernah meninggalkan pelayan. Ia ditulis ke `secrets.json` pelayan dalam direktori datanya, dengan kunci `google_google:<workspaceId>:<userId>:<email>`, di sebelah pangkalan data dan di bawah sempadan amanah sistem fail hos yang sama. Log masuk dengan klien sendiri menyimpan access token dan refresh token. Log masuk melalui Connect hanya menyimpan kelayakan yang dimeterai yang Connect buka untuk pelayan ini sahaja; access token hanya kekal dalam memori. Pelayan menyegarkan akses secara automatik dan, apabila Google membatalkan akaun secara kekal (sesi yang ditarik balik atau telah lama tamat), ia menerbitkan `CalendarAuthExpired` dan memaparkan sepanduk **sambung semula** dan bukannya gagal secara senyap. Log masuk yang tidak dapat digunakan lagi oleh pelayan ini (diterbitkan oleh klien sendiri yang berbeza, atau dimeterai untuk pemasangan atau Connect lain) dibuang semasa bacaan seterusnya dan memaparkan sepanduk yang sama.
+
+Tiada binaan membawa kelayakan Google. Klien pelayan datang daripada **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia** atau fail `.env` pelayan (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`). Sengaja tiada bendera baris arahan: secret pada baris arahan boleh dibaca melalui `ps`, dan pelayan enggan bermula apabila secret dieksport dalam persekitaran prosesnya.
 
 Untuk menjalankan projek Google anda sendiri, lihat
 [Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/).
@@ -128,7 +116,7 @@ mesyuarat itu sendiri sememangnya berfungsi dalam pelayar.
 
 :::note[Ejen tidak boleh membaca kalendar anda]
 Tiada alat MCP kalendar. Ejen tidak boleh menyenaraikan acara, membaca butiran
-acara atau menjawab jemputan bagi pihak anda; permukaan `calendar.*` ialah RPC
+acara, menempah, mengalih, memadam atau menjawab jemputan bagi pihak anda; permukaan `calendar.*` ialah RPC
 untuk klien manusia sahaja.
 :::
 

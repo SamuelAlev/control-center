@@ -1,15 +1,11 @@
 import 'dart:io';
 
-import 'package:cc_server_core/src/builtin_credentials.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:test/test.dart';
 
-/// What an OFFICIAL build offers before anyone configures anything.
-///
-/// The built-in tier is empty in this repository (the release job writes it),
-/// so these assert against the constant rather than a literal — that keeps them
-/// honest in a release checkout, where the value is real.
+/// Own-app credentials: nothing ships in a build, a half-configured app is a
+/// setup error (never a Connect fallback), and the environment seeds once.
 void main() {
   late Directory dir;
   late ProviderAppSettings apps;
@@ -21,65 +17,57 @@ void main() {
 
   tearDown(() => dir.deleteSync(recursive: true));
 
-  test('GitHub falls back to the built-in device-flow client id', () async {
-    // This is what makes "Sign in with GitHub" work out of the box: a device
-    // flow authenticates with the client id alone, so the id can ship.
-    final status = await apps.status(ProviderApp.github);
-    expect(status.clientId, builtinGitHubClientId);
-    expect(status.canSignIn, builtinGitHubClientId.isNotEmpty);
-  });
-
-  test('no client secret ships — the sign-in never sends one', () async {
-    // A device flow authenticates with the id alone. The only thing a secret
-    // would buy is refreshing an expiring token, and the shipped app leaves
-    // token expiry off so nothing needs refreshing.
-    final credentials = await apps.oauthCredentials(ProviderApp.github);
-    if (builtinGitHubClientId.isEmpty) {
-      expect(credentials, isNull);
-      return;
+  test('a stock server has no own app for any provider', () async {
+    for (final provider in ProviderApp.values) {
+      final status = await apps.status(provider);
+      expect(status.state, OwnAppState.none, reason: provider.wire);
+      expect(status.canSignIn, isFalse, reason: provider.wire);
+      expect(await apps.oauthCredentials(provider), isNull);
     }
-    expect(credentials!.clientId, builtinGitHubClientId);
-    expect(credentials.clientSecret, isEmpty);
+    expect((await apps.status(ProviderApp.github)).canActAsServer, isFalse);
   });
 
-  test('an operator id wins over the built-in one', () async {
-    await apps.save(ProviderApp.github, clientId: 'their-own-id');
-    final status = await apps.status(ProviderApp.github);
-    expect(status.clientId, 'their-own-id');
-    expect(status.canSignIn, isTrue);
-    final credentials = await apps.oauthCredentials(ProviderApp.github);
-    expect(credentials!.clientId, 'their-own-id');
-    expect(credentials.clientSecret, isEmpty);
-  });
-
-  test('GITHUB_CLIENT_SECRET seeds from the environment, once', () async {
-    // The secret never ships in a build, but an operator whose own app has
-    // token expiry on can supply it via the environment; without it an
-    // expiring user token cannot be refreshed. The seed writes only an unset
-    // field — a stored value survives later boots with a different env.
-    await apps.loadAndApply(
-      env: {'GITHUB_CLIENT_ID': 'their-own-id', 'GITHUB_CLIENT_SECRET': 'one'},
+  test('a Google client id without its secret is partial', () async {
+    await apps.save(ProviderApp.google, clientId: 'id.apps.googleusercontent');
+    expect((await apps.status(ProviderApp.google)).state, OwnAppState.partial);
+    expect(
+      () => apps.oauthCredentials(ProviderApp.google),
+      throwsA(isA<OwnAppIncomplete>()),
     );
-    var credentials = await apps.oauthCredentials(ProviderApp.github);
+  });
+
+  test('a complete Google client resolves to its pair', () async {
+    await apps.save(
+      ProviderApp.google,
+      clientId: 'id.apps.googleusercontent',
+      clientSecret: 'shh',
+    );
+    final credentials = await apps.oauthCredentials(ProviderApp.google);
+    expect(credentials!.clientId, 'id.apps.googleusercontent');
+    expect(credentials.clientSecret, 'shh');
+    // The secret is reported as present, never echoed.
+    final wire = (await apps.status(ProviderApp.google)).toJson();
+    expect(wire['has_client_secret'], isTrue);
+    expect(wire.values, isNot(contains('shh')));
+  });
+
+  test('the environment seeds unset fields once', () async {
+    await apps.loadAndApply(
+      env: {
+        'GOOGLE_OAUTH_CLIENT_ID': 'one.apps.googleusercontent',
+        'GOOGLE_OAUTH_CLIENT_SECRET': 'one',
+      },
+    );
+    var credentials = await apps.oauthCredentials(ProviderApp.google);
     expect(credentials!.clientSecret, 'one');
-    await apps.loadAndApply(env: {'GITHUB_CLIENT_SECRET': 'two'});
-    credentials = await apps.oauthCredentials(ProviderApp.github);
+    await apps.loadAndApply(env: {'GOOGLE_OAUTH_CLIENT_SECRET': 'two'});
+    credentials = await apps.oauthCredentials(ProviderApp.google);
     expect(credentials!.clientSecret, 'one');
   });
 
-  test('the server identity is NOT built in', () async {
-    // The app's private key mints installation tokens for every repository the
-    // app can see; an extracted copy would read all of them. The server binary
-    // is the distributed artifact, so only the client id ships — a stock build
-    // still has no identity of its own.
-    final status = await apps.status(ProviderApp.github);
-    expect(status.hasPrivateKey, isFalse);
-    expect(status.canActAsServer, isFalse);
-  });
-
-  test('Linear ships no app — its flow would need a secret', () async {
-    final status = await apps.status(ProviderApp.linear);
-    expect(status.clientId, isEmpty);
-    expect(status.canSignIn, isFalse);
+  test('clearing both Google fields returns the lane to none', () async {
+    await apps.save(ProviderApp.google, clientId: 'id', clientSecret: 'shh');
+    await apps.save(ProviderApp.google, clientId: '', clientSecret: '');
+    expect(await apps.oauthCredentials(ProviderApp.google), isNull);
   });
 }

@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_r
 import 'package:cc_domain/features/pr_review/domain/value_objects/visual_diff.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/pr_review/image_differ.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:path/path.dart' as p;
 
@@ -237,11 +238,12 @@ class VisualDiffService {
     String repoPath,
   ) async {
     final result =
-        await Process.run(flutter, [
-          'test',
-          '--update-goldens',
-          '--no-pub',
-        ], workingDirectory: repoPath).timeout(
+        await ChildProcess.run(
+          flutter,
+          ['test', '--update-goldens', '--no-pub'],
+          workingDirectory: repoPath,
+          toolchain: true,
+        ).timeout(
           testTimeout,
           onTimeout: () {
             throw TimeoutException('flutter test golden pass timed out');
@@ -327,9 +329,10 @@ class VisualDiffService {
     // capability declaration only needs a runnable flutter.
     for (final candidate in ['flutter', 'fvm']) {
       try {
-        final which = await Process.run(
+        final which = await ChildProcess.run(
           Platform.isWindows ? 'where' : 'which',
           [candidate],
+          toolchain: true,
         );
         if (which.exitCode == 0) {
           final path = (which.stdout as String).trim().split('\n').first.trim();

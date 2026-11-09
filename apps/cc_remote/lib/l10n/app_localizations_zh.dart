@@ -2460,6 +2460,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get credentialsWaitingForLogin => '正在等待浏览器授权…';
 
   @override
+  String get credentialsConnectCodePrompt => '输入浏览器中显示的代码';
+
+  @override
+  String get credentialsConnectCodeMalformed => '这看起来不像登录代码。代码由 8 个字母和数字组成。';
+
+  @override
+  String get credentialsSignInInvalidCode => '该代码与此次登录不匹配。请检查后重试。';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '此服务器尚未设置 $provider 登录。';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      '无法从手机安全访问此服务器的登录回调地址。请在桌面应用中登录，或请服务器所有者设置公共 HTTPS 地址。';
+
+  @override
   String get credentialsLoginTimedOut => '登录已过期。请重新发起登录。';
 
   @override
@@ -2476,10 +2494,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => '完成登录';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      '此服务器的浏览器回调无法通过手机安全访问。请让服务器所有者配置公开的 HTTPS 回调，或改为添加令牌。';
 
   @override
   String get credentialsUpdateToken => '更新令牌';
@@ -2524,6 +2538,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get failureUnreachable => '無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試';
+
+  @override
+  String get credentialsConnectCodePrompt => '輸入瀏覽器中顯示的代碼';
+
+  @override
+  String get credentialsConnectCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
+
+  @override
+  String get credentialsSignInInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '此伺服器尚未設定 $provider 登入。';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      '無法從手機安全存取此伺服器的登入回傳地址。請在桌面應用程式中登入，或請伺服器擁有者設定公開的 HTTPS 地址。';
 
   @override
   String get permissionHostExecution => '在主機上執行指令';
@@ -4986,6 +5018,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get credentialsWaitingForLogin => '正在等待瀏覽器授權…';
 
   @override
+  String get credentialsConnectCodePrompt => '輸入瀏覽器中顯示的代碼';
+
+  @override
+  String get credentialsConnectCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
+
+  @override
+  String get credentialsSignInInvalidCode => '此代碼與這次登入不符。請檢查後再試一次。';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '此伺服器尚未設定 $provider 登入。';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      '無法從手機安全存取此伺服器的登入回呼位址。請在桌面應用程式中登入，或請伺服器擁有者設定公開的 HTTPS 位址。';
+
+  @override
   String get credentialsLoginTimedOut => '登入已過期。請重新開始登入。';
 
   @override
@@ -5002,10 +5052,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get credentialsCompleteLogin => '完成登入';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      '無法從手機安全連線至此伺服器的瀏覽器回呼網址。請伺服器擁有者設定公開的 HTTPS 回呼網址，或改為新增權杖。';
 
   @override
   String get credentialsUpdateToken => '更新權杖';

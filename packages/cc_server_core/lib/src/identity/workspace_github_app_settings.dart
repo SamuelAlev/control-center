@@ -1,8 +1,14 @@
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
+import 'package:cc_server_core/src/connect/linear_sign_in_lane.dart'
+    show LinearAppGrants;
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/google_calendar_server.dart'
+    show FileGoogleCredentialsStore;
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
+import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 
 /// Per-workspace GitHub App identity (act-as-server + optional sign-in).
 ///
@@ -10,9 +16,9 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 /// workspace must not leak a private key. `workspaces.github_app_id` on the
 /// registry row is the non-secret id; the PEM and OAuth secret stay here.
 ///
-/// [GithubAuthMode.inherit] workspaces share the install App. [GithubAuthMode.pat]
-/// workspaces have no App. A missing workspace key in [GithubAuthMode.app]
-/// does **not** fall through to the install App.
+/// [GithubAuthMode.inherit] workspaces share the server's GitHub lane (its own
+/// App, else Connect). A missing workspace key in [GithubAuthMode.app] does
+/// **not** fall through to the server's lane.
 class WorkspaceGitHubAppSettings {
   /// Creates a [WorkspaceGitHubAppSettings].
   WorkspaceGitHubAppSettings({
@@ -43,16 +49,17 @@ class WorkspaceGitHubAppSettings {
   static String clientIdSecret(String workspaceId) =>
       'workspace_provider_app_github_${workspaceId}_client_id';
 
-  /// Secrets-file key for [workspaceId]'s background GitHub PAT.
-  static String backgroundPatSecret(String workspaceId) =>
-      'workspace_forge_github_$workspaceId';
-
-  /// True when [key] belongs to [workspaceId]'s GitHub identity.
+  /// True when [key] belongs to [workspaceId]: its GitHub identity, its
+  /// Google, Linear and Klipy apps, its members' GitHub overlays, Linear
+  /// grants and calendar credentials, and its Linear app-actor grant.
   static bool isWorkspaceSecret(String key, String workspaceId) {
-    if (key == backgroundPatSecret(workspaceId) ||
-        key == privateKeySecret(workspaceId) ||
+    if (key == privateKeySecret(workspaceId) ||
         key == clientSecretSecret(workspaceId) ||
-        key == clientIdSecret(workspaceId)) {
+        key == clientIdSecret(workspaceId) ||
+        key == LinearAppGrants.keyFor(workspaceId) ||
+        WorkspaceProviderAppSettings.isWorkspaceSecret(key, workspaceId) ||
+        UserCredentialsStore.isWorkspaceTicketKey(key, workspaceId) ||
+        FileGoogleCredentialsStore.isWorkspaceSecret(key, workspaceId)) {
       return true;
     }
     // Per-(user, workspace) GitHub overlay: `user_forge_github_<userId>_<ws>`.
@@ -60,20 +67,25 @@ class WorkspaceGitHubAppSettings {
     return key.startsWith(prefix) && key.endsWith('_$workspaceId');
   }
 
+  /// Deletes the per-workspace GitHub personal access tokens earlier
+  /// versions stored (`workspace_forge_github_<ws>`). GitHub is sign-in only;
+  /// nothing reads them, so they must not linger in the secrets file.
+  Future<int> purgeLegacyTokens() => _secrets.deleteMatching(
+    (key) => key.startsWith('workspace_forge_github_'),
+  );
+
   /// Deletes every secret belonging to [workspaceId].
   Future<int> deleteForWorkspace(String workspaceId) =>
       _secrets.deleteMatching((key) => isWorkspaceSecret(key, workspaceId));
 
   /// The GitHub App this workspace uses to act as the server, or null.
   ///
-  /// Inherit: the install App. App mode: this workspace's App, or null when
-  /// the key is missing (fail-closed). PAT mode: always null.
+  /// Inherit: the server's own App, when fully configured. App mode: this
+  /// workspace's App, or null when the key is missing (fail-closed).
   Future<GitHubAppClient?> githubApp(Workspace workspace) async {
     switch (workspace.githubAuthMode) {
       case GithubAuthMode.inherit:
         return _install.githubApp();
-      case GithubAuthMode.pat:
-        return null;
       case GithubAuthMode.app:
         return _workspaceClient(workspace);
     }
@@ -85,49 +97,25 @@ class WorkspaceGitHubAppSettings {
 
   /// OAuth client credentials for Sign in with GitHub in [workspace].
   ///
-  /// Inherit uses the install App. App mode uses the workspace App's client
-  /// id (optional secret). PAT mode returns null — device-flow OAuth is
-  /// installation-bounded and cannot see refused orgs.
+  /// Inherit uses the server's own App (null when the server rides
+  /// Connect). App mode uses the workspace App's client id and secret; the
+  /// web flow needs both.
   Future<OAuthAppCredentials?> oauthCredentials(Workspace workspace) async {
     switch (workspace.githubAuthMode) {
       case GithubAuthMode.inherit:
         return _install.oauthCredentials(ProviderApp.github);
-      case GithubAuthMode.pat:
-        return null;
       case GithubAuthMode.app:
         final clientId =
             (await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '').trim();
-        if (clientId.isEmpty) {
+        final clientSecret =
+            (await _secrets.readPsk(clientSecretSecret(workspace.id)) ?? '')
+                .trim();
+        if (clientId.isEmpty || clientSecret.isEmpty) {
           return null;
         }
-        final clientSecret =
-            await _secrets.readPsk(clientSecretSecret(workspace.id)) ?? '';
         return (clientId: clientId, clientSecret: clientSecret);
     }
   }
-
-  /// Background PAT for [workspaceId], or null.
-  Future<String?> backgroundPat(String workspaceId) async {
-    final raw = await _secrets.readPsk(backgroundPatSecret(workspaceId));
-    if (raw == null || raw.trim().isEmpty) {
-      return null;
-    }
-    return raw.trim();
-  }
-
-  /// Stores or clears the workspace background PAT. Empty [token] deletes.
-  Future<void> setBackgroundPat(String workspaceId, String? token) async {
-    final key = backgroundPatSecret(workspaceId);
-    if (token == null || token.trim().isEmpty) {
-      await _secrets.deletePsk(key);
-      return;
-    }
-    await _secrets.writePsk(key, token.trim());
-  }
-
-  /// Presence-only: whether a background PAT is stored.
-  Future<bool> hasBackgroundPat(String workspaceId) async =>
-      (await backgroundPat(workspaceId)) != null;
 
   /// Saves this workspace's GitHub App credentials.
   ///

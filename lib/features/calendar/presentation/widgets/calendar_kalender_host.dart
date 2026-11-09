@@ -3,12 +3,15 @@ import 'dart:math' as math;
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
-import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart'
-    show calendarKey;
+import 'package:control_center/features/calendar/presentation/providers/calendar_event_write_provider.dart'
+    show CalendarSlot;
 import 'package:control_center/features/calendar/presentation/utils/calendar_event_layout.dart';
+import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart'
+    show dayKey;
 import 'package:control_center/features/calendar/presentation/widgets/calendar_all_day_gutter.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_event_tile.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_overflow_overlay.dart';
-import 'package:flutter/rendering.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_tile_parts.dart';
 import 'package:flutter/widgets.dart';
 // intl declares its own `TextDirection` (a bidi enum, unrelated to the layout
 // one), which would shadow Flutter's in this file.
@@ -60,20 +63,30 @@ const double _timelineWidth = 56;
 
 /// A kalender tile that carries the originating domain [CalendarEvent].
 class _DomainTile extends k.KalenderEvent {
-  _DomainTile({required super.start, required super.end, required this.event})
-    : super(isAllDay: event.isAllDay);
+  _DomainTile({
+    required super.start,
+    required super.end,
+    required this.event,
+    super.interaction,
+  }) : super(isAllDay: event.isAllDay);
 
   final CalendarEvent event;
 
   @override
-  _DomainTile copyWithData({required DateTime start, required DateTime end}) {
-    return _DomainTile(start: start, end: end, event: event);
-  }
+  _DomainTile copyWithData({required DateTime start, required DateTime end}) =>
+      _DomainTile(
+        start: start,
+        end: end,
+        event: event,
+        interaction: interaction,
+      );
 }
 
 /// Hosts the `kalender` month / week views, fed from our domain events and
-/// styled to the design system. Read-only: dragging, resizing and creation are
-/// all disabled. Tapping a tile calls [onOpenEvent].
+/// styled to the design system. With [onCreate] set, dragging across empty
+/// time draws a new event's span; with [onMove] set, the tiles [canMove]
+/// allows drag to another time or stretch at an edge. Tapping a tile calls
+/// [onOpenEvent].
 class CalendarKalenderHost extends StatefulWidget {
   /// Creates a [CalendarKalenderHost].
   const CalendarKalenderHost({
@@ -84,7 +97,31 @@ class CalendarKalenderHost extends StatefulWidget {
     required this.now,
     required this.onOpenEvent,
     this.calendarColors = const {},
+    this.onCreate,
+    this.composing,
+    this.canMove,
+    this.onMove,
+    this.draft,
   });
+
+  /// The placeholder event for a span being drawn, so it looks like the tile
+  /// it becomes. Null draws nothing until the drag ends.
+  final CalendarEvent? Function(CalendarSlot slot)? draft;
+
+  /// Whether a tile may be dragged or resized. Null: none may.
+  final bool Function(CalendarEvent event)? canMove;
+
+  /// Called with an event and the span it was dropped on or stretched to.
+  /// Resolves false when the change was refused, and the tile goes back.
+  final Future<bool> Function(CalendarEvent event, CalendarSlot to)? onMove;
+
+  /// Called with the span drawn across empty time (and the point it was drawn
+  /// from), or null when the person has no calendar to add events to.
+  final ValueChanged<CalendarSlot>? onCreate;
+
+  /// The span the open composer is for, drawn as its [draft] until it is
+  /// saved or dropped.
+  final CalendarSlot? composing;
 
   /// Month, week or day (agenda is handled by a separate widget).
   final CalendarViewMode mode;
@@ -124,14 +161,24 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     viewConfiguration: _buildConfiguration(),
   );
 
-  /// Dragging, resizing and creation are all disabled, in the header and the
-  /// body alike. Held so a rebuild doesn't hand kalender a new (never `==`)
-  /// instance to propagate.
-  final _readOnly = k.KalenderInteraction(
-    allowResizing: false,
-    allowRescheduling: false,
-    allowEventCreation: false,
-  );
+  /// Creation follows [CalendarKalenderHost.onCreate], moving and resizing
+  /// [CalendarKalenderHost.onMove] (each tile still says whether it may).
+  /// Held so a rebuild hands kalender the same instance.
+  final _interactions = <(bool, bool), k.KalenderInteraction>{};
+
+  k.KalenderInteraction get _interaction {
+    final create = widget.onCreate != null;
+    final move = widget.onMove != null;
+    return _interactions[(create, move)] ??= k.KalenderInteraction(
+      allowResizing: move,
+      allowRescheduling: move,
+      allowEventCreation: create,
+    );
+  }
+
+  /// Where the current drag started, in global coordinates: the composer
+  /// opens beside it.
+  Offset _createAnchor = Offset.zero;
 
   /// False for the one frame a timed view needs to lay its body out before
   /// [_positionOnNow] can place it; the body paints fully transparent until then.
@@ -207,7 +254,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         }
       });
     }
-    if (!identical(oldWidget.events, widget.events)) {
+    if (!identical(oldWidget.events, widget.events) ||
+        oldWidget.composing != widget.composing ||
+        (oldWidget.canMove == null) != (widget.canMove == null)) {
       _syncEvents();
     }
   }
@@ -215,11 +264,98 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  /// The composer's placeholder tile, rebuilt with the tiles.
+  CalendarEvent? _preview;
+
   void _syncEvents() {
-    _tiles = [for (final event in widget.events) _toTile(event)];
+    final composing = widget.composing;
+    _preview = composing == null ? null : widget.draft?.call(composing);
+    _tiles = [
+      for (final event in widget.events) _toTile(event),
+      if (_preview case final preview?) _toTile(preview),
+    ];
     _allDayRowCache.clear();
     _eventsController.clearEvents();
     _eventsController.addEvents(_tiles);
+  }
+
+  /// The local span of kalender's [event] (it holds UTC instants). A drawn
+  /// span reads as whole days when it runs midnight to midnight (the month
+  /// grid and the all-day strip draw days); a moved one keeps [allDay].
+  CalendarSlot _slotFor(k.KalenderEvent event, {bool? allDay}) {
+    final start = event.start.toLocal();
+    final end = event.end.toLocal();
+    bool midnight(DateTime d) => d.hour == 0 && d.minute == 0 && d.second == 0;
+    final days =
+        allDay ??
+        (widget.mode == CalendarViewMode.month ||
+            (midnight(start) &&
+                midnight(end) &&
+                end.difference(start).inHours >= 23));
+    return CalendarSlot(
+      start: days ? dayKey(start) : start,
+      // kalender ends a day span on the last day's midnight or on the next;
+      // either way Google wants the day after the last one.
+      end: days
+          ? dayKey(
+              end.subtract(const Duration(seconds: 1)),
+            ).add(const Duration(days: 1))
+          : end,
+      allDay: days,
+      anchor: _createAnchor,
+    );
+  }
+
+  /// The event behind kalender's [event], at the times kalender holds (a
+  /// dragged or just-dropped tile has moved before the host confirms it), or
+  /// the [CalendarKalenderHost.draft] for a span being drawn.
+  CalendarEvent? _domainOf(k.KalenderEvent event) {
+    if (event is! _DomainTile) {
+      return widget.draft?.call(_slotFor(event));
+    }
+    final domain = event.event;
+    return event.start == domain.startTime.toUtc() &&
+            event.end == domain.endTime.toUtc()
+        ? domain
+        : domain.copyWith(startTime: event.start, endTime: event.end);
+  }
+
+  /// Tiles for one surface. While a tile is dragged its old place keeps a
+  /// ghost, and where it would land (or the span being drawn) floats above.
+  k.TileComponents _tileParts({required bool dense}) {
+    Widget tile(
+      k.KalenderEvent event, {
+      bool lifted = false,
+      k.KalenderDateTimeRange? range,
+    }) => CalendarEventTile(
+      event: _domainOf(event),
+      now: widget.now,
+      calendarColors: widget.calendarColors,
+      dense: dense,
+      tileRange: dense ? range : null,
+      lifted: lifted,
+    );
+    return k.TileComponents(
+      tileBuilder: (_, event, range) => tile(event, range: range),
+      tileWhenDraggingBuilder: (_, event) =>
+          Opacity(opacity: 0.35, child: tile(event)),
+      dropTargetTile: (_, event) =>
+          IgnorePointer(child: tile(event, lifted: true)),
+    );
+  }
+
+  /// Hands a dropped or stretched tile to [CalendarKalenderHost.onMove], and
+  /// puts it back when the change is refused.
+  Future<void> _moved(k.KalenderEvent from, k.KalenderEvent to) async {
+    final onMove = widget.onMove;
+    if (from is! _DomainTile || onMove == null) {
+      return;
+    }
+    final slot = _slotFor(to, allDay: from.event.isAllDay);
+    if (await onMove(from.event, slot) || !mounted) {
+      return;
+    }
+    setState(_syncEvents);
   }
 
   _DomainTile _toTile(CalendarEvent event) {
@@ -228,7 +364,13 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     if (!end.isAfter(start)) {
       end = start.add(const Duration(minutes: 30));
     }
-    return _DomainTile(start: start, end: end, event: event);
+    final movable = event != _preview && (widget.canMove?.call(event) ?? false);
+    return _DomainTile(
+      start: start,
+      end: end,
+      event: event,
+      interaction: k.EventInteraction.fromCanModify(movable),
+    );
   }
 
   k.ViewConfiguration _buildConfiguration() {
@@ -368,7 +510,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// What the header takes from the timed grid, whatever the strip needs.
   ///
   /// A constant: the strip at its resting size, one row. Everything past that
-  /// hangs over the grid instead of pushing it (see [_FloatingBand]), so the
+  /// hangs over the grid instead of pushing it (see [CalendarFloatingBand]), so the
   /// hour the grid opens on is decided by the time of day and nothing else —
   /// not by how many people put an all-day event in this particular week.
   double get _reservedHeaderHeight => _headerHeight(
@@ -446,10 +588,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       ),
       // Without explicit tile components the all-day header falls back to
       // kalender's default builder, which renders the literal text "Tile".
-      tileComponents: k.TileComponents(
-        tileBuilder: (_, event, tileRange) =>
-            _tile(t, event, dense: true, tileRange: tileRange),
-      ),
+      tileComponents: _tileParts(dense: true),
     );
   }
 
@@ -476,7 +615,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       child: k.KalenderView(
         eventsController: _eventsController,
         kalenderController: _calendarController,
-        interaction: _readOnly,
+        interaction: _interaction,
         components: _components(
           t,
           laneHeight: laneHeight,
@@ -485,10 +624,16 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         ),
         callbacks: k.KalenderCallbacks(
           onEventTapped: (event) {
-            if (event is _DomainTile) {
+            if (event is _DomainTile && event.event != _preview) {
               widget.onOpenEvent(event.event);
             }
           },
+          onEventCreateWithDetail: (event, detail) {
+            _createAnchor = detail.renderBox.localToGlobal(detail.localOffset);
+            return event;
+          },
+          onEventCreated: (event) => widget.onCreate?.call(_slotFor(event)),
+          onEventChanged: _moved,
           // kalender pages independently of the screen's focused date, so the
           // strip would otherwise size itself from a week the user has swiped
           // away from.
@@ -521,8 +666,12 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
                   eventLayoutStrategy: CalendarEventLayoutStrategy(),
                   minimumTileHeight: _minimumTileHeight,
                 ),
-                tileComponents: k.TileComponents(
-                  tileBuilder: (_, event, _) => _tile(t, event, dense: false),
+                tileComponents: _tileParts(dense: false),
+                // Quarter hours: a drawn or moved event lands on times people
+                // book, not on the now line or a ten-minute grid.
+                snapping: const k.KalenderSnapping(
+                  snapIntervalMinutes: 15,
+                  snapToTimeIndicator: false,
                 ),
               ),
             ),
@@ -540,12 +689,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
               // which reads as a random order for a stack of same-length
               // meetings.
               configuration: const k.MonthBodyConfiguration(
-                multiDayLayoutStrategy: _StartSortedMultiDayLayoutStrategy(),
+                multiDayLayoutStrategy: StartSortedMultiDayLayoutStrategy(),
               ),
-              tileComponents: k.TileComponents(
-                tileBuilder: (_, event, tileRange) =>
-                    _tile(t, event, dense: true, tileRange: tileRange),
-              ),
+              tileComponents: _tileParts(dense: true),
             ),
           ),
         ],
@@ -574,7 +720,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       // the summary row, which is the same "+N more" portal the overflow uses.
       maxRows: collapsed ? 0 : _allDayLaneRows,
     );
-    return _FloatingBand(
+    return CalendarFloatingBand(
       reservedHeight: reserved,
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: target, end: target),
@@ -593,7 +739,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             // would be a shadow on nothing.
             boxShadow: height > reserved + 0.5 ? CcElevation.raised : null,
           ),
-          child: _ClippedBand(
+          child: CalendarClippedBand(
             height: height,
             alignment: Alignment.topCenter,
             child: child!,
@@ -702,7 +848,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       // there, the way week view's day labels do. Centring it on the whole band
       // would walk the date down the screen as all-day rows arrived.
       if (widget.mode == CalendarViewMode.day) {
-        return _ClippedBand(
+        return CalendarClippedBand(
           height: _dayLaneMinHeight,
           alignment: Alignment.center,
           child: header,
@@ -800,458 +946,4 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       ),
     );
   }
-
-  Widget _tile(
-    DesignSystemTokens t,
-    k.KalenderEvent event, {
-    required bool dense,
-    k.KalenderDateTimeRange? tileRange,
-  }) {
-    final domain = event is _DomainTile ? event.event : null;
-    final isPast =
-        domain != null && domain.endTime.toLocal().isBefore(widget.now);
-    // Past tiles used to be wrapped in Opacity(0.5). That saveLayers every
-    // event on every frame the calendar paints. The same 50% folded into the
-    // tile's own colors keeps the dim and lets the grid scroll without an
-    // offscreen buffer per event.
-    Color dim(Color color) => isPast
-        ? color.withValues(alpha: (color.a * 0.5).clamp(0.0, 1.0))
-        : color;
-    final status = domain?.status ?? CalendarEventStatus.confirmed;
-    final cancelled = status == CalendarEventStatus.cancelled;
-    // An invitation the user has not responded to yet ("needsAction"). Drawn as
-    // a dashed outline with no fill so it reads as "pending — not yet on your
-    // calendar", distinct from a confirmed (solid) or organiser-tentative block.
-    final unanswered = !cancelled && (domain?.isUnansweredInvitation ?? false);
-    final tentative =
-        !cancelled && !unanswered && status == CalendarEventStatus.tentative;
-    final calColor =
-        (domain == null
-            ? null
-            : widget.calendarColors[calendarKey(
-                domain.accountId,
-                domain.calendarId,
-              )]) ??
-        t.accent;
-
-    // Status drives the tile's treatment so the calendar reports real state
-    // rather than painting every block the same: a soft fill in the calendar's
-    // color for confirmed, a dashed outline for an unanswered invitation, an
-    // outline for tentative, a neutral strikethrough for cancelled.
-    Color fill;
-    // The fill shown while the pointer is over the tile — a touch stronger than
-    // [fill] so hovering gives a clear, consistent "this is interactive" cue.
-    Color hoverFill;
-    Color accentBar;
-    Color titleColor;
-    BoxBorder? border;
-    var dashed = false;
-    if (cancelled) {
-      fill = t.bgSecondary;
-      hoverFill = t.bgSecondaryHover;
-      accentBar = t.borderSecondary;
-      titleColor = t.textTertiary;
-    } else if (unanswered) {
-      fill = const Color(0x00000000);
-      // On hover a faint wash of the calendar color appears behind the dashed
-      // outline, so a pending invitation still reacts to the pointer.
-      hoverFill = calColor.withValues(alpha: 0.10);
-      // The dashed outline (painted below) carries the calendar color, so the
-      // solid accent bar is suppressed.
-      accentBar = const Color(0x00000000);
-      titleColor = t.textSecondary;
-      dashed = true;
-    } else if (tentative) {
-      fill = const Color(0x00000000);
-      hoverFill = calColor.withValues(alpha: 0.10);
-      accentBar = calColor;
-      titleColor = t.textSecondary;
-      border = Border.all(color: calColor.withValues(alpha: 0.6), width: 1);
-    } else {
-      // A soft tint of the calendar color, kept fully opaque (alpha-blended over
-      // the body background rather than laid on as a translucent wash) so the
-      // tint reads consistently over the hour lines and now-indicator behind it.
-      // Hover deepens the tint.
-      fill = Color.alphaBlend(calColor.withValues(alpha: 0.16), t.bgPrimary);
-      hoverFill = Color.alphaBlend(
-        calColor.withValues(alpha: 0.30),
-        t.bgPrimary,
-      );
-      accentBar = calColor;
-      titleColor = t.textPrimary;
-    }
-    fill = dim(fill);
-    hoverFill = dim(hoverFill);
-    accentBar = dim(accentBar);
-    titleColor = dim(titleColor);
-    if (isPast && border != null) {
-      border = Border.all(
-        color: dim(calColor.withValues(alpha: 0.6)),
-        width: 1,
-      );
-    }
-
-    final title = Text(
-      domain?.title ?? '',
-      maxLines: dense ? 1 : 3,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontSize: 11,
-        height: 1.2,
-        fontWeight: FontWeight.w500,
-        color: titleColor,
-        decoration: cancelled ? TextDecoration.lineThrough : null,
-      ),
-    );
-
-    // Dense (month / all-day header) tiles only have room for a compact start
-    // time; the timed body tiles show the full start–end range (24h), matching
-    // the timeline they sit on.
-    final localStart = (domain == null || domain.isAllDay)
-        ? null
-        : domain.startTime.toLocal();
-    // A dense tile is one bar across every day of the event that falls in view,
-    // clipped at the edges of the page. When the event began before this page,
-    // that bar starts on a day the event did not — so its start time would read
-    // as "midnight on Monday" for something that started the previous Thursday.
-    // The bar carries no time at all in that case; the page it starts on shows
-    // it. (Nothing to suppress for the timed body: an event there is on its own
-    // day by definition.)
-    final continues =
-        dense &&
-        localStart != null &&
-        tileRange != null &&
-        localStart.isBefore(tileRange.start);
-    final startLabel = (localStart == null || continues)
-        ? null
-        : DateFormat.Hm().format(localStart);
-    final rangeLabel = localStart == null
-        ? null
-        : '$startLabel–${DateFormat.Hm().format(domain!.endTime.toLocal())}';
-
-    final Widget content = dense
-        ? Row(
-            children: [
-              if (startLabel != null) ...[
-                Text(
-                  startLabel,
-                  style: TextStyle(fontSize: 11, color: dim(t.textTertiary)),
-                ),
-                const SizedBox(width: 4),
-              ],
-              Expanded(child: title),
-            ],
-          )
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              title,
-              if (rangeLabel != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                    rangeLabel,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: dim(cancelled ? t.textTertiary : t.textSecondary),
-                    ),
-                  ),
-                ),
-            ],
-          );
-
-    Widget box = _HoverFillBox(
-      fill: fill,
-      hoverFill: hoverFill,
-      border: border,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(width: 2.5, color: accentBar),
-          Expanded(
-            // Short events give the tile less height than its content needs;
-            // OverflowBox lets the content lay out at its natural size (no
-            // RenderFlex overflow) while the parent Container clips the excess.
-            child: ClipRect(
-              child: OverflowBox(
-                alignment: AlignmentDirectional.topStart,
-                minHeight: 0,
-                maxHeight: double.infinity,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: dense ? 1 : 3,
-                  ),
-                  child: content,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (dashed) {
-      // BoxDecoration has no dashed border, so paint one over the (transparent)
-      // box. Drawn as a foreground painter so it sits above the clipped content.
-      box = CustomPaint(
-        foregroundPainter: _DashedRRectPainter(
-          color: dim(calColor),
-          radius: AppRadii.sm,
-        ),
-        child: box,
-      );
-    }
-
-    // Outer inset (was the Container's margin) so the dashed painter aligns with
-    // the box's rounded rect. The horizontal half-gap also opens a visible seam
-    // between adjacent side-by-side columns so overlapping events read as
-    // distinct tiles rather than one block.
-    final tile = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.5),
-      child: box,
-    );
-
-    return tile;
-  }
-}
-
-/// A band that takes [reservedHeight] from the layout and paints — and stays tappable — at
-/// whatever height its child turns out to be.
-/// This is what makes the all-day strip hover over the timed grid instead of pushing it
-/// down.
-class _FloatingBand extends SingleChildRenderObjectWidget {
-  const _FloatingBand({required this.reservedHeight, required super.child});
-
-  final double reservedHeight;
-
-  @override
-  _RenderFloatingBand createRenderObject(BuildContext context) {
-    return _RenderFloatingBand(reservedHeight);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderFloatingBand renderObject,
-  ) {
-    renderObject.reservedHeight = reservedHeight;
-  }
-}
-
-class _RenderFloatingBand extends RenderProxyBox {
-  _RenderFloatingBand(this._reservedHeight);
-
-  double _reservedHeight;
-  double get reservedHeight => _reservedHeight;
-  set reservedHeight(double value) {
-    if (value == _reservedHeight) {
-      return;
-    }
-    _reservedHeight = value;
-    markNeedsLayout();
-  }
-
-  @override
-  void performLayout() {
-    final child = this.child;
-    if (child == null) {
-      size = constraints.constrain(Size(0, _reservedHeight));
-      return;
-    }
-    // Height-unbounded, so the child settles at its own height rather than
-    // being squeezed into the band's.
-    child.layout(
-      BoxConstraints(
-        minWidth: constraints.minWidth,
-        maxWidth: constraints.maxWidth,
-      ),
-      parentUsesSize: true,
-    );
-    size = Size(child.size.width, _reservedHeight);
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    final child = this.child;
-    if (child == null || !(Offset.zero & child.size).contains(position)) {
-      return false;
-    }
-    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
-      result.add(BoxHitTestEntry(this, position));
-      return true;
-    }
-    return false;
-  }
-
-  /// Claims every point the band paints on, so a press on an empty part of it
-  /// stops there instead of falling through to the grid behind.
-  @override
-  bool hitTestSelf(Offset position) => true;
-}
-
-/// A [height]-tall band whose child is laid out at its natural height and
-/// clipped, rather than squeezed into the band.
-///
-/// The all-day strip is measured by kalender in two passes per frame — once
-/// unbounded, once against the height it settled on — and its page view reports
-/// a placeholder height before it has measured a page, then tweens between
-/// heights afterwards. So for a handful of frames the content is taller than
-/// the band it is going into. Clamped, that is a RenderFlex overflow (and a
-/// visibly squashed row); clipped, it is empty space below a top-aligned strip
-/// that nobody can see missing.
-class _ClippedBand extends StatelessWidget {
-  const _ClippedBand({
-    required this.height,
-    required this.alignment,
-    required this.child,
-  });
-
-  final double height;
-  final Alignment alignment;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: ClipRect(
-        child: OverflowBox(
-          alignment: alignment,
-          minHeight: 0,
-          maxHeight: double.infinity,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-/// The tile body, with a pointer-driven background. Stateful so each tile tracks
-/// its own hover without rebuilding the whole calendar. The fill cross-fades
-/// between [fill] and [hoverFill] (instantly when the platform requests reduced
-/// motion).
-class _HoverFillBox extends StatefulWidget {
-  const _HoverFillBox({
-    required this.fill,
-    required this.hoverFill,
-    required this.border,
-    required this.child,
-  });
-
-  final Color fill;
-  final Color hoverFill;
-  final BoxBorder? border;
-  final Widget child;
-
-  @override
-  State<_HoverFillBox> createState() => _HoverFillBoxState();
-}
-
-class _HoverFillBoxState extends State<_HoverFillBox> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final reducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: reducedMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: _hovered ? widget.hoverFill : widget.fill,
-          borderRadius: AppRadii.brSm,
-          border: widget.border,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-/// Paints a dashed rounded-rectangle outline, inset by half the stroke so it is
-/// not clipped at the edges. Used for unanswered invitations, which have no
-/// fill of their own.
-class _DashedRRectPainter extends CustomPainter {
-  const _DashedRRectPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  static const double _strokeWidth = 1;
-  static const double _dashLength = 4;
-  static const double _gapLength = 3;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth;
-    const inset = _strokeWidth / 2;
-    final outline = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            inset,
-            inset,
-            size.width - _strokeWidth,
-            size.height - _strokeWidth,
-          ),
-          Radius.circular(radius),
-        ),
-      );
-    for (final metric in outline.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final end = (distance + _dashLength).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(distance, end), paint);
-        distance += _dashLength + _gapLength;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedRRectPainter old) =>
-      old.color != color || old.radius != radius;
-}
-
-/// Month-cell packing that sorts by start time instead of duration.
-///
-/// kalender's default [k.MultiDayLayoutStrategy.byDuration] puts the longest
-/// events first, which reads as a random order for a stack of same-length
-/// meetings.
-class _StartSortedMultiDayLayoutStrategy extends k.MultiDayLayoutStrategy {
-  const _StartSortedMultiDayLayoutStrategy();
-
-  @override
-  k.MultiDayLayoutFrame generateFrame({
-    required k.FloatingDateTimeRange visibleRange,
-    required List<k.KalenderEvent> events,
-    required TextDirection textDirection,
-    required k.Location? location,
-    required k.MultiDayLayoutFrameCache? cache,
-  }) {
-    return k.defaultMultiDayFrameGenerator(
-      visibleRange: visibleRange,
-      events: events,
-      textDirection: textDirection,
-      location: location,
-      cache: cache,
-      eventComparator: (a, b) => a.start.compareTo(b.start),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) => other.runtimeType == runtimeType;
-
-  @override
-  int get hashCode => (_StartSortedMultiDayLayoutStrategy).hashCode;
 }

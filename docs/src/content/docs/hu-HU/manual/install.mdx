@@ -2,7 +2,7 @@
 title: Telepítés
 description: Használja a Control Centert böngészőben, vagy telepítse az asztali alkalmazást, állítson be egy ügynök-háttérrendszert, és válassza ki, hol fusson a szervere.
 slug: hu-HU/kezikonyv/telepites
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 A Control Center kétféleképpen fut: **webalkalmazásként** a
@@ -191,24 +191,19 @@ A GitHub-hitelesítő adat **az Öné, és a szerveren él**, a felhasználói a
 kötve — nem a kliens operációs rendszerének kulcstartójában. Minden eszköz, ahonnan
 bejelentkezik, ugyanazt használja, és más tag nem olvashatja.
 
-Ha a szerveren van regisztrált GitHub App
-([GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)), a
-**Beállítások → Munkaterület → Profil és identitás → Kódtárhely** felajánlja a
-**Bejelentkezés ezzel: GitHub** lehetőséget (a szerver által futtatott
-eszközfolyamat).
-Egyébként illesszen be egy személyes hozzáférési tokent:
+A GitHub kizárólag bejelentkezéssel működik: a **Beállítások → Munkaterület →
+Profil és identitás → Kódtárhely** a **Bejelentkezés: GitHub** lehetőséget
+kínálja, és nincs beillesztendő token. A bejelentkezés a szerver saját GitHub
+Appján ([GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/))
+vagy a Control Center Connecten keresztül fut, aszerint, hogy a szerver
+tulajdonosa melyiket választotta. A szerver saját alkalmazásával a böngésző
+magától visszatér a szerverre; a Connecten keresztül beírja a böngésző által
+mutatott 8 karakteres kódot, vagy hagyja, hogy a böngésző megnyissa a Control
+Centert. Lásd: [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/).
 
-- Klasszikus: `repo` és `read:org`
-- Finomhangolt: **Contents** és **Pull requests** (read and write), **Checks** és **Actions** (read)
-
-Hozzon létre egyet a
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
-oldalon. A szerver a tokent a tárolt állapotában vizsgálja meg a fióknévre, így a sor
-azt írhatja: „bejelentkezve mint …”; egy sikertelen vizsgálat is elmenti a tokent, és
-egy elírás vagy hiányzó hatókör később sikertelen kérésként jelenik meg.
-
-A bevezetési folyamat első lépése ez a kapcsolat. Utána ugyanazon a kártyán cserélheti
-le vagy törölheti. A GitLab és a Bitbucket ugyanezt a kártyát használja; lásd:
+A bevezetés kéri ezt a kapcsolatot. Utána ugyanazon a kártyán jelentkezhet be
+újra vagy választhatja le. A GitLab és a Bitbucket ugyanezt a kártyát használja
+beillesztett személyes tokennel; lásd:
 [Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/).
 
 ## Válassza ki, hol fusson a szerver

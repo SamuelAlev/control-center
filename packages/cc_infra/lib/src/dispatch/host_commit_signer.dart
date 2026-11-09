@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/git_global_config.dart';
 import 'package:meta/meta.dart';
 
@@ -77,6 +79,18 @@ class HostCommitSigner implements CommitSigner {
   final Map<String, String> _env;
   final List<TrustedSshSigner> _signers;
 
+  /// The owner's signer is the one child that gets the SSH agent: the
+  /// allowlist strips `SSH_AUTH_SOCK` from every other spawn.
+  Map<String, String> get _signerEnvironment {
+    final socket = _env['SSH_AUTH_SOCK'];
+    return ChildEnvironment.build(
+      _env,
+      overrides: {
+        if (socket != null && socket.isNotEmpty) 'SSH_AUTH_SOCK': socket,
+      },
+    );
+  }
+
   @override
   Future<String> sign(List<int> payload) async {
     final format = await readGlobalGitConfig('gpg.format', environment: _env);
@@ -116,16 +130,21 @@ class HostCommitSigner implements CommitSigner {
       } else {
         keyFile = _expandHome(key);
       }
-      final process = await Process.start(program, [
-        '-Y',
-        'sign',
-        '-n',
-        'git',
-        '-f',
-        keyFile,
-        if (literal != null) '-U',
-        buffer.path,
-      ], environment: _env);
+      final process = await ChildProcess.start(
+        program,
+        [
+          '-Y',
+          'sign',
+          '-n',
+          'git',
+          '-f',
+          keyFile,
+          if (literal != null) '-U',
+          buffer.path,
+        ],
+        environment: _signerEnvironment,
+        inheritBase: false,
+      );
       unawaited(process.stdin.close());
       final stderr = process.stderr.transform(utf8.decoder).join();
       unawaited(process.stdout.drain<void>());
@@ -200,7 +219,7 @@ class HostCommitSigner implements CommitSigner {
     if (!Platform.isMacOS) {
       return true;
     }
-    final result = await Process.run('/usr/bin/codesign', [
+    final result = await ChildProcess.run('/usr/bin/codesign', [
       '--verify',
       '--strict',
       '-R=anchor apple generic and certificate leaf[subject.OU] = "$teamId"',

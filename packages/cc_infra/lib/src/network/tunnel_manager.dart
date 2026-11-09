@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:crypto/crypto.dart';
 
 /// Managed tunnel providers supported by [TunnelManager] (PRD 15 §5 — "Share
@@ -389,7 +390,12 @@ class TunnelManager {
       final startedAt = DateTime.now();
       final Process process;
       try {
-        process = await Process.start(binary, args);
+        // cloudflared reads its operator config from `TUNNEL_*`.
+        process = await ChildProcess.start(
+          binary,
+          args,
+          inheritPrefixes: const ['TUNNEL_'],
+        );
       } on ProcessException catch (e) {
         _restarts++;
         _setStatus(
@@ -577,7 +583,7 @@ class TunnelManager {
     }
     final ProcessResult result;
     try {
-      result = await Process.run(binary, const ['status', '--json']);
+      result = await ChildProcess.run(binary, const ['status', '--json']);
     } on ProcessException catch (e) {
       _tailscaleDown('failed to run tailscale status: ${e.message}');
       return;

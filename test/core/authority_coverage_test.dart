@@ -68,7 +68,7 @@ void main() {
     const selfService = <String>{
       // Self-scoped to ctx.userId: personal preferences/credentials/identity.
       'prefs.getAll', 'prefs.set',
-      'credentials.setGitHubToken', 'credentials.setForgeToken',
+      'credentials.setForgeToken',
       'credentials.clearForgeToken', 'credentials.setTicketingToken',
       'credentials.clearTicketingToken',
       'identity.me', 'users.updateProfile', 'users.markOnboardingFinished',
@@ -82,8 +82,11 @@ void main() {
       'newsfeed.refreshFeed', 'newsfeed.seedDefaultFeedsIfEmpty',
       'newsfeed.setArticleRead', 'newsfeed.setArticleSaved',
       'newsfeed.setFeedEnabled',
-      // Caller-owned sign-in, forge/ticket status, and read-only harness listings.
-      'oauth.begin', 'oauth.providers', 'oauth.status',
+      // Caller-owned sign-in (the person is always ctx.userId; a workspace
+      // grant lane checks membership/admin in the handler), forge/ticket
+      // status, and read-only harness listings.
+      'oauth.lanes', 'oauth.begin', 'oauth.complete', 'oauth.status',
+      'oauth.connections', 'oauth.disconnect',
       'providers.list', 'providers.listModels',
       'forge.capabilities', 'forge.listConnections', 'forge.testConnection',
       'ticketing.listConnections', 'github.currentUser', 'github.teamProfile',
@@ -101,7 +104,7 @@ void main() {
       'openai.serviceStatus', 'serviceStatus.getAll', 'sandbox.detect',
       'changelog.get',
       'ide.detectEditors', 'process.detect', 'fonts.list',
-      'gif.search', 'gif.trending', 'demo.repoStars',
+      'demo.repoStars',
       'models.voiceCatalog',
       'models.catalog', 'models.refreshCatalog',
       'newsfeed.filterLists.state', 'newsfeed.filterLists.blocklist',

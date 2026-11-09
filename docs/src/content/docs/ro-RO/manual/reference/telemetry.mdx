@@ -2,7 +2,7 @@
 title: Statistici de utilizare
 description: Ce înregistrează Control Center când statisticile de utilizare sunt pornite, cine decide și ce nu se trimite niciodată.
 slug: ro-RO/manual/referinta/statistici-de-utilizare
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center poate trimite **evenimente de utilizare pseudonimizate** către o instanță [Umami](https://umami.is). Statisticile de utilizare sunt **oprite până când operatorul serverului le pornește**. Setarea aparține serverului și se aplică fiecărui client conectat la el: aplicația desktop, aplicația web, telefonul și serverul însuși.
@@ -95,9 +95,12 @@ Fiecare navigare înregistrează o vizualizare de pagină al cărei URL este **�
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | O rulare eșuată a fost reîncercată |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | O rulare a fost anulată din aplicație |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Un pas aflat în execuție a fost oprit forțat |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | O încercare de autentificare în calendar s-a încheiat |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (adevărat când autentificarea a rulat prin Control Center Connect, nu prin clientul Google propriu al serverului), `duration_s` | O încercare de autentificare în calendar s-a încheiat |
 | `calendar_disconnected` | `workspace_id` | Un cont de calendar a fost deconectat |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | S-a răspuns la o invitație |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (număr), `conference` | Un eveniment a fost programat în Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Un eveniment a fost mutat sau redimensionat pe grila calendarului |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Un eveniment a fost șters din Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | A pornit o înregistrare dintr-un eveniment din calendar |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | A fost deschis un link de întâlnire (telefon). Din link se deduce doar furnizorul |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | A fost folosit centrul de notificări |

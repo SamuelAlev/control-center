@@ -2,7 +2,7 @@
 title: Driftsättning och klienter
 description: Hur Control Centers arkitektur med tunna klienter skiljer en headless-server från klienterna för dator, webb och mobil.
 slug: sv-SE/handbok/koncept/driftsattning
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center är inte ett enda program. Det är en **arkitektur med tunna
@@ -200,7 +200,7 @@ jobb.
 | Agentkörning                                   | kör den (eller leasar ut den) | utför leasade jobb      | —                | —                               |
 | Gränssnittsrendering                           | —                          | —                          | full             | full (webb) / mestadels läsning (telefon) |
 | Mötesinspelning (mikrofon + mötesljud)         | —                          | —                          | nativ inspelning | endast webb, via skärmdelningsljud |
-| Kalender-OAuth (Google)                        | lagrar tokens              | —                          | —                | —                               |
+| Leverantörsinloggningar (GitHub, Google, Linear) | kör och lagrar dem       | —                          | —                | —                               |
 
 De två nivåerna sandlådar inte på samma sätt. `cc_server` kör de körningar den
 utför själv i värdens OS-sandlåda där en backend finns – Seatbelt på macOS,
@@ -212,6 +212,13 @@ begränsat av leasens miljö och den worktree den fick. Att leasa ut arbete
 flyttar alltså körningen utanför sandlådan även på en värd som har en. Se
 [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för vad
 som begränsar en körning i varje fall.
+
+Leverantörsinloggningar slutförs på servern, via dess egna appar eller via
+[Control Center Connect](/sv-SE/handbok/referens/connect/), en valfri tjänst som
+kör leverantörens OAuth för servrar utan egna appar. Connect lämnar tillbaka en
+autentiseringsuppgift som bara den här servern kan använda och ser aldrig
+innehållet i repos. Klienter öppnar bara webbläsaren och skickar, vid en
+inloggning via Connect, tillbaka koden den visar.
 
 Mötesinspelning sker i en klient eftersom den behöver en mikrofon och mötets
 ljud – en server i en garderob kan inte spela in ditt samtal. Inspelningen

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
 
 /// One recorded attempt plus the workspace change it produced.
@@ -142,7 +143,7 @@ class ReplayEvaluationBackend implements EvaluationBackendPort {
       await patch.writeAsString(
         recording.diff.endsWith('\n') ? recording.diff : '${recording.diff}\n',
       );
-      final result = await Process.run('git', [
+      final result = await IsolatedGit.run([
         '-C',
         workspaceRoot,
         'apply',

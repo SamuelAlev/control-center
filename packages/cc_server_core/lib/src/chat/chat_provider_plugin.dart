@@ -37,6 +37,24 @@ class ChatAppContext {
   final Future<String> Function() appId;
 }
 
+/// What an adapter needs from the server while it runs.
+///
+/// A connection whose credentials change on their own — a Connect grant
+/// rotates its seal on every renewal — saves through [persist] (which does
+/// not restart the adapter), and one whose grant is gone for good reports it
+/// through [onRejected] (which tears the connection down out of band).
+class ChatAdapterContext {
+  /// Creates a [ChatAdapterContext].
+  const ChatAdapterContext({required this.persist, required this.onRejected});
+
+  /// Stores a changed connection in place of the running one, without a
+  /// restart.
+  final Future<void> Function(ChatBridgeConnection connection) persist;
+
+  /// Reports that the connection's grant can never work again.
+  final void Function(String reason) onRejected;
+}
+
 /// Creating and reshaping the provider-side app from Control Center.
 ///
 /// Optional by design: this is the one part of the feature that is genuinely
@@ -90,7 +108,14 @@ abstract interface class ChatProviderPlugin {
 
   /// Builds the adapter that serves [connection]. The connector owns its
   /// lifecycle.
-  ChatProviderAdapter createAdapter(ChatBridgeConnection connection);
+  ChatProviderAdapter createAdapter(
+    ChatBridgeConnection connection,
+    ChatAdapterContext context,
+  );
+
+  /// Gives up whatever [connection] holds upstream (uninstalling a shared app
+  /// from the team) when it is disconnected. Best effort; never throws.
+  Future<void> release(ChatBridgeConnection connection);
 
   /// Provider-side app management for [context], or null when unsupported.
   ChatAppManager? appManager(ChatAppContext context);

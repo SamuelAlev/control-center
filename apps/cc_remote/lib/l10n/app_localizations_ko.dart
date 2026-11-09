@@ -2508,6 +2508,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get credentialsWaitingForLogin => '브라우저에서 승인 대기 중…';
 
   @override
+  String get credentialsConnectCodePrompt => '브라우저에 표시된 코드를 입력하세요';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      '로그인 코드가 아닌 것 같습니다. 코드는 영문자와 숫자 8자입니다.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      '이 코드는 이 로그인과 일치하지 않습니다. 확인한 뒤 다시 시도하세요.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '이 서버에는 아직 $provider 로그인이 설정되지 않았습니다.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      '이 서버의 로그인 콜백 주소는 휴대폰에서 안전하게 접근할 수 없습니다. 데스크톱 앱에서 로그인하거나 서버 소유자에게 공개 HTTPS 주소를 설정해 달라고 요청하세요.';
+
+  @override
   String get credentialsLoginTimedOut => '로그인 시간이 만료되었습니다. 다시 로그인해 보세요.';
 
   @override
@@ -2525,10 +2545,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => '로그인 완료';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      '휴대전화에서 이 서버의 브라우저 콜백에 안전하게 접근할 수 없습니다. 서버 소유자에게 공개 HTTPS 콜백을 설정해 달라고 요청하거나 대신 토큰을 추가하세요.';
 
   @override
   String get credentialsUpdateToken => '토큰 업데이트';

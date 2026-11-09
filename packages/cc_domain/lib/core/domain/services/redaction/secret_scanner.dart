@@ -81,6 +81,21 @@ class SecretScanner {
     _SecretPattern('Google API key', RegExp(r'\bAIza[0-9A-Za-z_-]{20,}')),
     _SecretPattern('AWS access key', RegExp(r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b')),
     _SecretPattern('GitHub token', RegExp(r'\bgh[pousr]_[A-Za-z0-9_]{20,}')),
+    _SecretPattern('GitHub token', RegExp(r'\bgithub_pat_[A-Za-z0-9_]{22,}')),
+    _SecretPattern(
+      'Slack token',
+      RegExp(r'\b(?:xox[abeoprs]|xoxe\.xox[abprs]|xapp)-[A-Za-z0-9-]{8,}'),
+    ),
+    _SecretPattern(
+      'Linear token',
+      RegExp(r'\blin_(?:api|oauth)_[A-Za-z0-9]{16,}'),
+    ),
+    _SecretPattern(
+      'Google OAuth token',
+      RegExp(
+        r'\bya29\.[A-Za-z0-9._-]{20,}|(?<![A-Za-z0-9/:._-])1//[A-Za-z0-9_-]{20,}',
+      ),
+    ),
     _SecretPattern(
       'private key',
       RegExp(r'-----BEGIN [A-Z ]*PRIVATE KEY-----'),

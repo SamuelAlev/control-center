@@ -2,7 +2,7 @@
 title: Liên kết tài khoản Slack của bạn
 description: Chứng minh một danh tính Slack là của bạn để agent hành động dựa trên tin nhắn của bạn và công việc của bạn được ghi nhận cho bạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Hướng dẫn này chỉ cho bạn cách liên kết danh tính chat của mình với người dùng
@@ -24,37 +24,56 @@ luồng Slack đó, giải thích cách liên kết. Không có gì được đi
 
 ## Liên kết bằng mã
 
+Liên kết cần cả hai phía: gửi mã từ Slack chứng minh tài khoản Slack, còn xác nhận
+trong Control Center chứng minh tài khoản đó là của bạn.
+
 1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** và cuộn đến thẻ
    **Tài khoản chat đã liên kết**
-2. Trong mục Slack, nhấn **Liên kết tài khoản Slack của tôi**
-3. Sao chép lệnh mà nó hiển thị, ví dụ:
+2. Trong mục Slack, nhấn **Liên kết tài khoản Slack của tôi**. Hộp thoại hiển thị một
+   mã dùng một lần, ví dụ:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Trong Slack, gửi lệnh đó cho bot — tin nhắn trực tiếp (DM) là nơi dễ nhất
-5. Bot xác nhận người dùng Control Center mà bạn giờ đã liên kết, và hộp thoại bạn
-   để mở cũng cập nhật để báo điều đó cùng lúc — bạn không phải đóng nó rồi mở lại
-   để xem
+3. Trong Slack, gửi mã đó cho bot trong **tin nhắn trực tiếp**: chỉ mình mã, không kèm
+   gì khác
+4. Bot trả lời "Got it. Confirm this Slack account in Control Center to finish linking."
+   và hộp thoại bạn để mở hiển thị hồ sơ Slack đã gửi mã: tên và mã thành viên Slack
+   của họ
+5. Nếu đó là tài khoản của bạn, nhấn **Xác nhận**. Liên kết được tạo, hộp thoại báo
+   như vậy và bot xác nhận trong cùng tin nhắn trực tiếp
+6. Nếu không phải của bạn, nhấn **Từ chối**. Không có gì được liên kết và mã ngừng hoạt
+   động; nhấn **Lấy mã mới** để thử lại
+
+Đóng hộp thoại không làm mất một yêu cầu liên kết. Một mã đến sau sẽ chờ ở dòng
+**Liên kết tài khoản Slack của tôi** trên trang hồ sơ của bạn, với cùng **Xác nhận**
+và **Từ chối**.
+
+Vì sao có bước xác nhận: một mã bị người khác đọc trộm và gửi từ tài khoản Slack của
+họ sẽ khiến tài khoản đó hành động thay bạn. Chỉ bạn mới xác nhận được, và chỉ đúng
+hồ sơ đã gửi mã.
 
 Mã này:
 
 - Chỉ dùng được một lần và hết hạn **15 phút** sau khi được tạo
 - Luôn được tạo cho _bạn_, không bao giờ cho đồng đội
+- Chỉ dùng được trong tin nhắn trực tiếp với bot. Trong kênh, nó chỉ là một tin nhắn thường
+- Chỉ có thể được nhận bởi một thành viên đầy đủ của không gian Slack nơi bot được cài
+  đặt, không phải khách hay người từ một tổ chức khác
 - Thay thế mọi mã bạn đang giữ, nên nhấn nút lần nữa sẽ vô hiệu hóa mã trước đó
 - Chỉ tồn tại trong bộ nhớ, nên việc khởi động lại máy chủ sẽ vô hiệu hóa mọi mã
   còn hiệu lực — hãy nhấn nút lần nữa
 
-Một mã không xác định, đã hết hạn hoặc được tạo cho một không gian làm việc khác
-đều thất bại theo cùng một cách không thể phân biệt: "mã đó không hợp lệ (hoặc đã
-hết hạn)".
+Một mã không xác định, đã hết hạn, đã bị từ chối hoặc được tạo cho một không gian làm
+việc khác đều thất bại theo cùng một cách không thể phân biệt: "That code is not valid
+(or has expired)."
 
 ## Liên kết tự động qua email
 
-Nếu hồ sơ Slack của bạn mang một email đã xác minh khớp với một người dùng Control
-Center **đã là thành viên của không gian làm việc này**, cầu nối sẽ liên kết bạn
-ngay lần đầu bạn trò chuyện với nó. Không cần mã.
+Nếu hồ sơ Slack của bạn mang một email đã được xác nhận khớp với email đã xác minh của
+một người dùng Control Center **đã là thành viên của không gian làm việc này**, cầu nối
+sẽ liên kết bạn ngay lần đầu bạn trò chuyện với nó. Không cần mã.
 
 Cả hai nửa đều quan trọng: việc khớp email chứng minh danh tính, nhưng chỉ tư cách
 thành viên mới cấp quyền truy cập, nên một người lạ có email tình cờ tồn tại trên
@@ -75,9 +94,9 @@ Trạng thái của riêng bạn nằm trên trang hồ sơ của bạn: dòng *
 Slack của tôi** hiển thị "Đã liên kết với _your-slack-id_" sau khi bạn đã liên kết
 và nhắc bạn liên kết khi bạn chưa liên kết.
 
-Danh sách thành viên là một đăng ký trực tiếp, vì thay đổi xảy ra ở phía bên kia —
-bạn gõ mã trong Slack, nên không yêu cầu nào từ ứng dụng có thể mang câu trả lời
-trở lại.
+Danh sách thành viên và việc xác nhận đều là đăng ký trực tiếp, vì thay đổi xảy ra ở
+phía bên kia: bạn gửi mã trong Slack, nên không yêu cầu nào từ ứng dụng có thể mang
+câu trả lời trở lại.
 
 ## Hủy liên kết
 
@@ -105,11 +124,16 @@ quản trị viên mời bạn; xem [Đa người dùng — danh tính, tư các
 Các vai trò `viewer` và `guest` không thể bắt đầu công việc. Quản trị viên phải nâng
 vai trò của bạn lên `member` hoặc cao hơn.
 
-### Lệnh slash không được nhận diện
+### Bot báo mã không hợp lệ
 
-Kiểm tra rằng lệnh slash tồn tại trong Slack và rằng bạn đang gửi đúng lệnh mà hộp
-thoại cài đặt đã hiển thị cho bạn — quản trị viên có thể đã đổi tên lệnh, khi đó
-hộp thoại sẽ hiển thị tên hiện tại.
+Mã đã hết hạn, đã được dùng, đã bị từ chối, hoặc đã bị thay bằng mã mới hơn. Nhấn
+**Liên kết tài khoản Slack của tôi** lần nữa và gửi mã mới.
+
+### Bot coi mã của tôi là một yêu cầu
+
+Bạn đã gửi nó trong một kênh, hoặc tài khoản Slack của bạn đã được liên kết. Mã chỉ
+được nhận trong tin nhắn trực tiếp, và một tin nhắn có dạng mã từ một tài khoản đã liên
+kết là một yêu cầu thông thường.
 
 ## Hướng dẫn liên quan
 

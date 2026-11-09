@@ -2,16 +2,16 @@
 title: Mapa tras
 description: Wszystkie trasy rejestrowane przez Control Center wraz z ich ekranami i parametrami zapytania.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/mapa-tras
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Powłoka aplikacji
 
-Powłoka aplikacji (`ControlCenterLayout`) opakowuje każdą trasę wewnątrz obszaru roboczego przez `ShellRoute`. **Każde miejsce docelowe w powłoce ma prefiks obszaru roboczego — `/workspaces/:workspaceId/…` — a identyfikator obszaru roboczego w adresie URL jest jedynym źródłem prawdy o aktywnym obszarze roboczym.** Tylko widoki sprzed kontekstu nie mają prefiksu: `/splash`, `/onboarding`, `/signed-out` oraz samo `/workspaces` (wybór obszaru roboczego) — wszystkie na pełnym ekranie i poza powłoką.
+Powłoka aplikacji (`ControlCenterLayout`) opakowuje każdą trasę wewnątrz obszaru roboczego przez `ShellRoute`. **Każde miejsce docelowe w powłoce ma prefiks obszaru roboczego — `/workspaces/:workspaceId/…` — a identyfikator obszaru roboczego w adresie URL jest jedynym źródłem prawdy o aktywnym obszarze roboczym.** Tylko widoki sprzed kontekstu nie mają prefiksu: `/splash`, `/onboarding` oraz samo `/workspaces` (wybór obszaru roboczego) — wszystkie na pełnym ekranie i poza powłoką.
 
 Brama jest domknięta, gdy **dla zalogowanego użytkownika** połączono co najmniej jedno forge i istnieje co najmniej jeden obszar roboczy.
 
-Brak poświadczenia i brak konfiguracji to różne ekrany, a rozstrzyga o tym `users.onboarding_finished_at` odczytane z własnego `identity.me` wywołującego — nigdy „obszary robocze istnieją”, co jest błędne w chwili, gdy ktoś zostanie zaproszony do obszaru roboczego, którego nigdy nie utworzył. Gdy nie połączono żadnego forge, konto, które ukończyło onboarding, trafia do `/signed-out`, aby ponownie się uwierzytelnić; konto, które go nie ukończyło, trafia do `/onboarding`. Dopóki flaga pozostaje nieznana, strażnik trzyma ekran startowy, zamiast zgadywać, ponieważ nigdy nie przekierowuje z powrotem poza onboarding.
+Brak poświadczenia i brak konfiguracji są traktowane inaczej, a rozstrzyga o tym `users.onboarding_finished_at` odczytane z własnego `identity.me` wywołującego — nigdy „obszary robocze istnieją”, co jest błędne w chwili, gdy ktoś zostanie zaproszony do obszaru roboczego, którego nigdy nie utworzył. Gdy nie połączono żadnego forge, konto, które ukończyło onboarding, pozostaje w aplikacji: powłoka obszaru roboczego pokazuje ostrzeżenie z linkiem do **Ustawienia → Obszar roboczy → Profil i tożsamość**, gdzie znajduje się logowanie. Konto, które go nie ukończyło, trafia do `/onboarding`. Dopóki flaga pozostaje nieznana, strażnik trzyma ekran startowy, zamiast zgadywać, ponieważ nigdy nie przekierowuje z powrotem poza onboarding.
 
 ## Trasy bez prefiksu
 
@@ -19,7 +19,6 @@ Brak poświadczenia i brak konfiguracji to różne ekrany, a rozstrzyga o tym `u
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Ekran startowy, który rozstrzyga bramę onboardingu |
 | `/onboarding`              | Połącz forge, utwórz obszar roboczy albo dołącz do niego, sandbox, domyślny adapter, a następnie głos. Krok z obszarem roboczym jest pomijany, gdy konto już do niego należy |
-| `/signed-out`              | Ponowne uwierzytelnienie: ta sama karta połączeń z forge, którą renderują Ustawienia, bez paska kroków i przycisku kontynuowania — router wychodzi sam, gdy forge się zgłosi |
 | `/workspaces`              | Lista i wybór obszarów roboczych                 |
 | `/workspaces/:workspaceId` | Przekierowuje do `/workspaces/:workspaceId/inbox` |
 

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Foreground-process title detection for server-hosted terminal PTYs.
 ///
 /// A bare `zsh -il` never retitles its terminal while a command runs — OSC 0/2
@@ -134,7 +136,8 @@ class TerminalForegroundTracker {
 /// [runProcess] is injectable for tests and defaults to [Process.run].
 Future<String?> sampleForegroundTitle(
   TerminalForegroundTracker tracker, {
-  Future<ProcessResult> Function(String, List<String>) runProcess = Process.run,
+  Future<ProcessResult> Function(String, List<String>) runProcess =
+      ChildProcess.run,
 }) async {
   if (Platform.isWindows) {
     return null;

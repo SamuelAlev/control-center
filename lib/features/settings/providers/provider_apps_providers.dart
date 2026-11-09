@@ -1,5 +1,26 @@
+import 'package:cc_data/cc_data.dart' show RemoteGitHubAppSetup;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// How complete an own provider app is, as the server judges it.
+enum ProviderAppState {
+  /// Nothing configured: the lane may use Connect.
+  none,
+
+  /// Some fields set, others missing: a setup error that never falls back to
+  /// Connect.
+  partial,
+
+  /// Ready.
+  complete;
+
+  /// Parses a wire value; [none] for anything unknown.
+  static ProviderAppState fromWire(Object? wire) => switch (wire) {
+    'partial' => partial,
+    'complete' => complete,
+    _ => none,
+  };
+}
 
 /// One provider app's configuration as the server reports it.
 ///
@@ -18,7 +39,8 @@ class ProviderAppStatusView {
     this.hasApiKey = false,
     this.canSignIn = false,
     this.canActAsServer = false,
-    this.redirectUri = '',
+    this.state = ProviderAppState.none,
+    this.redirectUris = const [],
     this.installations = const [],
     this.error = '',
   });
@@ -35,7 +57,11 @@ class ProviderAppStatusView {
         hasApiKey: json['has_api_key'] as bool? ?? false,
         canSignIn: json['can_sign_in'] as bool? ?? false,
         canActAsServer: json['can_act_as_server'] as bool? ?? false,
-        redirectUri: json['redirect_uri'] as String? ?? '',
+        state: ProviderAppState.fromWire(json['state']),
+        redirectUris: [
+          for (final uri in (json['redirect_uris'] as List? ?? const []))
+            if (uri is String && uri.isNotEmpty) uri,
+        ],
         installations: [
           for (final entry
               in (json['installations'] as List? ?? const [])
@@ -45,7 +71,7 @@ class ProviderAppStatusView {
         error: json['error'] as String? ?? '',
       );
 
-  /// The provider's wire id (`github`, `linear`).
+  /// The provider's wire id (`github`, `google`, `linear`).
   final String provider;
 
   /// The GitHub App's numeric id; empty for providers that have none.
@@ -64,7 +90,7 @@ class ProviderAppStatusView {
   /// Whether an OAuth client secret is stored.
   final bool hasClientSecret;
 
-  /// Whether a server-level API key is stored.
+  /// Whether a server-level API key is stored (Linear's service key).
   final bool hasApiKey;
 
   /// Whether this provider can run a user sign-in.
@@ -73,8 +99,12 @@ class ProviderAppStatusView {
   /// Whether the server can act as itself on this provider.
   final bool canActAsServer;
 
-  /// The callback URL to register with the provider, verbatim.
-  final String redirectUri;
+  /// How complete the app is.
+  final ProviderAppState state;
+
+  /// The own-mode callback URLs to register with the provider, verbatim.
+  /// Linear lists two: the personal lane and the automation actor.
+  final List<String> redirectUris;
 
   /// Accounts the app is installed on, after a test.
   final List<String> installations;
@@ -123,6 +153,16 @@ Future<void> saveProviderApp(
   });
   ref.invalidate(providerAppsProvider);
 }
+
+/// The one-time page that creates this server's own GitHub App from a
+/// manifest ("Create my GitHub App"), under [organization] when given. Its
+/// result lands in the GitHub row.
+Future<String> beginGitHubAppManifest(
+  WidgetRef ref, {
+  String organization = '',
+}) => RemoteGitHubAppSetup(
+  ref.read(rpcClientProvider),
+).beginManifest(organization: organization);
 
 /// Asks the provider whether the stored credentials actually work, and
 /// refreshes the card with the verdict.

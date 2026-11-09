@@ -1,0 +1,136 @@
+---
+title: Control Center Connect کا حوالہ
+description: Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا، تین modes، install identity، sealed credentials، configuration پر اعتماد، اور ہر setting، operation اور status code۔
+slug: ur-PK/ہدایت-نامہ/حوالہ/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ ایک سرور یا تو Control Center کے hosted Connect کو استعمال کرتا ہے، یا اس Connect کو جسے اس کی تنظیم چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا کوئی نہیں۔ انتخاب **Settings → Server → Single sign-on → Control Center Connect** میں، `cc_server connect` کمانڈ میں، یا `CC_CONNECT_URL` میں ہوتا ہے۔
+
+## Lanes
+
+**Use my own apps** کے تحت (یا کسی کے انتخاب سے پہلے) ایک lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل طور پر configured ہو؛ ورنہ وہ unavailable ہے۔ Control Center's apps یا custom Connect کے ساتھ، Connect وہ ہر lane چلاتا ہے جو وہ فراہم کرتا ہے: سرور کی اپنی apps محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں، نہ sign-ins کے لیے، نہ سرور automation کے لیے، نہ اس status کے لیے جو سرور رپورٹ کرتا ہے۔ workspace کی اپنی app ہر mode میں فوقیت رکھتی ہے۔
+
+| Lane         | اپنی app کی ضرورت                                  | Connect کے ذریعے                                              |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
+| `github`     | App id، private key، client id اور client secret   | لوگ مشترکہ GitHub App میں sign in کرتے ہیں                     |
+| `google`     | Client id اور client secret                        | لوگ Google Calendar جوڑتے ہیں                                   |
+| `linear`     | Client id                                          | لوگ Linear میں sign in کرتے ہیں                                 |
+| `linear_app` | Client id                                          | workspace admin Linear app actor جوڑتا ہے                       |
+| `slack`      | workspace کی اپنی Slack app کنکشن                  | workspace admin Slack کو مشترکہ Slack app سے جوڑتا ہے            |
+| `klipy`      | `KLIPY_APP_KEY`                                    | GIF search، Connect کے ذریعے proxy ہوتی ہے                       |
+
+جزوی طور پر configured اپنی app اس کی lane کو error بنا دیتی ہے، کبھی خاموشی سے Connect کی طرف fall back نہیں ہوتی۔ جو workspace اپنی GitHub App استعمال کرتا ہے (**Settings → Workspace → General → GitHub identity**) وہ GitHub کے لیے کبھی Connect سے نہیں گزرتا۔ اور جو workspace اپنی Google، Linear یا Klipy app استعمال کرتا ہے (**Settings → Workspace → General → Provider apps**) وہ اس provider کے لیے کبھی سرور کی app یا Connect سے نہیں گزرتا۔ Connect کا انتخاب بدلنے سے کوئی بھی workspace کی اپنی app سے sign out نہیں ہوتا۔
+
+## Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا
+
+| Connect دیکھتا ہے                                                                                  | Connect کبھی نہیں دیکھتا                                                                 |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| سرور کا install id اور request signatures                                                          | source code، repository contents، diffs یا pull request کا متن                            |
+| sign-in کے دوران وہ provider account جس نے sign in کیا                                              | tickets، transcripts یا workspace database میں کوئی بھی چیز                              |
+| کون سا workspace کسی credential کا ہے، seal کے اندر ایک opaque id کے طور پر                          | GitHub App کی private key: repository tokens کسی شخص کے sign-in سے آتے ہیں                |
+| وہ repository جس کے لیے ایک one-repository GitHub token جاری ہوتا ہے                                 | at rest refresh tokens: وہ صرف ان seals کے اندر ہوتے ہیں جو سرور رکھتا ہے                 |
+| سرور سے منسلک GitHub installation ids                                                              | Linear secrets: سرور Linear کا code خود exchange کرتا ہے                                  |
+| GIF search terms، جب وہ Klipy proxy کرتا ہے                                                         | passwords، pairing keys یا model provider keys                                              |
+| Slack event references (team، channel، message id) اور slash-command text                           | Slack message text: Connect اسے پہنچتے ہی drop کر دیتا ہے اور سرور خود Slack سے message پڑھتا ہے |
+
+Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے زیادہ 15 منٹ رکھتا ہے۔ اس کے صرف دیرپا records installation bindings ہیں: کون سے سرورز کون سا GitHub installation استعمال کر سکتے ہیں، اور ہر Slack team کس سرور سے منسلک ہے۔ errors میں صرف ایک code ہوتا ہے، provider کا response کبھی نہیں، اور logs install ids کو صرف keyed hashes کے طور پر ریکارڈ کرتے ہیں۔
+
+## Modes
+
+| Mode     | Setting                          | رویہ                                                                                                              |
+| -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Unset    | نیا سرور                        | کوئی lane Connect استعمال نہیں کرتی۔ onboarding سرور owner سے انتخاب کرنے کو کہتا ہے                                 |
+| `hosted` | **Use Control Center's apps**    | `https://connect.usectrl.dev`، offline-signed configuration کے ساتھ۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                                |
+| `custom` | **Use a custom Connect server**  | HTTPS URL پر Connect (صرف loopback پر `http`)، پہلے استعمال پر trusted ہو جاتا ہے۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                    |
+| `off`    | **Use my own apps**              | کوئی lane Connect استعمال نہیں کرتی۔ صرف اپنی apps لوگوں کو sign in کراتی ہیں                                       |
+
+سرور کے environment یا `.env` میں `CC_CONNECT_URL` انتخاب کو lock کرتا ہے: `hosted`، `off`، یا ایک Connect URL۔ پھر Settings lock دکھاتی ہے اور اسے بدل نہیں سکتی۔
+
+یہ build کوئی hosted configuration key compile نہیں کرتا، اس لیے hosted mode `hosted_unprovisioned` رپورٹ کرتا ہے اور کوئی lane پیش نہیں کرتا۔ اپنی apps اور custom Connect کام کرتے ہیں۔
+
+سرور زیادہ سے زیادہ ہر 10 منٹ میں Connect کی configuration پڑھتا ہے، اور ہر call کے لیے زیادہ سے زیادہ 5 سیکنڈ انتظار کرتا ہے۔ جب Connect تک رسائی نہ ہو تو آخری درست configuration استعمال ہوتی رہتی ہے اور Settings اسے stale نشان زد کرتی ہے۔
+
+## Install identity
+
+| Item             | یہ کیا ہے                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Install key      | سرور کی secrets فائل میں 32-byte seed (`connect_install_key`)، device pairing keys سے الگ                                       |
+| Per-Connect key  | ایک Ed25519 key جو seed اور Connect کے پتے سے اخذ ہوتی ہے۔ Connect کی ہر request اسی سے sign ہوتی ہے (RFC 9421)                    |
+| Install id       | اس public key سے اخذ شدہ 26 characters۔ Settings اور `cc_server connect status` میں دکھائی دیتا ہے                                |
+
+ایک ہی سرور کا ہر Connect پتے کے لیے مختلف install id ہوتا ہے۔ id صرف اس وقت بدلتا ہے جب key rotate ہو۔
+
+## Sealed credentials
+
+Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہے: ایک encrypted blob جسے صرف وہی Connect کھول سکتا ہے جس نے اسے بنایا۔ یہ provider، Connect کے پتے، install id، workspace، provider account، app اور secret generation سے منسلک ہوتا ہے۔
+
+- سرور seal اور وہ install id محفوظ کرتا ہے جس کے لیے یہ seal ہوا۔ access tokens memory میں رہتے ہیں
+- refresh کے لیے سرور seal واپس بھیجتا ہے اور نیا access token اور نیا seal وصول کرتا ہے
+- جس seal کا install id یا Connect پتہ اب مطابقت نہ رکھتا ہو وہ اگلی بار پڑھنے پر حذف ہو جاتا ہے، اور وہ شخص دوبارہ sign in کرتا ہے۔ یہ key rotation کے بعد، کسی دوسرے Connect پر منتقلی کے بعد، یا کسی دوسرے سرور پر بحال شدہ data directory کے بعد ہوتا ہے
+- وہ seal جسے Connect نہیں کھول سکتا `access_denied` کے ساتھ مسترد ہوتا ہے
+
+## GitHub installations
+
+مشترکہ GitHub App کا installation کسی سرور کے لیے صرف اسی وقت قابلِ استعمال ہے جب Connect اسے اس سرور کے install id سے bind کر چکا ہو۔
+
+- **Settings → Workspace → General** میں **Install GitHub App** ایک 15 منٹ کے ticket کے ساتھ GitHub کھولتا ہے۔ Connect نیا installation اس وقت bind کرتا ہے جب installer ذاتی account کا مالک ہو یا organization کا admin ہو
+- **Authorize this server** پہلے سے موجود installation کو bind کرتا ہے۔ یہ صرف organization admin کر سکتا ہے
+- ایک organization installation کئی سرورز سے bind ہو سکتا ہے؛ ہر ایک کو کسی admin کی authorization چاہیے
+
+## Configuration پر اعتماد
+
+| Connect | سرور اپنی configuration پر کیسے اعتماد کرتا ہے                                                                                                                                                                                                                          |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosted  | build میں compile شدہ keys کے خلاف Ed25519 signature verify کرتا ہے۔ اس سے کم epoch کو مسترد کرتا ہے جو اس نے سب سے زیادہ دیکھا (`rollback`)                                                                                                                 |
+| Custom  | پہلے استعمال پر GitHub app id اور client id، Google اور Linear client ids، اور Slack app اور client ids کو pin کرتا ہے۔ تبدیلی Connect sign-ins کو روک دیتی ہے (`pins_changed`) جب تک سرور owner **Trust new apps** نہ دبائے                                              |
+
+## Operations
+
+Connect کی تمام settings صرف سرور owner کے لیے ہیں۔
+
+| Operation             | کیا کرتا ہے                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `connect.status`      | Mode، URL، lock، install id، health، configuration epoch، اور ہر lane کا source                   |
+| `connect.configure`   | `hosted`، `custom` (`url` کے ساتھ) یا `off` سیٹ کرتا ہے                                       |
+| `connect.test`        | configuration دوبارہ fetch کرتا ہے اور health رپورٹ کرتا ہے                                    |
+| `connect.confirmPins` | custom Connect کے تبدیل شدہ identifiers قبول کرتا ہے                                            |
+| `connect.rotateKey`   | نیا install key بناتا ہے۔ اس سرور پر Connect کے ذریعے ہر sign-in کام کرنا بند کر دیتا ہے            |
+
+sign-ins خود `oauth.lanes`، `oauth.begin`، `oauth.status`، `oauth.complete`، `oauth.connections` اور `oauth.disconnect` استعمال کرتے ہیں۔ شخص ہمیشہ وہی caller ہوتا ہے جو sign in ہے۔
+
+## Connect کے ذریعے sign-in
+
+1. سرور Connect سے lane شروع کرنے کو کہتا ہے اور provider کا authorize URL وصول کرتا ہے، جسے وہ دکھانے سے پہلے جانچتا ہے
+2. شخص browser میں منظوری دیتا ہے۔ provider شخص کو Connect پر واپس بھیجتا ہے
+3. Connect ایک 8-character code اور ایک `control-center://oauth-done` link دکھاتا ہے
+4. شخص code کو app میں ٹائپ کرتا ہے، یا link پر جاتا ہے۔ سرور code اور request کے اپنے ثبوت کے ساتھ sign-in claim کرتا ہے
+
+sign-in 10 منٹ میں ختم ہو جاتا ہے۔ پانچ غلط codes اسے ختم کر دیتے ہیں۔ جو link یہ app شروع نہیں کرتی وہ **Sign-in not started here** کے ساتھ مسترد ہوتا ہے۔
+
+## Install key rotate کرنا
+
+Connect card پر **Rotate key**، یا `cc_server connect rotate-key --yes`:
+
+- سرور کو نیا install key اور نیا install id دیتا ہے
+- اس Connect کے ذریعے چلنے والی ہر lane سے سب کو sign out کر دیتا ہے
+- سرور کی اپنی apps کے ذریعے sign-ins کو اپنی حالت پر چھوڑ دیتا ہے
+- custom Connect کی allowlist میں نیا install id شامل کرنے کی ضرورت ہوتی ہے
+
+## Status codes
+
+| Code                   | مطلب                                                                 |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | اس build میں hosted configuration key نہیں ہے                        |
+| `signature`            | hosted configuration اپنی signature check میں ناکام ہوئی             |
+| `rollback`             | Connect نے وہ configuration پیش کی جو سرور پہلے دیکھ چکا تھا اس سے پرانی ہے |
+| `unreachable`          | سرور Connect تک نہیں پہنچ سکتا                                         |
+| `install_blocked`      | Connect یہ install id allow نہیں کرتا                                  |
+| `pins_changed`         | custom Connect نے مختلف app identifiers کا اعلان کیا                    |
+| `protocol`             | Connect نے ایسے format میں جواب دیا جسے یہ سرور نہیں سمجھتا               |
+
+## متعلقہ
+
+- [Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/)
+- [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)
+- [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/)

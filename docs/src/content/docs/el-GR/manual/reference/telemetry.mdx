@@ -2,7 +2,7 @@
 title: Αναλυτικά χρήσης
 description: Τι καταγράφει το Control Center όταν τα αναλυτικά χρήσης είναι ενεργά, ποιος αποφασίζει και τι δεν αποστέλλεται ποτέ.
 slug: el-GR/εγχειρίδιο/αναφορά/αναλυτικά-χρήσης
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Το Control Center μπορεί να στέλνει **ψευδωνυμοποιημένα συμβάντα χρήσης** σε μια εγκατάσταση του [Umami](https://umami.is). Τα αναλυτικά χρήσης είναι **απενεργοποιημένα μέχρι να τα ενεργοποιήσει ο διαχειριστής του διακομιστή**. Η ρύθμιση ανήκει στον διακομιστή και ισχύει για κάθε πρόγραμμα-πελάτη που συνδέεται σε αυτόν: την εφαρμογή υπολογιστή, την εφαρμογή web, το τηλέφωνο και τον ίδιο τον διακομιστή.
@@ -95,9 +95,12 @@ sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Επαναλήφθηκε μια αποτυχημένη εκτέλεση |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Ακυρώθηκε μια εκτέλεση από την εφαρμογή |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Τερματίστηκε βίαια ένα βήμα σε εξέλιξη |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Τελείωσε μια απόπειρα σύνδεσης σε ημερολόγιο |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true όταν η σύνδεση έγινε μέσω του Control Center Connect και όχι μέσω του δικού πελάτη Google του διακομιστή), `duration_s` | Τελείωσε μια απόπειρα σύνδεσης σε ημερολόγιο |
 | `calendar_disconnected` | `workspace_id` | Αποσυνδέθηκε ένας λογαριασμός ημερολογίου |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Απαντήθηκε μια πρόσκληση |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (πλήθος), `conference` | Έγινε κράτηση γεγονότος στο Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Ένα γεγονός μετακινήθηκε ή άλλαξε μέγεθος στο πλέγμα του ημερολογίου |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Ένα γεγονός διαγράφηκε από το Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Ξεκίνησε καταγραφή από ένα συμβάν ημερολογίου |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Άνοιξε ένας σύνδεσμος σύσκεψης (τηλέφωνο). Από τον σύνδεσμο προκύπτει μόνο ο πάροχος |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Χρησιμοποιήθηκε το κέντρο ειδοποιήσεων |

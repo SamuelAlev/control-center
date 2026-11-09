@@ -2,7 +2,7 @@
 title: Nutzungsanalysen
 description: Was Control Center bei eingeschalteten Nutzungsanalysen erfasst, wer darüber entscheidet und was nie gesendet wird.
 slug: de-DE/handbuch/referenz/nutzungsanalysen
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center kann **pseudonyme Nutzungsereignisse** an eine [Umami](https://umami.is)-Instanz senden. Nutzungsanalysen sind **ausgeschaltet, bis der Serverbetreiber sie einschaltet**. Die Einstellung gehört zum Server und gilt für jeden damit verbundenen Client: die Desktop-App, die Web-App, das Smartphone und den Server selbst.
@@ -95,9 +95,12 @@ Von der Desktop-App, der Web-App und dem Smartphone für Handlungen von Personen
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Ein fehlgeschlagener Lauf erneut versucht wurde |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Ein Lauf in der App abgebrochen wurde |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Ein laufender Schritt zwangsweise beendet wurde |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Ein Anmeldeversuch bei einem Kalender geendet hat |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true, wenn die Anmeldung über Control Center Connect lief statt über den eigenen Google-Client des Servers), `duration_s` | Ein Anmeldeversuch bei einem Kalender geendet hat |
 | `calendar_disconnected` | `workspace_id` | Ein Kalenderkonto getrennt wurde |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Eine Einladung beantwortet wurde |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (Anzahl), `conference` | Ein Termin in Google Calendar gebucht wurde |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Ein Termin im Zeitraster verschoben oder in der Dauer geändert wurde |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Ein Termin aus Google Calendar gelöscht wurde |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Eine Aufzeichnung aus einem Kalendertermin gestartet wurde |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Ein Besprechungslink geöffnet wurde (Smartphone). Aus dem Link wird nur der Anbieter abgeleitet |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Die Benachrichtigungszentrale benutzt wurde |

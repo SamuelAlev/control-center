@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: A headless szerver minden kapcsolója, környezeti változója, alparancsa és adatkönyvtár-útvonala.
 slug: hu-HU/kezikonyv/referencia/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Minden folyamatszintű beállítás megadható parancssori kapcsolóként vagy környezeti
 változóként; ilyenkor a kapcsoló nyer, aztán a környezet, végül az alapértelmezett érték. A
-harmadik féltől származó hitelesítő adatok kivételt képeznek — lásd alább.
+szolgáltatói hitelesítő adatok kivételt képeznek — lásd: [Szolgáltatói alkalmazások és Connect](#szolgáltatói-alkalmazások-és-connect).
 
 :::caution[Az ismeretlen kapcsolókat csendben figyelmen kívül hagyja]
 Az argumentumelemző kézzel írt, és mindent kihagy, amit nem ismer fel, ezért egy elírás
@@ -44,7 +44,7 @@ ellenőrizze az indítási napló sorait.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | nincs beállítva                | A bináris elvárt SHA-256-ja, amely minden indítás előtt ellenőrzésre kerül                                                                                   |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | üres                           | Vesszővel elválasztott extra argumentumok az alagút meghívásához                                                                                             |
 
-## Indexelés és harmadik féltől származó hitelesítő adatok
+## Indexelés és futtatókörnyezet
 
 | Kapcsoló                 | Környezeti változó              | Alapértelmezés                        | Jelentés                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +54,44 @@ ellenőrizze az indítási napló sorait.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Hogy a harness-futások egy kis rezidens eszközkészletet és egy névindexet küldenek-e, a többit az első használatkor betöltve. Lásd alább |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Hány másodpercig parkol egy futás arra várva, hogy egy ember kijavítsa a kiszolgálására képtelen hitelesítő adatot (0–3600 közé szorítva). Lásd alább |
 
-Egy hitelesítő adat üres értéke beállítatlanként értelmeződik, így a beépített
-tartalék továbbra is érvényesül. A forrásból készült build egyáltalán nem tartalmaz
-beépített hitelesítő adatokat.
+## Szolgáltatói alkalmazások és Connect
 
-A Google Calendar és a Klipy GIF-választó **csak környezeti változóval** állítható be —
-nincs `--google-client-id` / `--klipy-app-key` kapcsoló (az ismeretlen kapcsolókat a
-rendszer figyelmen kívül hagyja). Állítsa be a
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, valamint a `KLIPY_APP_KEY`
-értékét a környezetben (vagy a szerver melletti `.env` fájlban). Az üres érték nem az
-indítást rontja el, hanem letiltja azt a funkciót.
+Egyetlen build sem tartalmaz szolgáltatói hitelesítő adatokat. Ha a Control Center Connect be van
+kapcsolva, a Connect fut minden szolgáltatón, a saját alkalmazások pedig mentve maradnak, de nincsenek
+használatban. A **Saját alkalmazások használata** alatt minden szolgáltató a szerver saját alkalmazásán
+fut, ha az teljesen be van állítva, egyébként nem érhető el. A munkaterület saját alkalmazása mindkét
+esetben érvényes. A saját
+alkalmazásokat a **Beállítások → Szerver → Egyszeri bejelentkezés → Szolgáltatói
+alkalmazások** helyen lehet beállítani, vagy egyszer, a szerver `.env` fájljából
+feltölteni. Kapcsolók nincsenek hozzájuk: a parancssorban szereplő titok a `ps`
+segítségével kiolvasható.
+
+| Változó                        | Jelentés                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | A szerver GitHub Appjának azonosítója                                                         |
+| `GITHUB_APP_PRIVATE_KEY`       | A privát kulcsa, egy sorban, `\n` escape-ekkel. **Csak `.env`**                            |
+| `GITHUB_CLIENT_ID`             | A kliens-ID-ja, az emberek bejelentkeztetéséhez                                               |
+| `GITHUB_CLIENT_SECRET`         | A kliens titka. **Csak `.env`**                                                               |
+| `GOOGLE_OAUTH_CLIENT_ID`       | A szerver Web application típusú Google-kliense                                               |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | A titka. **Csak `.env`**                                                                      |
+| `LINEAR_CLIENT_ID`             | A szerver Linear-alkalmazása (PKCE, titok nélkül)                                             |
+| `LINEAR_API_KEY`               | Linear-szolgáltatáskulcs az automatizáláshoz. **Csak `.env`**                                 |
+| `KLIPY_APP_KEY`                | A szerver saját Klipy-kulcsa a GIF-kereséshez. Csak a **Saját alkalmazások használata** alatt használatos |
+| `CC_CONNECT_URL`               | `hosted`, `off` vagy egy Connect-URL. Rögzíti a Connect-választást; a Beállítások ezután nem módosíthatják |
+| `CC_SERVER_CONNECT_HOST`       | Az `on` a `<server>/connect` alá csatolja a Control Center Connectet, amelyet a `CONNECT_*` változók konfigurálnak. Lásd: [Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/#connect-csatolása-a-cc_server-be) |
+
+A `.env` fájlt a szerver a munkakönyvtárából, a végrehajtható fájl mellől vagy egy
+fölötte lévő forráskód-checkoutból olvassa; Dockerben csatolja a `/app/bin/.env`
+helyre. A szerver **nem indul el** (`78`-as kilépési kód), ha a
+`GITHUB_APP_PRIVATE_KEY`, a `GITHUB_CLIENT_SECRET`, a `GOOGLE_OAUTH_CLIENT_SECRET`,
+a `LINEAR_API_KEY` vagy bármely `SLACK_*SECRET*` a folyamata környezetébe van
+exportálva, ahol minden gyermekfolyamat kiolvashatná. A `.env` fájlból való
+feltöltés mezőnként egyszer történik, így egy későbbi szerkesztést a Beállításokban
+nem vonja vissza egy újraindítás. Az üres érték beállítatlanként értelmeződik.
+
+A GitLab és a Bitbucket háttérmunkája a `GITLAB_TOKEN` / `CI_JOB_TOKEN`, valamint a
+`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` és a `BITBUCKET_EMAIL` változót is
+olvassa. A GitHubnak nincs környezeti hitelesítő adata.
 
 ### `--sandbox`
 
@@ -117,7 +145,7 @@ adat pontosan úgy zárja le a kört, ahogy a kapu létezése előtt tette.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Addig futtatja a szervert, amíg `SIGINT`/`SIGTERM` nem érkezik                                       |
 | `cc_server pair`                              | Provisionál egy eszközt, és kiírja annak azonosítóját és párosítási kulcsát. Biztonságos olyan adatkönyvtárral szemben, amelyet egy szerver már kiszolgál — a futó szerver újraindítás nélkül felveszi az eszközt |
-| `cc_server calendar connect --workspace <id>` | Eszközkód-folyamattal összeköt egy Google-fiókot egy munkaterülettel, majd kilép                     |
+| `cc_server connect <command>`                 | Megmutatja vagy módosítja, melyik Control Center Connectet használja ez a szerver, elindítása nélkül |
 | `cc_server update`                            | Ellenőrzi, letölti és hitelesíti az újabb önálló kiadást                                            |
 | `cc_server --version`                         | Kiírja a build verzióját és a git SHA-t — ugyanazt az azonosságot, amelyet a `/healthz` és az RPC-kézfogás hirdet |
 
@@ -143,6 +171,26 @@ eszközazonosító és kulcs az URL-töredékben). A telefon egy másik hasznos 
 párosul, amelyet az alkalmazáson belüli párosítási panel állít ki — a szerver teljes
 kapcsolatleírójával és egy lejárattal. A kettő nem felcserélhető — lásd: [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
 :::
+
+### `connect`
+
+Ugyanazokat a beállításokat olvassa és írja az adatkönyvtárból, mint a **Control
+Center Connect** kártya a **Beállítások → Szerver → Egyszeri bejelentkezés**
+helyen. Egy futó szerver 10 percen belül vagy újraindításkor veszi fel a
+változást.
+
+| Parancs                         | Mit tesz                                                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Kiírja a módot, az URL-t, azt, hogy a `CC_CONNECT_URL` rögzíti-e, a telepítési azonosítót, az állapotot és az egyes sávok forrását (`own`, `connect` vagy `off`) |
+| `cc_server connect enable`      | A Control Center által üzemeltetett Connectet használja                                                          |
+| `cc_server connect enable --url <url>` | Egyéni Connectet használ az adott URL-en (HTTPS, vagy `http` loopbacken)                               |
+| `cc_server connect disable`     | Abbahagyja a Connect használatát. Csak a szerver saját alkalmazásai jelentkeztetik be az embereket              |
+| `cc_server connect rotate-key --yes` | Új telepítési kulcsot és telepítési azonosítót állít ki. Mindenki, aki a Connecten keresztül jelentkezett be, újra bejelentkezik. `--yes` nélkül csak figyelmeztet, és `2`-es kóddal lép ki |
+
+Parancs nélkül a `status` az alapértelmezett. Minden parancs elfogadja a
+`--data-dir` kapcsolót. A `CC_CONNECT_URL` felülírja azt, amit ezek tárolnak. Egy
+ismeretlen parancs `64`-es kóddal lép ki. A módokat, a telepítési identitást és
+az állapotkódokat lásd: [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
 
 ### `update`
 
@@ -187,7 +235,7 @@ csak akkor használatos, ha sem otthoni, sem alkalmazásadat-könyvtár nem oldh
 | `global.db`                       | A munkaterület-nyilvántartás, a felhasználók, a párosított eszközök, a hírfolyam és a flottasor |
 | `<workspaceId>/workspace.db`      | Munkaterületenként egy adatbázis — ügynökök, terek, jegyek, memória, a kódgráf   |
 | `<workspaceId>/chat_credentials/` | Csevegőbot-tokenek egyszerű JSON-ként, hogy a munkaterülettel együtt mozogjanak  |
-| `secrets.json`                    | Párosítási kulcsok, a szolgáltatói alkalmazásidentitás, felhasználónkénti és Google-tokenek, SSO (`0600`) |
+| `secrets.json`                    | Párosítási kulcsok, a Connect telepítési kulcsa, szolgáltatói alkalmazások, az emberek bejelentkezései (lepecsételve, ha a Connecten keresztül jöttek létre), SSO (`0600`) |
 | `backups/<timestamp>/`            | Egy telepítési pillanatkép — `manifest.json`, `global.db` és minden munkaterület egy másolata |
 | `backups/exports/`                | Egyetlen munkaterület exportjai, `<workspaceId>-<timestamp>.db`                  |
 | `backups/transfer/`               | Átmeneti terület a mentések letöltéséhez és feltöltéséhez; az azt író útvonal takarítja |

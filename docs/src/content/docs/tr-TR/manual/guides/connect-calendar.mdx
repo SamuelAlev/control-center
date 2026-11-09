@@ -1,36 +1,56 @@
 ---
 title: Bir Google Calendar bağlama
-description: Google Calendar’ı bir çalışma alanına bağlayın, birden çok hesabı yönetin ve bir token’ın süresi dolduğunda yeniden bağlanın.
+description: Google Calendar’ı bir çalışma alanına bağlayın, birden çok hesabı yönetin ve bir oturum açmanın süresi dolduğunda yeniden bağlanın.
 slug: tr-TR/kilavuz/nasil-yapilir/takvim-baglama
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Bu kılavuz, Google Calendar’ı bir çalışma alanına nasıl bağlayacağınızı gösterir.
-Bağlantı çalışma alanı başına kurulur: o çalışma alanının etkinliklerini Control
-Center’a salt okunur olarak eşitler. Tam resim için
+Bağlantı çalışma alanı ve üye başına kurulur: o çalışma alanındaki etkinliklerinizi
+Control Center’a eşitler; orada davetlere yanıt verebilir, etkinlikleri ayırtabilir, taşıyabilir ve silebilirsiniz. Tam resim için
 [Takvim ve zamanlama](/tr-TR/kilavuz/kavramlar/takvim/) sayfasına bakın.
+
+## Önkoşullar
+
+- Sunucu kişileri Google’a oturum açtırabiliyor olmalı: ya Control Center Connect
+  üzerinden ya da sunucunun kendi Google istemcisiyle
+  ([Kendi Google istemcinizi getirme](#kendi-google-istemcinizi-getirme)). Seçimi
+  sunucu sahibi **Ayarlar → Sunucu → Tek oturum açma** bölümünde yapar
+- Açık bir çalışma alanı: bir takvim hesabı her zaman bir çalışma alanına aittir
 
 ## Hesap bağlama
 
 1. Kenar çubuğunda **Takvim**’i açın.
 2. Takvim kenar çubuğunda **Takvim hesabı ekle**’ye tıklayın. (Aynı bölüm **Ayarlar → Çalışma alanı → Profil ve kimlik** yolunda, **Google Calendar** altında da yer alır.)
-3. Nasıl yetkilendireceğinizi seçin:
-   - **Control Center'ın Google uygulamasını kullan** — kurulacak bir şey yok. Yapınız bir tane içeriyorsa varsayılan budur.
-   - **Kendi Google Cloud istemcimi kullan** — kendi projenizden bir istemci kimliği ve gizli anahtar yapıştırın (bkz. [Kendi Google istemcinizi getirme](#kendi-google-istemcinizi-getirme-çatallar-ve-kendi-barındırma)).
-4. **Google Calendar’ı bağla**’ya tıklayın. İletişim kutusu kısa bir kod ve Google’ın cihaz sayfasına bir bağlantı gösterir.
-5. O sayfayı herhangi bir cihazda açın, kodu girin ve istenen erişimi onaylayın. İletişim kutusu kendiliğinden kapanır ve etkinlikleriniz eşitlenmeye başlar.
+3. **Google Calendar’ı bağla**’ya tıklayın. Tarayıcınız Google’ın onay sayfasını açar.
+4. Hesabı seçin ve takvim etkinliklerinize ve takvim listenize erişimi onaylayın.
 
-Bu alışverişi cihazınız değil sunucu yürütür ve ortaya çıkan yenileme token’ını
-saklar — kodun özellikle bu uygulamada değil de “herhangi bir cihazda”
-onaylanmasının nedeni budur.
+Nasıl tamamlanacağı, oturum açmayı kimin yürüttüğüne bağlıdır:
 
-Hesap **yalnızca etkin çalışma alanına** bağlanır. Çalışma alanını değiştirin,
+- **Sunucunun kendi Google istemcisi:** Google tarayıcınızı sunucuya geri gönderir
+  ve iletişim kutusu kendiliğinden kapanır
+- **Control Center Connect:** tarayıcı sayfası 8 karakterlik bir kod gösterir.
+  Onu iletişim kutusuna yazın ya da tarayıcının `control-center://` bağlantısıyla
+  Control Center’ı açmasına izin verip yazmayı atlayın
+
+Etkinlikleriniz hemen eşitlenmeye başlar. Alışverişi cihazınız değil sunucu
+tamamlar ve kimlik bilgisini saklar.
+
+Hesap **yalnızca etkin çalışma alanına** bağlanır ve size aittir: aynı Google
+adresini bağlayan iki üye ayrı hesaplar elde eder. Çalışma alanını değiştirin,
 onun yerine o çalışma alanının takvimlerini görürsünüz.
 
-Bağlantı akışı `calendar.readonly` ile birlikte e-posta adresinizi ister —
-yerleşik uygulama ve yapıştırdığınız istemci için aynı kapsamlar. Control Center
-etkinlikleri okur; Google’da etkinlik oluşturmaz, düzenlemez, silmez veya
-davetlere yanıt vermez.
+Bağlantı akışı, hangi istemci yürütürse yürütsün `calendar.events` ve `calendar.calendarlist.readonly` ile birlikte `openid email` ister. Önceden Control Center’ın Google’a yazabilmesinden önce bağlanmış bir hesap yalnızca salt okunur kapsama sahiptir; sizden yeniden bağlanmanız istenir ve yeni oturum açma gerisini verir.
+
+## Etkinlik ayırtma, taşıma, yanıtlama ve silme
+
+- **Etkinlik ayırt:** haftalık ya da günlük görünümde zaman ızgarasının üzerinde sürükleyerek aralığı çizin (aylık görünümde tüm gün etkinliği için günlerin üzerinde sürükleyin). Yanında başlık, saatler, konuklar, bir Google Meet bağlantısı, konum, açıklama ve hangi takvime ayırtılacağını içeren bir kart açılır. **Kaydet** etkinliği Google’da ayırtır ve açar. Takvim üst bilgisindeki **+** düğmesi, bir sonraki boş çeyrek saat için aynı kartı açar. İptal etmek için Escape’e basın
+- **Etkinliği taşı:** etkinliği başka bir saate ya da güne sürükleyin veya bitiş saatini değiştirmek için alt kenarını sürükleyin. Google yeni saati kabul ettiğinde açılır; Google reddederse eski yerine döner. Yalnızca kendi etkinliklerinizi ve düzenlediğiniz etkinlikleri taşıyabilirsiniz; bir davet, düzenleyenin koyduğu yerde kalır
+- **Davete yanıt verin:** etkinliği açın ve **Evet**, **Belki** ya da **Hayır** seçin
+- **Etkinliği silin:** etkinliği açın ve çöp kutusu simgesine tıklayın. Onay, kimlerin etkilendiğini gösterir: düzenlediğiniz bir etkinlik iptal edildiğinde konuklara bildirilir, bir daveti silmek ise onu yalnızca takviminizden kaldırır. Yinelenen bir etkinliğin tek bir örneğini silmek serinin geri kalanını korur
+
+Konuklar Google’ın kendi e-posta davetini, güncellemesini veya iptalini alır. Yalnızca hesabınızın yazabildiği takvimlerde ve yalnızca kendi hesaplarınızla ayırtabilirsiniz: başka bir üyenin bağlı takvimi asla önerilmez. Yinelenen bir etkinliğin tek bir örneğini taşımak da serinin geri kalanını korur.
+
 
 ## Eşitleme nasıl çalışır
 
@@ -44,10 +64,12 @@ bu token’ı sunar ve yalnızca değişenleri alır — iki dakikalık bir temp
 karşılanabilir kılan da budur. Pencere, her 24 saatte bir ve Google token’ı
 geçersiz kıldığında tam bir eşitlemeyle yeniden sabitlenir.
 
-Yenileme token’ları sunucu tarafında, sunucunun veri dizinindeki `secrets.json`
+Kimlik bilgileri sunucu tarafında, sunucunun veri dizinindeki `secrets.json`
 dosyasında yaşar ve yalnızca sahibinin erişebildiği biçimde (`0600`) yazılır —
 işletim sistemi anahtar zincirinde değil ve hiçbir zaman bir istemci cihazında
-değil.
+değil. Connect üzerinden yapılan bir oturum açma, yalnızca Connect’in sadece bu
+sunucu için açabildiği mühürlü bir kimlik bilgisini saklar; erişim token’ı
+sunucunun belleğinde kalır.
 
 ## Birden çok hesap bağlama
 
@@ -58,73 +80,72 @@ birinin bağlantısı kendi başına kesilebilir.
 
 ## Süresi dolmuş bir hesabı yeniden bağlama
 
-Google bir hesabın token’ını kalıcı olarak geçersiz kılarsa (iptal edilmiş veya
-süresi çoktan dolmuş bir oturum), eşitleme durur ve Control Center takvimde bir
-**Yeniden bağlan** banner’ı ile birlikte bir masaüstü bildirimi gösterir.
-**Yeniden bağlan**’a tıklayıp yeni bir kodu onaylayın; banner bir sonraki başarılı
+Google bir hesabın oturum açmasını kalıcı olarak geçersiz kılarsa (iptal edilmiş
+veya süresi çoktan dolmuş bir oturum), eşitleme durur ve Control Center takvimde
+bir **Yeniden bağlan** banner’ı ile birlikte bir masaüstü bildirimi gösterir.
+**Yeniden bağlan**’a tıklayıp yeniden oturum açın; banner bir sonraki başarılı
 eşitlemede kaybolur.
+
+Aynı banner, oturum açma bu sunucu tarafından artık kullanılamadığında da
+görünür: sunucu sahibi Connect sunucusunu değiştirdiyse ya da Connect anahtarını
+değiştirdiyse, sunucunun kendi Google istemcisi değiştiyse veya veri dizini başka
+bir makineye geri yüklendiyse.
 
 ## Bir hesabın bağlantısını kesme
 
 Takvim kenar çubuğundan (veya **Ayarlar → Çalışma alanı → Profil ve kimlik**
 yolundan) hesaptaki **Bağlantıyı kes**’e tıklayın. Bu işlem, eşitlenmiş
-etkinliklerini siler ve sunucudaki saklı token’larını temizler.
+etkinliklerini siler ve sunucudaki saklı kimlik bilgisini temizler.
 
-## Headless bir sunucudan bağlanma
+## Kendi Google istemcinizi getirme
 
-Grafik arayüzü olmayan bir sunucu, aynı hesabı kendi terminalinden bağlar:
+Kendi Google istemcinizi, **Kendi uygulamalarımı kullan** seçeneğini seçtiğinizde çalıştırın. Sunucunun kendi istemcisi yalnızca o durumda geçerlidir: Control Center Connect ya da özel bir Connect ile Connect her hattı çalıştırır, Google dahil; sunucunun istemcisi kayıtlı ama kullanılmadan kalır. Connect kullanılırken onay ekranının kendi projenizin adını taşımasını istiyorsanız çalışma alanına kendi istemcisini verin ([aşağıda](#bir-çalışma-alanına-kendi-google-istemcisini-verme)); bu her modda geçerlidir.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) üzerinde **Google Calendar API**’yi etkinleştirin ve `calendar.events`, `calendar.calendarlist.readonly`, `openid` ile `email` kapsamlarını ekleyerek **OAuth onay ekranını** yapılandırın. Uygulama doğrulanmamışken kendinizi bir **test kullanıcısı** olarak ekleyin.
+2. Uygulama türü **Web uygulaması** olan bir **OAuth istemci kimliği** oluşturun.
+3. Yetkili yönlendirme URI’si olarak `<server origin>/oauth/google/callback` ekleyin. **Ayarlar → Sunucu → Tek oturum açma → Sağlayıcı uygulamaları → Google** tam URL’yi **Geri çağırma URL’leri** altında gösterir; onu birebir kopyalayın.
+4. **İstemci id** ve **İstemci gizli anahtarı** değerlerini aynı Google bloğuna yapıştırın ya da sunucunun `.env` dosyasına `GOOGLE_OAUTH_CLIENT_ID` ve `GOOGLE_OAUTH_CLIENT_SECRET` olarak yazın.
 
-Bir kod ve bir URL yazdırır, onay bekler, ardından token’ları saklar ve bir
-sonraki taramada eşitler.
+`GOOGLE_OAUTH_CLIENT_SECRET` süreç ortamına dışa aktarıldığında sunucu başlamayı
+reddeder; onu `.env` dosyasında tutun (Docker’da dosyayı `/app/bin/.env` yoluna
+bağlayın). Gizli anahtar sunucudan asla ayrılmaz: hiçbir RPC yanıtı onu taşımaz.
+Gizli anahtarı olmayan bir istemci kimliği yarım kalmış bir kurulumdur ve ikisi
+de ayarlanana kadar Google oturum açmaları reddedilir.
 
-Kaynaktan bir derleme **hiç** Google istemcisi içermez, bu yüzden kimlik ve gizli
-anahtar zorunludur — `GOOGLE_OAUTH_CLIENT_ID` ve `GOOGLE_OAUTH_CLIENT_SECRET`
-değerlerini ayarlayın. `--google-client-id` diye bir bayrak yoktur (bilinmeyen
-bayraklar yok sayılır). Ortam değişkeni çifti olmadan komut, eksik istemci
-hatasıyla çıkar.
+Farklı bir istemciye geçmek herkesin Google Calendar oturumunu kapatır: bir oturum
+açma, onu veren istemciye aittir.
 
-## Kendi Google istemcinizi getirme (çatallar ve kendi barındırma)
+## Bir çalışma alanına kendi Google istemcisini verme
 
-Yayımlanan derlemeler bir Google istemcisiyle gelir, bu yüzden çoğu kişi buna hiç
-dokunmaz. Kaynaktan derliyorsanız, kendi sunucunuzu çalıştırıyorsanız veya onay
-ekranının kendi projenizin adını taşımasını istiyorsanız kendi istemcinizi
-getirin.
+Bir çalışma alanı, Google Calendar’ı sunucunun istemcisi yerine kendi istemcisi üzerinden bağlayabilir. Bunu yalnızca bir çalışma alanı yöneticisi veya sahibi ayarlayabilir.
 
-1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) üzerinde **Google Calendar API**’yi etkinleştirin ve `calendar.readonly`, `openid` ile `email` kapsamlarını ekleyerek **OAuth onay ekranını** yapılandırın. Uygulama doğrulanmamışken kendinizi bir **test kullanıcısı** olarak ekleyin. Onay ekranında `calendar.events` eklemek davetlere yanıt vermeyi etkinleştirmez — Control Center bu kapsamı hiç istemez.
-2. Uygulama türü **TV’ler ve sınırlı girdi cihazları** olan bir **OAuth istemci kimliği** oluşturun ve hem istemci kimliğini hem de istemci gizli anahtarını kopyalayın.
-3. Bunları ya her bağlantıda (iletişim kutusunda **Kendi Google Cloud istemcimi kullan**’ı seçin) ya da `GOOGLE_OAUTH_CLIENT_ID` ve `GOOGLE_OAUTH_CLIENT_SECRET` ile sunucu genelinde sağlayın.
+1. Yukarıdaki 1 ve 2. adımlardaki gibi bir Google **Web uygulaması** istemcisi oluşturun
+2. **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümüne gidin ve **Google Calendar**’ı açın
+3. **Bu çalışma alanının kendi uygulamasını kullan**’ı seçin
+4. Satırın **Geri çağırma URL’si** altında gösterdiği yönlendirme URI’sini istemciye birebir ekleyin
+5. **İstemci id** ve **İstemci gizli anahtarı** değerlerini yapıştırın
 
-Sunucu genelinde tanımlı bir çift, yerleşik olanın yerini her yerde alır —
-“Control Center'ın Google uygulamasını kullan” seçeneğinin arkasında bile — yani
-kendi sunucunuzda o seçenek sizin uygulamanızdır.
+Bu çalışma alanında bağlanan takvim hesapları, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu istemciden geçer. Sunucunun istemcisine ya da Connect’e asla geri dönmez: iki alan da ayarlanana kadar Google Calendar bu çalışma alanında kapalıdır ve satır neyin eksik olduğunu söyler. Gizli anahtar sunucudan asla ayrılmaz.
 
-İstemci gizli anahtarı sunucudan asla ayrılmaz: hiçbir RPC yanıtı onu taşımaz ve
-sunucunun kendi istemcisi üzerinden bağlanan bir hesap, çiftin bir kopyası yerine
-bir işaretçi saklar; dolayısıyla onu döndürmek, yeni bir değerle yeniden
-başlatmaktan ibarettir.
+Sunucunun istemcisi ile çalışma alanınınki arasında geçiş yapmak ya da çalışma alanının istemci id’sini değiştirmek, bu çalışma alanındaki her Google hesabını yeniden bağlanmak üzere işaretler. **Bu sunucunun uygulamasını kullan** çalışma alanının kayıtlı alanlarını siler. Sunucudaki diğer çalışma alanları etkilenmez.
 
-### Sorun giderme
+## Sorun giderme
 
-| Belirti                                                     | Olası neden                                                                                                                                                      |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| İletişim kutusu yerleşik bir seçenek sunmuyor               | Bu yapım hiçbir Google istemcisi içermiyor (kaynaktan derleme) ya da sunucu çiftin yalnızca bir yarısıyla başlatıldı. Hem kimlik hem de gizli anahtar gereklidir |
-| Akış başlatılırken `invalid_scope`                          | Calendar, o Cloud projesinde bir cihaz kodu istemcisi için izinli değildir. Bunun yerine loopback ya da web istemcisi olan bir proje kullanın                    |
-| Google’dan `invalid_client`                                 | İstemci, **TV’ler ve sınırlı girdi cihazları** türünde bir istemci değil ya da kimlik ile gizli anahtar farklı istemcilere ait                                   |
-| Onay başarılı ama eşitleme boş                              | Hesabınız onay ekranında bir **test kullanıcısı** değil ya da `calendar.readonly` verilmedi                                                                      |
-| Kod, siz onaylamadan önce süresi doluyor                    | Cihaz kodları kısa ömürlüdür. Yeni bir kod için bağlantıyı yeniden başlatın                                                                                      |
-| Bir davete yanıt verirken “Yanıtınız güncellenemedi”        | Beklenen bir durumdur: bağlantı akışı `calendar.events` kapsamını hiç istemez                                                                                    |
-| Eşitleme, sunucu günlüğünde bir yenileme uyarısıyla duruyor | Hesap, artık yapılandırılmamış bir istemciyle bağlanmıştı. Hesabı yeniden bağlayın ya da o istemci kimliğini ve gizli anahtarını geri yükleyin                   |
+| Belirti                                                          | Olası neden                                                                                                                                   |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Google Calendar’ı bağla** oturum açmanın ayarlanmadığını söylüyor | Sunucunun ne kendi Google istemcisi ne de Connect’i var. Sunucu sahibi **Ayarlar → Sunucu → Tek oturum açma** bölümünde birini seçer        |
+| Google `redirect_uri_mismatch` gösteriyor                        | İstemcide kayıtlı yönlendirme **Geri çağırma URL’leri** değeriyle birebir eşleşmiyor ya da sunucunun genel URL’si değişti                    |
+| Google’dan `invalid_client`                                      | Kimlik ile gizli anahtar farklı istemcilere ait ya da istemci silinmiş                                                                        |
+| Onay başarılı ama eşitleme boş                                   | Hesabınız onay ekranında bir **test kullanıcısı** değil ya da istenen kapsamlardan biri verilmedi                                                   |
+| İletişim kutusu kodun eşleşmediğini söylüyor                     | 8 karakteri tarayıcının gösterdiği gibi birebir yazın. Beş yanlış kod oturum açmayı sonlandırır; yeniden başlayın                            |
+| “Yanıtınız güncellenemedi”, ayırtma, taşıma veya silme başarısız             | Hesap eski salt okunur kapsamla bağlandı. Yeniden bağlayın; size yalnızca okuma olarak paylaşılmış bir takvim yazmayı da reddeder                                                                 |
+| Herkesin yeniden bağlanması gerekiyor                            | Sunucunun veya çalışma alanının Google istemcisi değişti ya da sunucunun Connect seçimi veya anahtarı değişti. Bkz. [Süresi dolmuş bir hesabı yeniden bağlama](#süresi-dolmuş-bir-hesabı-yeniden-bağlama) |
 
 ## İlgili kılavuzlar
 
 - [Bir toplantıyı kaydetme ve özetleme](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/): bir etkinliği kayda dönüştürün
-- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): token’ların ve eşitleme zamanlamasının yaşadığı yer
-- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): kimlik bilgilerinin ve eşitleme zamanlamasının yaşadığı yer
+- [Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/)
 
 ## İlgili kavramlar
 

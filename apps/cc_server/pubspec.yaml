@@ -18,6 +18,13 @@ dependencies:
   # client and the server compile in).
   cc_domain:
     path: ../../packages/cc_domain
+  # The embedded `/connect` mount (CC_SERVER_CONNECT_HOST=on): the same
+  # service the standalone image runs, adapted to cc_server_core's
+  # EmbeddedConnect seam here so cc_server_core never depends on an app.
+  cc_connect:
+    path: ../cc_connect
+  cc_connect_core:
+    path: ../../packages/cc_connect_core
   # Build-hook deps for hook/build.dart (bundles the prebuilt native dylibs as
   # DynamicLoadingBundled code assets, the same mechanism sqlite3/sqlite_vector
   # use). Hooks import these as libraries, so they are regular dependencies.

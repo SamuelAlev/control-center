@@ -2,7 +2,7 @@
 title: Pipeline-stapsoorten
 description: Referentie voor de stapsoorten van pipelines, de body-sleutels van stappen, hun configuratie en de stapresultaten.
 slug: nl-NL/handleiding/referentie/pipeline-stappen
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Een pipelinestap heeft twee onafhankelijke assen:
@@ -42,7 +42,7 @@ Agentloze shellstap (`bash -c`). `{{key}}`-placeholders in het script worden ver
 | `script`         | Uit te voeren shellopdracht (verplicht)                     |
 | `outputKey`      | Statussleutel die bij exitcode 0 de getrimde stdout ontvangt |
 
-Draait met cwd `<cc_root>/pipelines/<pipelineRunId>/` (gedeeld door alle bash-stappen in een run) en `GITHUB_TOKEN` in de omgeving. Schrijft ook `<stepId>_runDir` naar de status. Een exitcode anders dan nul laat de stap mislukken met de staart van stderr.
+Draait in de OS-sandbox van de host met cwd `<cc_root>/pipelines/<pipelineRunId>/` (gedeeld door alle bash-stappen in een run); op een host zonder sandbox mislukt de stap. De gegevensmap en het `.env`-bestand van de server zijn niet leesbaar, git en `gh` zien geen hostconfiguratie, en `GH_TOKEN` / `GITHUB_TOKEN` bevatten alleen een `read`-token voor één repository wanneer `repo_full_name` (status of triggerpayload) een aan de werkruimte gekoppelde GitHub-repo noemt. Een sjabloon met deze stap maken of bewerken vraagt een beheerder van de werkruimte. Schrijft ook `<stepId>_runDir` naar de status. Een exitcode anders dan nul laat de stap mislukken met de staart van stderr.
 
 ### `conversation.promptAgent`
 

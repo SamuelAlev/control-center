@@ -7,6 +7,7 @@ class GifResult {
     required this.previewUrl,
     required this.width,
     required this.height,
+    this.title = '',
   });
 
   /// Creates a [GifResult] from a JSON map.
@@ -28,28 +29,21 @@ class GifResult {
           (preview?['url'] as String?) ?? (gif?['url'] as String?) ?? '',
       width: (gif?['width'] as num?)?.toInt() ?? 0,
       height: (gif?['height'] as num?)?.toInt() ?? 0,
+      title: json['title'] is String ? json['title'] as String : '',
     );
   }
 
-  /// Rebuilds a [GifResult] from its flat [toWire] map (the thin client's parse
-  /// of the `gif.search` / `gif.trending` RPC result).
+  /// Rebuilds a [GifResult] from one item of the `gif.search` /
+  /// `gif.trending` RPC result: `{id, title, width, height, preview_url,
+  /// gif_url}`, the same shape Control Center Connect's Klipy proxy returns.
   factory GifResult.fromWire(Map<String, dynamic> json) => GifResult(
-    id: (json['id'] as num?)?.toInt() ?? 0,
-    url: json['url'] as String? ?? '',
+    id: int.tryParse('${json['id']}') ?? 0,
+    url: json['gif_url'] as String? ?? '',
     previewUrl: json['preview_url'] as String? ?? '',
     width: (json['width'] as num?)?.toInt() ?? 0,
     height: (json['height'] as num?)?.toInt() ?? 0,
+    title: json['title'] as String? ?? '',
   );
-
-  /// Flat wire map for the `gif.*` RPC ops (the server parses Klipy's nested
-  /// response via [GifResult.fromJson], then ships this to the client).
-  Map<String, dynamic> toWire() => <String, dynamic>{
-    'id': id,
-    'url': url,
-    'preview_url': previewUrl,
-    'width': width,
-    'height': height,
-  };
 
   /// Identifier.
   final int id;
@@ -66,6 +60,9 @@ class GifResult {
   /// Height.
   final int height;
 
+  /// Klipy's title for the GIF, or empty.
+  final String title;
+
   /// Equality comparison.
   @override
   bool operator ==(Object other) =>
@@ -76,9 +73,10 @@ class GifResult {
           url == other.url &&
           previewUrl == other.previewUrl &&
           width == other.width &&
-          height == other.height;
+          height == other.height &&
+          title == other.title;
 
   /// Hash code.
   @override
-  int get hashCode => Object.hash(id, url, previewUrl, width, height);
+  int get hashCode => Object.hash(id, url, previewUrl, width, height, title);
 }

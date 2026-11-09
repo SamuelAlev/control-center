@@ -2,7 +2,7 @@
 title: Ticket e delega
 description: Perché un ticket traccia il lavoro senza mandarlo in esecuzione, come la delega è protetta e cosa possiede e non possiede il mirror del fornitore.
 slug: it-IT/manuale/concetti/ticket
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Un ticket è l'unità di lavoro che Control Center traccia. È volutamente un
@@ -144,10 +144,11 @@ locale**, quindi un ticket supportato da un fornitore che elimini non viene
 eliminato sul tracker e può ricomparire alla sincronizzazione successiva. I
 collaboratori e i ticket figlio seguono a cascata.
 
-Le credenziali dell'adattatore vengono risolte dagli archivi delle credenziali
-del server (una chiave Linear o un token GitHub incollato in Settings viene
-raccolto alla richiesta successiva; l'ambiente si limita a popolare inizialmente
-quegli archivi).
+Le credenziali dell'adattatore vengono risolte a ogni chiamata sul server:
+l'accesso Linear o GitHub di una persona per ciò che fa lei, e l'automazione
+Linear dello spazio di lavoro (o la chiave di servizio Linear del server) o un
+token GitHub limitato a un repository per la sincronizzazione dei ticket. Un
+nuovo accesso viene raccolto alla richiesta successiva.
 
 ## Ticket e pipeline
 

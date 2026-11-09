@@ -2,18 +2,18 @@
 title: PR-samtaler
 description: Hvordan en GitHub-PR-kommentar blir til en agenttur uten webhook, hva som autoriserer forfatteren, og hvem hver side av samtalen tilskrives.
 slug: nb-NO/handbok/konsepter/pr-samtaler
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 En pull request er allerede stedet der samtalen om kode foregår. PR-samtaler gjør
 den til en flate i et Control Center-arbeidsområde, på samme måte som en
 [chatbro](/nb-NO/handbok/konsepter/chatbroer/) gjør Slack til det: @-nevn
-serverens GitHub App-bot i en PR, svar inne i gjennomgangstrådene dens, eller
-legg til etiketten `ai-review` — og arbeidet skjer i PR-ens gjennomgangsområde,
-med samme tilskrivning og tillatelsesregler som for alt som skrives i appen. En
-kommentar er også betinget av medlemskap; det er ikke etiketten, fordi den ikke
-har noen forfatter. Botens svar kommer tilbake på GitHub, i samme spor som
-spørsmålet ble stilt i.
+`@usectrl` (eller boten til arbeidsområdets GitHub App) i en PR, svar inne i
+gjennomgangstrådene dens, eller legg til etiketten `ai-review` — og arbeidet
+skjer i PR-ens gjennomgangsområde, med samme tilskrivning og tillatelsesregler
+som for alt som skrives i appen. En kommentar og en etikett kontrolleres på samme
+måte: ut fra medlemmet som skrev eller la den til. Svarene kommer tilbake på
+GitHub, i samme spor som spørsmålet ble stilt i.
 
 Tre beslutninger former funksjonen, og hver av dem er den samme beslutningen
 chatbroen tok for chat, formulert på nytt for en kodevert: **hvilken retning
@@ -24,16 +24,19 @@ tilkoblingen går i**, **hva som autoriserer en kommentar som kommer utenfra** o
 
 GitHubs eneste push-kanal for en app er en webhook, og en webhook trenger en
 innkommende URL — nettopp det denne flaten bevisst aldri krever. Derfor skjer
-oppdagelsen i en søkerunde: omtrent hvert minutt spør ett aliasert søk per
-appinstallasjon GitHub om PR-er som nevner boten (eller den korte slug-en dens)
-og om åpne PR-er som bærer gjennomgangsetiketten, PR-er som allerede har et
-gjennomgangsområde får kommentartrådene sine lest, og alt diffes på
-kommentar-id mot det som ble sett i forrige søkerunde.
+oppdagelsen i en søkerunde: ett aliasert søk per appinstallasjon spør GitHub om
+PR-er som nevner boten (eller den korte slug-en dens) og om åpne PR-er som bærer
+gjennomgangsetiketten, PR-er som allerede har et gjennomgangsområde får
+kommentartrådene sine lest, og alt diffes på kommentar-id mot det som ble sett i
+forrige søkerunde. En egen app går gjennom høyst 25 PR-er hvert minutt. Via
+Connect går kallene på medlemmenes egen GitHub-kvote, så søkerunden kjører hvert
+andre minutt over høyst 10, og et arbeidsområde under 15 % av kvoten hoppes over
+til den har hentet seg inn. Connect selv ser aldri PR-innhold.
 
 Det er verdt å navngi designkonsekvensene:
 
 - **Forsinkelsen er et søkerundeintervall, ikke en hendelse.** 👀-bekreftelsen
-  lander i løpet av omtrent et minutt. Ingenting kritisk hviler på den.
+  lander i løpet av én søkerunde. Ingenting kritisk hviler på den.
 - **Nøyaktig én gang per kommentar.** Kommentar-id-er er unike på tvers av
   GitHub; hver av dem registreres i det øyeblikket den klassifiseres som
   kvalifisert, før noe handler på den. Et krasj kan miste behandlingen av en
@@ -50,52 +53,59 @@ Det er verdt å navngi designkonsekvensene:
   en omtale er veien til å kjøre på nytt.
 
 Søket kjører én gang per installasjonskonto på eierens egen klient, fordi et
-installasjonstoken bare ser repoene til sin egen installasjon — én felles
+token bare ser repoene til sin egen installasjon — én felles
 legitimasjon for hele serveren ville i stillhet overse hver PR under appens
 andre installasjoner.
 
 ## Medlemskap autoriserer, ikke kommentaren
 
-En PR-kommentar kommer inn med lite annet enn en forfatterpålogging — en
-uautentisert ekstern identitet inntil det motsatte er bevist. Boten løser den
-opp mot en omvendt indeks over arbeidsområdets medlemmer og deres tilkoblede
-GitHub-kontoer, gjenoppbygd med en TTL fordi folk logger inn og blir invitert
-mens serveren kjører.
+En PR-kommentar kommer inn med en forfatter — en uautentisert ekstern identitet
+inntil det motsatte er bevist. Serveren løser opp forfatterens uforanderlige
+numeriske GitHub-konto-id (aldri påloggingsnavnet, som kan endres og gjenbrukes)
+mot GitHub-påloggingene til arbeidsområdets medlemmer, gjenoppbygd med en TTL
+fordi folk logger inn og blir invitert mens serveren kjører. For etiketten
+`ai-review` er det den som sist la den til, som løses opp.
 
-Å feile lukket ser ut som en stige, og hvert trinn svarer i tråden det avviste
-i:
+Tre kontroller, i rekkefølge, og å feile på en av dem skjer i stillhet — ingenting
+legges ut:
 
-- **En ukjent pålogging** — ikke tilkoblet, eller tilkoblet av noen som ikke er
-  medlem av dette arbeidsområdet — får beskjed om å logge inn og sørge for at de
-  hører til
-- **Et skrivebeskyttet medlem** (`viewer` eller `guest`) får beskjed om at rollen
-  deres ikke kan starte arbeid
+- **Et innlogget medlem.** Kontoen må tilhøre et medlem av _dette_
+  arbeidsområdet som har logget inn på GitHub på denne serveren
+- **En rolle med skrivetilgang.** `viewer` og `guest` kan ikke starte arbeid
+- **Push-tilgang.** Svar bruker et `bot`-token som er begrenset til medlemmets
+  tilgang til repoet. Hvis serveren ikke kan utstede et, går den ikke videre
 
-De to tilfellene med ukjent pålogging deler ett svar: den omvendte indeksen
-returnerer bare et medlem av _dette_ arbeidsområdet, så en ikke-tilkoblet konto
-og en tilkoblet ikke-medlem er samme bom. Ingen av dem går videre. En kommentar
-tilskrives aldri noen som ikke sendte den, og en fremmeds ord kommer aldri inn i
-et arbeidsområde de ikke kan se.
+Hver kontroll kjører før noen bekreftelse, så en fremmed får verken reaksjon
+eller svar. En kommentar tilskrives aldri noen som ikke sendte den, og en
+fremmeds ord kommer aldri inn i et arbeidsområde de ikke kan se.
 
-Etiketten `ai-review` har ingen forfatter å løse opp, så den klatrer ikke denne
-stigen. Å legge den til starter gjennomgangen i arbeidsområdet som allerede har
-repoet tilkoblet.
+### Kravet
+
+Det siste trinnet før noe arbeid er en 👀-reaksjon, lagt til med forfatterens
+egen GitHub-pålogging. GitHub svarer `201` for en ny reaksjon og `200` for en som
+allerede finnes, så reaksjonen fungerer også som en lås: når samme person er
+logget inn på to servere som begge har repoet tilkoblet, er det bare den første
+som reagerer, som gjør arbeidet. En kommentar som flere arbeidsområder på én
+server ser, tilbys hvert av dem, og det samme kravet avgjør.
 
 ## To identiteter, med vilje
 
 Hver side av samtalen bærer en annen identitet, og forskjellen er selve
 funksjonen:
 
-- **På GitHub er boten serveren.** Hver kommentar, reaksjon og svar broen legger
-  ut, går på appens installasjonstoken. Ingen har klikket på noe i en klient, så
-  ingenting låner en persons konto — samme regel som holder webhooker og polling
-  unna menneskelig legitimasjon.
+- **På GitHub er svaret automatisering på dine vegne.** Hvert svar går på et
+  `bot`-token for det ene repoet, begrenset til tilgangen til medlemmet som
+  spurte. Med en egen app er forfatteren appens `[bot]`-konto. Via Connect er et
+  token for den delte appen et brukertoken, så svaret skrives av kontoen til
+  medlemmet som spurte, som handler gjennom appen. Uansett begynner hvert svar
+  med `**Control Center** (for @login):`, som sier hvem som spurte og samtidig
+  fungerer som løkkevern.
 - **I området er spørsmålet ditt.** Meldingen tilskrives medlemmet forfatteren
   ble løst opp til, og agentkjøringen utføres på deres vegne: commits får dem som
   medforfatter, og områdets autonomiknott og tillatelsesregler for handlinger
   gjelder nøyaktig som for en melding skrevet i appen. Skrivinger til kodeverten
-  fra kjøringen går fortsatt ut som appen — samme regel som kulepunktet over —
-  ikke på medlemmets personlige token.
+  fra kjøringen bruker tokener for ett repo, begrenset av det medlemmet, aldri
+  påloggingen deres overlevert i sin helhet.
 
 Å publisere gjennomgangsfunn tilbake til GitHub er fortsatt en persons beslutning,
 tatt i Control Center. En omtale kan _starte_ en gjennomgang; bare et menneske
@@ -105,8 +115,10 @@ publiserer en.
 
 Alt som er skrevet av en botkonto, forkastes før noen port kjører — vår
 spesifikt, og enhver `[bot]`-endelse, slik at en annen apps gjennomgangsbot
-heller ikke kan vekke vår. Uten dette ville botens egne svar komme inn som nye
-kommentarer og utløse den på nytt i det uendelige.
+heller ikke kan vekke vår — og det samme gjør hver kommentar som begynner med
+prefikset `**Control Center** (for @`, siden et svar via Connect skrives av en
+persons konto. Uten dette ville svarene komme inn som nye kommentarer og utløse
+broen på nytt i det uendelige.
 
 `[bot]`-endelsen er også grunnen til at kortformen finnes. GitHub fastsetter en
 appkonto sin pålogging til `<slug>[bot]`, tilbyr ingen autofullføring for den og
@@ -122,7 +134,10 @@ hypotetisk.
 - **Ingen automatisk publisering.** Funn lander i gjennomgangsområdet;
   publisering til GitHub er en egen handling utført av et menneske
 - **Ingen uklar identitet.** Forfatteren løses opp til nøyaktig ett medlem eller
-  avvises — det finnes ingen tilskrivning basert på gjetting
+  ignoreres — det finnes ingen tilskrivning basert på gjetting
+- **Ingen automatisk godkjenning.** Automatisering kan kommentere og be om
+  endringer, men en `APPROVE`-gjennomgang avvises før den sendes. Å godkjenne er
+  en persons handling
 - **Ingen GitHub App-webhook.** Denne flaten registrerer aldri noen, så det
   finnes ingen innkommende URL å eksponere for PR-kommentarer. Andre
   produktwebhooker (pipelines, sakssynkronisering) er et separat, valgfritt
@@ -135,7 +150,7 @@ hypotetisk.
 - [Chatbroer](/nb-NO/handbok/konsepter/chatbroer/): de samme tre beslutningene,
   tatt for chat
 - [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/): hvor
-  botidentiteten kommer fra
+  botidentiteten til en egen app kommer fra
 - [Flerbruker — identitet, medlemskap og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/):
   partene og rollene en pålogging løses opp gjennom
 - [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): hva agenten

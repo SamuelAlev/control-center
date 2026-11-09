@@ -2575,6 +2575,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get credentialsWaitingForLogin => 'بانتظار التفويض في متصفحك…';
 
   @override
+  String get credentialsConnectCodePrompt => 'أدخل الرمز المعروض في المتصفح';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'لا يبدو هذا رمز تسجيل دخول. تتكون الرموز من 8 أحرف وأرقام.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'هذا الرمز لا يطابق تسجيل الدخول هذا. تحقّق منه وحاول مرة أخرى.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'لم يُعدّ تسجيل الدخول إلى $provider على هذا الخادم بعد.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'لا يمكن الوصول إلى عنوان رد تسجيل الدخول لهذا الخادم بشكل آمن من الهاتف. سجّل الدخول من تطبيق سطح المكتب، أو اطلب من مالك الخادم إعداد عنوان HTTPS عام.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'انتهت صلاحية تسجيل الدخول. ابدأ محاولة جديدة.';
 
@@ -2595,10 +2615,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'إكمال تسجيل الدخول';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'لا يمكن الوصول بأمان إلى عنوان رجوع المتصفح لهذا الخادم من الهاتف. اطلب من مالك الخادم إعداد عنوان رجوع عام عبر HTTPS، أو أضف رمز وصول بدلًا من ذلك.';
 
   @override
   String get credentialsUpdateToken => 'تحديث رمز الوصول';

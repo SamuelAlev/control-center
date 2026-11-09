@@ -419,9 +419,9 @@ Two more rules that bite in practice:
 
 ## Run it in Docker
 
-Every release publishes a self-hosted stack of four GHCR images plus a
-separate \`cc-server-demo\` image. Pin a version tag or ride
-\`latest\`.
+Every release publishes a self-hosted stack of four GHCR images, the optional
+\`cc-connect\` sign-in service and a separate \`cc-server-demo\` image. Pin a
+version tag or ride \`latest\`.
 
 | Image | What it is | Container port |
 | --- | --- | --- |
@@ -429,6 +429,7 @@ separate \`cc-server-demo\` image. Pin a version tag or ride
 | \`ghcr.io/samuelalev/cc-webapp\` | The web client (static nginx) | \`8080\` |
 | \`ghcr.io/samuelalev/cc-remote\` | The phone companion PWA (static nginx) | \`8080\`, usually published on \`8081\` |
 | \`ghcr.io/samuelalev/cc-signaling-server\` | The pairing relay (optional) | \`8788\` |
+| \`ghcr.io/samuelalev/cc-connect\` | Control Center Connect, for running provider sign-ins for your own servers (optional) | \`8790\` |
 
 Things to know before exposing any of it:
 
@@ -442,6 +443,10 @@ Things to know before exposing any of it:
 - The signaling relay is a fallback only. A phone uses loopback, LAN, a tailnet
   or a direct \`wss://\` path when one is reachable. Skip the relay if your
   clients always reach the server directly.
+- Provider secrets (\`GITHUB_APP_PRIVATE_KEY\`, \`GITHUB_CLIENT_SECRET\`,
+  \`GOOGLE_OAUTH_CLIENT_SECRET\`, \`LINEAR_API_KEY\`, any \`SLACK_*SECRET*\`)
+  go in a mounted \`.env\` at \`/app/bin/.env\`, never \`-e\`: the server
+  refuses to start (exit 78) when one is exported in its process environment.
 
 ## Pair a client before the first connection
 
@@ -462,8 +467,9 @@ device up with no restart. In Docker, run it against the same volume with
 - A credential minted by the CLI has no expiry, unlike the 30 days an in-app
   pairing sets.
 
-Other subcommands: \`cc_server calendar connect --workspace <id>\`,
-\`cc_server update\` (refused for installs it does not own, such as the
+Other subcommands: \`cc_server connect status|enable [--url URL]|disable|rotate-key --yes\`
+(which Control Center Connect, if any, runs this server's provider sign-ins;
+\`CC_CONNECT_URL\` locks the choice), \`cc_server update\` (refused for installs it does not own, such as the
 desktop's embedded server, a source checkout or a container), and
 \`cc_server --version\`, which prints the same identity \`/healthz\` and the RPC
 handshake advertise.
@@ -477,7 +483,7 @@ structural rather than a convention.
 | --- | --- |
 | \`global.db\` | The workspace registry, users, paired devices, the newsfeed, the fleet queue |
 | \`<workspaceId>/workspace.db\` | One database per workspace: agents, spaces, tickets, memory, the code graph |
-| \`secrets.json\` | Pairing keys, the provider app identity, per-user tokens and SSO secrets, mode \`0600\` |
+| \`secrets.json\` | Pairing keys, the Connect install key, provider apps, people's sign-ins and SSO secrets, mode \`0600\` |
 | \`models/\` | On-device embedding, diarization and speech models |
 | \`meetings/<meetingId>/\` | Retained meeting audio |
 | \`rigs/\` | Rig disk images, per-rig microVM state and the dev-domain certificate authority |

@@ -267,14 +267,74 @@ void main() {
       expect(reviewSpaces.updatedStatus, isNull);
     });
   });
+
+  group('ReviewPublisherService.publish — attribution', () {
+    ReviewPublisherService attributing({required bool asPerson}) =>
+        ReviewPublisherService(
+          githubPrClientFor: (_, {required workspaceId, required owner}) =>
+              github,
+          messaging: messaging,
+          reviewSpaces: reviewSpaces,
+          automatedAttribution:
+              ({required workspaceId, required owner, actingUserId}) async =>
+                  asPerson ? (body) => '[cc for @octo] $body' : null,
+        );
+
+    setUp(() {
+      reviewSpaces.association = association();
+      messaging.messages = [
+        nodeMessage(
+          'm1',
+          payload: payload(confirmedBy: ['peer']),
+          senderId: 'a1',
+          content: 'null check missing',
+        ),
+      ];
+    });
+
+    test('automation posting under a person names itself everywhere, inline '
+        'comments included', () async {
+      await attributing(
+        asPerson: true,
+      ).publish(workspaceId: 'ws1', spaceId: 'ch1');
+      final submit = github.submits.single;
+      expect(submit.body, startsWith('[cc for @octo] '));
+      expect(submit.comments, isNotEmpty);
+      for (final comment in submit.comments!) {
+        expect(comment['body'] as String, startsWith('[cc for @octo] '));
+      }
+    });
+
+    test('a bot account needs no prefix', () async {
+      await attributing(
+        asPerson: false,
+      ).publish(workspaceId: 'ws1', spaceId: 'ch1');
+      final submit = github.submits.single;
+      expect(submit.body, isNot(startsWith('[cc for @octo]')));
+      for (final comment in submit.comments!) {
+        expect(comment['body'] as String, isNot(startsWith('[cc for @octo]')));
+      }
+    });
+
+    test(
+      'a person pressing publish posts their own, unattributed review',
+      () async {
+        await attributing(
+          asPerson: true,
+        ).publish(workspaceId: 'ws1', spaceId: 'ch1', actingUserId: 'alice');
+        expect(github.submits.single.body, isNot(startsWith('[cc for @octo]')));
+      },
+    );
+  });
 }
 
 class _SubmitCall {
-  _SubmitCall(this.owner, this.repo, this.prNumber, this.comments);
+  _SubmitCall(this.owner, this.repo, this.prNumber, this.comments, this.body);
   final String owner;
   final String repo;
   final int prNumber;
   final List<Map<String, dynamic>>? comments;
+  final String? body;
 }
 
 /// A [GitHubPrClient] subclass that captures `submitReview` calls. The real
@@ -304,7 +364,7 @@ class _FakeGithub extends GitHubPrClient {
     List<Map<String, dynamic>>? comments,
     CancelToken? cancelToken,
   }) async {
-    final call = _SubmitCall(owner, repo, prNumber, comments);
+    final call = _SubmitCall(owner, repo, prNumber, comments, body);
     submits.add(call);
     if (submits.length == 1) {
       if (firstSubmitThrows != null) {

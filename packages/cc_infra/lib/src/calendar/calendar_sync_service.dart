@@ -7,10 +7,10 @@ import 'package:cc_infra/src/network/google_calendar_api_client.dart';
 import 'package:cc_infra/src/network/models/google_calendar_event.dart';
 import 'package:uuid/uuid.dart';
 
-/// Periodically syncs the active workspace's connected Google Calendar
-/// (read-only) into the local store.
+/// Periodically syncs the active workspace's connected Google Calendar into
+/// the local store.
 ///
-/// Mirrors `PrPollingService`: a [Timer.periodic] plus an immediate run on
+/// A [Timer.periodic] plus an immediate run on
 /// start. A no-op when there is no active workspace or no connected account.
 ///
 /// The rolling-window sweep is **incremental**: the first pass per calendar
@@ -401,61 +401,80 @@ class CalendarSyncService {
     String accountId,
     DateTime now,
     String calendarId,
-  ) {
-    final start = dto.start.resolved;
-    var end = dto.end.resolved;
-    if (end.isBefore(start)) {
-      end = start;
-    }
-    return CalendarEvent(
-      id: _uuid.v4(),
-      workspaceId: workspaceId,
-      accountId: accountId,
-      externalEventId: dto.id,
-      calendarId: calendarId,
-      title: dto.summary,
-      description: dto.description,
-      location: dto.location,
-      startTime: start,
-      endTime: end,
-      isAllDay: dto.isAllDay,
-      attendees: _resolveAttendees(dto),
-      meetingUrl: dto.meetUrl,
-      status: CalendarEventStatus.fromStorage(dto.status),
-      recurringEventId: dto.recurringEventId,
-      updatedAt: dto.updated ?? now,
-    );
-  }
-
-  /// Maps the DTO's attendees to domain attendees, backfilling any missing
-  /// per-attendee display name from the top-level organizer/creator objects —
-  /// Google often provides the real name only there, while invitee entries
-  /// carry just an email.
-  List<CalendarAttendee> _resolveAttendees(GoogleCalendarEvent dto) {
-    final nameByEmail = <String, String>{};
-    for (final p in [dto.organizer, dto.creator]) {
-      final name = p?.displayName?.trim();
-      if (p != null && p.email.isNotEmpty && name != null && name.isNotEmpty) {
-        nameByEmail.putIfAbsent(p.email.toLowerCase(), () => name);
-      }
-    }
-    return dto.attendees
-        .map((a) {
-          final existing = a.displayName?.trim();
-          final resolved = (existing != null && existing.isNotEmpty)
-              ? existing
-              : nameByEmail[a.email.toLowerCase()];
-          return CalendarAttendee(
-            email: a.email,
-            displayName: resolved,
-            responseStatus: a.responseStatus,
-            self: a.self,
-            organizer: a.organizer,
-          );
-        })
-        .toList(growable: false);
-  }
+  ) => calendarEventFromGoogle(
+    dto,
+    id: _uuid.v4(),
+    workspaceId: workspaceId,
+    accountId: accountId,
+    calendarId: calendarId,
+    now: now,
+  );
 
   /// Disposes the timer.
   void dispose() => stop();
+}
+
+/// Maps one Google event resource to a stored [CalendarEvent] with local id
+/// [id]. Shared by the sync and by writes that store what Google returned
+/// (a freshly created event shows before the next sync).
+CalendarEvent calendarEventFromGoogle(
+  GoogleCalendarEvent dto, {
+  required String id,
+  required String workspaceId,
+  required String accountId,
+  required String calendarId,
+  required DateTime now,
+}) {
+  final start = dto.start.resolved;
+  var end = dto.end.resolved;
+  if (end.isBefore(start)) {
+    end = start;
+  }
+  return CalendarEvent(
+    id: id,
+    workspaceId: workspaceId,
+    accountId: accountId,
+    externalEventId: dto.id,
+    calendarId: calendarId,
+    title: dto.summary,
+    description: dto.description,
+    location: dto.location,
+    startTime: start,
+    endTime: end,
+    isAllDay: dto.isAllDay,
+    attendees: _resolveAttendees(dto),
+    meetingUrl: dto.meetUrl,
+    status: CalendarEventStatus.fromStorage(dto.status),
+    recurringEventId: dto.recurringEventId,
+    updatedAt: dto.updated ?? now,
+  );
+}
+
+/// Maps the DTO's attendees to domain attendees, backfilling any missing
+/// per-attendee display name from the top-level organizer/creator objects —
+/// Google often provides the real name only there, while invitee entries
+/// carry just an email.
+List<CalendarAttendee> _resolveAttendees(GoogleCalendarEvent dto) {
+  final nameByEmail = <String, String>{};
+  for (final p in [dto.organizer, dto.creator]) {
+    final name = p?.displayName?.trim();
+    if (p != null && p.email.isNotEmpty && name != null && name.isNotEmpty) {
+      nameByEmail.putIfAbsent(p.email.toLowerCase(), () => name);
+    }
+  }
+  return dto.attendees
+      .map((a) {
+        final existing = a.displayName?.trim();
+        final resolved = (existing != null && existing.isNotEmpty)
+            ? existing
+            : nameByEmail[a.email.toLowerCase()];
+        return CalendarAttendee(
+          email: a.email,
+          displayName: resolved,
+          responseStatus: a.responseStatus,
+          self: a.self,
+          organizer: a.organizer,
+        );
+      })
+      .toList(growable: false);
 }

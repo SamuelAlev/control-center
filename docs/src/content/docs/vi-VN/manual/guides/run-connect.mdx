@@ -1,0 +1,288 @@
+---
+title: Chạy máy chủ Connect
+description: Chạy Control Center Connect của riêng bạn từ ảnh Docker cc-connect, hoặc gắn nó trong cc_server, để các máy chủ của bạn đăng nhập người dùng qua những ứng dụng nhà cung cấp mà bạn đăng ký.
+slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect chạy các đăng nhập nhà cung cấp (GitHub, Google Calendar, Linear,
+Slack) cho những máy chủ chưa đăng ký ứng dụng riêng. Hướng dẫn này chỉ cách chạy Connect
+của riêng bạn, để các ứng dụng nhà cung cấp, bí mật của chúng và danh sách máy chủ được phép
+dùng chúng đều nằm trong tay bạn.
+
+Những gì Connect thấy và không thấy được mô tả trong [tham chiếu Connect](/vi-VN/so-tay/tham-chieu/connect/).
+Hãy đọc nó trước nếu bạn đang cân nhắc có nên chạy một Connect hay không.
+
+:::note[Bạn có thể không cần nó]
+Một máy chủ có thể tự đăng ký ứng dụng của mình thay vì thế: **Cài đặt → Máy chủ → Đăng nhập
+một lần → Ứng dụng nhà cung cấp**, nơi **Tạo ứng dụng GitHub của tôi** thiết lập GitHub chỉ
+trong một bước. Ứng dụng riêng của máy chủ chỉ được dùng khi chọn **Dùng ứng dụng của riêng tôi**: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, còn ứng dụng riêng của không gian làm việc vẫn áp dụng. Hãy chạy một
+Connect khi nhiều máy chủ nên dùng chung một bộ ứng dụng.
+:::
+
+## Điều kiện tiên quyết
+
+- Một địa chỉ **HTTPS** công khai cho Connect, chẳng hạn `https://connect.example.com`, đứng
+  sau một proxy kết thúc TLS. HTTP thuần chỉ được chấp nhận trên loopback
+- Docker, hoặc một `cc_server` mà bạn có thể khởi động lại với các biến môi trường bổ sung
+- Quyền đăng ký ứng dụng với từng nhà cung cấp bạn muốn phục vụ
+- Các máy chủ sẽ dùng nó, cùng chủ của chúng ở bên cạnh: mỗi máy chủ có một id cài đặt mà
+  bạn thêm vào danh sách cho phép của Connect
+
+## Bước 1: Chọn địa chỉ
+
+Chọn URL ngay bây giờ và giữ nguyên nó. `CONNECT_PUBLIC_URL` là phần của mọi việc Connect
+làm: chữ ký yêu cầu, niêm phong thông tin xác thực, URL chuyển hướng của nhà cung cấp và id cài
+đặt của mỗi máy chủ đều được ràng buộc với nó. Đổi nó về sau nghĩa là đăng ký lại các chuyển
+hướng và mọi người đăng nhập lại.
+
+## Bước 2: Đăng ký ứng dụng nhà cung cấp
+
+Chỉ đăng ký những nhà cung cấp bạn muốn phục vụ. Một nhà cung cấp có biến số chưa đầy đủ sẽ
+bị loại khỏi cấu hình của Connect, và các máy chủ thấy nó là không khả dụng. `<base>` bên dưới
+là `CONNECT_PUBLIC_URL` của bạn.
+
+| Nhà cung cấp  | Đăng ký                                                                                                                                                                                                                                                              | Giữ lại                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` với **Redirect on update** bật. Để **Request user authorization (OAuth) during installation** tắt: nếu bật, GitHub bỏ qua setup URL. Giữ **Expire user authorization tokens** bật | App id, slug, client id, client secret |
+| **Google**    | Một OAuth client loại **Web application** với redirect URI `<base>/oauth/google/callback`, và Google Calendar API đã được bật                                                                                                                                       | Client id, client secret                |
+| **Linear**    | Một ứng dụng OAuth với callback URL `<base>/oauth/linear/callback` và `<base>/oauth/linear_app/callback`                                                                                                                                                              | Chỉ client id                           |
+| **Slack**     | Redirect URL `<base>/oauth/slack_oidc/callback` và `<base>/oauth/slack/callback`. Event Subscriptions tại `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash command tại `<base>/v1/hooks/slack/commands`. Bật token rotation | App id, client id, client secret, signing secret |
+
+Hãy cấp cho GitHub App các quyền kho mã sau: **Metadata** chỉ đọc, **Contents** đọc và ghi,
+**Pull requests** đọc và ghi, **Issues** đọc và ghi, **Checks**, **Actions** và **Commit
+statuses** chỉ đọc. Thêm quyền tổ chức **Members** chỉ đọc cho các yêu cầu review của nhóm.
+Webhook có thể tắt: các máy chủ tự thăm dò.
+
+Connect không bao giờ cần khóa riêng của GitHub App. Thay vào đó nó cấp các token một-kho từ
+đăng nhập của chính người dùng. Linear cũng không cần bí mật: Connect trả mã về cho máy chủ, và
+máy chủ tự hoàn tất trao đổi.
+
+## Bước 3: Thu thập id cài đặt
+
+Connect chỉ trả lời các máy chủ trong danh sách cho phép của nó. Trên mỗi máy chủ, hãy trỏ nó
+tới Connect của bạn, rồi đọc id cài đặt của nó:
+
+1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần**, mở thẻ **Control Center Connect** và chọn
+   **Dùng máy chủ Connect tùy chỉnh**
+2. Nhập URL của bạn rồi lưu. Thẻ hiển thị **Id cài đặt** của máy chủ
+
+Từ một terminal trên máy chủ, điều tương tự là:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` in ra id cài đặt. Nó hiển thị `install_blocked` cho đến khi Bước 5 hoàn tất, điều đó
+là bình thường.
+
+Id cài đặt được suy ra theo từng địa chỉ Connect, nên cùng một máy chủ có id khác nhau cho mỗi
+Connect mà nó nói chuyện. Nó chỉ đổi khi chủ máy chủ xoay khóa.
+
+## Bước 4: Tạo khóa niêm phong
+
+Connect mã hóa mọi thông tin xác thực mà nó trả về bằng một khóa niêm phong. Hãy tạo một khóa và
+giữ nó như một tệp bí mật:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Mất khóa niêm phong sẽ đăng xuất mọi người: không niêm phong nào có thể mở được nếu thiếu nó.
+
+## Bước 5: Khởi động container
+
+Mỗi bản phát hành công bố `ghcr.io/samuelalev/cc-connect` kèm chứng nhận nguồn gốc bản dựng.
+Trong môi trường production, hãy ghim một thẻ phiên bản.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Hãy trỏ reverse proxy của bạn tới cổng `8790`. Ảnh chạy với một người dùng không có đặc quyền,
+giữ trạng thái trong volume `/data` và có health check tích hợp (`cc-connect --healthcheck`, thăm
+dò `/healthz`).
+
+Connect từ chối khởi động (mã thoát `78`) khi cấu hình của nó mở, không an toàn hoặc còn dở dang,
+và in ra biến nào sai. Thiếu danh sách cho phép, một địa chỉ `http` không phải loopback, một khóa
+niêm phong sai định dạng, hoặc cả `NAME` lẫn `NAME_FILE` cùng được đặt đều khiến nó dừng.
+
+Điểm kiểm tra: trên mỗi máy chủ, thẻ Connect hiển thị **Đang hoạt động**, và **Mỗi kiểu đăng nhập
+chạy ở đâu** ghi **Connect** cho mọi nhà cung cấp bạn đã đăng ký. `cc_server connect status` in
+ra `Health: ok` cùng các làn tương tự.
+
+## Gắn Connect bên trong cc_server
+
+Một máy chủ có thể tự lưu trữ Connect thay vì dùng một container riêng. Dịch vụ được gắn chính là
+dịch vụ mà ảnh chạy.
+
+1. Đặt các biến `CONNECT_*` vào tệp `.env` của máy chủ (hoặc môi trường của nó), như ở Bước 5
+2. Thêm `CC_SERVER_CONNECT_HOST=on`
+3. Khởi động lại máy chủ. Nhật ký của nó in ra `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect khi đó được phục vụ tại `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` mặc định là origin URL công khai của máy chủ cộng với `/connect`. Hãy đặt
+  nó rõ ràng khi đứng sau proxy. Đường dẫn của nó phải chính xác là `/connect`, và phải dùng HTTPS
+  trừ khi là loopback
+- Chỉ các biến `CONNECT_*` mới đến được dịch vụ được gắn, nên nó không bao giờ mượn các ứng dụng
+  nhà cung cấp của chính máy chủ
+- `CONNECT_ALLOWED_INSTALLS` vẫn bắt buộc, kể cả với chính máy chủ đang lưu trữ
+- Một lần gắn cấu hình sai sẽ khiến máy chủ không khởi động được, thay vì phục vụ một broker mở
+- Máy chủ demo không bao giờ gắn nó
+
+Đăng ký chuyển hướng của nhà cung cấp với `https://<server>/connect`, rồi trỏ các máy chủ (kể cả
+máy chủ đang lưu trữ) tới URL đó như ở Bước 3.
+
+## Tham chiếu cấu hình
+
+Mọi cài đặt là một biến môi trường. Bất kỳ bí mật nào cũng có thể lấy từ một tệp được gắn: đặt
+`NAME_FILE` thay cho `NAME`. Connect đọc lại tệp tối đa mỗi 30 giây và giữ giá trị tốt gần nhất.
+Các bí mật được đánh dấu **dual** cũng nhận `NAME_PREVIOUS` (hoặc `NAME_PREVIOUS_FILE`) trong lúc
+xoay vòng.
+
+### Địa chỉ và truy cập
+
+| Biến                            | Mặc định  | Ý nghĩa                                                                                                                          |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | bắt buộc  | URL công khai chuẩn. HTTPS, hoặc `http` chỉ trên loopback. Một đường dẫn nghĩa là được gắn. Không có query hay fragment        |
+| `CONNECT_ALLOWED_INSTALLS`      | bắt buộc  | Các id cài đặt phân tách bằng dấu phẩy. `*` chỉ được chấp nhận cùng `CONNECT_SIGNED_CONFIG_FILE`                                 |
+| `CONNECT_DENY_INSTALLS`         |           | Các id cài đặt bị từ chối ngay cả khi đã được cho phép                                                                           |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Các id chủ sở hữu GitHub dạng số. Khi đặt, token kho mã chỉ được cấp cho các kho mã do họ sở hữu                               |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Địa chỉ bind và cổng                                                                                                      |
+| `CONNECT_TRUST_PROXY`           | `0`       | Số chặng proxy đáng tin trong `X-Forwarded-For` (0 đến 8). Chỉ dùng cho giới hạn tốc độ theo địa chỉ                              |
+
+### Các làn nhà cung cấp
+
+| Biến                                                                        | Mặc định | Ý nghĩa                                                                     |
+| --------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |           | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |           | Bí mật, dual                                                                |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |           | Client Google. Bí mật là dual                                               |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |           | Ứng dụng Linear. Không có bí mật                                            |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |           | Ứng dụng Slack                                                              |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |           | Bí mật, dual                                                                |
+| `CONNECT_KLIPY_APP_KEY`                                                     |           | Khóa tìm GIF Klipy. Bí mật, dual                                            |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy`   | `proxy` giữ khóa trong Connect; `key` đưa khóa cho các máy chủ              |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`       | GitHub, Google và Slack: thế hệ được ghi vào các niêm phong mới             |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`       | GitHub, Google và Slack: niêm phong cũ hơn phải đăng nhập lại               |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`    | Mọi làn: `false` ngừng đăng nhập mới trong khi đăng nhập hiện có vẫn làm mới |
+
+### Niêm phong, trạng thái và lưu trữ
+
+| Biến                                                      | Mặc định                   | Ý nghĩa                                                                                                    |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` hoặc `gcp-kms`                                                                                     |
+| `CONNECT_SEAL_KEYS`                                       |                            | Bí mật, bắt buộc với `local`. Các mục `kid:key` phân tách bằng dấu phẩy, mới nhất trước; các mục cũ hơn vẫn giải mã được |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, bắt buộc với `gcp-kms`                                   |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` cho một instance, `redis` cho nhiều instance                                                      |
+| `CONNECT_REDIS_URL`                                       |                            | Bí mật. `redis://` hoặc `rediss://`                                                                        |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | Bundle CA cho `rediss://`                                                                                  |
+| `CONNECT_BINDINGS`                                        | `file`                     | Nơi lưu các ràng buộc cài đặt GitHub: `file` hoặc `firestore`                                             |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` trong ảnh) | Chứa `bindings.json`                                                                                       |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | cơ sở dữ liệu `(default)`  | Dùng cho `CONNECT_BINDINGS=firestore`                                                                      |
+
+### Cấu hình, nhật ký và giới hạn
+
+| Biến                                    | Mặc định           | Ý nghĩa                                                                                             |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | Một cấu hình đã ký offline, được phục vụ nguyên trạng. Dùng cho Connect hosted của Control Center   |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Các khóa mà cấu hình đã ký phải xác minh được                                                       |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoch của cấu hình mà một Connect tự lưu trữ tạo ra                                                 |
+| `CONNECT_LOG_HMAC_KEY`                  | ngẫu nhiên mỗi tiến trình | Bí mật. Đặt nó để các thẻ thay cho id cài đặt trong nhật ký ổn định qua các lần khởi động lại và các instance |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Được báo cáo bởi `/v1/version`                                                                      |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Số yêu cầu cho mỗi cài đặt                                                                          |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Số yêu cầu cho mỗi địa chỉ                                                                          |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Số yêu cầu cho toàn bộ dịch vụ                                                                      |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Sự kiện Slack cho mỗi team                                                                          |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Số lượt tìm GIF cho mỗi cài đặt                                                                     |
+
+## Chạy nhiều hơn một instance
+
+Một instance với `CONNECT_STATE=memory` là đủ cho hầu hết các tổ chức. Nhiều instance phía sau
+một địa chỉ cần `CONNECT_STATE=redis`, và hoặc một `CONNECT_DATA_DIR` dùng chung hoặc
+`CONNECT_BINDINGS=firestore`, để một đăng nhập bắt đầu trên instance này có thể hoàn tất trên
+instance khác.
+
+## Xoay bí mật nhà cung cấp
+
+Không ai bị đăng xuất:
+
+1. Tạo bí mật mới tại nhà cung cấp và giữ bí mật cũ
+2. Chuyển giá trị cũ sang `NAME_PREVIOUS`, đặt giá trị mới vào `NAME`, và tăng
+   `CONNECT_<LANE>_SECRET_GENERATION`. Các tệp được gắn sẽ được nhận trong vòng 30 giây
+3. Chờ các đăng nhập làm mới, rồi xóa bí mật cũ tại nhà cung cấp và bỏ `NAME_PREVIOUS`
+
+Để xoay khóa niêm phong, hãy đặt một mục `cc-connect-config seal-key` mới vào đầu
+`CONNECT_SEAL_KEYS` và giữ mục cũ cho đến khi các niêm phong của nó đã được làm mới.
+
+## Đổi ứng dụng
+
+Các máy chủ ghi nhớ id ứng dụng và id client mà Connect của bạn đã công bố lần đầu chúng dùng
+nó. Nếu bạn thay một ứng dụng, thẻ Connect của mọi máy chủ sẽ hiển thị **Ứng dụng của Connect
+đã thay đổi**, và đăng nhập qua Connect sẽ tạm dừng cho đến khi chủ của nó nhấn **Tin tưởng ứng
+dụng mới**. Hãy báo chủ máy chủ trước khi bạn chuyển, để họ biết lời nhắc đó đến từ bạn.
+
+## Chặn một máy chủ
+
+Thêm id cài đặt của nó vào `CONNECT_DENY_INSTALLS` rồi khởi động lại. Chủ của nó sẽ thấy
+"Connect đã chặn id cài đặt của máy chủ này" và mọi đăng nhập qua Connect trên đó sẽ dừng lại.
+
+## Xử lý sự cố
+
+### Một máy chủ báo Connect đã chặn nó
+
+Id cài đặt của nó không có trong `CONNECT_ALLOWED_INSTALLS`, hoặc nó có trong
+`CONNECT_DENY_INSTALLS`. Id đổi khi chủ máy chủ xoay khóa; hãy yêu cầu id mới.
+
+### Một nhà cung cấp hiển thị là không khả dụng
+
+Một trong các biến của nó bị thiếu, nên Connect đã loại làn đó ra. Hãy kiểm tra nhật ký khởi động
+và các bảng ở trên. GitHub cần đủ bốn thứ là app id, slug, client id và client secret; Google
+cần cả client id lẫn client secret.
+
+### Đăng nhập thất bại với lỗi không khớp redirect
+
+Redirect đã đăng ký với nhà cung cấp không khớp chính xác với `CONNECT_PUBLIC_URL`. Hãy so sánh
+scheme, host, cổng và đường dẫn `/connect` đối với một Connect được gắn.
+
+### Mọi người phải đăng nhập lại
+
+Khóa niêm phong đã thay đổi hoặc bị mất, một máy chủ đã xoay khóa của nó, hoặc dữ liệu của một máy
+chủ được khôi phục sang một máy khác. Một thông tin xác thực đã niêm phong chỉ mở được cho cài đặt
+và Connect đã tạo ra nó.
+
+## Hướng dẫn liên quan
+
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
+- [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
+
+## Tham chiếu liên quan
+
+- [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/)
+- [Lệnh `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/)

@@ -2,7 +2,7 @@
 title: Bir kod barındırıcısı bağlama
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub, GitLab veya Bitbucket’ı bağlayın — tek bir çalışma alanı üçünü birden kullanabilir.
 slug: tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center, uygulama genelinde **forge** olarak adlandırılan üç kod barındırıcısıyla çalışır: **GitHub**, **GitLab** ve **Bitbucket Cloud**. Hiçbiri varsayılan değildir. Birini bağlayın, her şey çalışır; birkaçını bağlayın, tek bir çalışma alanı hepsinden aynı anda depo barındırabilir.
@@ -13,9 +13,9 @@ Forge, her **deponun** bir özelliğidir ve depoyu kaydettiğinizde `origin` rem
 
 1. **Ayarlar → Çalışma alanı → Profil ve kimlik**'i açın (`/settings/workspace/profile`).
 2. **Kod barındırma** kartını bulun. Desteklenen her forge, bağlı olsun olmasın listelenir.
-3. Satır sunuyorsa **… ile oturum aç**'a, sunmuyorsa **Token ekle**'ye basıp bir token yapıştırın.
+3. **GitHub**’da **GitHub hesabıyla oturum aç**’a basın. **GitLab** ya da **Bitbucket**’ta **Token ekle**’ye basıp bir token yapıştırın.
 
-**Oturum aç**, sunucunuzun bir uygulama kaydettirdiği forge için görünür — bugün bu, cihaz akışıyla çalışan GitHub’dır (bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)). Geri kalan her şey yapıştırılan bir token’dır; tamamlanamayacak bir düğme yerine dürüst olanak budur.
+**GitHub yalnızca oturum açmayla çalışır.** Oturum açma, sunucu sahibinin hangisini kurduğuna göre sunucunun kendi GitHub App’i ya da Control Center Connect üzerinden yürür (bkz. [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)); yapıştırılacak bir GitHub token’ı yoktur. GitLab ve Bitbucket hâlâ kişisel bir token alır.
 
 Her iki durumda da kimlik bilgisi **size aittir ve sunucuda yaşar**; kullanıcı kimliğinize göre anahtarlanır: token, yazdığınız makinede saklanmaz, oturum açtığınız her cihaz aynı token’ı kullanır ve başka hiçbir üye onu okuyamaz. **Bir sonraki istekte** yürürlüğe girer — yeniden başlatılacak bir şey yoktur ve bağlantıyı kesmek, gönderilmesini anında durdurur.
 
@@ -23,30 +23,29 @@ Her satır, kimlik bilgisinin nereden geldiğini söyler; çünkü “token’ı
 
 | Alt başlık                                                          | Anlamı                                                                              |
 | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `Signed in as octocat`                                              | Kendi kimlik bilginiz kullanılıyor                                                  |
-| `Signed in as octocat · via this server's app`                      | Sunucunun uygulama kimliği yanıt veriyor — siz oturum açmadınız                      |
-| `Signed in as octocat · from the environment`                       | Yanıt veren, kimlik bilginiz değil, bir sunucu ortam değişkeni                       |
-| `Not connected`                                                     | Bu forge için hiç kimlik bilginiz yok                                                |
+| `octocat olarak oturum açıldı`                                      | Kendi kimlik bilginiz kullanılıyor                                                  |
+| `octocat olarak oturum açıldı · ortamdan`                           | Yalnızca GitLab ya da Bitbucket: yanıt veren, token’ınız değil, bir sunucu ortam değişkeni |
+| `Bağlı değil`                                                       | Bu forge için hiç kimlik bilginiz yok                                                |
+| `GitHub oturum açma bu sunucuda henüz ayarlanmadı.`                 | Sunucunun ne kendi GitHub App’i ne de Connect’i var; sunucu sahibi birini kurar      |
 
 ### Her forge hangi token’ı ister
 
 | Forge         | Token                                                                                                    | Nerede oluşturulur                                  |
 | ------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| **GitHub**    | Klasik: `repo` ve `read:org`. İnce taneli: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | `api` kapsamlı bir kişisel erişim token’ı                                                                 | gitlab.com → User settings → Access tokens          |
 | **Bitbucket** | Bir Atlassian API token’ı ve hesap e-postanız                                                             | id.atlassian.com → Security → API tokens            |
 
 Bitbucket, **kullanıcı adı olarak hesap e-postanızla** ve parola olarak da token’la kimlik doğrular. Hangi e-postayı token’la eşleştireceğini bilmesi için sunucu ortamında `BITBUCKET_EMAIL` ayarlayın.
 
-### Ya da ortamı kullanın
+### Arka plan işleri
 
-Headless ya da CI kurulumlarında sunucu şunları okur:
+Arkasında insan olmayan işlerin (ajan çalıştırmaları, pipeline’lar, PR yoklaması) de bir kimlik bilgisine ihtiyacı vardır ve her forge bunu farklı karşılar:
 
-- **GitHub** — `GITHUB_TOKEN`, ardından `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, ardından `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, ardından `BITBUCKET_TOKEN` (`BITBUCKET_EMAIL` ile birlikte)
+- **GitHub** — her seferinde tek bir depo için, sunucunun GitHub App’inden ya da Connect üzerinden üretilen ve hesap verebilir bir üyenin orada yapabilecekleriyle sınırlı bir token. Asla bir kişinin bütünüyle devredilmiş oturum açması değildir ve hiçbir ortam değişkeni ya da yapıştırılan token onun yerine geçmez. Bkz. [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/#kimlik-bilginiz-kimin-adına-konuşur)
+- **GitLab** — sunucu sahibinin yapıştırdığı token, ardından `GITLAB_TOKEN`, ardından `CI_JOB_TOKEN`
+- **Bitbucket** — sunucu sahibinin yapıştırdığı token, ardından `BITBUCKET_API_TOKEN`, ardından `BITBUCKET_TOKEN` (`BITBUCKET_EMAIL` ile birlikte)
 
-Bunlar sizin değil, **sunucunun** kimlik bilgisidir ve bu ayrım kritik önem taşır: sizin adınıza yapılan bir istek, sizin kimlik bilginizi ve başka hiçbir şeyi kullanır; dolayısıyla ortam sizin yerinize sessizce geçmez. Arkasında insan olmayan işler — webhook’lar, PR yoklaması, bilet eşitleme — önce sunucunun uygulama kimliğini, sonra sunucu sahibinin kimlik bilgisini, en sonunda da ortamı çözer. Bu sıra sabittir; böylece “oturum açtım ve hiçbir şey değişmedi” asla desteklenen bir sonuç olmaz.
+GitLab ve Bitbucket ortam değişkenleri sizin değil, **sunucunun** kimlik bilgisidir: sizin adınıza yapılan bir istek, sizin token’ınızı ve başka hiçbir şeyi kullanır; dolayısıyla ortam sizin yerinize sessizce geçmez.
 
 ## Her forge’da farklı bir kişisiniz
 
@@ -94,11 +93,11 @@ GitLab, bir pull request’e **merge request** der. Control Center kendi modeli 
 
 ### PR listesi boş ve bir forge’ın bağlı olmadığını söylüyor
 
-O forge için hiç kimlik bilginiz yok. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** altında oturum açın ya da bir token yapıştırın. Diğer forge’ların depoları etkilenmez.
+O forge için hiç kimlik bilginiz yok. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** altında GitHub’a oturum açın ya da bir GitLab veya Bitbucket token’ı yapıştırın. Diğer forge’ların depoları etkilenmez.
 
 ### Bir forge bağladım ama depoları hâlâ hiçbir şey göstermiyor
 
-Satırın alt başlığına bakın. “bu sunucunun uygulaması üzerinden” ya da “ortamdan” yazıyorsa, beklediğinizden farklı bir kimlik bilgisi yanıt veriyordur — istediğiniz her şeyde kendi kimlik bilginiz kazanır; dolayısıyla aksini söylüyorsa sizinki kaydedilmemiştir.
+Satırın alt başlığına bakın. Bir GitLab ya da Bitbucket satırında “ortamdan” yazıyorsa, beklediğinizden farklı bir kimlik bilgisi yanıt veriyordur — istediğiniz her şeyde kendi token’ınız kazanır; dolayısıyla aksini söylüyorsa sizinki kaydedilmemiştir. GitHub’da, GitHub App’in depoların sahibi olan hesaba kurulu olduğunu kontrol edin.
 
 ### Bir depo kaydolmuyor
 

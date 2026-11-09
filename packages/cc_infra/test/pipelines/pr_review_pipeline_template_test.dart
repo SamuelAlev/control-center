@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
+    show kPipelineRequestedByKey;
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
@@ -18,14 +20,30 @@ void main() {
   late _FakeGitHubPrClient prClient;
   late PipelineBodyRegistry registry;
   late _RecordingFinalize finalize;
+  late List<String?> actingUsers;
+  late List<String?> attributedFor;
+  late bool postsAsPerson;
 
   setUp(() {
     prClient = _FakeGitHubPrClient();
     finalize = _RecordingFinalize();
+    actingUsers = [];
+    attributedFor = [];
+    postsAsPerson = false;
     registry = PipelineBodyRegistry();
     registerPrReviewBodies(
       registry,
-      githubPrClientFor: (_, _) => prClient,
+      githubPrClientFor: (_, _, {actingUserId}) {
+        actingUsers.add(actingUserId);
+        return prClient;
+      },
+      automatedAttribution:
+          ({required workspaceId, required owner, actingUserId}) async {
+            attributedFor.add(actingUserId);
+            return postsAsPerson
+                ? (body) => '**Control Center** (for @octocat): $body'
+                : null;
+          },
       finalizeReview: finalize.call,
     );
   });
@@ -221,6 +239,44 @@ void main() {
         expect(res.mutatedState!['comment_review_id'], 5);
       },
     );
+
+    test('posts bounded by the run\'s requester, never a payload\'s claim of '
+        'one', () async {
+      prClient.reviewToReturn = GitHubReview.fromJson({
+        'id': 3,
+        'state': 'COMMENTED',
+      });
+      await run(
+        state: {
+          'repo_full_name': 'o/r',
+          'pr_number': 1,
+          'consolidated_findings': 'f',
+          // State is agent-writable: it must not pick who the comment is
+          // bounded by.
+          kPipelineRequestedByKey: 'mallory',
+        },
+        trigger: {kPipelineRequestedByKey: 'alice'},
+      );
+      expect(actingUsers, ['alice']);
+      expect(attributedFor, ['alice']);
+    });
+
+    test('names Control Center when the token posts as a person', () async {
+      postsAsPerson = true;
+      prClient.reviewToReturn = GitHubReview.fromJson({
+        'id': 4,
+        'state': 'COMMENTED',
+      });
+      await run(
+        state: {
+          'repo_full_name': 'o/r',
+          'pr_number': 1,
+          'consolidated_findings': 'two nits',
+        },
+      );
+      expect(prClient.lastBody, '**Control Center** (for @octocat): two nits');
+      expect(actingUsers, [null], reason: 'no requester: accountable human');
+    });
 
     test(
       'reads prNumber from the trigger payload when absent in state',

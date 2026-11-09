@@ -2,7 +2,7 @@
 title: Usar revisão com IA
 description: Execute o pipeline pr_review em uma PR, leia os achados e o veredito e publique a revisão no GitHub.
 slug: pt-BR/manual/guias/revisao-com-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Este guia mostra como fazer agentes revisores revisarem uma pull request e como
@@ -119,14 +119,17 @@ GitHub.
 
 O Control Center envia **uma** revisão do GitHub. Achados já resolvidos ou
 descartados são ignorados. O botão inclui todos os achados abertos restantes e,
-em **Ship**, envia `APPROVE`. (A ferramenta MCP `publish_review_to_github` ainda
-usa por padrão apenas achados confirmados por pares e não aprova, a menos que
-você passe `approve_on_ship`.) Os que carregam uma âncora de arquivo e linha
+em **Ship**, envia `APPROVE`. (A ferramenta MCP `publish_review_to_github` usa
+por padrão apenas achados confirmados por pares e nunca aprova: ela publica como
+automação, então `approve_on_ship` não tem efeito ali.) Os que carregam uma
+âncora de arquivo e linha
 viram comentários em linha; todo o resto é incorporado ao corpo do resumo, cada
 um com um rodapé "— Control Center AI review" para que a origem seja
 inequívoca. Um veredito **Block** é enviado como `REQUEST_CHANGES`; **Hold**
 como `COMMENT`; **Ship** como `APPROVE` a partir deste botão. Um toast então
-exibe **Publicada**. A revisão é publicada sob a identidade do app do servidor.
+exibe **Publicada**. A revisão é publicada como você, com o seu próprio login no
+GitHub: se você não tiver entrado no GitHub, a publicação falha e pede que você
+entre.
 
 Se o GitHub rejeitar uma âncora em linha porque a linha não faz parte do diff, a
 revisão inteira é reenviada com todos os achados incorporados ao corpo, para que

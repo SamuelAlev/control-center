@@ -2,7 +2,7 @@
 title: Az ügynökindítás életciklusa
 description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Mi az indítás
@@ -54,7 +54,7 @@ Futtatásonként két identitás oldódik fel, mielőtt bármilyen folyamat elin
 
 **Git szerzőség.** Az ügynök commitjai mindig a kérő személy munkaterületen meghatározott Git-identitását használják a `GIT_AUTHOR_*` és a `GIT_COMMITTER_*` mezőben is. A programból indított futtatások a szerver tulajdonosának identitását használják. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. Az ügynök feltüntetését a **Beállítások → Ön → Commit-hozzárendelés** oldalon kapcsolhatja ki, ha el szeretné hagyni ezt a trailert. A munkaterület adminisztrátora a **Beállítások → Munkaterület → Általános** oldalon kötelezővé teheti vagy letilthatja a társszerzőséget; a felülírás elsőbbséget élvez, és letiltja a személyes kapcsolót anélkül, hogy módosítaná a mentett preferenciát. A változások a következő futtatástól érvényesek. A Claude Code saját commit- és PR-szerzőségi sorai mindig le vannak tiltva. A hívó és az adapter környezeti beállításai nem helyettesíthetik a meghatározott identitást; a hiányzó identitás vagy a feloldási hiba leállítja a futtatást. A forge hitelesítő adatai és a commitok aláírásának konfigurációja változatlanok; a helyes identitás önmagában nem garantál ellenőrzött aláírást.
 
-**Forge-identitás.** A futtatás GitHub-hitelesítő adata soha nem lehet más, mint a brókeré — egy repóra szűkített App-telepítési token vagy annak környezeti PAT-tartaléka —, soha nem a kérő tag saját tárolt tokenje. Az `actingUserId` korlátozza a PAT-tartalékot, így az a tag, aki nem a szerver tulajdonosa, nem örökli a szerver elérését; ugyanakkor nem is illeszt személyes tokent az ügynök környezetére.
+**Forge-identitás.** A futtatás GitHub-hitelesítő adata soha nem lehet más, mint a brókeré: egy token a futtatás egyetlen repójára, amelyet a munkaterület GitHub Appja, a szerver saját alkalmazása vagy a Control Center Connect állít ki. Az `actingUserId` a felelős embert nevezi meg (a kérőt, amíg még tag, egyébként a munkaterület tulajdonosát), és a tokent arra szűkíti, amit ez a személy a repón megtehet. Soha nem a tag saját bejelentkezése adódik át egészben, és nincs tartalék: egy elutasított kiállítás után a futtatás token nélkül marad, és a jegyzetei megmondják, miért.
 
 **A modellszolgáltató hitelesítő adatai** rögzített sorrendben oldódnak fel, és a sorrend számít:
 

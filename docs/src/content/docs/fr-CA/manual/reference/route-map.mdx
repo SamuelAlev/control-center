@@ -2,7 +2,7 @@
 title: Carte des routes
 description: Chaque route que Control Center enregistre, avec son écran et ses paramètres de requête.
 slug: fr-CA/manuel/reference/carte-des-routes
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Coquille de l’application
@@ -12,18 +12,17 @@ espace de travail au moyen d’un `ShellRoute`. **Chaque destination à l’int�
 coquille est préfixée par l’espace de travail — `/workspaces/:workspaceId/…` — et
 l’identifiant d’espace de travail présent dans l’URL est la source unique de vérité de
 l’espace de travail actif.** Seules les surfaces hors contexte n’ont aucun préfixe :
-`/splash`, `/onboarding`, `/signed-out` et le sélecteur `/workspaces` seul, toutes en
+`/splash`, `/onboarding` et le sélecteur `/workspaces` seul, toutes en
 plein écran et à l’extérieur de la coquille.
 
 La condition d’accès est remplie lorsque au moins une forge est connectée **pour
 l’utilisateur connecté** et qu’au moins un espace de travail existe.
 
-Un identifiant manquant et une configuration manquante mènent à des écrans différents, et
+Un identifiant manquant et une configuration manquante sont traitées différemment, et
 le discriminant est `users.onboarding_finished_at`, lu depuis le `identity.me` de
 l’appelant lui-même — jamais « des espaces de travail existent », ce qui est faux dès
 l’instant où quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans
-forge connectée, un compte qui a terminé la configuration initiale se rend à
-`/signed-out` pour se réauthentifier ; un compte qui ne l’a pas terminée se rend à
+forge connectée, un compte qui a terminé la configuration initiale reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Espace de travail → Profil et identité, où se trouve la connexion. Un compte qui ne l’a pas terminée se rend à
 `/onboarding`. Tant que l’indicateur demeure inconnu, la garde retient l’écran de
 démarrage plutôt que de deviner, parce qu’elle ne redirige jamais à rebours hors de la
 configuration initiale.
@@ -34,7 +33,6 @@ configuration initiale.
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `/splash`                  | Écran de démarrage qui résout la condition d’accès à la configuration initiale                                              |
 | `/onboarding`              | Connecter une forge, créer ou joindre un espace de travail, le bac à sable, l’adaptateur par défaut, puis la voix. L’étape Espace de travail est omise lorsque le compte appartient déjà à un espace |
-| `/signed-out`              | Se réauthentifier : la même carte des connexions aux forges que celle qu’affiche Paramètres, sans barre d’étapes ni bouton Continuer — le routeur quitte de lui-même dès qu’une forge répond |
 | `/workspaces`              | Liste et sélecteur d’espaces de travail                                                                                     |
 | `/workspaces/:workspaceId` | Redirige vers `/workspaces/:workspaceId/inbox`                                                                              |
 

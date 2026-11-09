@@ -1,4 +1,6 @@
 {
+  "credentialsConnectCodePrompt": "Introduza o código apresentado no seu navegador",
+  "credentialsSignInPhoneUnreachable": "O endereço de retorno do início de sessão deste servidor não está acessível de forma segura a partir de um telemóvel. Inicie sessão na aplicação para computador ou peça ao proprietário do servidor para configurar um endereço HTTPS público.",
   "@@locale": "pt_PT",
   "scanQrHelp": "Abra a câmera e aponte para o QR exibido no Control Center. Este celular liga-se diretamente por um link privado.",
   "connectingToMac": "A ligar ao Control Center…",

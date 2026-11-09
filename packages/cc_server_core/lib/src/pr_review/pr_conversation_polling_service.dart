@@ -6,6 +6,8 @@ import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dar
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart'
     show GitHubReviewComment, GitHubViewerPr;
+import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
+import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
 import 'package:meta/meta.dart';
@@ -42,72 +44,95 @@ class AssociatedPullRequest {
   }
 }
 
-/// One GitHub App identity the conversation poller fans out over.
+/// One workspace's GitHub bot, which the conversation poller fans out over.
 ///
-/// Inherit workspaces share the install App. A workspace with its own App is
-/// a separate identity. PAT-only workspaces are omitted.
+/// Credentials are strictly per workspace: two workspaces on the same App
+/// still search and reply through their own gateways, bounded by their own
+/// accountable humans. Workspaces without a GitHub lane are omitted.
 class PrConversationAppIdentity {
   /// Creates a [PrConversationAppIdentity].
   const PrConversationAppIdentity({
+    required this.workspaceId,
     required this.botLogin,
-    required this.workspaceIds,
+    required this.lane,
     required this.gateway,
   });
+
+  /// The workspace this bot serves. Mentions route only into it.
+  final String workspaceId;
 
   /// The App's actual bot login (`<slug>[bot]`), for loop detection and
   /// compatibility mentions; the default invocation is @usectrl.
   final String botLogin;
 
-  /// Workspaces that use this App. Mentions route only into these.
-  final Set<String> workspaceIds;
+  /// The workspace's lane: Connect sweeps on a slower, smaller budget.
+  final GitHubLane lane;
 
-  /// Gateway bound to this App.
+  /// Gateway bound to this workspace.
   final GitHubPrConversationGateway gateway;
 }
 
 /// Polls GitHub for bot-invoked PR conversations and hands them to the bridge.
 ///
-/// Replaces webhooks (no inbound URL required): search per installation, diff comments by id,
-/// follow review-thread replies for PRs with a review space.
-/// Eligible comment ids are persisted before bridging (at-most-once; crash loses, never double-fires).
-/// First sweep with empty state records without acting (baseline); later restarts catch up.
-/// Label search is presence, not events — one fire per key; re-run via @mention.
+/// Replaces webhooks (no inbound URL required; Connect never sees PR
+/// content): search per installation, diff comments by id, follow
+/// review-thread replies for PRs with a review space. Each workspace sweeps
+/// on its own budget: own App lanes every [minInterval] over at most
+/// [maxCommentSweeps] PRs; Connect (the accountable human's personal quota)
+/// every [connectMinInterval] over at most [connectMaxCommentSweeps]. A
+/// workspace whose [GitHubRateBudget] is low is skipped until it recovers.
+///
+/// Eligible comment ids are persisted per workspace before bridging
+/// (at-most-once; a crash loses, never double-fires); a comment several
+/// workspaces see is offered to each, and the author's 👀 claim decides.
+/// The first sweep with empty state records without acting (baseline); later
+/// restarts catch up. Label search is presence, not events — one fire per
+/// key; re-run via @mention.
 class PrConversationPollingService {
   /// Creates a [PrConversationPollingService].
   PrConversationPollingService({
-    required this._gateway,
+    required this._listIdentities,
     required this._bridge,
     required this._workspacesForRepo,
     required this._associatedPullRequests,
     this.minInterval = const Duration(seconds: 60),
+    this.connectMinInterval = const Duration(seconds: 120),
     this.idleInterval = const Duration(minutes: 5),
     this.maxCommentSweeps = 25,
+    this.connectMaxCommentSweeps = 10,
+    this.rateBudget,
     this.loadDedupeState,
     this.saveDedupeState,
-    this._listIdentities,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
-  final GitHubPrConversationGateway _gateway;
   final GitHubPrConversationSink _bridge;
   final Future<List<String>> Function(String repoFullName) _workspacesForRepo;
   final Future<List<AssociatedPullRequest>> Function() _associatedPullRequests;
 
-  /// When set, the poller fans out per unique GitHub App instead of using
-  /// a single install-wide bot. PAT-only workspaces are omitted by the
-  /// supplier.
-  final Future<List<PrConversationAppIdentity>> Function()? _listIdentities;
+  /// The workspaces to poll, each with its own bot and gateway.
+  final Future<List<PrConversationAppIdentity>> Function() _listIdentities;
 
-  /// Floor for the polling cadence.
+  /// Floor for an own App lane's cadence.
   final Duration minInterval;
 
-  /// Cadence while the server has no app identity (no bot to converse as).
+  /// Floor for a Connect lane's cadence: its requests spend a person's
+  /// 5,000-an-hour quota.
+  final Duration connectMinInterval;
+
+  /// Cadence while no workspace has an app identity (no bot to converse as).
   final Duration idleInterval;
 
-  /// Upper bound on PRs whose comments are fetched per sweep. The sweep must
-  /// stay bounded however busy the repos get; over the cap, PRs are skipped
-  /// this sweep (mentions first, then associations — the interactive set).
+  /// Upper bound on PRs whose comments are fetched per sweep on an own App
+  /// lane. The sweep must stay bounded however busy the repos get; over the
+  /// cap, the sweep rotates (associations first — the interactive set).
   final int maxCommentSweeps;
+
+  /// The same bound on a Connect lane.
+  final int connectMaxCommentSweeps;
+
+  /// Rate-limit readings; a workspace whose quota is low is not swept.
+  final GitHubRateBudget? rateBudget;
 
   /// Loads the persisted dedupe state (JSON), or null when none was saved.
   final Future<String?> Function()? loadDedupeState;
@@ -118,10 +143,10 @@ class PrConversationPollingService {
   final DateTime Function() _now;
 
   /// Bound on the dedupe memory (keys, FIFO-evicted).
-  static const _seenCap = 1024;
+  static const _seenCap = 2048;
 
-  /// The persisted-state format.
-  static const _storeVersion = 1;
+  /// The persisted-state format. v2: per-workspace keys and watermarks.
+  static const _storeVersion = 2;
 
   /// How far back the mention lane looks beyond its watermark: GitHub's
   /// search index lags writes by seconds to a minute.
@@ -134,15 +159,25 @@ class PrConversationPollingService {
   Timer? _timer;
   bool _running = false;
   bool _disposed = false;
-  bool _baseline = true;
 
-  /// Rotation offset for the capped comment sweep (see [_rotatedTargets]).
-  int _sweepCursor = 0;
+  /// Workspaces that already had their silent first-run sweep.
+  final Set<String> _baselined = {};
+
+  /// Rotation offset per workspace for the capped comment sweep (see
+  /// [_rotatedTargets]).
+  final Map<String, int> _sweepCursor = {};
+
+  /// When each workspace's last sweep started, for its lane's floor.
+  final Map<String, DateTime> _lastSweepAt = {};
+
   bool _storeLoaded = false;
   bool _firstRunEver = false;
   bool _dedupeDirty = false;
   Future<void>? _dedupeLoad;
-  DateTime? _watermark;
+
+  /// The mention lane's watermark per workspace (the start of its last
+  /// sweep that was saved).
+  final Map<String, DateTime> _watermarks = {};
 
   /// Log-once latch for the idle condition (no app identity).
   bool _loggedIdle = false;
@@ -183,70 +218,70 @@ class PrConversationPollingService {
     if (_disposed) {
       return;
     }
-    final identities = await _listIdentities?.call();
-    if (identities != null) {
-      await _pollIdentities(identities);
-      return;
-    }
-    final botLogin = await _gateway.botLogin();
-    if (botLogin.isEmpty) {
-      _idleNoBot();
-      return;
-    }
-    if (await _gateway.allInstallationsSuspended()) {
-      _idleSuspended();
-      return;
-    }
-    _loggedIdle = false;
-    _loggedSuspended = false;
+    final List<PrConversationAppIdentity> identities;
     try {
-      await _ensureDedupeLoaded();
-      final sweepStart = _now().toUtc();
-      final results = await _gateway.searchCandidates(
-        since: _windowStart(sweepStart),
-      );
-      await _handleSweep(botLogin, results, sweepStart);
-      _schedule(minInterval);
+      identities = await _listIdentities();
     } on Object catch (e) {
-      CcHostLog.warning('pr_conversation: poll failed: $e');
+      CcHostLog.warning('pr_conversation: listing workspaces failed: $e');
       _schedule(minInterval * 2);
+      return;
     }
+    await _pollIdentities(identities);
   }
+
+  Duration _floorFor(GitHubLane lane) =>
+      lane == GitHubLane.connect ? connectMinInterval : minInterval;
+
+  int _capFor(GitHubLane lane) =>
+      lane == GitHubLane.connect ? connectMaxCommentSweeps : maxCommentSweeps;
 
   Future<void> _pollIdentities(
     List<PrConversationAppIdentity> identities,
   ) async {
-    if (identities.isEmpty) {
-      _idleNoBot();
-      return;
-    }
+    var anyBot = false;
     var anyLive = false;
+    Duration? nextDelay;
     for (final identity in identities) {
       if (identity.botLogin.isEmpty) {
         continue;
       }
+      anyBot = true;
       if (await identity.gateway.allInstallationsSuspended()) {
         continue;
       }
       anyLive = true;
+      final workspaceId = identity.workspaceId;
+      final floor = _floorFor(identity.lane);
+      if (nextDelay == null || floor < nextDelay) {
+        nextDelay = floor;
+      }
+      final now = _now();
+      final last = _lastSweepAt[workspaceId];
+      if (last != null && now.difference(last) < floor) {
+        continue;
+      }
+      if (rateBudget?.backsOff(workspaceId, poller: 'pr_conversation') ??
+          false) {
+        continue;
+      }
+      _lastSweepAt[workspaceId] = now;
       try {
         await _ensureDedupeLoaded();
-        final sweepStart = _now().toUtc();
+        final sweepStart = now.toUtc();
         final results = await identity.gateway.searchCandidates(
-          since: _windowStart(sweepStart),
+          since: _windowStart(workspaceId, sweepStart),
         );
-        await _handleSweep(
-          identity.botLogin,
-          results,
-          sweepStart,
-          gateway: identity.gateway,
-          allowedWorkspaces: identity.workspaceIds,
-        );
+        await _handleSweep(identity, results, sweepStart);
       } on Object catch (e) {
         CcHostLog.warning(
-          'pr_conversation: poll failed for @${identity.botLogin}: $e',
+          'pr_conversation: poll failed for @${identity.botLogin} in '
+          '$workspaceId: $e',
         );
       }
+    }
+    if (!anyBot) {
+      _idleNoBot();
+      return;
     }
     if (!anyLive) {
       _idleSuspended();
@@ -254,15 +289,15 @@ class PrConversationPollingService {
     }
     _loggedIdle = false;
     _loggedSuspended = false;
-    _schedule(minInterval);
+    _schedule(nextDelay ?? minInterval);
   }
 
   void _idleNoBot() {
     if (!_loggedIdle) {
       _loggedIdle = true;
       CcHostLog.info(
-        'pr_conversation: idle — no GitHub App identity, so there is no bot '
-        'login to converse with. Re-checking every '
+        'pr_conversation: idle — no workspace has a GitHub App identity, so '
+        'there is no bot login to converse with. Re-checking every '
         '${idleInterval.inMinutes}m.',
       );
     }
@@ -274,18 +309,18 @@ class PrConversationPollingService {
       _loggedSuspended = true;
       CcHostLog.info(
         'pr_conversation: idle — GitHub App installation(s) suspended. '
-        'Resume the installation on GitHub or connect a token. '
-        'Re-checking every ${idleInterval.inMinutes}m.',
+        'Resume the installation on GitHub. Re-checking every '
+        '${idleInterval.inMinutes}m.',
       );
     }
     _schedule(idleInterval);
   }
 
-  /// The `updated:>` anchor for the mention lane: the watermark less the
-  /// index-lag overlap, clamped. Null (the gateway's own default window)
-  /// before the first save.
-  DateTime? _windowStart(DateTime sweepStart) {
-    final mark = _watermark;
+  /// The `updated:>` anchor for [workspaceId]'s mention lane: its watermark
+  /// less the index-lag overlap, clamped. Null (the gateway's own default
+  /// window) before its first save.
+  DateTime? _windowStart(String workspaceId, DateTime sweepStart) {
+    final mark = _watermarks[workspaceId];
     if (mark == null) {
       return null;
     }
@@ -295,7 +330,7 @@ class PrConversationPollingService {
   }
 
   Future<void> _handleSweep(
-    String botLogin,
+    PrConversationAppIdentity identity,
     ({
       List<GitHubViewerPr> mentioned,
       List<GitHubViewerPr> botMentioned,
@@ -303,78 +338,74 @@ class PrConversationPollingService {
       List<GitHubViewerPr> labeled,
     })
     results,
-    DateTime sweepStart, {
-    GitHubPrConversationGateway? gateway,
-    Set<String>? allowedWorkspaces,
-  }) async {
-    final lane = gateway ?? _gateway;
-    final silent = _baseline && _firstRunEver;
+    DateTime sweepStart,
+  ) async {
+    final workspaceId = identity.workspaceId;
+    final gateway = identity.gateway;
+    final silent = _firstRunEver && !_baselined.contains(workspaceId);
     final suspended = {
-      for (final owner in await lane.suspendedOwners()) owner.toLowerCase(),
+      for (final owner in await gateway.suspendedOwners()) owner.toLowerCase(),
     };
 
-    // Route every search hit to the workspace that links its repo. The
-    // association set wins over search routing for the same PR: a
-    // conversation that already has a space continues in that space's
-    // workspace, not in whichever workspace sorts first today.
+    // Every target is a PR of this workspace. The association set comes
+    // first (the live conversations); search hits join when the workspace
+    // links the repo, unless the PR's review space lives in another
+    // workspace — a conversation continues where it already is.
     final targets = <String, _SweepTarget>{};
+    final associatedElsewhere = <String>{};
     for (final associated in await _associatedPullRequests()) {
-      if (associated.owner.isEmpty || associated.name.isEmpty) {
+      if (associated.workspaceId != workspaceId) {
+        associatedElsewhere.add(
+          _prKey(associated.repoFullName, associated.prNumber),
+        );
         continue;
       }
-      if (allowedWorkspaces != null &&
-          !allowedWorkspaces.contains(associated.workspaceId)) {
+      if (associated.owner.isEmpty ||
+          associated.name.isEmpty ||
+          suspended.contains(associated.owner.toLowerCase())) {
         continue;
       }
-      if (suspended.contains(associated.owner.toLowerCase())) {
-        continue;
-      }
-      targets[associated.repoFullName.toLowerCase()] = _SweepTarget(
+      targets[_prKey(
+        associated.repoFullName,
+        associated.prNumber,
+      )] = _SweepTarget(
         owner: associated.owner,
         repo: associated.name,
         prNumber: associated.prNumber,
         prTitle: '',
-        workspaceId: associated.workspaceId,
       );
     }
 
     Future<void> addCandidates(List<GitHubViewerPr> prs) async {
       for (final pr in prs) {
-        final key = pr.repoFullName.toLowerCase();
-        if (targets.containsKey(key)) {
+        final key = _prKey(pr.repoFullName, pr.number);
+        if (targets.containsKey(key) ||
+            associatedElsewhere.contains(key) ||
+            suspended.contains(pr.owner.toLowerCase())) {
           continue;
         }
-        if (suspended.contains(pr.owner.toLowerCase())) {
-          continue;
-        }
-        var workspaceIds = const <String>[];
+        var linked = false;
         try {
-          workspaceIds = await _workspacesForRepo(pr.repoFullName);
+          linked = (await _workspacesForRepo(
+            pr.repoFullName,
+          )).contains(workspaceId);
         } on Object catch (e) {
           CcHostLog.warning(
             'pr_conversation: workspace resolution failed for '
             '${pr.repoFullName}: $e',
           );
         }
-        if (allowedWorkspaces != null) {
-          workspaceIds = [
-            for (final id in workspaceIds)
-              if (allowedWorkspaces.contains(id)) id,
-          ];
-        }
-        if (workspaceIds.isEmpty) {
+        if (!linked) {
           // Unlinked: skip BEFORE recording anything, so linking the repo
           // later still delivers the label/mention rather than finding it
           // already marked seen.
           continue;
         }
-        final sorted = [...workspaceIds]..sort();
         targets[key] = _SweepTarget(
           owner: pr.owner,
           repo: pr.name,
           prNumber: pr.number,
           prTitle: pr.title,
-          workspaceId: sorted.first,
         );
       }
     }
@@ -386,14 +417,13 @@ class PrConversationPollingService {
     await addCandidates(results.shortMentioned);
     await addCandidates(results.labeled);
 
-    // The label lane: presence-triggered, once per PR.
+    // The label lane: presence-triggered, once per PR per workspace.
     for (final pr in results.labeled) {
-      final target = targets[pr.repoFullName.toLowerCase()];
+      final target = targets[_prKey(pr.repoFullName, pr.number)];
       if (target == null) {
         continue;
       }
-      final key = 'lb:${pr.key}';
-      if (!_seen.add(key)) {
+      if (!_seen.add('lb:$workspaceId:${pr.key}')) {
         continue;
       }
       _dedupeDirty = true;
@@ -402,7 +432,7 @@ class PrConversationPollingService {
       }
       try {
         await _bridge.handleLabeledPullRequest(
-          workspaceId: target.workspaceId,
+          workspaceId: workspaceId,
           owner: target.owner,
           repo: target.repo,
           prNumber: target.prNumber,
@@ -420,19 +450,24 @@ class PrConversationPollingService {
     // insertion order puts associations first (the live conversations), so a
     // fixed cut would starve the same tail PRs on every sweep. The cursor
     // advances by the cap each pass, guaranteeing eventual coverage.
-    final ordered = _rotatedTargets(targets.values.toList(growable: false));
+    final cap = _capFor(identity.lane);
+    final ordered = _rotatedTargets(
+      workspaceId,
+      targets.values.toList(growable: false),
+      cap,
+    );
     var swept = 0;
     for (final target in ordered) {
-      if (swept >= maxCommentSweeps) {
+      if (swept >= cap) {
         CcHostLog.warning(
-          'pr_conversation: capped at $maxCommentSweeps PRs this sweep; '
+          'pr_conversation: capped at $cap PRs this sweep in $workspaceId; '
           'remaining PRs are retried next sweep.',
         );
         break;
       }
       swept++;
       try {
-        await _sweepPullRequestComments(botLogin, target, lane);
+        await _sweepPullRequestComments(identity, target, silent: silent);
       } on Object catch (e) {
         CcHostLog.warning(
           'pr_conversation: comment sweep failed for '
@@ -441,28 +476,38 @@ class PrConversationPollingService {
       }
     }
 
-    _baseline = false;
-    await _saveDedupeState(sweepStart);
+    _baselined.add(workspaceId);
+    await _saveDedupeState(workspaceId, sweepStart);
   }
 
-  /// Orders the comment-sweep targets starting at the rotating cursor and
-  /// advances the cursor by the sweep cap, so a capped sweep covers a
+  static String _prKey(String repoFullName, int number) =>
+      '${repoFullName.toLowerCase()}#$number';
+
+  /// Orders the comment-sweep targets starting at [workspaceId]'s rotating
+  /// cursor and advances the cursor by [cap], so a capped sweep covers a
   /// different slice each pass.
-  List<_SweepTarget> _rotatedTargets(List<_SweepTarget> targets) {
-    if (targets.length <= maxCommentSweeps) {
+  List<_SweepTarget> _rotatedTargets(
+    String workspaceId,
+    List<_SweepTarget> targets,
+    int cap,
+  ) {
+    if (targets.length <= cap) {
       // The cap cannot bite; no rotation needed (keeps association priority).
       return targets;
     }
-    final cursor = _sweepCursor % targets.length;
-    _sweepCursor = (_sweepCursor + maxCommentSweeps) % targets.length;
+    final cursor = (_sweepCursor[workspaceId] ?? 0) % targets.length;
+    _sweepCursor[workspaceId] = (cursor + cap) % targets.length;
     return [...targets.sublist(cursor), ...targets.sublist(0, cursor)];
   }
 
   Future<void> _sweepPullRequestComments(
-    String botLogin,
-    _SweepTarget target,
-    GitHubPrConversationGateway gateway,
-  ) async {
+    PrConversationAppIdentity identity,
+    _SweepTarget target, {
+    required bool silent,
+  }) async {
+    final workspaceId = identity.workspaceId;
+    final botLogin = identity.botLogin;
+    final gateway = identity.gateway;
     final issueComments = await gateway.listIssueComments(
       target.owner,
       target.repo,
@@ -477,10 +522,11 @@ class PrConversationPollingService {
     final botThreadMembers = botThreadCommentIds(reviewComments, botLogin);
 
     for (final comment in issueComments) {
-      if (_isBot(comment.user?.login, botLogin)) {
+      if (_isBot(comment.user?.login, botLogin) ||
+          GitHubPrConversationBridge.isAutomatedReply(comment.body)) {
         continue;
       }
-      final seenKey = 'c:${comment.id}';
+      final seenKey = 'c:$workspaceId:${comment.id}';
       if (_seen.contains(seenKey)) {
         continue;
       }
@@ -496,11 +542,11 @@ class PrConversationPollingService {
       }
       _seen.add(seenKey);
       _dedupeDirty = true;
-      if (_baseline && _firstRunEver) {
+      if (silent) {
         continue;
       }
       await _bridge.handleInboundComment(
-        workspaceId: target.workspaceId,
+        workspaceId: workspaceId,
         owner: target.owner,
         repo: target.repo,
         prNumber: target.prNumber,
@@ -508,18 +554,20 @@ class PrConversationPollingService {
         comment: InboundGitHubPrComment(
           id: comment.id,
           body: comment.body,
+          authorId: comment.user?.id ?? 0,
           authorLogin: comment.user?.login ?? '',
-          authorIsBot: _isBot(comment.user?.login, botLogin),
+          authorIsBot: false,
           isReviewComment: false,
         ),
       );
     }
 
     for (final comment in reviewComments) {
-      if (_isBot(comment.user?.login, botLogin)) {
+      if (_isBot(comment.user?.login, botLogin) ||
+          GitHubPrConversationBridge.isAutomatedReply(comment.body)) {
         continue;
       }
-      final seenKey = 'c:${comment.id}';
+      final seenKey = 'c:$workspaceId:${comment.id}';
       if (_seen.contains(seenKey)) {
         continue;
       }
@@ -533,11 +581,11 @@ class PrConversationPollingService {
       }
       _seen.add(seenKey);
       _dedupeDirty = true;
-      if (_baseline && _firstRunEver) {
+      if (silent) {
         continue;
       }
       await _bridge.handleInboundComment(
-        workspaceId: target.workspaceId,
+        workspaceId: workspaceId,
         owner: target.owner,
         repo: target.repo,
         prNumber: target.prNumber,
@@ -545,8 +593,9 @@ class PrConversationPollingService {
         comment: InboundGitHubPrComment(
           id: comment.id,
           body: comment.body,
+          authorId: comment.user?.id ?? 0,
           authorLogin: comment.user?.login ?? '',
-          authorIsBot: _isBot(comment.user?.login, botLogin),
+          authorIsBot: false,
           isReviewComment: true,
         ),
         isBotThread: inBotThread,
@@ -556,7 +605,9 @@ class PrConversationPollingService {
 
   /// The ids of review comments that belong to a thread our bot participates
   /// in — the interactive-follow-up set. A comment qualifies when any comment
-  /// in its reply chain (itself included) was authored by the bot.
+  /// in its reply chain (itself included) was authored by the bot, or is one
+  /// of our attributed replies (authored by the asking person on the Connect
+  /// and user-token lanes).
   @visibleForTesting
   static Set<int> botThreadCommentIds(
     List<GitHubReviewComment> comments,
@@ -564,7 +615,13 @@ class PrConversationPollingService {
   ) => threadCommentIdsAuthoredBy(
     [
       for (final c in comments)
-        (id: c.id, inReplyToId: c.inReplyToId, authorLogin: c.user?.login),
+        (
+          id: c.id,
+          inReplyToId: c.inReplyToId,
+          authorLogin: GitHubPrConversationBridge.isAutomatedReply(c.body)
+              ? botLogin
+              : c.user?.login,
+        ),
     ],
     // Deliberately NOT an exact-login test, unlike the viewer lane: the broad
     // `[bot]` half is this lane's loop guard against OTHER bots' comments
@@ -612,9 +669,15 @@ class PrConversationPollingService {
       _firstRunEver = true;
       return;
     }
-    _watermark = DateTime.tryParse(
-      decoded['savedAt'] as String? ?? '',
-    )?.toUtc();
+    final watermarks = decoded['watermarks'];
+    if (watermarks is Map) {
+      for (final MapEntry(:key, :value) in watermarks.entries) {
+        final at = value is String ? DateTime.tryParse(value)?.toUtc() : null;
+        if (key is String && at != null) {
+          _watermarks[key] = at;
+        }
+      }
+    }
     final seen = decoded['seen'];
     if (seen is List) {
       for (final key in seen) {
@@ -625,23 +688,27 @@ class PrConversationPollingService {
     }
   }
 
-  Future<void> _saveDedupeState(DateTime sweepStart) async {
+  Future<void> _saveDedupeState(String workspaceId, DateTime sweepStart) async {
     final saver = saveDedupeState;
     if (!_storeLoaded || saver == null || !_dedupeDirty) {
       return;
     }
+    // The sweep's START, never its end: anything that changed while the
+    // requests were in flight must fall inside the next window.
+    final watermarks = {..._watermarks, workspaceId: sweepStart};
     try {
       await saver(
         jsonEncode({
           'v': _storeVersion,
-          // The sweep's START, never its end: anything that changed while the
-          // requests were in flight must fall inside the next window.
-          'savedAt': sweepStart.toIso8601String(),
+          'watermarks': {
+            for (final MapEntry(:key, :value) in watermarks.entries)
+              key: value.toIso8601String(),
+          },
           'seen': _seen.keys.toList(growable: false),
         }),
       );
       _dedupeDirty = false;
-      _watermark = sweepStart;
+      _watermarks[workspaceId] = sweepStart;
     } on Object catch (e) {
       // Keep the dirty flag: the next pass retries.
       CcHostLog.warning('pr_conversation: dedupe state save failed: $e');
@@ -649,22 +716,19 @@ class PrConversationPollingService {
   }
 }
 
-/// One PR this sweep will act on, with the workspace that owns the
-/// conversation.
+/// One PR of the swept workspace this sweep will act on.
 class _SweepTarget {
   _SweepTarget({
     required this.owner,
     required this.repo,
     required this.prNumber,
     required this.prTitle,
-    required this.workspaceId,
   });
 
   final String owner;
   final String repo;
   final int prNumber;
   final String prTitle;
-  final String workspaceId;
 }
 
 /// A bounded FIFO key set: records keys and evicts the oldest beyond the cap

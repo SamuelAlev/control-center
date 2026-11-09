@@ -1,0 +1,302 @@
+---
+title: Kjør en Connect-server
+description: Kjør din egen Control Center Connect fra Docker-imaget cc-connect, eller monter den i cc_server, slik at serverne dine logger inn folk via leverandørapper du registrerer.
+slug: nb-NO/handbok/slik-gjor-du/kjor-connect-server
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect kjører leverandørpålogginger (GitHub, Google Calendar,
+Linear, Slack) for servere som ikke har registrert egne apper. Denne veiledningen
+viser deg hvordan du kjører din egen Connect, slik at leverandørappene,
+hemmelighetene deres og listen over servere som får bruke dem, blir hos deg.
+
+Hva Connect kan og ikke kan se, står i
+[Connect-referansen](/nb-NO/handbok/referanse/connect/). Les den først hvis du
+vurderer om du skal kjøre en.
+
+:::note[Du trenger den kanskje ikke]
+Én server kan registrere sine egne apper i stedet: **Innstillinger → Server →
+Enkel pålogging → Leverandørapper**, der **Opprett min GitHub-app** setter opp
+GitHub i ett trinn. Serverens egne apper gjelder bare under **Bruk mine egne apper**. Med Control Centers eller en egendefinert Connect håndterer Connect alle spor, mens en arbeidsområdeapp fortsatt gjelder. Kjør en Connect når flere servere skal dele ett sett apper.
+:::
+
+## Forutsetninger
+
+- En offentlig **HTTPS**-adresse for Connect, for eksempel
+  `https://connect.example.com`, bak en proxy som terminerer TLS. Vanlig `http`
+  godtas bare på loopback
+- Docker, eller en `cc_server` du kan starte på nytt med ekstra miljøvariabler
+- Tillatelse til å registrere apper hos hver leverandør du vil betjene
+- Serverne som skal bruke den, med eierne deres for hånden: hver av dem har en
+  installasjons-ID som du legger til i Connects tillatelsesliste
+
+## Trinn 1: Velg adressen
+
+Velg URL-en nå og behold den. `CONNECT_PUBLIC_URL` er en del av alt Connect gjør:
+forespørselssignaturer, forseglet påloggingsinformasjon, leverandørenes
+omdirigerings-URL-er og hver servers installasjons-ID er bundet til den. Å endre
+den senere betyr å registrere omdirigeringene på nytt og at alle må logge inn på
+nytt.
+
+## Trinn 2: Registrer leverandørappene
+
+Registrer bare leverandørene du vil betjene. En leverandør der variablene er
+ufullstendige, utelates fra Connects konfigurasjon, og serverne ser den som
+utilgjengelig. `<base>` nedenfor er din `CONNECT_PUBLIC_URL`.
+
+| Leverandør     | Registrer                                                                                                                                                                                                                                                            | Behold                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` med **Redirect on update** slått på. La **Request user authorization (OAuth) during installation** være av: når den er på, ignorerer GitHub setup-URL-en. La **Expire user authorization tokens** stå på | App-id, slug, client id, client secret |
+| **Google**     | En OAuth-klient av typen **Nettapplikasjon** med omdirigerings-URI `<base>/oauth/google/callback`, og Google Calendar API aktivert                                                                                                                                  | Client id, client secret                |
+| **Linear**     | En OAuth-applikasjon med callback-URL-ene `<base>/oauth/linear/callback` og `<base>/oauth/linear_app/callback`                                                                                                                                                    | Bare client id                          |
+| **Slack**      | Omdirigerings-URL-er `<base>/oauth/slack_oidc/callback` og `<base>/oauth/slack/callback`. Event Subscriptions på `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-kommandoer på `<base>/v1/hooks/slack/commands`. Tokenrotasjon på | App-id, client id, client secret, signing secret |
+
+Gi GitHub App-en disse repotillatelsene: **Metadata** les, **Contents** les og
+skriv, **Pull requests** les og skriv, **Issues** les og skriv, **Checks**,
+**Actions** og **Commit statuses** les. Legg til **Members** for organisasjonen
+med lesetilgang for forespørsler om gjennomgang fra team. Webhooks kan være av:
+serverne poller.
+
+Connect trenger aldri den private nøkkelen til GitHub App-en. Den utsteder i
+stedet tokener for ett repo fra en persons egen pålogging. Linear trenger heller
+ingen hemmelighet: Connect gir koden tilbake til serveren, som fullfører
+utvekslingen selv.
+
+## Trinn 3: Samle inn installasjons-ID-ene
+
+Connect svarer bare serverne på tillatelseslisten sin. På hver server peker du
+den mot Connect-en din og leser deretter av installasjons-ID-en:
+
+1. Gå til **Innstillinger → Server → Enkel pålogging**, åpne kortet **Control
+   Center Connect** og velg **Bruk en egen Connect-server**
+2. Skriv inn URL-en din og lagre. Kortet viser serverens **Installasjons-ID**
+
+Fra en terminal på serververten er det samme:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` skriver ut installasjons-ID-en. Den viser `install_blocked` til trinn 5
+er fullført, og det er forventet.
+
+En installasjons-ID avledes per Connect-adresse, så samme server har en annen ID
+for hver Connect den snakker med. Den endres bare når eieren bytter nøkkelen.
+
+## Trinn 4: Lag en seglnøkkel
+
+Connect krypterer all påloggingsinformasjon den gir tilbake, med en seglnøkkel.
+Lag en og oppbevar den som en hemmelig fil:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Mister du seglnøkkelen, blir alle logget ut: ingen segl kan åpnes uten den.
+
+## Trinn 5: Start containeren
+
+Hver utgivelse publiserer `ghcr.io/samuelalev/cc-connect` med byggeopprinnelse.
+Fest en versjonstagg i produksjon.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Pek reverse proxyen din mot port `8790`. Imaget kjører som en bruker uten
+privilegier, lagrer tilstanden sin i volumet `/data` og har en innebygd
+helsesjekk (`cc-connect --healthcheck`, som sjekker `/healthz`).
+
+Connect nekter å starte (avslutningskode `78`) når konfigurasjonen er åpen,
+utrygg eller halvferdig, og skriver ut hvilken variabel som er feil. En manglende
+tillatelsesliste, en `http`-adresse utenfor loopback, en feilformatert
+seglnøkkel eller at både `NAME` og `NAME_FILE` er satt, stopper den.
+
+Sjekkpunkt: på hver server viser Connect-kortet **Fungerer**, og **Hvor hver
+pålogging kjøres** nevner **Connect** for hver leverandør du har registrert.
+`cc_server connect status` skriver ut `Health: ok` og de samme sporene.
+
+## Monter Connect i cc_server
+
+En server kan selv være vert for Connect i stedet for en separat container. Den
+monterte tjenesten er den samme som imaget kjører.
+
+1. Legg `CONNECT_*`-variablene i serverens `.env`-fil (eller i miljøet), som i
+   trinn 5
+2. Legg til `CC_SERVER_CONNECT_HOST=on`
+3. Start serveren på nytt. Loggen skriver ut `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect serveres da på `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` er som standard opprinnelsen til serverens offentlige URL
+  pluss `/connect`. Sett den eksplisitt bak en proxy. Stien må være nøyaktig
+  `/connect`, og den må være HTTPS med mindre den er loopback
+- Bare `CONNECT_*`-variabler når den monterte tjenesten, så den låner aldri
+  serverens egne leverandørapper
+- `CONNECT_ALLOWED_INSTALLS` er fortsatt påkrevd, også for serveren som er vert
+- En feilkonfigurert montering stopper serveren fra å starte i stedet for å
+  servere en åpen megler
+- Demoserveren monterer den aldri
+
+Registrer leverandørenes omdirigeringer mot `https://<server>/connect`, og pek
+deretter serverne (inkludert verten) mot den URL-en som i trinn 3.
+
+## Konfigurasjonsreferanse
+
+Hver innstilling er en miljøvariabel. Enhver hemmelighet kan i stedet komme fra
+en montert fil: sett `NAME_FILE` i stedet for `NAME`. Connect leser filen på nytt
+høyst hvert 30. sekund og beholder den siste gode verdien. Hemmeligheter merket
+**dual** godtar også `NAME_PREVIOUS` (eller `NAME_PREVIOUS_FILE`) under en
+rotasjon.
+
+### Adresse og tilgang
+
+| Variabel                        | Standard  | Betydning                                                                                                                        |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | påkrevd   | Den kanoniske offentlige URL-en. HTTPS, eller `http` bare på loopback. En sti betyr en montering. Ingen spørring eller fragment   |
+| `CONNECT_ALLOWED_INSTALLS`      | påkrevd   | Kommaseparerte installasjons-ID-er. `*` godtas bare sammen med `CONNECT_SIGNED_CONFIG_FILE`                                       |
+| `CONNECT_DENY_INSTALLS`         |           | Installasjons-ID-er som avvises selv når de er tillatt                                                                           |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeriske GitHub-eier-ID-er. Når den er satt, utstedes repotokener bare for repoer de eier                                        |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bindingsadresse og port                                                                                                  |
+| `CONNECT_TRUST_PROXY`           | `0`       | Klarerte proxyhopp i `X-Forwarded-For` (0 til 8). Brukes bare for hastighetsgrensen per adresse                                  |
+
+### Leverandørspor
+
+| Variabel                                                                    | Standard | Betydning                                                                  |
+| --------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |          | GitHub App-en                                                              |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |          | Hemmelighet, dual                                                          |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |          | Google-klienten. Hemmeligheten er dual                                     |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |          | Linear-applikasjonen. Ingen hemmelighet                                    |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |          | Slack-appen                                                                |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |          | Hemmeligheter, dual                                                        |
+| `CONNECT_KLIPY_APP_KEY`                                                     |          | Nøkkel for GIF-søk i Klipy. Hemmelighet, dual                              |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy`  | `proxy` holder nøkkelen i Connect; `key` gir den til serverne              |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`      | GitHub, Google og Slack: generasjonen som registreres i nye segl           |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`      | GitHub, Google og Slack: eldre segl må logge inn på nytt                   |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`   | Hvert spor: `false` stopper nye pålogginger mens eksisterende fortsetter å fornyes |
+
+### Segl, tilstand og lagring
+
+| Variabel                                                  | Standard                   | Betydning                                                                                                  |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` eller `gcp-kms`                                                                                    |
+| `CONNECT_SEAL_KEYS`                                       |                            | Hemmelighet, påkrevd for `local`. Kommaseparerte `kid:key`-oppføringer, nyeste først; eldre oppføringer dekrypterer fortsatt |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, påkrevd for `gcp-kms`                                    |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` for én instans, `redis` for flere                                                                 |
+| `CONNECT_REDIS_URL`                                       |                            | Hemmelighet. `redis://` eller `rediss://`                                                                  |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | CA-pakke for `rediss://`                                                                                   |
+| `CONNECT_BINDINGS`                                        | `file`                     | Hvor bindinger til GitHub-installasjoner ligger: `file` eller `firestore`                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` i imaget)  | Inneholder `bindings.json`                                                                                 |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databasen `(default)`      | For `CONNECT_BINDINGS=firestore`                                                                           |
+
+### Konfigurasjon, logger og grenser
+
+| Variabel                                | Standard           | Betydning                                                                                           |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | En konfigurasjon signert offline, servert som den er. Brukes av den hostede Connect-tjenesten til Control Center |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Nøkler den signerte konfigurasjonen må verifiseres mot                                              |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoken til konfigurasjonen en selvhostet Connect genererer                                          |
+| `CONNECT_LOG_HMAC_KEY`                  | tilfeldig per prosess | Hemmelighet. Sett den for å holde merkene som står for installasjons-ID-er, stabile på tvers av omstarter og instanser |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Rapporteres av `/v1/version`                                                                        |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Forespørsler per installasjon                                                                       |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Forespørsler per adresse                                                                            |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Forespørsler for hele tjenesten                                                                     |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-hendelser per team                                                                            |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-søk per installasjon                                                                            |
+
+## Kjør mer enn én instans
+
+Én instans med `CONNECT_STATE=memory` er nok for de fleste organisasjoner. Flere
+instanser bak én adresse trenger `CONNECT_STATE=redis`, og enten en delt
+`CONNECT_DATA_DIR` eller `CONNECT_BINDINGS=firestore`, slik at en pålogging som
+startet på én instans, kan fullføres på en annen.
+
+## Roter en leverandørhemmelighet
+
+Ingen blir logget ut:
+
+1. Opprett den nye hemmeligheten hos leverandøren og behold den gamle
+2. Flytt den gamle verdien til `NAME_PREVIOUS`, legg den nye i `NAME`, og øk
+   `CONNECT_<LANE>_SECRET_GENERATION`. Monterte filer plukkes opp innen 30
+   sekunder
+3. Vent til påloggingene er fornyet, slett deretter den gamle hemmeligheten hos
+   leverandøren og fjern `NAME_PREVIOUS`
+
+For å rotere en seglnøkkel legger du en ny `cc-connect-config seal-key`-oppføring
+først i `CONNECT_SEAL_KEYS` og beholder den gamle oppføringen til seglene dens er
+fornyet.
+
+## Endre en app
+
+Serverne husker app- og client-id-ene Connect-en din kunngjorde første gang de
+brukte den. Hvis du bytter ut en app, viser Connect-kortet på hver server
+**Appene til Connect er endret**, og pålogginger via Connect settes på pause til
+eieren trykker **Stol på nye apper**. Si fra til servereierne før du bytter,
+slik at de vet at meldingen kommer fra deg.
+
+## Blokker en server
+
+Legg installasjons-ID-en til i `CONNECT_DENY_INSTALLS` og start på nytt. Eieren
+ser «Connect har blokkert installasjons-ID-en til denne serveren», og hver
+Connect-pålogging på den stopper.
+
+## Feilsøking
+
+### En server sier at Connect har blokkert den
+
+Installasjons-ID-en står ikke i `CONNECT_ALLOWED_INSTALLS`, eller den står i
+`CONNECT_DENY_INSTALLS`. ID-en endres når eieren bytter nøkkelen; be om den nye.
+
+### En leverandør vises som utilgjengelig
+
+En av variablene mangler, så Connect utelot sporet. Sjekk oppstartsloggen og
+tabellene over. GitHub trenger alle fire: app-id, slug, client id og client
+secret; Google trenger både client id og hemmelighet.
+
+### Pålogginger feiler med en omdirigeringsfeil
+
+Omdirigeringen som er registrert hos leverandøren, samsvarer ikke nøyaktig med
+`CONNECT_PUBLIC_URL`. Sammenlign skjema, vert, port og, for en montert Connect,
+stien `/connect`.
+
+### Alle måtte logge inn på nytt
+
+Seglnøkkelen ble endret eller mistet, en server byttet nøkkelen sin, eller
+dataene til en server ble gjenopprettet på en annen maskin. Forseglet
+påloggingsinformasjon åpnes bare for installasjonen og den Connect som laget den.
+
+## Relaterte veiledninger
+
+- [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/)
+- [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
+
+## Relatert referanse
+
+- [Control Center Connect](/nb-NO/handbok/referanse/connect/)
+- [`cc_server` CLI](/nb-NO/handbok/referanse/cc-server-cli/)

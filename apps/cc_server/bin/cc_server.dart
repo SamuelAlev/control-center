@@ -2,14 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_server/embedded_connect_host.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 
 /// Entrypoint for the Control Center headless server (pure Dart, no Flutter).
 /// Build with `scripts/build_server.sh` to include FFI libraries and media tools.
 ///
-/// Subcommands: `pair` (device + PSK, optional QR); `calendar connect
-/// `--workspace <id>`` (Google device-code flow); `update` (stage/apply
-/// standalone release; never silent); default runs until SIGINT/SIGTERM.
+/// Subcommands: `pair` (device + PSK, optional QR); `update` (stage/apply
+/// standalone release; never silent); `connect` (which Connect this server
+/// uses); default runs until SIGINT/SIGTERM.
 /// Config: `--data-dir`, `--port`, `--bind` (see [CcServerConfig]).
 Future<void> main(List<String> args) async {
   if (args.isNotEmpty && (args.first == '--help' || args.first == '-h')) {
@@ -21,8 +22,9 @@ port. Non-loopback binding requires TLS configuration.
 
 Commands:
   pair               Provision a paired device; stop the server first.
-  calendar connect   Connect Google Calendar; requires --workspace ID.
   update             Stage or apply a standalone server release.
+  connect            Show or change which Control Center Connect this server
+                     uses (status | enable [--url URL] | disable | rotate-key).
 
 Information (does not open databases or start services):
   --help, -h         Show this help.
@@ -48,14 +50,13 @@ https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server
     return;
   }
 
-  if (args.isNotEmpty && args.first == 'calendar') {
-    await _calendar(args.sublist(1));
-    return;
-  }
-
   if (args.isNotEmpty && args.first == 'update') {
     await _update(args.sublist(1));
     return;
+  }
+
+  if (args.isNotEmpty && args.first == 'connect') {
+    exit(await runConnectCommand(args: args.sublist(1)));
   }
 
   // Run the whole server under a guarded zone so an uncaught async error in a
@@ -69,7 +70,12 @@ https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server
 Future<void> _runServer(List<String> args) async {
   final CcServer server;
   try {
-    server = await runCcServer(args: args);
+    server = await runCcServer(args: args, connectHost: buildEmbeddedConnect);
+  } on ProviderSecretInEnvironmentException catch (e) {
+    // An exported provider secret is an operator mistake, not a crash: say
+    // what to do instead and end the process.
+    stderr.writeln(e.message);
+    exit(78);
   } on SocketException catch (e) {
     // A failed bind must END the process. The guarded zone only RECORDS an
     // uncaught error, so without this the server stayed alive with no listener
@@ -197,39 +203,6 @@ Future<void> _pair(List<String> args) async {
       'reverse proxy and add --insecure (plaintext on a trusted network only).',
     );
   }
-}
-
-/// Connects a Google account to a workspace via the headless device-code flow,
-/// stores its refresh token server-side, then exits. Run once per account.
-///
-/// Usage: `cc_server calendar connect --workspace <id>` (plus `--data-dir` and
-/// the `--google-client-id` / `--google-client-secret` config, or their
-/// `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` env vars).
-Future<void> _calendar(List<String> args) async {
-  if (args.isEmpty || args.first != 'connect') {
-    stderr.writeln('usage: cc_server calendar connect --workspace <id>');
-    exit(2);
-  }
-  final rest = args.sublist(1);
-  final config = CcServerConfig.resolve(rest);
-  final workspaceId = _flag(rest, 'workspace');
-  if (workspaceId == null || workspaceId.isEmpty) {
-    stderr.writeln('cc_server calendar connect: --workspace <id> is required');
-    exit(2);
-  }
-  try {
-    await connectGoogleCalendar(
-      config: config,
-      workspaceId: workspaceId,
-      log: stdout.writeln,
-    );
-  } on Object catch (e) {
-    stderr.writeln('cc_server calendar connect failed: $e');
-    await stdout.flush();
-    exit(1);
-  }
-  await stdout.flush();
-  exit(0);
 }
 
 /// Runs the standalone-server self-update flow. Opt-in and never silent:

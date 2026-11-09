@@ -1,11 +1,11 @@
 ---
 title: Configurar a integração com o Slack
-description: Conecte um app do Slack a um espaço de trabalho do Control Center para que os membros possam comandar agentes a partir do Slack.
+description: Conecte o Slack a um espaço de trabalho do Control Center, pelo app compartilhado do Control Center ou por um app seu, para que os membros possam comandar agentes a partir do Slack.
 slug: pt-BR/manual/guias/integracao-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Este guia mostra como conectar o Slack a um espaço de trabalho do Control Center, seja deixando o Control Center criar o app, seja criando-o você mesmo.
+Este guia mostra como conectar o Slack a um espaço de trabalho do Control Center: adicionando o app compartilhado do Control Center, ou com um app seu, que o Control Center cria para você ou que você mesmo cria.
 
 Para uma primeira execução guiada, consulte [Conecte o Slack ao seu espaço de trabalho](/pt-BR/manual/tutoriais/primeira-ponte-de-chat/).
 
@@ -17,9 +17,37 @@ A ponte é agnóstica de provedor por construção — uma interface guiada por 
 
 - A função `owner` ou `admin` no espaço de trabalho do Control Center — conectar um app de chat é uma alteração nas configurações do espaço de trabalho
 - Permissão para criar e instalar apps no espaço de trabalho do Slack
-- Nada acessível publicamente: a conexão é de saída (Socket Mode), então o servidor não precisa de porta de entrada, túnel nem domínio
+- Nada acessível publicamente: o seu próprio app se conecta para fora via Socket Mode e os eventos do app compartilhado chegam ao servidor por um long poll ao Control Center Connect, então o servidor não precisa de porta de entrada, túnel nem domínio
 
-## Três maneiras de obter o app
+## O app compartilhado ou o seu próprio
+
+Um espaço de trabalho usa exatamente um dos dois de cada vez.
+
+| Modo                                  | Precisa de                                                                                                    | Você recebe                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **App compartilhado do Control Center** | O servidor usa o Control Center Connect (**Configurações → Servidor → Início de sessão único**) e o Connect atende o Slack | Um clique e um login no Slack. Nenhum app para criar, nenhum token para colar, nada para rotacionar |
+| **O seu próprio app**                 | Um app do Slack no seu espaço de trabalho do Slack, criado de uma das três maneiras abaixo                    | O nome do bot, as descrições e o comando slash que você quiser, editáveis a partir do Control Center |
+
+### Adicionar o app compartilhado do Control Center
+
+1. No Control Center, vá em **Configurações → Espaço de trabalho → Geral** e role até o cartão **Pontes de chat**
+2. No bloco do Slack, encontre a linha **Adicionar o Control Center ao Slack** e clique em **Adicionar ao Slack**
+3. O navegador abre o Slack. Entre com o Slack, escolha o espaço de trabalho do Slack e aprove a instalação
+4. Quando o navegador mostrar um código, digite-o na caixa de diálogo que o Control Center deixou aberta. Se o navegador devolver você ao app sozinho, não há nada para digitar
+5. Um toast nomeia o espaço de trabalho do Slack ao qual o app foi adicionado, e o bloco do Slack mostra que a conexão roda no app compartilhado do Control Center
+
+Só um administrador do espaço de trabalho pode adicionar o app. A linha explica por que não pode começar quando o servidor usa os próprios apps em vez do Connect, quando o seu Connect não tem um app do Slack ou quando este espaço de trabalho já tem o próprio app do Slack conectado.
+
+Como ele difere do seu próprio app:
+
+- O Slack envia os eventos do app compartilhado ao Connect. O Connect guarda apenas uma referência (equipe, canal e id da mensagem) e descarta o texto da mensagem; o servidor faz long poll ao Connect em busca das referências e lê cada mensagem diretamente do Slack. O texto de um comando slash passa, sim, pelo Connect, e é por isso que [`/cc ticket`](#criar-rascunhos-de-tickets-pelo-slack) só cria rascunhos
+- O token de bot é selado para este servidor e renovado pelo Connect, então não há token para colar nem rotacionar
+- O nome do bot, as descrições e o comando slash são os do app compartilhado. A linha do Slack diz que a conexão roda no app compartilhado e não oferece **Personalizar o bot**
+- Um espaço de trabalho do Slack fica vinculado a um único servidor do Control Center de cada vez. Adicionar o app a partir de outro servidor o move para lá, e a conexão deste servidor para
+
+Para trocar de modo, desconecte e conecte da outra forma.
+
+### O seu próprio app: três maneiras de obtê-lo
 
 | Caminho            | Você fornece                          | O Control Center faz                                                                                                        |
 | ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -29,7 +57,7 @@ A ponte é agnóstica de provedor por construção — uma interface guiada por 
 
 O caminho guiado é o único que também deixa o app _gerenciável_ a partir do Control Center, que é o que viabiliza [Personalizar o bot de chat](/pt-BR/manual/guias/personalizar-bot-de-chat/). Um app **Criar no Slack** pode ser promovido a gerenciado depois, colando um token de configuração no diálogo de conexão.
 
-Não existe, de propósito, um botão "instalar o app do Slack do Control Center". Instalar um app do Slack distribuído exige um client secret compartilhado (o Slack não tem PKCE) e o Socket Mode distribui os eventos de um app aleatoriamente entre suas conexões — então um app compartilhado entregaria as mensagens do seu espaço de trabalho aos servidores de outras pessoas. Por isso cada espaço de trabalho tem seu próprio app, e esses três caminhos tratam de quão pouco trabalho isso custa a você.
+Os eventos do seu próprio app nunca passam pelo Connect: o Socket Mode os entrega direto a este servidor.
 
 ## Opção A: deixe o Control Center criar o app
 
@@ -100,6 +128,8 @@ message.im
 
 ## Conectar
 
+É assim que os tokens do seu próprio app chegam ao Control Center. O app compartilhado não precisa de nada disso.
+
 1. Vá em **Configurações → Espaço de trabalho → Geral** e role até o cartão **Pontes de chat**
 2. No bloco do Slack, clique em **Conectar Slack**
 3. Preencha os campos:
@@ -120,8 +150,8 @@ Sem o token de configuração do app opcional, a conexão funciona normalmente �
 
 ## O que a conexão faz
 
-- Armazena as credenciais no diretório do próprio espaço de trabalho, ao lado do banco de dados, legíveis apenas pelo proprietário. Elas nunca voltam para um cliente
-- Abre uma conexão Socket Mode para este espaço de trabalho e começa a receber menções, respostas em threads do Slack, mensagens diretas e comandos slash
+- Armazena as credenciais no diretório do próprio espaço de trabalho, ao lado do banco de dados, legíveis apenas pelo proprietário. Elas nunca voltam para um cliente. No app compartilhado, isso é a concessão selada; o token de bot de curta duração em que ela é renovada fica na memória
+- Começa a receber menções, respostas em threads do Slack, mensagens diretas e comandos slash: por uma conexão Socket Mode no caso do seu próprio app, ou pelo único long poll do servidor ao Connect no caso do app compartilhado
 - Rearma todos os threads do Slack que já haviam sido vinculados, de modo que uma reconexão continua conversas existentes em vez de abandoná-las
 - Não custa nada para espaços de trabalho sem app de chat: nenhum socket, nenhum timer, nenhum tráfego
 
@@ -137,9 +167,9 @@ reconectar o Slack lá.
 
 O acesso à ponte é a **associação** ao espaço de trabalho, nunca a posse de um
 token. Uma conta do Slack precisa estar vinculada a um usuário do Control Center
-que seja membro com uma função de escrita. Conectar, desconectar, a configuração
-guiada, o link de configuração e a personalização do bot são todos restritos a
-admins.
+que seja membro com uma função de escrita. Conectar, desconectar, a instalação
+do app compartilhado, a configuração guiada, o link de configuração e a
+personalização do bot são todos restritos a admins.
 :::
 
 ## Verificar
@@ -162,7 +192,25 @@ Raciocínio como uma parede de texto e a saída de ferramentas nunca saem do Con
 
 Se nada acontecer quando você clicar nele, o servidor que enviou a mensagem não está acessível a partir da máquina em que você clicou (um servidor apenas em loopback clicado de um celular, por exemplo), ou o Control Center não está em execução nela. Um servidor sem endereço alcançável envia um cartão sem botão, em vez de um que não leva a lugar nenhum.
 
+## Criar rascunhos de tickets pelo Slack
+
+Qualquer membro vinculado com uma função de escrita pode propor um ticket pelo Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+O texto antes do `|` é o título, e o texto depois dele, a descrição. O bot responde que criou o rascunho do ticket. Nada é criado ainda e nenhuma automação de tickets dispara: o rascunho espera por você em **Configurações → Espaço de trabalho → Perfil e identidade → Rascunhos de tickets do chat**, onde você pode corrigir o título e a descrição e depois clicar em **Criar ticket** ou **Descartar**.
+
+- Só o membro que executou o comando vê o rascunho
+- Um rascunho deixado de lado é descartado depois de um dia. Os rascunhos ficam na memória, então reiniciar o servidor também os descarta
+- O cartão só aparece enquanto você tem rascunhos
+
+O texto de um comando não pode ser relido no Slack e, no app compartilhado, ele passou pelo Connect. É criar o ticket no Control Center que o torna seu.
+
 ## Rotacionar um token
+
+Isto vale para o seu próprio app. O app compartilhado não tem token para rotacionar.
 
 Cole novamente o novo valor no diálogo de conexão e clique em **Conectar**. Conectar substitui qualquer conexão que estivesse em execução para este espaço de trabalho, então o socket é discado de novo com as novas credenciais.
 
@@ -170,7 +218,7 @@ Os dois tokens obrigatórios precisam estar presentes em toda conexão. O token 
 
 ## Desconectar
 
-Clique em **Desconectar** na linha do Slack (somente admins). O socket é fechado e as credenciais são esquecidas.
+Clique em **Desconectar** na linha do Slack (somente admins). A conexão é fechada e as credenciais são esquecidas. No app compartilhado, o Control Center também desinstala o bot do espaço de trabalho do Slack e libera o vínculo dele com este servidor.
 
 Os vínculos de espaço e de usuário sobrevivem de propósito: reconectar o mesmo app restaura todos os threads do Slack vinculados. Eles são linhas com escopo de espaço de trabalho, então excluir o espaço de trabalho os remove de qualquer forma.
 
@@ -207,7 +255,7 @@ Os cartões de tarefa do Slack fazem parte da mesma superfície nova Agents & AI
 
 ### "O Control Center precisa de um token de configuração do app para editar o bot"
 
-A linha **Personalizar o bot** fica desativada porque a conexão não tem um token de configuração do app. Isso é esperado para um app criado manualmente ou por meio de **Criar no Slack** — o Slack nunca disse ao Control Center qual app é. Gere um par de tokens em api.slack.com/apps e reconecte com o token de atualização preenchido.
+A linha **Personalizar o bot** fica desativada porque a conexão não tem um token de configuração do app. (No app compartilhado, não existe linha **Personalizar o bot**: o bot é o do app compartilhado.) Isso é esperado para um app criado manualmente ou por meio de **Criar no Slack** — o Slack nunca disse ao Control Center qual app é. Gere um par de tokens em api.slack.com/apps e reconecte com o token de atualização preenchido.
 
 ### Uma resposta longa é cortada
 

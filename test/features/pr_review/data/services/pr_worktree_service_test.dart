@@ -30,7 +30,8 @@ class _FakeIsolation extends Fake implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     CancellationToken? cancel,
     void Function(String line)? onOutput,
@@ -40,7 +41,8 @@ class _FakeIsolation extends Fake implements RepoIsolationPort {
       'destParentDir': destParentDir,
       'name': name,
       'branch': branch,
-      'authUrl': authUrl,
+      'fetchUrl': fetchUrl,
+      'fetchToken': fetchToken,
       'headRef': headRef,
     });
     return RepoIsolationResult(
@@ -121,7 +123,7 @@ void main() {
         filesystem: fs,
         isolation: isolation,
         registry: registry,
-        githubToken: () async => 'tok',
+        githubToken: (workspaceId, repo) async => 'tok',
       );
     });
 
@@ -143,10 +145,8 @@ void main() {
       // ...while the git branch carries the PR's real head-ref name.
       expect(call['branch'], 'feature/foo');
       expect(call['sourcePath'], '/src/hello');
-      expect(
-        call['authUrl'],
-        'https://x-access-token:tok@github.com/octocat/hello.git',
-      );
+      expect(call['fetchUrl'], 'https://github.com/octocat/hello.git');
+      expect(call['fetchToken'], 'tok');
 
       expect(registry.rows, hasLength(1));
       expect(registry.rows.single.spaceId, 'pr:octocat/hello#42');

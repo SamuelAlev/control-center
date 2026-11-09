@@ -69,6 +69,9 @@ class FakeViolationMonitor implements SandboxViolationMonitor {
   Stream<SandboxViolation> get stream => _streamController.stream;
 
   @override
+  int get pid => 0;
+
+  @override
   Future<void> close() async {
     _closeCallCount++;
     await _streamController.close();

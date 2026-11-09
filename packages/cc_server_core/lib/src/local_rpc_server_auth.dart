@@ -1,6 +1,34 @@
 part of 'local_rpc_server.dart';
 
 extension _AuthMethods on LocalRpcServer {
+  /// Serves the sign-in and provisioning routes (OIDC, provider OAuth, the
+  /// GitHub App manifest, an embedded Connect, SAML, SCIM); false when
+  /// [request] is for none of them.
+  Future<bool> _serveAuthRoute(HttpRequest request) async {
+    final path = request.uri.path;
+    final connectHost = this.connectHost;
+    final Future<void> Function(HttpRequest)? serve = switch (path) {
+      '/oidc/login' => _serveOidcLogin,
+      '/oidc/callback' => _serveOidcCallback,
+      _ when path.startsWith('/oauth/github/manifest/') => _serveGitHubManifest,
+      _ when path.startsWith('/oauth/') => _serveProviderOAuthCallback,
+      _ when connectHost != null && connectHost.ownsPath(path) =>
+        connectHost.handle,
+      '/saml/login' => _serveSamlLogin,
+      '/saml/acs' => _serveSamlAcs,
+      '/saml/claim' => _serveSamlGrantClaim,
+      '/saml/metadata' => _serveSamlMetadata,
+      '/auth/providers' => _serveAuthProviders,
+      _ when path.startsWith('/scim/v2/') => _serveScim,
+      _ => null,
+    };
+    if (serve == null) {
+      return false;
+    }
+    await serve(request);
+    return true;
+  }
+
   /// Invite codes are high-entropy one-use Noise PSKs. The public hello carries
   /// only a second digest; even a terminating TLS proxy cannot derive the
   /// stored invite hash or read the newly minted paired-device credential.
@@ -351,23 +379,18 @@ extension _AuthMethods on LocalRpcServer {
       return;
     }
     try {
-      final result = await oauth.handleCallback(
-        requestUri: request.uri,
-        redirectUri: providerOAuthRedirectUri(
-          _requestOrigin(request),
-          segments[1],
-        ),
-      );
+      final attempt = await oauth.handleCallback(request.uri);
       res
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.html
         ..headers.set('Cache-Control', 'no-store')
+        ..headers.set('Referrer-Policy', 'no-referrer')
         ..write(
           _providerOAuthPage(
             title: 'Signed in',
-            body: result.account.isEmpty
+            body: attempt.account.isEmpty
                 ? 'You can close this tab and return to Control Center.'
-                : 'Signed in as ${result.account}. You can close this tab '
+                : 'Signed in as ${attempt.account}. You can close this tab '
                       'and return to Control Center.',
           ),
         );
@@ -380,6 +403,89 @@ extension _AuthMethods on LocalRpcServer {
         ..write(
           _providerOAuthPage(
             title: 'Sign-in failed',
+            body: e is AuthException ? e.message : 'Something went wrong.',
+            ok: false,
+          ),
+        );
+    }
+    await res.close();
+  }
+
+  Future<void> _serveGitHubManifest(HttpRequest request) async {
+    final res = request.response;
+    final manifest = githubManifest;
+    final path = request.uri.path;
+    if (manifest == null ||
+        request.method != 'GET' ||
+        (path != GitHubManifestService.startPath &&
+            path != GitHubManifestService.callbackPath)) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+    res.headers
+      ..set('Cache-Control', 'no-store')
+      ..set('Referrer-Policy', 'no-referrer');
+    if (path == GitHubManifestService.startPath) {
+      final page = manifest.startPage(
+        request.uri.queryParameters['ticket'] ?? '',
+      );
+      if (page == null) {
+        res
+          ..statusCode = HttpStatus.gone
+          ..headers.contentType = ContentType.html
+          ..write(
+            _providerOAuthPage(
+              title: 'Link expired',
+              body: 'Start again from Settings in Control Center.',
+              ok: false,
+            ),
+          );
+      } else {
+        res
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.html
+          ..headers.set(
+            'Content-Security-Policy',
+            "default-src 'none'; script-src 'unsafe-inline'; "
+                "form-action https://github.com; style-src 'unsafe-inline'",
+          )
+          // Lax: GitHub's redirect back is a top-level GET, which carries it.
+          ..cookies.add(
+            Cookie(GitHubManifestService.browserCookie, page.browserKey)
+              ..httpOnly = true
+              ..secure = page.secure
+              ..sameSite = SameSite.lax
+              ..path = '/oauth/github/manifest'
+              ..maxAge = 600,
+          )
+          ..write(page.html);
+      }
+      await res.close();
+      return;
+    }
+    try {
+      String? browserKey;
+      for (final cookie in request.cookies) {
+        if (cookie.name == GitHubManifestService.browserCookie) {
+          browserKey = cookie.value;
+        }
+      }
+      final result = await manifest.complete(
+        request.uri,
+        browserKey: browserKey,
+      );
+      res
+        ..statusCode = HttpStatus.found
+        ..headers.set(HttpHeaders.locationHeader, result.installUrl.toString());
+    } catch (e) {
+      _w('GitHub App registration failed: $e');
+      res
+        ..statusCode = HttpStatus.forbidden
+        ..headers.contentType = ContentType.html
+        ..write(
+          _providerOAuthPage(
+            title: 'GitHub App not created',
             body: e is AuthException ? e.message : 'Something went wrong.',
             ok: false,
           ),

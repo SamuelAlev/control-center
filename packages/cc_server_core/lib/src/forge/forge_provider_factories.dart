@@ -50,10 +50,20 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
   final PrChangeSignals? _changeSignals;
   final BlobStore? _blobStore;
 
+  /// Throws [StateError] for a repo not linked to the workspace without a
+  /// member to key its cache rows by: those rows are never shared.
   @override
   PrReviewRepository create(ForgeProviderContext ctx) {
+    final userId = ctx.userId;
+    if (!ctx.linkedToWorkspace && (userId == null || userId.isEmpty)) {
+      throw StateError(
+        'A PR repository for a repo not linked to the workspace needs the '
+        'member it acts for: its cache rows are that member\'s alone.',
+      );
+    }
     return CachedPrReviewRepository(
       db: _dbs.of(ctx.workspaceId),
+      cacheMemberId: ctx.linkedToWorkspace ? null : userId,
       forgeClient: _buildClient(
         owner: ctx.repo.remoteOwner,
         repo: ctx.repo.remoteName,
@@ -87,6 +97,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
 ForgeProviderRegistry buildForgeProviderRegistry({
   required WorkspaceDatabaseManager workspaceDbs,
   required ForgeHttpClientFactory httpClientFactory,
+  required RhttpClient githubHttp,
   required PrDiffSource localGitSource,
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
@@ -95,7 +106,9 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   final factories = <ForgeProviderFactory>[];
 
   for (final forge in ForgeHost.supported) {
-    final httpClient = httpClientFactory.of(forge);
+    final httpClient = forge == ForgeHost.github
+        ? githubHttp
+        : httpClientFactory.of(forge);
     factories.add(
       ForgeRepositoryFactory(
         forge: forge,

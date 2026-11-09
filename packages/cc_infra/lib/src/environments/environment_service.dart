@@ -38,7 +38,7 @@ import 'package:cc_infra/src/environments/environment_service_ports.dart';
 import 'package:cc_infra/src/environments/worktree_seed_files.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/rig_ports.dart' show RigEnvironmentRoute;
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';

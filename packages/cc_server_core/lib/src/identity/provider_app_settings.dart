@@ -1,36 +1,31 @@
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_persistence/cc_persistence.dart';
-import 'package:cc_server_core/src/builtin_credentials.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 
-/// A provider the server can hold an app identity for.
+/// A provider the server can hold its own app identity for.
 ///
 /// Deliberately a small closed set rather than a free string: each entry has a
-/// hand-written OAuth endpoint pair and a hand-written credential shape, and a
-/// provider nobody wrote those for would be configurable but non-functional.
+/// hand-written OAuth endpoint pair and a hand-written credential shape.
+/// Configuring one here makes that lane run in own mode; leaving it empty
+/// routes the lane through Control Center Connect (when enabled). The two
+/// never mix: a half-configured own app is a setup error, not a Connect
+/// fallback.
 enum ProviderApp {
-  /// A GitHub App: an app id + private key (server identity) and a client
-  /// id/secret (user sign-in), both from the same registration.
+  /// A GitHub App: app id + private key (scoped tokens for automation) and a
+  /// client id + secret (person sign-in, Web OAuth with PKCE). All four or
+  /// none.
   github,
 
-  /// A Linear OAuth application, plus an optional workspace API key for the
-  /// server's own reads.
+  /// A Google OAuth client (Calendar, read-only): client id + secret.
+  google,
+
+  /// A Linear OAuth application (public PKCE client: client id only), plus
+  /// an optional service API key for workspace sync.
   linear;
 
   /// The wire spelling.
   String get wire => name;
-
-  /// Whether signing in to this provider needs the app's CLIENT SECRET.
-  ///
-  /// GitHub's device flow does not: the device-code request and the token poll
-  /// both authenticate with the client id alone, so requiring a secret would
-  /// gate the sign-in on a value it never sends. Linear has no device flow —
-  /// its browser round-trip is a confidential-client exchange and does.
-  ///
-  /// A GitHub secret is still USEFUL (it is what refreshes an expiring user
-  /// token), just not required to sign in.
-  bool get requiresClientSecret => this == ProviderApp.linear;
 
   /// Parses a wire value; null when unknown.
   static ProviderApp? fromWire(String? wire) {
@@ -41,6 +36,22 @@ enum ProviderApp {
     }
     return null;
   }
+}
+
+/// How complete one provider's own app is.
+enum OwnAppState {
+  /// Nothing configured: the lane may use Connect.
+  none,
+
+  /// Some fields set, others missing: a setup error, never a Connect
+  /// fallback.
+  partial,
+
+  /// Ready to use.
+  complete;
+
+  /// The wire spelling.
+  String get wire => name;
 }
 
 /// One provider's app configuration as reported to clients.
@@ -59,10 +70,16 @@ class ProviderAppStatus {
     this.hasApiKey = false,
     this.installations = const [],
     this.error = '',
+    this.active = true,
   });
 
   /// Which provider.
   final ProviderApp provider;
+
+  /// Whether the server's own apps are in force: false while the operator
+  /// uses a hosted or custom Connect, when the stored app is kept but every
+  /// lane ignores it.
+  final bool active;
 
   /// The GitHub App's numeric id; empty for providers that have none.
   final String appId;
@@ -90,16 +107,40 @@ class ProviderAppStatus {
   /// Why the last probe failed, or empty.
   final String error;
 
-  /// True when this provider can run a user sign-in.
-  bool get canSignIn =>
-      clientId.isNotEmpty &&
-      (hasClientSecret || !provider.requiresClientSecret);
+  /// How complete the own app is.
+  OwnAppState get state {
+    final fields = switch (provider) {
+      ProviderApp.github => [
+        appId.isNotEmpty,
+        hasPrivateKey,
+        clientId.isNotEmpty,
+        hasClientSecret,
+      ],
+      ProviderApp.google => [clientId.isNotEmpty, hasClientSecret],
+      ProviderApp.linear => [clientId.isNotEmpty],
+    };
+    if (fields.every((f) => f)) {
+      return OwnAppState.complete;
+    }
+    return fields.any((f) => f) ? OwnAppState.partial : OwnAppState.none;
+  }
 
-  /// True when the server can act as itself on this provider.
-  bool get canActAsServer => switch (provider) {
-    ProviderApp.github => appId.isNotEmpty && hasPrivateKey,
-    ProviderApp.linear => hasApiKey,
-  };
+  /// How complete the own app is as lanes see it: [OwnAppState.none] while
+  /// it is inactive, whatever is stored.
+  OwnAppState get effectiveState => active ? state : OwnAppState.none;
+
+  /// True when this provider can run a person sign-in in own mode.
+  bool get canSignIn => effectiveState == OwnAppState.complete;
+
+  /// True when the server can act for automation on this provider without
+  /// a person: a complete GitHub App, or a Linear service API key.
+  bool get canActAsServer =>
+      active &&
+      switch (provider) {
+        ProviderApp.github => state == OwnAppState.complete,
+        ProviderApp.google => false,
+        ProviderApp.linear => hasApiKey,
+      };
 
   /// The wire shape.
   Map<String, Object?> toJson() => {
@@ -110,6 +151,8 @@ class ProviderAppStatus {
     'has_private_key': hasPrivateKey,
     'has_client_secret': hasClientSecret,
     'has_api_key': hasApiKey,
+    'state': state.wire,
+    'active': active,
     'can_sign_in': canSignIn,
     'can_act_as_server': canActAsServer,
     'installations': installations,
@@ -120,30 +163,39 @@ class ProviderAppStatus {
 /// An OAuth client id/secret pair.
 typedef OAuthAppCredentials = ({String clientId, String clientSecret});
 
-/// Server-wide GitHub App + Linear app credentials.
+/// Server-wide own-app credentials (GitHub App, Google client, Linear app).
 ///
-/// Two lanes: install tokens for background work; OAuth client for user sign-in.
-/// Non-secrets in `server_settings`, secrets in [FileSecretsStore]; env seeds once then store wins.
+/// Non-secrets in `server_settings`, secrets in [FileSecretsStore]; the
+/// `.env` file seeds unset fields once, then the store wins.
+///
+/// The one chokepoint for whether they apply: `ownAppsActive` (the Connect
+/// choice, `ConnectSettings.serverOwnAppsActive`) false makes [githubApp],
+/// [oauthCredentials] and [linearApiKey] answer as if nothing were stored,
+/// and [status] report `active: false`. The stored values stay, so choosing
+/// no Connect again restores them. Null (hosts with no Connect) is active.
 class ProviderAppSettings {
   /// Creates a [ProviderAppSettings].
   ProviderAppSettings({
     required this._secrets,
     this._settings,
     this._githubAppFactory,
+    this._ownAppsActive,
   });
 
   final FileSecretsStore _secrets;
   final ServerSettingDao? _settings;
+  final Future<bool> Function()? _ownAppsActive;
   final GitHubAppClient Function({required String appId, required String pem})?
   _githubAppFactory;
 
   static const _githubAppIdKey = 'provider_app_github_app_id';
   static const _githubClientIdKey = 'provider_app_github_client_id';
   static const _linearClientIdKey = 'provider_app_linear_client_id';
+  static const _googleClientIdKey = 'provider_app_google_client_id';
 
   static const _githubPrivateKeySecret = 'provider_app_github_private_key';
   static const _githubClientSecret = 'provider_app_github_client_secret';
-  static const _linearClientSecret = 'provider_app_linear_client_secret';
+  static const _googleClientSecret = 'provider_app_google_client_secret';
   static const _linearApiKeySecret = 'provider_app_linear_api_key';
 
   /// In-memory settings for hosts that wire no database (tests, the minimal
@@ -152,12 +204,33 @@ class ProviderAppSettings {
 
   GitHubAppClient? _githubApp;
   bool _githubAppResolved = false;
+  final List<void Function(ProviderApp provider)> _listeners = [];
 
-  /// Seeds unset fields from [env] (and the release build's built-in
-  /// credentials, which arrive as env entries from the caller).
+  /// Runs [listener] after every [save]: a token minted by the previous app
+  /// belongs to a different identity, so callers drop what they cached.
+  void addListener(void Function(ProviderApp provider) listener) =>
+      _listeners.add(listener);
+
+  /// Whether the stored own apps are in force right now.
+  Future<bool> active() async => await _ownAppsActive?.call() ?? true;
+
+  /// Runs after the Connect choice changed: every own app may have turned on
+  /// or off, so the cached GitHub client goes and every listener hears about
+  /// every provider.
+  void connectChoiceChanged() {
+    _invalidate();
+    for (final provider in ProviderApp.values) {
+      for (final listener in List.of(_listeners)) {
+        listener(provider);
+      }
+    }
+  }
+
+  /// Seeds unset fields from [env] (the server's `.env` file).
   ///
   /// Runs once at boot, before the HTTP listener starts, so the first inbound
-  /// request already sees a configured app.
+  /// request already sees a configured app. Also drops the Linear client
+  /// secret older builds stored: Linear is a public PKCE client now.
   Future<void> loadAndApply({Map<String, String> env = const {}}) async {
     Future<void> seedSetting(String key, String? value) async {
       if (value == null || value.trim().isEmpty) {
@@ -178,64 +251,72 @@ class ProviderAppSettings {
       }
     }
 
-    // GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY are the names the sandbox token
-    // broker already reads, so a host that configured fine-grained agent
-    // tokens gets the server lane for free rather than pasting the same key
-    // under a second name.
     await seedSetting(_githubAppIdKey, env['GITHUB_APP_ID']);
     await seedSecret(_githubPrivateKeySecret, env['GITHUB_APP_PRIVATE_KEY']);
     await seedSetting(_githubClientIdKey, env['GITHUB_CLIENT_ID']);
-    // The GitHub client secret is never baked into a build (the device flow
-    // does not send one), but it does seed from the environment like Linear's:
-    // it is what lets an operator whose own app has token expiry on refresh
-    // user tokens instead of re-prompting a sign-in every eight hours.
     await seedSecret(_githubClientSecret, env['GITHUB_CLIENT_SECRET']);
+    await seedSetting(_googleClientIdKey, env['GOOGLE_OAUTH_CLIENT_ID']);
+    await seedSecret(_googleClientSecret, env['GOOGLE_OAUTH_CLIENT_SECRET']);
     await seedSetting(_linearClientIdKey, env['LINEAR_CLIENT_ID']);
-    await seedSecret(_linearClientSecret, env['LINEAR_CLIENT_SECRET']);
     await seedSecret(_linearApiKeySecret, env['LINEAR_API_KEY']);
+    await _secrets.deletePsk('provider_app_linear_client_secret');
     _invalidate();
   }
 
-  /// The live GitHub App client, or null when this server has no app identity.
+  /// The live GitHub App client, or null unless the server's own GitHub App
+  /// is complete (app id, key, client id and secret). A partial app never
+  /// mints anything.
   Future<GitHubAppClient?> githubApp() async {
+    if (!await active()) {
+      return null;
+    }
     if (_githubAppResolved) {
       return _githubApp;
     }
     _githubAppResolved = true;
-    final appId = await _readSetting(_githubAppIdKey) ?? '';
-    final pem = await _secrets.readPsk(_githubPrivateKeySecret) ?? '';
-    if (appId.isEmpty || pem.isEmpty) {
+    if ((await status(ProviderApp.github)).state != OwnAppState.complete) {
       return _githubApp = null;
     }
+    final appId = await _readSetting(_githubAppIdKey) ?? '';
+    final pem = await _secrets.readPsk(_githubPrivateKeySecret) ?? '';
     final factory = _githubAppFactory;
     return _githubApp = factory != null
         ? factory(appId: appId, pem: pem)
         : GitHubAppClient.tryCreate(appId: appId, privateKeyPem: pem);
   }
 
-  /// The OAuth client credentials for [provider], or null when it cannot run a
-  /// sign-in.
-  ///
-  /// The client SECRET may come back empty: a device flow does not send one,
-  /// so requiring it would gate GitHub's sign-in on a value nothing uses. It
-  /// is required only where the flow actually is a confidential-client
-  /// exchange — see [ProviderApp.requiresClientSecret].
+  /// The own-app OAuth client for [provider], or null when none is
+  /// configured or own apps are inactive. Throws [OwnAppIncomplete] when it
+  /// is half-configured (and active).
   Future<OAuthAppCredentials?> oauthCredentials(ProviderApp provider) async {
-    final (idKey, secretKey) = switch (provider) {
-      ProviderApp.github => (_githubClientIdKey, _githubClientSecret),
-      ProviderApp.linear => (_linearClientIdKey, _linearClientSecret),
-    };
-    final clientId = await _readSetting(idKey) ?? _builtinClientId(provider);
-    final clientSecret = await _secrets.readPsk(secretKey) ?? '';
-    if (clientId.isEmpty ||
-        (clientSecret.isEmpty && provider.requiresClientSecret)) {
-      return null;
+    final current = await status(provider);
+    switch (current.effectiveState) {
+      case OwnAppState.none:
+        return null;
+      case OwnAppState.partial:
+        throw OwnAppIncomplete(provider);
+      case OwnAppState.complete:
+        final secretKey = switch (provider) {
+          ProviderApp.github => _githubClientSecret,
+          ProviderApp.google => _googleClientSecret,
+          ProviderApp.linear => null,
+        };
+        return (
+          clientId: current.clientId,
+          clientSecret: secretKey == null
+              ? ''
+              : await _secrets.readPsk(secretKey) ?? '',
+        );
     }
-    return (clientId: clientId, clientSecret: clientSecret);
   }
 
-  /// The server-level Linear API key, or empty.
-  Future<String> linearApiKey() async =>
+  /// The server-level Linear API key, or empty (also while own apps are
+  /// inactive).
+  Future<String> linearApiKey() async => await active()
+      ? await _storedLinearApiKey()
+      : '';
+
+  Future<String> _storedLinearApiKey() async =>
       await _secrets.readPsk(_linearApiKeySecret) ?? '';
 
   /// Every provider's configuration, for the settings screen.
@@ -243,8 +324,8 @@ class ProviderAppSettings {
   /// [probe] additionally asks GitHub which installations the app has — a
   /// network call, so it is opt-in rather than part of every settings read.
   Future<List<ProviderAppStatus>> statuses({bool probe = false}) async => [
-    await status(ProviderApp.github, probe: probe),
-    await status(ProviderApp.linear, probe: probe),
+    for (final provider in ProviderApp.values)
+      await status(provider, probe: probe),
   ];
 
   /// One provider's configuration.
@@ -252,6 +333,7 @@ class ProviderAppSettings {
     ProviderApp provider, {
     bool probe = false,
   }) async {
+    final active = await this.active();
     switch (provider) {
       case ProviderApp.github:
         final appId = await _readSetting(_githubAppIdKey) ?? '';
@@ -259,7 +341,11 @@ class ProviderAppSettings {
         var installations = const <Map<String, Object?>>[];
         var error = '';
         var botLogin = '';
-        if (probe && appId.isNotEmpty && pem.isNotEmpty) {
+        if (probe && !active) {
+          error =
+              'This server uses Control Center Connect, so its own GitHub '
+              'App is not in use. Choose "Use my own apps" to use it.';
+        } else if (probe && appId.isNotEmpty && pem.isNotEmpty) {
           final app = await githubApp();
           if (app == null) {
             error =
@@ -279,22 +365,29 @@ class ProviderAppSettings {
         return ProviderAppStatus(
           provider: provider,
           appId: appId,
-          clientId:
-              await _readSetting(_githubClientIdKey) ?? builtinGitHubClientId,
+          clientId: await _readSetting(_githubClientIdKey) ?? '',
           botLogin: botLogin,
           hasPrivateKey: pem.isNotEmpty,
           hasClientSecret:
               (await _secrets.readPsk(_githubClientSecret) ?? '').isNotEmpty,
           installations: installations,
           error: error,
+          active: active,
+        );
+      case ProviderApp.google:
+        return ProviderAppStatus(
+          provider: provider,
+          clientId: await _readSetting(_googleClientIdKey) ?? '',
+          hasClientSecret:
+              (await _secrets.readPsk(_googleClientSecret) ?? '').isNotEmpty,
+          active: active,
         );
       case ProviderApp.linear:
         return ProviderAppStatus(
           provider: provider,
           clientId: await _readSetting(_linearClientIdKey) ?? '',
-          hasClientSecret:
-              (await _secrets.readPsk(_linearClientSecret) ?? '').isNotEmpty,
-          hasApiKey: (await linearApiKey()).isNotEmpty,
+          hasApiKey: (await _storedLinearApiKey()).isNotEmpty,
+          active: active,
         );
     }
   }
@@ -330,12 +423,17 @@ class ProviderAppSettings {
         await _applySetting(_githubClientIdKey, clientId);
         await _applySecret(_githubPrivateKeySecret, privateKeyPem);
         await _applySecret(_githubClientSecret, clientSecret);
+      case ProviderApp.google:
+        await _applySetting(_googleClientIdKey, clientId);
+        await _applySecret(_googleClientSecret, clientSecret);
       case ProviderApp.linear:
         await _applySetting(_linearClientIdKey, clientId);
-        await _applySecret(_linearClientSecret, clientSecret);
         await _applySecret(_linearApiKeySecret, apiKey);
     }
     _invalidate();
+    for (final listener in List.of(_listeners)) {
+      listener(provider);
+    }
     return status(provider);
   }
 
@@ -371,18 +469,6 @@ class ProviderAppSettings {
     await _secrets.writePsk(key, trimmed);
   }
 
-  /// The client id this build ships, when it ships one.
-  ///
-  /// This is what makes "Sign in with GitHub" work on an official build with
-  /// nothing configured: a device-flow client id is public by design, so it can
-  /// travel in the binary. An operator's own value always wins over it.
-  static String _builtinClientId(ProviderApp provider) => switch (provider) {
-    ProviderApp.github => builtinGitHubClientId,
-    // No Linear app ships: its flow is a confidential-client redirect, which
-    // would need a secret in the binary and a callback URL per install.
-    ProviderApp.linear => '',
-  };
-
   Future<String?> _readSetting(String key) async {
     final dao = _settings;
     final value = dao == null ? _memory[key] : await dao.getValue(key);
@@ -406,4 +492,29 @@ class ProviderAppSettings {
     }
     await dao.deleteValue(key);
   }
+}
+
+/// Thrown when an own app is half-configured.
+final class OwnAppIncomplete implements Exception {
+  /// Creates the error.
+  const OwnAppIncomplete(this.provider);
+
+  /// Which provider.
+  final ProviderApp provider;
+
+  /// What the operator has to fix.
+  String get message => switch (provider) {
+    ProviderApp.github =>
+      'This server\'s GitHub App is only partly set up. Add the app id, '
+          'private key, client id and client secret — or clear them all to '
+          'use Control Center Connect.',
+    ProviderApp.google =>
+      'This server\'s Google client is only partly set up. Add both the '
+          'client id and the client secret — or clear them to use Control '
+          'Center Connect.',
+    ProviderApp.linear => 'This server\'s Linear app is only partly set up.',
+  };
+
+  @override
+  String toString() => message;
 }

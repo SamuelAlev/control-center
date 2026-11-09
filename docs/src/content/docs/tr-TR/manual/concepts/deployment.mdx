@@ -2,7 +2,7 @@
 title: Dağıtım ve istemciler
 description: Control Center’ın ince istemci mimarisinin headless bir sunucuyu masaüstü, web ve mobil istemcilerinden nasıl ayırdığı.
 slug: tr-TR/kilavuz/kavramlar/dagitim
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center tek bir program değildir. Bir **ince istemci mimarisidir**:
@@ -199,7 +199,7 @@ yürütür.
 | Ajan yürütme                                           | bunu yürütür (ya da kiralar) | kiralanmış işleri yürütür     | —                  | —                                            |
 | Arayüz çizimi                                          | —                            | —                             | tam                | tam (web) / ağırlıklı olarak okuma (telefon) |
 | Toplantı kaydı (mikrofon + toplantı sesi)              | —                            | —                             | yerel kayıt        | yalnızca web, ekran paylaşımı sesi üzerinden |
-| Takvim OAuth (Google)                                  | belirteçleri saklar          | —                             | —                  | —                                            |
+| Sağlayıcı oturum açmaları (GitHub, Google, Linear)     | yürütür ve saklar            | —                             | —                  | —                                            |
 
 İki katman aynı biçimde sandbox uygulamaz. `cc_server`, kendi yürüttüğü
 çalıştırmaları, bir arka ucun bulunduğu yerlerde ana makinenin işletim sistemi
@@ -213,6 +213,14 @@ dışarıya kiralamak, sandbox’ı olan bir ana makinede bile yürütmeyi sandb
 dışına taşır. Her durumda bir çalıştırmayı neyin sınırladığı için
 [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasına
 bakın.
+
+Sağlayıcı oturum açmaları sunucuda, onun kendi uygulamaları üzerinden ya da
+[Control Center Connect](/tr-TR/kilavuz/referans/connect/) üzerinden tamamlanır;
+Connect, kendi uygulaması olmayan sunucular için sağlayıcı OAuth akışını yürüten
+isteğe bağlı bir hizmettir. Connect yalnızca bu sunucunun kullanabileceği bir
+kimlik bilgisi döndürür ve depo içeriklerini asla görmez. İstemciler yalnızca
+tarayıcıyı açar ve bir Connect oturum açmasında tarayıcının gösterdiği kodu geri
+iletir.
 
 Toplantı kaydı bir istemcide gerçekleşir çünkü bir mikrofona ve toplantının
 sesine ihtiyaç duyar — bir dolaptaki sunucu aramanızı kaydedemez. Kayıt daha

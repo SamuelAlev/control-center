@@ -2,7 +2,7 @@
 title: Användningsstatistik
 description: Vad Control Center registrerar när användningsstatistiken är på, vem som bestämmer och vad som aldrig skickas.
 slug: sv-SE/handbok/referens/anvandningsstatistik
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center kan skicka **pseudonymiserade användningshändelser** till en [Umami](https://umami.is)-instans. Användningsstatistiken är **avstängd tills serveroperatören slår på den**. Inställningen tillhör servern och gäller alla klienter som är anslutna till den: skrivbordsappen, webbappen, telefonen och själva servern.
@@ -95,9 +95,12 @@ Registreras av skrivbordsappen, webbappen och telefonen för sådant en person g
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | En misslyckad körning gjordes om |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | En körning avbröts från appen |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Ett pågående steg dödades |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Ett inloggningsförsök till en kalender avslutades |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true när inloggningen gick via Control Center Connect i stället för serverns egen Google-klient), `duration_s` | Ett inloggningsförsök till en kalender avslutades |
 | `calendar_disconnected` | `workspace_id` | Ett kalenderkonto kopplades från |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | En inbjudan besvarades |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (antal), `conference` | En händelse bokades i Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | En händelse flyttades eller ändrades i kalenderrutnätet |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | En händelse togs bort från Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | En inspelning startades från en kalenderhändelse |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | En möteslänk öppnades (telefon). Bara leverantören härleds från länken |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Aviseringscentret användes |

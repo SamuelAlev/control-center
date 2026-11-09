@@ -2,7 +2,7 @@
 title: Vytvořte šablonu pipeline
 description: Napiš v editoru pipeline šablonu postupu jako DAG. Přidej uzly, propoj je, deklaruj vstupy a udělej ji spustitelnou.
 slug: cs-CZ/prirucka/navody/vytvoreni-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Šablony pipeline se píšou v nastavení pracovního prostoru. Položka **Pipelines**
@@ -122,11 +122,20 @@ Přidá **Bash skript**. Pole pro pracovní adresář ani prostředí tu nejsou,
 protože ani jedno nejde nastavit:
 
 - Každý bash krok v běhu sdílí cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` se vloží z úložiště přihlašovacích údajů, takže `gh` a
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` fungují bez dalšího
-  nastavení.
+- Skript běží v sandboxu operačního systému hostitele, stejně jako příkazy
+  agenta. Hostitel bez sandboxu (Windows nebo Linux bez `bwrap`) krok nechá
+  selhat, místo aby ho spustil bez omezení. Datový adresář serveru a soubor
+  `.env` jsou zevnitř nečitelné.
+- Git a `gh` nevidí žádnou konfiguraci hostitele: žádné uložené přihlášení,
+  pomocníka pro pověření ani globální hooky.
+- Když pipeline jmenuje repozitář GitHub propojený s pracovním prostorem
+  (`repo_full_name` ve stavu nebo v payloadu spouštěče), `GH_TOKEN` a
+  `GITHUB_TOKEN` obsahují token, který smí číst jen tento jeden repozitář, takže
+  `gh` a `git clone` proti němu fungují bez dalšího nastavení. Jinak žádný token
+  GitHubu není.
+- Pipeline s bash krokem smí vytvořit nebo upravit jen admin pracovního prostoru.
 - Skript se spouští jako doslovný spustitelný soubor `bash`, takže `bash` musí
-  být na `PATH` hostitele serveru. Na Windows na to mysli.
+  být na `PATH` hostitele serveru.
 
 ### Router
 

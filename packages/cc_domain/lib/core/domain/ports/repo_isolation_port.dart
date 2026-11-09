@@ -31,7 +31,10 @@ abstract interface class RepoIsolationPort {
   ///
   /// Rift: register → CoW → fetch base into FETCH_HEAD → `checkout -B`. Empty
   /// [baseRef] from `origin/HEAD` then main/master — never source HEAD.
-  /// [authUrl] or copy's origin; [headRef] fetches that ref as [branch].
+  /// Fetches from [fetchUrl] (a plain URL, never carrying credentials) or the
+  /// copy's origin; [fetchToken] rides as a git Authorization header in the
+  /// environment, never in argv or a URL. [headRef] fetches that ref as
+  /// [branch].
   /// Rift failures throw (no worktree rescue on CoW). [pristine] → clean -ffdx.
   /// [cancel] → [CancelledException]; disk leftover is caller's to reap.
   /// [onOutput] receives each stage and git's progress as it happens; lines
@@ -42,7 +45,8 @@ abstract interface class RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,

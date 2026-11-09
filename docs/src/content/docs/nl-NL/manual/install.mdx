@@ -2,7 +2,7 @@
 title: Installeren
 description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center werkt op twee manieren: als **webapp** op
@@ -136,14 +136,9 @@ Modellenlijsten worden live geleverd door elke verbonden provider; [models.dev](
 
 Een GitHub-inloggegeven is **van jou en staat op de server**, gekoppeld aan je gebruikers-id — niet in de sleutelhanger van het besturingssysteem van de client. Elk apparaat waarmee je inlogt gebruikt hetzelfde gegeven, en geen ander lid kan het lezen.
 
-Als er een GitHub App op de server is geregistreerd ([De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)), biedt **Instellingen → Werkruimte → Profiel en identiteit → Codehosting** de optie **Inloggen met GitHub** (een device flow die de server uitvoert). Plak anders een persoonlijk toegangstoken:
+GitHub kent alleen aanmelden: **Instellingen → Werkruimte → Profiel en identiteit → Codehosting** biedt **Inloggen bij GitHub**, en er is geen token om te plakken. De aanmelding loopt via de eigen GitHub App van de server ([De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)) of via Control Center Connect, afhankelijk van wat de servereigenaar heeft gekozen. Met de eigen app van de server keert de browser vanzelf terug naar de server; via Connect typ je de code van 8 tekens die de browser toont, of laat je de browser Control Center openen. Zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/).
 
-- Klassiek: `repo` en `read:org`
-- Fijnmazig: **Contents** en **Pull requests** (lezen en schrijven), **Checks** en **Actions** (lezen)
-
-Maak er een aan op [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). De server controleert de token op de accountnaam op het moment dat hij wordt opgeslagen, zodat de rij ‘ingelogd als …’ kan tonen; een mislukte controle slaat de token alsnog op, en een typefout of ontbrekende scope blijkt later uit een mislukt verzoek.
-
-De eerste stap van de onboarding is deze verbinding. Daarna vervang of wis je hem op dezelfde kaart. GitLab en Bitbucket gebruiken dezelfde kaart; zie [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
+De onboarding vraagt om deze verbinding. Daarna meld je je op dezelfde kaart opnieuw aan of verbreek je de verbinding. GitLab en Bitbucket gebruiken dezelfde kaart met een geplakt persoonlijk token; zie [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
 
 ## Kies waar de server draait
 

@@ -2505,6 +2505,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get credentialsWaitingForLogin => 'ブラウザーでの認可を待っています…';
 
   @override
+  String get credentialsConnectCodePrompt => 'ブラウザに表示されたコードを入力してください';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'サインインコードではないようです。コードは英数字8文字です。';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'このコードはこのサインインと一致しません。確認してもう一度お試しください。';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'このサーバーでは$providerへのサインインがまだ設定されていません。';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'このサーバーのサインイン用コールバックには、スマートフォンから安全にアクセスできません。デスクトップアプリからサインインするか、サーバーの所有者に公開 HTTPS アドレスの設定を依頼してください。';
+
+  @override
   String get credentialsLoginTimedOut => 'サインインの期限が切れました。もう一度やり直してください。';
 
   @override
@@ -2523,10 +2543,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'サインインを完了';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'このサーバーのブラウザーコールバックには、スマートフォンから安全にアクセスできません。公開HTTPSコールバックの設定をサーバーの所有者に依頼するか、代わりにトークンを追加してください。';
 
   @override
   String get credentialsUpdateToken => 'トークンを更新';

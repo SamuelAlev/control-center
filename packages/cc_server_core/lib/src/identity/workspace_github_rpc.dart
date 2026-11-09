@@ -4,7 +4,7 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 
-/// Per-workspace GitHub App / background PAT (`workspaceGitHub.*`).
+/// Per-workspace GitHub App (`workspaceGitHub.*`).
 ///
 /// Admin of the bound workspace. Secrets never leave the server. Injected via
 /// `extraOps` so `remote_rpc_catalog.dart` does not grow. Empty when the host
@@ -30,7 +30,6 @@ List<RepoOp> buildWorkspaceGitHubOps({
         return {
           ...status.toJson(),
           'github_auth_mode': ws.githubAuthMode.wireName,
-          'has_background_pat': await apps.hasBackgroundPat(ws.id),
         };
       },
     ),
@@ -57,7 +56,6 @@ List<RepoOp> buildWorkspaceGitHubOps({
         return {
           ...saved.toJson(),
           'github_auth_mode': ws.githubAuthMode.wireName,
-          'has_background_pat': await apps.hasBackgroundPat(ws.id),
         };
       },
     ),
@@ -74,32 +72,7 @@ List<RepoOp> buildWorkspaceGitHubOps({
         return {
           ...status.toJson(),
           'github_auth_mode': ws.githubAuthMode.wireName,
-          'has_background_pat': await apps.hasBackgroundPat(ws.id),
         };
-      },
-    ),
-    RepoOp(
-      name: 'workspaceGitHub.setPat',
-      kind: RepoOpKind.mutate,
-      minRole: WorkspaceRole.admin,
-      handler: (ctx) async {
-        final token = ctx.args['token'];
-        await apps.setBackgroundPat(
-          ctx.workspaceId!,
-          token is String ? token : '',
-        );
-        return {
-          'ok': true,
-          'has_background_pat': await apps.hasBackgroundPat(ctx.workspaceId!),
-        };
-      },
-    ),
-    RepoOp(
-      name: 'workspaceGitHub.hasPat',
-      kind: RepoOpKind.read,
-      minRole: WorkspaceRole.admin,
-      handler: (ctx) async => {
-        'has_background_pat': await apps.hasBackgroundPat(ctx.workspaceId!),
       },
     ),
   ];

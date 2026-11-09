@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Connecter un Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "Serveur et déploiement",
   "docs.sidebar.guidesRunHeadlessServer": "Exécuter un serveur sans interface",
+  "docs.sidebar.guidesRunConnect": "Exécuter un serveur Connect",
   "docs.sidebar.guidesConnectRemoteServer": "Se connecter à un serveur distant",
   "docs.sidebar.guidesRunFleetWorker": "Exécuter un worker de flotte",
   "docs.sidebar.guidesBackUpAndRestore": "Sauvegarder et restaurer",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "Raccourcis clavier",
   "docs.sidebar.referenceRouteMap": "Carte des routes",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "Sauvegarde, export et import",
   "docs.sidebar.referenceTelemetry": "Statistiques d'utilisation",
   "docs.sidebar.referenceGlossary": "Glossaire"

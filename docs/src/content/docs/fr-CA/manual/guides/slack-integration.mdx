@@ -1,11 +1,11 @@
 ---
 title: Configurer l’intégration Slack
-description: Connectez une app Slack à un espace de travail Control Center pour que les membres puissent piloter des agents depuis Slack.
+description: Connectez Slack à un espace de travail Control Center, au moyen de l’app Control Center partagée ou d’une app bien à vous, pour que les membres puissent piloter des agents depuis Slack.
 slug: fr-CA/manuel/guides/integration-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Ce guide vous montre comment connecter Slack à un espace de travail Control Center, soit en laissant Control Center créer l’app, soit en la créant vous-même.
+Ce guide vous montre comment connecter Slack à un espace de travail Control Center : en ajoutant l’app Control Center partagée, ou avec une app bien à vous, que Control Center crée pour vous ou que vous créez vous-même.
 
 Pour une première prise en main guidée, consultez [Relier Slack à votre espace de travail](/fr-CA/manuel/tutoriels/premiere-passerelle-de-clavardage/).
 
@@ -20,9 +20,37 @@ Telegram, Teams ou Matrix.
 
 - Le rôle `owner` ou `admin` dans l’espace de travail Control Center — connecter une app de clavardage est un changement aux paramètres de l’espace de travail
 - La permission de créer et d’installer des apps dans l’espace de travail Slack
-- Rien de joignable publiquement : la connexion est sortante (Socket Mode), donc le serveur n’a besoin d’aucun port entrant, d’aucun tunnel ni d’aucun domaine
+- Rien de joignable publiquement : votre propre app se connecte en sortie par Socket Mode et les événements de l’app partagée parviennent au serveur par une interrogation longue (long poll) auprès de Control Center Connect, donc le serveur n’a besoin d’aucun port entrant, d’aucun tunnel ni d’aucun domaine
 
-## Trois façons d’obtenir l’app
+## App partagée ou app bien à vous
+
+Un espace de travail fonctionne avec exactement l’une des deux à la fois.
+
+| Mode | Ce qu’il faut | Ce que vous obtenez |
+| --- | --- | --- |
+| **App Control Center partagée** | Le serveur utilise Control Center Connect (**Paramètres → Serveur → Authentification unique**) et Connect sert Slack | Un clic et une connexion à Slack. Aucune app à créer, aucun jeton à coller, rien à remplacer |
+| **Votre propre app** | Une app Slack dans votre espace de travail Slack, obtenue de l’une des trois façons ci-dessous | Votre propre nom de robot, vos descriptions et votre commande slash, modifiables depuis Control Center |
+
+### Ajouter l’app Control Center partagée
+
+1. Dans Control Center, allez à **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
+2. Dans le bloc Slack, repérez la ligne **Ajouter Control Center à Slack** et cliquez sur **Ajouter à Slack**
+3. Votre navigateur ouvre Slack. Connectez-vous avec Slack, choisissez l’espace de travail Slack et approuvez l’installation
+4. Quand le navigateur affiche un code, entrez-le dans la boîte de dialogue que Control Center a laissée ouverte. Si le navigateur vous renvoie de lui-même à l’app, il n’y a rien à taper
+5. Une notification indique l’espace de travail Slack auquel l’app a été ajoutée, et le bloc Slack montre que la connexion fonctionne avec l’app Control Center partagée
+
+Seul un administrateur de l’espace de travail peut ajouter l’app. La ligne explique pourquoi l’installation ne peut pas démarrer quand le serveur utilise ses propres apps plutôt que Connect, quand votre Connect n’a pas d’app Slack, ou quand cet espace de travail a déjà connecté sa propre app Slack.
+
+Ce qui la distingue de votre propre app :
+
+- Slack envoie les événements de l’app partagée à Connect. Connect ne garde qu’une référence (équipe, canal et identifiant de message) et supprime le texte du message ; le serveur interroge Connect en long poll pour obtenir les références et lit lui-même chaque message depuis Slack. Le texte d’une commande slash, lui, passe bien par Connect, et c’est pourquoi [`/cc ticket`](#créer-des-brouillons-de-tickets-depuis-slack) ne fait que créer un brouillon
+- Le jeton du robot est scellé pour ce serveur et renouvelé par Connect, donc il n’y a aucun jeton à coller ni à remplacer
+- Le nom du robot, ses descriptions et sa commande slash sont ceux de l’app partagée. La ligne Slack indique que la connexion fonctionne avec l’app partagée et n’offre pas **Personnaliser le bot**
+- Un espace de travail Slack n’est lié qu’à un seul serveur Control Center à la fois. Ajouter l’app depuis un autre serveur l’y déplace, et la connexion de ce serveur-ci s’arrête
+
+Pour passer d’un mode à l’autre, déconnectez, puis connectez de l’autre façon.
+
+### Votre propre app : trois façons de l’obtenir
 
 | Voie                | Ce que vous fournissez                | Ce que fait Control Center                                                                                                     |
 | ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -32,7 +60,7 @@ Telegram, Teams ou Matrix.
 
 La voie guidée est la seule qui laisse aussi l’app _gérable_ depuis Control Center, ce qui permet de [Personnaliser le robot de clavardage](/fr-CA/manuel/guides/personnaliser-robot-de-clavardage/). Une app créée avec **Créer dans Slack** peut être promue en app gérée plus tard en collant un jeton de configuration dans la boîte de dialogue de connexion.
 
-Il n’existe délibérément aucun bouton « installer l’app Slack de Control Center ». Installer une app Slack distribuée exige un secret client partagé (Slack n’a pas de PKCE) et Socket Mode répartit les événements d’une app au hasard entre ses connexions — une app partagée unique livrerait donc les messages de votre espace de travail aux serveurs d’autres personnes. Chaque espace de travail possède donc sa propre app, et ces trois voies portent sur le peu de travail que cela vous coûte.
+Les événements de votre propre app ne passent jamais par Connect : Socket Mode les livre directement à ce serveur.
 
 ## Option A : laisser Control Center créer l’app
 
@@ -103,6 +131,8 @@ message.im
 
 ## Connexion
 
+C’est de cette façon que les jetons de votre propre app parviennent à Control Center. L’app partagée n’a besoin de rien de tout cela.
+
 1. Allez à **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
 2. Dans le bloc Slack, cliquez sur **Connecter Slack**
 3. Remplissez les champs :
@@ -125,8 +155,8 @@ Sans le jeton de configuration d’app facultatif, la connexion fonctionne très
 
 ## Ce que fait la connexion
 
-- Enregistre les identifiants dans le répertoire propre de l’espace de travail, à côté de sa base de données, lisibles par le propriétaire seulement. Ils ne reviennent jamais vers un client
-- Ouvre une connexion Socket Mode pour cet espace de travail et commence à recevoir les mentions, les réponses dans les fils Slack, les messages privés et les commandes slash
+- Enregistre les identifiants dans le répertoire propre de l’espace de travail, à côté de sa base de données, lisibles par le propriétaire seulement. Ils ne reviennent jamais vers un client. Pour l’app partagée, il s’agit de l’autorisation scellée ; le jeton de robot de courte durée qu’elle sert à renouveler reste en mémoire
+- Commence à recevoir les mentions, les réponses dans les fils Slack, les messages privés et les commandes slash : par une connexion Socket Mode pour votre propre app, ou par l’unique interrogation longue du serveur auprès de Connect pour l’app partagée
 - Réarme chaque fil Slack qui était lié auparavant, de sorte qu’une reconnexion poursuit les conversations existantes au lieu de les abandonner
 - Ne coûte rien aux espaces de travail qui n’ont pas d’app de clavardage : aucun socket, aucune minuterie, aucun trafic
 
@@ -144,8 +174,9 @@ reconnecter Slack.
 L’accès à la passerelle repose sur l’**appartenance** à l’espace de travail,
 jamais sur la possession d’un jeton. Un compte Slack doit être lié à un
 utilisateur Control Center qui est membre avec un rôle d’écriture. La connexion,
-la déconnexion, la configuration guidée, le lien de configuration et la
-personnalisation du robot sont tous réservés aux administrateurs.
+la déconnexion, l’installation de l’app partagée, la configuration guidée, le
+lien de configuration et la personnalisation du robot sont tous réservés aux
+administrateurs.
 :::
 
 ## Vérifier
@@ -168,7 +199,25 @@ Le raisonnement sous forme de mur de texte et la sortie des outils ne quittent j
 
 Si rien ne se produit quand vous cliquez, c’est que le serveur qui a envoyé le message n’est pas joignable depuis la machine sur laquelle vous avez cliqué (un serveur qui n’écoute qu’en boucle locale, cliqué depuis un téléphone, par exemple), ou que Control Center n’y tourne pas. Un serveur sans adresse joignable envoie une carte sans bouton plutôt qu’une carte qui ne mène nulle part.
 
+## Créer des brouillons de tickets depuis Slack
+
+Tout membre lié qui a un rôle d’écriture peut proposer un ticket depuis Slack :
+
+```text
+/cc ticket Corriger le test de connexion instable | Il échoue en CI environ une fois par jour.
+```
+
+Le texte avant le `|` est le titre, le texte après est la description. Le robot répond qu’il a créé un brouillon du ticket. Rien n’est encore créé et aucune automatisation de ticket ne se déclenche : le brouillon vous attend dans **Paramètres → Espace de travail → Profil et identité → Brouillons de tickets depuis le chat**, où vous pouvez corriger le titre et la description, puis cliquer sur **Créer le ticket** ou **Abandonner**.
+
+- Seul le membre qui a lancé la commande voit le brouillon
+- Un brouillon que vous laissez de côté est supprimé après une journée. Les brouillons sont gardés en mémoire, donc un redémarrage du serveur les supprime aussi
+- La carte n’apparaît que lorsque vous avez des brouillons
+
+Le texte d’une commande ne peut pas être relu depuis Slack et, avec l’app partagée, il a transité par Connect. C’est la création du ticket dans Control Center qui le rend vôtre.
+
 ## Rotation d’un jeton
+
+Ceci s’applique à votre propre app. L’app partagée n’a aucun jeton à remplacer.
 
 Collez de nouveau la nouvelle valeur dans la boîte de dialogue de connexion et cliquez sur **Connecter**. La connexion remplace toute connexion en cours pour cet espace de travail, de sorte que le socket est rétabli avec les nouveaux identifiants.
 
@@ -176,7 +225,7 @@ Les deux jetons obligatoires doivent être présents à chaque connexion. Le jet
 
 ## Déconnexion
 
-Cliquez sur **Déconnecter** sur la ligne Slack (administrateurs seulement). Le socket se ferme et les identifiants sont oubliés.
+Cliquez sur **Déconnecter** sur la ligne Slack (administrateurs seulement). La connexion se ferme et les identifiants sont oubliés. Pour l’app partagée, Control Center désinstalle aussi le robot de l’espace de travail Slack et libère sa liaison avec ce serveur.
 
 Les liaisons d’espaces et d’utilisateurs sont conservées à dessein : reconnecter la même app restaure chaque fil Slack lié. Ce sont des lignes propres à l’espace de travail, donc supprimer l’espace de travail les supprime de toute façon.
 
@@ -213,7 +262,7 @@ Les cartes de tâche de Slack font partie de la même nouvelle surface Agents & 
 
 ### « Control Center a besoin d’un jeton de configuration d’app pour modifier le bot »
 
-La ligne **Personnaliser le bot** est désactivée parce que la connexion n’a pas de jeton de configuration d’app. C’est le comportement attendu pour une app créée à la main ou au moyen de **Créer dans Slack** — Slack n’a jamais dit à Control Center de quelle app il s’agit. Générez une paire de jetons sur api.slack.com/apps et reconnectez en remplissant le jeton d’actualisation.
+La ligne **Personnaliser le bot** est désactivée parce que la connexion n’a pas de jeton de configuration d’app. (Avec l’app partagée, la ligne **Personnaliser le bot** n’existe pas du tout : le robot est celui de l’app partagée.) C’est le comportement attendu pour une app créée à la main ou au moyen de **Créer dans Slack** — Slack n’a jamais dit à Control Center de quelle app il s’agit. Générez une paire de jetons sur api.slack.com/apps et reconnectez en remplissant le jeton d’actualisation.
 
 ### Une longue réponse est tronquée
 

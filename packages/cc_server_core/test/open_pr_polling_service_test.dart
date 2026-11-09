@@ -7,10 +7,12 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:test/test.dart';
 
@@ -543,6 +545,72 @@ void main() {
     port.probeResults[repo1.id] = (changed: false, etag: 'etag-2');
     await poller.pollSoon('ws1');
     expect(port.fetchGroupsCalls, 1);
+  });
+
+  test(
+    'a low GitHub rate budget pauses the loop, not a forced refresh',
+    () async {
+      final budget = GitHubRateBudget(now: () => now.toUtc());
+      final budgeted = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        rateBudget: budget,
+        now: () => now,
+      );
+      addTearDown(budgeted.dispose);
+      budget.record(
+        'ws1',
+        resource: 'core',
+        remaining: 100,
+        limit: 5000,
+        resetAt: now.toUtc().add(const Duration(minutes: 30)),
+      );
+
+      await budgeted.pollSoon('ws1');
+      expect(port.probeCalls, 0);
+
+      // An explicit refresh is a person asking, not a poll.
+      await budgeted.refreshNow('ws1');
+      expect(port.fetchGroupsCalls, 1);
+
+      // Past the reset the loop resumes.
+      final probesBefore = port.probeCalls;
+      now = now.add(const Duration(minutes: 31));
+      await budgeted.pollSoon('ws1');
+      expect(port.probeCalls, greaterThan(probesBefore));
+    },
+  );
+
+  test('a low GitHub budget pauses only GitHub repositories', () async {
+    final gitlab = _repo('gl1').copyWith(forge: ForgeHost.gitlab);
+    workspaces.reposByWs['ws1'] = [repo1, gitlab];
+    final budget = GitHubRateBudget(now: () => now.toUtc());
+    final budgeted = OpenPrPollingService(
+      fetchPort: port,
+      workspaceRepository: workspaces,
+      workspaceDbs: dbs,
+      changeSignals: signals,
+      prToWire: _prToWire,
+      eventBus: bus,
+      rateBudget: budget,
+      now: () => now,
+    );
+    addTearDown(budgeted.dispose);
+    budget.record(
+      'ws1',
+      resource: 'core',
+      remaining: 100,
+      limit: 5000,
+      resetAt: now.toUtc().add(const Duration(minutes: 30)),
+    );
+
+    await budgeted.pollSoon('ws1');
+
+    expect(port.probedRepoIds, ['gl1'], reason: 'GitLab has its own limit');
   });
 
   test('a changed PR emits a targeted (non-checks) signal', () async {

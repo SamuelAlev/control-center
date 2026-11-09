@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_infra/src/detection/claude_control_session.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 
 /// One model as the Claude Code CLI itself advertises it.
 class ClaudeCodeProbedModel {
@@ -156,12 +157,12 @@ class ClaudeCodeModelProbe {
     List<String> arguments, {
     required String workingDirectory,
     required Map<String, String> environment,
-  }) => Process.start(
+  }) => ChildProcess.start(
     executable,
     arguments,
     workingDirectory: workingDirectory,
     environment: environment,
-    runInShell: false,
+    toolchain: true,
   );
 
   /// Probes [binaryPath] as the account in [configDir] (the operator's own
@@ -185,7 +186,6 @@ class ClaudeCodeModelProbe {
         args,
         workingDirectory: cwd.path,
         environment: {
-          ...Platform.environment,
           if (configDir != null && configDir.isNotEmpty)
             'CLAUDE_CONFIG_DIR': configDir,
         },

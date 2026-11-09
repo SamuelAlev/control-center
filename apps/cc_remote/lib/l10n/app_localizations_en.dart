@@ -2562,6 +2562,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Waiting for authorization in your browser…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Enter the code shown in your browser';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'That doesn\'t look like a sign-in code. Codes have 8 letters and digits.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'That code doesn\'t match this sign-in. Check it and try again.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '$provider sign-in isn\'t set up on this server yet.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'This server\'s sign-in callback isn\'t reachable securely from a phone. Sign in from the desktop app, or ask the server owner to set up a public HTTPS address.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'The login expired. Start a new sign-in attempt.';
 
@@ -2581,10 +2602,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Complete sign-in';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'This server\'s browser callback is not reachable securely from a phone. Ask the server owner to configure a public HTTPS callback, or add a token instead.';
 
   @override
   String get credentialsUpdateToken => 'Update token';

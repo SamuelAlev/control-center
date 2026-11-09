@@ -2,7 +2,7 @@
 title: Připojte hostitele kódu
 description: Připoj GitHub, GitLab nebo Bitbucket, aby fungovala plocha pull requestů, registrace repozitářů a běhy agentů. Jeden pracovní prostor může používat všechny tři.
 slug: cs-CZ/prirucka/navody/pripojeni-hostitele-kodu
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 Control Center pracuje se třemi hostiteli kódu. Aplikace jim říká **forge**: **GitHub**, **GitLab** a **Bitbucket Cloud**. Žádný není výchozí. Připoj jednoho a všechno funguje. Připoj jich víc a jeden pracovní prostor může držet repozitáře ze všech najednou.
@@ -13,9 +13,9 @@ Forge je vlastnost každého **repozitáře**. Přečte se z jeho remote `origin
 
 1. Otevři **Nastavení → Pracovní prostor → Profil a identita** (`/settings/workspace/profile`).
 2. Najdi kartu **Hostování kódu**. Jsou na ní všechny podporované forge, připojené i nepřipojené.
-3. Stiskni **Přihlásit se přes …**, když to řádek nabízí, nebo **Přidat token** a token vlož.
+3. U **GitHubu** stiskni **Přihlásit se k GitHub**. U **GitLabu** nebo **Bitbucketu** stiskni **Přidat token** a token vlož.
 
-**Přihlásit se** se ukáže u forge, pro kterou má server zaregistrovanou aplikaci. Dnes je to GitHub, přes device flow (viz [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)). Všechno ostatní je vložený token. To je poctivé ovládání: tlačítko, které by nešlo dokončit, se neukáže.
+**GitHub umí jen přihlášení.** Přihlášení proběhne přes vlastní GitHub App serveru nebo přes Control Center Connect, podle toho, co nastavil vlastník serveru (viz [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)); token GitHubu se nevkládá. GitLab a Bitbucket pořád berou osobní token.
 
 V obou případech je přihlašovací údaj **tvůj a žije na serveru**, klíčovaný tvým uživatelským id. Token se neukládá na stroj, na kterém jsi ho zadal, každé zařízení, ze kterého se přihlásíš, používá ten samý a žádný jiný člen ho nepřečte. Začne platit u **dalšího požadavku**. Není co restartovat a odpojení ho přestane posílat hned.
 
@@ -24,29 +24,28 @@ Každý řádek říká, odkud jeho přihlašovací údaj pochází. To je rozd�
 | Podtitul | Význam |
 | --- | --- |
 | `Signed in as octocat` | Používá se tvůj vlastní přihlašovací údaj |
-| `Signed in as octocat · via this server's app` | Odpovídá identita aplikace serveru. Ještě ses nepřihlásil |
-| `Signed in as octocat · from the environment` | Odpovídá proměnná prostředí serveru, ne tvůj přihlašovací údaj |
+| `Signed in as octocat · from the environment` | Jen GitLab nebo Bitbucket: odpovídá proměnná prostředí serveru, ne tvůj token |
 | `Not connected` | Pro tuhle forge nemáš přihlašovací údaj |
+| `GitHub sign-in isn't set up on this server yet.` | Server nemá vlastní GitHub App ani Connect; jedno z nich nastaví vlastník serveru |
 
 ### Jaký token která forge chce
 
 | Forge | Token | Kde ho vytvořit |
 | --- | --- | --- |
-| **GitHub** | Klasický: `repo` a `read:org`. Fine-grained: Contents + Pull requests (čtení/zápis), Checks + Actions (čtení) | github.com → Settings → Developer settings → Tokens |
 | **GitLab** | Osobní přístupový token s oprávněním `api` | gitlab.com → User settings → Access tokens |
 | **Bitbucket** | API token Atlassianu a e-mail účtu | id.atlassian.com → Security → API tokens |
 
 Bitbucket se ověřuje **e-mailem účtu jako uživatelským jménem** a tokenem jako heslem. Nastav `BITBUCKET_EMAIL` v prostředí serveru, aby věděl, který e-mail k tokenu patří.
 
-### Nebo použij prostředí
+### Práce na pozadí
 
-U instalace bez rozhraní nebo v CI server čte tohle:
+Práce, za kterou nestojí člověk (běhy agentů, pipelines, polling PR), potřebuje přihlašovací údaj taky a každá forge to řeší jinak:
 
-- **GitHub** — `GITHUB_TOKEN`, potom `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, potom `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, potom `BITBUCKET_TOKEN` (s `BITBUCKET_EMAIL`)
+- **GitHub** — token vždy pro jeden repozitář, vydaný z GitHub App serveru nebo přes Connect a omezený na to, co tam smí odpovědný člen. Nikdy to není celé předané přihlášení člověka a žádná proměnná prostředí ani vložený token ho nezastoupí. Viz [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/#za-koho-tvé-pověření-mluví)
+- **GitLab** — vložený token vlastníka serveru, potom `GITLAB_TOKEN`, potom `CI_JOB_TOKEN`
+- **Bitbucket** — vložený token vlastníka serveru, potom `BITBUCKET_API_TOKEN`, potom `BITBUCKET_TOKEN` (s `BITBUCKET_EMAIL`)
 
-Tohle je přihlašovací údaj **serveru**, ne tvůj, a právě ten rozdíl rozhoduje. Požadavek tvým jménem použije tvůj údaj a nic jiného, takže tě prostředí nikdy potichu nezastoupí. Práce, za kterou nestojí člověk (webhooky, polling pull requestů, synchronizace ticketů), bere nejdřív identitu aplikace serveru, potom přihlašovací údaj vlastníka serveru a potom prostředí. Pořadí je pevné, aby „přihlásil jsem se a nic se nezměnilo“ nikdy nebylo podporované chování.
+Proměnné prostředí pro GitLab a Bitbucket jsou přihlašovací údaj **serveru**, ne tvůj: požadavek tvým jménem použije tvůj token a nic jiného, takže tě prostředí nikdy potichu nezastoupí.
 
 ## Na každé forge jsi někdo jiný
 
@@ -94,11 +93,11 @@ GitLab říká pull requestu **merge request**. Control Center ve vlastním mode
 
 ### Seznam PR je prázdný a hlásí, že forge není připojená
 
-Pro tuhle forge nemáš přihlašovací údaj. Přihlas se, nebo vlož token v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**. Repozitáře ostatních forge to nezasáhne.
+Pro tuhle forge nemáš přihlašovací údaj. Přihlas se ke GitHubu, nebo vlož token GitLabu či Bitbucketu, v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**. Repozitáře ostatních forge to nezasáhne.
 
 ### Připojil jsem forge, ale její repozitáře pořád nic neukazují
 
-Podívej se na podtitul řádku. Když v něm stojí „přes aplikaci tohoto serveru“ nebo „z prostředí“, odpovídá jiný přihlašovací údaj, než čekáš. Tvůj vlastní vyhrává u všeho, o co požádáš, takže když řádek říká něco jiného, ten tvůj se neuložil.
+Podívej se na podtitul řádku. Když u řádku GitLabu nebo Bitbucketu stojí „z prostředí“, odpovídá jiný přihlašovací údaj, než čekáš. Tvůj vlastní token vyhrává u všeho, o co požádáš, takže když řádek říká něco jiného, ten tvůj se neuložil. U GitHubu ověř, že je GitHub App nainstalovaná na účtu, který repozitáře vlastní.
 
 ### Repozitář nejde zaregistrovat
 

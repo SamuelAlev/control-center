@@ -2,7 +2,7 @@
 title: Collega il tuo account Slack
 description: Dimostra che un'identità Slack è la tua, così gli agenti agiscono sui tuoi messaggi e il tuo lavoro ti viene attribuito.
 slug: it-IT/manuale/guide/collega-account-chat
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Questa guida mostra come collegare la tua identità di chat al tuo utente di Control Center e come scollegarne una.
@@ -17,30 +17,39 @@ Un membro non collegato che menziona il bot riceve una risposta in quel thread d
 
 ## Collega con un codice
 
+Il collegamento richiede entrambi i lati: inviare un codice da Slack prova l'account Slack, e confermarlo in Control Center prova che quell'account è tuo.
+
 1. Vai in **Impostazioni → Spazio di lavoro → Profilo e identità** e scorri fino alla scheda **Account di chat
    collegati**
-2. Nel blocco di Slack, fai clic su **Collega il mio account Slack**
-3. Copia il comando che mostra, per esempio:
+2. Nel blocco di Slack, fai clic su **Collega il mio account Slack**. La finestra mostra un codice monouso, per esempio:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. In Slack, invia quel comando al bot — un messaggio diretto è il posto più semplice
-5. Il bot conferma con l'utente di Control Center a cui sei ora collegato e la finestra che avevi lasciato aperta si aggiorna per dirlo nello stesso momento — non devi chiuderla e andare a controllare
+3. In Slack, invia quel codice al bot in un **messaggio diretto**: solo il codice, nient'altro
+4. Il bot risponde «Got it. Confirm this Slack account in Control Center to finish linking.» e la finestra che avevi lasciato aperta mostra il profilo Slack che ha inviato il codice: il suo nome e il suo ID membro Slack
+5. Se è il tuo account, fai clic su **Conferma**. Il collegamento viene creato, la finestra lo indica e il bot lo conferma nello stesso messaggio diretto
+6. Se non è il tuo, fai clic su **Rifiuta**. Non viene collegato nulla e il codice smette di funzionare; fai clic su **Ottieni un nuovo codice** per riprovare
+
+Chiudere la finestra non fa perdere una rivendicazione. Un codice che arriva più tardi resta in attesa nella riga **Collega il mio account Slack** della tua pagina del profilo, con gli stessi pulsanti **Conferma** e **Rifiuta**.
+
+Perché il passaggio di conferma: senza di esso, un codice letto da sopra la tua spalla e inviato dall'account Slack di qualcun altro farebbe agire quell'account come te. Solo tu puoi confermare, e solo il profilo esatto che ha inviato il codice.
 
 Il codice:
 
 - È monouso e scade **15 minuti** dopo essere stato generato
 - È sempre generato per _te_, mai per un collega
+- Funziona solo in un messaggio diretto al bot. In un canale è solo un messaggio
+- Può essere rivendicato solo da un membro effettivo dello spazio di lavoro Slack in cui è installato il bot, non da un ospite o da qualcuno di un'altra organizzazione
 - Sostituisce qualsiasi codice già in tuo possesso, quindi premere di nuovo il pulsante invalida il precedente
 - Vive solo in memoria, quindi un riavvio del server invalida i codici in sospeso — premi di nuovo il pulsante
 
-Un codice sconosciuto, scaduto o generato per un altro spazio di lavoro fallisce nello stesso modo indistinguibile: «that code is not valid (or has expired)».
+Un codice sconosciuto, scaduto, rifiutato o generato per un altro spazio di lavoro fallisce nello stesso modo indistinguibile: «That code is not valid (or has expired).»
 
 ## Collegamento automatico tramite e-mail
 
-Se il tuo profilo Slack porta un'e-mail verificata che corrisponde a un utente di Control Center che è **già membro di questo spazio di lavoro**, il ponte ti collega la prima volta che gli parli. Nessun codice necessario.
+Se il tuo profilo Slack porta un'e-mail confermata che corrisponde all'e-mail verificata di un utente di Control Center che è **già membro di questo spazio di lavoro**, il ponte ti collega la prima volta che gli parli. Nessun codice necessario.
 
 Entrambe le metà contano: la corrispondenza dell'e-mail prova l'identità, ma solo l'appartenenza concede l'accesso, quindi un estraneo la cui e-mail esiste per caso sul server non collega nulla. L'elenco mostra come è stato creato ogni collegamento («abbinato via e-mail» o «collegato con un codice»).
 
@@ -58,9 +67,9 @@ Il tuo stato personale è nella tua pagina del profilo: la riga **Collega il mio
 account Slack** dice «Collegato a _your-slack-id_» quando sei collegato e ti
 invita a collegarti quando non lo sei.
 
-L'elenco è una sottoscrizione in tempo reale, perché la modifica avviene
-dall'altra parte — digiti il codice in Slack, quindi nessuna richiesta dall'app
-può riportare indietro la risposta.
+L'elenco e la rivendicazione sono sottoscrizioni in tempo reale, perché la
+modifica avviene dall'altra parte: invii il codice in Slack, quindi nessuna
+richiesta dall'app può riportare indietro la risposta.
 
 ## Scollega
 
@@ -82,9 +91,13 @@ Il tuo account Slack è collegato a un utente di Control Center, ma quell'utente
 
 I ruoli `viewer` e `guest` non possono avviare lavoro. Un amministratore deve elevare il tuo ruolo a `member` o superiore.
 
-### Il comando slash non viene riconosciuto
+### Il bot dice che il codice non è valido
 
-Controlla che il comando slash esista in Slack e che tu stia inviando il comando che la finestra delle impostazioni ti ha mostrato — un amministratore potrebbe averlo rinominato, nel qual caso la finestra mostra il nome attuale.
+Il codice è scaduto, è già stato usato, è stato rifiutato o è stato sostituito da uno più recente. Fai di nuovo clic su **Collega il mio account Slack** e invia il nuovo codice.
+
+### Il bot tratta il mio codice come una richiesta
+
+L'hai inviato in un canale, oppure il tuo account Slack è già collegato. I codici vengono accettati solo in un messaggio diretto, e un messaggio con l'aspetto di un codice proveniente da un account collegato è una richiesta normale.
 
 ## Guide correlate
 

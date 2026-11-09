@@ -2,16 +2,16 @@
 title: Perbualan PR
 description: Bagaimana komen PR GitHub menjadi giliran ejen tanpa webhook, apa yang memberi kebenaran kepada penulisnya, dan kepada siapa setiap pihak dalam perbualan itu diatribusikan.
 slug: ms-MY/manual-pengguna/konsep/perbualan-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Pull request sudah pun menjadi tempat perbualan tentang kod berlaku. Perbualan
 PR menjadikannya satu permukaan pada ruang kerja Control Center, sama seperti
 [jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/) menjadikan Slack satu: @sebut
-bot GitHub App pelayan pada sesuatu PR, balas di dalam benang semakannya, atau
+`@usectrl` (atau bot GitHub App ruang kerja) pada sesuatu PR, balas di dalam benang semakannya, atau
 tambah label `ai-review`, dan kerja itu berlaku dalam ruang semakan PR — di bawah
 atribusi dan guardrail yang sama seperti apa-apa yang ditaip dalam aplikasi.
-Sesuatu komen juga dikawal oleh keahlian; label tidak, kerana ia tiada penulis.
+Sesuatu komen dan label dikawal dengan cara yang sama: berdasarkan ahli yang menulis atau menambahnya.
 Jawapan bot kembali di GitHub, dalam lorong tempat soalan itu ditanya.
 
 Tiga keputusan membentuk ciri ini, dan setiap satunya ialah keputusan yang sama
@@ -23,17 +23,19 @@ yang tiba dari luar** dan **kepada siapa setiap pihak diatribusikan**.
 
 Satu-satunya saluran tolak GitHub untuk sesuatu aplikasi ialah webhook, dan
 webhook memerlukan URL masuk — satu-satunya perkara yang sengaja tidak pernah
-diperlukan oleh permukaan ini. Jadi penemuan ialah sapuan: setiap minit atau
-lebih, satu carian beralias bagi setiap pemasangan aplikasi meminta GitHub
-untuk PR yang menyebut bot itu (atau slug pendeknya) dan untuk PR terbuka yang
-membawa label semakan, PR yang sudah mempunyai ruang semakan akan dibaca benang
-komennya, dan semuanya dibezakan mengikut id komen terhadap apa yang dilihat
-pada sapuan lepas.
+diperlukan oleh permukaan ini. Jadi penemuan ialah sapuan: satu carian beralias bagi setiap
+pemasangan aplikasi meminta GitHub untuk PR yang menyebut bot itu (atau slug pendeknya) dan untuk PR
+terbuka yang membawa label semakan; PR yang sudah mempunyai ruang semakan akan dibaca benang
+komennya, dan semuanya dibezakan mengikut id komen terhadap apa yang dilihat pada sapuan lepas. Aplikasi
+milik sendiri menyapu setiap minit ke atas paling banyak 25 PR. Melalui Connect, panggilan menggunakan
+kuota GitHub setiap ahli, jadi sapuan berjalan setiap dua minit ke atas paling banyak 10 PR, dan ruang
+kerja yang kuota GitHubnya di bawah 15% dilangkau sehingga pulih. Connect sendiri tidak pernah melihat
+kandungan PR.
 
 Kesan reka bentuknya wajar dinamakan:
 
 - **Kependaman ialah selang sapuan, bukan peristiwa.** Pengakuan 👀 tiba dalam
-  masa kira-kira satu minit. Tiada apa-apa yang mendesak bergantung padanya.
+  satu sapuan. Tiada apa-apa yang mendesak bergantung padanya.
 - **Tepat sekali, bagi setiap komen.** Id komen adalah unik merentas GitHub;
   setiap satu direkodkan pada saat ia dikelaskan sebagai layak, sebelum
   apa-apa bertindak ke atasnya. Ranap boleh menghilangkan pengendalian sesuatu
@@ -50,55 +52,56 @@ Kesan reka bentuknya wajar dinamakan:
   untuk menjalankan semula.
 
 Carian itu berjalan sekali bagi setiap akaun pemasangan pada klien pemilik itu
-sendiri, kerana token pemasangan hanya melihat repositori pemasangannya sendiri
-— satu kelayakan seluruh pelayan akan terlepas secara senyap setiap PR di bawah
+sendiri, kerana token hanya melihat repositori pemasangannya sendiri — satu
+kelayakan seluruh pelayan akan terlepas secara senyap setiap PR di bawah
 pemasangan aplikasi yang lain.
 
 ## Keahlian memberi kebenaran, bukan komen
 
 Komen PR tiba dengan tidak lebih daripada satu log masuk penulis — identiti
-luaran yang belum disahkan sehingga dibuktikan. Bot menyelesaikannya terhadap
-indeks songsang ahli ruang kerja dan akaun GitHub mereka yang bersambung, dibina
-semula mengikut TTL kerana orang mendaftar masuk dan dijemput semasa pelayan
-berjalan.
+luaran yang belum disahkan sehingga dibuktikan. Pelayan menyelesaikan ID akaun GitHub berangka
+penulis yang tidak berubah (bukan log masuk, yang boleh dinamakan semula dan digunakan semula) terhadap
+log masuk GitHub ahli ruang kerja, dibina semula mengikut TTL kerana orang mendaftar masuk dan dijemput
+semasa pelayan berjalan. Untuk label `ai-review`, orang yang diselesaikan ialah sesiapa yang
+menambahnya paling baharu.
 
-Gagal tertutup kelihatan seperti tangga, dan setiap anak tangga menjawab dalam
-benang tempat ia menolak:
+Tiga semakan, mengikut urutan, dan kegagalan mana-mana satunya senyap — tiada apa-apa yang disiarkan:
 
-- **Log masuk yang tidak dikenali** — tidak dipautkan, atau dipautkan oleh
-  seseorang yang bukan ahli ruang kerja ini — diberitahu untuk mendaftar masuk
-  dan memastikan mereka memang ahlinya
-- **Ahli baca sahaja** (`viewer` atau `guest`) diberitahu bahawa peranan mereka
-  tidak boleh memulakan kerja
+- **Ahli yang telah mendaftar masuk.** Akaun mesti tergolong dalam ahli _ruang kerja ini_ yang
+  mendaftar masuk ke GitHub pada pelayan ini
+- **Peranan tulis.** `viewer` dan `guest` tidak boleh memulakan kerja
+- **Akses tolak.** Balasan menggunakan token `bot` yang dihadkan kepada akses ahli itu ke repositori.
+  Jika pelayan tidak dapat mencetak token, ia tidak meneruskan
 
-Dua kes log masuk tidak dikenali berkongsi satu balasan: indeks songsang hanya
-mengembalikan ahli ruang kerja _ini_, jadi akaun yang tidak dipautkan dan bukan
-ahli yang dipautkan ialah kes terlepas yang sama. Tiada daripada mereka
-meneruskan. Komen tidak pernah diatribusikan kepada seseorang yang tidak
-menghantarnya, dan kata-kata orang luar tidak pernah memasuki ruang kerja yang
-tidak dapat mereka lihat.
+Setiap semakan berjalan sebelum sebarang pengakuan, jadi orang luar tidak mendapat reaksi atau balasan.
+Komen tidak pernah diatribusikan kepada seseorang yang tidak menghantarnya, dan kata-kata orang luar
+tidak pernah memasuki ruang kerja yang tidak dapat mereka lihat.
 
-Label `ai-review` tiada penulis untuk diselesaikan, jadi ia tidak menaiki tangga
-ini. Menambahnya memulakan semakan dalam ruang kerja yang sudah memautkan
-repositori itu.
+### Tuntutan
+
+Langkah terakhir sebelum sebarang kerja ialah reaksi 👀, ditambah dengan log masuk GitHub penulis sendiri.
+GitHub menjawab `201` untuk reaksi baharu dan `200` untuk reaksi yang sudah wujud, jadi reaksi itu berfungsi
+sebagai kunci: apabila orang yang sama mendaftar masuk pada dua pelayan yang kedua-duanya memautkan repositori,
+hanya yang pertama bereaksi melakukan kerja. Komen yang boleh dilihat oleh beberapa ruang kerja pada satu
+pelayan ditawarkan kepada setiap satunya, dan tuntutan yang sama itulah yang memutuskannya.
 
 ## Dua identiti, dengan sengaja
 
 Setiap pihak dalam perbualan membawa identiti yang berbeza, dan perbezaan itulah
 cirinya:
 
-- **Di GitHub, bot ialah pelayan.** Setiap komen, reaksi dan balasan yang
-  disiarkan oleh jambatan menggunakan token pemasangan aplikasi. Tiada sesiapa
-  mengklik apa-apa dalam klien, jadi tiada apa-apa meminjam akaun seseorang —
-  peraturan yang sama yang menjauhkan webhook dan pengundian daripada kelayakan
-  manusia.
+- **Di GitHub, balasan ialah automasi bagi pihak anda.** Setiap balasan menggunakan token `bot` untuk
+  repositori itu sahaja, dihadkan kepada akses ahli yang bertanya. Pada aplikasi sendiri, pengarangnya ialah
+  akaun `[bot]` aplikasi itu. Melalui Connect, token untuk App kongsi ialah token pengguna, jadi balasan
+  dikarang oleh akaun ahli yang bertanya, bertindak melalui App. Bagaimanapun caranya, setiap balasan bermula
+  dengan `**Control Center** (for @login):`, yang menyatakan siapa yang bertanya dan sekali gus berfungsi sebagai
+  pengawal gelung.
 - **Dalam ruang, soalan itu milik anda.** Mesej itu diatribusikan kepada ahli
   yang diselesaikan oleh penulis, dan larian ejen dilaksanakan bagi pihak
   mereka: komit menyenaraikan mereka sebagai pengarang bersama, dan dail
   autonomi serta guardrail tindakan ruang itu terpakai tepat seperti pada mesej
-  yang ditaip dalam aplikasi. Tulisan hos kod daripada larian itu masih keluar
-  sebagai aplikasi — peraturan yang sama seperti titik di atas — bukan dengan
-  token peribadi ahli itu.
+  yang ditaip dalam aplikasi. Penulisan hos kod daripada larian menggunakan token satu-repo
+  yang dihadkan oleh ahli itu, bukan log masuk mereka yang diserahkan sepenuhnya.
 
 Menerbitkan penemuan semakan kembali ke GitHub kekal sebagai keputusan
 seseorang, dibuat dalam Control Center. Sebutan boleh _memulakan_ semakan; hanya
@@ -108,8 +111,9 @@ manusia yang menerbitkannya.
 
 Semua yang dikarang oleh akaun bot digugurkan sebelum sebarang get dijalankan —
 bot kita khususnya, dan setiap akhiran `[bot]`, supaya bot semakan aplikasi lain
-juga tidak boleh membangunkan bot kita. Tanpa ini, jawapan bot sendiri akan tiba
-sebagai komen baharu dan mencetusnya semula selama-lamanya.
+juga tidak boleh membangunkan bot kita — dan begitu juga setiap komen yang bermula dengan
+awalan `**Control Center** (for @`, kerana balasan melalui Connect dikarang oleh akaun seseorang.
+Tanpa ini, jawapan bot sendiri akan tiba sebagai komen baharu dan mencetusnya semula selama-lamanya.
 
 Akhiran `[bot]` juga sebab bentuk pendek itu wujud. GitHub menetapkan log masuk
 akaun aplikasi pada `<slug>[bot]`, tidak menawarkan autolengkap untuknya, dan
@@ -125,7 +129,9 @@ Nama aplikasi yang tersendiri menjadikan pertembungan itu hipotetikal.
 - **Tiada penerbitan automatik.** Penemuan mendarat dalam ruang semakan;
   menerbitkan ke GitHub ialah tindakan manusia yang berasingan
 - **Tiada identiti kabur.** Penulis diselesaikan kepada tepat satu ahli atau
-  ditolak — tiada atribusi tekaan terbaik
+  diabaikan — tiada atribusi tekaan terbaik
+- **Tiada kelulusan automatik.** Automasi boleh mengulas dan meminta perubahan, tetapi semakan `APPROVE`
+  ditolak sebelum dihantar. Meluluskan ialah tindakan seseorang
 - **Tiada webhook GitHub App.** Permukaan ini tidak pernah mendaftarkannya, jadi
   tiada URL masuk untuk didedahkan bagi komen PR. Webhook produk lain
   (pipeline, penyegerakan tiket) ialah persediaan berasingan yang pilihan.
@@ -136,8 +142,8 @@ Nama aplikasi yang tersendiri menjadikan pertembungan itu hipotetikal.
   panduan cara untuk semua ini
 - [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/): tiga keputusan yang sama,
   dibuat untuk sembang
-- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/): dari mana identiti bot itu
-  datang
+- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/): dari mana identiti bot aplikasi
+  milik sendiri itu datang
 - [Multipemain dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/):
   prinsipal dan peranan yang dilalui oleh sesuatu log masuk untuk diselesaikan
 - [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): apa yang dibenarkan dilakukan oleh

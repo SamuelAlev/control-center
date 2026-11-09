@@ -18,30 +18,32 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
     }
   }
 
+  /// Stores a pasted GitLab or Bitbucket token. Sign-in lanes never take one.
   Future<void> _save() async {
     final token = _token.text.trim();
-    if (!_authorized || _busy || token.isEmpty) return;
+    if (!_authorized ||
+        _busy ||
+        token.isEmpty ||
+        widget.lane != null ||
+        !widget.isForge) {
+      return;
+    }
     final providerId = widget.providerId;
     final workspaceId = widget.workspaceId;
-    final isForge = widget.isForge;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final client = ref.read(rpcClientProvider).requireValue;
-      await client.call(
-        isForge ? 'credentials.setForgeToken' : 'credentials.setTicketingToken',
-        {
-          if (isForge) 'forge': providerId else 'provider': providerId,
-          'token': token,
-          'workspace_id': workspaceId,
-        },
-      );
+      await client.call('credentials.setForgeToken', {
+        'forge': providerId,
+        'token': token,
+        'workspace_id': workspaceId,
+      });
       if (!mounted ||
           widget.providerId != providerId ||
-          widget.workspaceId != workspaceId ||
-          widget.isForge != isForge) {
+          widget.workspaceId != workspaceId) {
         return;
       }
       _token.clear();
@@ -64,27 +66,29 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
     if (!_authorized || _busy || !_confirmRemove || widget.hostManaged) return;
     final providerId = widget.providerId;
     final workspaceId = widget.workspaceId;
-    final isForge = widget.isForge;
+    final lane = widget.lane;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final client = ref.read(rpcClientProvider).requireValue;
-      await client.call(
-        isForge
-            ? 'credentials.clearForgeToken'
-            : 'credentials.clearTicketingToken',
-        {
-          if (isForge) 'forge': providerId else 'provider': providerId,
+      if (lane != null) {
+        // Revokes the grant upstream where the provider allows it.
+        await RemoteProviderSignIn(
+          client,
+        ).disconnect(lane, workspaceId: workspaceId);
+      } else {
+        await client.call('credentials.clearForgeToken', {
+          'forge': providerId,
           'workspace_id': workspaceId,
-        },
-      );
+        });
+      }
       if (!mounted ||
           !_authorized ||
           widget.providerId != providerId ||
           widget.workspaceId != workspaceId ||
-          widget.isForge != isForge) {
+          widget.lane != lane) {
         return;
       }
       setState(() => _confirmRemove = false);

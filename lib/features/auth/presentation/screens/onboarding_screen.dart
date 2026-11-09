@@ -5,6 +5,7 @@ import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_model_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_adapter_step.dart';
+import 'package:control_center/features/auth/presentation/widgets/onboarding_connect_step.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_connection_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_flow_view.dart';
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
@@ -22,6 +23,9 @@ import 'package:go_router/go_router.dart';
 /// because the workspace step does not apply to everyone — an invited member
 /// already has one.
 enum _StepId {
+  /// Choose whose provider apps sign people in (server owner only).
+  signIn,
+
   /// Connect a code-hosting forge (and optionally a ticketing vendor).
   connect,
 
@@ -38,7 +42,8 @@ enum _StepId {
   voice,
 }
 
-/// First-run onboarding: configure API access, add a workspace, set up agent
+/// First-run onboarding: (for the server owner) choose whose provider apps
+/// sign people in, configure API access, add a workspace, set up agent
 /// sandboxing, choose a default adapter + model, then optionally fetch the
 /// local voice transcription model. The embedding and diarization models have
 /// no step — the server force-installs both at boot.
@@ -88,14 +93,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// gate only routes here after the workspace list has settled, so a single
   /// read is both correct and stable.
   ///
-  /// Only the workspace step is conditional. The connect step is always shown
-  /// even when a forge is already connected (it simply renders the connected
-  /// state): it is the one thing the gate requires, so it stays visible rather
-  /// than silently absent.
+  /// Only the sign-in and workspace steps are conditional. Sign-in is the
+  /// server owner's alone and decides whose apps every later forge sign-in
+  /// uses, so it comes first. The connect step always shows, even with a
+  /// forge connected: the gate requires it, so it stays visible.
   List<_StepId> _planSteps() {
     final hasWorkspace =
         ref.read(workspacesProvider).value?.isNotEmpty ?? false;
     return [
+      if (ref.read(isServerOwnerProvider)) _StepId.signIn,
       _StepId.connect,
       if (!hasWorkspace) _StepId.workspace,
       _StepId.sandbox,
@@ -114,6 +120,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   List<String> _stepLabels(AppLocalizations l10n) => [
     for (final step in _steps)
       switch (step) {
+        _StepId.signIn => l10n.onboardingStepSignIn,
         _StepId.connect => l10n.onboardingStepConnect,
         _StepId.workspace => l10n.onboardingStepWorkspace,
         _StepId.sandbox => l10n.onboardingStepSandbox,
@@ -124,6 +131,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   OnboardingStepCopy _copyFor(_StepId step, AppLocalizations l10n) {
     switch (step) {
+      case _StepId.signIn:
+        return OnboardingStepCopy(
+          title: l10n.onboardingConnectTitle,
+          subtitle: l10n.onboardingConnectSubtitle,
+        );
       case _StepId.connect:
         return OnboardingStepCopy(
           title: l10n.letsPluginTools,
@@ -196,8 +208,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     void next() => isLast ? unawaited(_finishOnboarding()) : _goTo(index + 1);
 
     switch (_steps[index]) {
+      case _StepId.signIn:
+        return OnboardingConnectStep(onContinue: next);
       case _StepId.connect:
-        return OnboardingConnectStep(
+        return OnboardingForgeStep(
           isAuthed: ref.watch(hasAnyForgeConnectedProvider),
           onContinue: next,
         );

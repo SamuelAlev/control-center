@@ -9,7 +9,7 @@ import 'package:rhttp/rhttp.dart';
 ///
 /// Slack reports application-level failures in the body, not the status code,
 /// so this is the error every method raises for a refusal (bad token, missing
-/// scope, unknown space, rate limit, streaming not available on the plan).
+/// scope, unknown channel, rate limit, streaming not available on the plan).
 class SlackApiException implements Exception {
   /// Creates a [SlackApiException].
   const SlackApiException(
@@ -47,6 +47,10 @@ class SlackApiException implements Exception {
     'token_expired',
     'invalid_app_id',
   }.contains(error);
+
+  /// Whether the bot token aged out. A rotating (`xoxe.xoxb-`) token lives 12
+  /// hours; renewing it is the token source's job, not the caller's.
+  bool get isTokenExpired => error == 'token_expired';
 
   /// Whether Slack throttled the call.
   bool get isRateLimited => error == 'ratelimited' || error == 'rate_limited';
@@ -101,8 +105,37 @@ class SlackAuthIdentity {
   /// are the bot's own and are ignored.
   final String? botId;
 
-  /// The app id (`A…`), when Slack reports it.
+  /// The app id (`A…`). `auth.test` never reports it; it is filled from
+  /// `bots.info` by [SlackApiClient.identify].
   final String? appId;
+
+  /// Returns a copy with [appId] set.
+  SlackAuthIdentity withAppId(String? appId) => SlackAuthIdentity(
+    teamId: teamId,
+    teamName: teamName,
+    userId: userId,
+    botName: botName,
+    botId: botId,
+    appId: appId,
+  );
+}
+
+/// A bot integration as `bots.info` describes it.
+class SlackBotInfo {
+  /// Creates a [SlackBotInfo].
+  const SlackBotInfo({required this.id, this.appId, this.userId, this.name});
+
+  /// The bot id (`B…`).
+  final String id;
+
+  /// The app the bot belongs to (`A…`).
+  final String? appId;
+
+  /// The bot's user id (`U…`).
+  final String? userId;
+
+  /// The bot's name.
+  final String? name;
 }
 
 /// A Slack member as `users.info` describes them.
@@ -116,6 +149,11 @@ class SlackUserProfile {
     this.email,
     this.isBot = false,
     this.teamId,
+    this.deleted = false,
+    this.isRestricted = false,
+    this.isUltraRestricted = false,
+    this.isStranger = false,
+    this.emailConfirmed = false,
   });
 
   /// Slack member id (`U…`).
@@ -140,6 +178,33 @@ class SlackUserProfile {
   /// The member's team id.
   final String? teamId;
 
+  /// Whether the account was deactivated.
+  final bool deleted;
+
+  /// A multi-channel guest.
+  final bool isRestricted;
+
+  /// A single-channel guest.
+  final bool isUltraRestricted;
+
+  /// A person from another organization, seen through a Slack Connect
+  /// channel.
+  final bool isStranger;
+
+  /// Whether Slack reports [email] as confirmed by its owner.
+  final bool emailConfirmed;
+
+  /// Whether this is an active, non-bot, non-guest member of [teamId] itself —
+  /// not someone visiting from another organization.
+  bool isFullMemberOf(String teamId) =>
+      teamId.isNotEmpty &&
+      this.teamId == teamId &&
+      !deleted &&
+      !isBot &&
+      !isRestricted &&
+      !isUltraRestricted &&
+      !isStranger;
+
   /// The best human label available for this member.
   String get label {
     for (final candidate in [displayName, realName, name]) {
@@ -154,37 +219,64 @@ class SlackUserProfile {
 /// A live Slack response stream opened by `chat.startStream`.
 class SlackStreamHandle {
   /// Creates a [SlackStreamHandle].
-  const SlackStreamHandle({required this.space, required this.ts});
+  const SlackStreamHandle({required this.channel, required this.ts});
 
-  /// The conversation the stream is posting into.
-  final String space;
+  /// The Slack channel id the stream is posting into.
+  final String channel;
 
   /// The streaming message's `ts` — the append/stop key.
   final String ts;
 }
 
+/// Where a [SlackApiClient] gets the bot token for a call. [renew] asks for a
+/// fresh token because Slack just refused the last one as expired.
+typedef SlackBotTokenSource = Future<String> Function({bool renew});
+
+/// Whether [url] is a Slack slash-command `response_url` this server may post
+/// to: `https://hooks.slack.com/` and nothing else, so a forged command cannot
+/// turn the reply path into a request to an arbitrary host.
+bool isSlackHooksUrl(String url) {
+  final uri = Uri.tryParse(url);
+  return uri != null &&
+      uri.scheme == 'https' &&
+      uri.host == 'hooks.slack.com' &&
+      !uri.hasPort &&
+      uri.userInfo.isEmpty;
+}
+
 /// Client for Slack's Web API (`https://slack.com/api/...`).
 ///
-/// `ok: false` is the error space (HTTP 200 for app failures →
+/// `ok: false` is the error channel (HTTP 200 for app failures →
 /// [SlackApiException]). Tokens are per-call: bot default, app-level
 /// (`apps.connections.open`), and config tokens passed explicitly so manifest
 /// edits never ride the bot token.
 class SlackApiClient {
-  /// Creates a [SlackApiClient]. [_botToken] is the default authorization for
-  /// every call that does not name its own token.
-  SlackApiClient({required this._httpClient, required this._botToken});
+  /// Creates a [SlackApiClient] whose default authorization is the fixed
+  /// [botToken] (an own app's pasted token).
+  SlackApiClient({required this._httpClient, required String botToken})
+    : _tokenSource = (({bool renew = false}) async => botToken),
+      _renewable = false;
+
+  /// Creates a [SlackApiClient] whose bot token comes from the token source on
+  /// every call — the short-lived rotating token a Connect grant mints. A call
+  /// Slack refuses as `token_expired` is retried once with a renewed token.
+  SlackApiClient.withTokenSource({
+    required this._httpClient,
+    required this._tokenSource,
+  }) : _renewable = true;
 
   final RhttpClient _httpClient;
-  final String _botToken;
+  final SlackBotTokenSource _tokenSource;
+  final bool _renewable;
 
-  /// Retries on `ratelimited`. Slack's `chat.*` tiers are per-space and the
+  /// Retries on `ratelimited`. Slack's `chat.*` tiers are per-channel and the
   /// bridge's throttle keeps well under them, so a limit here is exceptional —
   /// two retries turn a burst into a delay instead of a lost reply.
   static const int _maxRateLimitRetries = 2;
 
   /// Verifies a token and reports who it belongs to.
   Future<SlackAuthIdentity> authTest({String? token}) async {
-    final body = await _call('auth.test', token: token);
+    final body = await _call('auth.test', token: token, form: true);
     return SlackAuthIdentity(
       teamId: body['team_id'] as String? ?? '',
       teamName: body['team'] as String? ?? '',
@@ -192,6 +284,44 @@ class SlackApiClient {
       botName: body['user'] as String? ?? '',
       botId: body['bot_id'] as String?,
       appId: body['app_id'] as String?,
+    );
+  }
+
+  /// [authTest] plus the app id, which only `bots.info` reports. The proof a
+  /// bot token is who it claims to be, recorded when a token is saved so every
+  /// later token can be checked against it.
+  Future<SlackAuthIdentity> identify({String? token}) async {
+    final identity = await authTest(token: token);
+    final botId = identity.botId ?? '';
+    if (botId.isEmpty) {
+      throw const SlackApiException('auth.test', 'not_a_bot_token');
+    }
+    final bot = await botsInfo(botId, token: token);
+    if (bot.userId != null &&
+        bot.userId!.isNotEmpty &&
+        bot.userId != identity.userId) {
+      throw const SlackApiException('bots.info', 'bot_user_mismatch');
+    }
+    return identity.withAppId(bot.appId);
+  }
+
+  /// Looks a bot integration up (`bots.info`, `users:read`).
+  Future<SlackBotInfo> botsInfo(String botId, {String? token}) async {
+    final body = await _call(
+      'bots.info',
+      payload: {'bot': botId},
+      token: token,
+      form: true,
+    );
+    final bot = body['bot'];
+    if (bot is! Map) {
+      throw const SlackApiException('bots.info', 'missing_bot');
+    }
+    return SlackBotInfo(
+      id: bot['id'] as String? ?? botId,
+      appId: bot['app_id'] as String?,
+      userId: bot['user_id'] as String?,
+      name: bot['name'] as String?,
     );
   }
 
@@ -224,7 +354,7 @@ class SlackApiClient {
   /// fallback (what a push notification and a screen reader read), so it is
   /// still required rather than optional.
   Future<String> postMessage({
-    required String space,
+    required String channel,
     required String text,
     String? threadTs,
     bool markdown = true,
@@ -233,7 +363,7 @@ class SlackApiClient {
     final body = await _call(
       'chat.postMessage',
       payload: {
-        'channel': space,
+        'channel': channel,
         'text': text,
         'thread_ts': ?threadTs,
         'mrkdwn': markdown,
@@ -245,16 +375,16 @@ class SlackApiClient {
 
   /// Posts a message only the invoking user sees. The bridge's refusal path —
   /// an unlinked or non-member Slack user is told how to fix it without
-  /// cluttering the space for everyone else.
+  /// cluttering the channel for everyone else.
   Future<void> postEphemeral({
-    required String space,
+    required String channel,
     required String user,
     required String text,
     String? threadTs,
   }) => _call(
     'chat.postEphemeral',
     payload: {
-      'channel': space,
+      'channel': channel,
       'user': user,
       'text': text,
       'thread_ts': ?threadTs,
@@ -272,7 +402,7 @@ class SlackApiClient {
   /// (`timeline` for a row per step, `dense` to collapse them, `plan` for a
   /// checklist). Omitted, the stream carries text only.
   Future<SlackStreamHandle> startStream({
-    required String space,
+    required String channel,
     required String threadTs,
     String? recipientTeamId,
     String? recipientUserId,
@@ -281,7 +411,7 @@ class SlackApiClient {
     final body = await _call(
       'chat.startStream',
       payload: {
-        'channel': space,
+        'channel': channel,
         'thread_ts': threadTs,
         'recipient_team_id': ?recipientTeamId,
         'recipient_user_id': ?recipientUserId,
@@ -293,7 +423,7 @@ class SlackApiClient {
       throw const SlackApiException('chat.startStream', 'missing_ts');
     }
     return SlackStreamHandle(
-      space: body['channel'] as String? ?? space,
+      channel: body['channel'] as String? ?? channel,
       ts: ts,
     );
   }
@@ -321,7 +451,7 @@ class SlackApiClient {
     return _call(
       'chat.appendStream',
       payload: {
-        'channel': handle.space,
+        'channel': handle.channel,
         'ts': handle.ts,
         'markdown_text': ?markdownText,
         'chunks': ?chunks,
@@ -332,35 +462,39 @@ class SlackApiClient {
   /// Closes a live stream, finalizing the message.
   Future<void> stopStream({required SlackStreamHandle handle}) => _call(
     'chat.stopStream',
-    payload: {'channel': handle.space, 'ts': handle.ts},
+    payload: {'channel': handle.channel, 'ts': handle.ts},
   );
 
   /// Sets the transient status line shown in an assistant thread
   /// ("thinking…"). Slack clears it when the reply lands.
   Future<void> setThreadStatus({
-    required String space,
+    required String channel,
     required String threadTs,
     required String status,
   }) => _call(
     'assistant.threads.setStatus',
-    payload: {'space_id': space, 'thread_ts': threadTs, 'status': status},
+    payload: {'channel_id': channel, 'thread_ts': threadTs, 'status': status},
   );
 
   /// Titles an assistant thread, so a Slack DM's history reads like the
   /// Control Center space it drives.
   Future<void> setThreadTitle({
-    required String space,
+    required String channel,
     required String threadTs,
     required String title,
   }) => _call(
     'assistant.threads.setTitle',
-    payload: {'space_id': space, 'thread_ts': threadTs, 'title': title},
+    payload: {'channel_id': channel, 'thread_ts': threadTs, 'title': title},
   );
 
   /// Looks a Slack member up. [SlackUserProfile.email] is populated only when
   /// the app holds `users:read.email`.
   Future<SlackUserProfile?> userInfo(String userId) async {
-    final body = await _call('users.info', payload: {'user': userId});
+    final body = await _call(
+      'users.info',
+      payload: {'user': userId},
+      form: true,
+    );
     final user = body['user'];
     if (user is! Map) {
       return null;
@@ -377,20 +511,64 @@ class SlackApiClient {
       email: profile['email'] as String?,
       isBot: map['is_bot'] as bool? ?? false,
       teamId: map['team_id'] as String?,
+      deleted: map['deleted'] as bool? ?? false,
+      isRestricted: map['is_restricted'] as bool? ?? false,
+      isUltraRestricted: map['is_ultra_restricted'] as bool? ?? false,
+      isStranger: map['is_stranger'] as bool? ?? false,
+      emailConfirmed: map['is_email_confirmed'] as bool? ?? false,
     );
+  }
+
+  /// Re-reads one message from Slack, or null when it is gone.
+  ///
+  /// The Connect relay carries ids only, never text, so this is where a
+  /// relayed event becomes a message: `conversations.replies` inside a thread,
+  /// `conversations.history` otherwise, pinned to exactly [ts].
+  Future<Map<String, dynamic>?> readMessage({
+    required String channel,
+    required String ts,
+    String? threadTs,
+  }) async {
+    final inThread = threadTs != null && threadTs.isNotEmpty && threadTs != ts;
+    final body = await _call(
+      inThread ? 'conversations.replies' : 'conversations.history',
+      payload: {
+        'channel': channel,
+        if (inThread) 'ts': threadTs,
+        'oldest': ts,
+        'latest': ts,
+        'inclusive': true,
+        'limit': inThread ? 2 : 1,
+      },
+      form: true,
+    );
+    final messages = body['messages'];
+    if (messages is! List) {
+      return null;
+    }
+    for (final message in messages.whereType<Map>()) {
+      if (message['ts'] == ts) {
+        return Map<String, dynamic>.from(message);
+      }
+    }
+    return null;
   }
 
   /// Replies to a slash command through the `response_url` Slack sent with it.
   ///
   /// The robust answer path for a command: the URL is pre-authorized (no token,
   /// no scope) and works in a conversation the bot is not a member of, where
-  /// `chat.postEphemeral` would fail with `space_not_found`.
+  /// `chat.postEphemeral` would fail with `channel_not_found`. Only
+  /// `https://hooks.slack.com/` is ever posted to.
   Future<void> respondToCommand(
     String responseUrl, {
     required String text,
-    bool visibleToSpace = false,
+    bool visibleToChannel = false,
     List<Map<String, dynamic>>? blocks,
   }) async {
+    if (!isSlackHooksUrl(responseUrl)) {
+      throw const SlackApiException('response_url', 'invalid_response_url');
+    }
     try {
       await _httpClient.post(
         responseUrl,
@@ -398,7 +576,7 @@ class SlackApiClient {
           'Content-Type': 'application/json; charset=utf-8',
         }),
         body: HttpBody.json({
-          'response_type': visibleToSpace ? 'in_channel' : 'ephemeral',
+          'response_type': visibleToChannel ? 'in_channel' : 'ephemeral',
           'text': text,
           'blocks': ?blocks,
         }),
@@ -412,8 +590,12 @@ class SlackApiClient {
   }
 
   /// Reads a conversation's metadata (name, whether it is a DM).
-  Future<Map<String, dynamic>?> conversationInfo(String space) async {
-    final body = await _call('conversations.info', payload: {'channel': space});
+  Future<Map<String, dynamic>?> conversationInfo(String channel) async {
+    final body = await _call(
+      'conversations.info',
+      payload: {'channel': channel},
+      form: true,
+    );
     final info = body['channel'];
     return info is Map ? Map<String, dynamic>.from(info) : null;
   }
@@ -555,30 +737,63 @@ class SlackApiClient {
     return complaints;
   }
 
-  /// POSTs [method] with a JSON [payload], unwrapping Slack's `ok` envelope.
+  /// POSTs [method], unwrapping Slack's `ok` envelope.
+  ///
+  /// [payload] travels as JSON unless [form] is set. Slack's read methods
+  /// (`users.info`, `conversations.history`, …) ignore a JSON body, so they
+  /// post form-encoded arguments instead.
   Future<Map<String, dynamic>> _call(
     String method, {
     Map<String, dynamic>? payload,
     String? token,
+    bool form = false,
     int attempt = 0,
+    bool renewed = false,
   }) async {
-    final auth = token ?? _botToken;
+    final auth = token ?? await _tokenSource(renew: renewed);
+    try {
+      return await _post(
+        method,
+        payload: payload,
+        auth: auth,
+        form: form,
+        attempt: attempt,
+      );
+    } on SlackApiException catch (e) {
+      // A rotating bot token aged out between the source's last check and
+      // this call: renew once and retry. Only the default (source) token
+      // renews; an explicit token is the caller's to manage.
+      if (token == null && _renewable && !renewed && e.isTokenExpired) {
+        return _call(method, payload: payload, form: form, renewed: true);
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _post(
+    String method, {
+    required Map<String, dynamic>? payload,
+    required String auth,
+    required bool form,
+    required int attempt,
+  }) async {
     // Slack reads a JSON body only when the call authenticates through the
     // Authorization header. `tooling.tokens.rotate` deliberately sends no token
     // (the refresh token IS the credential), so posting its arguments as JSON
     // delivers no arguments at all and Slack answers "missing required field:
     // refresh_token" — a message that reads like the caller forgot to pass one.
     final unauthenticated = auth.isEmpty;
+    final asForm = unauthenticated || form;
     try {
       final response = await _httpClient.post(
         '$slackApiBaseUrl/$method',
         headers: HttpHeaders.rawMap({
           if (!unauthenticated) 'Authorization': 'Bearer $auth',
-          'Content-Type': unauthenticated
+          'Content-Type': asForm
               ? 'application/x-www-form-urlencoded'
               : 'application/json; charset=utf-8',
         }),
-        body: unauthenticated
+        body: asForm
             ? HttpBody.form({
                 for (final entry
                     in (payload ?? const <String, dynamic>{}).entries)
@@ -609,10 +824,11 @@ class SlackApiClient {
         final seconds = int.tryParse(_header(e, 'retry-after') ?? '') ?? 1;
         if (attempt < _maxRateLimitRetries) {
           await Future<void>.delayed(Duration(seconds: seconds));
-          return _call(
+          return _post(
             method,
             payload: payload,
-            token: token,
+            auth: auth,
+            form: form,
             attempt: attempt + 1,
           );
         }

@@ -9,6 +9,8 @@ import 'dart:typed_data';
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/rig_events.dart';
+import 'package:cc_domain/core/domain/ports/credential_broker_port.dart'
+    show ForgeTokenScope;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig_action_log_entry.dart';
@@ -31,6 +33,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/adb_client.dart';
 import 'package:cc_infra/src/rigs/browser_engine_attach.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
@@ -40,6 +43,7 @@ import 'package:cc_infra/src/rigs/host_window_rig_driver.dart';
 import 'package:cc_infra/src/rigs/ios_rig_driver.dart';
 import 'package:cc_infra/src/rigs/ios_simulator_backend.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart';
+import 'package:cc_infra/src/rigs/rig_action_audit.dart';
 import 'package:cc_infra/src/rigs/rig_dev_tls.dart';
 import 'package:cc_infra/src/rigs/rig_drivers.dart';
 import 'package:cc_infra/src/rigs/rig_file_transfer.dart';
@@ -164,7 +168,7 @@ class RigService implements RigPort, RigPortsPort {
       if (binary == null) {
         throw StateError('smolvm is not resolved on this host.');
       }
-      return Process.run(binary, [
+      return ChildProcess.run(binary, [
         'machine',
         'exec',
         '--name',
@@ -182,7 +186,7 @@ class RigService implements RigPort, RigPortsPort {
       if (binary == null) {
         throw StateError('smolvm is not resolved on this host.');
       }
-      return Process.start(binary, [
+      return ChildProcess.start(binary, [
         'machine',
         'exec',
         '--name',
@@ -945,6 +949,13 @@ class RigService implements RigPort, RigPortsPort {
     );
   }
 
+  /// Whether an agent `eval` kernel may run in [rig]: an exec rig whose forge
+  /// token is [ForgeTokenScope.read]. A rig granted [ForgeTokenScope.write]
+  /// (a human's terminal rig) keeps its write helper to the shell it was
+  /// opened for; a kernel a model drives there could reach it.
+  static bool admitsKernel(Rig rig) =>
+      rig.spec.isExec && rig.spec.forgeTokenScope == ForgeTokenScope.read;
+
   /// The guest carrier for the RUNNING exec rig of [conversationId], or null
   /// when there is none.
   ///
@@ -953,6 +964,9 @@ class RigService implements RigPort, RigPortsPort {
   /// same rule holds here: an `eval` cell must not silently boot a microVM. A
   /// null answer means the caller falls back to running on the host, which is
   /// a decision the composition root makes in the open, not a hidden boot.
+  ///
+  /// Only a rig that [admitsKernel] is considered: a kernel never attaches
+  /// to a machine holding a push-capable token.
   WorktreeTransport? execTransportFor({
     required String workspaceId,
     required String conversationId,
@@ -960,7 +974,7 @@ class RigService implements RigPort, RigPortsPort {
     for (final live in _live.values) {
       if (live.rig.workspaceId != workspaceId ||
           live.rig.conversationId != conversationId ||
-          !live.rig.spec.isExec ||
+          !admitsKernel(live.rig) ||
           !live.rig.status.phase.holdsMachine) {
         continue;
       }
@@ -989,7 +1003,7 @@ class RigService implements RigPort, RigPortsPort {
         'exec ffmpeg -nostdin -hide_banner -loglevel error '
         '-f pulse -i ccout.monitor -vn -ac 2 -ar 44100 '
         '-b:a 128k -f mp3 pipe:1';
-    final process = await Process.start(binary, [
+    final process = await ChildProcess.start(binary, [
       'machine',
       'exec',
       '--name',
@@ -2288,7 +2302,7 @@ class RigService implements RigPort, RigPortsPort {
     final imageHash = result.imageBase64 == null
         ? null
         : sha256.convert(utf8.encode(result.imageBase64!)).toString();
-    final audit = _auditPayload(action);
+    final audit = rigAuditPayload(action);
     await _logRaw(
       live: live,
       verb: action.verb,
@@ -2307,7 +2321,7 @@ class RigService implements RigPort, RigPortsPort {
   /// Takes the already-redacted pieces rather than a [RigAction], because the
   /// clipboard and file lanes have no action to derive them from — an exec
   /// rig has no verb vocabulary at all, and the bytes those lanes carry must
-  /// never reach [_auditPayload]'s argument map in the first place. Their
+  /// never reach [rigAuditPayload]'s argument map in the first place. Their
   /// callers pass a SHAPE ("2 files", "48 characters"); this writes it down.
   Future<void> _logRaw({
     required _LiveRig live,
@@ -2329,7 +2343,7 @@ class RigService implements RigPort, RigPortsPort {
           rigId: live.rig.id,
           seq: 0, // Allocated inside the repository's transaction.
           verb: verb,
-          args: _capArgs(args, verb),
+          args: capRigAuditArgs(args, verb),
           summary: summary,
           actor: actor,
           isTakeOver: actor.isUser && live.rig.controller?.wire == actor.wire,
@@ -2348,68 +2362,6 @@ class RigService implements RigPort, RigPortsPort {
       // log exists to prevent.
       CcInfraLog.error('rig/${live.rig.id}: action log write failed: $e', e);
     }
-  }
-
-  /// Verbs whose `text` is a key COMBINATION rather than content.
-  ///
-  /// `ctrl+s` is precisely what the audit exists to record, and it is a name,
-  /// not something anybody types a secret into.
-  static const Set<String> _keyComboVerbs = {'key', 'hold_key'};
-
-  /// How much serialized argument JSON one row may carry.
-  static const int _maxArgsChars = 4096;
-
-  /// What [action] looks like once it is safe to persist.
-  ///
-  /// `type`/`fill` (and take-over keystrokes) redact plaintext at this
-  /// chokepoint — length + hash keep "was something typed?" answerable without
-  /// storing the string. Hash is not a defence for short text. Summary is
-  /// redacted with the args (same text, next column).
-  ({Map<String, dynamic> args, String summary}) _auditPayload(
-    RigAction action,
-  ) {
-    final args = Map<String, dynamic>.of(action.toJson());
-    var summary = action.summary;
-    final text = args['text'];
-    if (!_keyComboVerbs.contains(action.verb) &&
-        text is String &&
-        text.isNotEmpty) {
-      args['text'] = {
-        'textLength': text.length,
-        'textSha256': sha256.convert(utf8.encode(text)).toString(),
-      };
-      summary = _redactQuoted(summary, text.length);
-    }
-    return (args: _capArgs(args, action.verb), summary: summary);
-  }
-
-  /// Replaces the quoted preview in [summary] with a length note.
-  ///
-  /// Every summary that quotes anything quotes exactly the text just redacted
-  /// (`Typed "hunter2"`, `Filled #pw with "hunter2"`), so dropping what lies
-  /// between the first and the last quote keeps the part that carries the
-  /// audit — the verb, the selector — and loses the part that carries the
-  /// secret.
-  static String _redactQuoted(String summary, int length) {
-    final first = summary.indexOf('"');
-    final last = summary.lastIndexOf('"');
-    if (first < 0 || last <= first) {
-      return summary;
-    }
-    return '${summary.substring(0, first)}$length '
-        '${length == 1 ? 'character' : 'characters'} (hidden)'
-        '${summary.substring(last + 1)}';
-  }
-
-  /// Caps one row's arguments. A `navigate` URL is caller-supplied and
-  /// unbounded, and a log row that costs a megabyte is a payload store rather
-  /// than an audit trail.
-  static Map<String, dynamic> _capArgs(Map<String, dynamic> args, String verb) {
-    final encoded = jsonEncode(args);
-    if (encoded.length <= _maxArgsChars) {
-      return args;
-    }
-    return {'action': verb, 'argsTruncated': true, 'argsChars': encoded.length};
   }
 
   /// Destroys a machine that finished booting into a rig nobody holds.

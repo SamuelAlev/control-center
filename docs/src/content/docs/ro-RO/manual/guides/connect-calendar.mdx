@@ -1,38 +1,72 @@
 ---
 title: Conectează un Google Calendar
-description: Conectează Google Calendar la un spațiu de lucru, gestionează mai multe conturi și reconectează când expiră un token.
+description: Conectează Google Calendar la un spațiu de lucru, gestionează mai multe conturi și reconectează când expiră o autentificare.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-calendar
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Acest ghid îți arată cum să conectezi Google Calendar la un spațiu de lucru.
-Conectarea este proprie fiecărui spațiu de lucru: sincronizează evenimentele
-acelui spațiu în Control Center, doar în citire. Vezi
-[Calendar și programare](/ro-RO/manual/concepte/calendar/) pentru imaginea
-completă.
+Conectarea este proprie fiecărui spațiu de lucru și fiecărui membru:
+sincronizează evenimentele tale pentru acel spațiu în Control Center, unde poți și răspunde la
+invitații, programa, muta și șterge evenimente. Vezi [Calendar și programare](/ro-RO/manual/concepte/calendar/) pentru
+imaginea completă.
+
+## Cerințe preliminare
+
+- Serverul poate autentifica oamenii în Google: fie prin Control Center Connect,
+  fie cu clientul Google propriu al serverului
+  ([Adu-ți propriul client Google](#adu-ți-propriul-client-google)).
+  Proprietarul serverului alege în **Setări → Server → Autentificare unică**
+- Un spațiu de lucru deschis: un cont de calendar aparține întotdeauna unuia
 
 ## Conectează un cont
 
 1. Deschide **Calendar** în bara laterală.
 2. Apasă **Adaugă un cont de calendar** în bara laterală a calendarului. (Aceeași secțiune se află în **Setări → Spațiu de lucru → Profil și identitate**, sub **Google Calendar**.)
-3. Alege cum să autorizezi:
-   - **Folosește aplicația Google a Control Center** — nimic de configurat. Aceasta este opțiunea implicită când build-ul tău vine cu una.
-   - **Folosește propriul client Google Cloud** — lipește un id de client și un secret din propriul proiect (vezi [Adu-ți propriul client Google](#adu-ți-propriul-client-google-fork-uri-și-auto-găzduire)).
-4. Apasă **Conectează Google Calendar**. Dialogul afișează un cod scurt și un link către pagina de dispozitiv a Google.
-5. Deschide acea pagină pe orice dispozitiv, introdu codul și aprobă accesul solicitat. Dialogul se închide singur, iar evenimentele tale încep să se sincronizeze.
+3. Apasă **Conectează Google Calendar**. Browserul deschide pagina de consimțământ a Google.
+4. Alege contul și aprobă accesul la evenimentele calendarului și la lista de calendare.
 
-Serverul, nu dispozitivul tău, rulează acest schimb și păstrează tokenul de
-reîmprospătare rezultat — de aceea codul se aprobă pe „orice dispozitiv", nu în
-această aplicație anume.
+Felul în care se încheie depinde de cine rulează autentificarea:
 
-Contul este conectat **doar la spațiul de lucru activ**. Schimbă spațiul de lucru
-și vei vedea în schimb calendarele acelui spațiu.
+- **Clientul Google propriu al serverului:** Google trimite browserul înapoi la
+  server, iar dialogul se închide singur
+- **Control Center Connect:** pagina din browser afișează un cod de 8
+  caractere. Tastează-l în dialog sau lasă browserul să deschidă Control Center
+  prin linkul `control-center://` și sari peste tastare
 
-Fluxul de conectare solicită `calendar.readonly` plus adresa ta de e-mail —
-aceleași domenii pentru aplicația integrată și pentru un client pe care îl
-lipești. Control Center citește evenimentele; nu creează, nu editează, nu șterge
-și nu răspunde la invitații pe Google.
+Evenimentele tale încep să se sincronizeze imediat. Serverul, nu dispozitivul
+tău, încheie schimbul și păstrează acreditarea.
 
+Contul este conectat **doar la spațiul de lucru activ** și este al tău: doi
+membri care conectează aceeași adresă Google primesc conturi separate. Schimbă
+spațiul de lucru și vei vedea în schimb calendarele acelui spațiu.
+
+Fluxul de conectare solicită `calendar.events` și `calendar.calendarlist.readonly`
+plus `openid email`, indiferent de clientul care îl rulează. Un cont conectat
+înainte ca Control Center să poată scrie pe Google are doar domeniul de citire;
+îi cere să te reconectezi, iar noua autentificare acordă restul.
+
+## Programează, mută, răspunde și șterge evenimente
+
+- **Programează un eveniment:** în vizualizarea săptămână sau zi, trage peste
+  grila de ore pentru a desena intervalul (în vizualizarea lună, trage peste zile
+  pentru un eveniment cu toată ziua). Se deschide alături un card cu titlul,
+  orele, participanții, un link Google Meet, locația, descrierea și calendarul pe
+  care să programezi. **Salvează** îl programează pe Google și îl deschide.
+  Butonul **+** din antetul calendarului deschide același card pentru următorul
+  sfert de oră liber. Apasă Escape ca să renunți
+- **Mută un eveniment:** trage-l în altă oră sau zi, ori trage marginea de jos ca să schimbi când se termină. Se deschide când Google are noua oră; dacă Google refuză, revine unde era. Poți muta doar evenimentele tale și pe cele pe care le organizezi; o invitație rămâne unde a pus-o organizatorul
+- **Răspunde la o invitație:** deschide evenimentul și alege **Da**, **Poate** sau
+  **Nu**
+- **Șterge un eveniment:** deschide-l și apasă pictograma coș. Confirmarea arată
+  cine este afectat: participanții sunt anunțați că un eveniment pe care îl
+  organizezi este anulat, iar ștergerea unei invitații o scoate doar din calendarul
+  tău. Ștergerea unei apariții dintr-un eveniment recurent lasă restul seriei
+
+Participanții primesc invitația, actualizarea sau anularea trimisă de Google.
+Poți programa doar pe calendarele în care contul tău are voie să scrie și doar cu
+conturile tale: calendarul conectat al altui membru nu este oferit niciodată.
+ Mutarea unei apariții dintr-un eveniment recurent lasă restul seriei.
 ## Cum funcționează sincronizarea
 
 **Serverul** deține programul: parcurge conturile conectate ale fiecărui spațiu de
@@ -46,9 +80,12 @@ doar ce s-a schimbat, ceea ce face sustenabilă o cadență de două minute. Fer
 este reancorată printr-o sincronizare completă la fiecare 24 de ore și ori de câte
 ori Google invalidează tokenul.
 
-Tokenurile de reîmprospătare stau pe server, în `secrets.json`, în directorul de
-date al serverului, scrise cu acces doar pentru proprietar (`0600`) — nu în
-keychain-ul sistemului de operare și niciodată pe un dispozitiv client.
+Acreditările stau pe server, în `secrets.json`, în directorul de date al
+serverului, scrise cu acces doar pentru proprietar (`0600`) — nu în
+keychain-ul sistemului de operare și niciodată pe un dispozitiv client. O
+autentificare prin Connect stochează doar o acreditare sigilată pe care Connect
+o poate deschide doar pentru acest server; tokenul ei de acces rămâne în
+memoria serverului.
 
 ## Conectează mai multe conturi
 
@@ -60,73 +97,89 @@ deconectat separat.
 
 ## Reconectează un cont expirat
 
-Dacă Google invalidează definitiv tokenul unui cont (o sesiune revocată sau
+Dacă Google invalidează definitiv autentificarea unui cont (o sesiune revocată sau
 expirată de mult timp), sincronizarea se oprește și Control Center afișează un
 banner **Reconectează** pe calendar, plus o notificare pe desktop. Apasă
-**Reconectează** și aprobă un cod nou; bannerul dispare la următoarea sincronizare
-reușită.
+**Reconectează** și autentifică-te din nou; bannerul dispare la următoarea
+sincronizare reușită.
+
+Același banner apare când autentificarea nu mai poate fi folosită de acest
+server: proprietarul serverului a trecut pe alt server Connect sau a schimbat
+cheia Connect, clientul Google propriu al serverului s-a schimbat sau directorul
+de date a fost restaurat pe o altă mașină.
 
 ## Deconectează un cont
 
 Din bara laterală a calendarului (sau **Setări → Spațiu de lucru → Profil și
 identitate**), apasă **Deconectează** pe cont. Aceasta șterge evenimentele
-sincronizate și curăță tokenurile stocate pe server.
+sincronizate și curăță acreditarea stocată pe server.
 
-## Conectează de pe un server headless
+## Adu-ți propriul client Google
 
-Un server fără interfață grafică conectează același cont din propriul terminal:
+Rulează propriul client Google când ai ales **Folosește aplicațiile mele**.
+Clientul serverului se aplică doar atunci: cu Control Center Connect sau cu un
+Connect propriu, Connect rulează fiecare bandă, inclusiv Google, iar clientul
+serverului rămâne salvat, dar nefolosit. Ca ecranul de consimțământ să numească
+propriul tău proiect cât timp serverul folosește Connect, dă spațiului de lucru
+propriul client ([mai jos](#dă-unui-spațiu-de-lucru-propriul-client-google));
+asta se aplică în orice mod.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. În [Google Cloud Console](https://console.cloud.google.com/apis/credentials), activează **Google Calendar API** și configurează **ecranul de consimțământ OAuth**, adăugând domeniile `calendar.events`, `calendar.calendarlist.readonly`, `openid` și `email`. Cât timp aplicația nu este verificată, adaugă-te ca **utilizator de test**.
+2. Creează un **ID client OAuth** cu tipul de aplicație **Web application**.
+3. Adaugă URI-ul de redirecționare autorizat `<server origin>/oauth/google/callback`. **Setări → Server → Autentificare unică → Aplicații provider → Google** afișează URL-ul exact sub **URL-uri de callback**; copiază-l întocmai.
+4. Lipește **Client id** și **Client secret** în același bloc Google sau pune-le în fișierul `.env` al serverului ca `GOOGLE_OAUTH_CLIENT_ID` și `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Afișează un cod și un URL, așteaptă aprobarea, apoi stochează tokenurile și
-sincronizează la următoarea parcurgere.
+Serverul refuză să pornească atunci când `GOOGLE_OAUTH_CLIENT_SECRET` este
+exportat în mediul procesului său; păstrează-l în fișierul `.env` (în Docker,
+montează-l la `/app/bin/.env`). Secretul nu părăsește niciodată serverul:
+niciun răspuns RPC nu îl conține. Un client id fără secretul lui este o
+configurare neterminată, iar autentificările Google sunt refuzate până când
+ambele sunt setate.
 
-O construcție din surse nu include **niciun** client Google, așa că id-ul și
-secretul sunt obligatorii — setează `GOOGLE_OAUTH_CLIENT_ID` și
-`GOOGLE_OAUTH_CLIENT_SECRET`. Nu există un flag `--google-client-id` (flag-urile
-necunoscute sunt ignorate). Fără perechea de variabile de mediu, comanda se
-încheie cu o eroare de client lipsă.
+Trecerea la un alt client îi deconectează pe toți de la Google Calendar: o
+autentificare aparține clientului care a emis-o.
 
-## Adu-ți propriul client Google (fork-uri și auto-găzduire)
+## Dă unui spațiu de lucru propriul client Google
 
-Build-urile de lansare includ un client Google, așa că majoritatea oamenilor nu
-ating niciodată acest subiect. Adu-ți propriul client dacă construiești din surse,
-rulezi propriul server sau vrei ca ecranul de consimțământ să numească propriul
-proiect.
+Un spațiu de lucru poate conecta Google Calendar printr-un client propriu, în locul
+celui al serverului. Doar un administrator sau un proprietar al spațiului de lucru
+o poate configura.
 
-1. În [Google Cloud Console](https://console.cloud.google.com/apis/credentials), activează **Google Calendar API** și configurează **ecranul de consimțământ OAuth**, adăugând domeniile `calendar.readonly`, `openid` și `email`. Cât timp aplicația nu este verificată, adaugă-te ca **utilizator de test**. Adăugarea lui `calendar.events` pe ecranul de consimțământ nu activează RSVP — Control Center nu solicită niciodată acel domeniu.
-2. Creează un **ID client OAuth** cu tipul de aplicație **TVs and limited input devices** și copiază atât id-ul de client, cât și secretul de client.
-3. Furnizează-le fie per conectare (alege **Folosește propriul client Google Cloud** în dialog), fie la nivel de server cu `GOOGLE_OAUTH_CLIENT_ID` și `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Creează un client Google de tip **Web application** ca la pașii 1 și 2 de mai sus
+2. Mergi la **Setări → Spațiu de lucru → General → Aplicații ale providerilor** și deschide **Google Calendar**
+3. Alege **Folosește aplicația proprie a acestui spațiu de lucru**
+4. Adaugă clientului URI-ul de redirecționare afișat de rând sub **URL de callback**, întocmai
+5. Lipește **Client id** și **Client secret**
 
-O pereche la nivel de server o înlocuiește pe cea integrată peste tot, inclusiv în
-spatele opțiunii „folosește aplicația Google a Control Center" — așa că pe
-propriul tău server, acea opțiune este aplicația ta.
+Conturile de calendar conectate în acest spațiu de lucru trec atunci prin acel
+client, indiferent cum autentifică serverul oamenii. Nu revin niciodată la clientul
+serverului sau la Connect: până când ambele câmpuri sunt completate, Google Calendar
+este oprit în acest spațiu de lucru, iar rândul spune ce lipsește. Secretul nu
+parăsește niciodată serverul.
 
-Secretul de client nu părăsește niciodată serverul: niciun răspuns RPC nu îl
-conține, iar un cont conectat prin clientul propriu al serverului stochează un
-marcaj în loc de o copie a perechii, așa că rotirea lui înseamnă doar o repornire
-cu o valoare nouă.
+Trecerea între clientul serverului și cel al spațiului de lucru, sau schimbarea
+id-ului clientului spațiului de lucru, marchează fiecare cont Google din acest
+spațiu de lucru pentru reconectare. **Folosește aplicația acestui server** șterge
+câmpurile salvate ale spațiului de lucru. Celelalte spații de lucru de pe server nu
+sunt afectate.
 
-### Depanare
+## Depanare
 
-| Simptom                                             | Cauză probabilă                                                                                                                                          |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialogul nu oferă nicio opțiune integrată           | Această construcție nu include niciun client Google (o construcție din surse) sau serverul a fost pornit cu doar o jumătate a perechii. Atât id-ul, cât și secretul sunt obligatorii |
-| `invalid_scope` la pornirea fluxului                | Calendar nu este permis pentru un client cu cod de dispozitiv în acel proiect Cloud. Folosește în schimb un proiect cu client loopback sau web           |
-| `invalid_client` de la Google                       | Clientul nu este un client de tip **TVs and limited input devices** sau id-ul și secretul provin din clienți diferiți                                    |
-| Aprobarea reușește, dar sincronizarea este goală    | Contul tău nu este **utilizator de test** pe ecranul de consimțământ sau `calendar.readonly` nu a fost acordat                                           |
-| Codul expiră înainte să îl aprobi                   | Codurile de dispozitiv sunt de scurtă durată. Pornește din nou conectarea pentru unul nou                                                                |
-| „Nu s-a putut actualiza răspunsul" la un RSVP       | Comportament așteptat: fluxul de conectare nu solicită niciodată `calendar.events`                                                                       |
-| Sincronizarea se oprește cu un avertisment de reîmprospătare în jurnalul serverului | Contul a fost conectat cu un client care nu mai este configurat. Reconectează contul sau restaurează id-ul și secretul acelui client                     |
+| Simptom                                             | Cauză probabilă                                                                                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Conectează Google Calendar** spune că autentificarea nu este configurată | Serverul nu are nici client Google propriu, nici Connect. Proprietarul serverului alege unul în **Setări → Server → Autentificare unică** |
+| Google afișează `redirect_uri_mismatch`             | Redirecționarea înregistrată pe client nu se potrivește exact cu valoarea din **URL-uri de callback** sau URL-ul public al serverului s-a schimbat |
+| `invalid_client` de la Google                       | Id-ul și secretul provin din clienți diferiți sau clientul a fost șters                                                              |
+| Aprobarea reușește, dar sincronizarea este goală    | Contul tău nu este **utilizator de test** pe ecranul de consimțământ sau un domeniu cerut nu a fost acordat                       |
+| Dialogul spune că codul nu se potrivește            | Tastează cele 8 caractere exact cum le afișează browserul. Cinci coduri greșite încheie autentificarea; pornește din nou              |
+| „Nu s-a putut actualiza răspunsul", sau programarea, mutarea ori ștergerea eșuează       | Contul a fost conectat cu vechiul domeniu doar de citire. Reconectează-l; un calendar partajat cu tine doar pentru citire refuză și scrierile                                                   |
+| Toată lumea trebuie să se reconecteze               | Clientul Google al serverului sau al spațiului de lucru s-a schimbat, sau alegerea ori cheia lui Connect de pe server s-a schimbat. Vezi [Reconectează un cont expirat](#reconectează-un-cont-expirat) |
 
 ## Ghiduri conexe
 
 - [Înregistrează și rezumă o întâlnire](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/): transformă un eveniment într-o înregistrare
-- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): unde stau tokenurile și programul de sincronizare
-- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): unde stau acreditările și programul de sincronizare
+- [Rulează un server Connect](/ro-RO/manual/ghiduri-practice/ruleaza-server-connect/)
 
 ## Concepte conexe
 

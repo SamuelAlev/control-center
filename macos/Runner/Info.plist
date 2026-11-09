@@ -38,14 +38,6 @@
 				<string>control-center</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.controlcenter.google-oauth</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
-			</array>
-		</dict>
 	</array>
 	<key>NSLocationUsageDescription</key>
 	<string>Control Center uses this Mac's location so the soundscape matches the weather where you are. The coordinates are sent to your server, which looks up the forecast.</string>

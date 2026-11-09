@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 /// A seed path that would read or write outside its root.
@@ -187,7 +189,7 @@ Future<void> copyWorktreeFile(String source, String destination) async {
         ? ['/bin/cp', '-c', '-p', source, destination]
         : ['cp', '--reflink=auto', '-p', source, destination];
     try {
-      final result = await Process.run(argv.first, argv.sublist(1));
+      final result = await ChildProcess.run(argv.first, argv.sublist(1));
       if (result.exitCode == 0) {
         return;
       }

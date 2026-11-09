@@ -80,9 +80,10 @@ class CcServer {
   /// are reaped on shutdown.
   DemoMeetingService? _demoMeeting;
 
-  /// GitHub viewer-activity poller (review requests / mentions / merges →
-  /// events + targeted refreshes). Disposed on [shutdown].
-  GitHubViewerActivityPollingService? _githubActivityPoller;
+  /// GitHub viewer-activity pollers, one per signed-in person (review
+  /// requests / mentions / merges → events + targeted refreshes). Disposed on
+  /// [shutdown].
+  ViewerActivityPollers? _githubActivityPoller;
 
   /// GitHub PR-conversation poller: discovers bot @mentions / review-label
   /// requests on GitHub and bridges them into PR review spaces (the bot
@@ -325,8 +326,11 @@ class CcServer {
       _pairedDeviceWatch?.dispose();
     });
     await step('scheduler', () async => _fleetScheduler?.dispose());
-    await step('skillEvaluations', () async => _skillEvaluation?.dispose(),
-        timeout: const Duration(seconds: 30));
+    await step(
+      'skillEvaluations',
+      () async => _skillEvaluation?.dispose(),
+      timeout: const Duration(seconds: 30),
+    );
     await step('calendar', () async => _calendarSync?.dispose());
     await step('weather', () async => _weatherService?.dispose());
     await step('soundscape', () async => _soundscapeHub?.dispose());

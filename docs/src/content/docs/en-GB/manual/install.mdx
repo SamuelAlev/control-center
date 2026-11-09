@@ -2,7 +2,7 @@
 title: Install
 description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
 slug: en-GB/manual/install
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center runs two ways: as a **web app** at
@@ -119,14 +119,9 @@ Model lists are served live by each connected provider; [models.dev](https://mod
 
 A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
 
-If the server has a GitHub App registered ([Create the GitHub App](/en-GB/manual/guides/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+GitHub is sign-in only: **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in to GitHub**, and there is no token to paste. The sign-in runs through the server's own GitHub App ([Create the GitHub App](/en-GB/manual/guides/github-app/)) or through Control Center Connect, whichever the server owner chose. With the server's own app, the browser comes back to the server by itself; through Connect, you type the 8-character code the browser shows, or let it open Control Center. See [Set up GitHub integration](/en-GB/manual/guides/github-integration/).
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
-
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
-
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/en-GB/manual/guides/connect-forges/).
+Onboarding asks for this connection. After that the same card is where you sign in again or disconnect. GitLab and Bitbucket use the same card with a pasted personal token; see [Connect a code host](/en-GB/manual/guides/connect-forges/).
 
 ## Choose where the server runs
 

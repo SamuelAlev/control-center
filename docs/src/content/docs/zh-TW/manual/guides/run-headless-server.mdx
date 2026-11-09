@@ -1,9 +1,9 @@
 ---
 title: 執行無介面伺服器
 description: 執行 cc_server 無介面二進位檔或其 Docker 映像，配對用戶端，並以完整的 CLI 旗標與環境變數介面進行設定。
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: zh-TW/手冊/操作指南/執行無介面伺服器
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 在一台持續開機的機器上執行 `cc_server`，然後從你的桌面版、瀏覽器或手機連線過去。
@@ -14,8 +14,9 @@ Windows 上無介面執行。它擁有資料庫、執行代理，並發出每一
 ## 在 Docker 中執行（預先建置的映像）
 
 每次發行都會發布一套自行託管的堆疊，內含四個 GHCR 映像——後端、兩個靜態精簡
-用戶端，以及選用的配對中繼——另外還有一個給公開示範主機用的獨立
-`cc-server-demo` 映像。自行託管的安裝不需要簽出原始碼。請固定版本標籤
+用戶端，以及選用的配對中繼——外加選用的 `cc-connect` 登入服務
+（[執行 Connect 伺服器](/zh-TW/手冊/操作指南/執行-connect-伺服器/)），以及一個給公開
+示範主機用的獨立 `cc-server-demo` 映像。自行託管的安裝不需要簽出原始碼。請固定版本標籤
 （`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`）或直接使用 `latest`。
 
 | 映像                                             | 內容                                   | 對外連接埠        |
@@ -63,6 +64,11 @@ volumes:
   或 compose 的 `environment:` 區塊覆寫。
 - **`/data` 是唯一保存狀態的地方。** SQLite 資料庫、已配對裝置的密鑰、
   下載的模型與會議音訊全都放在這個磁碟區裡——備份它，容器就變成可拋棄的。
+- **供應商密鑰要放在掛載的 `.env` 中，絕不要用 `-e`。** 若
+  `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、
+  `LINEAR_API_KEY` 或任何 `SLACK_*SECRET*` 出現在伺服器的行程環境中，伺服器會
+  拒絕啟動。請將該檔案以唯讀方式掛載到 `/app/bin/.env`
+  （`-v /secure/cc.env:/app/bin/.env:ro`），或在設定中設定這些應用程式。
 - **在首次連線前，從映像內部配對一個用戶端**，這是[步驟 3](#步驟-3在首次啟動前配對用戶端)
   的容器等效做法：
 
@@ -248,19 +254,32 @@ node tool/stage_resource_assets.mjs build/web
 伺服器所啟動之編輯器擴充功能的私有回送回報／命令閘道。敏感的公開 HTTP
 要求會遭拒；資源需要已驗證的加密工作階段。
 
-## 步驟 6：連接 Google Calendar（選用）
+## 步驟 6：選擇人們的登入方式
 
-若要在沒有連接任何圖形介面的情況下同步工作區的日曆，請使用裝置代碼流程：
+第一個以伺服器擁有者身分連線的用戶端，會被詢問這台伺服器要如何讓人們登入
+GitHub、Google Calendar 與 Linear：**使用 Control Center 的應用程式**、
+**使用我自己的應用程式**，或**使用自訂 Connect 伺服器**。在終端機中，同樣的選擇
+如下：
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-它會印出一組代碼與一個網址，讓你在另一台裝置上核准；它會把重新整理權杖存放
-在伺服器端，然後結束。原始碼建置不會隨附 Google 用戶端，因此 id 與密鑰這兩個
-環境變數是必要的——沒有 `--google-client-id` 旗標。請參閱[連接 Google Calendar](/zh-TW/手冊/操作指南/連接日曆/)。
+伺服器環境或 `.env` 中的 `CC_CONNECT_URL`（`hosted`、`off` 或一個網址）則會改為
+鎖定這個選擇。選擇**使用我自己的應用程式**時，請在
+**設定 → 伺服器 → 單一登入 → 供應商應用程式**中註冊每個供應商；
+**建立我的 GitHub 應用程式**能一步設定好 GitHub。供應商密鑰應放在伺服器的
+`.env` 檔案中，絕不要放在匯出的環境中。請參閱[建立 GitHub App](/zh-TW/手冊/操作指南/github-app/)
+與 [Control Center Connect](/zh-TW/手冊/參考/connect/)。
+
+透過 Connect 的登入會以瀏覽器顯示的代碼完成，因此伺服器不需要公開位址。透過
+伺服器自己應用程式的登入，會把瀏覽器送回伺服器的公開網址，因此請把
+`--public-url` 設為人們的瀏覽器能連到的位址。
+
+若要從這台伺服器為其他伺服器代管 Connect，請設定 `CC_SERVER_CONNECT_HOST=on`；
+請參閱[執行 Connect 伺服器](/zh-TW/手冊/操作指南/執行-connect-伺服器/#在-cc_server-內掛載-connect)。
 
 ## 設定
 
@@ -312,6 +331,7 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
 - [配對裝置](/zh-TW/手冊/操作指南/配對裝置/)
 - [執行機群工作程序](/zh-TW/手冊/操作指南/執行機群工作程序/)
 - [連接 Google Calendar](/zh-TW/手冊/操作指南/連接日曆/)
+- [執行 Connect 伺服器](/zh-TW/手冊/操作指南/執行-connect-伺服器/)
 
 ## 相關概念
 

@@ -76,9 +76,9 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Calendar Bounded Context
 
-- **CalendarAccount:** connected Google account per workspace/email; reauthorization is indicated by expired auth state. Tokens are not fields on this entity. **CalendarEvent:** synced scheduled event, distinct from a recorded **Meeting**. **CalendarAttendee:** RSVP participant; the app only writes the signed-in user's attendance response, never creates/edits/deletes events.
+- **CalendarAccount:** connected Google account per member per workspace/email (`google:<workspaceId>:<userId>:<email>`); reauthorization is indicated by expired auth state. Tokens are not fields on this entity. **CalendarEvent:** synced scheduled event, distinct from a recorded **Meeting**. **CalendarAttendee:** RSVP participant; the app only writes the signed-in user's attendance response, never creates/edits/deletes events.
 - **MeetingCalendarLink:** optional unique link from a recorded meeting to its source calendar event. **CalendarEventStatus** is the provider event lifecycle; **CalendarViewMode** is a UI preference, not an event state.
-- **GoogleOAuthService / GoogleCredentialsRepository / GoogleOAuthRedirectChannel:** OAuth PKCE flow, per-account server-side credential store and OS redirect bridge, respectively. See [SECURITY.md](SECURITY.md) for credential ownership.
+- **Google sign-in lane / FileGoogleCredentialsStore / ServerGoogleTokenManager:** the `google` browser sign-in (own Web client or Connect), the per-account server-side credential store (`google_<accountId>` in `secrets.json`) and the in-memory, single-flight token refresher. See [SECURITY.md](SECURITY.md) for credential ownership.
 
 ## Meetings Bounded Context
 
@@ -116,7 +116,16 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Auth Bounded Context
 
-- **ApiCredentials:** external-service API credentials for a user. **GitHubCliStatus:** local `gh` installation/auth state. **Token:** sensitive value object whose string rendering masks the secret.
+- **Token:** sensitive value object whose string rendering masks the secret. People's forge and ticketing credentials are server-side sign-ins (see Provider Sign-in and Connect below), not client entities.
+
+## Provider Sign-in and Connect Bounded Context
+
+- **Control Center Connect:** optional OAuth broker (`apps/cc_connect`, contract in `packages/cc_connect_core`) that runs provider sign-ins for servers without their own apps: hosted, self-hosted (`custom`) or `off`. It returns credential seals and one-repository GitHub tokens, never holds a GitHub App private key, refresh tokens at rest or Linear secrets, and never sees repository contents. **ConnectMode:** `unset` (behaves as `off`), `hosted`, `custom`, `off`.
+- **Sign-in lane:** one provider's browser sign-in: `github`, `google`, `linear`, `linear_app` (workspace app actor) or `slack`. Runs on the server's own app when complete, else Connect, else unavailable; a partial own app is an error, never a fall back. Not a model-provider OAuth (harness credentials).
+- **Install id (`install_id`):** a server's identity towards one Connect origin: 26 Crockford base32 characters of SHA-256 over the SPKI of an Ed25519 key HKDF-derived from the server's `connect_install_key` seed. Distinct from device pairing identity; rotating the seed changes it and invalidates every seal.
+- **Credential seal (`credential_seal`):** AEAD blob only the issuing Connect can open, bound to provider, Connect origin, install id, workspace, account, app and secret generation. The server stores the seal with `seal_install_id` and `connect_origin`; access tokens stay in memory. A mismatched seal is cleared on read.
+- **Install binding (`install_binding`):** Connect's record of which install ids may use a GitHub installation of the shared App (an organization needs an admin to authorize each server), or which single install a Slack team is bound to.
+- **Own app:** a provider app the server (or a workspace, for GitHub) registered itself; always takes precedence over Connect. **Create my GitHub App** registers one through GitHub's manifest flow.
 
 ## Identity & Access Bounded Context
 
@@ -218,7 +227,8 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **ActionPolicyRule:** scoped `allow`, `prompt` or `deny`; resolution order is space > agent > workspace > mode preset > built-in default, then longest command prefix and most restrictive rule. **ActionDecision / PolicyResolver:** stable within a turn; an unanswerable prompt is denied and multi-class actions take the most restrictive decision.
 - **Adapter honesty matrix:** records what each runtime can actually enforce at MCP, native CLI and sandbox layers; CC cannot intercept every external CLI action.
 - **Agent run gateway:** loopback `/agent/` endpoint through which the action policy reaches code inside an agent's sandbox. Hard half: every GitHub push is rewritten to it, checked against `gitPush` (refs included) and forwarded on a server-held write token. Soft half: `ShellActionClassifier` maps shell command lines (harness `bash`, Claude Code's PreToolUse hook) to action classes; a hidden command evades it, a push cannot.
-- **ForgeTokenScope:** `read` (contents read + pull requests, what an agent's environment holds) or `write` (push; held only by the gateway or a human-opened terminal rig). There is no "none": permission is the policy's call, not token withholding.
+- **ForgeTokenScope:** `read` (one repository: contents read plus pull requests when the accountable human can push, what an agent's environment holds) or `write` (push; held only by the gateway or a human-opened terminal rig). There is no "none": permission is the policy's call, not token withholding. On GitHub it maps to a **GitHubTokenScope** (`read`, `review`, `bot`, `write`), clamped to the accountable human's repository role.
+- **Accountable human:** the member whose GitHub access bounds automation in a workspace: the acting user (requester, labeller, mention author, pipeline `requested_by_user_id`) while still a member, else the workspace owner. Never an unrelated server owner.
 
 ## Agent Peer Messaging & Delegation
 

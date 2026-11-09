@@ -2,16 +2,16 @@
 title: Rota haritası
 description: Control Center'ın kaydettiği her rota, ekranı ve sorgu parametreleriyle birlikte.
 slug: tr-TR/kilavuz/referans/rota-haritasi
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Uygulama kabuğu
 
-Uygulama kabuğu (`ControlCenterLayout`), çalışma alanı içindeki her rotayı bir `ShellRoute` üzerinden sarar. **Kabuk içindeki her hedef çalışma alanı öneki taşır — `/workspaces/:workspaceId/…` — ve etkin çalışma alanı için tek doğruluk kaynağı, URL'deki çalışma alanı kimliğidir.** Öneksiz kalan yalnızca bağlam öncesi yüzeylerdir: `/splash`, `/onboarding`, `/signed-out` ve yalın `/workspaces` seçicisi; hepsi tam ekran ve kabuğun dışındadır.
+Uygulama kabuğu (`ControlCenterLayout`), çalışma alanı içindeki her rotayı bir `ShellRoute` üzerinden sarar. **Kabuk içindeki her hedef çalışma alanı öneki taşır — `/workspaces/:workspaceId/…` — ve etkin çalışma alanı için tek doğruluk kaynağı, URL'deki çalışma alanı kimliğidir.** Öneksiz kalan yalnızca bağlam öncesi yüzeylerdir: `/splash`, `/onboarding` ve yalın `/workspaces` seçicisi; hepsi tam ekran ve kabuğun dışındadır.
 
 Kapı, **oturum açmış kullanıcı için** en az bir forge bağlı olduğunda ve en az bir çalışma alanı var olduğunda tamamlanır.
 
-Eksik bir kimlik bilgisi ile eksik bir kurulum farklı ekranlardır ve ayırt edici ölçüt, çağıranın kendi `identity.me` değerinden okunan `users.onboarding_finished_at` alanıdır — asla “çalışma alanları var”, çünkü bu, biri hiç oluşturmadığı bir çalışma alanına davet edildiği anda yanlış olur. Bağlı forge yokken kurulumu tamamlamış bir hesap yeniden kimlik doğrulamak için `/signed-out` adresine gider; tamamlamamış olan ise `/onboarding` adresine gider. Bayrak hâlâ bilinmezken koruma tahmin yürütmek yerine açılış ekranını tutar, çünkü onboarding'den geri asla yönlendirme yapmaz.
+Eksik bir kimlik bilgisi ile eksik bir kurulum ayrı ele alınır ve ayırt edici ölçüt, çağıranın kendi `identity.me` değerinden okunan `users.onboarding_finished_at` alanıdır — asla “çalışma alanları var”, çünkü bu, biri hiç oluşturmadığı bir çalışma alanına davet edildiği anda yanlış olur. Bağlı forge yokken kurulumu tamamlamış bir hesap uygulamada kalır: çalışma alanı kabuğu, oturum açmanın bulunduğu **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne bağlantı veren bir uyarı gösterir. Tamamlamamış olan ise `/onboarding` adresine gider. Bayrak hâlâ bilinmezken koruma tahmin yürütmek yerine açılış ekranını tutar, çünkü onboarding'den geri asla yönlendirme yapmaz.
 
 ## Öneksiz rotalar
 
@@ -19,7 +19,6 @@ Eksik bir kimlik bilgisi ile eksik bir kurulum farklı ekranlardır ve ayırt ed
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/splash`                  | Onboarding kapısını çözen açılış ekranı                                                                                                                                                                                              |
 | `/onboarding`              | Bir forge bağlayın, bir çalışma alanı oluşturun veya mevcut olana katılın, sandbox, varsayılan adaptör, ardından ses. Hesap zaten bir çalışma alanına aitse çalışma alanı adımı atlanır                                                      |
-| `/signed-out`              | Yeniden kimlik doğrulama: Ayarlar'ın işlediği aynı forge bağlantıları kartı, adım çubuğu ve devam düğmesi olmadan — bir forge bildirim verdiğinde yönlendirici kendi kendine ayrılır                                                            |
 | `/workspaces`              | Çalışma alanı listesi ve seçici                                                                                                                                                                                                      |
 | `/workspaces/:workspaceId` | `/workspaces/:workspaceId/inbox` adresine yönlendirir                                                                                                                                                                               |
 

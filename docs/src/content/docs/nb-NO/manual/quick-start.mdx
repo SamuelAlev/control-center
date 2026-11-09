@@ -2,7 +2,7 @@
 title: Hurtigstart
 description: Installer Control Center, konfigurer én agent og se den jobbe mot repoet ditt.
 slug: nb-NO/handbok/hurtigstart
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Dette er den korteste komplette veien fra ingenting til en agent som kjører mot din egen kode. Følg den i rekkefølge; hvert steg bygger på det forrige.
@@ -20,18 +20,19 @@ Den samme appen kjører i nettleseren på [app.usectrl.dev](https://app.usectrl.
 samme funksjonene. En nettleserfane kan imidlertid ikke være vert for serveren, så du må
 stille med en selv – kjør `cc_server` lokalt og koble til `ws://localhost:9030`, eller pek
 den mot en server på en annen maskin. Denne hurtigstarten tar skrivebordsveien fordi den
-ikke krever noe serveroppsett; se [Installer](/nb-NO/handbok/installer/#use-it-in-your-browser) for nettleseralternativet.
+ikke krever noe serveroppsett; se [Installer](/nb-NO/handbok/installer/#bruk-den-i-nettleseren) for nettleseralternativet.
 :::
 
 ## Steg 2: Gå gjennom onboarding
 
-Onboarding består av fem steg som kjøres i rekkefølge – du kan ikke hoppe over noe.
+Onboarding kjører stegene sine i rekkefølge – du kan ikke hoppe over noe. Det første vises bare for servereieren, og på et skrivebord som kjører sin egen server, er det deg.
 
-1. **Koble til**: logg inn med GitHub eller lim inn et personlig tilgangstoken med `repo` og `read:org`. Påloggingsinformasjonen lagres på serveren, knyttet til kontoen din.
-2. **Arbeidsområde**: gi det første arbeidsområdet ditt et navn og velg eventuelt en logo. Når du oppretter det, seedes fem agenter – en CEO pluss `qa`, `architect`, `engineer` og `librarian` – sammen med de innebygde pipeline-malene.
-3. **Sandkasse**: registrerer et sandkassevalg. Uansett hva du velger, kan du fortsette.
-4. **Adapter**: velg hvilken adapter og modell agentene skal bruke som standard. Velg **Control Center (built-in)**, og bruk deretter leverandørvelgeren som dukker opp, til å logge inn hos en modellleverandør – modellisten forblir tom til en leverandør er koblet til. Når du fullfører dette steget, festes også adapteren og modellen til arbeidsområdets CEO-agent.
-5. **Stemme (valgfritt)**: installer en talemodell på enheten for diktering, eller hopp over det.
+1. **Pålogging** (bare servereier): velg hvordan denne serveren logger inn folk på GitHub, Google Calendar og Linear – **Bruk appene til Control Center**, **Bruk mine egne apper** eller **Bruk en egen Connect-server**. Med egne apper setter **Opprett min GitHub-app** opp GitHub i ett steg. Du kan endre dette senere under **Innstillinger → Server → Enkel pålogging**.
+2. **Koble til**: logg inn på GitHub, eller lim inn et GitLab- eller Bitbucket-token. Påloggingsinformasjonen lagres på serveren, knyttet til kontoen din.
+3. **Arbeidsområde**: gi det første arbeidsområdet ditt et navn og velg eventuelt en logo. Når du oppretter det, seedes fem agenter – en CEO pluss `qa`, `architect`, `engineer` og `librarian` – sammen med de innebygde pipeline-malene.
+4. **Sandkasse**: registrerer et sandkassevalg. Uansett hva du velger, kan du fortsette.
+5. **Adapter**: velg hvilken adapter og modell agentene skal bruke som standard. Velg **Control Center (built-in)**, og bruk deretter leverandørvelgeren som dukker opp, til å logge inn hos en modellleverandør – modellisten forblir tom til en leverandør er koblet til. Når du fullfører dette steget, festes også adapteren og modellen til arbeidsområdets CEO-agent.
+6. **Stemme (valgfritt)**: installer en talemodell på enheten for diktering, eller hopp over det.
 
 Deretter åpner Control Center innboksen for arbeidsområdet.
 

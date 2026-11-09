@@ -2,7 +2,7 @@
 title: Dein Slack-Konto verknüpfen
 description: Weise nach, dass eine Slack-Identität dir gehört, damit Agenten auf deine Nachrichten hin handeln und deine Arbeit dir zugeordnet wird.
 slug: de-DE/handbuch/anleitungen/chat-konto-verknuepfen
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Diese Anleitung zeigt dir, wie du deine Chat-Identität mit deinem Nutzer in Control Center verknüpfst und wie du eine Verknüpfung wieder löst.
@@ -17,29 +17,38 @@ Ein nicht verknüpftes Mitglied, das den Bot erwähnt, bekommt in diesem Slack-T
 
 ## Mit einem Code verknüpfen
 
+Zum Verknüpfen gehören beide Seiten: Einen Code aus Slack zu schicken beweist das Slack-Konto, und ihn in Control Center zu bestätigen beweist, dass dieses Konto dir gehört.
+
 1. Geh zu **Einstellungen → Arbeitsbereich → Profil und Identität** und scrolle zur Karte **Verknüpfte Chat-Konten**
-2. Klicke im Slack-Block auf **Mein Slack-Konto verknüpfen**
-3. Kopiere den Befehl, den sie anzeigt, zum Beispiel:
+2. Klicke im Slack-Block auf **Mein Slack-Konto verknüpfen**. Der Dialog zeigt einen Einmalcode, zum Beispiel:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Schick diesen Befehl in Slack an den Bot — eine Direktnachricht ist der einfachste Ort
-5. Der Bot bestätigt mit dem Nutzer in Control Center, mit dem du jetzt verknüpft bist, und der Dialog, den du offen gelassen hast, sagt im selben Moment dasselbe — du musst ihn nicht schließen und nachsehen
+3. Schick diesen Code in Slack in einer **Direktnachricht** an den Bot: nur den Code, sonst nichts
+4. Der Bot antwortet „Got it. Confirm this Slack account in Control Center to finish linking.“, und der Dialog, den du offen gelassen hast, zeigt das Slack-Profil, das den Code geschickt hat: seinen Namen und seine Slack-Mitglieds-ID
+5. Ist es dein Konto, klicke auf **Bestätigen**. Die Verknüpfung entsteht, der Dialog meldet das, und der Bot bestätigt in derselben Direktnachricht
+6. Ist es nicht deins, klicke auf **Ablehnen**. Nichts wird verknüpft, und der Code funktioniert nicht mehr; klicke auf **Neuen Code holen**, um es noch einmal zu versuchen
+
+Schließt du den Dialog, geht ein Anspruch nicht verloren. Ein Code, der später ankommt, wartet in der Zeile **Mein Slack-Konto verknüpfen** auf deiner Profilseite, mit denselben Schaltflächen **Bestätigen** und **Ablehnen**.
+
+Warum es den Bestätigungsschritt gibt: Ein Code, den jemand über deine Schulter liest und von einem anderen Slack-Konto schickt, würde dieses Konto sonst als dich handeln lassen. Nur du kannst bestätigen, und nur genau das Profil, das den Code geschickt hat.
 
 Der Code:
 
 - Ist einmalig und läuft **15 Minuten** nach dem Erzeugen ab
 - Wird immer für _dich_ erzeugt, nie für ein Teammitglied
+- Funktioniert nur in einer Direktnachricht an den Bot. In einem Kanal ist er nur eine Nachricht
+- Kann nur von einem Vollmitglied des Slack-Workspace eingelöst werden, in dem der Bot installiert ist, nicht von einem Gast oder jemandem aus einer anderen Organisation
 - Ersetzt jeden Code, den du schon hältst, sodass ein erneuter Klick auf die Schaltfläche den vorherigen ungültig macht
 - Liegt nur im Speicher, sodass ein Neustart des Servers noch offene Codes ungültig macht — tippe erneut auf die Schaltfläche
 
-Ein Code, der unbekannt, abgelaufen oder für einen anderen Arbeitsbereich erzeugt wurde, scheitert jedes Mal auf dieselbe, nicht unterscheidbare Weise: „that code is not valid (or has expired)“.
+Ein Code, der unbekannt, abgelaufen, abgelehnt oder für einen anderen Arbeitsbereich erzeugt wurde, scheitert jedes Mal auf dieselbe, nicht unterscheidbare Weise: „That code is not valid (or has expired).“
 
 ## Automatisch per E-Mail verknüpfen
 
-Trägt dein Slack-Profil eine verifizierte E-Mail, die zu einem Nutzer in Control Center passt, der **bereits Mitglied dieses Arbeitsbereichs** ist, verknüpft die Brücke dich beim ersten Gespräch. Kein Code nötig.
+Trägt dein Slack-Profil eine bestätigte E-Mail, die zur verifizierten E-Mail eines Nutzers in Control Center passt, der **bereits Mitglied dieses Arbeitsbereichs** ist, verknüpft die Brücke dich beim ersten Gespräch. Kein Code nötig.
 
 Beide Hälften zählen: Der E-Mail-Abgleich beweist die Identität, aber nur die Mitgliedschaft gewährt Zugang, sodass ein Fremder, dessen E-Mail zufällig auf dem Server liegt, mit nichts verknüpft wird. Die Liste zeigt, wie jede Verknüpfung entstanden ist („per E-Mail zugeordnet“ oder „mit einem Code verknüpft“).
 
@@ -51,7 +60,7 @@ Die Liste gehört zur Verwaltung des Arbeitsbereichs, sie liegt also auf der and
 
 Deinen eigenen Stand siehst du auf deiner Profilseite: Die Zeile **Mein Slack-Konto verknüpfen** liest „Verknüpft mit _your-slack-id_“, sobald du verknüpft bist, und fordert dich zum Verknüpfen auf, solange du es nicht bist.
 
-Die Liste ist ein Live-Abonnement, weil die Änderung auf der anderen Seite geschieht — du tippst den Code in Slack, also kann keine Anfrage aus der App die Antwort zurücktragen.
+Die Liste und der Anspruch sind Live-Abonnements, weil die Änderung auf der anderen Seite geschieht: Du schickst den Code in Slack, also kann keine Anfrage aus der App die Antwort zurücktragen.
 
 ## Verknüpfung lösen
 
@@ -73,9 +82,13 @@ Dein Slack-Konto ist mit einem Nutzer in Control Center verknüpft, aber dieser 
 
 Die Rollen `viewer` und `guest` können keine Arbeit starten. Ein Admin muss deine Rolle auf `member` oder höher setzen.
 
-### Der Slash-Befehl wird nicht erkannt
+### Der Bot sagt, der Code sei nicht gültig
 
-Prüfe, dass der Slash-Befehl in Slack existiert und dass du den Befehl schickst, den dir der Einstellungsdialog gezeigt hat — ein Admin kann ihn umbenannt haben, dann zeigt der Dialog den aktuellen Namen.
+Der Code ist abgelaufen, wurde schon benutzt, wurde abgelehnt oder durch einen neueren ersetzt. Klicke erneut auf **Mein Slack-Konto verknüpfen** und schick den neuen Code.
+
+### Der Bot behandelt meinen Code als Anfrage
+
+Du hast ihn in einem Kanal geschickt, oder dein Slack-Konto ist schon verknüpft. Codes werden nur in einer Direktnachricht angenommen, und eine Nachricht in Codeform von einem verknüpften Konto ist eine gewöhnliche Anfrage.
 
 ## Verwandte Anleitungen
 

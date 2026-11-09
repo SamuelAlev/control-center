@@ -1,35 +1,40 @@
 ---
 title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+description: Ask Control Center for a review or a question from the PR conversation itself, with no webhook or public URL.
 slug: en-GB/manual/guides/github-pr-conversations
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 This guide shows you how to work with Control Center without leaving GitHub:
 request an AI review from the PR page, ask the bot a question in a comment, and
 keep the conversation going in its review threads.
 
-The bot is your server's own [GitHub App](/en-GB/manual/guides/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Replies come through the workspace's GitHub lane: your server's own
+[GitHub App](/en-GB/manual/guides/github-app/), or Control Center's shared App through
+Connect. Nothing new is registered, and nothing has to be reachable from the
+internet: the server discovers what was said on GitHub by polling, so a laptop
+behind NAT behaves exactly like a public deploy.
 
 ## Prerequisites
 
-- The server has its GitHub App [registered and
-  installed](/en-GB/manual/guides/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
+- The workspace has a GitHub lane: the server's own GitHub App or Connect, with
+  the app [installed](/en-GB/manual/guides/github-app/#install-it-where-your-repositories-are)
+  on the account that owns the repository. An own app needs **Pull requests**
+  and **Issues** read and write, which **Create my GitHub App** already grants
 - The repository is linked to a workspace in Control Center
+- You are [signed in to GitHub](/en-GB/manual/guides/github-integration/) on this
+  server, and you can push to the repository
 - No webhook URL, no tunnel, no callback — there is nothing to configure on the
   network side
 
 ## Find your bot's name
 
-Mention `@usectrl`, the dedicated Control Center GitHub account. This is the default trigger; your server's configured GitHub App still handles the request and posts replies. You do not need credentials for the `usectrl` account.
+Mention `@usectrl`, the dedicated Control Center GitHub account. This is the
+default trigger; your workspace's GitHub lane still handles the request and
+posts replies. You do not need credentials for the `usectrl` account.
 
-The App's own login, `<appslug>[bot]`, and short `@appslug` form also work. To look up that optional alias:
+The App's own login, `<appslug>[bot]`, and short `@appslug` form also work.
+To look up that optional alias on your own app:
 
 1. Go to **Settings → Server → Single sign-on** and scroll to the
    **Provider apps** card
@@ -52,11 +57,11 @@ button starts:
 
 - **Add the `ai-review` label** to the PR. This is the closest thing GitHub
   offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@usectrl review`** (or just `@usectrl`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+  native requested-reviewer slot. Your account reacts to the PR with 👀 and the
+  review starts in Control Center; no comment is posted
+- **Comment `@usectrl review`** (or just `@usectrl`) on the PR conversation. A
+  👀 appears on your comment, then a reply says the review has started (or that
+  one is already running)
 
 The reviewers work in the PR's review space; read and publish the findings as
 in [Use AI-powered review](/en-GB/manual/guides/ai-review/). Publishing back to GitHub
@@ -77,11 +82,12 @@ Comment on the PR conversation:
 
 What happens, in order:
 
-1. The bot reacts with 👀 so you know the comment was seen
+1. A 👀 appears on your comment, from your own account, so you know the comment
+   was seen
 2. The question is posted into the PR's review space **as you** — same
    attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+3. An agent answers in the space, and the answer is posted back on the PR. Every
+   reply starts with `**Control Center** (for @your-login):`
 
 A question on a PR with no review yet wakes the workspace's CEO agent; once a
 review has run, the agent that spoke last answers, so follow-ups land with
@@ -108,34 +114,44 @@ still needs an @mention.
 
 ## Who the bot talks to
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+The server resolves the author of a comment, or whoever added the `ai-review`
+label, before doing anything:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/en-GB/manual/guides/github-integration/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
+- **The GitHub account must be signed in** on this server. The match is on
+  GitHub's numeric account id, never the login. Sign in from **Settings →
+  Workspace → Profile & identity → Code hosting**
+- **They must be a member with a write role** (`member`, `admin`, or `owner`)
   in the workspace that links the repository
+- **They must be able to push** to the repository on GitHub. Replies use a token
+  limited to that person's access, so someone who can only read gets no reply
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Anyone else is ignored silently: nothing is posted, and their words never enter
+the workspace. Comments from bots, and Control Center's own replies, are never
+treated as questions.
+
+### Two servers, one PR
+
+The 👀 is also how servers agree on who answers. It is added with the author's
+own sign-in, and GitHub tells the server whether that reaction is new. If you
+are signed in on two Control Center servers that both link the repository, the
+first to react answers and the other stays silent. The same holds for the
+label.
 
 ## What to expect
 
 | Thing               | Behaviour                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
+| Acknowledgement     | 👀 from your account on the comment (or on the PR, for the label), within one sweep |
+| Answers             | Posted in the lane the question was asked in, starting `**Control Center** (for @your-login):`. On an own app the author is the app's bot; through Connect it is your account, acting through the shared App |
 | In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
 | Reviews             | Findings land in the review space; publishing to GitHub is manual         |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+A sweep runs every minute on an own app and checks up to 25 pull requests;
+through Connect it runs every two minutes and checks up to 10, because those
+calls share each member's own GitHub quota. A workspace whose GitHub quota is
+below 15% is skipped until it recovers. The latency is the trade for needing no
+inbound network access at all. Nothing is lost while the server is offline — a
+comment that arrives during downtime is caught on the next sweep.
 
 ## Troubleshooting
 
@@ -144,18 +160,22 @@ next sweep.
 - Is the app **installed** on the account that owns the repo, and the repo
   **linked** to a workspace? An unlinked repo is skipped before anything is
   recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
+- Are you signed in to GitHub on this server, a member with a write role, and
+  able to push to the repo? The server ignores anyone else without replying
+- On Control Center's shared App, is the organisation's installation
+  authorised for this server? See
+  [Authorise this server for an organisation](/en-GB/manual/guides/github-app/#authorise-this-server-for-an-organisation)
 - Still nothing? The server log names the sweep and the PR when something
   fails; look for `pr_conversation:` (the poller) and
   `github_pr_conversation:` (the bridge)
 
 **The label does not start a review.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+It fires once per PR, and the person who added it passes the same checks as a
+comment's author. If a review already ran, or the label was added before the
+server ever saw the PR (the first sweep records the backlog silently rather
+than storming it), mention the bot instead — `@usectrl review` always starts
+one unless a review is already in flight.
 
 **The bot's answer never arrived on GitHub.**
 

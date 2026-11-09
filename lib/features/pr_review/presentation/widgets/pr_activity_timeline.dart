@@ -23,6 +23,7 @@ import 'package:control_center/features/pr_review/presentation/utils/server_revi
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_actions.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -175,10 +176,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
         _resolvedOverride.remove(thread.id);
         _open.remove(thread.id);
       });
-      CcToastScope.of(context).show(
-        AppLocalizations.of(context).failedToResolveConversation('$e'),
-        variant: CcToastVariant.danger,
-      );
+      showPrError(context, ref, e, (l) => l.failedToResolveConversation('$e'));
     } finally {
       if (mounted) {
         setState(() => _resolveInFlight.remove(thread.id));

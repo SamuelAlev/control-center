@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 slug: en-GB/manual/reference/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+then the environment, then the default. Provider credentials are the
+exception — see [Provider apps and Connect](#provider-apps-and-connect).
 
 :::caution[Unknown flags are ignored silently]
 The argument parser is hand-rolled and skips anything it does not recognise, so a typo
@@ -43,7 +43,7 @@ default. Check the startup log lines when a flag seems to have no effect.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
 
-## Indexing and third-party credentials
+## Indexing and runtime
 
 | Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -53,14 +53,38 @@ default. Check the startup log lines when a flag seems to have no effect.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+## Provider apps and Connect
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+No build carries provider credentials. With Control Center Connect on, Connect runs every provider and these own apps stay saved but unused. Under **Use my own apps**, each provider runs on the server's own app when one is fully configured, else it is unavailable. A workspace's own app wins in either case. Own apps are set in **Settings → Server → Single sign-on
+→ Provider apps**, or seeded once from the server's `.env` file. There are no
+flags for them: a secret on a command line is readable through `ps`.
+
+| Variable                       | Meaning                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | The server's GitHub App id                                                                    |
+| `GITHUB_APP_PRIVATE_KEY`       | Its private key, on one line with `\n` escapes. **`.env` only**                               |
+| `GITHUB_CLIENT_ID`             | Its client id, for signing people in                                                          |
+| `GITHUB_CLIENT_SECRET`         | Its client secret. **`.env` only**                                                            |
+| `GOOGLE_OAUTH_CLIENT_ID`       | The server's Google Web application client                                                    |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Its secret. **`.env` only**                                                                   |
+| `LINEAR_CLIENT_ID`             | The server's Linear application (PKCE, no secret)                                             |
+| `LINEAR_API_KEY`               | A Linear service key for automation. **`.env` only**                                          |
+| `KLIPY_APP_KEY`                | The server's own Klipy key for GIF search, used only under **Use my own apps**                     |
+| `CC_CONNECT_URL`               | `hosted`, `off`, or a Connect URL. Locks the Connect choice; Settings then cannot change it    |
+| `CC_SERVER_CONNECT_HOST`       | `on` mounts Control Center Connect at `<server>/connect`, configured by `CONNECT_*` variables. See [Run a Connect server](/en-GB/manual/guides/run-connect/#mount-connect-inside-cc_server) |
+
+The `.env` file is read from the server's working directory, beside the
+executable, or a source checkout above it; in Docker, mount it at
+`/app/bin/.env`. The server **refuses to start** (exit code `78`) when
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+`LINEAR_API_KEY` or any `SLACK_*SECRET*` is exported in its process environment,
+where every child process could read it. Seeding from `.env` happens once per
+field, so a later edit in Settings is not undone by a restart. An empty value
+reads as unset.
+
+GitLab and Bitbucket background work also reads `GITLAB_TOKEN` / `CI_JOB_TOKEN`
+and `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` with `BITBUCKET_EMAIL`. GitHub has
+no environment credential.
 
 ### `--sandbox`
 
@@ -108,7 +132,7 @@ ends the turn exactly as it did before the gate existed.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
 | `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
+| `cc_server connect <command>`                 | Shows or changes which Control Center Connect this server uses, without starting it               |
 | `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
 | `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
 
@@ -133,6 +157,25 @@ device id and key in the URL fragment). The phone pairs with a different payload
 minted from the in-app pairing panel — the server's full connection descriptor
 plus an expiry. The two are not interchangeable — see [Pair a device](/en-GB/manual/guides/pair-a-device/).
 :::
+
+### `connect`
+
+Reads and writes the same settings as the **Control Center Connect** card in
+**Settings → Server → Single sign-on**, from the data directory. A running server
+picks up a change within 10 minutes or on restart.
+
+| Command                         | What it does                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Prints the mode, URL, whether `CC_CONNECT_URL` locks it, the install id, health and each lane's source (`own`, `connect` or `off`) |
+| `cc_server connect enable`      | Uses Control Center's hosted Connect                                                                             |
+| `cc_server connect enable --url <url>` | Uses a custom Connect at that URL (HTTPS, or `http` on loopback)                                          |
+| `cc_server connect disable`     | Stops using Connect. Only the server's own apps sign people in                                                   |
+| `cc_server connect rotate-key --yes` | Mints a new install key and install id. Everybody who signed in through Connect signs in again. Without `--yes` it only warns and exits `2` |
+
+`status` with no command is the default. Each command accepts `--data-dir`.
+`CC_CONNECT_URL` overrides whatever these store. An unknown command exits `64`.
+See [Control Center Connect](/en-GB/manual/reference/connect/) for the modes, install
+identity and status codes.
 
 ### `update`
 
@@ -176,7 +219,7 @@ no home or app-data directory resolves.
 | `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
 | `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
 | `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
+| `secrets.json`                    | Pairing keys, the Connect install key, provider apps, people's sign-ins (sealed when made through Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
 | `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |

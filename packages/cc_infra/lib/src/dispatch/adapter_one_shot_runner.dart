@@ -14,6 +14,8 @@ import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// One spawned adapter process, abstracted away from `dart:io` so the runner
 /// is unit-testable without any CLI installed on the host.
 abstract interface class OneShotProcess {
@@ -299,11 +301,12 @@ Future<OneShotProcess> _spawnIoProcess(
   String? workingDirectory,
   Map<String, String>? environment,
 }) async {
-  final process = await Process.start(
+  final process = await ChildProcess.start(
     executable,
     arguments,
     workingDirectory: workingDirectory,
     environment: environment,
+    toolchain: true,
   );
   return _IoOneShotProcess(process);
 }

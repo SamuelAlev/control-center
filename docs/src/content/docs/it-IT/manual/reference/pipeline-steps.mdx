@@ -2,7 +2,7 @@
 title: Passaggi delle pipeline
 description: Riferimento per i tipi di passaggio delle pipeline, le chiavi del corpo dei passaggi, la loro configurazione e i risultati dei passaggi.
 slug: it-IT/manuale/riferimento/passaggi-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Un passaggio di pipeline ha due assi indipendenti:
@@ -42,7 +42,7 @@ Passaggio shell senza agente (`bash -c`). I segnaposto `{{key}}` nello script ve
 | `script`                | Comando shell da eseguire (obbligatorio)         |
 | `outputKey`             | Chiave di stato che riceve lo stdout ripulito in caso di uscita 0 |
 
-Viene eseguito con cwd `<cc_root>/pipelines/<pipelineRunId>/` (condivisa da tutti i passaggi bash di un'esecuzione) e `GITHUB_TOKEN` nell'ambiente. Scrive inoltre `<stepId>_runDir` nello stato. Un'uscita diversa da zero fa fallire il passaggio con la coda dello stderr.
+Viene eseguito nel sandbox del sistema operativo dell'host con cwd `<cc_root>/pipelines/<pipelineRunId>/` (condivisa da tutti i passaggi bash di un'esecuzione); un host senza sandbox fa fallire il passaggio. La directory dati del server e il file `.env` non sono leggibili, git e `gh` non vedono alcuna configurazione dell'host, e `GH_TOKEN` / `GITHUB_TOKEN` contengono un token `read` limitato a un repository solo quando `repo_full_name` (stato o payload del trigger) indica un repository GitHub collegato allo spazio di lavoro. Creare o modificare un modello con questo passaggio richiede un amministratore dello spazio di lavoro. Scrive inoltre `<stepId>_runDir` nello stato. Un'uscita diversa da zero fa fallire il passaggio con la coda dello stderr.
 
 ### `conversation.promptAgent`
 

@@ -2,7 +2,7 @@
 title: Słownik
 description: Definicje kluczowych pojęć używanych w Control Center.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/slownik
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Potok', 'Przepływ pracy oparty na DAG, który łączy kroki (uruchomienie agenta, skrypty, warunki). Definiowany przez szablony; wykonywany jako uruchomienia.'],
 ['Spotkanie', 'Lokalnie nagrywana i transkrybowana sesja spotkania. Przechwytuje dźwięk mikrofonu i systemu, transkrybuje na urządzeniu wybieralnym modelem ASR (domyślnie Parakeet TDT v3; alternatywy to Parakeet TDT v2, Whisper large-v3-turbo i Whisper base.en), rozdziela mówiących i podsumowuje w notatki, zadania i decyzje. Wybrany model ASR jest wymuszenie instalowany przy starcie, a operacje nagrywania ożywają po jednym restarcie. Przypisane do obszaru roboczego.'],
 ['CalendarEvent', 'Zsynchronizowany wpis Google Calendar przypisany do obszaru roboczego i połączonego konta. Różni się od spotkania: wydarzenie to zaplanowane zobowiązanie, spotkanie to nagrana sesja.'],
-['CalendarAccount', 'Połączone konto Google, dla danego obszaru roboczego i adresu e-mail. Tokeny odświeżania OAuth są przechowywane po stronie serwera jako klucze google_* w pliku secrets.json w katalogu danych i nigdy nie trafiają do klienta; flaga authExpiredAt steruje banerem ponownego połączenia.'],
+['CalendarAccount', 'Połączone konto Google, dla danego obszaru roboczego, członka i adresu e-mail. Jego poświadczenie jest przechowywane po stronie serwera jako klucz google_* w pliku secrets.json w katalogu danych i nigdy nie trafia do klienta; logowanie przez Connect zapisuje tylko pieczęć poświadczenia. Flaga authExpiredAt steruje banerem ponownego połączenia.'],
 ['AgentRole', 'Wyliczona rola (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Określa personę, dostęp do pamięci i hierarchię.'],
 ['AgentSkills', 'Zbiór identyfikatorów skilli niewrażliwy na wielkość liter, który wstrzykuje istotny kontekst do promptów w momencie uruchomienia.'],
 ['Źródło skilla', 'Repozytorium GitHub zarejestrowane w obszarze roboczym jako katalog skilli. Z założenia niezaufane: metadane repozytorium służą tylko do wyświetlania, a każda instalacja przechodzi przez bramkę skanowania z zasadą fail-closed, zanim jakakolwiek treść trafi na dysk lub do promptu.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w centach) dla jednego uruchomienia agenta.'],
 ['WakeReason', 'Powód uruchomienia agenta. Sześć wartości: wiadomość użytkownika, przypisanie zgłoszenia, ponowne uruchomienie naprawcze po awarii, ukończenie zgłoszenia podrzędnego, zaplanowany heartbeat kontynuacji i krok potoku.'],
 ['SandboxPort', 'Zarządza cyklem życia sandboxa (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa (tylko do odczytu dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera) i unieważnia je przy zamykaniu.'],
+['CredentialBrokerPort', 'Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa (token dla jednego repozytorium dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera) i zwalnia je przy zamykaniu.'],
 ['GitRepoInspectorPort', 'Wyodrębnia metadane (właściciel, repozytorium, gałąź) ze ścieżki lokalnego repozytorium Git.'],
 ['EmbeddingPort', 'Tworzy wektory osadzeń tekstowych o jednostkowej normie na potrzeby wyszukiwania semantycznego.'],
 ['NotificationPort', 'Pokazuje natywne powiadomienia pulpitu, respektując bramkowanie według kategorii i trasy.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Werdykt recenzji', 'ship, hold lub block. Każde ustalenie P0 z pewnością >= 0,7 blokuje; każde inne P0 lub dowolne P1 wstrzymuje; w przeciwnym razie ship. Oś objęta bramką, która nie przechodzi, wymusza block i nie mogą jej przegłosować ustalenia.'],
 ['SessionRecording', 'Strumień zdarzeń oraz kasety HTTP/LLM i wejście/wyjście narzędzi zarejestrowane dla jednego przebiegu, w parze z AgentConfigHash.'],
 ['Sesja golden', 'Uświęcone SessionRecording przypięte do danego agenta lub playbooka.'],
+['Control Center Connect', 'Opcjonalna usługa, która prowadzi logowania do dostawców (GitHub, Google, Linear) dla serwerów bez własnych aplikacji. Hostowana przez Control Center, hostowana samodzielnie albo wyłączona. Zwraca pieczęcie poświadczeń i tokeny GitHub dla jednego repozytorium i nigdy nie widzi zawartości repozytoriów.'],
+['Pieczęć poświadczenia', 'Zaszyfrowane poświadczenie, które może otworzyć tylko Connect, który je utworzył, powiązane z dostawcą, adresem Connect, identyfikatorem instalacji, obszarem roboczym, kontem, aplikacją i generacją sekretu. Serwer przechowuje pieczęć; tokeny dostępu zostają w pamięci.'],
+['Identyfikator instalacji', 'Tożsamość serwera wobec jednego adresu Connect, wyprowadzona z jego klucza instalacji. Connect dopuszcza serwery według identyfikatora instalacji; wymiana klucza go zmienia i wylogowuje wszystkich ze ścieżek przez Connect.'],
+['Powiązanie instalacji', 'Zapis Connect o tym, które serwery mogą używać instalacji GitHub współdzielonej App. Instalacja w organizacji wymaga, aby administrator autoryzował każdy serwer.'],
+['Ścieżka logowania', 'Logowanie w przeglądarce u jednego dostawcy: github, google, linear, linear_app lub slack. Każda ścieżka działa na własnej aplikacji serwera, gdy jest kompletna, w przeciwnym razie przez Connect, a w przeciwnym razie jest niedostępna.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Zarządza cyklem życia sandboxa (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa — tylko do odczytu dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera — i unieważnia je przy zamykaniu.
+**CredentialBrokerPort**: Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa — token dla jednego repozytorium dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera — i zwalnia je przy zamykaniu.
 
 **GitRepoInspectorPort**: Wyodrębnia metadane (właściciel, repozytorium, gałąź) ze ścieżki lokalnego repozytorium Git.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Zsynchronizowany wpis Google Calendar przypisany do obszaru roboczego i połączonego konta. Różni się od spotkania: wydarzenie to zaplanowane zobowiązanie; spotkanie to nagrana sesja. Powiązane jeden do jednego przez `MeetingCalendarLink`.
 
-**CalendarAccount**: Połączone konto Google, dla danego obszaru roboczego i adresu e-mail. Tokeny odświeżania OAuth są przechowywane po stronie serwera jako klucze `google_*` w `<dataDir>/secrets.json` i nigdy nie trafiają do klienta; przepływ z kodem urządzenia kończy się na serwerze. Flaga `authExpiredAt` steruje banerem ponownego połączenia.
+**CalendarAccount**: Połączone konto Google, dla danego obszaru roboczego, członka i adresu e-mail (`google:<workspaceId>:<userId>:<email>`). Jego poświadczenie jest przechowywane po stronie serwera jako klucz `google_*` w `<dataDir>/secrets.json` i nigdy nie trafia do klienta; logowanie w przeglądarce kończy się na serwerze. Logowanie przez Connect zapisuje tylko pieczęć poświadczenia. Flaga `authExpiredAt` steruje banerem ponownego połączenia.
 
 ## Pojęcia architektoniczne
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Cienki klient telefoniczny — PWA we Flutterze na web, który zdalnie steruje flotą przez przekaźnik brokera, z polityką narzędzi domyślnie odmawiającą.
 
 **cc_signaling_server**: Bezstanowy broker przekaźnika WebSocket hostujący pokoje dostępne na zaproszenie — prosty przekaźnik, który przekazuje tylko ramki zapieczętowane end-to-end, nie przechowuje żadnych danych aplikacji i nigdy nie widzi PSK parowania.
+
+**Control Center Connect**: Opcjonalna usługa, która prowadzi logowania do dostawców (GitHub, Kalendarz Google, Linear) dla serwerów, które nie zarejestrowały własnych aplikacji: hostowana przez Control Center, prowadzona przez organizację (`cc-connect` albo osadzona w `cc_server` pod `/connect`) albo żadna. Zwraca pieczęcie poświadczeń i tokeny GitHub dla jednego repozytorium i nigdy nie widzi zawartości repozytoriów. Zobacz [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/).
+
+**Pieczęć poświadczenia**: Zaszyfrowane poświadczenie (`credential_seal`), które może otworzyć tylko Connect, który je utworzył, powiązane z dostawcą, adresem Connect, identyfikatorem instalacji, obszarem roboczym, kontem, aplikacją i generacją sekretu. Serwer przechowuje pieczęć i identyfikator instalacji, dla którego powstała; tokeny dostępu zostają w pamięci. Pieczęć, której identyfikator instalacji już się nie zgadza, jest odrzucana, a jej właściciel loguje się ponownie.
+
+**Identyfikator instalacji**: Tożsamość serwera wobec jednego adresu Connect (`install_id`), wyprowadzona z klucza instalacji w jego pliku sekretów. Connect dopuszcza serwery według identyfikatora instalacji. Wymiana klucza daje nowy identyfikator i wylogowuje wszystkich ze ścieżek przez Connect.
+
+**Powiązanie instalacji**: Zapis Connect (`install_binding`) o tym, które serwery mogą używać instalacji GitHub współdzielonej App. Instalacja przez serwer go wiąże; **Autoryzuj ten serwer** od administratora organizacji wiąże kolejny.
+
+**Ścieżka logowania**: Logowanie w przeglądarce u jednego dostawcy — `github`, `google`, `linear`, `linear_app` lub `slack`. Ścieżka działa na własnej aplikacji serwera, gdy ta aplikacja jest kompletna, w przeciwnym razie przez Connect, a w przeciwnym razie jest niedostępna; częściowo skonfigurowana własna aplikacja to błąd, nigdy przejście na zapas.
 
 ## Zobacz też
 

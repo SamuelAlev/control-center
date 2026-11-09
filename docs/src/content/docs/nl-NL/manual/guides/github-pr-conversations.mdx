@@ -1,35 +1,38 @@
 ---
 title: Met Control Center praten vanuit een GitHub-PR
-description: Vraag de bot van de GitHub App van je server om een review of stel een vraag vanuit het PR-gesprek zelf, zonder webhook of openbare URL.
+description: Vraag Control Center om een review of stel een vraag vanuit het PR-gesprek zelf, zonder webhook of openbare URL.
 slug: nl-NL/handleiding/gidsen/github-pr-gesprekken
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Deze gids laat zien hoe je met Control Center werkt zonder GitHub te verlaten:
 vraag een AI-review aan vanaf de PR-pagina, stel de bot een vraag in een
 opmerking, en houd het gesprek gaande in zijn reviewthreads.
 
-De bot is de eigen [GitHub App](/nl-NL/handleiding/gidsen/github-app/) van je
-server — dezelfde die mensen al aanmeldt en achtergrondwerk uitvoert. Er wordt
-niets nieuws geregistreerd, en niets hoeft vanaf het internet bereikbaar te
+Antwoorden komen via de GitHub-route van de werkruimte: de eigen
+[GitHub App](/nl-NL/handleiding/gidsen/github-app/) van je server, of de gedeelde
+App van Control Center via Connect. Er wordt niets nieuws geregistreerd, en niets hoeft vanaf het internet bereikbaar te
 zijn: de server ontdekt door te pollen wat er op GitHub is gezegd, dus een
 laptop achter NAT gedraagt zich precies als een openbare deployment.
 
 ## Vereisten
 
-- De server heeft zijn GitHub App [geregistreerd en
-  geïnstalleerd](/nl-NL/handleiding/gidsen/github-app/), met **Pull requests: read and write**
-  (voor opmerkingen, threads en reacties) en **Issues: read** (voor het zoeken in
-  opmerkingen). Beide staan al in de machtigingenlijst van die gids
+- De werkruimte heeft een GitHub-route: de eigen GitHub App van de server of
+  Connect, met de app [geïnstalleerd](/nl-NL/handleiding/gidsen/github-app/#installeren-waar-je-repositorys-staan)
+  op het account dat eigenaar is van de repository. Een eigen app heeft
+  **Pull requests** en **Issues** met lezen en schrijven nodig, wat **Mijn
+  GitHub-app maken** al toekent
 - De repository is aan een werkruimte in Control Center gekoppeld
+- Je bent op deze server [aangemeld bij GitHub](/nl-NL/handleiding/gidsen/github-integratie/)
+  en je mag naar de repository pushen
 - Geen webhook-URL, geen tunnel, geen callback — aan de netwerkkant valt er
   niets te configureren
 
 ## De naam van je bot vinden
 
-Vermeld `@usectrl`, het eigen GitHub-account van Control Center. Dit is de standaardtrigger; de geconfigureerde GitHub App van je server verwerkt het verzoek nog steeds en plaatst de antwoorden. Je hebt geen inloggegevens voor het account `usectrl` nodig.
+Vermeld `@usectrl`, het eigen GitHub-account van Control Center. Dit is de standaardtrigger; de GitHub-route van je werkruimte verwerkt het verzoek nog steeds en plaatst de antwoorden. Je hebt geen inloggegevens voor het account `usectrl` nodig.
 
-De eigen login van de App, `<appslug>[bot]`, en de korte vorm `@appslug` werken ook. Zo vind je deze optionele alias:
+De eigen login van de App, `<appslug>[bot]`, en de korte vorm `@appslug` werken ook. Zo vind je deze optionele alias op je eigen app:
 
 1. Ga naar **Instellingen → Server → Single sign-on** en scroll naar de kaart
    **Provider-apps**
@@ -52,11 +55,11 @@ de knop **Ask AI**:
 
 - **Voeg het label `ai-review` toe** aan de PR. Dat komt het dichtst in de buurt
   van de bot als reviewer toewijzen — appaccounts kunnen de native plek van een
-  aangevraagde reviewer niet bezetten. Er is geen opmerking om op te reageren,
-  dus er wordt niets op GitHub geplaatst; de review start in Control Center
+  aangevraagde reviewer niet bezetten. Je account reageert op de PR met 👀 en de
+  review start in Control Center; er wordt geen opmerking geplaatst
 - **Plaats `@usectrl review`** (of alleen `@usectrl`) als opmerking in het
-  PR-gesprek. De bot reageert met 👀 en antwoordt vervolgens wanneer de review is
-  gestart (of dat er al een loopt)
+  PR-gesprek. Er verschijnt 👀 op je opmerking, en daarna meldt een antwoord dat
+  de review is gestart (of dat er al een loopt)
 
 De reviewers werken in de reviewruimte van de PR; lees en publiceer de
 bevindingen zoals in [AI-gestuurde review gebruiken](/nl-NL/handleiding/gidsen/ai-review/).
@@ -78,11 +81,12 @@ Plaats een opmerking in het PR-gesprek:
 
 Wat er gebeurt, in volgorde:
 
-1. De bot reageert met 👀, zodat je weet dat de opmerking is gezien
+1. Er verschijnt 👀 op je opmerking, vanaf je eigen account, zodat je weet dat
+   de opmerking is gezien
 2. De vraag wordt in de reviewruimte van de PR geplaatst **als jou** — dezelfde
    attributie als wanneer je hem in Control Center had getypt
 3. Een agent antwoordt in de ruimte, en het antwoord wordt terug op de PR
-   geplaatst als een opmerking die jou @-vermeldt
+   geplaatst. Elk antwoord begint met `**Control Center** (for @your-login):`
 
 Een vraag op een PR zonder review wekt de CEO-agent van de werkruimte; zodra er
 een review is gelopen, antwoordt de agent die het laatst sprak, zodat
@@ -109,33 +113,45 @@ het hoogste niveau en heeft daarom nog steeds een @-vermelding nodig.
 
 ## Met wie de bot praat
 
-Een GitHub-opmerking komt binnen met weinig meer dan een login, dus de bot
-herleidt de auteur voordat hij iets doet:
+De server herleidt de auteur van een opmerking, of degene die het label
+`ai-review` toevoegde, voordat hij iets doet:
 
-- **Je GitHub-account moet aan je identiteit gekoppeld zijn** in Control Center —
-  [meld je aan met GitHub](/nl-NL/handleiding/gidsen/github-integratie/), of plak
-  een token, via **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**
-- **Je moet lid zijn met een schrijfrol** (`member`, `admin` of `owner`) in de
-  werkruimte die de repository koppelt
+- **Het GitHub-account moet op deze server zijn aangemeld.** Er wordt gematcht op
+  het numerieke account-id van GitHub, nooit op de login. Meld je aan via
+  **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**
+- **Die persoon moet lid zijn met een schrijfrol** (`member`, `admin` of
+  `owner`) in de werkruimte die de repository koppelt
+- **Die persoon moet op GitHub naar de repository kunnen pushen.** Antwoorden
+  gebruiken een token dat beperkt is tot de toegang van die persoon, dus iemand
+  die alleen kan lezen, krijgt geen antwoord
 
-Alle anderen krijgen één beleefd antwoord dat uitlegt wat er ontbreekt — een
-onbekende login (niet gekoppeld, of gekoppeld maar hier geen lid) en een
-alleen-lezenrol zijn de twee gevallen — en hun woorden komen nooit de werkruimte
-binnen. Het label `ai-review` wordt niet zo tegengehouden: het heeft geen auteur,
-dus het start de review in de werkruimte die de repo al koppelt.
+Alle anderen worden stil genegeerd: er wordt niets geplaatst, en hun woorden
+komen nooit de werkruimte binnen. Opmerkingen van bots, en de eigen antwoorden van
+Control Center, worden nooit als vragen behandeld.
+
+### Twee servers, één PR
+
+Met de 👀 spreken servers ook af wie antwoordt. Hij wordt toegevoegd met de eigen
+aanmelding van de auteur, en GitHub vertelt de server of die reactie nieuw is. Ben
+je aangemeld op twee Control Center-servers die allebei de repository koppelen,
+dan antwoordt de eerste die reageert en blijft de andere stil. Hetzelfde geldt
+voor het label.
 
 ## Wat je kunt verwachten
 
 | Onderdeel                | Gedrag                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
-| Bevestiging              | 👀 op een opmerking binnen ongeveer een minuut — het pollinterval. Het label `ai-review` heeft geen opmerking om op te reageren |
-| Antwoorden               | Geplaatst als de bot (de app), op de plek waar de vraag is gesteld        |
+| Bevestiging              | 👀 vanaf je account op de opmerking (of op de PR, voor het label), binnen één pollronde |
+| Antwoorden               | Geplaatst op de plek waar de vraag is gesteld, beginnend met `**Control Center** (for @your-login):`. Bij een eigen app is de auteur de bot van de app; via Connect is het je eigen account, handelend via de gedeelde App |
 | Attributie in de ruimte  | De vraag is van jou; de agent draait namens jou, onder de autonomie-instellingen van de ruimte |
 | Reviews                  | Bevindingen belanden in de reviewruimte; publiceren naar GitHub is handmatig |
 
-De latentie van ongeveer een minuut is de prijs voor het feit dat er helemaal
-geen inkomende netwerktoegang nodig is. Niets aan de pollronde is dringend, en er
-gaat niets verloren terwijl de server offline is — een opmerking die tijdens
+Een pollronde draait elke minuut bij een eigen app en controleert tot 25 pull
+requests; via Connect draait hij elke twee minuten en controleert tot 10, omdat
+die aanroepen het eigen GitHub-quotum van elk lid delen. Een werkruimte waarvan
+het GitHub-quotum onder 15% ligt, wordt overgeslagen tot het hersteld is. De
+latentie is de prijs voor het feit dat er helemaal geen inkomende netwerktoegang
+nodig is. Er gaat niets verloren terwijl de server offline is — een opmerking die tijdens
 downtime binnenkomt, wordt bij de volgende pollronde opgepikt.
 
 ## Problemen oplossen
@@ -145,18 +161,23 @@ downtime binnenkomt, wordt bij de volgende pollronde opgepikt.
 - Is de app **geïnstalleerd** op het account dat eigenaar is van de repo, en is
   de repo **gekoppeld** aan een werkruimte? Een niet-gekoppelde repo wordt
   overgeslagen voordat er iets wordt vastgelegd, dus later koppelen levert alsnog
-- Is je GitHub-account gekoppeld, en ben je lid met een schrijfrol? Kijk op de PR
-  naar het weigeringsantwoord van de bot — dat zegt welk geval het is
+- Ben je op deze server aangemeld bij GitHub, ben je lid met een schrijfrol, en
+  mag je naar de repo pushen? De server negeert iedereen anders zonder te
+  antwoorden
+- Is op de gedeelde App van Control Center de installatie van de organisatie
+  geautoriseerd voor deze server? Zie
+  [Deze server autoriseren voor een organisatie](/nl-NL/handleiding/gidsen/github-app/#deze-server-autoriseren-voor-een-organisatie)
 - Nog steeds niets? Het serverlogboek noemt de pollronde en de PR wanneer er iets
   misgaat; zoek naar `pr_conversation:` (de poller) en
   `github_pr_conversation:` (de brug)
 
 **Het label start geen review.**
 
-Het vuurt één keer per PR. Als er al een review is gelopen, of het label is
+Het vuurt één keer per PR, en degene die het toevoegde doorloopt dezelfde
+controles als de auteur van een opmerking. Als er al een review is gelopen, of het label is
 toegevoegd voordat de server de PR ooit zag (de eerste pollronde registreert de
 achterstand stil, in plaats van er een storm van te maken), vermeld dan in plaats
-daarvan de bot — `@myapp review` start er altijd een, tenzij er al een review
+daarvan de bot — `@usectrl review` start er altijd een, tenzij er al een review
 onderweg is.
 
 **Het antwoord van de bot is nooit op GitHub aangekomen.**

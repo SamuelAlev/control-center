@@ -135,10 +135,7 @@ void main() {
     });
 
     test('iOS slots identify distinct ephemeral simulators', () {
-      final primary = RigSpec(
-        surface: RigSurface.ios,
-        conversationId: 'c1',
-      );
+      final primary = RigSpec(surface: RigSurface.ios, conversationId: 'c1');
       final second = RigSpec(
         surface: RigSurface.ios,
         conversationId: 'c1',
@@ -172,17 +169,10 @@ void main() {
       expect(restored.repoName, 'widgets');
     });
 
-    test('a spec stored with the old capability flags keeps push', () {
+    test('a spec without a scope reads, whatever else it carries', () {
       final json = RigSpec.exec(conversationId: 'c1').toJson()
         ..remove('forgeTokenScope')
-        ..['capabilities'] = '{"canPushToRepo":true,"canCallGitHubApi":true}';
-      expect(RigSpec.fromJson(json).forgeTokenScope, ForgeTokenScope.write);
-    });
-
-    test('a spec stored without push in the old flags reads', () {
-      final json = RigSpec.exec(conversationId: 'c1').toJson()
-        ..remove('forgeTokenScope')
-        ..['capabilities'] = '{"canPushToRepo":false}';
+        ..['capabilities'] = '{"canPushToRepo":true}';
       expect(RigSpec.fromJson(json).forgeTokenScope, ForgeTokenScope.read);
     });
   });

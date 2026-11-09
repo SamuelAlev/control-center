@@ -1,0 +1,172 @@
+---
+title: Reference Control Center Connect
+description: Co Connect vidí a co nikdy, tři režimy, identita instalace, zapečetěná pověření, důvěra v konfiguraci a každé nastavení, operace a stavový kód.
+slug: cs-CZ/prirucka/referencni-prirucka/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect provádí přihlášení k poskytovatelům pro servery, které
+si nezaregistrovaly vlastní aplikace. Server používá buď hostovaný Connect od
+Control Center, Connect, který provozuje jeho organizace
+([Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)),
+nebo žádný. Volba leží v **Nastavení → Server → Jednotné přihlášení → Control
+Center Connect**, v `cc_server connect` nebo v `CC_CONNECT_URL`.
+
+## Dráhy
+
+Každý poskytovatel je dráha. Při **Použít vlastní aplikace** (nebo dřív, než si někdo vybere) dráha běží na vlastní aplikaci serveru, když je úplně nastavená, jinak není dostupná. S Control Center nebo vlastním Connect obsluhuje Connect každou dráhu, kterou nabízí: vlastní aplikace serveru zůstávají uložené, ale nepoužijí se ani pro přihlášení, ani pro automatizaci serveru, ani pro stav, který server hlásí. Vlastní aplikace pracovního prostoru platí v každém režimu.
+
+| Dráha        | Vlastní aplikace potřebuje                      | Přes Connect                                                  |
+| ------------ | ----------------------------------------------- | ------------------------------------------------------------- |
+| `github`     | App id, soukromý klíč, client id a client secret | Lidé se přihlašují ke sdílené GitHub App                     |
+| `google`     | Client id a client secret                       | Lidé připojují Google Calendar                                |
+| `linear`     | Client id                                       | Lidé se přihlašují k Linear                                   |
+| `linear_app` | Client id                                       | Admin pracovního prostoru připojí aktéra aplikace Linear      |
+| `slack`      | Spojení vlastní aplikace Slack pracovního prostoru | Admin pracovního prostoru připojí Slack ke sdílené aplikaci Slack |
+| `klipy`      | `KLIPY_APP_KEY`                                 | Hledání GIF přes proxy Connect                                |
+
+Vlastní aplikace, která je nastavená jen částečně, z dráhy udělá chybu, nikdy
+tichý přechod na Connect. Pracovní prostor, který používá vlastní GitHub App
+(**Nastavení → Pracovní prostor → Obecné → Identita GitHub**), u GitHubu přes
+Connect nikdy nejde, a pracovní prostor, který používá vlastní aplikaci Google, Linear nebo Klipy (**Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů**), nikdy u tohoto poskytovatele nejde přes aplikaci serveru ani přes Connect. Změna volby Connect nikoho neodhlásí z vlastní aplikace pracovního prostoru.
+
+## Co Connect vidí a co nikdy
+
+| Connect vidí                                                                                  | Connect nikdy nevidí                                                  |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ID instalace serveru a podpisy požadavků                                                      | Zdrojový kód, obsah repozitářů, diffy ani text pull requestů          |
+| Účet u poskytovatele, který se přihlásil, během přihlášení                                    | Tickety, přepisy ani nic v databázi pracovního prostoru               |
+| Ke kterému pracovnímu prostoru pověření patří, jako neprůhledné id uvnitř pečetě              | Soukromý klíč GitHub App: tokeny repozitářů pocházejí z přihlášení člověka |
+| Repozitář, pro který se vydává token GitHubu pro jediný repozitář                             | Obnovovací tokeny v klidu: existují jen uvnitř pečetí, které drží server |
+| Id instalací GitHubu vázaná na server                                                         | Tajemství Linear: kód od Linear vyměňuje server sám                  |
+| Hledané výrazy GIF, když dělá proxy pro Klipy                                                 | Hesla, párovací klíče ani klíče poskytovatelů modelů                  |
+| Odkazy na události Slacku (tým, kanál, id zprávy) a text slash příkazů                        | Text zpráv Slacku: Connect ho při příchodu zahodí a server si zprávu přečte ze Slacku sám |
+
+Krátkodobý stav (rozpracovaná přihlášení, nonce, mezipaměti) drží Connect
+nejvýš 15 minut. Jediné trvalé záznamy jsou vazby instalací: které servery
+smějí používat kterou instalaci GitHubu a ke kterému serveru je vázaný každý
+tým Slacku. Chyby nesou kód, nikdy odpověď poskytovatele, a logy zapisují ID
+instalací jen jako klíčované hashe.
+
+## Režimy
+
+| Režim    | Nastavení                   | Chování                                                                                                  |
+| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Nenastaveno | Čerstvý server           | Žádná dráha Connect nepoužívá. Onboarding vyzve vlastníka serveru k volbě                                |
+| `hosted` | **Použít aplikace Control Center** | `https://connect.usectrl.dev`, s offline podepsanou konfigurací. Vlastní aplikace serveru se nepoužijí                                   |
+| `custom` | **Použít vlastní server Connect** | Connect na URL s HTTPS (`http` jen na loopbacku), důvěryhodný od prvního použití. Vlastní aplikace serveru se nepoužijí                   |
+| `off`    | **Použít vlastní aplikace** | Žádná dráha Connect nepoužívá. Lidi přihlašují jen vlastní aplikace                                      |
+
+`CC_CONNECT_URL` v prostředí serveru nebo v `.env` volbu zamkne: `hosted`,
+`off` nebo URL Connect. Nastavení pak zámek ukáže a volbu změnit nemůže.
+
+Tohle sestavení nemá zakompilovaný žádný klíč hostované konfigurace, takže
+hostovaný režim hlásí `hosted_unprovisioned` a neobsluhuje žádnou dráhu.
+Vlastní aplikace a vlastní Connect fungují.
+
+Server čte konfiguraci Connect nejvýš každých 10 minut a na každé volání čeká
+nejvýš 5 sekund. Když je Connect nedostupný, zůstává v platnosti poslední dobrá
+konfigurace a Nastavení ji označí jako zastaralou.
+
+## Identita instalace
+
+| Položka        | Co to je                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Instalační klíč | 32bajtové semínko v souboru secrets serveru (`connect_install_key`), oddělené od párovacích klíčů zařízení      |
+| Klíč pro daný Connect | Klíč Ed25519 odvozený ze semínka a adresy Connect. Každý požadavek na Connect se jím podepisuje (RFC 9421) |
+| ID instalace   | 26 znaků odvozených z toho veřejného klíče. Ukazuje ho Nastavení a `cc_server connect status`                   |
+
+Tentýž server má pro každou adresu Connect jiné ID instalace. ID se změní jen
+při výměně klíče.
+
+## Zapečetěná pověření
+
+Přihlášení přes Connect vrátí **pečeť pověření**: zašifrovaný blob, který umí
+otevřít jen Connect, který ho vytvořil. Je vázaná na poskytovatele, adresu
+Connect, ID instalace, pracovní prostor, účet u poskytovatele, aplikaci
+a generaci tajemství.
+
+- Server uloží pečeť a ID instalace, pro které byla zapečetěná. Přístupové
+  tokeny zůstávají v paměti
+- Při obnově server pečeť pošle zpět a dostane nový přístupový token a novou
+  pečeť
+- Pečeť, jejíž ID instalace nebo adresa Connect už nesedí, se při dalším čtení
+  smaže a ten člověk se přihlásí znovu. Stane se to po výměně klíče, po
+  přechodu na jiný Connect nebo po obnovení datového adresáře na jiný server
+- Pečeť, kterou Connect otevřít nedokáže, se odmítne s `access_denied`
+
+## Instalace GitHubu
+
+Instalaci sdílené GitHub App může server použít, jen když ji Connect navázal na
+ID instalace toho serveru.
+
+- **Nainstalovat aplikaci GitHub** v **Nastavení → Pracovní prostor → Obecné**
+  otevře GitHub s 15minutovým lístkem. Connect novou instalaci naváže, když
+  instalující vlastní osobní účet nebo spravuje organizaci
+- **Autorizovat tento server** naváže instalaci, která už existuje. Udělat to
+  může jen admin organizace
+- Instalace v organizaci může být navázaná na několik serverů; každý potřebuje
+  autorizaci od admina
+
+## Důvěra v konfiguraci
+
+| Connect  | Jak server důvěřuje jeho konfiguraci                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Hostovaný | Ověří podpis Ed25519 proti klíčům zakompilovaným do sestavení. Odmítne epochu nižší, než jakou už viděl (`rollback`)                     |
+| Vlastní  | Při prvním použití si připne app id a client id GitHubu, client id Google a Linear a app id a client id Slacku. Změna pozastaví přihlášení přes Connect (`pins_changed`), dokud vlastník serveru nestiskne **Důvěřovat novým aplikacím** |
+
+## Operace
+
+Všechna nastavení Connect smí měnit jen vlastník serveru.
+
+| Operace               | Co dělá                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `connect.status`      | Režim, URL, zámek, ID instalace, stav, epocha konfigurace a zdroj každé dráhy          |
+| `connect.configure`   | Nastaví `hosted`, `custom` (s `url`) nebo `off`                                        |
+| `connect.test`        | Znovu stáhne konfiguraci a ohlásí stav                                                 |
+| `connect.confirmPins` | Přijme změněné identifikátory vlastního Connect                                        |
+| `connect.rotateKey`   | Vystaví nový instalační klíč. Každé přihlášení přes Connect na tomto serveru přestane fungovat |
+
+Samotná přihlášení používají `oauth.lanes`, `oauth.begin`, `oauth.status`,
+`oauth.complete`, `oauth.connections` a `oauth.disconnect`. Člověkem je vždy
+přihlášený volající.
+
+## Přihlášení přes Connect
+
+1. Server požádá Connect o spuštění dráhy a dostane autorizační URL
+   poskytovatele, kterou si ověří, než ji ukáže
+2. Člověk to schválí v prohlížeči. Poskytovatel se vrátí na Connect
+3. Connect ukáže 8místný kód a odkaz `control-center://oauth-done`
+4. Člověk kód opíše do aplikace, nebo otevře odkaz. Server si přihlášení
+   vyzvedne s tím kódem a s vlastním důkazem požadavku
+
+Přihlášení vyprší po 10 minutách. Pět chybných kódů ho ukončí. Odkaz, který
+tahle aplikace nezahájila, se odmítne hláškou **Přihlášení nebylo zahájeno
+zde**.
+
+## Výměna instalačního klíče
+
+**Vyměnit klíč** na kartě Connect, nebo `cc_server connect rotate-key --yes`:
+
+- Dá serveru nový instalační klíč a nové ID instalace
+- Odhlásí všechny ze všech drah, které běží přes Connect
+- Přihlášení přes vlastní aplikace serveru nechá být
+- Vyžaduje přidání nového ID instalace na seznam povolených u vlastního Connect
+
+## Stavové kódy
+
+| Kód                    | Význam                                                               |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Tohle sestavení nemá klíč hostované konfigurace                      |
+| `signature`            | Hostovaná konfigurace neprošla kontrolou podpisu                     |
+| `rollback`             | Connect obsloužil starší konfiguraci, než jakou server už viděl      |
+| `unreachable`          | Server na Connect nedosáhne                                          |
+| `install_blocked`      | Connect toto ID instalace nepovoluje                                 |
+| `pins_changed`         | Vlastní Connect ohlásil jiné identifikátory aplikací                 |
+| `protocol`             | Connect odpověděl ve tvaru, kterému tento server nerozumí            |
+
+## Související
+
+- [Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)
+- [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/)

@@ -2,7 +2,7 @@
 title: Länka ditt Slack-konto
 description: Bevisa att en Slack-identitet är din så att agenter agerar på dina meddelanden och ditt arbete tillskrivs dig.
 slug: sv-SE/handbok/how-to-guider/lanka-chattkonto
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Den här guiden visar hur du länkar din chattidentitet till din Control Center-användare och hur du avlänkar en.
@@ -17,29 +17,38 @@ En olänkad medlem som nämner boten får ett svar i den Slack-tråden som förk
 
 ## Länka med en kod
 
+Länkning kräver båda sidorna: att skicka en kod från Slack bevisar Slack-kontot, och att bekräfta den i Control Center bevisar att kontot är ditt.
+
 1. Gå till **Inställningar → Arbetsyta → Profil och identitet** och rulla till kortet **Länkade chattkonton**
-2. Klicka på **Länka mitt Slack-konto** i Slack-blocket
-3. Kopiera kommandot som visas, till exempel:
+2. Klicka på **Länka mitt Slack-konto** i Slack-blocket. Dialogen visar en engångskod, till exempel:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Skicka kommandot till boten i Slack – ett DM är den enklaste platsen
-5. Boten bekräftar med den Control Center-användare du nu är länkad till, och dialogen du lämnade öppen uppdateras med samma besked i samma stund – du behöver inte stänga den och titta efter
+3. Skicka koden till boten i Slack i ett **direktmeddelande**: bara koden, inget annat
+4. Boten svarar "Got it. Confirm this Slack account in Control Center to finish linking." och dialogen du lämnade öppen visar Slack-profilen som skickade koden: dess namn och Slack-medlems-id
+5. Om det är ditt konto klickar du på **Bekräfta**. Länken skapas, dialogen säger det och boten bekräftar i samma direktmeddelande
+6. Om det inte är ditt klickar du på **Avböj**. Inget länkas och koden slutar fungera; klicka på **Hämta en ny kod** för att försöka igen
+
+Att stänga dialogen gör inte att ett anspråk går förlorat. En kod som kommer senare väntar på raden **Länka mitt Slack-konto** på din profilsida, med samma **Bekräfta** och **Avböj**.
+
+Varför bekräftelsesteget finns: en kod som någon läser över din axel och skickar från ett annat Slack-konto skulle annars få det kontot att agera som du. Bara du kan bekräfta, och bara exakt den profil som skickade koden.
 
 Koden:
 
 - Går bara att använda en gång och upphör att gälla **15 minuter** efter att den har skapats
 - Skapas alltid för _dig_, aldrig för en kollega
+- Fungerar bara i ett direktmeddelande till boten. I en kanal är den bara ett meddelande
+- Kan bara hämtas av en fullvärdig medlem i den Slack-arbetsyta där boten är installerad, inte av en gäst eller någon från en annan organisation
 - Ersätter varje kod du redan har, så att trycka på knappen igen ogiltigförklarar den föregående
 - Finns bara i minnet, så en serveromstart ogiltigförklarar utestående koder – tryck på knappen igen
 
-En kod som är okänd, har gått ut eller skapades för en annan arbetsyta misslyckas på exakt samma sätt, utan att gå att skilja åt: "that code is not valid (or has expired)".
+En kod som är okänd, har gått ut, har avböjts eller skapades för en annan arbetsyta misslyckas på exakt samma sätt, utan att gå att skilja åt: "That code is not valid (or has expired)".
 
 ## Automatisk länkning via e-post
 
-Om din Slack-profil har en verifierad e-postadress som matchar en Control Center-användare som **redan är medlem i den här arbetsytan** länkar bryggan dig första gången du pratar med den. Ingen kod behövs.
+Om din Slack-profil har en bekräftad e-postadress som matchar den verifierade e-postadressen för en Control Center-användare som **redan är medlem i den här arbetsytan** länkar bryggan dig första gången du pratar med den. Ingen kod behövs.
 
 Båda halvorna spelar roll: e-postmatchningen bevisar identitet, men bara medlemskap ger åtkomst, så en främling vars e-postadress råkar finnas på servern länkar till ingenting. Listan över länkade konton visar hur varje länk skapades (”matchad via e-post” eller ”länkad med en kod”).
 
@@ -56,8 +65,9 @@ Ditt eget tillstånd finns på din profilsida: raden **Länka mitt Slack-konto**
 ”Länkad till _ditt-slack-id_” när du är länkad och uppmanar dig att länka när du
 inte är det.
 
-Listan är en prenumeration i realtid, eftersom ändringen sker på andra sidan –
-du skriver koden i Slack, så ingen begäran från appen kan bära svaret tillbaka.
+Listan och anspråket är prenumerationer i realtid, eftersom ändringen sker på
+andra sidan: du skickar koden i Slack, så ingen begäran från appen kan bära svaret
+tillbaka.
 
 ## Avlänka
 
@@ -79,9 +89,13 @@ Ditt Slack-konto är länkat till en Control Center-användare, men den använda
 
 Rollerna `viewer` och `guest` kan inte starta arbete. En admin måste höja din roll till `member` eller högre.
 
-### Slash-kommandot känns inte igen
+### Boten säger att koden inte är giltig
 
-Kontrollera att slash-kommandot finns i Slack och att du skickar det kommando som inställningsdialogen visade dig – en admin kan ha bytt namn på det, och då visar dialogen det aktuella namnet.
+Koden har gått ut, har redan använts, har avböjts eller har ersatts av en nyare. Klicka på **Länka mitt Slack-konto** igen och skicka den nya koden.
+
+### Boten behandlar min kod som en förfrågan
+
+Du skickade den i en kanal, eller så är ditt Slack-konto redan länkat. Koder tas bara emot i ett direktmeddelande, och ett meddelande som ser ut som en kod från ett länkat konto är en vanlig förfrågan.
 
 ## Relaterade guider
 

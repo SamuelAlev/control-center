@@ -1,0 +1,277 @@
+---
+title: 執行 Connect 伺服器
+description: 以 cc-connect Docker 映像執行你自己的 Control Center Connect，或將它掛載在 cc_server 內，讓你的伺服器透過你註冊的供應商應用程式讓人們登入。
+slug: zh-TW/手冊/操作指南/執行-connect-伺服器
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect 會為尚未註冊自己應用程式的伺服器執行供應商登入（GitHub、
+Google Calendar、Linear、Slack）。本指南說明如何執行你自己的 Connect，讓供應商
+應用程式、它們的密鑰，以及獲准使用它們的伺服器清單，全都留在你手上。
+
+Connect 看得到與看不到什麼，請見 [Connect 參考](/zh-TW/手冊/參考/connect/)。如果你
+正在決定是否要執行一個，請先閱讀它。
+
+:::note[你可能不需要它]
+單一伺服器可以改為註冊自己的應用程式：在 **設定 → 伺服器 → 單一登入 → 供應商
+應用程式** 中，**建立我的 GitHub 應用程式**能一步設定好 GitHub。伺服器自己的應用程式只在選擇了**使用我自己的應用程式**時適用：使用 Control Center Connect 或自訂 Connect 時，Connect 會執行每個通道，而工作區自己的應用程式仍然適用。當數台伺服器應該共用同一組應用程式時，才需要
+執行 Connect。
+:::
+
+## 先決條件
+
+- 一個供 Connect 使用的公開 **HTTPS** 位址，例如 `https://connect.example.com`，
+  位於一個終止 TLS 的代理伺服器後方。純 `http` 只在回送位址上被接受
+- Docker，或一台你可以帶著額外環境變數重新啟動的 `cc_server`
+- 有權向你想服務的每個供應商註冊應用程式
+- 將使用它的伺服器，以及能隨時聯絡上的伺服器擁有者：每台伺服器都有一個安裝 ID，
+  要加入 Connect 的允許清單
+
+## 步驟 1：選擇位址
+
+現在就挑好網址並保留下來。`CONNECT_PUBLIC_URL` 是 Connect 所做一切的一部分：請求
+簽章、封存的憑證、供應商重新導向網址，以及每台伺服器的安裝 ID，全都綁定到它。之後
+變更它，就表示要重新註冊重新導向，而且每個人都得重新登入。
+
+## 步驟 2：註冊供應商應用程式
+
+只註冊你想服務的供應商。變數不完整的供應商會被排除在 Connect 的設定之外，伺服器會
+看到它無法使用。下方的 `<base>` 就是你的 `CONNECT_PUBLIC_URL`。
+
+| 供應商         | 註冊                                                                                                                                                                                                                                                                 | 保留                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | 回呼網址 `<base>/oauth/github/callback`。設定網址 `<base>/oauth/github/setup`，並開啟 **Redirect on update**。讓 **Request user authorization (OAuth) during installation** 保持關閉：開啟時，GitHub 會忽略設定網址。保持 **Expire user authorization tokens** 開啟 | App id、slug、用戶端 id、用戶端密鑰    |
+| **Google**     | 一個類型為 **Web application** 的 OAuth 用戶端，重新導向 URI 為 `<base>/oauth/google/callback`，並啟用 Google Calendar API                                                                                                                                          | 用戶端 id、用戶端密鑰                   |
+| **Linear**     | 一個 OAuth 應用程式，回呼網址為 `<base>/oauth/linear/callback` 與 `<base>/oauth/linear_app/callback`                                                                                                                                                                | 只需用戶端 id                           |
+| **Slack**      | 重新導向網址 `<base>/oauth/slack_oidc/callback` 與 `<base>/oauth/slack/callback`。Event Subscriptions 位於 `<base>/v1/hooks/slack/events`（`app_mention`、`message.*`、`assistant_thread_*`、`app_uninstalled`、`tokens_revoked`）。斜線指令位於 `<base>/v1/hooks/slack/commands`。開啟權杖輪替 | App id、用戶端 id、用戶端密鑰、簽章密鑰 |
+
+為 GitHub App 授予下列儲存庫權限：**Metadata** 讀取、**Contents** 讀取與寫入、
+**Pull requests** 讀取與寫入、**Issues** 讀取與寫入，以及 **Checks**、**Actions**
+與 **Commit statuses** 讀取。為了團隊審查請求，請加上組織 **Members** 讀取。Webhook
+可以保持關閉：伺服器會輪詢。
+
+Connect 永遠不需要 GitHub App 的私鑰。它改以某個人自己的登入來簽發只適用於單一
+儲存庫的權杖。Linear 也不需要密鑰：Connect 會把代碼交回伺服器，由伺服器自行完成
+交換。
+
+## 步驟 3：收集安裝 ID
+
+Connect 只回應允許清單上的伺服器。在每台伺服器上，把它指向你的 Connect，然後讀取
+它的安裝 ID：
+
+1. 前往 **設定 → 伺服器 → 單一登入**，開啟 **Control Center Connect** 卡片，選擇
+   **使用自訂 Connect 伺服器**
+2. 輸入你的網址並儲存。卡片會顯示伺服器的**安裝 ID**
+
+在伺服器主機的終端機中，同樣的操作如下：
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` 會印出安裝 ID。在完成步驟 5 之前，它會顯示 `install_blocked`，這是預期中的
+情況。
+
+安裝 ID 是依 Connect 位址衍生的，因此同一台伺服器面對每個 Connect 都有不同的 ID。
+只有在其擁有者輪替金鑰時，它才會改變。
+
+## 步驟 4：建立封存金鑰
+
+Connect 會用一把封存金鑰加密它交回的每一份憑證。產生一把，並將它保存為機密檔案：
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+遺失封存金鑰會讓所有人登出：沒有它，任何封存都無法開啟。
+
+## 步驟 5：啟動容器
+
+每次發行都會發布附帶建置來源證明的 `ghcr.io/samuelalev/cc-connect`。在正式環境中請
+固定版本標籤。
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+把你的反向代理指向連接埠 `8790`。映像以非特權使用者執行，把狀態保存在 `/data`
+磁碟區中，並內建健康檢查（`cc-connect --healthcheck`，它會探測 `/healthz`）。
+
+當設定是開放的、不安全的或只完成一半時，Connect 會拒絕啟動（結束代碼 `78`），並
+印出是哪個變數有誤。缺少允許清單、不在回送位址上的 `http` 位址、格式錯誤的封存
+金鑰，或同時設定了 `NAME` 與 `NAME_FILE`，都會讓它停下。
+
+檢查點：在每台伺服器上，Connect 卡片顯示**正常**，而**每種登入在哪裡進行**會為你
+註冊的每個供應商標示 **Connect**。`cc_server connect status` 會印出 `Health: ok`
+與相同的通道。
+
+## 在 cc_server 內掛載 Connect
+
+伺服器可以自己代管 Connect，而不使用獨立的容器。掛載的服務與映像執行的是同一個。
+
+1. 把 `CONNECT_*` 變數放進伺服器的 `.env` 檔案（或其環境），做法同步驟 5
+2. 加上 `CC_SERVER_CONNECT_HOST=on`
+3. 重新啟動伺服器。它的日誌會印出 `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+接著 Connect 會在 `<server>/connect` 提供服務：
+
+- `CONNECT_PUBLIC_URL` 預設為伺服器公開網址的來源加上 `/connect`。位於代理伺服器
+  後方時，請明確設定它。它的路徑必須正好是 `/connect`，而且除非是回送位址，否則
+  必須使用 HTTPS
+- 只有 `CONNECT_*` 變數會傳到掛載的服務，因此它永遠不會借用伺服器自己的供應商
+  應用程式
+- `CONNECT_ALLOWED_INSTALLS` 仍然是必要的，包括代管它的伺服器本身
+- 設定錯誤的掛載會讓伺服器無法開機，而不是提供一個開放的仲介
+- 示範伺服器永遠不會掛載它
+
+請以 `https://<server>/connect` 註冊供應商的重新導向，然後如步驟 3 所述，把各伺服器
+（包括代管的那一台）指向該網址。
+
+## 設定參考
+
+每一項設定都是一個環境變數。任何密鑰都可以改從掛載的檔案取得：以 `NAME_FILE`
+取代 `NAME`。Connect 最多每 30 秒重新讀取一次該檔案，並保留最後一個有效的值。標示
+為**雙值**的密鑰在輪替期間也接受 `NAME_PREVIOUS`（或 `NAME_PREVIOUS_FILE`）。
+
+### 位址與存取
+
+| 變數                            | 預設值    | 意義                                                                                                                             |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | 必要      | 標準的公開網址。HTTPS，或僅限回送位址的 `http`。帶有路徑表示掛載。不可有查詢字串或片段                                           |
+| `CONNECT_ALLOWED_INSTALLS`      | 必要      | 以逗號分隔的安裝 ID。只有搭配 `CONNECT_SIGNED_CONFIG_FILE` 時才接受 `*`                                                          |
+| `CONNECT_DENY_INSTALLS`         |           | 即使已被允許也會遭拒的安裝 ID                                                                                                    |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | 數字形式的 GitHub 擁有者 ID。設定後，只會為這些擁有者所擁有的儲存庫簽發儲存庫權杖                                                |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | 繫結位址與連接埠                                                                                                         |
+| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` 中受信任的代理跳數（0 到 8）。只用於依位址的速率限制                                                           |
+
+### 供應商通道
+
+| 變數                                                                        | 預設值  | 意義                                                                        |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | 密鑰，雙值                                                                  |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Google 用戶端。密鑰為雙值                                                   |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Linear 應用程式。沒有密鑰                                                   |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Slack 應用程式                                                              |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |         | 密鑰，雙值                                                                  |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | Klipy GIF 搜尋金鑰。密鑰，雙值                                              |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` 會把金鑰留在 Connect；`key` 會把它交給伺服器                        |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub、Google 與 Slack：記錄在新封存中的世代                               |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub、Google 與 Slack：較舊的封存必須重新登入                             |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | 每條通道：`false` 會停止新的登入，既有的登入則繼續重新整理                  |
+
+### 封存、狀態與儲存
+
+| 變數                                                      | 預設值                     | 意義                                                                                                       |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` 或 `gcp-kms`                                                                                       |
+| `CONNECT_SEAL_KEYS`                                       |                            | 密鑰，`local` 必要。以逗號分隔的 `kid:key` 項目，最新的在前；較舊的項目仍可解密                            |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`，`gcp-kms` 必要                                           |
+| `CONNECT_STATE`                                           | `memory`                   | 單一執行個體用 `memory`，多個執行個體用 `redis`                                                            |
+| `CONNECT_REDIS_URL`                                       |                            | 密鑰。`redis://` 或 `rediss://`                                                                            |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | `rediss://` 使用的 CA 憑證組合                                                                             |
+| `CONNECT_BINDINGS`                                        | `file`                     | GitHub 安裝綁定存放的位置：`file` 或 `firestore`                                                           |
+| `CONNECT_DATA_DIR`                                        | `data`（映像中為 `/data`） | 存放 `bindings.json`                                                                                       |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` 資料庫         | 用於 `CONNECT_BINDINGS=firestore`                                                                          |
+
+### 設定、日誌與限制
+
+| 變數                                    | 預設值             | 意義                                                                                                |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | 一份離線簽署的設定，原樣提供。由 Control Center 代管的 Connect 使用                                 |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | 簽署的設定必須通過驗證的金鑰                                                                        |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | 自行代管的 Connect 所產生之設定的世代號                                                             |
+| `CONNECT_LOG_HMAC_KEY`                  | 每個行程隨機產生   | 密鑰。設定它，可讓代替安裝 ID 的標記在重新啟動與不同執行個體之間保持穩定                            |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | 由 `/v1/version` 回報                                                                               |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | 每個安裝的請求數                                                                                    |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | 每個位址的請求數                                                                                    |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | 整個服務的請求數                                                                                    |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | 每個團隊的 Slack 事件數                                                                             |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | 每個安裝的 GIF 搜尋次數                                                                             |
+
+## 執行多個執行個體
+
+對大多數組織而言，一個使用 `CONNECT_STATE=memory` 的執行個體就足夠了。位於同一個
+位址後方的多個執行個體需要 `CONNECT_STATE=redis`，以及共用的 `CONNECT_DATA_DIR`
+或 `CONNECT_BINDINGS=firestore`，這樣在某個執行個體上開始的登入才能在另一個上完成。
+
+## 輪替供應商密鑰
+
+不會有任何人被登出：
+
+1. 在供應商處建立新的密鑰，並保留舊的
+2. 把舊值移到 `NAME_PREVIOUS`，把新值放進 `NAME`，並調高
+   `CONNECT_<LANE>_SECRET_GENERATION`。掛載的檔案會在 30 秒內被讀取
+3. 等待各登入重新整理，然後在供應商處刪除舊密鑰，並移除 `NAME_PREVIOUS`
+
+若要輪替封存金鑰，請把一個新的 `cc-connect-config seal-key` 項目放在
+`CONNECT_SEAL_KEYS` 的最前面，並保留舊項目，直到它的封存都已重新整理為止。
+
+## 更換應用程式
+
+伺服器會記住你的 Connect 在它們第一次使用時公告的應用程式 ID 與用戶端 ID。如果你
+更換了某個應用程式，每台伺服器的 Connect 卡片都會顯示 **Connect 的應用程式已變更**，
+而透過 Connect 的登入會暫停，直到其擁有者按下**信任新應用程式**。在切換之前請先通知
+各伺服器擁有者，讓他們知道這個提示來自你。
+
+## 封鎖伺服器
+
+把它的安裝 ID 加進 `CONNECT_DENY_INSTALLS` 並重新啟動。其擁有者會看到「Connect
+已封鎖此伺服器的安裝 ID。」，而它上面所有透過 Connect 的登入都會停止。
+
+## 疑難排解
+
+### 伺服器表示 Connect 封鎖了它
+
+它的安裝 ID 不在 `CONNECT_ALLOWED_INSTALLS` 中，或在 `CONNECT_DENY_INSTALLS` 中。
+當其擁有者輪替金鑰時，這個 ID 會改變；請向對方索取新的 ID。
+
+### 某個供應商顯示為無法使用
+
+它的某個變數缺漏，因此 Connect 把該通道排除在外。請檢查啟動日誌與上方的表格。GitHub
+需要 App id、slug、用戶端 id 與用戶端密鑰這四項；Google 需要用戶端 id 與密鑰兩者。
+
+### 登入因重新導向不符而失敗
+
+向供應商註冊的重新導向與 `CONNECT_PUBLIC_URL` 不完全相符。請比對通訊協定、主機、
+連接埠，以及掛載式 Connect 的 `/connect` 路徑。
+
+### 所有人都必須重新登入
+
+封存金鑰已變更或遺失、某台伺服器輪替了它的金鑰，或某台伺服器的資料被還原到另一台
+機器上。封存的憑證只會為建立它的那個安裝與 Connect 開啟。
+
+## 相關指南
+
+- [建立 GitHub App](/zh-TW/手冊/操作指南/github-app/)
+- [執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)
+- [連接 Google Calendar](/zh-TW/手冊/操作指南/連接日曆/)
+
+## 相關參考
+
+- [Control Center Connect](/zh-TW/手冊/參考/connect/)
+- [`cc_server` CLI](/zh-TW/手冊/參考/cc-server-cli/)

@@ -2,7 +2,7 @@
 title: تحلیل‌های استفاده
 description: وقتی تحلیل‌های استفاده روشن است Control Center چه چیزی را ثبت می‌کند، چه کسی تصمیم می‌گیرد و چه چیزی هرگز ارسال نمی‌شود.
 slug: fa-IR/راهنمای-کاربر/مرجع/تحلیل-استفاده
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center می‌تواند **رویدادهای استفادهٔ مستعار** را به یک نمونهٔ [Umami](https://umami.is) بفرستد. تحلیل‌های استفاده **تا وقتی گردانندهٔ سرور روشنشان نکند خاموش‌اند**. این تنظیم متعلق به سرور است و برای همهٔ کلاینت‌های متصل به آن اعمال می‌شود: اپ دسکتاپ، اپ وب، تلفن و خود سرور.
@@ -95,9 +95,12 @@ Umami افزون بر این، نشانی IP درخواست را دریافت م
 | `pipeline_run_retried` | `workspace_id`، `pipeline_run_id` | اجرای ناموفقی دوباره امتحان شد |
 | `pipeline_run_cancel_requested` | `workspace_id`، `pipeline_run_id` | اجرایی از داخل اپ لغو شد |
 | `pipeline_step_killed` | `workspace_id`، `step_run_id` | یک مرحلهٔ در حال اجرا به‌اجبار متوقف شد |
-| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client`، `duration_s` | تلاشی برای ورود به یک تقویم تمام شد |
+| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client` (درست وقتی ورود از طریق Control Center Connect انجام شده باشد، نه از طریق کلاینت Google خود سرور)، `duration_s` | تلاشی برای ورود به تقویم تمام شد |
 | `calendar_disconnected` | `workspace_id` | یک حساب تقویم قطع شد |
 | `calendar_rsvp_sent` | `calendar_event_id`، `response`، `previous_response`، `workspace_id` | به یک دعوت پاسخ داده شد |
+| `calendar_event_created` | `workspace_id`، `all_day`، `guests` (تعداد)، `conference` | یک رویداد در Google Calendar رزرو شد |
+| `calendar_event_moved` | `workspace_id`، `calendar_event_id`، `had_guests` | یک رویداد در شبکهٔ تقویم جابه‌جا یا اندازهٔ آن تغییر کرد |
+| `calendar_event_deleted` | `workspace_id`، `calendar_event_id`، `had_guests` | یک رویداد از Google Calendar حذف شد |
 | `calendar_event_recorded` | `workspace_id`، `calendar_event_id` | ضبطی از یک رویداد تقویم شروع شد |
 | `calendar_meeting_joined` | `provider` (`meet`، `zoom`، `teams`، `webex`، `other`)، `workspace_id`، `calendar_event_id` | پیوند یک جلسه باز شد (تلفن). از پیوند فقط ارائه‌دهنده استخراج می‌شود |
 | `notification_action` | `action` (`read`، `unread`، `dismiss`، `mark_all_read`، `clear_all`)، `workspace_id` | مرکز اعلان‌ها استفاده شد |

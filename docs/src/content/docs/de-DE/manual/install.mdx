@@ -2,7 +2,7 @@
 title: Installation
 description: Nutze Control Center im Browser oder installiere die Desktop-App, richte ein Agenten-Backend ein und wähle, wo der Server läuft.
 slug: de-DE/handbuch/installation
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center läuft auf zwei Wegen: als **Web-App** unter
@@ -184,24 +184,19 @@ Ein GitHub-Zugangsdatum gehört **dir und liegt auf dem Server**, gebunden an de
 Benutzer-ID — nicht im Schlüsselbund des Client-Betriebssystems. Jedes Gerät, von
 dem du dich anmeldest, nutzt dasselbe, und kein anderes Mitglied kann es lesen.
 
-Hat der Server eine GitHub App registriert
-([Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)), bietet
-**Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** die
-Schaltfläche **Mit GitHub anmelden** (ein Device Flow, den der Server ausführt).
-Sonst fügst du ein persönliches Zugriffstoken ein:
+Bei GitHub gibt es nur die Anmeldung: **Einstellungen → Arbeitsbereich → Profil
+und Identität → Code-Hosting** bietet **Bei GitHub anmelden**, und ein Token zum
+Einfügen gibt es nicht. Die Anmeldung läuft über die eigene GitHub App des Servers
+([Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)) oder über
+Control Center Connect, je nachdem, was der Server-Eigentümer gewählt hat. Mit der
+eigenen App des Servers kehrt der Browser von selbst zum Server zurück; über
+Connect tippst du den 8-stelligen Code ein, den der Browser zeigt, oder lässt ihn
+Control Center öffnen. Siehe
+[GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/).
 
-- Classic: `repo` und `read:org`
-- Fine-grained: **Contents** und **Pull requests** (read and write), **Checks** und **Actions** (read)
-
-Lege eins an unter
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-Der Server prüft das Token auf den Kontonamen, so wie es gespeichert wird, damit die
-Zeile „Angemeldet als …“ sagen kann. Eine fehlgeschlagene Prüfung speichert das Token
-trotzdem, und ein Tippfehler oder ein fehlender Scope zeigt sich später als
-fehlgeschlagene Anfrage.
-
-Der erste Schritt des Onboardings ist diese Verbindung. Danach ersetzt oder löschst
-du sie auf derselben Karte. GitLab und Bitbucket nutzen dieselbe Karte; siehe
+Das Onboarding fragt nach dieser Verbindung. Danach meldest du dich auf derselben
+Karte erneut an oder trennst die Verbindung. GitLab und Bitbucket nutzen dieselbe
+Karte mit einem eingefügten persönlichen Token; siehe
 [Einen Code-Host verbinden](/de-DE/handbuch/anleitungen/code-host-verbinden/).
 
 ## Wo der Server läuft

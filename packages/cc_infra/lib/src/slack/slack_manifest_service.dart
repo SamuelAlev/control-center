@@ -42,6 +42,83 @@ class SlackAppCreation {
   String get settingsUrl => 'https://api.slack.com/apps/$appId';
 }
 
+/// App-configuration access tokens, at most one per workspace, shared by
+/// every [SlackManifestService] the server builds.
+///
+/// Rotating a configuration refresh token is destructive (the presented token
+/// dies), so two rotations racing each other leave one caller holding a dead
+/// token and, worse, may persist the loser's refresh token over the winner's.
+/// This cache makes rotation single-flight per key and reuses the minted
+/// access token until [margin] before it expires.
+class SlackConfigTokenCache {
+  /// Creates a [SlackConfigTokenCache].
+  SlackConfigTokenCache({
+    this.margin = const Duration(minutes: 5),
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  /// How long before expiry a cached access token stops being handed out.
+  final Duration margin;
+
+  final DateTime Function() _clock;
+  final Map<String, _CachedConfigToken> _tokens = {};
+  final Map<String, Future<String>> _inflight = {};
+
+  /// The access token for [key], rotating [refreshToken] through [rotate] only
+  /// when no live one is cached and no rotation is already running.
+  ///
+  /// [persist] receives the replacement refresh token before the access token
+  /// is returned; a failed write fails the call (the old token is dead).
+  Future<String> accessToken(
+    String key, {
+    required String refreshToken,
+    required Future<({String accessToken, String refreshToken, DateTime expiresAt})>
+    Function(String refreshToken)
+    rotate,
+    required Future<void> Function(String refreshToken) persist,
+  }) {
+    final cached = _tokens[key];
+    // A cached token is only reused while the stored refresh token is the one
+    // its rotation produced: a newly pasted token means a new grant.
+    if (cached != null &&
+        cached.refreshToken == refreshToken &&
+        _clock().isBefore(cached.expiresAt.subtract(margin))) {
+      return Future.value(cached.accessToken);
+    }
+    final running = _inflight[key];
+    if (running != null) {
+      return running;
+    }
+    final rotation = () async {
+      final rotated = await rotate(refreshToken);
+      await persist(rotated.refreshToken);
+      _tokens[key] = _CachedConfigToken(
+        accessToken: rotated.accessToken,
+        refreshToken: rotated.refreshToken,
+        expiresAt: rotated.expiresAt,
+      );
+      return rotated.accessToken;
+    }();
+    _inflight[key] = rotation;
+    return rotation.whenComplete(() => _inflight.remove(key));
+  }
+
+  /// Forgets [key]'s access token (Slack refused it).
+  void invalidate(String key) => _tokens.remove(key);
+}
+
+class _CachedConfigToken {
+  const _CachedConfigToken({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.expiresAt,
+  });
+
+  final String accessToken;
+  final String refreshToken;
+  final DateTime expiresAt;
+}
+
 /// Creates and reshapes the workspace's Slack app through the App Manifest API.
 ///
 /// Two things make this more than a thin API wrapper:
@@ -51,7 +128,8 @@ class SlackAppCreation {
 ///    be persisted *before* it is used. Dropping it un-manages the app for good
 ///    (only a hand-made token in Slack's UI recovers it), which is why
 ///    [_accessToken] writes through [_writeRefreshToken] on every rotation and
-///    treats a failed write as a failed operation.
+///    treats a failed write as a failed operation. Rotation is single-flight
+///    per workspace through a shared [SlackConfigTokenCache].
 ///  * **Updates merge, they do not replace.** `apps.manifest.update` takes a
 ///    whole manifest, so the service exports the live one and overlays only the
 ///    fields it owns. Anything the user added in Slack's UI — an extra scope, a
@@ -61,16 +139,24 @@ class SlackManifestService {
   ///
   /// [_readRefreshToken] and [_writeRefreshToken] are the persistence seam: the
   /// service never decides *where* the token lives (that is the workspace's
-  /// credentials file), only that a rotation is saved immediately.
+  /// credentials file), only that a rotation is saved immediately. Services
+  /// built for the same workspace share [tokenCache] under the same
+  /// [cacheKey].
   SlackManifestService({
     required this._api,
     required this._readRefreshToken,
     required this._writeRefreshToken,
-  });
+    SlackConfigTokenCache? tokenCache,
+    this.cacheKey = '',
+  }) : _tokens = tokenCache ?? SlackConfigTokenCache();
 
   final SlackApiClient _api;
   final Future<String?> Function() _readRefreshToken;
   final Future<void> Function(String refreshToken) _writeRefreshToken;
+  final SlackConfigTokenCache _tokens;
+
+  /// The [SlackConfigTokenCache] key: the workspace whose app this manages.
+  final String cacheKey;
 
   /// Bot scopes the bridge needs. Merged into whatever the app already has —
   /// never subtracted, so a scope somebody added in Slack survives an edit.
@@ -93,11 +179,11 @@ class SlackManifestService {
   /// one" as ours would delete a command the user added in Slack the next time
   /// the bot is edited here.
   static const String commandDescription =
-      'File a ticket or link your Control Center account';
+      'Draft a Control Center ticket';
 
-  /// Events the bridge listens for. `message.spaces`/`message.groups` are what
-  /// make a *reply* inside an already-bridged thread work; without them only the
-  /// first mention would ever arrive.
+  /// Events the bridge listens for. `message.channels`/`message.groups` are
+  /// what make a *reply* inside an already-bridged thread work; without them
+  /// only the first mention would ever arrive.
   static const Set<String> requiredBotEvents = {
     'app_home_opened',
     'app_mention',
@@ -330,11 +416,15 @@ class SlackManifestService {
         'tokens”) and paste the refresh token when connecting.',
       );
     }
-    final rotated = await _guard(() => _api.rotateConfigToken(refreshToken));
-    // Slack has already invalidated the token we presented: if this write fails
-    // the app becomes unmanageable, so the failure has to be the operation's.
-    await _writeRefreshToken(rotated.refreshToken);
-    return rotated.accessToken;
+    return _tokens.accessToken(
+      cacheKey,
+      refreshToken: refreshToken,
+      rotate: (refresh) => _guard(() => _api.rotateConfigToken(refresh)),
+      // Slack has already invalidated the token we presented: if this write
+      // fails the app becomes unmanageable, so the failure has to be the
+      // operation's.
+      persist: _writeRefreshToken,
+    );
   }
 
   /// Turns Slack's refusals into messages the person in the settings dialog can
@@ -343,6 +433,10 @@ class SlackManifestService {
     try {
       return await call();
     } on SlackApiException catch (e) {
+      if (e.isAuthFailure) {
+        // A cached access token Slack no longer honours must not be reused.
+        _tokens.invalidate(cacheKey);
+      }
       throw ValidationException(_explain(e));
     }
   }

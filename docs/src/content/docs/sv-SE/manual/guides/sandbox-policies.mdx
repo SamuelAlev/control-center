@@ -2,7 +2,7 @@
 title: Konfigurera sandlådepolicyer
 description: Vad som begränsar en agentkörning, hur du avgör om OS-sandlådan lindar in den och hur åtgärdsreglerna avgör vad en agent får pusha eller nå.
 slug: sv-SE/handbok/how-to-guider/sandladepolicyer
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Om en agentkörning är sandlådad avgörs på servern, vid start
@@ -72,9 +72,10 @@ godkännande som anger repot och refs; med **Neka** skriver git ut
 
 Så når varje regel körningen:
 
-- **Push** framtvingas genom vad körningen har. Dess GitHub-token är en
-  installationstoken för GitHub-appen som bara kan läsa: den kan läsa innehåll
-  och arbeta med pull requests. Dess git-konfiguration skickar varje push till
+- **Push** framtvingas genom vad körningen har. Dess GitHub-token täcker
+  körningens enda repo och kan inte pusha: den kan läsa innehåll och, när den
+  ansvariga medlemmen kan pusha, kommentera på pull requests. Dess
+  git-konfiguration skickar varje push till
   GitHub till en loopback-gateway på `cc_server`, som frågar regeln och först
   därefter skickar vidare pushen med en skrivtoken som agenten aldrig ser.
   Gatewayen skickar bara vidare till worktreens eget repo eller till ett
@@ -91,16 +92,13 @@ Så når varje regel körningen:
   fortfarande vid varje anrop. Så länge nätverket är på finns GitHub alltid på
   den utgående allowlisten.
 
-:::caution[Utan GitHub-app är pushregeln bara rådgivande]
-Utan en konfigurerad GitHub-app får körningen den personliga åtkomsttoken som
-fallback, och den kan inte begränsas till enbart läsning. `git push` går
-fortfarande genom gatewayen och regeln, men kod som använder token direkt kan
-pusha förbi den. Konfigurera GitHub-appen för att göra regeln bindande.
-
-Körningens GitHub-inloggningsuppgift är alltid bara mäklarens – en repo-scopad
-installationstoken för GitHub-appen, eller PAT-fallbacken – aldrig den begärande
-medlemmens egen lagrade token. Serverns PAT hålls tillbaka från en körning som
-agerar för en medlem som inte är ägare och inte har anslutit GitHub.
+:::note[Var körningens GitHub-token kommer ifrån]
+Token utfärdas för körningen från arbetsytans GitHub-app, serverns egen app
+eller Control Center Connect, och den är begränsad till vad den ansvariga
+medlemmen (den som frågade, annars arbetsytans ägare) kan göra i det repot. Den
+är aldrig en medlems egen inloggning överlämnad i sin helhet, och det finns
+ingen reservtoken: när ingen kan utfärdas startar körningen utan, och dess
+anteckningar förklarar varför.
 :::
 
 ## Kontrollera om dina agentkörningar är sandlådade

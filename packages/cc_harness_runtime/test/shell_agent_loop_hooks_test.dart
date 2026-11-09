@@ -18,6 +18,9 @@ Object _shScriptsSkip() => Platform.isWindows
     ? 'hook scripts are #!/bin/sh files; no POSIX exec contract on Windows'
     : false;
 
+/// The hooks' whole environment: they inherit nothing from this process.
+const _env = {'PATH': '/usr/bin:/bin'};
+
 void main() {
   late Directory dir;
 
@@ -37,7 +40,7 @@ void main() {
 
   group('ShellAgentLoopHooks — no scripts configured', () {
     test('all hooks are no-ops that allow every tool', () async {
-      final hooks = ShellAgentLoopHooks(cwd: dir.path);
+      final hooks = ShellAgentLoopHooks(cwd: dir.path, environment: _env);
       await expectLater(hooks.onSessionStart(), completes);
       expect(await hooks.preToolUse('bash', {}), isTrue);
       await expectLater(
@@ -52,6 +55,7 @@ void main() {
       final marker = p.join(dir.path, 'started.flag');
       final hooks = ShellAgentLoopHooks(
         cwd: dir.path,
+        environment: _env,
         sessionStartScript: sh('on_start', 'touch "\$PWD/started.flag"'),
       );
       await hooks.onSessionStart();
@@ -63,6 +67,7 @@ void main() {
     test('a pre-tool script exiting 0 allows the call', () async {
       final hooks = ShellAgentLoopHooks(
         cwd: dir.path,
+        environment: _env,
         preToolScript: sh('pre_allow', 'exit 0'),
       );
       expect(await hooks.preToolUse('write', {'path': 'x'}), isTrue);
@@ -71,6 +76,7 @@ void main() {
     test('a pre-tool script exiting non-zero DENIES the call', () async {
       final hooks = ShellAgentLoopHooks(
         cwd: dir.path,
+        environment: _env,
         preToolScript: sh('pre_deny', 'exit 5'),
       );
       expect(await hooks.preToolUse('write', {}), isFalse);
@@ -85,6 +91,7 @@ void main() {
         // launch that allows the tool.
         final hooks = ShellAgentLoopHooks(
           cwd: dir.path,
+          environment: _env,
           preToolScript: 'definitely-not-a-real-command-xyz',
         );
         expect(await hooks.preToolUse('write', {}), isFalse);
@@ -95,6 +102,7 @@ void main() {
       // A timed-out run returns -1 (not null), which the gate treats as deny.
       final hooks = ShellAgentLoopHooks(
         cwd: dir.path,
+        environment: _env,
         preToolScript: sh('hang', 'sleep 30'),
         timeout: const Duration(milliseconds: 200),
       );
@@ -107,10 +115,29 @@ void main() {
       final marker = p.join(dir.path, 'post.flag');
       final hooks = ShellAgentLoopHooks(
         cwd: dir.path,
+        environment: _env,
         postToolScript: sh('post', 'touch "\$PWD/post.flag"'),
       );
       await hooks.postToolUse('bash', 'done', isError: false);
       expect(File(marker).existsSync(), isTrue);
+    });
+  }, skip: _shScriptsSkip());
+
+  group('ShellAgentLoopHooks — environment', () {
+    test('scripts see exactly the given environment', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        environment: const {..._env, 'CC_HOOK_PROBE': 'given'},
+        sessionStartScript: sh(
+          'env_probe',
+          'echo "\$CC_HOOK_PROBE \${HOME:-no-home}" > "\$PWD/env.txt"',
+        ),
+      );
+      await hooks.onSessionStart();
+      expect(
+        File(p.join(dir.path, 'env.txt')).readAsStringSync().trim(),
+        'given no-home',
+      );
     });
   }, skip: _shScriptsSkip());
 }

@@ -2,7 +2,7 @@
 title: Tickets y delegación
 description: Por qué un ticket registra el trabajo sin despacharlo, cómo se protege la delegación y qué posee y qué no posee el espejo del proveedor.
 slug: es-MX/manual/conceptos/tickets
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Un ticket es la unidad de trabajo que registra Control Center. A propósito es un
@@ -148,9 +148,12 @@ local**, así que un ticket respaldado por un proveedor que elimines no se
 elimina en el rastreador y puede reaparecer en la siguiente sincronización. Los
 colaboradores y los tickets hijos se eliminan en cascada.
 
-Las credenciales del adaptador se resuelven desde los almacenes de credenciales
-del servidor (una clave de Linear o un token de GitHub pegados en Ajustes se
-recogen en la siguiente solicitud; el entorno solo siembra esos almacenes).
+Las credenciales del adaptador se resuelven en el servidor en cada llamada: el
+propio inicio de sesión de Linear o GitHub de una persona para lo que hace, y la
+automatización de Linear del espacio de trabajo (o la clave de servicio de
+Linear del servidor) o un token de GitHub de un solo repositorio para la
+sincronización de tickets. Un nuevo inicio de sesión se toma en la siguiente
+solicitud.
 
 ## Tickets y pipelines
 

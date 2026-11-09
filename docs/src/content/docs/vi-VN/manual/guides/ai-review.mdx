@@ -2,7 +2,7 @@
 title: Dùng đánh giá hỗ trợ AI
 description: Chạy quy trình pr_review trên một PR, đọc các phát hiện và kết luận, rồi xuất bản đánh giá lên GitHub.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Hướng dẫn này chỉ cho bạn cách để các agent đánh giá xem xét một pull request và
@@ -118,14 +118,15 @@ không đăng lên GitHub.
 
 Control Center gửi **một** đánh giá GitHub duy nhất. Những phát hiện đã được giải
 quyết hoặc đã bỏ qua sẽ bị bỏ qua. Nút này bao gồm mọi phát hiện đang mở còn lại
-và, khi **Ship**, gửi `APPROVE`. (Công cụ MCP `publish_review_to_github` vẫn mặc
-định chỉ dùng các phát hiện đã được xác nhận ngang hàng và không phê duyệt trừ
-khi bạn truyền `approve_on_ship`.) Những phát hiện có neo tệp và dòng sẽ trở
-thành bình luận nội tuyến; mọi thứ còn lại được gộp vào phần thân tóm tắt, mỗi
+và, khi **Ship**, gửi `APPROVE`. (Công cụ MCP `publish_review_to_github` mặc định
+chỉ dùng các phát hiện đã được xác nhận ngang hàng và không bao giờ phê duyệt: nó
+xuất bản dưới dạng tự động hóa, nên `approve_on_ship` không có tác dụng ở đó.)
+Những phát hiện có neo tệp và dòng sẽ trở thành bình luận nội tuyến; mọi thứ còn lại được gộp vào phần thân tóm tắt, mỗi
 mục kèm một chân trang "— Control Center AI review" để nguồn gốc rõ ràng. Một kết
 luận **Block** được gửi dưới dạng `REQUEST_CHANGES`; **Hold** là `COMMENT`;
 **Ship** là `APPROVE` từ nút này. Sau đó một thông báo nổi hiện **Đã xuất bản**.
-Đánh giá được đăng dưới danh tính ứng dụng của máy chủ.
+Đánh giá được đăng dưới danh nghĩa bạn, bằng đăng nhập GitHub của chính bạn: nếu bạn
+chưa đăng nhập GitHub, việc xuất bản thất bại và yêu cầu bạn đăng nhập.
 
 Nếu GitHub từ chối một neo nội tuyến vì dòng đó không thuộc diff, toàn bộ đánh
 giá sẽ được gửi lại với mọi phát hiện được gộp vào phần thân, để không có gì bị

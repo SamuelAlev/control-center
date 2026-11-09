@@ -2,7 +2,7 @@
 title: Sandbox en beveiliging
 description: Wat een agent in Control Center vandaag daadwerkelijk beperkt, hoe ver de OS-sandbox reikt en welke grenzen standhouden op een host die geen backend heeft.
 slug: nl-NL/handleiding/concepten/sandbox-en-beveiliging
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Waar de OS-sandbox wel en niet reikt]
@@ -124,7 +124,7 @@ voor altijd blijft hangen op zijn eigen goedkeuringsprompt. De lees-, schrijf- e
 aanroepen nog steeds binnen de sandboxwrap, dus is het besturingssysteem de grens
 eromheen. Waar dat niet zo is, is er niets. Elke adapter vermeldt dit in zijn
 afdwingingsmatrix — zie [de eerlijkheidsmatrix per
-adapter](/nl-NL/handleiding/concepten/beveiligingen/#the-adapter-honesty-matrix).
+adapter](/nl-NL/handleiding/concepten/beveiligingen/#de-eerlijkheidsmatrix-van-de-adapters).
 
 ## Pushes lopen via Control Center
 
@@ -136,9 +136,11 @@ agent ook draait.
 
 Een push is de actie die moet standhouden, zelfs tegen een agent die een regel
 probeert te omzeilen. Daarom wordt hij afgedwongen via wat de agent bezit, niet
-via wat hij uitvoert. Met een geconfigureerde GitHub App krijgt een run in een
-GitHub-worktree een tot de repo beperkt installatietoken dat inhoud kan lezen en
-met pull requests kan werken, maar niet kan pushen. De git-configuratie van de
+via wat hij uitvoert. Een run in een GitHub-worktree krijgt een token voor die
+ene repository, uitgegeven via de GitHub App van de werkruimte, de eigen app van
+de server of Control Center Connect. Het kan inhoud lezen en, als het
+verantwoordelijke lid mag pushen, opmerkingen plaatsen op pull requests, maar het
+kan niet pushen. De git-configuratie van de
 run herschrijft elke GitHub-push-URL (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) naar de **agentrun-gateway**, een
 loopback-eindpunt op `cc_server`. De gateway leest welke refs de push bijwerkt,
@@ -168,12 +170,11 @@ schrijven**; pakketinstallaties zijn **Een pakket installeren**; `curl` en
 van een actie, en een agent die er een wil verbergen (`eval`, een scriptbestand,
 een directe API-aanroep) kan dat. Pushes zijn er niet van afhankelijk.
 
-:::caution[Zonder GitHub App is de pushregel alleen een advies]
-Zonder geconfigureerde GitHub App valt de broker terug op een personal access
-token, dat niet tot alleen lezen kan worden beperkt. De regel geldt nog steeds
-voor `git push`, omdat git de push naar de gateway stuurt, maar code die het
-token uit de omgeving rechtstreeks gebruikt, kan eromheen pushen.
-:::
+Elk GitHub-token dat een run krijgt, is dubbel begrensd: tot één repository, en
+tot wat het verantwoordelijke lid (degene die het vroeg, anders de eigenaar van
+de werkruimte) daar mag doen. Er zijn geen reserve-inloggegevens. Als er geen
+token kan worden uitgegeven, start de run zonder, en zijn notities vermelden
+waarom.
 
 In een sandbox wordt geen ticketing-API-sleutel gezet. Agenten schrijven tickets
 via de MCP-tools van Control Center, die **Naar een externe tracker schrijven**
@@ -182,9 +183,11 @@ raadplegen.
 De regel **Toegang tot het netwerk** wordt één keer gelezen, wanneer de run
 start. Het netwerk van een sandbox staat aan of uit, dus weigeren zet het uit,
 terwijl toestaan en eerst vragen het aan laten; de tools `web_fetch` en
-`web_search` van de harness blijven bij elke aanroep vragen. Inloggegevens
-worden ingetrokken wanneer de run wordt afgebroken, samen met elk schrijftoken
-dat de gateway heeft aangemaakt, zodat een token de run niet overleeft.
+`web_search` van de harness blijven bij elke aanroep vragen. De handles voor de
+inloggegevens van de run worden vrijgegeven wanneer de run wordt afgebroken. De
+tokens erachter worden per lid en repository gedeeld en verlopen binnen ongeveer
+een uur; een lid dat zich afmeldt bij GitHub of de werkruimte verlaat, laat in
+één keer elk token vervallen dat namens hem is uitgegeven.
 
 ## Wat de sandbox toevoegt en waar hij stopt
 

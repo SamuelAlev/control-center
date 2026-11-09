@@ -1,9 +1,9 @@
 ---
 title: Jalankan pelayan tanpa kepala
 description: Jalankan binari tanpa kepala cc_server atau imej Docker-nya, gandingkan klien dengannya dan konfigurasikannya dengan keseluruhan permukaan bendera CLI dan pemboleh ubah persekitaran.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Jalankan `cc_server` pada mesin yang sentiasa hidup, kemudian sambung kepadanya
@@ -16,8 +16,9 @@ panggilan API luaran; klien hanya memaparkan.
 
 Setiap keluaran menerbitkan tindanan pengehosan sendiri bagi empat imej GHCR —
 bahagian belakang, dua klien nipis statik dan geganti penggandingan pilihan —
-berserta imej `cc-server-demo` yang berasingan untuk hos demo awam. Pemasangan
-pengehosan sendiri tidak memerlukan semakan keluar sumber. Sematkan tag versi
+berserta imej `cc-server-demo` yang berasingan untuk hos demo awam. Setiap keluaran juga menerbitkan
+perkhidmatan log masuk `cc-connect` pilihan ([Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)).
+Pemasangan pengehosan sendiri tidak memerlukan semakan keluar sumber. Sematkan tag versi
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) atau ikut `latest`.
 
 | Imej                                             | Apanya                                        | Menerbitkan     |
@@ -69,6 +70,10 @@ melebihi loopback:
 - **`/data` ialah satu-satunya keadaan.** Pangkalan data SQLite, rahsia peranti
   berganding, model yang dimuat turun dan audio mesyuarat semuanya tinggal di
   dalam volum itu — sandarkannya dan kontena itu menjadi boleh buang.
+- **Rahsia pembekal masuk ke `.env` yang dilekapkan, tidak sekali-kali melalui `-e`.** Pelayan enggan bermula apabila
+  `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` atau `SLACK_*SECRET*` berada dalam
+  persekitaran prosesnya. Lekapkan fail itu sebagai baca sahaja pada `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`), atau
+  konfigurasikan apl dalam Tetapan.
 - **Gandingkan klien dari dalam imej** sebelum sambungan pertama, iaitu padanan
   kontena bagi [langkah 3](#langkah-3-gandingkan-klien-sebelum-permulaan-pertama):
 
@@ -283,21 +288,30 @@ editor yang dilancarkan pelayan melalui proksi awam. Permintaan HTTP awam yang
 sensitif ditolak; sumber memerlukan sesi tersulit yang disahkan.
 
 
-## Langkah 6: Sambungkan Google Calendar (pilihan)
+## Langkah 6: Pilih cara pengguna log masuk
 
-Untuk menyegerakkan kalendar ruang kerja tanpa GUI, gunakan aliran kod peranti:
+Klien pertama yang bersambung sebagai pemilik pelayan akan ditanya bagaimana pelayan ini mendaftar masuk orang ke GitHub,
+Google Calendar dan Linear: **Gunakan aplikasi Control Center**, **Gunakan aplikasi saya sendiri**, atau **Gunakan pelayan
+Connect tersuai**. Dari terminal, pilihan yang sama ialah:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Ia mencetak kod dan URL untuk diluluskan pada peranti lain, menyimpan token
-penyegaran di sisi pelayan dan keluar. Binaan daripada sumber tidak menyertakan
-klien Google, jadi pemboleh ubah persekitaran id dan rahsia itu diperlukan —
-tiada bendera `--google-client-id`. Lihat
-[Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/).
+`CC_CONNECT_URL` (`hosted`, `off` atau URL) dalam persekitaran atau `.env` pelayan mengunci pilihan itu sebagai gantinya.
+Dengan **Gunakan aplikasi saya sendiri**, daftarkan setiap pembekal dalam **Tetapan → Pelayan → Daftar masuk tunggal →
+Apl penyedia**; **Cipta aplikasi GitHub saya** menyediakan GitHub dalam satu langkah sahaja. Rahsia pembekal tergolong dalam
+fail `.env` pelayan, bukan persekitaran yang dieksport. Lihat [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+dan [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
+
+Log masuk melalui Connect selesai dengan kod yang dipaparkan pelayar, jadi pelayan tidak memerlukan alamat awam untuknya.
+Log masuk melalui apl pelayan sendiri menghantar pelayar kembali ke URL awam pelayan, jadi tetapkan `--public-url` kepada
+alamat yang boleh dicapai oleh pelayar pengguna.
+
+Untuk menjadi hos Connect bagi pelayan lain daripada pelayan ini, tetapkan `CC_SERVER_CONNECT_HOST=on`; lihat
+[Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/#pasang-connect-dalam-cc_server).
 
 ## Konfigurasi
 
@@ -356,6 +370,7 @@ digandingkan atau memberi kebenaran kepada sumber):
 - [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/)
 - [Jalankan pekerja armada](/ms-MY/manual-pengguna/panduan-cara/jalankan-pekerja-armada/)
 - [Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/)
+- [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)
 
 ## Konsep berkaitan
 

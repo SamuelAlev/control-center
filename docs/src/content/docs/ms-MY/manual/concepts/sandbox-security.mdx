@@ -2,7 +2,7 @@
 title: Kotak pasir dan keselamatan
 description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
@@ -90,7 +90,7 @@ kepada benarkan, tanya dahulu, atau tolak sebelum panggilan itu dijalankan. Satu
 yang tiada siapa dapat jawab tidak pernah menjadi ya. Lihat
 [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) untuk model penyelesaiannya.
 
-**Kelayakan melalui broker dan persekitaran yang disanitasi.** Kelayakan ditempa setiap pelancaran dan ditarik balik apabila larian tamat, dan token GitHub yang dipegang larian boleh membaca tetapi tidak boleh push — lihat "Push melalui Control Center" di bawah. ACP, `bash` harness dan Claude Code di bawah balutan natif
+**Kelayakan melalui broker dan persekitaran yang disanitasi.** Kelayakan ditempa setiap pelancaran dan dilepaskan apabila larian tamat, dan token GitHub yang dipegang larian boleh membaca tetapi tidak boleh push — lihat "Push melalui Control Center" di bawah. ACP, `bash` harness dan Claude Code di bawah balutan natif
 mendapat persekitaran yang dilucutkan vektor suntikan pemaut dinamik dan
 penterjemah (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
 `GIT_SSH_COMMAND` dan seumpamanya) sebelum proses bermula. Claude Code melalui
@@ -137,10 +137,10 @@ yang menjalankan ejen.
 
 Push ialah tindakan yang mesti bertahan walaupun terhadap ejen yang cuba
 memintas sesuatu peraturan, jadi ia dikuatkuasakan melalui apa yang dipegang
-ejen, bukan melalui apa yang dijalankannya. Dengan GitHub App dikonfigurasikan,
-larian dalam worktree GitHub mendapat token pemasangan berskop repo yang boleh
-membaca kandungan dan bekerja dengan pull request tetapi tidak boleh push.
-Konfigurasi git larian menulis semula setiap URL push GitHub
+ejen, bukan melalui apa yang dijalankannya. Larian dalam worktree GitHub
+mendapat token untuk repositori itu sahaja, ditempa daripada GitHub App ruang kerja, App milik pelayan,
+atau Control Center Connect. Token itu boleh membaca kandungan dan, apabila ahli yang bertanggungjawab
+boleh push, mengulas pada pull request, tetapi tidak boleh push. Konfigurasi git larian menulis semula setiap URL push GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) kepada
 **gerbang larian ejen**, titik akhir loopback pada `cc_server`. Gerbang itu
 membaca ref mana yang dikemas kini oleh push, bertanya kepada peraturan
@@ -169,13 +169,9 @@ mengenali cara lazim menulis sesuatu tindakan, dan ejen yang bertekad
 menyembunyikannya (`eval`, fail skrip, panggilan API terus) boleh berbuat
 demikian. Push tidak bergantung padanya.
 
-:::caution[Tanpa GitHub App, peraturan push hanya bersifat nasihat]
-Tanpa GitHub App dikonfigurasikan, broker berpatah balik kepada token akses
-peribadi, yang tidak boleh disempitkan kepada baca sahaja. Peraturan itu masih
-terpakai untuk `git push`, kerana git menghantar push ke gerbang, tetapi kod
-yang menggunakan token dalam persekitaran secara terus boleh push dengan
-memintasnya.
-:::
+Setiap token GitHub yang diterima oleh larian dihadkan dua kali: kepada satu repositori, dan kepada apa yang
+boleh dilakukan oleh ahli yang bertanggungjawab (yang meminta, jika tidak pemilik ruang kerja) pada repositori
+itu. Tiada kelayakan sandaran. Apabila tiada token dapat dicetak, larian bermula tanpa token dan notanya menerangkan sebabnya.
 
 Tiada kunci API tiket diletakkan dalam kotak pasir. Ejen menulis tiket melalui
 alat MCP Control Center, yang bertanya kepada **Tulis ke penjejak luaran**.
@@ -183,9 +179,10 @@ alat MCP Control Center, yang bertanya kepada **Tulis ke penjejak luaran**.
 Peraturan **Akses rangkaian** dibaca sekali, apabila larian bermula. Rangkaian
 kotak pasir sama ada hidup atau mati, jadi tolak mematikannya manakala benarkan
 dan tanya dahulu membiarkannya hidup; alat `web_fetch` dan `web_search` harness
-masih bertanya pada setiap panggilan. Kelayakan ditarik balik apabila larian
-dimusnahkan, bersama setiap token tulis yang ditempa oleh gerbang, jadi sesuatu
-pemegang tidak hidup lebih lama daripada larian.
+masih bertanya pada setiap panggilan. Pemegang kelayakan larian dilepaskan apabila larian
+dibongkar. Token di sebalik pemegang itu dikongsi bagi setiap ahli dan repositori serta tamat dalam
+lebih kurang satu jam; ahli yang log keluar daripada GitHub atau meninggalkan ruang kerja serta-merta
+membatalkan setiap token yang dicetak bagi pihak mereka.
 
 ## Apa yang ditambah oleh kotak pasir dan di mana ia berhenti
 

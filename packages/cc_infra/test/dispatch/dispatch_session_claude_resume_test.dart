@@ -18,6 +18,7 @@ import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
@@ -153,6 +154,7 @@ class _NoopBroker implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override
@@ -266,12 +268,15 @@ void main() {
         }
         return creditAgent;
       },
-      resolveGitIdentity: (_, {workspaceId}) async {
+      resolveCommitIdentity: (_, {workspaceId}) async {
         if (identityFailure != null) {
           throw identityFailure;
         }
         return hasGitIdentity
-            ? (name: 'Requesting User', email: 'requester@example.test')
+            ? AgentCommitIdentity.owner(
+                name: 'Requesting User',
+                email: 'requester@example.test',
+              )
             : null;
       },
     ),

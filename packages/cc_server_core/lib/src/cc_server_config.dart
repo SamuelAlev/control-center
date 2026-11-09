@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cc_server_core/src/builtin_credentials.dart';
 import 'package:cc_server_core/src/dotenv.dart';
 
 /// Minimum log severity the server emits. Ordered most-to-least chatty so
@@ -35,10 +34,10 @@ enum CcServerLogLevel {
 /// * `--tool-deferral` / `CC_SERVER_TOOL_DEFERRAL` — `on`(default)/`off`; `off` makes every admitted tool resident.
 /// * `--insecure` / `CC_SERVER_INSECURE` — allow non-loopback plaintext; only behind a TLS-terminating proxy (ignored when TLS set).
 ///
-/// Credentials are **environment-only** (`ps` can read argv): `GOOGLE_OAUTH_CLIENT_ID`/`SECRET`, `KLIPY_APP_KEY`,
-/// `GITHUB_APP_ID`/`PRIVATE_KEY`, `GITHUB_CLIENT_ID`, `LINEAR_CLIENT_ID`/`SECRET`, `LINEAR_API_KEY`. Each falls back
-/// to a release build-in (`builtin_credentials.dart`); empty disables the feature. Only `GITHUB_CLIENT_ID` may be baked in —
-/// private key and Linear secret must not. Provider apps seed `ProviderAppSettings` once at boot, then the store wins.
+/// Credentials are **environment-only** (`ps` can read argv) and never baked into a build: `KLIPY_APP_KEY` here;
+/// the provider apps (`GOOGLE_OAUTH_CLIENT_ID`/`SECRET`, `GITHUB_APP_ID`/`PRIVATE_KEY`, `GITHUB_CLIENT_ID`/`SECRET`,
+/// `LINEAR_CLIENT_ID`, `LINEAR_API_KEY`) seed `ProviderAppSettings` once at boot, then the store wins. A lane with no
+/// own credential uses Control Center Connect, or is off.
 class CcServerConfig {
   /// Creates a [CcServerConfig].
   const CcServerConfig({
@@ -48,8 +47,6 @@ class CcServerConfig {
     required this.repoRoots,
     required this.publicUrl,
     required this.signalingUrl,
-    required this.googleClientId,
-    required this.googleClientSecret,
     required this.allowedOrigins,
     this.webClientUrl = '',
     this.tlsCertPath = '',
@@ -114,13 +111,6 @@ class CcServerConfig {
   /// else [defaultSignalingUrl].
   final String signalingUrl;
 
-  /// Google OAuth device-code client id (`GOOGLE_OAUTH_CLIENT_ID`, else built-in).
-  /// Empty disables calendar sync. Also used by "use Control Center's Google app".
-  final String googleClientId;
-
-  /// Device-code client secret (`GOOGLE_OAUTH_CLIENT_SECRET`, else built-in). Never leaves the server.
-  final String googleClientSecret;
-
   /// Browser origins permitted to dial the RPC WebSocket cross-origin (e.g. a
   /// hosted web build). Loopback origins (`localhost` / `127.0.0.1`) and native
   /// clients are always allowed regardless of this set; anything else must be
@@ -182,7 +172,8 @@ class CcServerConfig {
   /// `0` never parks; the ceiling keeps unattended runs from waiting forever.
   final int credentialGateSeconds;
 
-  /// Klipy GIF app key (`KLIPY_APP_KEY`, else built-in). Empty disables `gif.*` ops.
+  /// The operator's own Klipy GIF app key (`KLIPY_APP_KEY`). Empty routes
+  /// `gif.*` through Control Center Connect, or returns nothing.
   final String klipyAppKey;
 
   /// Human-readable server name shown in pickers, discovery and pairing
@@ -229,12 +220,6 @@ class CcServerConfig {
   /// Whether in-process TLS is configured (both cert + key paths are present).
   bool get tlsConfigured => tlsCertPath.isNotEmpty && tlsKeyPath.isNotEmpty;
 
-  /// Whether Google Calendar sync is configured (a client id is present).
-  bool get googleCalendarConfigured => googleClientId.isNotEmpty;
-
-  /// Whether the Klipy GIF picker is configured (an app key is present).
-  bool get klipyConfigured => klipyAppKey.isNotEmpty;
-
   /// The address to bind, derived from [bindAny].
   InternetAddress get bindAddress =>
       bindAny ? InternetAddress.anyIPv4 : InternetAddress.loopbackIPv4;
@@ -255,11 +240,9 @@ class CcServerConfig {
 
     String? pick(String flag, String envKey) => flags[flag] ?? env[envKey];
 
-    /// Env-only credential (`ps` can read argv). Empty/unset both mean absent so a built-in can apply.
-    String? pickCredential(String envKey) {
-      final value = env[envKey]?.trim();
-      return (value == null || value.isEmpty) ? null : value;
-    }
+    /// Env-only credential (`ps` can read argv). Empty and unset both mean
+    /// absent.
+    String pickCredential(String envKey) => env[envKey]?.trim() ?? '';
 
     final dataDirRaw =
         pick('data-dir', 'CC_SERVER_DATA_DIR') ?? _defaultDataDir(env);
@@ -287,17 +270,10 @@ class CcServerConfig {
       'web-client-url',
       'CC_SERVER_WEB_CLIENT_URL',
     )?.trim();
-    // Environment > the credential baked in at release build time. A
-    // self-hoster's own Google Cloud client therefore wins over ours.
-    final googleClientId =
-        pickCredential('GOOGLE_OAUTH_CLIENT_ID') ?? builtinGoogleClientId;
-    final googleClientSecret =
-        pickCredential('GOOGLE_OAUTH_CLIENT_SECRET') ??
-        builtinGoogleClientSecret;
     final allowedOrigins = _parseOrigins(
       pick('allowed-origins', 'CC_SERVER_ALLOWED_ORIGINS'),
     );
-    final klipyAppKey = pickCredential('KLIPY_APP_KEY') ?? builtinKlipyAppKey;
+    final klipyAppKey = pickCredential('KLIPY_APP_KEY');
     final tlsCertPath = pick('tls-cert', 'CC_SERVER_TLS_CERT')?.trim() ?? '';
     final tlsKeyPath = pick('tls-key', 'CC_SERVER_TLS_KEY')?.trim() ?? '';
     final allowInsecure = _parseBool(pick('insecure', 'CC_SERVER_INSECURE'));
@@ -374,8 +350,6 @@ class CcServerConfig {
       repoRoots: repoRoots,
       publicUrl: publicUrl,
       signalingUrl: signalingUrl,
-      googleClientId: googleClientId,
-      googleClientSecret: googleClientSecret,
       allowedOrigins: allowedOrigins,
       webClientUrl: webClientUrl ?? '',
       tlsCertPath: tlsCertPath,

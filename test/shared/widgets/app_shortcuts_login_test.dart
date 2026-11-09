@@ -22,7 +22,6 @@ void main() {
       routes: [
         for (final path in [
           onboardingRoute,
-          signedOutRoute,
           splashRoute,
           inboxRoute('ws-1'),
           settingsRoute('ws-1'),
@@ -55,7 +54,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final login in [onboardingRoute, signedOutRoute, splashRoute]) {
+    for (final login in [onboardingRoute, splashRoute]) {
       router.go(login);
       await tester.pumpAndSettle();
       dispatcher.debugDispatchStroke(
@@ -94,11 +93,7 @@ void main() {
       redirect: (context, state) =>
           onboardingGuard(context, state, gate, () => 'ws-1'),
       routes: [
-        for (final path in [
-          onboardingRoute,
-          signedOutRoute,
-          settingsAppearanceRoute('ws-1'),
-        ])
+        for (final path in [onboardingRoute, settingsAppearanceRoute('ws-1')])
           GoRoute(path: path, builder: (_, _) => const SizedBox()),
       ],
     );
@@ -112,9 +107,12 @@ void main() {
       onboardingRoute,
     );
 
-    gate.value = OnboardingGate.signedOut;
+    gate.value = OnboardingGate.complete;
     router.go(settingsAppearanceRoute('ws-1'));
     await tester.pumpAndSettle();
-    expect(router.routerDelegate.currentConfiguration.uri.path, signedOutRoute);
+    expect(
+      router.routerDelegate.currentConfiguration.uri.path,
+      settingsAppearanceRoute('ws-1'),
+    );
   });
 }

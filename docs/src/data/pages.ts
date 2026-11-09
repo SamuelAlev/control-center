@@ -143,8 +143,8 @@ export const developersPage: SitePageData = {
     {
       id: 'cli',
       title: 'CLI and containers',
-      html: `<p><code>cc_server</code> is scriptable: boot settings take a CLI flag or an environment variable (flag wins), and subcommands cover device pairing (<code>cc_server pair</code>), Google Calendar connect and self-update (<code>cc_server update</code>). Provider credentials are environment-only, never a flag. <a href="/manual/reference/cc-server-cli/">cc_server CLI</a> is the complete reference.</p>
-<p>Each release publishes five GHCR images — <code>cc-server</code>, <code>cc-webapp</code>, <code>cc-remote</code>, <code>cc-signaling-server</code> and <code>cc-server-demo</code> — with a compose file for the self-hosted four in <a href="/manual/guides/run-headless-server/">the headless-server guide</a>.</p>`,
+      html: `<p><code>cc_server</code> is scriptable: boot settings take a CLI flag or an environment variable (flag wins), and subcommands cover device pairing (<code>cc_server pair</code>), the Control Center Connect choice (<code>cc_server connect</code>) and self-update (<code>cc_server update</code>). Provider apps are set in Settings or the server's <code>.env</code>, never a flag, and the server refuses to start with a provider secret exported in its environment. <a href="/manual/reference/cc-server-cli/">cc_server CLI</a> is the complete reference.</p>
+<p>Each release publishes six GHCR images — <code>cc-server</code>, <code>cc-webapp</code>, <code>cc-remote</code>, <code>cc-signaling-server</code>, <code>cc-connect</code> and <code>cc-server-demo</code> — with a compose file for the self-hosted four in <a href="/manual/guides/run-headless-server/">the headless-server guide</a> and the sign-in service in <a href="/manual/guides/run-connect/">Run a Connect server</a>.</p>`,
     },
     {
       id: 'this-site',

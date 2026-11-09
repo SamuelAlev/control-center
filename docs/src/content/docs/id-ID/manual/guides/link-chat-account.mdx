@@ -2,7 +2,7 @@
 title: Tautkan akun Slack Anda
 description: Buktikan bahwa identitas Slack adalah milik Anda agar agen menindaklanjuti pesan Anda dan pekerjaan Anda diatribusikan kepada Anda.
 slug: id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Panduan ini menunjukkan cara menautkan identitas chat Anda ke pengguna Control Center Anda dan cara membatalkan tautannya.
@@ -17,29 +17,38 @@ Anggota yang belum menautkan akun dan menyebut bot akan menerima balasan di thre
 
 ## Tautkan dengan kode
 
+Penautan memerlukan kedua pihak: mengirim kode dari Slack membuktikan akun Slack, dan mengonfirmasinya di Control Center membuktikan bahwa akun itu milik Anda.
+
 1. Buka **Pengaturan → Ruang kerja → Profil & identitas** dan gulir ke kartu **Akun chat tertaut**
-2. Pada blok Slack, klik **Hubungkan akun Slack saya**
-3. Salin perintah yang ditampilkan, misalnya:
+2. Pada blok Slack, klik **Hubungkan akun Slack saya**. Dialog menampilkan kode sekali pakai, misalnya:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Di Slack, kirim perintah itu ke bot — DM adalah tempat paling mudah
-5. Bot mengonfirmasi pengguna Control Center yang kini tertaut dengan Anda, dan dialog yang Anda biarkan terbuka ikut diperbarui pada saat yang sama — Anda tidak perlu menutupnya untuk memeriksa
+3. Di Slack, kirim kode itu ke bot dalam **pesan langsung**: hanya kodenya, tanpa yang lain
+4. Bot membalas "Got it. Confirm this Slack account in Control Center to finish linking." dan dialog yang Anda biarkan terbuka menampilkan profil Slack yang mengirim kode: namanya dan id anggota Slack-nya
+5. Jika itu akun Anda, klik **Konfirmasi**. Tautan dibuat, dialog menyatakannya, dan bot mengonfirmasi di pesan langsung yang sama
+6. Jika itu bukan akun Anda, klik **Tolak**. Tidak ada yang ditautkan dan kode berhenti berfungsi; klik **Minta kode baru** untuk mencoba lagi
 
-Kode tersebut:
+Menutup dialog tidak menghilangkan klaim. Kode yang tiba kemudian akan menunggu di baris **Hubungkan akun Slack saya** pada halaman profil Anda, dengan **Konfirmasi** dan **Tolak** yang sama.
+
+Alasan ada langkah konfirmasi: kode yang dibaca orang lain lalu dikirim dari akun Slack mereka akan membuat akun itu bertindak sebagai Anda. Hanya Anda yang dapat mengonfirmasi, dan hanya profil persis yang mengirim kode.
+
+Kode ini:
 
 - Hanya dapat dipakai sekali dan kedaluwarsa **15 menit** setelah dibuat
 - Selalu dibuat untuk _Anda_, tidak pernah untuk rekan tim
+- Hanya diterima dalam pesan langsung ke bot. Di kanal, kode itu hanya pesan biasa
+- Hanya dapat diklaim oleh anggota penuh ruang kerja Slack tempat bot dipasang, bukan tamu atau orang dari organisasi lain
 - Menggantikan kode apa pun yang sudah Anda pegang, sehingga menekan tombol itu lagi membatalkan kode sebelumnya
 - Hanya tersimpan di memori, sehingga memulai ulang server membatalkan kode yang belum dipakai — tekan tombolnya lagi
 
-Kode yang tidak dikenal, sudah kedaluwarsa, atau dibuat untuk ruang kerja lain akan gagal dengan cara yang sama dan tidak dapat dibedakan: "that code is not valid (or has expired)".
+Kode yang tidak dikenal, sudah kedaluwarsa, ditolak, atau dibuat untuk ruang kerja lain akan gagal dengan cara yang sama dan tidak dapat dibedakan: "That code is not valid (or has expired)."
 
 ## Penautan otomatis lewat email
 
-Jika profil Slack Anda memuat email terverifikasi yang cocok dengan pengguna Control Center yang **sudah menjadi anggota ruang kerja ini**, jembatan akan menautkan Anda saat pertama kali Anda berbicara dengannya. Tidak perlu kode.
+Jika profil Slack Anda memuat email yang sudah dikonfirmasi dan cocok dengan email terverifikasi pengguna Control Center yang **sudah menjadi anggota ruang kerja ini**, jembatan akan menautkan Anda saat pertama kali Anda berbicara dengannya. Tidak perlu kode.
 
 Kedua syarat itu sama pentingnya: kecocokan email membuktikan identitas, tetapi hanya keanggotaan yang memberi akses, jadi orang asing yang emailnya kebetulan ada di server tidak akan tertaut ke apa pun. Daftar anggota menunjukkan bagaimana setiap tautan dibuat ("dicocokkan lewat email" atau "terhubung dengan kode").
 
@@ -56,9 +65,9 @@ Status Anda sendiri ada di halaman profil Anda: baris **Hubungkan akun Slack say
 menampilkan "Terhubung ke _your-slack-id_" setelah Anda tertaut, dan meminta Anda
 menautkan akun bila belum.
 
-Daftar anggota adalah langganan langsung, karena perubahan terjadi di sisi lain —
-Anda mengetik kode di Slack, sehingga tidak ada permintaan dari aplikasi yang dapat
-membawa jawabannya kembali.
+Daftar anggota dan konfirmasi adalah langganan langsung, karena perubahan terjadi di sisi lain:
+Anda mengirim kode di Slack, sehingga tidak ada permintaan dari aplikasi yang dapat membawa
+jawabannya kembali.
 
 ## Batalkan tautan
 
@@ -80,9 +89,13 @@ Akun Slack Anda tertaut ke pengguna Control Center, tetapi pengguna itu tidak me
 
 Peran `viewer` dan `guest` tidak dapat memulai pekerjaan. Admin harus menaikkan peran Anda ke `member` atau lebih tinggi.
 
-### Perintah slash tidak dikenali
+### Bot mengatakan kode tidak valid
 
-Periksa bahwa perintah slash itu ada di Slack dan Anda mengirim perintah yang ditampilkan dialog pengaturan kepada Anda — admin mungkin telah mengganti namanya, dan dalam hal ini dialog menampilkan nama yang berlaku saat ini.
+Kode sudah kedaluwarsa, sudah dipakai, ditolak, atau sudah digantikan kode yang lebih baru. Klik **Hubungkan akun Slack saya** lagi dan kirim kode yang baru.
+
+### Bot memperlakukan kode saya sebagai permintaan
+
+Anda mengirimnya di kanal, atau akun Slack Anda sudah tertaut. Kode hanya diterima di pesan langsung, dan pesan berbentuk kode dari akun yang sudah tertaut adalah permintaan biasa.
 
 ## Panduan terkait
 

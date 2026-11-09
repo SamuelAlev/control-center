@@ -12,11 +12,13 @@ import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dar
     as mention;
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
+import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
 import 'package:cc_server_core/src/identity/github_login_directory.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
 import 'package:meta/meta.dart';
 
-/// Starts the AI review pipeline for one pull request. The runtime's
+/// Starts the AI review pipeline for one pull request as [userId] (the
+/// accountable human: the member who asked or labelled). The runtime's
 /// `startPrReview` seam: idempotent, duplicate-guarded (`already_running`),
 /// and it creates + provisions the PR's review space itself.
 typedef StartAiReview =
@@ -25,6 +27,7 @@ typedef StartAiReview =
       required String owner,
       required String repo,
       required int prNumber,
+      required String userId,
     });
 
 /// Ensures a PR has its backing review space (checking the worktree out at
@@ -61,6 +64,7 @@ class InboundGitHubPrComment {
   const InboundGitHubPrComment({
     required this.id,
     required this.body,
+    required this.authorId,
     required this.authorLogin,
     required this.authorIsBot,
     required this.isReviewComment,
@@ -72,7 +76,11 @@ class InboundGitHubPrComment {
   /// Raw markdown body.
   final String body;
 
-  /// Author's login (`appslug[bot]` for app accounts).
+  /// The author's immutable numeric GitHub user id (`user.id`); 0 when the
+  /// payload carried none. The author is matched on this, never on the login.
+  final int authorId;
+
+  /// Author's login (`appslug[bot]` for app accounts). Display only.
   final String authorLogin;
 
   /// Whether the author is a bot account — ours or anyone else's.
@@ -114,40 +122,96 @@ abstract interface class GitHubPrConversationSink {
   Future<void> stop();
 }
 
+/// The member a conversation is on behalf of: who asked, as Control Center
+/// and GitHub know them.
+final class _Asker {
+  const _Asker({
+    required this.userId,
+    required this.accountId,
+    required this.login,
+  });
+
+  final String userId;
+  final int accountId;
+  final String login;
+}
+
 /// A pending outbound reply, recorded against the agent run it answers and
 /// consumed when that run completes.
+///
+/// It carries who asked (to bound the post and to attribute it) and which
+/// bot the question reached (so a reply after a lane or App change does not
+/// post as a different identity).
 class _PendingReply {
   _PendingReply({
     required this.owner,
     required this.repo,
     required this.prNumber,
-    required this.askerLogin,
+    required this.asker,
+    required this.identity,
     required this.isReviewThread,
     this.parentCommentId,
   });
 
-  factory _PendingReply.fromJson(Map<String, dynamic> json) => _PendingReply(
-    owner: json['owner'] as String? ?? '',
-    repo: json['repo'] as String? ?? '',
-    prNumber: (json['pr_number'] as num?)?.toInt() ?? 0,
-    askerLogin: json['asker_login'] as String? ?? '',
-    isReviewThread: json['kind'] == 'review',
-    parentCommentId: (json['parent_comment_id'] as num?)?.toInt(),
-  );
+  static const int _version = 2;
+
+  /// Null for anything this build did not write.
+  static _PendingReply? fromJson(Map<String, dynamic> json) {
+    if (json['v'] != _version) {
+      return null;
+    }
+    final userId = json['asker_user_id'];
+    final accountId = json['asker_account_id'];
+    final botLogin = json['bot_login'];
+    final lane = GitHubLane.values
+        .where((l) => l.wire == json['lane'])
+        .firstOrNull;
+    if (userId is! String ||
+        userId.isEmpty ||
+        accountId is! int ||
+        botLogin is! String ||
+        botLogin.isEmpty ||
+        lane == null) {
+      return null;
+    }
+    return _PendingReply(
+      owner: json['owner'] as String? ?? '',
+      repo: json['repo'] as String? ?? '',
+      prNumber: (json['pr_number'] as num?)?.toInt() ?? 0,
+      asker: _Asker(
+        userId: userId,
+        accountId: accountId,
+        login: json['asker_login'] as String? ?? '',
+      ),
+      identity: GitHubConversationIdentity(
+        botLogin: botLogin,
+        slug: json['app_slug'] as String? ?? '',
+        lane: lane,
+      ),
+      isReviewThread: json['kind'] == 'review',
+      parentCommentId: (json['parent_comment_id'] as num?)?.toInt(),
+    );
+  }
 
   final String owner;
   final String repo;
   final int prNumber;
-  final String askerLogin;
+  final _Asker asker;
+  final GitHubConversationIdentity identity;
   final bool isReviewThread;
   final int? parentCommentId;
 
   Map<String, dynamic> toJson() => {
-    'v': 1,
+    'v': _version,
     'owner': owner,
     'repo': repo,
     'pr_number': prNumber,
-    'asker_login': askerLogin,
+    'asker_user_id': asker.userId,
+    'asker_account_id': asker.accountId,
+    'asker_login': asker.login,
+    'bot_login': identity.botLogin,
+    'app_slug': identity.slug,
+    'lane': identity.lane.wire,
     'kind': isReviewThread ? 'review' : 'issue',
     if (parentCommentId != null) 'parent_comment_id': parentCommentId,
   };
@@ -155,16 +219,26 @@ class _PendingReply {
 
 /// Bridges GitHub PR conversations into PR review spaces and back.
 ///
-/// @mention (or reply in a bot thread) → space turn attributed to the mapped writing member;
-/// bare mention/`review` starts the AI review pipeline; agent reply posts back on GitHub.
-/// Gates: drop bot authors (loop guard); best-effort 👀 ack; unmapped/read-only authors never enter.
-/// GitHub writes use the app identity; in-space runs act as the mapped member.
-/// Outbound: run-log id keys a pending-reply cache row; one post-back attempt then drop (answer stays in space).
+/// @mention (or a reply in a bot thread) → a space turn attributed to the
+/// member who signed in to GitHub as that author; a bare mention/`review`
+/// starts the AI review pipeline; the agent's reply posts back on GitHub.
+///
+/// Order, per comment: loop guard (bots and our own attributed replies) →
+/// author resolved by numeric GitHub id to a writing member, else ignored
+/// silently (nothing is posted) → the server confirms it can mint a `bot`
+/// token bounded by that member → the claim: the member's own 👀 reaction,
+/// where 201 means this server owns the work and 200 means another server of
+/// theirs already does → work. A label runs the same gate on the labeller.
+///
+/// Every reply rides the workspace's gateway with a `bot` token bounded by
+/// the asking member and starts with [attributed]'s prefix. Outbound: the
+/// run-log id keys a pending-reply cache row; one post-back attempt, then
+/// drop (the answer stays in the space).
 class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// Creates a [GitHubPrConversationBridge]. Call [start] to arm the
   /// outbound listener.
   GitHubPrConversationBridge({
-    required this._gateway,
+    required this._gatewayFor,
     required this._loginDirectory,
     required this._messaging,
     required this._messagingRepository,
@@ -180,7 +254,14 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// run-log id (= the agent turn's message id).
   static const String pendingReplyCacheKind = 'github_pr_reply';
 
-  final GitHubPrConversationGateway _gateway;
+  /// How every automated reply begins, before the asker's login. In the
+  /// Connect and user-token lanes a reply is authored by the asking person,
+  /// not a `[bot]` account, so this prefix is also the loop guard.
+  static const String attributionLead = '**Control Center** (for @';
+
+  /// The gateway of one workspace: its bot, its tokens. A reply always
+  /// rides the workspace the question arrived in.
+  final GitHubPrConversationGateway Function(String workspaceId) _gatewayFor;
   final GitHubLoginDirectory _loginDirectory;
   final MessagingPort _messaging;
   final MessagingRepository _messagingRepository;
@@ -221,6 +302,14 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     }
     return body.trim();
   }
+
+  /// [body] as an automated reply on behalf of [login].
+  static String attributed(String login, String body) =>
+      '$attributionLead$login): $body';
+
+  /// Whether [body] is one of our automated replies.
+  static bool isAutomatedReply(String body) =>
+      body.trimLeft().startsWith(attributionLead);
 
   /// Classifies an invocation by its mention-stripped text: a bare mention
   /// (or `review`, ignoring trailing punctuation) asks for the review
@@ -269,66 +358,105 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     bool isBotThread = false,
   }) async {
     // 1. Loop guard, before anything that costs a request or a row.
-    if (comment.authorIsBot) {
+    if (comment.authorIsBot || isAutomatedReply(comment.body)) {
       return;
     }
-    final botLogin = await _gateway.botLogin();
-    final mention = mentionsBot(comment.body, botLogin);
+    final gateway = _gatewayFor(workspaceId);
+    final identity = await gateway.identity();
+    if (identity == null) {
+      return;
+    }
+    final mention = mentionsBot(comment.body, identity.botLogin);
     if (!mention && !isBotThread) {
       return;
     }
 
-    // 2. Acknowledge before the slow work.
-    await _tryAcknowledge(owner, repo, comment);
-
-    // 3. Membership gate.
-    final actor = await _resolveActor(workspaceId, comment.authorLogin);
-    if (actor.refusal != null) {
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body: actor.refusal!,
-      );
+    // 2. Membership, by numeric id. Strangers and read-only members are
+    // ignored silently: answering them would announce the bot to anyone.
+    final member = await _resolveActor(workspaceId, comment.authorId);
+    if (member == null) {
       return;
     }
-    final member = actor.member!;
+
+    // 3. The claim, as that member.
+    final claimed = await _claim(
+      gateway,
+      owner: owner,
+      repo: repo,
+      userId: member.userId,
+      what: 'comment ${comment.id} on $owner/$repo#$prNumber',
+      react: () => comment.isReviewComment
+          ? gateway.claimReviewComment(
+              owner,
+              repo,
+              comment.id,
+              asUserId: member.userId,
+            )
+          : gateway.claimIssueComment(
+              owner,
+              repo,
+              comment.id,
+              asUserId: member.userId,
+            ),
+    );
+    if (!claimed) {
+      return;
+    }
+    final asker = _Asker(
+      userId: member.userId,
+      accountId: comment.authorId,
+      login: comment.authorLogin,
+    );
 
     final question = mention
-        ? stripMention(comment.body, botLogin)
+        ? stripMention(comment.body, identity.botLogin)
         : comment.body.trim();
     // Only an explicit mention can ask for a review: a bare mention or
     // `review`. A thread reply that did not mention the bot is always a
     // question — treating it as a review request would re-run the pipeline
     // on every follow-up.
     if (mention && parseCommand(question) == GitHubBotCommand.review) {
-      await _startReviewAndReport(
+      final body = await _startReviewAndDescribe(
         workspaceId: workspaceId,
         owner: owner,
         repo: repo,
         prNumber: prNumber,
+        userId: member.userId,
+      );
+      await _replyTo(
+        gateway,
+        owner: owner,
+        repo: repo,
+        prNumber: prNumber,
         comment: comment,
+        asker: asker,
+        body: body,
       );
       return;
     }
 
     await _answerQuestion(
+      gateway,
+      identity: identity,
       workspaceId: workspaceId,
       owner: owner,
       repo: repo,
       prNumber: prNumber,
       prTitle: prTitle,
       comment: comment,
-      member: member,
+      asker: asker,
       question: question,
     );
   }
 
   /// Handles a PR that carries the review label — the reviewer-assignment
   /// stand-in, since a GitHub App cannot hold the native requested-reviewer
-  /// slot. The poller dedupes per PR; there is no author to gate (a label
-  /// carries none), exactly like the poll-driven PR events this mirrors.
+  /// slot. The poller dedupes per PR.
+  ///
+  /// The label is gated exactly like a mention: the labeller (latest
+  /// `labeled` event, by numeric id) must be a writing member who can push
+  /// to the repository, and claims the PR with their own 👀. The review runs
+  /// with the labeller as its accountable human. Nothing is posted.
   @override
   Future<void> handleLabeledPullRequest({
     required String workspaceId,
@@ -336,79 +464,108 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     required String repo,
     required int prNumber,
   }) async {
-    await _startReviewAndReport(
+    final gateway = _gatewayFor(workspaceId);
+    if (await gateway.identity() == null) {
+      return;
+    }
+    final GitHubPrActor? labeller;
+    try {
+      labeller = await gateway.latestLabeler(owner, repo, prNumber);
+    } on Object catch (e) {
+      _onWarning?.call(
+        'github_pr_conversation: reading who labelled '
+        '$owner/$repo#$prNumber failed: $e',
+      );
+      return;
+    }
+    if (labeller == null) {
+      return;
+    }
+    final member = await _resolveActor(workspaceId, labeller.accountId);
+    if (member == null) {
+      return;
+    }
+    final claimed = await _claim(
+      gateway,
+      owner: owner,
+      repo: repo,
+      userId: member.userId,
+      what: 'label on $owner/$repo#$prNumber',
+      react: () => gateway.claimPullRequest(
+        owner,
+        repo,
+        prNumber,
+        asUserId: member.userId,
+      ),
+    );
+    if (!claimed) {
+      return;
+    }
+    await _startReviewAndDescribe(
       workspaceId: workspaceId,
       owner: owner,
       repo: repo,
       prNumber: prNumber,
-      comment: null,
+      userId: member.userId,
     );
   }
 
   // ── Inbound helpers ─────────────────────────────────────────────────────
 
-  Future<void> _tryAcknowledge(
-    String owner,
-    String repo,
-    InboundGitHubPrComment comment,
-  ) async {
-    try {
-      if (comment.isReviewComment) {
-        await _gateway.acknowledgeReviewComment(owner, repo, comment.id);
-      } else {
-        await _gateway.acknowledgeIssueComment(owner, repo, comment.id);
-      }
-    } on Object catch (e) {
-      _onWarning?.call('github_pr_conversation: ack failed: $e');
-    }
-  }
-
-  /// The membership ladder, mirroring the chat bridge's: fails closed and
-  /// explains, so an unmapped author is told how to map and a read-only one
-  /// is told why not. None of them proceed.
-  Future<({WorkspaceMember? member, String? refusal})> _resolveActor(
+  /// The writing member who signed in to GitHub as [accountId], or null —
+  /// unknown accounts and read-only members alike.
+  Future<WorkspaceMember?> _resolveActor(
     String workspaceId,
-    String login,
+    int accountId,
   ) async {
-    final member = await _loginDirectory.memberForLogin(workspaceId, login);
-    if (member == null) {
-      return (
-        member: null,
-        refusal:
-            'I do not know who you are in Control Center yet. Sign in to '
-            'GitHub from Settings → Workspace → Profile & identity → Code hosting '
-            '(or paste a token) so your account is linked, and make sure you '
-            'are a member of the workspace that links this repository.',
-      );
-    }
-    if (!member.role.canWrite) {
-      return (
-        member: null,
-        refusal:
-            'Your role in this workspace is read-only '
-            '(${member.role.name}), so I cannot start work on your behalf.',
-      );
-    }
-    return (member: member, refusal: null);
+    final member = await _loginDirectory.memberForAccountId(
+      workspaceId,
+      accountId,
+    );
+    return member != null && member.role.canWrite ? member : null;
   }
 
-  Future<void> _startReviewAndReport({
+  /// Whether this server owns the work: it can reply bounded by [userId],
+  /// and [react] left that person's 👀 (201). A 200 (already reacted:
+  /// another server of theirs) or any failure means stop.
+  Future<bool> _claim(
+    GitHubPrConversationGateway gateway, {
+    required String owner,
+    required String repo,
+    required String userId,
+    required String what,
+    required Future<GitHubReactionClaim> Function() react,
+  }) async {
+    if (!await gateway.canPostAs(owner, repo, actingUserId: userId)) {
+      return false;
+    }
+    try {
+      return await react() == GitHubReactionClaim.claimed;
+    } on Object catch (e) {
+      _onWarning?.call('github_pr_conversation: claiming $what failed: $e');
+      return false;
+    }
+  }
+
+  /// Starts the review as [userId] and returns the reply that describes the
+  /// outcome.
+  Future<String> _startReviewAndDescribe({
     required String workspaceId,
     required String owner,
     required String repo,
     required int prNumber,
-    required InboundGitHubPrComment? comment,
+    required String userId,
   }) async {
-    String body;
     try {
       final result = await _startReview(
         workspaceId: workspaceId,
         owner: owner,
         repo: repo,
         prNumber: prNumber,
+        userId: userId,
       );
       final status = result['status'] as String? ?? 'started';
-      body = status == 'already_running'
+      return status == 'already_running'
           ? 'A review of this pull request is already running — its findings '
                 'will appear in the review space in Control Center.'
           : 'Review started. The findings will appear in this pull request\'s '
@@ -419,31 +576,33 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         'github_pr_conversation: review failed to start for '
         '$owner/$repo#$prNumber: $e',
       );
-      body =
-          'I could not start the review ($e). The operator can see the '
+      return 'I could not start the review ($e). The operator can see the '
           'failure in the server log.';
-    }
-    if (comment != null) {
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body: body,
-      );
     }
   }
 
-  Future<void> _answerQuestion({
+  Future<void> _answerQuestion(
+    GitHubPrConversationGateway gateway, {
+    required GitHubConversationIdentity identity,
     required String workspaceId,
     required String owner,
     required String repo,
     required int prNumber,
     required String prTitle,
     required InboundGitHubPrComment comment,
-    required WorkspaceMember member,
+    required _Asker asker,
     required String question,
   }) async {
+    Future<void> reply(String body) => _replyTo(
+      gateway,
+      owner: owner,
+      repo: repo,
+      prNumber: prNumber,
+      comment: comment,
+      asker: asker,
+      body: body,
+    );
+
     final repoFullName = '$owner/$repo';
     String spaceId;
     try {
@@ -460,40 +619,21 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         'github_pr_conversation: space provisioning failed for '
         '$repoFullName#$prNumber: $e',
       );
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body:
-            'I could not prepare this pull request\'s workspace, so I '
-            'cannot answer here yet.',
-      );
-      return;
+      spaceId = '';
     }
     if (spaceId.isEmpty) {
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body:
-            'I could not prepare this pull request\'s workspace, so I '
-            'cannot answer here yet.',
+      await reply(
+        'I could not prepare this pull request\'s workspace, so I cannot '
+        'answer here yet.',
       );
       return;
     }
 
     final answerer = await _resolveAnswerer(workspaceId, spaceId);
     if (answerer == null) {
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body:
-            'This workspace has no agent available to answer. Ask the '
-            'operator to check the workspace\'s agents.',
+      await reply(
+        'This workspace has no agent available to answer. Ask the operator '
+        'to check the workspace\'s agents.',
       );
       return;
     }
@@ -502,12 +642,13 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       workspaceId,
       spaceId,
       question,
-      senderUserId: member.userId,
+      senderUserId: asker.userId,
       metadata: {
         'github': {
           'comment_id': comment.id,
           'repo': repoFullName,
           'pr_number': prNumber,
+          'author_id': comment.authorId,
           'author_login': comment.authorLogin,
           'thread': comment.isReviewComment ? 'review' : 'issue',
         },
@@ -521,7 +662,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         spaceId: spaceId,
         agentId: answerer,
         prompt: question,
-        requestedByUserId: member.userId,
+        requestedByUserId: asker.userId,
       );
     } on Object catch (e) {
       // The message is in the space; only the turn failed to start. Report
@@ -531,30 +672,15 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         'github_pr_conversation: dispatch failed for '
         '$repoFullName#$prNumber: $e',
       );
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body:
-            'I could not start an agent on that. The question is in the '
-            'review space; the operator can retry it there.',
-      );
-      return;
     }
     if (runLogId == null || runLogId.isEmpty) {
       _onWarning?.call(
-        'github_pr_conversation: dispatch refused for '
+        'github_pr_conversation: no agent turn started for '
         '$repoFullName#$prNumber',
       );
-      await _reply(
-        owner: owner,
-        repo: repo,
-        prNumber: prNumber,
-        comment: comment,
-        body:
-            'I could not start an agent on that. The question is in the '
-            'review space; the operator can retry it there.',
+      await reply(
+        'I could not start an agent on that. The question is in the review '
+        'space; the operator can retry it there.',
       );
       return;
     }
@@ -565,7 +691,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       owner: owner,
       repo: repo,
       prNumber: prNumber,
-      askerLogin: comment.authorLogin,
+      asker: asker,
+      identity: identity,
       isReviewThread: comment.isReviewComment,
       parentCommentId: comment.isReviewComment ? comment.id : null,
     );
@@ -644,14 +771,16 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     await _cache(
       workspaceId,
     ).deleteEntry(workspaceId, pendingReplyCacheKind, runId);
-    _PendingReply pending;
+    _PendingReply? pending;
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) {
-        return;
+      if (decoded is Map<String, dynamic>) {
+        pending = _PendingReply.fromJson(decoded);
       }
-      pending = _PendingReply.fromJson(decoded);
     } on FormatException {
+      pending = null;
+    }
+    if (pending == null) {
       return;
     }
 
@@ -665,29 +794,49 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       // space; posting an empty answer on GitHub would be noise.
       return;
     }
+    final where = '${pending.owner}/${pending.repo}#${pending.prNumber}';
+
+    // The reply must leave as the identity the question reached. A lane or
+    // App change in between would post as someone the asker never addressed.
+    final gateway = _gatewayFor(workspaceId);
+    final current = await gateway.identity();
+    if (current == null || !current.sameAs(pending.identity)) {
+      _onWarning?.call(
+        'github_pr_conversation: not posting the answer to $where — the '
+        'workspace\'s GitHub identity changed since the question '
+        '(${pending.identity.botLogin} on ${pending.identity.lane.wire}, now '
+        '${current == null ? 'none' : '${current.botLogin} on '
+                  '${current.lane.wire}'}). The answer is in the review '
+        'space.',
+      );
+      return;
+    }
+    // And on behalf of the same person, who must still be a writing member
+    // signed in as that GitHub account.
+    final member = await _resolveActor(workspaceId, pending.asker.accountId);
+    if (member == null || member.userId != pending.asker.userId) {
+      _onWarning?.call(
+        'github_pr_conversation: not posting the answer to $where — the '
+        'asker is no longer a writing member signed in as that GitHub '
+        'account. The answer is in the review space.',
+      );
+      return;
+    }
     try {
-      if (pending.isReviewThread && pending.parentCommentId != null) {
-        await _gateway.replyInReviewThread(
-          pending.owner,
-          pending.repo,
-          prNumber: pending.prNumber,
-          parentCommentId: pending.parentCommentId!,
-          body: content,
-        );
-      } else {
-        await _gateway.postConversationComment(
-          pending.owner,
-          pending.repo,
-          prNumber: pending.prNumber,
-          body: pending.askerLogin.isEmpty
-              ? content
-              : '@${pending.askerLogin} $content',
-        );
-      }
+      await _post(
+        gateway,
+        owner: pending.owner,
+        repo: pending.repo,
+        prNumber: pending.prNumber,
+        reviewThreadParentId: pending.isReviewThread
+            ? pending.parentCommentId
+            : null,
+        asker: pending.asker,
+        body: content,
+      );
     } on Object catch (e) {
       _onWarning?.call(
-        'github_pr_conversation: posting the answer to '
-        '${pending.owner}/${pending.repo}#${pending.prNumber} failed: $e. '
+        'github_pr_conversation: posting the answer to $where failed: $e. '
         'The answer itself is in the review space.',
       );
     }
@@ -695,36 +844,62 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
 
   // ── Shared ──────────────────────────────────────────────────────────────
 
-  Future<void> _reply({
+  /// Replies to [comment] in its own lane; a failure is logged, not thrown.
+  Future<void> _replyTo(
+    GitHubPrConversationGateway gateway, {
     required String owner,
     required String repo,
     required int prNumber,
     required InboundGitHubPrComment comment,
+    required _Asker asker,
     required String body,
   }) async {
     try {
-      if (comment.isReviewComment) {
-        await _gateway.replyInReviewThread(
-          owner,
-          repo,
-          prNumber: prNumber,
-          parentCommentId: comment.id,
-          body: body,
-        );
-      } else {
-        await _gateway.postConversationComment(
-          owner,
-          repo,
-          prNumber: prNumber,
-          body: comment.authorLogin.isEmpty
-              ? body
-              : '@${comment.authorLogin} $body',
-        );
-      }
+      await _post(
+        gateway,
+        owner: owner,
+        repo: repo,
+        prNumber: prNumber,
+        reviewThreadParentId: comment.isReviewComment ? comment.id : null,
+        asker: asker,
+        body: body,
+      );
     } on Object catch (e) {
       _onWarning?.call(
         'github_pr_conversation: replying on $owner/$repo#$prNumber '
         'failed: $e',
+      );
+    }
+  }
+
+  /// Posts an attributed automated reply bounded by [asker]: inside the
+  /// review thread rooted at [reviewThreadParentId], else on the timeline.
+  Future<void> _post(
+    GitHubPrConversationGateway gateway, {
+    required String owner,
+    required String repo,
+    required int prNumber,
+    required int? reviewThreadParentId,
+    required _Asker asker,
+    required String body,
+  }) async {
+    final text = attributed(asker.login, body);
+    if (reviewThreadParentId != null) {
+      await gateway.replyInReviewThread(
+        owner,
+        repo,
+        prNumber: prNumber,
+        parentCommentId: reviewThreadParentId,
+        body: text,
+        actingUserId: asker.userId,
+      );
+    } else {
+      await gateway.postConversationComment(
+        owner,
+        repo,
+        prNumber: prNumber,
+        body: text,
+        actingUserId: asker.userId,
       );
     }
   }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
@@ -103,6 +104,9 @@ class _FakeGit implements GitCommandPort {
   /// class's central invariant: on the CoW backend no command — not even a
   /// read-only probe — is issued against the user's checkout.
   final List<String> workdirs = [];
+
+  /// The `env` of each entry in [runs], same index.
+  final List<Map<String, String>?> envs = [];
   final Map<String, GitResult> _responses;
 
   @override
@@ -115,6 +119,7 @@ class _FakeGit implements GitCommandPort {
   }) async {
     runs.add(args);
     workdirs.add(workdir);
+    envs.add(env);
     final joined = args.join(' ');
     for (final entry in _responses.entries) {
       if (joined.contains(entry.key)) {
@@ -346,7 +351,8 @@ void main() {
       destParentDir: tmp.path,
       name: 'repo',
       branch: 'feature/x',
-      authUrl: 'https://token@github.com/owner/repo.git',
+      fetchUrl: 'https://github.com/owner/repo.git',
+      fetchToken: 'token',
     );
 
     expect(result.backend, RepoIsolationBackend.rift);
@@ -443,7 +449,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       );
 
@@ -474,7 +481,7 @@ void main() {
     },
   );
 
-  test('provision with headRef but no authUrl throws StateError', () async {
+  test('provision with headRef but no fetch URL throws StateError', () async {
     final rift = _FakeRift();
     final git = _FakeGit();
     final adapter = _adapter(rift: rift, git: git);
@@ -505,7 +512,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       );
 
@@ -705,7 +713,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       ),
       throwsA(isA<StateError>()),
@@ -731,55 +740,54 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       ),
       throwsA(isA<StateError>()),
     );
   });
 
-  test(
-    'provision — without headRef, authUrl fetch failure degrades to local',
-    () async {
-      final rift = _FakeRift();
-      final git = _FakeGit(
-        responses: {
-          'fetch --no-tags --force': const GitResult(
-            exitCode: 128,
-            stdout: '',
-            stderr: 'fatal: could not read',
-          ),
-        },
-      );
-      final adapter = _adapter(rift: rift, git: git);
-
-      // Should NOT throw — fetch failure is non-fatal on the non-headRef path.
-      final result = await adapter.provision(
-        sourcePath: '/src/repo',
-        destParentDir: tmp.path,
-        name: 'repo',
-        branch: 'feature/x',
-        authUrl: 'https://token@github.com/owner/repo.git',
-        baseRef: 'main',
-      );
-
-      expect(result.backend, RepoIsolationBackend.rift);
-      // Fetch failed → no FETCH_HEAD checkout; next start is inherited origin/main.
-      expect(
-        git.ran((a) => a.contains('checkout') && a.contains('FETCH_HEAD')),
-        isFalse,
-      );
-      expect(
-        git.ran(
-          (a) =>
-              a.contains('checkout') &&
-              a.contains('-B') &&
-              a.contains('refs/remotes/origin/main'),
+  test('provision — without headRef, fetch failure degrades to local', () async {
+    final rift = _FakeRift();
+    final git = _FakeGit(
+      responses: {
+        'fetch --no-tags --force': const GitResult(
+          exitCode: 128,
+          stdout: '',
+          stderr: 'fatal: could not read',
         ),
-        isTrue,
-      );
-    },
-  );
+      },
+    );
+    final adapter = _adapter(rift: rift, git: git);
+
+    // Should NOT throw — fetch failure is non-fatal on the non-headRef path.
+    final result = await adapter.provision(
+      sourcePath: '/src/repo',
+      destParentDir: tmp.path,
+      name: 'repo',
+      branch: 'feature/x',
+      fetchUrl: 'https://github.com/owner/repo.git',
+      fetchToken: 'token',
+      baseRef: 'main',
+    );
+
+    expect(result.backend, RepoIsolationBackend.rift);
+    // Fetch failed → no FETCH_HEAD checkout; next start is inherited origin/main.
+    expect(
+      git.ran((a) => a.contains('checkout') && a.contains('FETCH_HEAD')),
+      isFalse,
+    );
+    expect(
+      git.ran(
+        (a) =>
+            a.contains('checkout') &&
+            a.contains('-B') &&
+            a.contains('refs/remotes/origin/main'),
+      ),
+      isTrue,
+    );
+  });
 
   // -- provision: worktreeFallback error cases -------------------------------
 
@@ -802,7 +810,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       ),
       throwsA(isA<StateError>()),
@@ -1604,7 +1613,7 @@ void main() {
   // =========================================================================
 
   test(
-    'worktree fallback with headRef and no authUrl throws StateError',
+    'worktree fallback with headRef and no fetch URL throws StateError',
     () async {
       final rift = _FakeRift(available: false);
       final git = _FakeGit();
@@ -1617,7 +1626,7 @@ void main() {
           name: 'repo',
           branch: 'pr-42',
           headRef: 'refs/pull/42/head',
-          // No authUrl.
+          // No fetch URL.
         ),
         throwsA(isA<StateError>()),
       );
@@ -1634,7 +1643,8 @@ void main() {
       destParentDir: tmp.path,
       name: 'repo',
       branch: 'pr-42',
-      authUrl: 'https://token@github.com/owner/repo.git',
+      fetchUrl: 'https://github.com/owner/repo.git',
+      fetchToken: 'token',
       headRef: 'refs/pull/42/head',
       // No baseRef provided — but should skip resolution because headRef present.
     );
@@ -1655,7 +1665,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
         baseRef: '', // Explicit empty.
       );
@@ -1725,7 +1736,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'feature/x',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         baseRef: 'main',
       );
 
@@ -1768,7 +1780,8 @@ void main() {
           destParentDir: tmp.path,
           name: 'repo',
           branch: 'feature/x',
-          authUrl: 'https://token@github.com/owner/repo.git',
+          fetchUrl: 'https://github.com/owner/repo.git',
+          fetchToken: 'token',
           baseRef: 'main',
         ),
         throwsA(isA<StateError>()),
@@ -1800,7 +1813,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'pr-42',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         headRef: 'refs/pull/42/head',
       ),
       throwsA(isA<StateError>()),
@@ -2009,47 +2023,113 @@ void main() {
   });
 
   // =========================================================================
-  // Edge cases — authUrl / credential handling
+  // Edge cases — fetch URL / credential handling
   // =========================================================================
 
-  test('provision with authUrl on normal path uses fetch + checkout', () async {
+  test(
+    'provision with a fetch URL on normal path uses fetch + checkout',
+    () async {
+      final rift = _FakeRift();
+      final git = _FakeGit();
+      final adapter = _adapter(rift: rift, git: git);
+
+      final result = await adapter.provision(
+        sourcePath: '/src/repo',
+        destParentDir: tmp.path,
+        name: 'repo',
+        branch: 'feature/x',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
+        baseRef: 'main',
+      );
+
+      expect(result.backend, RepoIsolationBackend.rift);
+      // Fetch writes FETCH_HEAD only — never origin/main.
+      expect(
+        git.ran(
+          (a) =>
+              a.contains('fetch') &&
+              a.contains('main') &&
+              !a.any((s) => s.contains('refs/remotes/origin/')),
+        ),
+        isTrue,
+      );
+      expect(
+        git.ran(
+          (a) =>
+              a.contains('checkout') &&
+              a.contains('-B') &&
+              a.contains('FETCH_HEAD'),
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test('the fetch token rides in the environment, never in argv', () async {
     final rift = _FakeRift();
     final git = _FakeGit();
     final adapter = _adapter(rift: rift, git: git);
 
-    final result = await adapter.provision(
+    await adapter.provision(
       sourcePath: '/src/repo',
       destParentDir: tmp.path,
       name: 'repo',
       branch: 'feature/x',
-      authUrl: 'https://token@github.com/owner/repo.git',
+      fetchUrl: 'https://github.com/owner/repo.git',
+      fetchToken: 'ghs_secret',
       baseRef: 'main',
     );
 
-    expect(result.backend, RepoIsolationBackend.rift);
-    // Fetch writes FETCH_HEAD only — never origin/main.
+    final fetchIndex = git.runs.indexWhere((a) => a.contains('fetch'));
+    expect(fetchIndex, isNonNegative);
+    for (final args in git.runs) {
+      expect(args.join(' '), isNot(contains('ghs_secret')));
+    }
+    final param = git.envs[fetchIndex]!['GIT_CONFIG_PARAMETERS']!;
+    final expected = base64Encode(utf8.encode('x-access-token:ghs_secret'));
     expect(
-      git.ran(
-        (a) =>
-            a.contains('fetch') &&
-            a.contains('main') &&
-            !a.any((s) => s.contains('refs/remotes/origin/')),
-      ),
-      isTrue,
-    );
-    expect(
-      git.ran(
-        (a) =>
-            a.contains('checkout') &&
-            a.contains('-B') &&
-            a.contains('FETCH_HEAD'),
-      ),
-      isTrue,
+      param,
+      "'http.https://github.com/.extraHeader=Authorization: Basic $expected'",
     );
   });
 
+  test('a fetch URL carrying credentials is refused', () async {
+    final adapter = _adapter(rift: _FakeRift(), git: _FakeGit());
+
+    await expectLater(
+      adapter.provision(
+        sourcePath: '/src/repo',
+        destParentDir: tmp.path,
+        name: 'repo',
+        branch: 'feature/x',
+        fetchUrl: 'https://x-access-token:tok@github.com/owner/repo.git',
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('a token is never sent to a non-GitHub host', () async {
+    final git = _FakeGit();
+    final adapter = _adapter(rift: _FakeRift(), git: git);
+
+    await adapter.provision(
+      sourcePath: '/src/repo',
+      destParentDir: tmp.path,
+      name: 'repo',
+      branch: 'feature/x',
+      fetchUrl: 'https://gitlab.com/owner/repo.git',
+      fetchToken: 'tok',
+      baseRef: 'main',
+    );
+
+    for (final env in git.envs) {
+      expect(env?['GIT_CONFIG_PARAMETERS'], isNull);
+    }
+  });
+
   test(
-    'provision with authUrl on worktree path fetches into source then creates worktree',
+    'provision with a fetch URL on worktree path fetches into source then creates worktree',
     () async {
       final rift = _FakeRift(available: false);
       final git = _FakeGit();
@@ -2060,7 +2140,8 @@ void main() {
         destParentDir: tmp.path,
         name: 'repo',
         branch: 'feature/x',
-        authUrl: 'https://token@github.com/owner/repo.git',
+        fetchUrl: 'https://github.com/owner/repo.git',
+        fetchToken: 'token',
         baseRef: 'develop',
       );
 
@@ -2088,7 +2169,7 @@ void main() {
   );
 
   test(
-    'empty authUrl fetches the origin URL to FETCH_HEAD, never an empty repo',
+    'empty fetch URL fetches the origin URL to FETCH_HEAD, never an empty repo',
     () async {
       final rift = _FakeRift();
       final git = _FakeGit(

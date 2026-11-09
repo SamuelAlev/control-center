@@ -26,6 +26,8 @@ CLI flags override environment variables, which override defaults:
 | `--port` | `CC_SERVER_PORT` | `9030`; `0` selects an ephemeral port. |
 | `--bind` | `CC_SERVER_BIND` | `loopback`; `any` requires TLS. |
 
+Provider secrets (`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY`, any `SLACK_*SECRET*`) come from a `.env` file or Settings, never the exported environment: the server refuses to boot when one is exported. It reads `.env` from its working directory, beside the executable, or a source checkout above it (copy [`.env.template`](../../.env.template)). In Docker, mount the file at `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`) instead of passing `-e` or `--env-file`.
+
 ## Pair a web client
 
 On a new data dir, pair **before** starting the server; `pair` opens the database directly and must not run alongside it:

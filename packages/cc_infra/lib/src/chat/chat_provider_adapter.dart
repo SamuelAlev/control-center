@@ -393,6 +393,8 @@ class ChatUserProfile {
     this.email,
     this.isBot = false,
     this.teamId,
+    this.fullMember = false,
+    this.emailConfirmed = false,
   });
 
   /// Provider-side member id.
@@ -410,6 +412,15 @@ class ChatUserProfile {
 
   /// The member's provider-side team/guild id, when known.
   final String? teamId;
+
+  /// Whether the provider vouches for this as an active, full member of the
+  /// connected team itself: not a bot, not a guest, not a person visiting from
+  /// another organization. Only a full member may link an account.
+  final bool fullMember;
+
+  /// Whether the provider reports [email] as confirmed by its owner. An
+  /// unconfirmed address is a claim, not an identity.
+  final bool emailConfirmed;
 }
 
 /// Live transport state, as the settings surface shows it.

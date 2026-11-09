@@ -23,7 +23,6 @@ List<RepoOp> buildPrReviewOps({
     String owner,
     String repo, {
     required String userId,
-    bool asApp,
   })
   resolvePrReviewRepository,
   required ({String owner, String repo}) Function(Map<String, dynamic> args)
@@ -271,10 +270,9 @@ List<RepoOp> buildPrReviewOps({
       return {'ok': true};
     },
   ),
-  // Posts review findings as inline PR comments under the server's app
-  // identity. Bodies read from stored `review_node` messages (not the
-  // client) so attribution is honest. `pr_review.postReviewComment` stays
-  // on the caller's account (human-typed body).
+  // Posts review findings as inline PR comments on the caller's own GitHub
+  // sign-in: the person choosing which findings go out is who publishes them.
+  // Bodies read from stored `review_node` messages (not the client).
   //
   // Unanchored findings counted, never dropped. Anchors outside the diff
   // get their own bucket (GitHub 422; not retryable as `failed`).
@@ -320,7 +318,6 @@ List<RepoOp> buildPrReviewOps({
         c.owner,
         c.repo,
         userId: ctx.userId,
-        asApp: true,
       );
 
       var posted = 0;

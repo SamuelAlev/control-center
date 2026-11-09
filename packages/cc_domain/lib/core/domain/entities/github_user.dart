@@ -21,8 +21,8 @@ String formatGitHubLoginWithName(String login, String? name) {
   return '$login ($trimmed)';
 }
 
-/// Typed representation of a GitHub user (login, avatar, optional display
-/// name).
+/// Typed representation of a GitHub user (numeric id, login, avatar, optional
+/// display name).
 ///
 /// Lives in the shared kernel because it is used across many features on both
 /// sides of the RPC boundary — the server-side GitHub network models embed it,
@@ -31,7 +31,12 @@ String formatGitHubLoginWithName(String login, String? name) {
 /// into the server-only `cc_infra` package for the type (FINDINGS §20.9).
 class GitHubUser {
   /// Creates a [GitHubUser].
-  const GitHubUser({required this.login, required this.avatarUrl, this.name});
+  const GitHubUser({
+    required this.login,
+    required this.avatarUrl,
+    this.name,
+    this.id = 0,
+  });
 
   /// Creates a [GitHubUser] from a JSON map (GitHub REST shape).
   factory GitHubUser.fromJson(Map<String, dynamic> json) {
@@ -39,17 +44,26 @@ class GitHubUser {
       login: json['login'] as String? ?? '',
       avatarUrl: json['avatar_url'] as String? ?? '',
       name: json['name'] as String?,
+      id: (json['id'] as num?)?.toInt() ?? 0,
     );
   }
 
   /// Serializes this user back to the GitHub JSON shape.
   Map<String, dynamic> toJson() => <String, dynamic>{
+    if (id != 0) 'id': id,
     'login': login,
     'avatar_url': avatarUrl,
     if (name != null) 'name': name,
   };
 
-  /// The user's login name.
+  /// GitHub's immutable numeric account id (`user.id`), or 0 when the source
+  /// did not carry one (GraphQL nodes, cached shapes).
+  ///
+  /// The only identity safe to match a person on: a login can be renamed and
+  /// then claimed by somebody else.
+  final int id;
+
+  /// The user's login name. Display only — match people on [id].
   final String login;
 
   /// URL to the user's avatar image.
@@ -65,10 +79,11 @@ class GitHubUser {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is GitHubUser &&
+          other.id == id &&
           other.login == login &&
           other.avatarUrl == avatarUrl &&
           other.name == name;
 
   @override
-  int get hashCode => Object.hash(login, avatarUrl, name);
+  int get hashCode => Object.hash(id, login, avatarUrl, name);
 }

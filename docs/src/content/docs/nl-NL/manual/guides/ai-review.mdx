@@ -2,7 +2,7 @@
 title: AI-gestuurde review gebruiken
 description: Voer de pr_review-pipeline uit op een PR, lees de bevindingen en het oordeel en publiceer de review vervolgens naar GitHub.
 slug: nl-NL/handleiding/gidsen/ai-review
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Deze gids laat zien hoe je reviewer-agenten een pull request laat reviewen en hoe
@@ -120,14 +120,15 @@ GitHub gepost.
 Control Center verstuurt **één** GitHub-review. Bevindingen die al zijn opgelost
 of verworpen, worden overgeslagen. De knop neemt elke resterende open bevinding
 mee en dient bij **Ship** `APPROVE` in. (De MCP-tool `publish_review_to_github`
-gebruikt standaard nog steeds alleen door peers bevestigde bevindingen en keurt
-niet goed tenzij je `approve_on_ship` meegeeft.) Bevindingen met een anker naar
+gebruikt standaard alleen door peers bevestigde bevindingen en keurt nooit goed:
+die publiceert als automatisering, dus `approve_on_ship` heeft daar geen effect.) Bevindingen met een anker naar
 een bestand en regel worden inline reacties; al het overige komt in de
 samenvattingstekst terecht, elk met een voettekst "— Control Center AI review",
 zodat de bron ondubbelzinnig is. Een **Block**-oordeel wordt ingediend als
 `REQUEST_CHANGES`; **Hold** als `COMMENT`; **Ship** als `APPROVE` vanaf deze
-knop. Een melding luidt dan **Gepubliceerd**. De review wordt geplaatst onder de
-app-identiteit van de server.
+knop. Een melding luidt dan **Gepubliceerd**. De review wordt geplaatst als jij,
+met je eigen GitHub-aanmelding: als je niet bij GitHub bent aangemeld, mislukt
+het publiceren en wordt je gevraagd je aan te melden.
 
 Als GitHub een inline anker weigert omdat de regel geen deel uitmaakt van de
 diff, wordt de hele review opnieuw verstuurd met elke bevinding in de tekst

@@ -2592,6 +2592,27 @@ class AppLocalizationsPl extends AppLocalizations {
       'Oczekiwanie na autoryzację w przeglądarce…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Wpisz kod wyświetlony w przeglądarce';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'To nie wygląda na kod logowania. Kody mają 8 liter i cyfr.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Ten kod nie pasuje do tego logowania. Sprawdź go i spróbuj ponownie.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Logowanie do $provider nie jest jeszcze skonfigurowane na tym serwerze.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Adres zwrotny logowania tego serwera nie jest bezpiecznie dostępny z telefonu. Zaloguj się w aplikacji na komputer albo poproś właściciela serwera o skonfigurowanie publicznego adresu HTTPS.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Sesja logowania wygasła. Rozpocznij logowanie ponownie.';
 
@@ -2612,10 +2633,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Dokończ logowanie';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Z tego telefonu nie można bezpiecznie połączyć się z adresem zwrotnym przeglądarki na tym serwerze. Poproś właściciela serwera o skonfigurowanie publicznego adresu zwrotnego HTTPS albo dodaj token.';
 
   @override
   String get credentialsUpdateToken => 'Aktualizuj token';

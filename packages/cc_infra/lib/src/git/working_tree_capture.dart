@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -186,8 +186,7 @@ Future<({int exitCode, String stdout, String stderr})> _git(
   String workdir, {
   Map<String, String>? env,
 }) async {
-  final result = await Process.run(
-    'git',
+  final result = await IsolatedGit.run(
     RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
     workingDirectory: workdir,
     environment: env,

@@ -3,30 +3,25 @@ part of '../cc_server_runtime.dart';
 /// The `fetchPrPreview` / `fetchCommitPreview` closures behind PR and commit
 /// link previews.
 ///
-/// Read on the caller's client, same reason as the catalog's `userProfile`:
-/// the no-caller lane is the GitHub App, and a private repo the installation
-/// cannot see comes back 404. A member with no GitHub credential still falls
-/// through `tokenForActor` to the app identity. A failed read is no preview,
-/// never an error.
+/// Read only with the caller's own GitHub sign-in: a preview is a person
+/// reading a link, and a repository they cannot see must not render a title
+/// fetched with somebody else's access. Not signed in, or no caller, is no
+/// preview. A failed read is no preview, never an error.
 ({PrPreviewFetcher pr, CommitPreviewFetcher commit}) _linkPreviewFetchers({
   required GitHubApiClient Function(String userId, {String? workspaceId})
   forActor,
-  required GitHubApiClient Function(String workspaceId, String owner) forOwner,
-  required GitHubApiClient server,
 }) {
-  GitHubApiClient clientFor(
-    String owner,
-    String actingUserId,
-    String? workspaceId,
-  ) => actingUserId.isNotEmpty
-      ? forActor(actingUserId, workspaceId: workspaceId)
-      : workspaceId != null && workspaceId.isNotEmpty
-      ? forOwner(workspaceId, owner)
-      : server;
+  GitHubApiClient? clientFor(String actingUserId, String? workspaceId) =>
+      actingUserId.isEmpty
+      ? null
+      : forActor(actingUserId, workspaceId: workspaceId);
 
   return (
     pr: (owner, repo, number, {required actingUserId, workspaceId}) async {
-      final client = clientFor(owner, actingUserId, workspaceId);
+      final client = clientFor(actingUserId, workspaceId);
+      if (client == null) {
+        return null;
+      }
       try {
         final pr = await client.pr.getPullRequest(owner, repo, number);
         if (pr == null) {
@@ -44,7 +39,10 @@ part of '../cc_server_runtime.dart';
       }
     },
     commit: (owner, repo, sha, {required actingUserId, workspaceId}) async {
-      final client = clientFor(owner, actingUserId, workspaceId);
+      final client = clientFor(actingUserId, workspaceId);
+      if (client == null) {
+        return null;
+      }
       try {
         final commit = await client.pr.getCommit(owner, repo, sha);
         if (commit == null) {
@@ -82,9 +80,9 @@ _reviewHubStats(DaoReviewRunSnapshotRepository snapshots) =>
 
 /// The `publishReview` closure behind the client's "Publish to GitHub" button.
 ///
-/// Published under the APP — findings are reviewer-agent work with a human
-/// release gate, not the operator's own prose. `userId` is still required for
-/// the role gate and audit; GitHub credit is the app.
+/// Published as the person who pressed it, on their own GitHub sign-in: the
+/// release gate is theirs, so the review is too. Not signed in fails like any
+/// unauthenticated call.
 Future<Map<String, dynamic>> Function({
   required String workspaceId,
   required String spaceId,
@@ -92,7 +90,7 @@ Future<Map<String, dynamic>> Function({
   required bool approveOnShip,
   required String userId,
 })
-_publishReviewAsApp(ReviewPublisherService publisher) =>
+_publishReviewAsCaller(ReviewPublisherService publisher) =>
     ({
       required String workspaceId,
       required String spaceId,
@@ -107,7 +105,7 @@ _publishReviewAsApp(ReviewPublisherService publisher) =>
             ? ReviewPublishSelection.allOpen
             : ReviewPublishSelection.consensus,
         approveOnShip: approveOnShip,
-        actingUserId: null,
+        actingUserId: userId,
       );
       return {
         'review_id': result.reviewId,

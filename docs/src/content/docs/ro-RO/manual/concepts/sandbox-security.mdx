@@ -2,7 +2,7 @@
 title: Sandbox și securitate
 description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
@@ -125,9 +125,11 @@ rulează agentul.
 
 Un push este acțiunea care trebuie să reziste chiar și în fața unui agent care
 încearcă să ocolească o regulă, așa că este impus prin ce deține agentul, nu
-prin ce rulează. Cu un GitHub App configurat, o rulare într-un worktree GitHub
-primește un token de instalare limitat la depozit, care poate citi conținut și
-lucra cu pull request-uri, dar nu poate face push. Configurația git a rulării
+prin ce rulează. O rulare într-un worktree GitHub primește un token pentru acel
+singur depozit, emis din GitHub App a spațiului de lucru, din aplicația proprie
+a serverului sau din Control Center Connect. Poate citi conținut și, când
+membrul responsabil poate face push, poate comenta pe pull request-uri, dar nu
+poate face push. Configurația git a rulării
 rescrie fiecare URL de push GitHub (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) către **gateway-ul rulărilor de agenți**, un punct
 final de loopback pe `cc_server`. Gateway-ul citește ce ref-uri actualizează
@@ -156,12 +158,11 @@ sunt **Accesează rețeaua**. Asta recunoaște forma obișnuită de a scrie o
 acțiune, iar un agent hotărât să o ascundă (`eval`, un fișier de script, un apel
 direct la API) poate face asta. Push-urile nu depind de asta.
 
-:::caution[Fără GitHub App, regula de push este doar orientativă]
-Fără un GitHub App configurat, brokerul recurge la un token de acces personal,
-care nu poate fi restrâns doar la citire. Regula se aplică în continuare pentru
-`git push`, pentru că git trimite push-ul la gateway, dar codul care folosește
-direct tokenul din mediu poate face push ocolind-o.
-:::
+Fiecare token GitHub pe care îl primește o rulare este limitat de două ori: la
+un singur depozit și la ce poate face acolo membrul responsabil (cel care a
+cerut, altfel proprietarul spațiului de lucru). Nu există nicio acreditare de
+rezervă. Când nu se poate emite niciun token, rularea pornește fără, iar notele
+ei spun de ce.
 
 Nicio cheie API de tichete nu este pusă într-un sandbox. Agenții scriu tichete
 prin instrumentele MCP ale Control Center, care întreabă **Scrie într-un tracker
@@ -170,9 +171,11 @@ extern**.
 Regula **Accesează rețeaua** este citită o singură dată, când pornește rularea.
 Rețeaua unui sandbox este fie pornită, fie oprită, așa că refuzul o oprește, iar
 permite și întreabă întâi o lasă pornită; instrumentele `web_fetch` și
-`web_search` ale harness-ului întreabă în continuare la fiecare apel. Datele de
-autentificare sunt revocate când rularea se desființează, împreună cu orice
-token de scriere emis de gateway, așa că un handle nu supraviețuiește rulării.
+`web_search` ale harness-ului întreabă în continuare la fiecare apel. Handle-urile de
+acreditare ale rulării sunt eliberate când aceasta se desființează. Tokenurile
+din spatele lor sunt partajate per membru și depozit și expiră în aproximativ o
+oră; un membru care se deconectează de la GitHub sau părăsește spațiul de lucru
+anulează dintr-odată toate tokenurile emise în numele lui.
 
 ## Ce adaugă sandbox-ul și unde se oprește
 

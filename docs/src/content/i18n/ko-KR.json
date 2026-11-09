@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Google Calendar 연결",
   "docs.sidebar.guidesServerAndDeployment": "서버와 배포",
   "docs.sidebar.guidesRunHeadlessServer": "헤드리스 서버 실행",
+  "docs.sidebar.guidesRunConnect": "Connect 서버 실행",
   "docs.sidebar.guidesConnectRemoteServer": "원격 서버 연결",
   "docs.sidebar.guidesRunFleetWorker": "플릿 워커 실행",
   "docs.sidebar.guidesBackUpAndRestore": "백업 및 복원",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "키보드 단축키",
   "docs.sidebar.referenceRouteMap": "라우트 맵",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "백업, 내보내기, 가져오기",
   "docs.sidebar.referenceTelemetry": "사용 분석",
   "docs.sidebar.referenceGlossary": "용어집"

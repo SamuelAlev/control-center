@@ -18,6 +18,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +86,7 @@ class FakeCredentialBrokerPort implements CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   }) async {
     mintCount++;
     scopes.add(scope);
@@ -264,8 +266,11 @@ SandboxDispatchDeps _makeDeps({
     agentRepo: agentRepo ?? FakeAgentRepository(),
     runLogRepo: runLogRepo,
     eventBus: eventBus,
-    resolveGitIdentity: (_, {workspaceId}) async =>
-        (name: 'Test User', email: 'test@example.test'),
+    resolveCommitIdentity: (_, {workspaceId}) async =>
+        AgentCommitIdentity.owner(
+          name: 'Test User',
+          email: 'test@example.test',
+        ),
     backendRegistry: buildBackendRegistry(),
   );
 }
@@ -1258,7 +1263,7 @@ void main() {
   // its own environment only ever gets a READ-scoped forge token. A push goes
   // through the agent run gateway, which asks the push rule first.
   group('credential scope', () {
-    test('mints a read-scoped token for a known agent', () async {
+    test('mints a review-scoped (never write) token for a known agent', () async {
       final agentRepo = FakeAgentRepository();
       agentRepo.agentToReturn = Agent(
         id: 'agent-1',
@@ -1281,10 +1286,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.read));
+      expect(broker.scopes, everyElement(ForgeTokenScope.review));
     });
 
-    test('mints a read-scoped token when the agent is not found', () async {
+    test('mints a review-scoped token when the agent is not found', () async {
       final agentRepo = FakeAgentRepository();
       agentRepo.agentToReturn = null;
       final broker = FakeCredentialBrokerPort();
@@ -1296,10 +1301,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.read));
+      expect(broker.scopes, everyElement(ForgeTokenScope.review));
     });
 
-    test('mints a read-scoped token when agentId is null', () async {
+    test('mints a review-scoped token when agentId is null', () async {
       final broker = FakeCredentialBrokerPort();
       final session = DispatchSession(
         deps: _makeDeps(broker: broker),
@@ -1327,10 +1332,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.read));
+      expect(broker.scopes, everyElement(ForgeTokenScope.review));
     });
 
-    test('mints a read-scoped token for an unknown agent id', () async {
+    test('mints a review-scoped token for an unknown agent id', () async {
       final agentRepo = FakeAgentRepository();
       agentRepo.agentToReturn = null;
       final broker = FakeCredentialBrokerPort();
@@ -1359,9 +1364,10 @@ void main() {
       unawaited(session.run());
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Still mints, and still read-only, when the agent lookup finds nothing.
+      // Still mints, and still without push, when the agent lookup finds
+      // nothing.
       expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.read));
+      expect(broker.scopes, everyElement(ForgeTokenScope.review));
     });
   });
 

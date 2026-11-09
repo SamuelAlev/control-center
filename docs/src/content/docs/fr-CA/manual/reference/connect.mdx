@@ -1,0 +1,181 @@
+---
+title: Référence de Control Center Connect
+description: Ce que Connect voit et ne voit jamais, les trois modes, l’identité d’installation, les identifiants scellés, la confiance dans la configuration, et chaque réglage, opération et code d’état.
+slug: fr-CA/manuel/reference/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect exécute les connexions aux fournisseurs pour les serveurs
+qui n’ont pas enregistré leurs propres applications. Un serveur utilise soit le
+Connect hébergé de Control Center, soit un Connect qu’exploite son organisation
+([Exécuter un serveur Connect](/fr-CA/manuel/guides/executer-serveur-connect/)),
+soit aucun. Le choix se fait dans **Paramètres → Serveur → Authentification
+unique → Control Center Connect**, avec `cc_server connect` ou avec
+`CC_CONNECT_URL`.
+
+## Voies
+
+Chaque fournisseur est une voie. Sous **Utiliser mes propres applications** (ou avant qu’aucun choix ne soit fait), une voie s’exécute avec l’application propre au serveur lorsqu’elle est entièrement configurée, sinon elle est indisponible. Avec Control Center ou un Connect personnalisé, Connect exécute chaque voie qu’il sert : les applications propres du serveur restent enregistrées mais ne sont pas utilisées, ni pour les connexions, ni pour l’automatisation du serveur, ni pour le statut qu’il signale. Une application propre à l’espace de travail s’applique dans tous les modes.
+
+| Voie         | Une application propre requiert                  | Via Connect                                               |
+| ------------ | ------------------------------------------------ | --------------------------------------------------------- |
+| `github`     | Identifiant d’application, clé privée, identifiant client et secret client | Les gens se connectent à la GitHub App partagée |
+| `google`     | Identifiant client et secret client              | Les gens connectent Google Calendar                       |
+| `linear`     | Identifiant client                               | Les gens se connectent à Linear                           |
+| `linear_app` | Identifiant client                               | Un administrateur de l’espace de travail connecte l’acteur applicatif de Linear |
+| `slack`      | La connexion à l’application Slack propre à un espace de travail | Un administrateur de l’espace de travail connecte Slack à l’application Slack partagée |
+| `klipy`      | `KLIPY_APP_KEY`                                  | La recherche de GIF, relayée par Connect                  |
+
+Une application propre qui n’est que partiellement configurée met sa voie en
+erreur, jamais un repli silencieux sur Connect. Un espace de travail qui utilise
+sa propre GitHub App (**Paramètres → Espace de travail → Général → Identité
+GitHub**) ne passe jamais par Connect pour GitHub, et un espace de travail qui utilise sa propre application Google, Linear ou Klipy (**Paramètres → Espace de travail → Général → Applications fournisseur**) ne passe jamais par l’application du serveur ni par Connect pour ce fournisseur. Changer le choix de Connect ne déconnecte personne de l’application propre d’un espace de travail.
+
+## Ce que Connect voit et ne voit jamais
+
+| Connect voit                                                                                  | Connect ne voit jamais                                                |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| L’identifiant d’installation du serveur et les signatures de ses requêtes                     | Le code source, le contenu des dépôts, les diffs ou le texte des demandes de tirage |
+| Le compte du fournisseur qui s’est connecté, pendant la connexion                             | Les tickets, les transcriptions ou quoi que ce soit dans une base de données d’espace de travail |
+| L’espace de travail auquel appartient un identifiant, sous forme d’identifiant opaque dans le scellé | La clé privée d’une GitHub App : les jetons de dépôt proviennent de la connexion d’une personne |
+| Le dépôt pour lequel un jeton GitHub limité à un dépôt est émis                               | Les jetons d’actualisation au repos : ils n’existent qu’à l’intérieur des scellés que conserve le serveur |
+| Les identifiants d’installation GitHub liés au serveur                                        | Les secrets Linear : le serveur échange lui-même le code de Linear    |
+| Les termes de recherche de GIF, lorsqu’il relaie Klipy                                        | Les mots de passe, les clés d’appairage ou les clés des fournisseurs de modèles |
+| Les références d’événements Slack (équipe, canal, identifiant de message) et le texte des commandes slash | Le texte des messages Slack : Connect le supprime à l’arrivée et le serveur lit lui-même le message depuis Slack |
+
+Connect conserve un état de courte durée (connexions en attente, nonces, caches)
+pendant au plus 15 minutes. Ses seuls enregistrements durables sont les liaisons
+d’installation : quels serveurs peuvent utiliser quelle installation GitHub, et
+à quel serveur chaque équipe Slack est liée. Les erreurs portent un code, jamais
+la réponse du fournisseur, et les journaux n’enregistrent les identifiants
+d’installation que sous forme de hachages à clé.
+
+## Modes
+
+| Mode     | Réglage                     | Comportement                                                                                             |
+| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Non défini | Serveur neuf              | Aucune voie n’utilise Connect. La configuration initiale demande au propriétaire du serveur de choisir   |
+| `hosted` | **Utiliser les applications de Control Center** | `https://connect.usectrl.dev`, avec une configuration signée hors ligne. Les applications propres du serveur ne sont pas utilisées |
+| `custom` | **Utiliser un serveur Connect personnalisé** | Un Connect à une URL HTTPS (`http` sur la boucle locale uniquement), approuvé à la première utilisation. Les applications propres du serveur ne sont pas utilisées |
+| `off`    | **Utiliser mes propres applications** | Aucune voie n’utilise Connect. Seules les applications propres connectent les gens          |
+
+`CC_CONNECT_URL` dans l’environnement ou le `.env` du serveur verrouille le
+choix : `hosted`, `off` ou une URL Connect. Paramètres affiche alors le verrou
+et ne peut pas le modifier.
+
+Cette version ne compile aucune clé de configuration hébergée : le mode hébergé
+signale donc `hosted_unprovisioned` et ne sert aucune voie. Les applications
+propres et un Connect personnalisé fonctionnent.
+
+Un serveur lit la configuration de Connect au plus toutes les 10 minutes et
+attend au plus 5 secondes pour chaque appel. Lorsque Connect est injoignable, la
+dernière configuration valide reste en vigueur et Paramètres l’indique comme
+périmée.
+
+## Identité d’installation
+
+| Élément        | Ce que c’est                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Clé d’installation | Une graine de 32 octets dans le fichier de secrets du serveur (`connect_install_key`), distincte des clés d’appairage des appareils |
+| Clé par Connect | Une clé Ed25519 dérivée de la graine et de l’adresse du Connect. Chaque requête adressée à Connect est signée avec elle (RFC 9421) |
+| Identifiant d’installation | 26 caractères dérivés de cette clé publique. Affiché dans Paramètres et par `cc_server connect status` |
+
+Le même serveur a un identifiant d’installation différent pour chaque adresse
+Connect. L’identifiant ne change que lorsque la clé est renouvelée.
+
+## Identifiants scellés
+
+Une connexion par Connect renvoie un **scellé d’identifiant** : un objet chiffré
+que seul le Connect qui l’a créé peut ouvrir. Il est lié au fournisseur, à
+l’adresse de Connect, à l’identifiant d’installation, à l’espace de travail, au
+compte du fournisseur, à l’application et à la génération du secret.
+
+- Le serveur stocke le scellé et l’identifiant d’installation pour lequel il a
+  été scellé. Les jetons d’accès restent en mémoire
+- Pour actualiser, le serveur renvoie le scellé et reçoit un nouveau jeton
+  d’accès et un nouveau scellé
+- Un scellé dont l’identifiant d’installation ou l’adresse de Connect ne
+  correspond plus est supprimé à sa prochaine lecture, et la personne concernée
+  se reconnecte. Cela se produit après un renouvellement de clé, un passage à un
+  autre Connect, ou un répertoire de données restauré sur un autre serveur
+- Un scellé que Connect ne peut pas ouvrir est refusé avec `access_denied`
+
+## Installations GitHub
+
+Une installation de la GitHub App partagée n’est utilisable par un serveur que
+lorsque Connect l’a liée à l’identifiant d’installation de ce serveur.
+
+- **Installer l’application GitHub** dans **Paramètres → Espace de travail →
+  Général** ouvre GitHub avec un ticket valable 15 minutes. Connect lie la
+  nouvelle installation lorsque la personne qui installe possède le compte
+  personnel ou administre l’organisation
+- **Autoriser ce serveur** lie une installation qui existe déjà. Seul un
+  administrateur de l’organisation peut le faire
+- L’installation d’une organisation peut être liée à plusieurs serveurs ; chacun
+  exige l’autorisation d’un administrateur
+
+## Confiance dans la configuration
+
+| Connect | Comment le serveur fait confiance à sa configuration                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Hébergé | Vérifie une signature Ed25519 par rapport à des clés compilées dans la version. Refuse une époque inférieure à la plus élevée qu’il a vue (`rollback`) |
+| Personnalisé | Épingle à la première utilisation l’identifiant d’application et l’identifiant client GitHub, les identifiants client Google et Linear, et les identifiants d’application et de client Slack. Un changement suspend les connexions par Connect (`pins_changed`) jusqu’à ce que le propriétaire du serveur appuie sur **Faire confiance aux nouvelles applications** |
+
+## Opérations
+
+Tous les réglages de Connect sont réservés au propriétaire du serveur.
+
+| Opération             | Effet                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `connect.status`      | Mode, URL, verrou, identifiant d’installation, état de santé, époque de configuration et source de chaque voie |
+| `connect.configure`   | Définit `hosted`, `custom` (avec `url`) ou `off`                                        |
+| `connect.test`        | Récupère de nouveau la configuration et indique l’état de santé                        |
+| `connect.confirmPins` | Accepte les identifiants modifiés d’un Connect personnalisé                            |
+| `connect.rotateKey`   | Émet une nouvelle clé d’installation. Toutes les connexions par Connect sur ce serveur cessent de fonctionner |
+
+Les connexions elles-mêmes utilisent `oauth.lanes`, `oauth.begin`,
+`oauth.status`, `oauth.complete`, `oauth.connections` et `oauth.disconnect`. La
+personne est toujours l’appelant connecté.
+
+## Connexion par Connect
+
+1. Le serveur demande à Connect de démarrer la voie et reçoit l’URL
+   d’autorisation du fournisseur, qu’il vérifie avant de l’afficher
+2. La personne approuve dans le navigateur. Le fournisseur revient vers Connect
+3. Connect affiche un code de 8 caractères et un lien
+   `control-center://oauth-done`
+4. La personne tape le code dans l’app, ou suit le lien. Le serveur
+   récupère la connexion avec le code et sa propre preuve de la requête
+
+Une connexion expire au bout de 10 minutes. Cinq codes erronés y mettent fin. Un
+lien que cette application n’a pas lancé est refusé avec **Connexion non lancée
+d’ici**.
+
+## Renouveler la clé d’installation
+
+**Renouveler la clé** sur la carte Connect, ou `cc_server connect rotate-key --yes` :
+
+- Donne au serveur une nouvelle clé d’installation et un nouvel identifiant
+  d’installation
+- Déconnecte tout le monde de chaque voie qui passe par Connect
+- Laisse intactes les connexions par les applications propres au serveur
+- Exige d’ajouter le nouvel identifiant d’installation à la liste d’autorisation
+  d’un Connect personnalisé
+
+## Codes d’état
+
+| Code                   | Signification                                                        |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Cette version n’a aucune clé de configuration hébergée               |
+| `signature`            | La configuration hébergée a échoué à la vérification de sa signature |
+| `rollback`             | Connect a servi une configuration plus ancienne que celle déjà vue par le serveur |
+| `unreachable`          | Le serveur ne peut pas joindre Connect                               |
+| `install_blocked`      | Connect n’autorise pas cet identifiant d’installation                |
+| `pins_changed`         | Un Connect personnalisé a annoncé d’autres identifiants d’application |
+| `protocol`             | Connect a répondu sous une forme que ce serveur ne comprend pas      |
+
+## Voir aussi
+
+- [Exécuter un serveur Connect](/fr-CA/manuel/guides/executer-serveur-connect/)
+- [Créer la GitHub App](/fr-CA/manuel/guides/github-app/)
+- [CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli/)

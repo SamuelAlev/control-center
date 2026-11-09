@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:cc_natives/src/git/isolated_git.dart';
 import 'package:cc_natives/src/git/rig_worktree_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -163,8 +164,7 @@ class RepoStateProbe {
   static Future<String?> _git(String repoPath, List<String> args) async {
     ProcessResult result;
     try {
-      result = await Process.run(
-        'git',
+      result = await IsolatedGit.run(
         RigWorktreeGuard.gitArgs(args, workingDirectory: repoPath),
         workingDirectory: repoPath,
       );

@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/gif_result.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/klipy_gif_picker.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -289,11 +290,16 @@ void main() {
       final host = FakeRpcHost()
         ..onCall = (op, args) {
           expect(op, anyOf('gif.trending', 'gif.search'));
+          // Searches name the active workspace, whose own Klipy key may apply.
+          expect(args['workspace_id'], 'ws-1');
           return {'gifs': <Map<String, dynamic>>[]};
         };
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [rpcClientProvider.overrideWithValue(host.client())],
+          overrides: [
+            rpcClientProvider.overrideWithValue(host.client()),
+            activeWorkspaceIdProvider.overrideWith(_Workspace.new),
+          ],
           child: testWrap(
             Align(
               alignment: alignment ?? Alignment.center,
@@ -362,7 +368,7 @@ void main() {
         ).style;
         expect(titleStyle.decoration, TextDecoration.none);
 
-        final hint = find.text('Search GIFs...');
+        final hint = find.text('Search KLIPY');
         expect(hint, findsOneWidget);
         final hintRect = tester.getRect(hint);
         final fieldRect = tester.getRect(find.byType(CcTextField));
@@ -462,4 +468,9 @@ void main() {
       expect(result.previewUrl, 'https://example.com/gif.gif');
     });
   });
+}
+
+class _Workspace extends ActiveWorkspaceIdNotifier {
+  @override
+  String? build() => 'ws-1';
 }

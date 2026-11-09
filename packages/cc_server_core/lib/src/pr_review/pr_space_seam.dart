@@ -134,11 +134,14 @@ PrSpaceSeam buildPrSpaceSeam({
                   owner,
                   repo,
                 );
-                final token = await credentials.tokenForActor(
-                  ForgeHost.github,
-                  userId,
-                  workspaceId: workspaceId,
-                );
+                // The person asking, on their own sign-in; nobody else's.
+                final token = userId == null
+                    ? null
+                    : await credentials.personToken(
+                        ForgeHost.github,
+                        userId,
+                        workspaceId: workspaceId,
+                      );
                 return diffSource.mergeConflictFiles(
                   PrSourceRequest(
                     prNumber: prNumber,

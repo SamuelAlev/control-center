@@ -2,7 +2,7 @@
 title: Instalace
 description: Použij Control Center v prohlížeči nebo nainstaluj aplikaci pro počítač, nastav backend agenta a vyber, kde poběží jeho server.
 slug: cs-CZ/prirucka/instalace
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center běží dvěma způsoby: jako **webová aplikace** na
@@ -180,22 +180,18 @@ Přihlašovací údaj ke GitHubu je **tvůj a leží na serveru**, klíčovaný 
 uživatele, ne v klíčence OS na klientovi. Každé zařízení, ze kterého se
 přihlásíš, používá tentýž, a žádný jiný člen ho nepřečte.
 
-Když má server zaregistrovanou GitHub App
-([Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)), **Nastavení →
-Pracovní prostor → Profil a identita → Hostování kódu** nabízí **Přihlásit se
-přes GitHub** (device flow, který běží na serveru). Jinak vlož osobní
-přístupový token:
+GitHub umí jen přihlášení: **Nastavení → Pracovní prostor → Profil a identita →
+Hostování kódu** nabízí **Přihlásit se k GitHub** a žádný token se nevkládá.
+Přihlášení proběhne přes vlastní GitHub App serveru
+([Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)) nebo přes Control
+Center Connect, podle toho, co zvolil vlastník serveru. S vlastní aplikací
+serveru se prohlížeč vrátí na server sám; přes Connect opíšeš 8místný kód,
+který prohlížeč ukáže, nebo ho necháš otevřít Control Center. Viz
+[Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/).
 
-- Classic: `repo` a `read:org`
-- Fine-grained: **Contents** a **Pull requests** (čtení i zápis), **Checks** a **Actions** (čtení)
-
-Vytvoř ho na [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-Server při ukládání tokenem ověří jméno účtu, takže řádek může říct „Přihlášeno
-jako …“. Neúspěšná sonda token stejně uloží a překlep nebo chybějící scope se
-ukáže až později, jako neúspěšný požadavek.
-
-První krok onboardingu je tohle připojení. Pak na stejné kartě údaj vyměníš
-nebo smažeš. GitLab a Bitbucket používají tutéž kartu; viz
+Onboarding si o tohle připojení řekne. Pak se na stejné kartě znovu přihlásíš
+nebo se odpojíš. GitLab a Bitbucket používají tutéž kartu s vloženým osobním
+tokenem; viz
 [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
 ## Vyber, kde server poběží

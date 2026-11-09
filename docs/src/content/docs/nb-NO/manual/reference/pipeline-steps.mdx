@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referanse for typer av pipeline-steg, kroppsnøkler for steg, konfigurasjonen deres og stegresultater.
 slug: nb-NO/handbok/referanse/pipeline-steg
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Et pipeline-steg har to uavhengige akser:
@@ -42,7 +42,7 @@ Shell-steg uten agent (`bash -c`). `{{key}}`-plassholdere i skriptet erstattes f
 | `script`           | Shell-kommando som skal kjøres (obligatorisk)    |
 | `outputKey`        | Tilstandsnøkkel som mottar trimmet stdout ved avslutningskode 0 |
 
-Kjører med cwd `<cc_root>/pipelines/<pipelineRunId>/` (delt av alle bash-steg i en kjøring) og `GITHUB_TOKEN` i miljøet. Skriver også `<stepId>_runDir` til tilstanden. En avslutningskode ulik null feiler steget, med halen av stderr.
+Kjører i vertens OS-sandkasse med cwd `<cc_root>/pipelines/<pipelineRunId>/` (delt av alle bash-steg i en kjøring); en vert uten sandkasse lar steget feile. Serverens datakatalog og `.env`-fil kan ikke leses, git og `gh` ser ingen vertskonfigurasjon, og `GH_TOKEN` / `GITHUB_TOKEN` inneholder et `read`-token for ett repo bare når `repo_full_name` (tilstand eller utløserens nyttelast) navngir et GitHub-repo som er koblet til arbeidsområdet. Å opprette eller redigere en mal med dette steget krever en administrator i arbeidsområdet. Skriver også `<stepId>_runDir` til tilstanden. En avslutningskode ulik null feiler steget, med halen av stderr.
 
 ### `conversation.promptAgent`
 

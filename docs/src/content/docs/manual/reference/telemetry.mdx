@@ -93,9 +93,12 @@ Recorded by the desktop app, the web app and the phone for things a person does.
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | A failed run was retried |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | A run was cancelled from the app |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | A running step was killed |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | A calendar sign-in attempt ended |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true when the sign-in ran through Control Center Connect rather than the server's own Google client), `duration_s` | A calendar sign-in attempt ended |
 | `calendar_disconnected` | `workspace_id` | A calendar account was disconnected |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | An invitation was answered |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (count), `conference` | An event was booked on Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | An event was moved or resized on the calendar grid |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | An event was deleted from Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | A recording was started from a calendar event |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | A meeting link was opened (phone). Only the provider is derived from the link |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | The notification center was used |

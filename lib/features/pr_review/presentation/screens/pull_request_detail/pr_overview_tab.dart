@@ -6,6 +6,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/widgets/editable_pr_title.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_activity_timeline.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/shared/widgets/confined_directional_focus.dart';
 import 'package:flutter/widgets.dart';
@@ -88,6 +89,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        PrSignInNotice(prRef: prRef),
         _OverviewHeader(
           pr: pr,
           prRef: prRef,

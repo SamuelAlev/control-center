@@ -49,8 +49,7 @@ stage_natives "$NATIVES" "$APP/Contents/Frameworks" dylib no-queries
 # server bundle's Frameworks so its @executable_path/../Frameworks loader finds
 # them (the server is a SEPARATE executable from the desktop app).
 #
-# Whatever `builtin_credentials.sh inject` wrote is compiled in here, so that step
-# has to precede this one (a bundle built earlier is reused as-is).
+# A bundle built earlier is reused as-is.
 CC_SERVER_BUNDLE="$(ensure_cc_server_bundle macos)"
 log "Embedding cc_server backend"
 rm -rf "$APP/Contents/Resources/cc_server"

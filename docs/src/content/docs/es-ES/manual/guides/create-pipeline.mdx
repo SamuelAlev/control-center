@@ -2,7 +2,7 @@
 title: Crear una plantilla de pipeline
 description: Crea una plantilla de flujo de trabajo DAG en el editor de pipelines — añade nodos, conéctalos, declara entradas y haz que se pueda ejecutar.
 slug: es-ES/manual/guias/crear-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Las plantillas de pipeline se crean en los ajustes del espacio de trabajo. La
@@ -134,12 +134,22 @@ Añade **Script bash**. No hay campos de directorio de trabajo ni de entorno,
 porque ninguno de los dos es configurable:
 
 - Todos los pasos bash de una ejecución comparten el cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` se inyecta desde el almacén de credenciales, así que `gh` y
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` funcionan sin ninguna
-  configuración.
+- El script se ejecuta en el entorno aislado del sistema operativo del host,
+  igual que los comandos de un agente. En un host sin entorno aislado (Windows,
+  o Linux sin `bwrap`) el paso falla en lugar de ejecutarse sin restricciones.
+  El directorio de datos del servidor y su archivo `.env` no se pueden leer
+  desde dentro.
+- Git y `gh` no ven ninguna configuración del host: ni inicio de sesión
+  guardado, ni asistente de credenciales, ni hooks globales.
+- Cuando el pipeline nombra un repo de GitHub vinculado al espacio de trabajo
+  (`repo_full_name` en el estado o en la carga del disparador), `GH_TOKEN` y
+  `GITHUB_TOKEN` contienen un token que solo puede leer ese repo, así que `gh` y
+  `git clone` contra él funcionan sin ninguna configuración. En caso contrario,
+  no hay ningún token de GitHub.
+- Solo un administrador del espacio de trabajo puede crear o editar un pipeline
+  con un paso bash.
 - El script se lanza como el ejecutable literal `bash`, así que `bash` debe
-  estar en el `PATH` del host del servidor. Es algo que hay que tener en cuenta
-  en Windows.
+  estar en el `PATH` del host del servidor.
 
 ### Enrutador
 

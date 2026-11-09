@@ -1156,6 +1156,101 @@ class AppLocalizationsRo extends AppLocalizations {
   String get calendarRsvpFailed => 'Nu s-a putut actualiza răspunsul';
 
   @override
+  String get calendarNewEvent => 'Eveniment nou';
+
+  @override
+  String get calendarComposerTitleHint => 'Adaugă un titlu';
+
+  @override
+  String get calendarComposerStarts => 'Începe';
+
+  @override
+  String get calendarComposerEnds => 'Se termină';
+
+  @override
+  String get calendarComposerDate => 'Data';
+
+  @override
+  String get calendarComposerEndDate => 'Ultima zi';
+
+  @override
+  String get calendarComposerGuestsHint => 'Adaugă invitați prin e-mail';
+
+  @override
+  String get calendarComposerMeet => 'Adaugă un link Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Adaugă o locație';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Adaugă o descriere';
+
+  @override
+  String get calendarComposerCalendar => 'Calendar';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Adaugă un titlu ca să salvezi evenimentul';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Una dintre adresele de e-mail ale invitaților nu este validă';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Evenimentul trebuie să se termine după ce începe';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Evenimentul nu a putut fi creat. Încearcă din nou.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Invitații primesc o invitație pe e-mail de la Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Șterge evenimentul';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Ștergi „$title”?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Este șters din Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Este șters din Google Calendar, iar toți invitații sunt anunțați că a fost anulat.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Este șters doar din calendarul tău. Organizatorul și ceilalți invitați îl păstrează.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Se șterge doar această apariție; restul seriei rămâne.';
+
+  @override
+  String get calendarDeleteFailed =>
+      'Evenimentul nu a putut fi șters. Încearcă din nou.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Evenimentul nu a putut fi mutat. A revenit la locul inițial.';
+
+  @override
+  String get activityCreatedCalendarEvent =>
+      'A creat un eveniment din calendar';
+
+  @override
+  String get activityMovedCalendarEvent => 'A mutat un eveniment din calendar';
+
+  @override
+  String get activityDeletedCalendarEvent =>
+      'A șters un eveniment din calendar';
+
+  @override
   String get calendarAddAccount => 'Adaugă un cont de calendar';
 
   @override
@@ -1166,9 +1261,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conectează un cont Google pentru a sincroniza evenimentele în acest spațiu. Aceste calendare sunt ale tale aici.';
 
   @override
-  String get calendarConnecting => 'Se conectează…';
-
-  @override
   String get calendarSyncNow => 'Sincronizează acum';
 
   @override
@@ -1177,33 +1269,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Nu s-a putut conecta Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Introdu Client ID-ul și secretul Google OAuth device-code pentru proiectul tău. Serverul rulează conexiunea și sincronizarea — browserul tău nu deține niciodată tokenii.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Deschide pagina de verificare pe orice dispozitiv, autentifică-te și introdu acest cod:';
-
-  @override
-  String get calendarConnectOpenPage => 'Deschide pagina de verificare';
-
-  @override
-  String get calendarConnectWaiting => 'Se așteaptă aprobarea…';
-
-  @override
-  String get calendarConnectDenied =>
-      'Autorizarea a fost refuzată. Încearcă din nou.';
-
-  @override
-  String get calendarConnectExpired => 'Codul a expirat. Încearcă din nou.';
 
   @override
   String get notificationMeetingStartsSoon => 'Întâlnirea începe curând';
@@ -2432,9 +2497,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'A schimbat accesul unui membru la depozit';
 
   @override
-  String get activityUpdatedGitHubToken => 'A actualizat tokenul GitHub';
-
-  @override
   String get activityRefreshedWeather => 'A reîmprospătat prognoza meteo';
 
   @override
@@ -2471,10 +2533,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get activityRespondedToInvitation =>
       'A răspuns la invitația la eveniment';
-
-  @override
-  String get activityStartedCalendarConnect =>
-      'A pornit conexiunea la calendar';
 
   @override
   String get activityDisconnectedCalendar => 'A deconectat calendarul';
@@ -4793,7 +4851,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchGifs => 'Caută GIF-uri';
 
   @override
-  String get searchGifsHint => 'Caută GIF-uri...';
+  String get searchGifsHint => 'Caută pe KLIPY';
 
   @override
   String get searchInDiffHint => 'Caută în diff…';
@@ -5278,9 +5336,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Agent fără nume';
-
-  @override
-  String get updateKey => 'Actualizează cheia';
 
   @override
   String get updateLabel => 'Actualizează';
@@ -6345,7 +6400,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Rulează cu bash -c. GITHUB_TOKEN este setat. Placeholderele sunt înlocuite înainte de execuție.';
+      'Rulează cu bash -c în sandboxul sistemului de operare. GH_TOKEN și GITHUB_TOKEN conțin un token doar pentru citire pentru depozitul asociat. Placeholderele sunt puse între ghilimele și înlocuite înainte de execuție.';
 
   @override
   String get nodeConfigRouteKeys => 'Chei de rută';
@@ -7026,7 +7081,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Autentifică-te pe GitHub sau adaugă un token în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
+      'Autentifică-te pe GitHub în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -12044,7 +12099,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Menționează botul în $provider ca să pui un agent pe ceva sau creează tichete cu $command.';
+    return 'Menționează botul în $provider ca să pui un agent pe ceva sau creează ciorne de tichete cu $command.';
   }
 
   @override
@@ -12131,7 +12186,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Trimite această comandă botului în $provider. Funcționează o dată și expiră în 15 minute.';
+    return 'Trimite acest cod botului $provider într-un mesaj direct. Funcționează o dată și expiră în 15 minute.';
   }
 
   @override
@@ -12298,21 +12353,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → copiază tokenul OAuth al utilizatorului bot.';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'Folosește aplicația Google a Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Aprobă cu contul tău Google. Nimic de configurat în Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Folosește propriul client Google Cloud';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Introdu un client OAuth din propriul proiect Google Cloud.';
 
   @override
   String get aboutTitle => 'Despre';
@@ -13016,18 +13056,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get signInAgain => 'Autentifică-te din nou';
 
   @override
-  String get signInNotFinished =>
-      'Autentificarea nu s-a întors încă. Termin-o în browser, apoi verifică din nou.';
+  String get forgeSignInBannerTitle =>
+      'Găzduirea de cod nu este conectată în acest spațiu de lucru';
 
   @override
-  String get signedOutTitle => 'Ești deconectat';
+  String get forgeSignInBannerBody =>
+      'O autentificare a expirat sau a fost revocată, ori acest spațiu de lucru folosește propriul GitHub App. Pull request-urile, revizuirile și sincronizarea depozitelor sunt în pauză până când te autentifici.';
 
   @override
-  String get signedOutSubtitle =>
-      'Conexiunea ta de găzduire de cod nu mai este validă — un token a expirat sau accesul i-a fost revocat. Nimic altceva nu s-a schimbat: autentifică-te din nou și totul e unde l-ai lăsat.';
-
-  @override
-  String get viaServerApp => 'prin aplicația acestui server';
+  String get forgeSignInBannerAction => 'Autentifică-te';
 
   @override
   String get ticketing => 'Ticketing';
@@ -13045,14 +13082,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ticketProviderLocal => 'Local';
 
   @override
-  String get addKey => 'Adaugă cheie';
-
-  @override
   String get providerApps => 'Aplicații provider';
 
   @override
   String get providerAppsDescription =>
-      'Spațiile moștenesc acest GitHub App decât dacă aleg alt App sau un token de acces personal. Munca din fundal — webhook-uri, interogare, sync — rulează pe app, niciodată pe tokenul unei persoane.';
+      'Aplicații pe care acest server le-a înregistrat singur la fiecare furnizor. Oamenii se autentifică prin ele, iar munca de fundal, precum webhook-urile, interogarea și sincronizarea, rulează pe ele, niciodată pe autentificarea unei persoane.';
 
   @override
   String get providerAppId => 'App id';
@@ -13065,9 +13099,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Client secret';
-
-  @override
-  String get providerApiKey => 'Cheie API';
 
   @override
   String get providerCallbackUrl => 'URL de callback';
@@ -13088,17 +13119,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Datele de autentificare funcționează. Instalat pe: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Introdu acest cod pe pagina $provider care tocmai s-a deschis. A fost copiat în clipboard.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Se așteaptă să termini în browser…';
-
-  @override
-  String get copyCodeAndOpen => 'Copiază codul și deschide';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13446,7 +13466,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Pentru spațiile care moștenesc GitHub App-ul acestei instalații. Un spațiu cu App sau PAT propriu se configurează în Spațiu de lucru → General.';
+      'Folosită de spațiile de lucru care moștenesc aplicația GitHub a acestei instalări. Un spațiu de lucru cu propria aplicație o configurează în Spațiu de lucru → General.';
 
   @override
   String get providerAppsGroupPrConversations => 'Conversații de pull request';
@@ -15016,7 +15036,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Cum se autentifică munca GitHub din fundal în acest spațiu de lucru. Moștenește App-ul instalației, folosește alt App sau doar un token de acces personal.';
+      'Cum se autentifică munca GitHub din fundal în acest spațiu de lucru: cu aplicația acestei instalări sau cu o aplicație proprie a spațiului de lucru.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -15026,28 +15046,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Folosește un alt GitHub App';
 
   @override
-  String get workspaceGitHubModePat => 'Doar token de acces personal';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Folosește GitHub App-ul din Server → Aplicații furnizor.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Identitatea de bot și de interogare a acestui spațiu. Membrii se autentifică în Tu prin acest App.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Token de fundal';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Pentru interogare și agenți în acest spațiu. Nu este tokenul de profil al unui membru.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Un token de fundal este stocat.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Niciun token de fundal stocat.';
 
   @override
   String get profileOverlayHint =>
@@ -16929,4 +16933,539 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Schimbă spațiul de lucru';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Autentifică-te în $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Conectează Linear pentru automatizare';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Se deschide $provider în browser…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Aprobă cererea pe pagina $provider din browser. Fereastra aceasta observă singură când ai terminat.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Se așteaptă $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Autentificarea nu s-a finalizat';
+
+  @override
+  String get signInReopenPage => 'Redeschide pagina de autentificare';
+
+  @override
+  String get signInCodePrompt => 'Introdu codul afișat în browser';
+
+  @override
+  String get signInCodeMalformed =>
+      'Nu pare un cod de autentificare. Codurile au 8 litere și cifre.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Dacă browserul se oferă să deschidă Control Center, permite-i și nu va mai trebui să tastezi codul.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Autentificat în $provider ca $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Autentificat în $provider';
+  }
+
+  @override
+  String get signInErrorExpired =>
+      'Această autentificare a expirat. Începe din nou.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Autentificarea în $provider a fost anulată sau refuzată.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider a acordat mai puține permisiuni decât îi trebuie lui Control Center. Autentifică-te din nou și aprobă toate permisiunile.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider nu răspunde acum. Încearcă din nou peste câteva minute.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider a acceptat autentificarea, dar serverul nu a putut-o finaliza. Încearcă din nou.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Aplicația $provider a acestui server este configurată greșit. Cere proprietarului serverului să verifice Setări → Server → Autentificare unică.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Autentificarea ta în $provider a expirat. Autentifică-te din nou ca să lucrezi în continuare în numele tău.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'Aplicația $provider nu este instalată acolo unde e nevoie de ea. Instaleaz-o și încearcă din nou.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Această instalare a aplicației GitHub este deja autorizată pentru alt server Control Center.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Acest spațiu Linear este deja conectat la alt server Control Center.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Doar un administrator sau proprietar al spațiului de lucru Slack îl poate conecta prima dată la Control Center. Cere-i unuia dintre ei să adauge aplicația.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'Aplicația $provider este suspendată. Anulează suspendarea în $provider și încearcă din nou.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect a blocat acest server. Contactează operatorul serverului tău Connect.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Autentificarea a eșuat dintr-un motiv pe care serverul nu l-a raportat. Încearcă din nou.';
+
+  @override
+  String get signInPhishingTitle => 'Autentificare nepornită de aici';
+
+  @override
+  String get signInPhishingBody =>
+      'Această autentificare nu a fost pornită din această aplicație. Dacă cineva ți-a trimis acest link, nu continua.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Nu s-a trimis nimic. Finalizarea unei autentificări pornite de altcineva ți-ar conecta contul la serverul acelei persoane.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Este necesară autentificarea în $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Acțiunea rulează în numele tău în $provider, iar tu nu ești autentificat. Autentifică-te și încearcă din nou.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Nu ești autentificat în $provider. Tot ce faci aici rulează în numele tău, așa că autentifică-te mai întâi.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Autentificarea în $provider nu este încă configurată pe acest server.';
+  }
+
+  @override
+  String get githubInstallations => 'Instalări ale aplicației GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Unde este instalată aplicația GitHub, printre conturile cărora le aparțin depozitele acestui spațiu de lucru. Instalarea unei organizații funcționează doar pe serverele autorizate de administratorii ei.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'Aplicația GitHub nu este instalată pe niciun cont căruia îi aparțin depozitele acestui spațiu de lucru.';
+
+  @override
+  String get githubInstallApp => 'Instalează aplicația GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Autorizează acest server';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Acest server poate folosi acum instalarea de pe $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Suspendată';
+
+  @override
+  String get githubInstallationAuthorized => 'Autorizată';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Neautorizată';
+
+  @override
+  String get linearAutomationTitle => 'Automatizare Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Permite agenților și pipeline-urilor din acest spațiu de lucru să acționeze în Linear ca aplicație, nu ca persoană. Administratorii spațiului o conectează.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Conectat la $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Folosește aplicațiile Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Autentificările trec prin Control Center Connect. Connect sigilează fiecare autentificare astfel încât doar acest server să o poată deschide, emite tokenuri GitHub limitate la un singur depozit, nu păstrează nicio cheie de depozit și nu primește niciodată codul tău sursă.';
+
+  @override
+  String get connectModeOwn => 'Folosește aplicațiile mele';
+
+  @override
+  String get connectModeOwnHint =>
+      'Înregistrează singur aplicațiile GitHub, Google și Linear în Setări → Server → Autentificare unică și conectează aplicația Slack proprie a fiecărui spațiu de lucru din setările acestuia. „Creează aplicația mea GitHub” configurează GitHub într-un singur pas.';
+
+  @override
+  String get connectModeCustom => 'Folosește un server Connect propriu';
+
+  @override
+  String get connectModeCustomHint =>
+      'Organizația ta rulează propriul server Connect. Autentificările merg acolo în loc de serverul Control Center.';
+
+  @override
+  String get connectModeUnset => 'Încă neconfigurat';
+
+  @override
+  String get connectCustomUrlLabel => 'URL-ul serverului Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Introdu o adresă HTTPS, de exemplu https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'HTTP simplu ajunge doar la un Connect de pe acest calculator. Folosește HTTPS pentru orice într-o rețea.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Aplicațiile găzduite ale Control Center nu sunt încă disponibile în această versiune. Folosește aplicațiile tale sau un server Connect propriu.';
+
+  @override
+  String get connectErrorSignature =>
+      'Configurația Connect nu a trecut verificarea semnăturii. Autentificările prin Connect sunt suspendate până când este verificată din nou.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect a furnizat o configurație mai veche decât cea văzută deja de acest server, așa că a fost refuzată. Autentificările prin Connect sunt suspendate.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Acest server nu poate contacta Connect acum. Autentificările care îl folosesc vor eșua până revine.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect a blocat ID-ul de instalare al acestui server. Contactează operatorul serverului tău Connect.';
+
+  @override
+  String get connectErrorPinsChanged => 'Aplicațiile Connect s-au schimbat';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect a răspuns într-un mod pe care acest server nu îl înțelege. Actualizează serverul sau verifică URL-ul Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect a raportat o problemă fără să o explice. Rulează un test ca să reîncerci.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Serverul tău Connect indică acum alte aplicații GitHub, Google, Linear sau Slack decât cele pe care acest server le-a fixat la prima utilizare. Ai încredere în ele doar dacă operatorul te-a anunțat că urmează.';
+
+  @override
+  String get connectConfirmPins => 'Acceptă aplicațiile noi';
+
+  @override
+  String get connectStale =>
+      'Configurația folosită este mai veche decât era de așteptat. Rulează un test ca s-o reîmprospătezi.';
+
+  @override
+  String get connectLaneSourceOwn => 'Aplicație proprie';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Oprit';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Ale cui aplicații folosește acest server pentru GitHub, Google Calendar, Linear, Slack și căutarea de GIF-uri.';
+
+  @override
+  String get connectFactMode => 'Aplicații de autentificare';
+
+  @override
+  String get connectFactHealth => 'Stare';
+
+  @override
+  String get connectFactEpoch => 'Versiunea configurației';
+
+  @override
+  String get connectHealthOff => 'Nefolosit';
+
+  @override
+  String get connectHealthOk => 'Funcționează';
+
+  @override
+  String get connectHealthDown => 'Nu funcționează';
+
+  @override
+  String get connectLocked =>
+      'CC_CONNECT_URL din mediul acestui server stabilește asta. Modifică-l acolo și repornește serverul.';
+
+  @override
+  String get connectLanesTitle => 'Unde rulează fiecare autentificare';
+
+  @override
+  String get connectLanesDescription =>
+      'O aplicație proprie are mereu prioritate față de Connect pentru furnizorul ei.';
+
+  @override
+  String get connectServerGroup => 'Acest server';
+
+  @override
+  String get connectInstallId => 'ID de instalare';
+
+  @override
+  String get connectInstallIdHint =>
+      'Identifică acest server în fața Connect. Dă-l proprietarului unei organizații sau operatorului Connect care îl cere.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Se atribuie prima dată când acest server folosește Connect.';
+
+  @override
+  String get connectTestOk => 'Connect funcționează.';
+
+  @override
+  String get connectRotateKey => 'Schimbă cheia';
+
+  @override
+  String get connectRotateKeyTitle => 'Schimbi cheia Connect a acestui server?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Acest server primește o cheie nouă și un ID de instalare nou. Toate autentificările făcute prin Connect nu mai funcționează și toată lumea trebuie să se autentifice din nou. Autentificările prin propriile aplicații nu sunt afectate.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Cheie schimbată. Toți cei autentificați prin Connect trebuie să se autentifice din nou.';
+
+  @override
+  String get connectCliLabel => 'Dintr-un terminal';
+
+  @override
+  String get onboardingStepSignIn => 'Autentificare';
+
+  @override
+  String get onboardingConnectTitle => 'Alege cum se autentifică oamenii';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center lucrează cu GitHub, Google Calendar, Linear, Slack și căutarea de GIF-uri prin aplicații înregistrate la fiecare furnizor. Alege ale cui aplicații folosește acest server. Poți schimba asta mai târziu în Setări → Server → Autentificare unică.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Creează acum o aplicație GitHub pentru acest server sau adaugă-ți aplicațiile mai târziu în Setări → Server → Autentificare unică.';
+
+  @override
+  String get providerServiceApiKey => 'Cheie API de serviciu';
+
+  @override
+  String get providerAppPartial => 'Configurarea nu e terminată';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Încă lipsește: $fields. Până când toate câmpurile sunt completate, autentificările pentru acest furnizor sunt refuzate în loc să treacă prin Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'ID-ul de client autentifică membrii. Cheia API de serviciu permite acestui server să citească și să scrie singur în Linear.';
+
+  @override
+  String get providerCallbackUrls => 'URL-uri de callback';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Înregistrează-l la furnizor exact așa cum apare.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Creează o aplicație GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub înregistrează o aplicație cu permisiunile și callbackul corecte, apoi îi predă acestui server datele de autentificare. Nimic de copiat manual.';
+
+  @override
+  String get providerAppCreateGitHub => 'Creează aplicația mea GitHub';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Organizație (opțional)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Lasă gol pentru a crea aplicația în propriul cont GitHub. Crearea ei într-o organizație necesită un proprietar al acelei organizații.';
+
+  @override
+  String get providerAppSignInReady => 'Oamenii se pot autentifica.';
+
+  @override
+  String get chatLinkWaiting => 'Se așteaptă mesajul tău direct…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Este acesta contul tău $provider?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Acest cont a trimis codul tău botului. Confirmă doar dacă este al tău: după legare, ce trimite în $provider acționează ca tine în acest spațiu de lucru.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Refuză';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Nu s-a legat nimic. Obține un cod nou dacă tot vrei să-ți legi contul $provider.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Obține un cod nou';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Adaugă Control Center în $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center a fost adăugat în $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Instalează aplicația comună Control Center în spațiul tău de lucru $provider. Nu trebuie să creezi nicio aplicație și nici să lipești vreun token.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Adaugă în $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Rulează pe aplicația comună Control Center, așa că aici nu există tokenuri sau setări ale botului de gestionat.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Ciorne de tichete din chat';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'O ciornă devine tichet în backlog doar când o creezi aici. Ciornele lăsate deoparte sunt șterse după o zi.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Din $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Creează tichetul';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '$key a fost creat';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Aplicații ale providerilor';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Ce aplicații Google Calendar, Linear și Klipy folosește acest spațiu de lucru. Implicit folosește aplicațiile acestui server sau Control Center Connect. Un spațiu de lucru cu aplicație proprie nu revine niciodată la ele.';
+
+  @override
+  String get workspaceProviderAppModeInherit =>
+      'Folosește aplicația acestui server';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Autentificările și cererile folosesc aplicația acestui server sau Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Folosește aplicația proprie a acestui spațiu de lucru';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Se folosește doar aplicația acestui spațiu de lucru. Cât timp este incompletă, acest provider este dezactivat aici în loc să revină la altă aplicație.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Aplicația serverului';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Aplicație proprie';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Lipsesc încă: $fields. Până când toate câmpurile sunt completate, acest provider este dezactivat în acest spațiu de lucru. Nu revine la aplicația acestui server.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Schimbarea aplicației deconectează pe toți din acest spațiu de lucru. Se vor autentifica din nou cu cea nouă.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Cheie de aplicație';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Căutarea GIF-urilor din acest spațiu de lucru folosește această cheie.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Schimbi aplicația $provider?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Toți cei conectați la $provider în acest spațiu de lucru prin aplicația acestui server trebuie să se autentifice din nou cu aplicația spațiului de lucru.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Asta șterge datele de autentificare $provider ale spațiului de lucru. Toți cei conectați prin aplicația spațiului de lucru trebuie să se autentifice din nou.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Schimbă aplicația';
 }

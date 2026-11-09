@@ -8,6 +8,7 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart'
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
 
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
 
@@ -511,12 +512,12 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
   }) async {
     Process process;
     try {
-      process = await Process.start(
+      process = await ChildProcess.start(
         claudePath,
         args,
         workingDirectory: workspaceRoot,
+        toolchain: true,
         environment: {
-          ...Platform.environment,
           if (configDir != null && configDir!.isNotEmpty)
             'CLAUDE_CONFIG_DIR': configDir!,
           ...extraEnv,

@@ -2,7 +2,7 @@
 title: Cycle de vie du lancement d’un agent
 description: Ce qui se passe entre l’arrivée d’un message et la fermeture d’un journal d’exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-CA/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Ce qu’est un lancement
@@ -54,7 +54,7 @@ Deux identités sont résolues par exécution, avant le lancement de tout proces
 
 **Paternité Git.** Les commits des agents utilisent toujours l’identité Git de la personne à l’origine de la demande, telle que définie dans l’espace de travail, pour `GIT_AUTHOR_*` et `GIT_COMMITTER_*`. Les exécutions lancées par programmation utilisent l’identité du propriétaire du serveur. Par défaut, la ligne `Co-Authored-By: Control Center <hi@usectrl.dev>` crédite le compte GitHub `@usectrl` comme coauteur. Désactivez l’attribution à l’agent dans **Paramètres → Vous → Attribution des commits** pour omettre cette ligne. Un administrateur peut imposer ou désactiver cette mention de coauteur dans **Paramètres → Espace de travail → Général**; cette règle prévaut et désactive le commutateur personnel sans modifier la préférence enregistrée. Les changements s’appliquent à la prochaine exécution. Les mentions de paternité ajoutées par Claude Code aux commits et aux PR sont toujours désactivées. Les paramètres d’environnement de l’appelant et de l’adaptateur ne peuvent pas remplacer l’identité définie; une identité manquante ou une erreur lors de sa résolution empêche le lancement. Les identifiants de la forge et la configuration de signature des commits ne changent pas; une identité correcte ne garantit pas à elle seule une signature vérifiée.
 
-**Identité de la forge.** L’identifiant GitHub de l’exécution n’est jamais que celui du courtier — un jeton d’installation d’App limité à un dépôt, ou son repli par PAT défini dans l’environnement — jamais le jeton personnel enregistré du membre à l’origine de la demande. `actingUserId` borne le repli PAT pour qu’un membre qui n’est pas le propriétaire du serveur n’hérite pas de la portée du serveur ; il ne superpose pas un jeton personnel à l’environnement de l’agent.
+**Identité de la forge.** L’identifiant GitHub de l’exécution n’est jamais que celui du courtier : un jeton pour l’unique dépôt de l’exécution, émis à partir de la GitHub App de l’espace de travail, de l’app propre au serveur ou de Control Center Connect. `actingUserId` désigne la personne responsable (le demandeur tant qu’il est encore membre, sinon le propriétaire de l’espace de travail) et restreint le jeton à ce que cette personne peut faire sur le dépôt. Ce n’est jamais la connexion du membre remise telle quelle, et il n’y a aucun repli : une émission refusée laisse l’exécution sans jeton et ses notes expliquent pourquoi.
 
 **Les identifiants de fournisseur de modèle** sont résolus dans un ordre fixe, et cet ordre importe :
 

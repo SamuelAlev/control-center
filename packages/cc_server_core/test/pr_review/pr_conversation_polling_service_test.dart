@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/cc_infra.dart'
     show GitHubIssueComment, GitHubReviewComment, GitHubViewerPr;
+import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
+import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
 import 'package:cc_server_core/src/pr_review/pr_conversation_polling_service.dart';
@@ -18,18 +20,23 @@ GitHubViewerPr _pr(String repoFullName, int number, [String title = 'T']) =>
       updatedAt: DateTime(2026, 8, 26),
     );
 
-GitHubIssueComment _issue(int id, String body, {String login = 'octocat'}) =>
-    GitHubIssueComment(
-      id: id,
-      body: body,
-      user: GitHubUser(login: login, avatarUrl: ''),
-      createdAt: DateTime(2026, 8, 26),
-    );
+GitHubIssueComment _issue(
+  int id,
+  String body, {
+  String login = 'octocat',
+  int userId = 101,
+}) => GitHubIssueComment(
+  id: id,
+  body: body,
+  user: GitHubUser(login: login, avatarUrl: '', id: userId),
+  createdAt: DateTime(2026, 8, 26),
+);
 
 GitHubReviewComment _review(
   int id,
   String body, {
   String login = 'octocat',
+  int userId = 101,
   int? inReplyTo,
 }) => GitHubReviewComment(
   id: id,
@@ -37,7 +44,7 @@ GitHubReviewComment _review(
   path: 'lib/a.dart',
   diffHunk: '@@ -1,1 +1,1 @@',
   inReplyToId: inReplyTo,
-  user: GitHubUser(login: login, avatarUrl: ''),
+  user: GitHubUser(login: login, avatarUrl: '', id: userId),
   createdAt: DateTime(2026, 8, 26),
 );
 
@@ -74,7 +81,13 @@ class _FakeGateway implements GitHubPrConversationGateway {
   ) => reviewComments[_key(owner, repo, pr)] = comments;
 
   @override
-  Future<String> botLogin() async => botLoginValue;
+  Future<GitHubConversationIdentity?> identity() async => botLoginValue.isEmpty
+      ? null
+      : GitHubConversationIdentity(
+          botLogin: botLoginValue,
+          slug: 'cc-test',
+          lane: GitHubLane.ownApp,
+        );
 
   @override
   Future<
@@ -181,10 +194,35 @@ class _RecordingSink implements GitHubPrConversationSink {
 /// A valid empty store: a loader that returns this is a RESTART (state
 /// exists, nothing seen yet), not a first run ever — the sweep acts.
 final String _emptyStore = jsonEncode({
-  'v': 1,
-  'savedAt': '2026-08-26T11:00:00.000Z',
+  'v': 2,
+  'watermarks': <String, String>{},
   'seen': <String>[],
 });
+
+/// One identity per workspace (`ws-a` plus every linked or associated one),
+/// each served by [gateway] on [lane].
+Future<List<PrConversationAppIdentity>> Function() _identitiesOf(
+  _FakeGateway Function() gateway,
+  Map<String, List<String>> repoLinks,
+  List<AssociatedPullRequest> Function() associated, {
+  GitHubLane lane = GitHubLane.ownApp,
+}) => () async {
+  final g = gateway();
+  final workspaceIds = <String>{
+    'ws-a',
+    for (final ids in repoLinks.values) ...ids,
+    for (final a in associated()) a.workspaceId,
+  };
+  return [
+    for (final id in workspaceIds.toList()..sort())
+      PrConversationAppIdentity(
+        workspaceId: id,
+        botLogin: g.botLoginValue,
+        lane: lane,
+        gateway: g,
+      ),
+  ];
+};
 
 void main() {
   late _FakeGateway gateway;
@@ -193,12 +231,16 @@ void main() {
   final repoLinks = <String, List<String>>{};
   var associated = <AssociatedPullRequest>[];
   String? savedState;
+  // Advances on every read so consecutive passes clear any lane's floor;
+  // the cadence tests drive their own clock.
+  var clock = DateTime(2026, 8, 26, 12);
+  DateTime tick() => clock = clock.add(const Duration(minutes: 3));
 
   PrConversationPollingService build({
     String? loadedState,
     bool wireStore = true,
   }) => PrConversationPollingService(
-    gateway: gateway,
+    listIdentities: _identitiesOf(() => gateway, repoLinks, () => associated),
     bridge: sink,
     workspacesForRepo: (repoFullName) async =>
         repoLinks[repoFullName.toLowerCase()] ?? const [],
@@ -209,7 +251,7 @@ void main() {
         ? (() async => loadedState ?? _emptyStore)
         : null,
     saveDedupeState: (state) async => savedState = state,
-    now: () => DateTime(2026, 8, 26, 12),
+    now: tick,
   );
 
   setUp(() {
@@ -233,6 +275,16 @@ void main() {
       expect(ids, {1, 2});
     });
 
+    test('an attributed reply by a person counts as ours', () {
+      // Connect posts as the asking person, so the root is theirs.
+      final ids = PrConversationPollingService.botThreadCommentIds([
+        _review(1, '**Control Center** (for @octocat): the finding'),
+        _review(2, 'and the migration?', inReplyTo: 1),
+      ], _botLogin);
+
+      expect(ids, {1, 2});
+    });
+
     test('a broken parent chain is not assumed to be ours', () {
       final ids = PrConversationPollingService.botThreadCommentIds([
         // Replies to a parent the list does not carry.
@@ -250,7 +302,7 @@ void main() {
 
       await poller.pollOnce();
 
-      expect(gateway.mentioned, isEmpty);
+      expect(gateway.searchCalls, 0);
       expect(sink.inbound, isEmpty);
       expect(sink.labeled, isEmpty);
     },
@@ -303,6 +355,22 @@ void main() {
     expect(sink.inbound.single.comment.authorIsBot, isFalse);
   });
 
+  test('the author\'s numeric id reaches the bridge', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [
+      _issue(11, '@usectrl hello?', login: 'renamed', userId: 583231),
+    ]);
+    gateway.setReview('acme', 'app', 7, [
+      _review(12, '@usectrl why?', userId: 77),
+    ]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.map((e) => e.comment.authorId), [583231, 77]);
+    expect(sink.inbound.first.comment.authorLogin, 'renamed');
+  });
+
   test('@usectrl in a review comment reaches the bridge', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
@@ -342,7 +410,7 @@ void main() {
   );
 
   test(
-    'a mentioning comment is routed to the first linking workspace',
+    'a mention is offered to every linking workspace; the claim decides',
     () async {
       repoLinks['acme/app'] = ['ws-b', 'ws-a'];
       gateway.mentioned = [_pr('acme/app', 7, 'Fix')];
@@ -350,13 +418,25 @@ void main() {
 
       await poller.pollOnce();
 
-      final call = sink.inbound.single;
-      expect(call.workspaceId, 'ws-a');
-      expect(call.comment.id, 11);
-      expect(call.comment.isReviewComment, isFalse);
-      expect(call.prTitle, 'Fix');
+      expect(sink.inbound.map((e) => (e.workspaceId, e.comment.id)), [
+        ('ws-a', 11),
+        ('ws-b', 11),
+      ]);
+      expect(sink.inbound.first.prTitle, 'Fix');
+      expect(sink.inbound.first.comment.isReviewComment, isFalse);
     },
   );
+
+  test('two PRs of the same repository are both swept', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7), _pr('acme/app', 8)];
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin a')]);
+    gateway.setIssue('acme', 'app', 8, [_issue(12, '@$_botLogin b')]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.map((e) => e.prNumber), [7, 8]);
+  });
 
   test('the same comment never fires twice', () async {
     repoLinks['acme/app'] = ['ws-a'];
@@ -375,6 +455,8 @@ void main() {
     gateway.setIssue('acme', 'app', 7, [
       _issue(11, '@usectrl thanks', login: _botLogin),
       _issue(12, '@usectrl from another bot', login: 'copilot[bot]'),
+      // Connect: our reply, authored by the person it answered.
+      _issue(13, '**Control Center** (for @octocat): ask @usectrl again'),
     ]);
 
     await poller.pollOnce();
@@ -453,6 +535,20 @@ void main() {
     expect(sink.inbound.single.comment.id, 12);
   });
 
+  test(
+    'the first-run baseline covers every workspace, not just the first',
+    () async {
+      repoLinks['acme/app'] = ['ws-a', 'ws-b'];
+      gateway.mentioned = [_pr('acme/app', 7)];
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+      poller = build(wireStore: false);
+
+      await poller.pollOnce();
+
+      expect(sink.inbound, isEmpty);
+    },
+  );
+
   test('a persisted store means no baseline: a restart catches up', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
@@ -474,6 +570,23 @@ void main() {
 
     expect(sink.inbound, hasLength(1));
     expect(sink.inbound.single.comment.id, 12);
+  });
+
+  test('a store from an older build is a first run (silent)', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    poller = build(
+      loadedState: jsonEncode({
+        'v': 1,
+        'savedAt': '2026-08-26T11:00:00.000Z',
+        'seen': <String>[],
+      }),
+    );
+
+    await poller.pollOnce();
+
+    expect(sink.inbound, isEmpty);
   });
 
   test('a labeled PR triggers a review exactly once', () async {
@@ -499,7 +612,7 @@ void main() {
     gateway.setIssue('acme', 'one', 1, [_issue(11, '@$_botLogin a')]);
     gateway.setIssue('acme', 'two', 2, [_issue(12, '@$_botLogin b')]);
     final capped = PrConversationPollingService(
-      gateway: gateway,
+      listIdentities: _identitiesOf(() => gateway, repoLinks, () => associated),
       bridge: sink,
       workspacesForRepo: (repoFullName) async =>
           repoLinks[repoFullName.toLowerCase()] ?? const [],
@@ -507,7 +620,7 @@ void main() {
       maxCommentSweeps: 1,
       loadDedupeState: () async => _emptyStore,
       saveDedupeState: (state) async => savedState = state,
-      now: () => DateTime(2026, 8, 26, 12),
+      now: tick,
     );
 
     await capped.pollOnce();
@@ -519,8 +632,8 @@ void main() {
   });
 
   test('an association wins over search routing for the same PR', () async {
-    // Linked in ws-a and ws-b (ws-a sorts first), but the review space lives
-    // in ws-b: the conversation continues where it already is.
+    // Linked in ws-a and ws-b, but the review space lives in ws-b: the
+    // conversation continues where it already is.
     repoLinks['acme/app'] = ['ws-b', 'ws-a'];
     associated = [
       const AssociatedPullRequest(
@@ -537,16 +650,16 @@ void main() {
     expect(sink.inbound.single.workspaceId, 'ws-b');
   });
 
-  test('the saved state is a versioned JSON document', () async {
+  test('the saved state is a versioned, per-workspace document', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.labeled = [_pr('acme/app', 9)];
 
     await poller.pollOnce();
 
     final decoded = jsonDecode(savedState!) as Map<String, dynamic>;
-    expect(decoded['v'], 1);
-    expect((decoded['seen'] as List).contains('lb:acme/app#9'), isTrue);
-    expect(decoded['savedAt'], isNotNull);
+    expect(decoded['v'], 2);
+    expect((decoded['seen'] as List).contains('lb:ws-a:acme/app#9'), isTrue);
+    expect((decoded['watermarks'] as Map).containsKey('ws-a'), isTrue);
   });
 
   test('mentions route only into workspaces that use that App', () async {
@@ -560,23 +673,24 @@ void main() {
     gateway.setIssue('acme', 'app', 7, [_issue(12, '@$_botLogin hello?')]);
 
     final routed = PrConversationPollingService(
-      gateway: gateway,
       bridge: sink,
       workspacesForRepo: (repoFullName) async =>
           repoLinks[repoFullName.toLowerCase()] ?? const [],
       associatedPullRequests: () async => associated,
       loadDedupeState: () async => _emptyStore,
       saveDedupeState: (state) async => savedState = state,
-      now: () => DateTime(2026, 8, 26, 12),
+      now: tick,
       listIdentities: () async => [
         PrConversationAppIdentity(
+          workspaceId: 'ws-inherit',
           botLogin: _botLogin,
-          workspaceIds: const {'ws-inherit'},
+          lane: GitHubLane.ownApp,
           gateway: gateway,
         ),
         PrConversationAppIdentity(
+          workspaceId: 'ws-app-b',
           botLogin: 'other-bot[bot]',
-          workspaceIds: const {'ws-app-b'},
+          lane: GitHubLane.workspaceApp,
           gateway: appB,
         ),
       ],
@@ -586,6 +700,138 @@ void main() {
     expect(sink.inbound.map((e) => (e.workspaceId, e.comment.id)).toSet(), {
       ('ws-inherit', 12),
       ('ws-app-b', 11),
+    });
+  });
+
+  group('Connect lane cadence', () {
+    late DateTime now;
+
+    PrConversationPollingService connectPoller({GitHubLane? lane}) =>
+        PrConversationPollingService(
+          listIdentities: _identitiesOf(
+            () => gateway,
+            repoLinks,
+            () => associated,
+            lane: lane ?? GitHubLane.connect,
+          ),
+          bridge: sink,
+          workspacesForRepo: (repoFullName) async =>
+              repoLinks[repoFullName.toLowerCase()] ?? const [],
+          associatedPullRequests: () async => associated,
+          loadDedupeState: () async => _emptyStore,
+          saveDedupeState: (state) async => savedState = state,
+          now: () => now,
+        );
+
+    setUp(() {
+      now = DateTime(2026, 8, 26, 12);
+      repoLinks['acme/app'] = ['ws-a'];
+      gateway.mentioned = [for (var n = 1; n <= 30; n++) _pr('acme/app', n)];
+    });
+
+    test('sweeps at most 10 PRs per pass', () async {
+      await connectPoller().pollOnce();
+
+      expect(gateway.issueCommentCalls, 10);
+    });
+
+    test('an own App lane keeps the larger cap', () async {
+      await connectPoller(lane: GitHubLane.ownApp).pollOnce();
+
+      expect(gateway.issueCommentCalls, 25);
+    });
+
+    test('does not sweep again inside 120 seconds', () async {
+      final connect = connectPoller();
+      await connect.pollOnce();
+      expect(gateway.searchCalls, 1);
+
+      now = now.add(const Duration(seconds: 61));
+      await connect.pollOnce();
+      expect(gateway.searchCalls, 1, reason: 'still inside the floor');
+
+      now = now.add(const Duration(seconds: 60));
+      await connect.pollOnce();
+      expect(gateway.searchCalls, 2);
+      // The rotation moved on to the next ten.
+      expect(gateway.issueCommentCalls, 20);
+    });
+
+    test('an own App lane sweeps again after 60 seconds', () async {
+      final own = connectPoller(lane: GitHubLane.ownApp);
+      await own.pollOnce();
+
+      now = now.add(const Duration(seconds: 61));
+      await own.pollOnce();
+
+      expect(gateway.searchCalls, 2);
+    });
+  });
+
+  group('rate budget', () {
+    late DateTime now;
+    late GitHubRateBudget budget;
+
+    PrConversationPollingService budgeted() => PrConversationPollingService(
+      listIdentities: _identitiesOf(() => gateway, repoLinks, () => associated),
+      bridge: sink,
+      workspacesForRepo: (repoFullName) async =>
+          repoLinks[repoFullName.toLowerCase()] ?? const [],
+      associatedPullRequests: () async => associated,
+      rateBudget: budget,
+      loadDedupeState: () async => _emptyStore,
+      saveDedupeState: (state) async => savedState = state,
+      now: () => now,
+    );
+
+    setUp(() {
+      now = DateTime.utc(2026, 8, 26, 12);
+      budget = GitHubRateBudget(now: () => now);
+      repoLinks['acme/app'] = ['ws-a', 'ws-b'];
+      gateway.mentioned = [_pr('acme/app', 7)];
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hi')]);
+    });
+
+    test('a workspace under 15% of its quota is not swept', () async {
+      budget.record(
+        'ws-a',
+        resource: 'graphql',
+        remaining: 700,
+        limit: 5000,
+        resetAt: now.add(const Duration(minutes: 20)),
+      );
+
+      await budgeted().pollOnce();
+
+      // ws-b still sweeps; ws-a asked GitHub for nothing.
+      expect(sink.inbound.map((e) => e.workspaceId), ['ws-b']);
+      expect(gateway.searchCalls, 1);
+    });
+
+    test('the workspace resumes once the window resets', () async {
+      budget.record(
+        'ws-a',
+        resource: 'core',
+        remaining: 10,
+        limit: 5000,
+        resetAt: now.add(const Duration(minutes: 20)),
+      );
+      final poller = budgeted();
+      await poller.pollOnce();
+      expect(sink.inbound.map((e) => e.workspaceId), ['ws-b']);
+
+      now = now.add(const Duration(minutes: 21));
+      await poller.pollOnce();
+
+      expect(sink.inbound.map((e) => e.workspaceId), ['ws-b', 'ws-a']);
+    });
+
+    test('a healthy reading lets the sweep through', () async {
+      budget.record('ws-a', resource: 'core', remaining: 800, limit: 5000);
+
+      await budgeted().pollOnce();
+
+      expect(sink.inbound.map((e) => e.workspaceId), ['ws-a', 'ws-b']);
     });
   });
 }

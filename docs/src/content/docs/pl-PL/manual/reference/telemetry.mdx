@@ -2,7 +2,7 @@
 title: Analityka użycia
 description: Co Control Center rejestruje, gdy analityka użycia jest włączona, kto o tym decyduje i co nigdy nie jest wysyłane.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/analityka-uzycia
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center może wysyłać **pseudonimowe zdarzenia użycia** do instancji [Umami](https://umami.is). Analityka użycia jest **wyłączona, dopóki operator serwera jej nie włączy**. Ustawienie należy do serwera i dotyczy każdego połączonego z nim klienta: aplikacji desktopowej, aplikacji webowej, telefonu i samego serwera.
@@ -95,9 +95,12 @@ Rejestrowane przez aplikację desktopową, aplikację webową i telefon w odpowi
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Ponowiono nieudane uruchomienie |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Uruchomienie zostało anulowane z aplikacji |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Działający krok został przerwany siłą |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Zakończyła się próba logowania do kalendarza |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true, gdy logowanie przeszło przez Control Center Connect, a nie przez własnego klienta Google serwera), `duration_s` | Zakończyła się próba logowania do kalendarza |
 | `calendar_disconnected` | `workspace_id` | Odłączono konto kalendarza |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Udzielono odpowiedzi na zaproszenie |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (liczba), `conference` | Wydarzenie zostało dodane w Kalendarzu Google |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Wydarzenie zostało przesunięte albo zmieniono jego długość na siatce kalendarza |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Wydarzenie zostało usunięte z Kalendarza Google |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Rozpoczęto nagrywanie z wydarzenia w kalendarzu |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Otwarto link do spotkania (telefon). Z linku ustalany jest tylko dostawca |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Użyto centrum powiadomień |

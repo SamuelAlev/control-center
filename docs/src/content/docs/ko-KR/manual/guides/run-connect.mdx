@@ -1,0 +1,292 @@
+---
+title: Connect 서버 실행
+description: cc-connect Docker 이미지로 자체 Control Center Connect를 실행하거나 cc_server 안에 마운트해, 서버들이 직접 등록한 프로바이더 앱으로 사람들을 로그인시키도록 합니다.
+slug: ko-KR/매뉴얼/사용-가이드/connect-서버-실행
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect는 자체 앱을 등록하지 않은 서버를 위해 프로바이더
+로그인(GitHub, Google Calendar, Linear, Slack)을 실행합니다. 이 가이드에서는 자체
+Connect를 실행해 프로바이더 앱, 그 시크릿, 그리고 그것을 사용할 수 있는 서버 목록을
+모두 직접 보유하는 방법을 설명합니다.
+
+Connect가 무엇을 볼 수 있고 무엇을 볼 수 없는지는
+[Connect 레퍼런스](/ko-KR/매뉴얼/레퍼런스/connect/)에 있습니다. Connect를 실행할지
+결정하는 중이라면 먼저 읽어 보세요.
+
+:::note[필요하지 않을 수도 있습니다]
+서버 하나가 대신 자체 앱을 등록할 수도 있습니다. **설정 → 서버 → 싱글 사인온 →
+프로바이더 앱**에서 하며, **내 GitHub 앱 만들기**는 한 단계로 GitHub를 설정합니다.
+서버 자체 앱은 **내 앱 사용**에서만 적용됩니다. Control Center 또는 사용자 지정 Connect를 쓰면 Connect가 모든 프로바이더를 담당하고, 워크스페이스 자체 앱은 계속 적용됩니다. 여러 서버가 앱 한 벌을
+공유해야 할 때 Connect를 실행하세요.
+:::
+
+## 사전 요구 사항
+
+- TLS를 종료하는 프록시 뒤에 있는, `https://connect.example.com` 같은 Connect용
+  공개 **HTTPS** 주소. 일반 `http`는 루프백에서만 허용됩니다
+- Docker, 또는 추가 환경 변수를 넣어 재시작할 수 있는 `cc_server`
+- 제공하려는 각 프로바이더에 앱을 등록할 권한
+- 이를 사용할 서버들과 그 소유자. 각 서버에는 Connect의 허용 목록에 추가할 설치
+  ID가 있습니다
+
+## 1단계: 주소 정하기
+
+지금 URL을 정하고 계속 유지하세요. `CONNECT_PUBLIC_URL`은 Connect가 하는 모든 일의
+일부입니다. 요청 서명, 봉인된 자격 증명, 프로바이더 리디렉션 URL, 각 서버의 설치
+ID가 모두 이 주소에 묶입니다. 나중에 바꾸면 리디렉션을 다시 등록하고 모두가 다시
+로그인해야 합니다.
+
+## 2단계: 프로바이더 앱 등록
+
+제공하려는 프로바이더만 등록하세요. 변수가 불완전한 프로바이더는 Connect의 구성에서
+빠지며, 서버에는 사용할 수 없는 것으로 보입니다. 아래의 `<base>`는
+`CONNECT_PUBLIC_URL`입니다.
+
+| 프로바이더     | 등록할 것                                                                                                                                                                                                                                                          | 보관할 것                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| **GitHub App** | 콜백 URL `<base>/oauth/github/callback`. 설정 URL `<base>/oauth/github/setup`에 **Redirect on update**를 켭니다. **Request user authorization (OAuth) during installation**은 꺼 둡니다. 켜면 GitHub가 설정 URL을 무시합니다. **Expire user authorization tokens**는 켜 둡니다 | 앱 ID, 슬러그, 클라이언트 ID, 클라이언트 시크릿 |
+| **Google**     | 리디렉션 URI `<base>/oauth/google/callback`을 가진 **웹 애플리케이션** 유형의 OAuth 클라이언트. Google Calendar API를 사용 설정합니다                                                                                                                              | 클라이언트 ID, 클라이언트 시크릿                 |
+| **Linear**     | 콜백 URL `<base>/oauth/linear/callback`과 `<base>/oauth/linear_app/callback`을 가진 OAuth 애플리케이션                                                                                                                                                              | 클라이언트 ID만                                  |
+| **Slack**      | 리디렉션 URL `<base>/oauth/slack_oidc/callback`과 `<base>/oauth/slack/callback`. Event Subscriptions는 `<base>/v1/hooks/slack/events`(`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). 슬래시 명령은 `<base>/v1/hooks/slack/commands`. 토큰 회전을 켭니다 | 앱 ID, 클라이언트 ID, 클라이언트 시크릿, 서명 시크릿 |
+
+GitHub App에는 다음 저장소 권한을 부여합니다. **Metadata** 읽기, **Contents** 읽기 및
+쓰기, **Pull requests** 읽기 및 쓰기, **Issues** 읽기 및 쓰기, **Checks**, **Actions**,
+**Commit statuses** 읽기입니다. 팀 리뷰 요청을 위해 조직 **Members** 읽기를 추가합니다.
+웹훅은 꺼 두어도 됩니다. 서버가 폴링합니다.
+
+Connect는 GitHub App의 비공개 키가 결코 필요하지 않습니다. 대신 사람 자신의
+로그인으로 저장소 하나에 대한 토큰을 발급합니다. Linear도 시크릿이 필요 없습니다.
+Connect가 코드를 서버에 돌려주고, 서버가 교환을 직접 마칩니다.
+
+## 3단계: 설치 ID 모으기
+
+Connect는 허용 목록에 있는 서버에만 응답합니다. 각 서버에서 내 Connect를 가리키게
+한 뒤 설치 ID를 읽습니다.
+
+1. **설정 → 서버 → 싱글 사인온**으로 이동해 **Control Center Connect** 카드를 열고
+   **사용자 지정 Connect 서버 사용**을 고릅니다
+2. URL을 입력하고 저장합니다. 카드에 서버의 **설치 ID**가 표시됩니다
+
+서버 호스트의 터미널에서는 다음과 같이 합니다.
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status`는 설치 ID를 출력합니다. 5단계를 마칠 때까지는 `install_blocked`가 표시되며,
+이는 예상된 동작입니다.
+
+설치 ID는 Connect 주소마다 파생되므로, 같은 서버라도 통신하는 Connect마다 ID가
+다릅니다. 소유자가 키를 교체할 때만 바뀝니다.
+
+## 4단계: 봉인 키 만들기
+
+Connect는 돌려주는 모든 자격 증명을 봉인 키로 암호화합니다. 키를 하나 만들어 시크릿
+파일로 보관하세요.
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+봉인 키를 잃으면 모두가 로그아웃됩니다. 봉인 키 없이는 어떤 봉인도 열 수 없습니다.
+
+## 5단계: 컨테이너 시작
+
+모든 릴리스는 빌드 출처 증명과 함께 `ghcr.io/samuelalev/cc-connect`를 게시합니다.
+프로덕션에서는 버전 태그를 고정하세요.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+리버스 프록시가 포트 `8790`을 가리키게 하세요. 이미지는 권한 없는 사용자로 실행되고,
+상태를 `/data` 볼륨에 보관하며, 내장 상태 검사(`/healthz`를 확인하는
+`cc-connect --healthcheck`)가 있습니다.
+
+구성이 열려 있거나, 안전하지 않거나, 반쯤 완성되어 있으면 Connect는 시작을 거부하고(종료
+코드 `78`) 어떤 변수가 잘못되었는지 출력합니다. 허용 목록이 없거나, 루프백이 아닌 `http`
+주소이거나, 봉인 키 형식이 잘못되었거나, `NAME`과 `NAME_FILE`이 둘 다 설정되어 있으면 모두
+시작이 중단됩니다.
+
+확인 지점: 각 서버에서 Connect 카드에 **작동 중**이 표시되고, **각 로그인이 실행되는 곳**에
+등록한 모든 프로바이더에 대해 **Connect**가 표시됩니다. `cc_server connect status`는
+`Health: ok`와 같은 레인을 출력합니다.
+
+## cc_server 안에 Connect 마운트하기
+
+별도의 컨테이너 대신 서버가 Connect를 직접 호스팅할 수 있습니다. 마운트된 서비스는
+이미지가 실행하는 것과 같은 서비스입니다.
+
+1. 5단계처럼 `CONNECT_*` 변수를 서버의 `.env` 파일(또는 환경)에 넣습니다
+2. `CC_SERVER_CONNECT_HOST=on`을 추가합니다
+3. 서버를 재시작합니다. 로그에 `embedded Connect at <url>`이 출력됩니다
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+그러면 Connect는 `<server>/connect`에서 제공됩니다.
+
+- `CONNECT_PUBLIC_URL`의 기본값은 서버 공개 URL의 오리진에 `/connect`를 붙인 것입니다.
+  프록시 뒤에서는 명시적으로 설정하세요. 경로는 정확히 `/connect`여야 하며, 루프백이
+  아니라면 HTTPS여야 합니다
+- 마운트된 서비스에는 `CONNECT_*` 변수만 전달되므로, 서버 자체의 프로바이더 앱을
+  빌려 쓰는 일은 결코 없습니다
+- 호스팅하는 서버 자신을 포함해 `CONNECT_ALLOWED_INSTALLS`는 여전히 필요합니다
+- 마운트 구성이 잘못되면 열린 브로커를 제공하는 대신 서버 부팅이 중단됩니다
+- 데모 서버는 결코 이를 마운트하지 않습니다
+
+프로바이더 리디렉션을 `https://<server>/connect` 기준으로 등록한 뒤, 3단계처럼
+서버들(호스팅하는 서버 포함)이 그 URL을 가리키게 하세요.
+
+## 구성 레퍼런스
+
+모든 설정은 환경 변수입니다. 모든 시크릿은 대신 마운트된 파일에서 가져올 수 있습니다.
+`NAME` 대신 `NAME_FILE`을 설정하세요. Connect는 최대 30초마다 파일을 다시 읽고 마지막으로
+유효했던 값을 유지합니다. **이중**으로 표시된 시크릿은 교체 중에 `NAME_PREVIOUS`(또는
+`NAME_PREVIOUS_FILE`)도 받아들입니다.
+
+### 주소와 접근
+
+| 변수                            | 기본값            | 의미                                                                                                                    |
+| ------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | 필수              | 정규 공개 URL. HTTPS, 또는 루프백에서만 `http`. 경로가 있으면 마운트를 뜻합니다. 쿼리나 프래그먼트는 쓸 수 없습니다      |
+| `CONNECT_ALLOWED_INSTALLS`      | 필수              | 쉼표로 구분한 설치 ID. `*`는 `CONNECT_SIGNED_CONFIG_FILE`과 함께일 때만 허용됩니다                                       |
+| `CONNECT_DENY_INSTALLS`         |                   | 허용되어 있어도 거부할 설치 ID                                                                                          |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |                   | 숫자 GitHub 소유자 ID. 설정하면 이들이 소유한 저장소에 대해서만 저장소 토큰을 발급합니다                                |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | 바인드 주소와 포트                                                                                                      |
+| `CONNECT_TRUST_PROXY`           | `0`               | `X-Forwarded-For`에서 신뢰할 프록시 홉 수(0~8). 주소별 속도 제한에만 쓰입니다                                            |
+
+### 프로바이더 레인
+
+| 변수                                                                           | 기본값  | 의미                                                                          |
+| ------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                    |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                                 |         | 시크릿, 이중                                                                  |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                     |         | Google 클라이언트. 시크릿은 이중                                              |
+| `CONNECT_LINEAR_CLIENT_ID`                                                     |         | Linear 애플리케이션. 시크릿 없음                                              |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                              |         | Slack 앱                                                                      |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`                  |         | 시크릿, 이중                                                                  |
+| `CONNECT_KLIPY_APP_KEY`                                                        |         | Klipy GIF 검색 키. 시크릿, 이중                                               |
+| `CONNECT_KLIPY_MODE`                                                           | `proxy` | `proxy`는 키를 Connect에 두고, `key`는 키를 서버에 넘깁니다                   |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                             | `1`     | GitHub, Google, Slack: 새 봉인에 기록되는 세대                                |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                           | `1`     | GitHub, Google, Slack: 이보다 오래된 봉인은 다시 로그인해야 합니다            |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                   | `true`  | 모든 레인: `false`면 기존 로그인은 계속 갱신되지만 새 로그인은 중단됩니다     |
+
+### 봉인, 상태, 저장소
+
+| 변수                                                      | 기본값                         | 의미                                                                                                  |
+| --------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                        | `local` 또는 `gcp-kms`                                                                                |
+| `CONNECT_SEAL_KEYS`                                       |                                | 시크릿, `local`에 필수. 쉼표로 구분한 `kid:key` 항목, 최신순. 오래된 항목도 여전히 복호화합니다       |
+| `CONNECT_KMS_KEY`                                         |                                | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, `gcp-kms`에 필수                                    |
+| `CONNECT_STATE`                                           | `memory`                       | 인스턴스 하나면 `memory`, 여러 개면 `redis`                                                           |
+| `CONNECT_REDIS_URL`                                       |                                | 시크릿. `redis://` 또는 `rediss://`                                                                   |
+| `CONNECT_REDIS_CA_FILE`                                   |                                | `rediss://`용 CA 번들                                                                                 |
+| `CONNECT_BINDINGS`                                        | `file`                         | GitHub 설치 바인딩을 두는 곳: `file` 또는 `firestore`                                                 |
+| `CONNECT_DATA_DIR`                                        | `data`(이미지에서는 `/data`)   | `bindings.json`을 보관합니다                                                                          |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` 데이터베이스       | `CONNECT_BINDINGS=firestore`용                                                                        |
+
+### 구성, 로그, 제한
+
+| 변수                                      | 기본값               | 의미                                                                                          |
+| ----------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`              |                      | 오프라인으로 서명된 구성으로, 그대로 제공됩니다. Control Center의 호스팅 Connect가 사용합니다 |
+| `CONNECT_CONFIG_PUBLIC_KEYS`              |                      | 서명된 구성을 검증할 키                                                                       |
+| `CONNECT_CONFIG_EPOCH`                    | `1`                  | 자체 호스팅 Connect가 생성하는 구성의 에포크                                                  |
+| `CONNECT_LOG_HMAC_KEY`                    | 프로세스마다 무작위  | 시크릿. 설정하면 설치 ID를 대신하는 태그가 재시작과 인스턴스 간에 안정적으로 유지됩니다       |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                      | `/v1/version`이 보고합니다                                                                    |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`         | `600`                | 설치당 요청 수                                                                                |
+| `CONNECT_RATE_IP_PER_MINUTE`              | `300`                | 주소당 요청 수                                                                                |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`          | `500`                | 서비스 전체의 요청 수                                                                         |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`      | `600`                | 팀당 Slack 이벤트 수                                                                          |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`           | `120`                | 설치당 GIF 검색 수                                                                            |
+
+## 인스턴스 여러 개 실행
+
+대부분의 조직에는 `CONNECT_STATE=memory`인 인스턴스 하나면 충분합니다. 한 주소 뒤에
+인스턴스 여러 개를 두려면 `CONNECT_STATE=redis`와 함께, 공유 `CONNECT_DATA_DIR` 또는
+`CONNECT_BINDINGS=firestore`가 필요합니다. 그래야 한 인스턴스에서 시작한 로그인을 다른
+인스턴스에서 마칠 수 있습니다.
+
+## 프로바이더 시크릿 교체
+
+아무도 로그아웃되지 않습니다.
+
+1. 프로바이더에서 새 시크릿을 만들고 이전 시크릿은 남겨 둡니다
+2. 이전 값을 `NAME_PREVIOUS`로 옮기고, 새 값을 `NAME`에 넣은 뒤,
+   `CONNECT_<LANE>_SECRET_GENERATION`을 올립니다. 마운트된 파일은 30초 안에
+   반영됩니다
+3. 로그인이 갱신될 때까지 기다린 뒤, 프로바이더에서 이전 시크릿을 삭제하고
+   `NAME_PREVIOUS`를 제거합니다
+
+봉인 키를 교체하려면 새 `cc-connect-config seal-key` 항목을 `CONNECT_SEAL_KEYS`의 맨
+앞에 넣고, 이전 항목은 그 봉인들이 갱신될 때까지 남겨 둡니다.
+
+## 앱 변경
+
+서버는 내 Connect를 처음 사용할 때 Connect가 알린 앱 ID와 클라이언트 ID를 기억합니다.
+앱을 교체하면 모든 서버의 Connect 카드에 **Connect 앱이 변경되었습니다**가 표시되고,
+서버 소유자가 **새 앱 신뢰**를 누를 때까지 Connect를 통한 로그인이 일시 중지됩니다.
+전환하기 전에 서버 소유자들에게 알려, 그 안내가 내 것임을 알 수 있게 하세요.
+
+## 서버 차단
+
+그 서버의 설치 ID를 `CONNECT_DENY_INSTALLS`에 추가하고 재시작합니다. 그 서버의
+소유자에게는 "Connect가 이 서버의 설치 ID를 차단했습니다"가 표시되고, 그 서버의 모든
+Connect 로그인이 중단됩니다.
+
+## 문제 해결
+
+### 서버에 Connect가 자신을 차단했다고 표시됩니다
+
+그 서버의 설치 ID가 `CONNECT_ALLOWED_INSTALLS`에 없거나 `CONNECT_DENY_INSTALLS`에
+있습니다. 소유자가 키를 교체하면 ID가 바뀝니다. 새 ID를 요청하세요.
+
+### 프로바이더가 사용할 수 없는 것으로 표시됩니다
+
+변수 중 하나가 없어서 Connect가 그 레인을 뺐습니다. 시작 로그와 위의 표를
+확인하세요. GitHub에는 앱 ID, 슬러그, 클라이언트 ID, 클라이언트 시크릿 네 가지가 모두
+필요하고, Google에는 클라이언트 ID와 시크릿이 둘 다 필요합니다.
+
+### 로그인이 리디렉션 불일치로 실패합니다
+
+프로바이더에 등록한 리디렉션이 `CONNECT_PUBLIC_URL`과 정확히 일치하지 않습니다.
+스킴, 호스트, 포트, 그리고 마운트된 Connect라면 `/connect` 경로를 비교하세요.
+
+### 모두가 다시 로그인해야 했습니다
+
+봉인 키가 바뀌었거나 사라졌거나, 서버가 키를 교체했거나, 서버의 데이터가 다른 머신에
+복원되었습니다. 봉인된 자격 증명은 그것을 만든 설치와 Connect에서만 열립니다.
+
+## 관련 가이드
+
+- [GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
+- [Google Calendar 연결](/ko-KR/매뉴얼/사용-가이드/캘린더-연결/)
+
+## 관련 레퍼런스
+
+- [Control Center Connect](/ko-KR/매뉴얼/레퍼런스/connect/)
+- [`cc_server` CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/)

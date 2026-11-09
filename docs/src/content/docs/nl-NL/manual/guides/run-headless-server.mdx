@@ -1,9 +1,9 @@
 ---
 title: Een headless server draaien
 description: Draai de headless binary cc_server of de Docker-image ervan, koppel een client eraan en configureer hem met het volledige CLI-flag- en omgevingsoppervlak.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: nl-NL/handleiding/gidsen/headless-server-draaien
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Draai `cc_server` op een machine die aan blijft staan en maak er vervolgens
@@ -15,8 +15,10 @@ externe API-aanroep; de clients renderen alleen.
 ## Draaien in Docker (vooraf gebouwde images)
 
 Elke release publiceert een self-hosted stack van vier GHCR-images — de backend,
-de twee statische thin clients en de optionele koppelingsrelay — plus een aparte
-`cc-server-demo`-image voor de openbare demohost. Een self-hosted installatie
+de twee statische thin clients en de optionele koppelingsrelay — plus de
+optionele aanmelddienst `cc-connect`
+([Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/))
+en een aparte `cc-server-demo`-image voor de openbare demohost. Een self-hosted installatie
 heeft geen source-checkout nodig. Pin een versietag
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) of blijf op `latest`.
 
@@ -69,6 +71,11 @@ Dingen die je moet weten voordat je dit alles buiten loopback beschikbaar stelt 
 - **`/data` is de enige state.** De SQLite-databases, secrets van gekoppelde
   apparaten, gedownloade modellen en vergaderaudio staan allemaal in het volume —
   maak er een back-up van en de container is wegwerpbaar.
+- **Providersecrets horen in een gekoppeld `.env`, nooit in `-e`.** De server
+  weigert te starten wanneer `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` of een `SLACK_*SECRET*` in zijn
+  procesomgeving staat. Koppel het bestand alleen-lezen aan `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), of configureer de apps in Instellingen.
 - **Koppel een client vanuit de image zelf** vóór de eerste verbinding, het
   container-equivalent van [stap 3](#stap-3-een-client-koppelen-vóór-de-eerste-start):
 
@@ -282,21 +289,35 @@ de door de server gestarte editoruitbreiding niet beschikbaar via een openbare
 proxy. Gevoelige openbare HTTP-verzoeken worden geweigerd; bronnen vereisen een
 geauthenticeerde versleutelde sessie.
 
-## Stap 6: Een Google Calendar verbinden (optioneel)
+## Stap 6: Kiezen hoe mensen zich aanmelden
 
-Gebruik de devicecode-flow om de agenda van een werkruimte te synchroniseren
-zonder GUI:
+De eerste client die als servereigenaar verbinding maakt, krijgt de vraag hoe
+deze server mensen aanmeldt bij GitHub, Google Calendar en Linear: **De apps van
+Control Center gebruiken**, **Mijn eigen apps gebruiken** of **Een eigen
+Connect-server gebruiken**. Vanuit de terminal maak je dezelfde keuze zo:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Hij drukt een code en een URL af om op een ander apparaat goed te keuren, slaat
-het refreshtoken server-side op en stopt. Een build uit de source levert geen
-Google-client mee, dus de omgevingsvariabelen voor id en secret zijn verplicht —
-er is geen `--google-client-id`-flag. Zie [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/).
+`CC_CONNECT_URL` (`hosted`, `off` of een URL) in de omgeving of het `.env` van de
+server legt de keuze in plaats daarvan vast. Met **Mijn eigen apps gebruiken**
+registreer je elke provider in **Instellingen → Server → Single sign-on →
+Provider-apps**; **Mijn GitHub-app maken** zet GitHub in één stap op.
+Providersecrets horen in het `.env`-bestand van de server, nooit in de
+geëxporteerde omgeving. Zie [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)
+en [Control Center Connect](/nl-NL/handleiding/referentie/connect/).
+
+Aanmeldingen via Connect eindigen met een code die de browser toont, dus de
+server heeft daarvoor geen openbaar adres nodig. Aanmeldingen via de eigen apps
+van de server sturen de browser terug naar de openbare URL van de server, dus
+stel `--public-url` in op een adres dat de browsers van mensen kunnen bereiken.
+
+Wil je vanaf deze server Connect hosten voor andere servers, stel dan
+`CC_SERVER_CONNECT_HOST=on` in; zie
+[Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/#connect-in-cc_server-inbouwen).
 
 ## Configuratie
 
@@ -353,6 +374,7 @@ stelt:
 - [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/)
 - [Een fleet-worker draaien](/nl-NL/handleiding/gidsen/fleet-worker-draaien/)
 - [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
+- [Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)
 
 ## Gerelateerde concepten
 

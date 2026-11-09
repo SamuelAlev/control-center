@@ -221,6 +221,95 @@ void main() {
     });
   });
 
+  group('configuration token cache (single-flight per workspace)', () {
+    _SlackStub stub({Object? exp}) => _SlackStub()
+      ..reply('tooling.tokens.rotate', {
+        'token': 'xoxe.xoxp-access',
+        'refresh_token': 'xoxe-2',
+        'exp': ?exp,
+      })
+      ..reply('apps.manifest.export', {'manifest': <String, dynamic>{}});
+
+    int rotations(_SlackStub slack) =>
+        slack.calls.where((c) => c == 'tooling.tokens.rotate').length;
+
+    test('concurrent calls in one workspace rotate once', () async {
+      final slack = stub();
+      final store = _TokenStore('xoxe-1');
+      final cache = SlackConfigTokenCache();
+
+      // Two services, as the plugin builds one per call: they share the cache.
+      await Future.wait([
+        _service(slack, store, cache: cache).profile('A1'),
+        _service(slack, store, cache: cache).profile('A1'),
+      ]);
+
+      // A second rotation would have presented the already-dead `xoxe-1`.
+      expect(rotations(slack), 1);
+      expect(store.writes, ['xoxe-2']);
+    });
+
+    test('a live access token is reused until five minutes before expiry', () async {
+      var now = DateTime.utc(2026, 11, 8, 12);
+      final expiry = now.add(const Duration(hours: 12));
+      final slack = stub(exp: expiry.millisecondsSinceEpoch ~/ 1000);
+      final store = _TokenStore('xoxe-1');
+      final cache = SlackConfigTokenCache(clock: () => now);
+
+      await _service(slack, store, cache: cache).profile('A1');
+      now = expiry.subtract(const Duration(minutes: 6));
+      await _service(slack, store, cache: cache).profile('A1');
+      expect(rotations(slack), 1);
+
+      now = expiry.subtract(const Duration(minutes: 4));
+      await _service(slack, store, cache: cache).profile('A1');
+      expect(rotations(slack), 2);
+    });
+
+    test('workspaces never share a token', () async {
+      final slack = stub();
+      final cache = SlackConfigTokenCache();
+
+      await _service(slack, _TokenStore('xoxe-a'), cache: cache).profile('A1');
+      await _service(
+        slack,
+        _TokenStore('xoxe-b'),
+        cache: cache,
+        key: 'ws-2',
+      ).profile('A2');
+
+      expect(rotations(slack), 2);
+    });
+
+    test('a newly pasted refresh token is rotated, not shadowed', () async {
+      final slack = stub();
+      final store = _TokenStore('xoxe-1');
+      final cache = SlackConfigTokenCache();
+
+      await _service(slack, store, cache: cache).profile('A1');
+      store.token = 'xoxe-pasted';
+      await _service(slack, store, cache: cache).profile('A1');
+
+      expect(rotations(slack), 2);
+    });
+
+    test('a token Slack refuses is not reused', () async {
+      final slack = stub()
+        ..reply('apps.manifest.export', {'ok': false, 'error': 'invalid_auth'});
+      final store = _TokenStore('xoxe-1');
+      final cache = SlackConfigTokenCache();
+
+      await expectLater(
+        _service(slack, store, cache: cache).profile('A1'),
+        throwsA(isA<ValidationException>()),
+      );
+      slack.reply('apps.manifest.export', {'manifest': <String, dynamic>{}});
+      await _service(slack, store, cache: cache).profile('A1');
+
+      expect(rotations(slack), 2);
+    });
+  });
+
   group('token rotation', () {
     test(
       'persists the new refresh token before using the access token',
@@ -440,12 +529,18 @@ const _profile = ChatBotProfile(
   command: 'cc',
 );
 
-SlackManifestService _service(_SlackStub slack, _TokenStore store) =>
-    SlackManifestService(
-      api: SlackApiClient(httpClient: slack.client, botToken: ''),
-      readRefreshToken: store.read,
-      writeRefreshToken: store.write,
-    );
+SlackManifestService _service(
+  _SlackStub slack,
+  _TokenStore store, {
+  SlackConfigTokenCache? cache,
+  String key = 'ws-1',
+}) => SlackManifestService(
+  api: SlackApiClient(httpClient: slack.client, botToken: ''),
+  readRefreshToken: store.read,
+  writeRefreshToken: store.write,
+  tokenCache: cache,
+  cacheKey: key,
+);
 
 /// The persistence seam, with a read-back guarantee (the real one writes the
 /// workspace's credentials file) and an optional write failure.

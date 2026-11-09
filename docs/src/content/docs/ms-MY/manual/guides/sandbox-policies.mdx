@@ -2,7 +2,7 @@
 title: Konfigurasikan polisi kotak pasir
 description: Apa yang mengekang sesuatu larian ejen, cara mengetahui sama ada kotak pasir OS membalutnya dan bagaimana peraturan tindakan menentukan apa yang boleh di-push atau dicapai oleh ejen.
 slug: ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Sama ada sesuatu larian ejen dikotak pasirkan ditentukan pada pelayan, semasa boot
@@ -75,36 +75,10 @@ kelulusan yang menamakan repo dan ref; dengan **Tolak**, git mencetak
 
 Bagaimana setiap peraturan sampai kepada larian:
 
-- **Push** dikuatkuasakan melalui apa yang dipegang larian. Token GitHub-nya
-  ialah token pemasangan GitHub App baca sahaja yang boleh membaca kandungan dan
-  bekerja dengan pull request. Konfigurasi git-nya menghantar setiap push GitHub
-  ke gerbang loopback pada `cc_server`, yang bertanya kepada peraturan dan
-  barulah memajukan push dengan token tulis yang tidak pernah dilihat ejen.
-  Gerbang itu hanya memajukan ke repo worktree itu sendiri atau ke repo GitHub
-  yang dipautkan kepada ruang kerja. Ini terpakai bagi setiap penyesuai.
-- **Pull request dan isu dari shell** dikenali melalui baris perintah, dalam
-  alat `bash` harness dan, melalui hook, dalam alat `Bash` Claude Code. Ejen
-  yang menyembunyikan perintah (skrip, `eval`, panggilan API terus) melepasi
-  semakan ini, tetapi tidak melepasi gerbang push.
-- **Kunci penetikan** tidak pernah diletakkan dalam kotak pasir. Ejen menulis
-  tiket melalui alat MCP Control Center, yang bertanya kepada peraturan.
-- **Rangkaian** diselesaikan sekali, apabila larian bermula. **Tolak**
-  mematikan rangkaian kotak pasir; **Benarkan** dan **Tanya dahulu**
-  membiarkannya hidup, dan dengan **Tanya dahulu** alat `web_fetch` dan
-  `web_search` harness masih bertanya pada setiap panggilan. Selagi rangkaian
-  hidup, GitHub sentiasa berada dalam senarai benarkan keluar.
+- **Push** dikuatkuasakan melalui apa yang dipegang larian. Token GitHub-nya hanya meliputi satu repositori larian dan tidak boleh push: ia boleh membaca kandungan dan, apabila ahli yang bertanggungjawab boleh push, mengulas pada pull request. Konfigurasi git-nya menghantar setiap push GitHub ke gerbang loopback pada `cc_server`, yang bertanya kepada peraturan dan barulah memajukan push dengan token tulis yang tidak pernah dilihat ejen. Gerbang itu hanya memajukan ke repo worktree itu sendiri atau ke repo GitHub yang dipautkan kepada ruang kerja. Ini terpakai bagi setiap penyesuai.
 
-:::caution[Tanpa GitHub App, peraturan push hanya bersifat nasihat]
-Tanpa GitHub App dikonfigurasikan, larian mendapat token akses peribadi
-sandaran, yang tidak boleh disempitkan kepada baca sahaja. `git push` masih
-melalui gerbang dan peraturan, tetapi kod yang menggunakan token secara terus
-boleh push dengan memintasnya. Konfigurasikan GitHub App supaya peraturan itu
-mengikat.
-
-Kelayakan GitHub larian itu hanya pernah milik broker — token pemasangan
-GitHub App berskop repo, atau PAT sandaran — tidak pernah token tersimpan ahli
-yang meminta itu sendiri. PAT pelayan ditahan daripada larian yang bertindak
-bagi ahli yang bukan pemilik dan belum menyambungkan GitHub.
+:::note[Dari mana token GitHub larian berasal]
+Token dicetak untuk larian daripada GitHub App ruang kerja, app pelayan, atau Control Center Connect, dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab (yang meminta, atau jika tidak, pemilik ruang kerja) pada repositori itu. Ia tidak pernah log masuk GitHub seorang ahli yang diserahkan sepenuhnya, dan tiada token sandaran: apabila token tidak dapat dicetak, larian berjalan tanpa token dan notanya menerangkan sebabnya.
 :::
 
 ## Semak sama ada larian ejen anda dikotak pasirkan

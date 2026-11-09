@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -101,6 +102,9 @@ class _MarkReadyForReviewButtonState
         variant: CcToastVariant.success,
       );
     } on Exception catch (e) {
+      if (mounted && offerGitHubSignIn(context, ref, e)) {
+        return;
+      }
       toaster.show(
         l10n.failedToMarkPrReady('$e'),
         variant: CcToastVariant.danger,
@@ -194,6 +198,9 @@ Future<bool> confirmAndConvertToDraft(
     );
     return true;
   } on Exception catch (e) {
+    if (context.mounted && offerGitHubSignIn(context, ref, e)) {
+      return false;
+    }
     toaster.show(
       l10n.failedToConvertPrToDraft('$e'),
       variant: CcToastVariant.danger,

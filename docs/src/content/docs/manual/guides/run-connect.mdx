@@ -1,0 +1,300 @@
+---
+title: Run a Connect server
+description: Run your own Control Center Connect from the cc-connect Docker image, or mount it inside cc_server, so your servers sign people in through provider apps you register.
+---
+
+Control Center Connect runs provider sign-ins (GitHub, Google Calendar, Linear,
+Slack) for servers that have not registered apps of their own. This guide shows you how
+to run your own Connect, so the provider apps, their secrets and the list of
+servers allowed to use them all stay with you.
+
+What Connect can and cannot see is in the
+[Connect reference](/manual/reference/connect/). Read it first if you are
+deciding whether to run one.
+
+:::note[You may not need it]
+One server can register its own apps instead: **Settings → Server → Single
+sign-on → Provider apps**, where **Create my GitHub App** sets up GitHub in one
+step. The server's own apps apply only under **Use my own apps**: with
+Control Center's or a custom Connect, Connect runs every lane, while a
+workspace's own app still applies. Run a Connect when several servers should
+share one set of apps.
+:::
+
+## Prerequisites
+
+- A public **HTTPS** address for Connect, such as `https://connect.example.com`,
+  behind a TLS-terminating proxy. Plain `http` is accepted on loopback only
+- Docker, or a `cc_server` you can restart with extra environment variables
+- Permission to register apps with each provider you want to serve
+- The servers that will use it, with their owners at hand: each one has an
+  install id you add to Connect's allowlist
+
+## Step 1: Choose the address
+
+Pick the URL now and keep it. `CONNECT_PUBLIC_URL` is part of everything Connect
+does: request signatures, sealed credentials, provider redirect URLs and each
+server's install id are all bound to it. Changing it later means registering the
+redirects again and every person signing in again.
+
+## Step 2: Register the provider apps
+
+Register only the providers you want to serve. A provider whose variables are
+incomplete is left out of Connect's configuration, and servers see it as
+unavailable. `<base>` below is your `CONNECT_PUBLIC_URL`.
+
+| Provider       | Register                                                                                                                                                                                                                                                             | Keep                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` with **Redirect on update** on. Leave **Request user authorization (OAuth) during installation** off: with it on, GitHub ignores the setup URL. Keep **Expire user authorization tokens** on | App id, slug, client id, client secret |
+| **Google**     | An OAuth client of type **Web application** with redirect URI `<base>/oauth/google/callback`, and the Google Calendar API enabled                                                                                                                                  | Client id, client secret                |
+| **Linear**     | An OAuth application with callback URLs `<base>/oauth/linear/callback` and `<base>/oauth/linear_app/callback`                                                                                                                                                    | Client id only                          |
+| **Slack**      | Redirect URLs `<base>/oauth/slack_oidc/callback` and `<base>/oauth/slack/callback`. Event Subscriptions at `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands at `<base>/v1/hooks/slack/commands`. Token rotation on | App id, client id, client secret, signing secret |
+
+Give the GitHub App these repository permissions: **Metadata** read, **Contents**
+read and write, **Pull requests** read and write, **Issues** read and write,
+**Checks**, **Actions** and **Commit statuses** read. Add organization
+**Members** read for team review requests. Webhooks can stay off: servers poll.
+
+Connect never needs the GitHub App's private key. It mints one-repository
+tokens from a person's own sign-in instead. Linear needs no secret either:
+Connect hands the code back to the server, which finishes the exchange itself.
+
+## Step 3: Collect the install ids
+
+Connect answers only the servers on its allowlist. On each server, point it at
+your Connect, then read its install id:
+
+1. Go to **Settings → Server → Single sign-on**, open the **Control Center
+   Connect** card and choose **Use a custom Connect server**
+2. Enter your URL and save. The card shows the server's **Install id**
+
+From a terminal on the server host, the same thing is:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` prints the install id. It shows `install_blocked` until Step 5 is done,
+which is expected.
+
+An install id is derived per Connect address, so the same server has a
+different id for every Connect it talks to. It changes only when its owner
+rotates the key.
+
+## Step 4: Create a seal key
+
+Connect encrypts every credential it hands back with a seal key. Make one and
+keep it as a secret file:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+Losing the seal key signs everybody out: no seal can be opened without it.
+
+## Step 5: Start the container
+
+Every release publishes `ghcr.io/samuelalev/cc-connect` with build provenance.
+Pin a version tag in production.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+Point your reverse proxy at port `8790`. The image runs as an unprivileged user,
+keeps its state in the `/data` volume and has a built-in health check
+(`cc-connect --healthcheck`, which probes `/healthz`).
+
+Connect refuses to start (exit code `78`) when its configuration is open, unsafe
+or half finished, and prints which variable is wrong. A missing allowlist, an
+`http` address off loopback, a malformed seal key or both `NAME` and
+`NAME_FILE` set all stop it.
+
+Checkpoint: on each server, the Connect card reads **Working**, and **Where each
+sign-in runs** names **Connect** for every provider you registered.
+`cc_server connect status` prints `Health: ok` and the same lanes.
+
+## Mount Connect inside cc_server
+
+A server can host Connect itself instead of a separate container. The mounted
+service is the same one the image runs.
+
+1. Put the `CONNECT_*` variables in the server's `.env` file (or its
+   environment), as in Step 5
+2. Add `CC_SERVER_CONNECT_HOST=on`
+3. Restart the server. Its log prints `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect is then served at `<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` defaults to the server's public URL origin plus
+  `/connect`. Set it explicitly behind a proxy. Its path must be exactly
+  `/connect`, and it must be HTTPS unless it is loopback
+- Only `CONNECT_*` variables reach the mounted service, so it never borrows the
+  server's own provider apps
+- `CONNECT_ALLOWED_INSTALLS` is still required, including for the hosting
+  server itself
+- A misconfigured mount stops the server from booting rather than serving an
+  open broker
+- The demo server never mounts it
+
+Register the provider redirects against `https://<server>/connect`, then point
+servers (the hosting one included) at that URL as in Step 3.
+
+## Configuration reference
+
+Every setting is an environment variable. Any secret can come from a mounted
+file instead: set `NAME_FILE` in place of `NAME`. Connect re-reads the file at
+most every 30 seconds and keeps the last good value. Secrets marked **dual** also
+accept `NAME_PREVIOUS` (or `NAME_PREVIOUS_FILE`) during a rotation.
+
+### Address and access
+
+| Variable                        | Default   | Meaning                                                                                                                          |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | required  | The canonical public URL. HTTPS, or `http` on loopback only. A path means a mount. No query or fragment                          |
+| `CONNECT_ALLOWED_INSTALLS`      | required  | Comma-separated install ids. `*` is accepted only together with `CONNECT_SIGNED_CONFIG_FILE`                                     |
+| `CONNECT_DENY_INSTALLS`         |           | Install ids refused even when allowed                                                                                            |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeric GitHub owner ids. When set, repository tokens are minted only for repositories they own                                  |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bind address and port                                                                                                    |
+| `CONNECT_TRUST_PROXY`           | `0`       | Trusted proxy hops in `X-Forwarded-For` (0 to 8). Used only for the per-address rate limit                                        |
+
+### Provider lanes
+
+| Variable                                                                    | Default | Meaning                                                                     |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | The GitHub App                                                              |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Secret, dual                                                                |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | The Google client. The secret is dual                                       |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | The Linear application. No secret                                           |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | The Slack app                                                               |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |         | Secrets, dual                                                               |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | Klipy GIF search key. Secret, dual                                          |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` keeps the key in Connect; `key` hands it to servers                 |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub, Google and Slack: the generation recorded in new seals              |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub, Google and Slack: older seals must sign in again                    |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | Every lane: `false` stops new sign-ins while existing ones keep refreshing  |
+
+### Seals, state and storage
+
+| Variable                                                  | Default                    | Meaning                                                                                                    |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` or `gcp-kms`                                                                                       |
+| `CONNECT_SEAL_KEYS`                                       |                            | Secret, required for `local`. Comma-separated `kid:key` entries, newest first; older entries still decrypt |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, required for `gcp-kms`                                   |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` for one instance, `redis` for several                                                             |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` or `rediss://`                                                                          |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | CA bundle for `rediss://`                                                                                  |
+| `CONNECT_BINDINGS`                                        | `file`                     | Where GitHub installation bindings live: `file` or `firestore`                                             |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` in the image) | Holds `bindings.json`                                                                                   |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` database       | For `CONNECT_BINDINGS=firestore`                                                                           |
+
+### Configuration, logs and limits
+
+| Variable                                | Default            | Meaning                                                                                             |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | An offline-signed configuration, served as is. Used by Control Center's hosted Connect              |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Keys the signed configuration must verify against                                                   |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | The epoch of the configuration a self-hosted Connect generates                                      |
+| `CONNECT_LOG_HMAC_KEY`                  | random per process | Secret. Set it to keep the tags that stand in for install ids stable across restarts and instances  |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Reported by `/v1/version`                                                                           |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Requests per install                                                                                |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Requests per address                                                                                |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Requests for the whole service                                                                      |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack events per team                                                                               |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF searches per install                                                                            |
+
+## Run more than one instance
+
+One instance with `CONNECT_STATE=memory` is enough for most organizations.
+Several instances behind one address need `CONNECT_STATE=redis`, and either a
+shared `CONNECT_DATA_DIR` or `CONNECT_BINDINGS=firestore`, so a sign-in started
+on one instance can finish on another.
+
+## Rotate a provider secret
+
+Nobody is signed out:
+
+1. Create the new secret at the provider and keep the old one
+2. Move the old value to `NAME_PREVIOUS`, put the new one in `NAME`, and raise
+   `CONNECT_<LANE>_SECRET_GENERATION`. Mounted files are picked up within 30
+   seconds
+3. Wait for sign-ins to refresh, then delete the old secret at the provider and
+   remove `NAME_PREVIOUS`
+
+To rotate a seal key, put a new `cc-connect-config seal-key` entry first in
+`CONNECT_SEAL_KEYS` and keep the old entry until its seals have refreshed.
+
+## Change an app
+
+Servers remember the app and client ids your Connect announced the first time
+they used it. If you replace an app, every server's Connect card shows **Connect's
+apps changed**, and sign-ins through Connect pause until its owner presses
+**Trust new apps**. Tell server owners before you switch, so they know the
+prompt is yours.
+
+## Block a server
+
+Add its install id to `CONNECT_DENY_INSTALLS` and restart. Its owner sees
+"Connect has blocked this server's install id" and every Connect sign-in on it
+stops.
+
+## Troubleshooting
+
+### A server says Connect has blocked it
+
+Its install id is not in `CONNECT_ALLOWED_INSTALLS`, or it is in
+`CONNECT_DENY_INSTALLS`. The id changes when its owner rotates the key; ask for
+the new one.
+
+### A provider shows as unavailable
+
+One of its variables is missing, so Connect left the lane out. Check the startup
+log and the tables above. GitHub needs all four of app id, slug, client id and
+client secret; Google needs both client id and secret.
+
+### Sign-ins fail with a redirect mismatch
+
+The redirect registered with the provider does not match `CONNECT_PUBLIC_URL`
+exactly. Compare scheme, host, port and the `/connect` path for a mounted
+Connect.
+
+### Everybody had to sign in again
+
+The seal key changed or was lost, a server rotated its key, or a server's data
+was restored onto another machine. A sealed credential opens only for the
+install and Connect that created it.
+
+## Related guides
+
+- [Create the GitHub App](/manual/guides/github-app/)
+- [Run a headless server](/manual/guides/run-headless-server/)
+- [Connect a Google Calendar](/manual/guides/connect-calendar/)
+
+## Related reference
+
+- [Control Center Connect](/manual/reference/connect/)
+- [`cc_server` CLI](/manual/reference/cc-server-cli/)

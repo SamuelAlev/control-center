@@ -12,6 +12,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
 
@@ -114,12 +115,12 @@ class NoSandboxAdapter implements SandboxPort {
     final launch = _supervised.contains(handle.sessionId)
         ? superviseProcessGroup(argv.first, argv.skip(1).toList())
         : (executable: argv.first, argv: argv.skip(1).toList());
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       launch.executable,
       launch.argv,
       workingDirectory: workingDirectory,
       environment: env,
-      includeParentEnvironment: true,
+      toolchain: true,
       // NEVER a shell. This argv is built for execve (`--model <id>`,
       // `--mcp-config <path>`, a prompt), so `runInShell: true` handed
       // semi-trusted config strings containing shell metacharacters to `sh`

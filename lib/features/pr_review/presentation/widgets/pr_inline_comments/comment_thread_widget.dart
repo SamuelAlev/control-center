@@ -14,6 +14,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_commen
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
 import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -178,10 +179,7 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
         return;
       }
       setState(() => _sending = false);
-      CcToastScope.of(context).show(
-        AppLocalizations.of(context).failedToPostReply('$e'),
-        variant: CcToastVariant.danger,
-      );
+      showPrError(context, ref, e, (l) => l.failedToPostReply('$e'));
     }
   }
 

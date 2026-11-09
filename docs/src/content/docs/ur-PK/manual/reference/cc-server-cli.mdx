@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: ہیڈلیس سرور کے تمام فلیگز، ماحول کے ویری ایبلز، ذیلی کمانڈز اور ڈیٹا ڈائر کے پاتھز۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 پروسیس کا ہر فلیگ یا تو CLI فلیگ سے آتا ہے یا ماحول کے ویری ایبل سے؛ پہلے فلیگ کا
@@ -43,7 +43,7 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | غیر سیٹ                       | اُس بائنری کا متوقع SHA-256، جو ہر اسپان سے پہلے تصدیق ہوتا ہے                                                                                                 |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | خالی                          | ٹنل کی درخواست کے لیے کوما سے الگ اضافی آرگیومنٹس                                                                                                              |
 
-## انڈیکسنگ اور فریقِ ثالث کی اسناد
+## انڈیکسنگ اور رن ٹائم
 
 | فلیگ                     | ماحول                           | ڈیفالٹ                                | مطلب                                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -52,15 +52,31 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | تیار بینر کے بعد پہلی انڈیکس جھاڑو روکنے کے سیکنڈ (0–300 تک محدود)                                                             |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | کہ ہارنس رنز ایک چھوٹا ریذیڈنٹ ٹول سیٹ کے ساتھ نام کا انڈیکس بھیجیں، اور باقی پہلی استعمال پر لوڈ ہوں۔ نیچے دیکھیں              |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | وہ سیکنڈ جن تک کوئی رن ایسے کریڈنشل کے درست ہونے کے انتظار میں پارک رہتا ہے جو اُس کی خدمت نہیں کر سکتا (0–3600 تک محدود)۔ نیچے دیکھیں |
+کسی کریڈنشل کی خالی قدر غیر سیٹ شدہ سمجھی جاتی ہے، اس لیے بلٹ اِن ڈیفالٹ فال بیک اب بھی لاگو ہوتا ہے۔ سورس سے بنے بلڈ میں کوئی بلٹ اِن کریڈنشل بالکل نہیں ہوتا۔
 
-کسی کریڈنشل کی خالی قدر غیر سیٹ سمجھی جاتی ہے، چنانچہ بلٹ اِن فال بیک پھر بھی لاگو رہتا
-ہے۔ سورس سے بنے بلڈ میں کوئی بلٹ اِن کریڈنشل بالکل نہیں ہوتا۔
 
-Google Calendar اور Klipy GIF picker **صرف ماحول سے** چلتے ہیں — کوئی
-`--google-client-id` / `--klipy-app-key` فلیگ نہیں ہے (نامعلوم فلیگز نظر انداز ہو
-جاتے ہیں)۔ `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` اور
-`KLIPY_APP_KEY` ماحول میں سیٹ کریں (یا سرور کے ساتھ والی `.env` فائل میں)۔ خالی
-رکھنے سے بوٹ ناکام ہونے کے بجائے وہ خصوصیت بند ہو جاتی ہے۔
+## ارائه دہندگان ایپ اور Connect
+
+کوئی build provider کریڈینشلز ساتھ نہیں رکھتا۔ Control Center Connect آن ہو تو Connect ہر provider چلاتا ہے، اور سرور کی اپنی ایپس محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ **Use my own apps** کے تحت ہر provider سرور کی اپنی ایپ پر چلتا ہے جب وہ مکمل طور پر کنفیگر ہو، ورنہ دستیاب نہیں۔ workspace کی اپنی ایپ دونوں صورتوں میں فوقیت رکھتی ہے۔ اپنی ایپس **Settings ← Server ← Single sign-on ← Provider apps** میں سیٹ ہوتی ہیں، یا سرور کی `.env` فائل سے ایک بار بیج (seed) ہوتی ہیں۔ ان کے لیے کوئی فلیگ نہیں: کمانڈ لائن پر راز `ps` کے ذریعے پڑھا جا سکتا ہے۔
+
+| متغیر                          | مطلب                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | سرور کی GitHub App کا id                                                                                                  |
+| `GITHUB_APP_PRIVATE_KEY`       | اس کی private key، `\n` escapes کے ساتھ ایک لائن میں۔ **صرف `.env`**                                                    |
+| `GITHUB_CLIENT_ID`             | اس کا client id، لوگوں کو sign in کرانے کے لیے                                                                           |
+| `GITHUB_CLIENT_SECRET`         | اس کا client secret۔ **صرف `.env`**                                                                                       |
+| `GOOGLE_OAUTH_CLIENT_ID`       | سرور کا Google Web application client                                                                                     |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | اس کا secret۔ **صرف `.env`**                                                                                              |
+| `LINEAR_CLIENT_ID`             | سرور کی Linear application (PKCE، کوئی secret نہیں)                                                                       |
+| `LINEAR_API_KEY`               | automation کے لیے Linear service key۔ **صرف `.env`**                                                                     |
+| `KLIPY_APP_KEY`                | GIF search کے لیے سرور کی اپنی Klipy key۔ صرف **Use my own apps** کے تحت استعمال ہوتی ہے                              |
+| `CC_CONNECT_URL`               | `hosted`، `off`، یا Connect URL۔ Connect کا انتخاب lock کرتا ہے؛ Settings اسے نہیں بدل سکتیں                                |
+| `CC_SERVER_CONNECT_HOST`       | `on` تو Control Center Connect `<server>/connect` پر mount ہوتا ہے، جو `CONNECT_*` متغیرات سے کنفیگر ہوتا ہے۔ دیکھیں [Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/#cc_server-کے-اندر-connect-mount-کریں) |
+
+`.env` فائل سرور کی ورکنگ ڈائریکٹری سے، ایگزیکیوٹیبل کے ساتھ، یا اوپر کسی source checkout سے پڑھی جاتی ہے؛ Docker میں اسے `/app/bin/.env` پر mount کریں۔ سرور **شروع ہونے سے انکار کرتا ہے** (exit code `78`) جب `GITHUB_APP_PRIVATE_KEY`، `GITHUB_CLIENT_SECRET`، `GOOGLE_OAUTH_CLIENT_SECRET`، `LINEAR_API_KEY` یا کوئی `SLACK_*SECRET*` اس کے پروسیس ماحول میں ایکسپورٹ ہو، جہاں ہر child process انہیں پڑھ سکتا ہے۔ `.env` سے بیج کرنا ہر فیلڈ کے لیے ایک بار ہوتا ہے، اس لیے Settings میں بعد کی ترمیم restart سے ختم نہیں ہوتی۔ خالی قدر کو غیر سیٹ سمجھا جاتا ہے۔
+
+GitLab اور Bitbucket کا پس منظر کا کام `GITLAB_TOKEN` / `CI_JOB_TOKEN` اور `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` کے ساتھ `BITBUCKET_EMAIL` بھی پڑھتا ہے۔ GitHub کا کوئی ماحولیاتی کریڈینشل نہیں۔
+
 
 ### `--sandbox`
 
@@ -111,7 +127,7 @@ Google Calendar اور Klipy GIF picker **صرف ماحول سے** چلتے ہی
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | سرور کو `SIGINT`/`SIGTERM` تک چلاتا ہے                                                               |
 | `cc_server pair`                              | ایک ڈیوائس فراہم کرتا ہے اور اُس کی id اور پیئرنگ کلید پرنٹ کرتا ہے۔ اُس ڈیٹا ڈائر کے خلاف محفوظ ہے جسے کوئی سرور پہلے سے پیش کر رہا ہو — چلتا ہوا سرور نئے ڈیوائس کو بغیر ری اسٹارٹ اُٹھا لیتا ہے |
-| `cc_server calendar connect --workspace <id>` | ڈیوائس کوڈ فلو کے ذریعے کسی ورک اسپیس سے Google اکاؤنٹ جوڑتا ہے، پھر ختم ہو جاتا ہے                  |
+| `cc_server connect <command>`                 | دکھاتا یا بدلتا ہے کہ یہ سرور کون سا Control Center Connect استعمال کرتا ہے، بغیر اسے چلائے                                  |
 | `cc_server update`                            | نئی اسٹینڈ اَلون ریلیز کی جانچ کرتا ہے، ڈاؤن لوڈ کرتا ہے اور تصدیق کرتا ہے                            |
 | `cc_server --version`                         | بلڈ ورژن اور git SHA پرنٹ کرتا ہے — وہی شناخت جو `/healthz` اور RPC ہینڈ شیک ظاہر کرتے ہیں          |
 
@@ -139,6 +155,21 @@ Google Calendar اور Klipy GIF picker **صرف ماحول سے** چلتے ہی
 [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)۔
 :::
 
+### `connect`
+
+اُنہی settings کو پڑھتا اور لکھتا ہے جو **Settings → Server → Single sign-on** کے تحت **Control Center Connect** کارڈ میں ہیں، data directory سے۔ چلتا ہوا سرور تبدیلی 10 منٹ کے اندر یا restart پر لے لیتا ہے۔
+
+| کمانڈ                                  | کیا کرتی ہے                                                                                                                       |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`             | mode، URL، کیا `CC_CONNECT_URL` اسے lock کرتا ہے، install id، health اور ہر lane کا source (`own`، `connect` یا `off`) پرنٹ کرتی ہے |
+| `cc_server connect enable`             | Control Center کا hosted Connect استعمال کرتی ہے                                                                                  |
+| `cc_server connect enable --url <url>` | اس URL پر custom Connect استعمال کرتی ہے (HTTPS، یا loopback پر `http`)                                                            |
+| `cc_server connect disable`            | Connect استعمال کرنا بند کرتی ہے۔ صرف سرور کی اپنی apps لوگوں کو sign in کراتی ہیں                                                  |
+| `cc_server connect rotate-key --yes`   | نیا install key اور install id بناتی ہے۔ جو سب Connect کے ذریعے sign in تھے وہ دوبارہ sign in کریں گے۔ `--yes` کے بغیر صرف انتباہ دیتی ہے اور کوڈ `2` کے ساتھ ختم ہوتی ہے |
+
+بغیر کمانڈ کے `status` ڈیفالٹ ہے۔ ہر کمانڈ `--data-dir` قبول کرتی ہے۔ `CC_CONNECT_URL` وہ سب کچھ override کرتا ہے جو یہ کمانڈز محفوظ کرتی ہیں۔ نامعلوم کمانڈ کوڈ `64` کے ساتھ ختم ہوتی ہے۔ modes، install identity اور status codes کے لیے [Control Center Connect کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/connect/) دیکھیں۔
+
+### `update`
 ### `update`
 
 `--apply` انسٹال کو بدل دیتا ہے؛ جب تک کوئی سرور کنفیگر شدہ پورٹ پر جواب دے رہا ہو
@@ -182,7 +213,7 @@ Google Calendar اور Klipy GIF picker **صرف ماحول سے** چلتے ہی
 | `global.db`                       | ورک اسپیس رجسٹری، صارفین، پیئر شدہ ڈیوائسز، نیوز فیڈ اور فلیٹ قطار               |
 | `<workspaceId>/workspace.db`      | ہر ورک اسپیس کے لیے ایک ڈیٹا بیس — ایجنٹس، اسپیسز، ٹکٹس، میموری، کوڈ گراف        |
 | `<workspaceId>/chat_credentials/` | چیٹ بوٹ ٹوکنز، سادہ JSON کی صورت میں، تاکہ وہ ورک اسپیس کے ساتھ ہی رہیں          |
-| `secrets.json`                    | پیئرنگ کلیدیں، فراہم کنندہ ایپ کی شناخت، فی صارف اور Google ٹوکنز، SSO (`0600`)  |
+| `secrets.json`                    | Connect install key، provider apps، لوگوں کے sign-ins (Connect کے ذریعے بنائے گئے ہوں تو sealed)، SSO (`0600`) |
 | `backups/<timestamp>/`            | ایک انسٹال اسنیپ شاٹ — `manifest.json`، `global.db` اور ہر ورک اسپیس کی ایک کاپی |
 | `backups/exports/`                | واحد ورک اسپیس کی ایکسپورٹس، `<workspaceId>-<timestamp>.db`                     |
 | `backups/transfer/`               | بیک اپ ڈاؤن لوڈز اور اپ لوڈز کے لیے اسٹیجنگ؛ اُسی روٹ سے صاف ہوتا ہے جو اسے لکھتا ہے |

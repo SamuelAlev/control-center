@@ -2,12 +2,12 @@
 title: CLI cc_server
 description: Setiap flag, pemboleh ubah persekitaran, subperintah dan laluan direktori data bagi pelayan tanpa kepala.
 slug: ms-MY/manual-pengguna/rujukan/cli-cc-server
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Setiap flag proses menerima flag CLI atau pemboleh ubah persekitaran; flag diutamakan,
-kemudian persekitaran, kemudian lalai. Kelayakan pihak ketiga ialah pengecualian —
-lihat di bawah.
+kemudian persekitaran, kemudian lalai. Kelayakan pembekal ialah pengecualian —
+lihat [Apl pembekal dan Connect](#apl-pembekal-dan-connect).
 
 :::caution[Flag yang tidak dikenali diabaikan secara senyap]
 Penghurai argumen ditulis sendiri dan melangkau apa-apa yang tidak dikenali, jadi salah taip
@@ -43,7 +43,7 @@ lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | tidak ditetapkan              | SHA-256 yang dijangka bagi binari itu, disahkan sebelum setiap pelahiran                                                                                     |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | kosong                        | Argumen tambahan dipisahkan koma untuk pemanggilan terowong                                                                                                  |
 
-## Pengindeksan dan kelayakan pihak ketiga
+## Pengindeksan dan masa jalan
 
 | Flag                     | Persekitaran                    | Lalai                                 | Maksud                                                                                                                      |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -53,14 +53,34 @@ lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Sama ada larian harness menghantar set alat residen yang kecil serta indeks nama, lalu memuatkan selebihnya pada penggunaan pertama. Lihat di bawah |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Saat sesuatu larian diparkirkan sambil menunggu manusia membetulkan kelayakan yang tidak dapat melayaninya (dihadkan 0–3600). Lihat di bawah |
 
-Nilai kosong bagi sesuatu kelayakan dibaca sebagai tidak ditetapkan, jadi sandaran
-terbina masih terpakai. Binaan daripada sumber tidak membawa sebarang kelayakan terbina.
+## Apl pembekal dan Connect
 
-Google Calendar dan pemilih GIF Klipy **hanya melalui persekitaran** — tiada
-flag `--google-client-id` / `--klipy-app-key` (flag yang tidak dikenali diabaikan).
-Tetapkan `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, dan
-`KLIPY_APP_KEY`, dalam persekitaran (atau `.env` di sebelah pelayan). Nilai kosong
-menyahdayakan ciri itu dan bukan menggagalkan but.
+Tiada binaan membawa kelayakan pembekal. Apabila Control Center Connect dihidupkan, Connect menjalankan setiap pembekal dan apl sendiri kekal disimpan tetapi tidak digunakan. Di bawah **Gunakan aplikasi saya sendiri**, setiap pembekal berjalan pada apl pelayan itu sendiri apabila ia dikonfigurasikan sepenuhnya, jika tidak ia tidak tersedia. Apl ruang kerja terpakai dalam kedua-dua kes. Apl sendiri
+ditetapkan dalam **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia**, atau disemai sekali daripada fail `.env`
+pelayan. Tiada bendera untuknya: rahsia pada baris arahan boleh dibaca melalui `ps`.
+
+| Pemboleh ubah                  | Maksud                                                                                        |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | ID GitHub App pelayan                                                                         |
+| `GITHUB_APP_PRIVATE_KEY`       | Kunci peribadinya, pada satu baris dengan escape `\n`. **Hanya `.env`**                       |
+| `GITHUB_CLIENT_ID`             | ID kliennya, untuk mendaftar masuk orang                                                      |
+| `GITHUB_CLIENT_SECRET`         | Rahsia kliennya. **Hanya `.env`**                                                             |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Klien Google Web application pelayan                                                          |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Rahsianya. **Hanya `.env`**                                                                   |
+| `LINEAR_CLIENT_ID`             | Apl Linear pelayan (PKCE, tanpa rahsia)                                                       |
+| `LINEAR_API_KEY`               | Kunci perkhidmatan Linear untuk automasi. **Hanya `.env`**                                    |
+| `KLIPY_APP_KEY`                | Kunci Klipy pelayan sendiri untuk carian GIF. Hanya digunakan di bawah **Gunakan aplikasi saya sendiri** |
+| `CC_CONNECT_URL`               | `hosted`, `off`, atau URL Connect. Mengunci pilihan Connect; Tetapan tidak dapat menukarnya    |
+| `CC_SERVER_CONNECT_HOST`       | `on` memasang Control Center Connect di `<server>/connect`, dikonfigurasi oleh pemboleh ubah `CONNECT_*`. Lihat [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/#pasang-connect-dalam-cc_server) |
+
+Fail `.env` dibaca dari direktori kerja pelayan, di sebelah boleh laksana, atau dari checkout sumber di atasnya; dalam
+Docker, lekapkan pada `/app/bin/.env`. Pelayan **enggan bermula** (kod keluar `78`) apabila `GITHUB_APP_PRIVATE_KEY`,
+`GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY`, atau mana-mana `SLACK_*SECRET*` dieksport dalam
+persekitaran prosesnya, tempat setiap proses anak boleh membacanya. Penyemaian daripada `.env` berlaku sekali bagi setiap
+medan, jadi suntingan kemudian dalam Tetapan tidak dibatalkan oleh mula semula. Nilai kosong dibaca sebagai tidak ditetapkan.
+
+Kerja latar belakang GitLab dan Bitbucket juga membaca `GITLAB_TOKEN` / `CI_JOB_TOKEN` dan `BITBUCKET_API_TOKEN` /
+`BITBUCKET_TOKEN` dengan `BITBUCKET_EMAIL`. GitHub tidak mempunyai kelayakan persekitaran.
 
 ### `--sandbox`
 
@@ -113,7 +133,7 @@ yang buruk menamatkan giliran tepat seperti sebelum pintu ini wujud.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Menjalankan pelayan sehingga `SIGINT`/`SIGTERM`                                                     |
 | `cc_server pair`                              | Menyediakan peranti dan mencetak id serta kunci penggandingannya. Selamat terhadap direktori data yang sudah disajikan oleh pelayan — pelayan yang berjalan akan mengambil peranti itu tanpa permulaan semula |
-| `cc_server calendar connect --workspace <id>` | Menyambungkan akaun Google ke ruang kerja melalui aliran kod peranti, kemudian keluar               |
+| `cc_server connect <command>`                 | Menunjukkan atau menukar Control Center Connect yang digunakan oleh pelayan ini, tanpa memulakannya |
 | `cc_server update`                            | Menyemak, memuat turun dan mengesahkan keluaran berdiri sendiri yang lebih baharu                   |
 | `cc_server --version`                         | Mencetak versi binaan dan SHA git — identiti yang sama yang dihebahkan oleh `/healthz` dan jabat tangan RPC |
 
@@ -139,6 +159,23 @@ id peranti dan kunci dalam serpihan URL). Telefon digandingkan dengan muatan
 berbeza yang ditempa daripada panel penggandingan dalam apl — deskriptor sambungan
 penuh pelayan serta tarikh luput. Kedua-duanya tidak boleh saling ditukar — lihat [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/).
 :::
+
+### `connect`
+
+Membaca dan menulis tetapan yang sama seperti kad **Control Center Connect** dalam **Tetapan → Pelayan → Daftar masuk tunggal**,
+daripada direktori data. Pelayan yang sedang berjalan mengambil perubahan dalam masa 10 minit atau apabila dimulakan semula.
+
+| Arahan                                  | Fungsinya                                                                                                                                |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`              | Mencetak mod, URL, sama ada `CC_CONNECT_URL` mengunci, id pemasangan, kesihatan dan sumber setiap lorong (`own`, `connect` atau `off`) |
+| `cc_server connect enable`              | Menggunakan Control Center Connect yang dihoskan oleh Control Center                                                                     |
+| `cc_server connect enable --url <url>`  | Menggunakan Connect tersuai di URL itu (HTTPS, atau `http` pada loopback)                                                                |
+| `cc_server connect disable`             | Berhenti menggunakan Connect. Hanya apl pelayan sendiri yang mendaftar masuk orang                                                      |
+| `cc_server connect rotate-key --yes`    | Mencipta kunci pemasangan dan id pemasangan baharu. Semua orang yang log masuk melalui Connect perlu log masuk semula. Tanpa `--yes` ia hanya memberi amaran dan keluar dengan kod `2` |
+
+`status` tanpa arahan ialah lalai. Setiap arahan menerima `--data-dir`. `CC_CONNECT_URL` mengatasi apa sahaja yang disimpan
+oleh arahan-arahan ini. Arahan yang tidak dikenali keluar dengan kod `64`. Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/)
+untuk mod, identiti pemasangan dan kod status.
 
 ### `update`
 
@@ -183,7 +220,7 @@ digunakan apabila tiada direktori rumah atau data apl dapat diselesaikan.
 | `global.db`                       | Daftar ruang kerja, pengguna, peranti berganding, suapan berita dan barisan armada |
 | `<workspaceId>/workspace.db`      | Satu pangkalan data bagi setiap ruang kerja — ejen, ruang, tiket, memori, graf kod |
 | `<workspaceId>/chat_credentials/` | Token bot sembang, sebagai JSON biasa, supaya ia bergerak bersama ruang kerja   |
-| `secrets.json`                    | Kunci penggandingan, identiti apl pembekal, token setiap pengguna dan Google, SSO (`0600`) |
+| `secrets.json`                    | Kunci penggandingan, kunci pemasangan Connect, apl pembekal, log masuk pengguna (dimeterai apabila dicipta melalui Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Satu snapshot pemasangan — `manifest.json`, `global.db` dan salinan setiap ruang kerja |
 | `backups/exports/`                | Eksport satu ruang kerja, `<workspaceId>-<timestamp>.db`                         |
 | `backups/transfer/`               | Kawasan persediaan untuk muat turun dan muat naik sandaran; disapu oleh laluan yang menulisnya |

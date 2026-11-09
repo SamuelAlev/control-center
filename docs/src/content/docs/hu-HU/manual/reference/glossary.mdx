@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'DAG-alapú munkafolyamat, amely lépéseket (ügynökindítás, szkriptek, feltételek) fűz össze. Sablonok definiálják; futásként hajtódik végre.'],
 ['Megbeszélés', 'Helyben rögzített, átírt megbeszélés. Rögzíti a mikrofont és a rendszerhangot, az eszközön írja át egy választható ASR-modellel (alapértelmezésben Parakeet TDT v3; alternatíva a Parakeet TDT v2, a Whisper large-v3-turbo és a Whisper base.en), beszélőkre bontja, és jegyzetekbe, feladatlistákba és döntésekbe foglalja össze. A kiválasztott ASR-modellt indításkor kényszertelepítjük, és a rögzítési műveletek egy újraindítás után válnak elérhetővé. Munkaterület-hatókörű.'],
 ['CalendarEvent', 'Egy munkaterülethez és csatlakoztatott fiókhoz kötött, szinkronizált Google Calendar-bejegyzés. Különbözik a Megbeszéléstől: az esemény egy ütemezett elköteleződés, a Megbeszélés egy rögzített ülés.'],
-['CalendarAccount', 'Egy csatlakoztatott Google-fiók, munkaterületenként és e-mail-címenként. Az OAuth-frissítő tokenek kiszolgálóoldalon, google_* kulcsként a data-könyvtár alatti secrets.json fájlban tárolódnak, és soha nem jutnak el a klienshez; az authExpiredAt jelző vezérli az újracsatlakozási sávot.'],
+['CalendarAccount', 'Egy csatlakoztatott Google-fiók, munkaterületenként, tagonként és e-mail-címenként. A hitelesítő adata kiszolgálóoldalon, google_* kulcsként a data-könyvtár alatti secrets.json fájlban tárolódik, és soha nem jut el a klienshez; a Connecten keresztüli bejelentkezés csak egy hitelesítőadat-pecsétet tárol. Az authExpiredAt jelző vezérli az újracsatlakozási sávot.'],
 ['AgentRole', 'Felsorolt szerep (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Meghatározza a személyiséget, a memóriahozzáférést és a hierarchiát.'],
 ['AgentSkills', 'Kis-nagybetűre érzéketlen készségazonosítók halmaza, amelyek indításkor releváns kontextust injektálnak a promptokba.'],
 ['Készségforrás', 'Egy munkaterületenként készségkatalógusként regisztrált GitHub-repó. Konstrukciójánál fogva nem megbízható: a repó metaadatai csak megjelenítésre szolgálnak, és minden telepítés áthalad a hiba esetén elzáró vizsgálati kapun, mielőtt bármilyen tartalom eljutna a lemezre vagy egy promptba.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség centre) egyetlen ügynökfutásra.'],
 ['WakeReason', 'Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.'],
 ['SandboxPort', 'A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához (csak olvasásra az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára), és visszavonja őket a lebontáskor.'],
+['CredentialBrokerPort', 'Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához (egyetlen repóra szóló tokent az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára), és felszabadítja őket a lebontáskor.'],
 ['GitRepoInspectorPort', 'Metaadatokat (owner, repo, branch) nyer ki egy helyi Git-repó útvonalából.'],
 ['EmbeddingPort', 'Egységnormájú szövegbeágyazási vektorokat állít elő szemantikus kereséshez.'],
 ['NotificationPort', 'Natív asztali értesítéseket jelenít meg, tiszteletben tartva a kategória/útvonal szerinti kapuzást.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Review verdict', 'ship, hold vagy block. Bármely P0 megállapítás 0,7 vagy nagyobb bizonyossággal block ítéletet ad; bármely más P0 vagy bármely P1 hold ítéletet; egyébként ship. Egy kapuzott, megbukó tengely blockot kényszerít, és a megállapítások nem szavazhatják felül.'],
 ['SessionRecording', 'Egy futáshoz rögzített eseményfolyam, valamint HTTP/LLM-kazetták és eszköz-I/O, egy AgentConfigHash-sal párosítva.'],
 ['Golden session', 'Egy megáldott SessionRecording, ügynökönként vagy playbookonként rögzítve.'],
+['Control Center Connect', 'Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google, Linear) futtatja a saját alkalmazással nem rendelkező szerverek számára. A Control Center üzemelteti, saját üzemeltetésű, vagy ki van kapcsolva. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát.'],
+['Hitelesítőadat-pecsét', 'Titkosított hitelesítő adat, amelyet csak az a Connect tud megnyitni, amely létrehozta; a szolgáltatóhoz, a Connect címéhez, a telepítési azonosítóhoz, a munkaterülethez, a fiókhoz, az alkalmazáshoz és a titokgenerációhoz kötött. A szerver a pecsétet tárolja; a hozzáférési tokenek a memóriában maradnak.'],
+['Telepítési azonosító', 'Egy szerver identitása egy adott Connect-cím felé, a telepítési kulcsából származtatva. A Connect telepítési azonosító alapján engedélyezi a szervereket; a kulcs cseréje megváltoztatja, és mindenkit kijelentkeztet a Connect-sávokból.'],
+['Telepítési kötés', 'A Connect nyilvántartása arról, mely szerverek használhatják a megosztott App egy GitHub-telepítését. Egy szervezeti telepítésnél minden szervert egy adminisztrátornak kell engedélyeznie.'],
+['Bejelentkezési sáv', 'Egy szolgáltató böngészős bejelentkezése: github, google, linear, linear_app vagy slack. Minden sáv a szerver saját alkalmazásán fut, ha az teljes, egyébként a Connecten keresztül, egyébként nem érhető el.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához — csak olvasásra az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára —, és visszavonja őket a lebontáskor.
+**CredentialBrokerPort**: Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához — egyetlen repóra szóló tokent az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára —, és felszabadítja őket a lebontáskor.
 
 **GitRepoInspectorPort**: Metaadatokat (owner, repo, branch) nyer ki egy helyi Git-repó útvonalából.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: Egy munkaterülethez és csatlakoztatott fiókhoz kötött, szinkronizált Google Calendar-bejegyzés. Különbözik a Megbeszéléstől: az esemény egy ütemezett elköteleződés; a Megbeszélés egy rögzített ülés. Egy az egyhez kapcsolódnak egy `MeetingCalendarLink` révén.
 
-**CalendarAccount**: Egy csatlakoztatott Google-fiók, munkaterületenként és e-mail-címenként. Az OAuth-frissítő tokenek kiszolgálóoldalon, `google_*` kulcsként a `<dataDir>/secrets.json` fájlban tárolódnak, és soha nem jutnak el a klienshez; az eszközkód-folyamat a szerveren fejeződik be. Egy `authExpiredAt` jelző vezérli az újracsatlakozási sávot.
+**CalendarAccount**: Egy csatlakoztatott Google-fiók, munkaterületenként, tagonként és e-mail-címenként (`google:<workspaceId>:<userId>:<email>`). A hitelesítő adata kiszolgálóoldalon, `google_*` kulcsként a `<dataDir>/secrets.json` fájlban tárolódik, és soha nem jut el a klienshez; a böngészős bejelentkezés a szerveren fejeződik be. A Connecten keresztüli bejelentkezés csak egy hitelesítőadat-pecsétet tárol. Egy `authExpiredAt` jelző vezérli az újracsatlakozási sávot.
 
 ## Architektúra-kifejezések
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: A telefonos vékonykliens — egy Flutter web PWA, amely a közvetített relayen keresztül távolról vezérli a flottát, alapértelmezésben elzáró eszközszabályzattal.
 
 **cc_signaling_server**: Egy állapotmentes WebSocket relay broker, amely meghívásra korlátozott szobákat szolgál ki — egy buta relay, amely csak végpontok között lezárt kereteket továbbít, nem tartalmaz alkalmazásadatokat, és soha nem látja a párosítási PSK-t.
+
+**Control Center Connect**: Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google Calendar, Linear) futtatja azoknak a szervereknek, amelyek nem regisztráltak saját alkalmazást: a Control Center által üzemeltetett, egy szervezet által futtatott (`cc-connect`, vagy a `cc_server`-be a `/connect` alá csatolva), vagy egyik sem. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát. Lásd: [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
+
+**Hitelesítőadat-pecsét**: Titkosított hitelesítő adat (`credential_seal`), amelyet csak az a Connect tud megnyitni, amely létrehozta; a szolgáltatóhoz, a Connect címéhez, a telepítési azonosítóhoz, a munkaterülethez, a fiókhoz, az alkalmazáshoz és a titokgenerációhoz kötött. A szerver a pecsétet és azt a telepítési azonosítót tárolja, amelyhez készült; a hozzáférési tokenek a memóriában maradnak. Az a pecsét, amelynek telepítési azonosítója már nem egyezik, elvetésre kerül, és a tulajdonosa újra bejelentkezik.
+
+**Telepítési azonosító**: Egy szerver identitása egy adott Connect-cím felé (`install_id`), a titokfájljában lévő telepítési kulcsból származtatva. A Connect telepítési azonosító alapján engedélyezi a szervereket. A kulcs cseréje új azonosítót ad, és mindenkit kijelentkeztet a Connect-sávokból.
+
+**Telepítési kötés**: A Connect nyilvántartása (`install_binding`) arról, mely szerverek használhatják a megosztott App egy GitHub-telepítését. A szerveren keresztüli telepítés köti azt a szervert; egy szervezeti adminisztrátor **A szerver engedélyezése** művelete egy másikat köt.
+
+**Bejelentkezési sáv**: Egy szolgáltató böngészős bejelentkezése — `github`, `google`, `linear`, `linear_app` vagy `slack`. Egy sáv a szerver saját alkalmazásán fut, ha az az alkalmazás teljes, egyébként a Connecten keresztül, egyébként nem érhető el; a részben beállított saját alkalmazás hiba, soha nem tartalékra váltás.
 
 ## Lásd még
 

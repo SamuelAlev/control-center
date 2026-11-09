@@ -1,11 +1,11 @@
 ---
 title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+description: Connect Slack to a Control Center workspace, through the shared Control Center app or one of your own, so members can drive agents from Slack.
 slug: en-GB/manual/guides/slack-integration
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+This guide shows you how to connect Slack to a Control Center workspace: by adding the shared Control Center app, or with an app of your own that Control Center creates for you or that you build yourself.
 
 For a guided first run, see [Bridge Slack to your workspace](/en-GB/manual/tutorials/first-chat-bridge/).
 
@@ -19,9 +19,37 @@ Discord, Telegram, Teams or Matrix implementation.
 
 - The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
 - Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Nothing publicly reachable: your own app connects out over Socket Mode and the shared app's events reach the server through a long poll to Control Center Connect, so the server needs no inbound port, tunnel, or domain
 
-## Three ways to get the app
+## Shared app or your own
+
+A workspace runs on exactly one of these at a time.
+
+| Mode                       | Needs                                                                                     | You get                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Shared Control Center app** | The server uses Control Center Connect (**Settings → Server → Single sign-on**) and Connect serves Slack | One click and a Slack sign-in. No app to create, no token to paste, nothing to rotate          |
+| **Your own app**           | A Slack app in your Slack workspace, made one of the three ways below                    | Your own bot name, descriptions and slash command, editable from Control Center               |
+
+### Add the shared Control Center app
+
+1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+2. On the Slack block, find the **Add Control Center to Slack** row and click **Add to Slack**
+3. Your browser opens Slack. Sign in with Slack, pick the Slack workspace and approve the install
+4. When the browser shows a code, enter it in the dialog Control Center left open. If the browser hands you back to the app by itself, there is nothing to type
+5. A toast names the Slack workspace the app was added to, and the Slack block shows the connection as running on the shared Control Center app
+
+Only a workspace admin can add the app. The row says why it cannot start when the server uses its own apps rather than Connect, when your Connect has no Slack app, or when this workspace already has its own Slack app connected.
+
+How it differs from your own app:
+
+- Slack sends the shared app's events to Connect. Connect keeps only a reference (team, channel and message id) and drops the message text; the server long-polls Connect for references and reads each message from Slack itself. A slash command's text does pass through Connect, which is why [`/cc ticket`](#draft-tickets-from-slack) only drafts
+- The bot token is sealed for this server and renewed through Connect, so there is no token to paste or rotate
+- The bot's name, descriptions and slash command are the shared app's. The Slack row says the connection runs on the shared app and offers no **Customise bot**
+- A Slack workspace is bound to one Control Center server at a time. Adding the app from another server moves it there and this server's connection stops
+
+To switch between modes, disconnect and connect the other way.
+
+### Your own app: three ways to get it
 
 | Path                | You provide                           | Control Center does                                                                                                        |
 | ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ Discord, Telegram, Teams or Matrix implementation.
 
 The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customise the chat bot](/en-GB/manual/guides/customise-chat-bot/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Your own app's events never pass through Connect: Socket Mode delivers them straight to this server.
 
 ## Option A: let Control Center create the app
 
@@ -102,6 +130,8 @@ message.im
 
 ## Connect
 
+This is how your own app's tokens reach Control Center. The shared app needs none of it.
+
 1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
 2. On the Slack block, click **Connect Slack**
 3. Fill in the fields:
@@ -123,8 +153,8 @@ Without the optional app configuration token, the connection works fine — you 
 
 ## What connecting does
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
+- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client. For the shared app, that is the sealed grant; the short-lived bot token it renews into stays in memory
+- Starts receiving mentions, Slack thread replies, DMs and slash commands: over one Socket Mode connection for your own app, or through the server's one Connect long poll for the shared app
 - Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
 - Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
 
@@ -139,8 +169,8 @@ workspace elsewhere means reconnecting Slack there.
 
 Access to the bridge is workspace **membership**, never possession of a token. A
 Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customisation are all admin-gated.
+writing role. Connect, disconnect, the shared-app install, guided setup, the setup
+link and bot customisation are all admin-gated.
 :::
 
 ## Verify
@@ -163,7 +193,25 @@ Reasoning as a wall of text and tool output, never leave Control Center — the 
 
 If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
 
+## Draft tickets from Slack
+
+Any linked member with a writing role can propose a ticket from Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Text before the `|` is the title, text after it the description. The bot replies that it drafted the ticket. Nothing is created yet and no ticket automation fires: the draft waits for you in **Settings → Workspace → Profile & identity → Ticket drafts from chat**, where you can correct the title and description, then click **Create ticket** or **Discard**.
+
+- Only the member who ran the command sees the draft
+- A draft you leave is dropped after a day. Drafts live in memory, so a server restart drops them too
+- The card appears only while you have drafts
+
+A command's text cannot be re-read from Slack and, on the shared app, it travelled through Connect. Creating the ticket in Control Center is what makes it yours.
+
 ## Rotate a token
+
+This applies to your own app. The shared app has no token to rotate.
 
 Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialled with the new credentials.
 
@@ -171,7 +219,7 @@ The two required tokens have to be present on every connect. The optional app co
 
 ## Disconnect
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Click **Disconnect** on the Slack row (admins only). The connection closes and the credentials are forgotten. For the shared app, Control Center also uninstalls the bot from the Slack workspace and releases its binding to this server.
 
 Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
 
@@ -208,7 +256,7 @@ Slack's task cards are part of the same new Agents & AI Apps surface as streamin
 
 ### "Control Center needs an app configuration token to edit the bot"
 
-The **Customise bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+The **Customise bot** row is disabled because the connection has no app configuration token. (On the shared app there is no **Customise bot** row at all: the bot is the shared app's.) This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
 
 ### A long answer is cut off
 

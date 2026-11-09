@@ -181,7 +181,7 @@ Today, only a real `cc_worker` executes leased jobs.
 | Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
 | UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
 | Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Provider sign-ins (GitHub, Google, Linear)     | runs and stores them       | —                            | —              | —                                |
 
 The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
 itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
@@ -193,6 +193,13 @@ directly, bounded by the lease's environment and the worktree it was given.
 Leasing work out therefore moves execution outside the sandbox even on a host
 that has one. See [Sandbox and security](/manual/concepts/sandbox-security/)
 for what bounds a run in each case.
+
+Provider sign-ins finish on the server, through its own apps or through
+[Control Center Connect](/manual/reference/connect/), an optional service that
+runs the provider OAuth for servers without apps of their own. Connect hands
+back a credential only this server can use and never sees repository contents.
+Clients only open the browser and, for a Connect sign-in, pass back the code
+it shows.
 
 Meeting capture happens on a client because it needs a microphone and the
 meeting's audio — a server in a closet cannot record your call. The recording

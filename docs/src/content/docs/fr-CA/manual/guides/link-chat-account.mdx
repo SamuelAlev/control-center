@@ -2,7 +2,7 @@
 title: Lier votre compte Slack
 description: Prouvez qu’une identité Slack est la vôtre afin que les agents agissent sur vos messages et que votre travail vous soit attribué.
 slug: fr-CA/manuel/guides/lier-compte-clavardage
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Ce guide vous montre comment lier votre identité de clavardage à votre utilisateur Control Center et comment délier cette liaison.
@@ -17,29 +17,38 @@ Un membre non lié qui mentionne le robot reçoit une réponse dans ce fil Slack
 
 ## Lier avec un code
 
+La liaison demande les deux côtés : envoyer un code à partir de Slack prouve le compte Slack, et le confirmer dans Control Center prouve que ce compte est le vôtre.
+
 1. Allez à **Paramètres → Espace de travail → Profil et identité** et faites défiler jusqu’à la carte **Comptes de messagerie liés**
-2. Dans le bloc Slack, cliquez sur **Lier mon compte Slack**
-3. Copiez la commande qu’il affiche, par exemple :
+2. Dans le bloc Slack, cliquez sur **Lier mon compte Slack**. La boîte de dialogue affiche un code à usage unique, par exemple :
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. Dans Slack, envoyez cette commande au robot — un message privé est l’endroit le plus simple
-5. Le robot confirme en indiquant l’utilisateur Control Center auquel vous êtes maintenant lié, et la boîte de dialogue que vous avez laissée ouverte se met à jour pour le dire au même moment — vous n’avez pas à la fermer pour aller voir
+3. Dans Slack, envoyez ce code au robot dans un **message direct** : le code seulement, rien d’autre
+4. Le robot répond « Got it. Confirm this Slack account in Control Center to finish linking. » et la boîte de dialogue que vous avez laissée ouverte affiche le profil Slack qui a envoyé le code : son nom et son identifiant de membre Slack
+5. Si c’est votre compte, cliquez sur **Confirmer**. La liaison est établie, la boîte de dialogue l’indique et le robot le confirme dans le même message direct
+6. Si ce n’est pas le vôtre, cliquez sur **Refuser**. Rien n’est lié et le code cesse de fonctionner ; cliquez sur **Obtenir un nouveau code** pour réessayer
+
+Fermer la boîte de dialogue ne fait pas perdre une revendication. Un code qui arrive plus tard attend sur la ligne **Lier mon compte Slack** de votre page de profil, avec les mêmes boutons **Confirmer** et **Refuser**.
+
+Pourquoi cette étape de confirmation : sans elle, un code lu par-dessus votre épaule et envoyé à partir du compte Slack de quelqu’un d’autre ferait agir ce compte en votre nom. Vous seul pouvez confirmer, et seulement le profil exact qui a envoyé le code.
 
 Le code :
 
 - Est à usage unique et expire **15 minutes** après sa création
 - Est toujours créé pour _vous_, jamais pour un coéquipier
+- Ne fonctionne que dans un message direct au robot. Dans un canal, ce n’est qu’un message
+- Ne peut être revendiqué que par un membre à part entière de l’espace de travail Slack où le robot est installé, pas par un invité ni par quelqu’un d’une autre organisation
 - Remplace tout code que vous détenez déjà, donc appuyer de nouveau sur le bouton invalide le précédent
 - Ne vit qu’en mémoire, donc un redémarrage du serveur invalide les codes en circulation — appuyez de nouveau sur le bouton
 
-Un code inconnu, expiré ou créé pour un autre espace de travail échoue de la même façon indiscernable : « ce code n’est pas valide (ou il a expiré) ».
+Un code inconnu, expiré, refusé ou créé pour un autre espace de travail échoue de la même façon indiscernable : « That code is not valid (or has expired). »
 
 ## Liaison automatique par courriel
 
-Si votre profil Slack porte un courriel vérifié qui correspond à un utilisateur Control Center qui est **déjà membre de cet espace de travail**, la passerelle vous lie la première fois que vous lui parlez. Aucun code n’est nécessaire.
+Si votre profil Slack porte un courriel confirmé qui correspond au courriel vérifié d’un utilisateur Control Center qui est **déjà membre de cet espace de travail**, la passerelle vous lie la première fois que vous lui parlez. Aucun code n’est nécessaire.
 
 Les deux moitiés comptent : la correspondance de courriel prouve l’identité, mais seule l’appartenance accorde l’accès, donc un inconnu dont le courriel se trouve par hasard sur le serveur ne se lie à rien. La liste des comptes liés indique comment chaque liaison a été établie (« associé par courriel » ou « lié avec un code »).
 
@@ -51,7 +60,7 @@ La liste des comptes liés relève de l’administration de l’espace de travai
 
 Votre propre état se trouve sur votre page de profil : la ligne **Lier mon compte Slack** affiche « Lié à _votre-identifiant-slack_ » une fois que vous êtes lié, et vous invite à établir la liaison lorsque vous ne l’êtes pas.
 
-La liste est un abonnement en direct, parce que le changement se produit de l’autre côté — vous tapez le code dans Slack, donc aucune requête de l’application ne peut rapporter la réponse.
+La liste et la revendication sont des abonnements en direct, parce que le changement se produit de l’autre côté : vous envoyez le code dans Slack, donc aucune requête de l’application ne peut rapporter la réponse.
 
 ## Délier
 
@@ -73,9 +82,13 @@ Votre compte Slack est lié à un utilisateur Control Center, mais cet utilisate
 
 Les rôles `viewer` et `guest` ne peuvent pas lancer de travail. Un administrateur doit élever votre rôle à `member` ou plus.
 
-### La commande slash n’est pas reconnue
+### Le robot dit que le code n’est pas valide
 
-Vérifiez que la commande slash existe dans Slack et que vous envoyez bien la commande que la boîte de dialogue des paramètres vous a montrée — un administrateur l’a peut-être renommée, auquel cas la boîte de dialogue affiche le nom actuel.
+Le code a expiré, a déjà été utilisé, a été refusé ou a été remplacé par un plus récent. Cliquez de nouveau sur **Lier mon compte Slack** et envoyez le nouveau code.
+
+### Le robot traite mon code comme une demande
+
+Vous l’avez envoyé dans un canal, ou votre compte Slack est déjà lié. Les codes ne sont acceptés que dans un message direct, et un message en forme de code venant d’un compte lié est une demande ordinaire.
 
 ## Guides connexes
 

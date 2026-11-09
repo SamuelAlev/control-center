@@ -2,7 +2,7 @@
 title: Étapes de pipeline
 description: Référence sur les types d’étapes de pipeline, les clés de corps d’étape, leur configuration et les résultats d’étape.
 slug: fr-CA/manuel/reference/etapes-de-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Une étape de pipeline comporte deux axes indépendants :
@@ -42,7 +42,7 @@ Corps sans effet du nœud `trigger` obligatoire — se termine immédiatement po
 | `script`               | Commande shell à exécuter (obligatoire)          |
 | `outputKey`            | Clé d’état qui reçoit la sortie standard débarrassée des espaces de début et de fin en cas de sortie 0 |
 
-S’exécute avec le répertoire de travail `<cc_root>/pipelines/<pipelineRunId>/` (partagé par toutes les étapes bash d’une exécution) et `GITHUB_TOKEN` dans l’environnement. Écrit aussi `<stepId>_runDir` dans l’état. Un code de sortie non nul fait échouer l’étape avec la fin de la sortie d’erreur (stderr).
+S’exécute dans le bac à sable du système d’exploitation de l’hôte, avec le répertoire de travail `<cc_root>/pipelines/<pipelineRunId>/` (partagé par toutes les étapes bash d’une exécution) ; sur un hôte sans bac à sable, l’étape échoue. Le répertoire de données du serveur et le fichier `.env` sont illisibles, git et `gh` ne voient aucune configuration de l’hôte, et `GH_TOKEN` / `GITHUB_TOKEN` contiennent un jeton `read` limité à un dépôt seulement quand `repo_full_name` (dans l’état ou la charge utile du déclencheur) nomme un dépôt GitHub lié à l’espace de travail. Créer ou modifier un modèle qui comporte cette étape exige un administrateur de l’espace de travail. Écrit aussi `<stepId>_runDir` dans l’état. Un code de sortie non nul fait échouer l’étape avec la fin de la sortie d’erreur (stderr).
 
 ### `conversation.promptAgent`
 

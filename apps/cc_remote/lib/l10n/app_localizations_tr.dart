@@ -2564,6 +2564,26 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tarayıcıda yetkilendirme bekleniyor…';
 
   @override
+  String get credentialsConnectCodePrompt => 'Tarayıcında gösterilen kodu gir';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Bu bir oturum açma koduna benzemiyor. Kodlar 8 harf ve rakamdan oluşur.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Bu kod bu oturum açma işlemiyle eşleşmiyor. Kontrol edip yeniden dene.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return '$provider oturum açma bu sunucuda henüz ayarlanmadı.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Bu sunucunun oturum açma geri dönüş adresine telefondan güvenli şekilde erişilemiyor. Masaüstü uygulamasından oturum açın veya sunucu sahibinden herkese açık bir HTTPS adresi ayarlamasını isteyin.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Oturum açma süresi doldu. Yeni bir oturum açma işlemi başlatın.';
 
@@ -2584,10 +2604,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Oturum açmayı tamamla';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Bu sunucunun tarayıcı geri çağrısına telefondan güvenli şekilde erişilemiyor. Sunucu sahibinden genel erişime açık bir HTTPS geri çağrısı yapılandırmasını isteyin veya bunun yerine token ekleyin.';
 
   @override
   String get credentialsUpdateToken => 'Token\'ı güncelle';

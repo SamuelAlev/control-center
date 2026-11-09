@@ -183,6 +183,50 @@ void main() {
     });
   });
 
+  group('oauth-done', () {
+    const loginId = 'AAAAAAAAAAAAAAAAAAAAAA';
+
+    test('names the login id and the normalised code', () {
+      final target = DeepLinkHandler.resolve(
+        'control-center://oauth-done?login_id=$loginId&code=k7q2-9wxm',
+      );
+
+      expect(target, isA<OauthDoneDeepLink>());
+      final done = target! as OauthDoneDeepLink;
+      expect(done.loginId, loginId);
+      expect(done.code, 'K7Q29WXM');
+    });
+
+    test('the parameter order does not matter', () {
+      final target = DeepLinkHandler.resolve(
+        'control-center://oauth-done?code=K7Q29WXM&login_id=$loginId',
+      );
+      expect((target! as OauthDoneDeepLink).loginId, loginId);
+    });
+
+    test('anything but exactly login_id and code is not this link', () {
+      const good =
+          'control-center://oauth-done?login_id=$loginId&code=K7Q29WXM';
+      for (final url in [
+        // Missing a parameter.
+        'control-center://oauth-done?login_id=$loginId',
+        'control-center://oauth-done?code=K7Q29WXM',
+        // An extra parameter, or one given twice.
+        '$good&next=x',
+        '$good&code=K7Q29WXM',
+        // A path or a fragment.
+        'control-center://oauth-done/x?login_id=$loginId&code=K7Q29WXM',
+        '$good#f',
+        // A malformed login id or code.
+        'control-center://oauth-done?login_id=short&code=K7Q29WXM',
+        'control-center://oauth-done?login_id=$loginId&code=K7Q2',
+        'control-center://oauth-done?login_id=$loginId&code=K7Q2-9WX!',
+      ]) {
+        expect(DeepLinkHandler.resolve(url), isNull, reason: url);
+      }
+    });
+  });
+
   group('anything else', () {
     test('another scheme, or nonsense, resolves to nothing', () {
       for (final url in [

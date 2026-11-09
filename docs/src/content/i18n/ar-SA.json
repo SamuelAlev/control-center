@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "ربط Google Calendar",
   "docs.sidebar.guidesServerAndDeployment": "الخادم والنشر",
   "docs.sidebar.guidesRunHeadlessServer": "تشغيل خادم بلا واجهة",
+  "docs.sidebar.guidesRunConnect": "تشغيل خادم Connect",
   "docs.sidebar.guidesConnectRemoteServer": "الاتصال بخادم بعيد",
   "docs.sidebar.guidesRunFleetWorker": "تشغيل عامل أسطول",
   "docs.sidebar.guidesBackUpAndRestore": "النسخ الاحتياطي والاستعادة",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "اختصارات لوحة المفاتيح",
   "docs.sidebar.referenceRouteMap": "خريطة المسارات",
   "docs.sidebar.referenceCcServerCli": "واجهة سطر أوامر cc_server",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "النسخ الاحتياطي والتصدير والاستيراد",
   "docs.sidebar.referenceTelemetry": "تحليلات الاستخدام",
   "docs.sidebar.referenceGlossary": "المسرد"

@@ -2,7 +2,7 @@
 title: การวิเคราะห์การใช้งาน
 description: สิ่งที่ Control Center บันทึกเมื่อเปิดการวิเคราะห์การใช้งาน ใครเป็นผู้ตัดสินใจ และสิ่งใดที่ไม่มีวันถูกส่งออกไป
 slug: th-TH/คู่มือ/อ้างอิง/การวิเคราะห์การใช้งาน
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center สามารถส่ง **เหตุการณ์การใช้งานแบบใช้นามแฝง** ไปยังอินสแตนซ์ [Umami](https://umami.is) ได้ การวิเคราะห์การใช้งาน **ปิดอยู่จนกว่าผู้ดูแลเซิร์ฟเวอร์จะเปิด** การตั้งค่านี้เป็นของเซิร์ฟเวอร์และมีผลกับทุกไคลเอนต์ที่เชื่อมต่ออยู่ ได้แก่ แอปเดสก์ท็อป เว็บแอป โทรศัพท์ และตัวเซิร์ฟเวอร์เอง
@@ -95,9 +95,12 @@ ID ถูกส่งไป แต่ในรูปของนามแฝง�
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | การรันที่ล้มเหลวถูกลองใหม่ |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | การรันถูกยกเลิกจากแอป |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | ขั้นตอนที่กำลังทำงานถูกบังคับหยุด |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | การพยายามลงชื่อเข้าใช้ปฏิทินสิ้นสุด |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (เป็น true เมื่อการลงชื่อเข้าใช้ทำงานผ่าน Control Center Connect แทนไคลเอนต์ Google ของเซิร์ฟเวอร์เอง), `duration_s` | การพยายามลงชื่อเข้าใช้ปฏิทินสิ้นสุด |
 | `calendar_disconnected` | `workspace_id` | บัญชีปฏิทินถูกยกเลิกการเชื่อมต่อ |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | คำเชิญได้รับการตอบกลับ |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (จำนวน), `conference` | จองกิจกรรมใน Google Calendar แล้ว |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | มีการย้ายหรือปรับขนาดกิจกรรมบนกริดปฏิทิน |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | ลบกิจกรรมออกจาก Google Calendar แล้ว |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | เริ่มบันทึกจากกิจกรรมในปฏิทิน |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | ลิงก์การประชุมถูกเปิด (โทรศัพท์) ระบุเพียงผู้ให้บริการจากลิงก์ |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | มีการใช้ศูนย์การแจ้งเตือน |

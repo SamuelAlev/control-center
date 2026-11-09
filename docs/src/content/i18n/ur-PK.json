@@ -158,6 +158,7 @@
   "docs.sidebar.guidesConnectCalendar": "Google Calendar جوڑیں",
   "docs.sidebar.guidesServerAndDeployment": "سرور اور ڈیپلائمنٹ",
   "docs.sidebar.guidesRunHeadlessServer": "ہیڈلیس سرور چلائیں",
+  "docs.sidebar.guidesRunConnect": "Connect سرور چلائیں",
   "docs.sidebar.guidesConnectRemoteServer": "ریموٹ سرور سے جڑیں",
   "docs.sidebar.guidesRunFleetWorker": "فلیٹ ورکر چلائیں",
   "docs.sidebar.guidesBackUpAndRestore": "بیک اپ اور بحالی",
@@ -197,6 +198,7 @@
   "docs.sidebar.referenceKeyboardShortcuts": "کی بورڈ شارٹ کٹس",
   "docs.sidebar.referenceRouteMap": "روٹ میپ",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
+  "docs.sidebar.referenceConnect": "Control Center Connect",
   "docs.sidebar.referenceBackup": "بیک اپ، ایکسپورٹ اور امپورٹ",
   "docs.sidebar.referenceTelemetry": "استعمال کے تجزیات",
   "docs.sidebar.referenceGlossary": "لغت"

@@ -2,7 +2,7 @@
 title: Agent dispatch lifecycle
 description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
 slug: en-GB/manual/concepts/dispatch-lifecycle
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## What a dispatch is
@@ -54,7 +54,7 @@ Two identities are resolved per run, before any process launches.
 
 **Git authorship.** Agent commits always use the requesting person's workspace-resolved Git identity in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*`. Programmatic runs use the server owner's identity. By default, `Co-Authored-By: Control Center <hi@usectrl.dev>` credits the GitHub account `@usectrl` as a co-author. Turn off agent attribution in **Settings → You → Commit attribution** to omit that trailer. A workspace administrator can force co-author credit on or off in **Settings → Workspace → General**; that override takes precedence and disables the personal toggle without changing its saved preference. Changes take effect on the next run. Claude Code's own commit and PR bylines are always disabled. Caller and adapter environment settings cannot replace the resolved identity; a missing identity or a resolution failure stops the run. Forge credentials and commit signing configuration are unaffected; the correct identity alone does not guarantee a verified signature.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Forge identity.** The run's GitHub credential is only ever the broker's: a token for the run's one repository, minted from the workspace's GitHub App, the server's own app or Control Center Connect. `actingUserId` names the accountable human (the requester while still a member, else the workspace owner) and clamps the token to what that person can do on the repository. It is never the member's own sign-in handed over whole, and there is no fallback: a refused mint leaves the run without a token and says why in its notes.
 
 **Model provider credentials** resolve in a fixed order and the order matters:
 

@@ -1,8 +1,8 @@
 ---
 title: GitHub entegrasyonunu kurma
-description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'da oturum açın.
+description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'a oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
@@ -14,76 +14,69 @@ sayfasına bakın.
 ## Önkoşullar
 
 - Üzerinde çalışmak istediğiniz depolara erişimi olan bir GitHub hesabı
-- Sunucunuz için kaydedilmiş bir GitHub App (bkz.
-  [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)) — böylece **oturum
-  açabilirsiniz** — **ya da** yapıştırmak için `repo` ve `read:org` yetkilerine
-  sahip bir kişisel erişim token'ı
+- Kişileri GitHub’a oturum açtırabilen bir sunucu: ya kendi GitHub App’i (bkz.
+  [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)) ya da sunucu sahibinin **Ayarlar →
+  Sunucu → Tek oturum açma** bölümünde seçtiği Control Center Connect
 
 :::note[Kimlik bilgileri sunucuda yaşar ve size bağlıdır]
-Yazdığınız makinede hiçbir şey saklanmaz. Kimlik bilginiz `cc_server` tarafından
-tutulur, kullanıcı kimliğinize göre anahtarlanır ve oturum açtığınız her cihaz
-— masaüstü, web ve telefon — onu kullanır. Aynı sunucudaki başka bir üye onu
-okuyamaz ve onları oturum açtırmak onların kendi yaptığı bir şeydir.
+Yazdığınız makinede hiçbir şey saklanmaz. GitHub oturum açmanız `cc_server`
+tarafından tutulur, kullanıcı kimliğinize göre anahtarlanır ve oturum açtığınız
+her cihaz — masaüstü, web ve telefon — onu kullanır. Aynı sunucudaki başka bir
+üye onu kullanamaz ve onları oturum açtırmak onların kendi yaptığı bir şeydir.
 :::
 
-## GitHub ile oturum açma
+## GitHub’a oturum açma
 
-Bir **cihaz akışı**: GitHub size kısa bir kod gösterir, siz onu github.com'da
-onaylarsınız ve sunucu kimlik bilgisini alır — callback URL yok, port yok, açığa
-çıkarılacak hiçbir şey yok. Sunucunun bir istemci id'si olduğunda kullanılabilir;
-resmî bir yapı bunu zaten içerir.
+GitHub yalnızca oturum açmayla çalışır: yapıştırılacak bir token yoktur.
 
 1. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** bölümüne gidin
    (ya da ilk kurulumun ilk adımına)
-2. **GitHub** satırında **GitHub ile oturum aç**'a tıklayın
-3. Bir iletişim kutusu sekiz karakterlik bir kod gösterir ve tarayıcınızda
-   [github.com/login/device](https://github.com/login/device) adresini açar. Kod
-   zaten panonuzdadır
-4. Yapıştırın, uygulamayı onaylayın ve geri dönün. Satır kendiliğinden
-   "_kullanıcı-adınız_ olarak oturum açıldı" durumuna geçer
+2. **GitHub** satırında **GitHub hesabıyla oturum aç**’a tıklayın
+3. Tarayıcınız GitHub’ı açar. Uygulamayı onaylayın
 
-Tarayıcıda işinizi bitirirken iletişim kutusu kapatılabilir — sunucu, kodun
-süresi dolana kadar (yaklaşık 15 dakika) yoklamayı sürdürür; böylece oturum açma
-yine de tamamlanır.
+Oturum açmanın nasıl tamamlanacağı, onu kimin yürüttüğüne bağlıdır:
 
-## Ya da bir token yapıştırın
-
-Sunucunun uygulaması olmadığında, uygulama ihtiyaç duyduğunuz bir hesaba
-kurulmadığında ya da yalnızca bir PAT kullanmayı tercih ettiğinizdeki geri dönüş
-yolu.
-
-1. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** bölümüne gidin
-2. **GitHub** satırında **Token ekle**'ye tıklayın
-3. `repo` ve `read:org` içeren bir token yapıştırın (klasik) ve kaydedin. **İnce
-   taneli** bir token için depo **Contents** ve **Pull requests** (okuma ve
-   yazma) ile **Checks** ve **Actions** (okuma) gerekir.
-
-Token saklanırken sınanır; böylece satır ait olduğu hesabı adlandırabilir.
-Kaldırmak için **Bağlantıyı kes**'e tıklayın.
+- **Sunucunun kendi uygulaması:** GitHub tarayıcınızı sunucuya geri gönderir ve
+  iletişim kutusu bunu kendiliğinden fark eder. Yazacak bir şey yoktur
+- **Control Center Connect:** tarayıcı sayfası 8 karakterlik bir kod gösterir.
+  Onu iletişim kutusuna yazın ya da tarayıcının `control-center://` bağlantısıyla
+  Control Center’ı açmasına izin verip yazmayı atlayın
 
 Kontrol noktası: **GitHub** satırı "_kullanıcı-adınız_ olarak oturum açıldı"
-yazar. Yanıt veren kimlik bilgisi sizinki olmadığında bir son ek kaynağı
-adlandırır — "bu sunucunun uygulaması üzerinden" ya da "ortamdan".
+yazar.
 
-:::note[Öncelik sabittir]
-Sizin adınıza yapılan bir istek **sizin** kimlik bilginizi kullanır, başka hiçbir
-şeyi değil — ortam, sunucunun kimlik bilgisidir, sizinki değil; dolayısıyla
-sizin yerinize asla geçmez. Ardında hiç insan olmayan işler (webhook'lar, PR
-yoklaması, bilet eşitleme) sunucunun uygulama kimliğini, ardından sunucu
-sahibinin kimlik bilgisini, ardından ortamı kullanır.
-:::
+İletişim kutusu, kendisinin başlatmadığı bir kodu ya da bağlantıyı **Oturum açma
+burada başlatılmadı** ile reddeder. Biri size bir oturum açma bağlantısı
+gönderirse devam etmeyin: onu tamamlamak hesabınızı onun sunucusuna bağlardı.
+
+Oturum açmanızı kaldırmak için **Bağlantıyı kes**’e tıklayın. GitHub oturumunu
+kapatmak ya da bir çalışma alanından çıkarılmak da sunucunun sizin adınıza
+ürettiği tüm token’ları geçersiz kılar.
+
+## Kimlik bilginiz kimin adına konuşur
+
+- **Yaptığınız her şey** (PR sayfasını açmak, inceleme göndermek, onaylamak,
+  birleştirmek) **sizin** oturum açmanızla ve başka hiçbir şeyle çalışmaz. Oturum
+  açmadıysanız uygulama bunu söyler ve oturum açmanızı ister. Başka hiçbir kimlik
+  bilgisi sizin yerinize geçmez
+- **Kimsenin yazmadığı işler** (ajan çalıştırmaları, pipeline’lar, PR yoklaması,
+  bot yanıtları, klonlar) sunucunun GitHub App’inden ya da Connect üzerinden
+  üretilen tek depoluk bir token alır. Bu token, hesap verebilir bir üyenin orada
+  yapabilecekleriyle sınırlıdır: isteyen üye, değilse çalışma alanı sahibi. Push
+  edemeyen bir üye token’ı okumaya sınırlar
+- **Otomasyon bir pull request’i asla onaylamaz.** Onay bir kişinin eylemidir
 
 ## Entegrasyonun size verdikleri
 
-| Özellik               | Nasıl                                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR listesi ve ayrıntısı | Sunucudan, uygulama kimliğiyle ya da kendi kimlik bilginizle GitHub REST API'si                             |
-| Kontrol çalıştırmaları | GitHub Checks API'si                                                                                          |
-| İnceleme yayımlama    | İncelemenizi PR'a gönderen, kullanıcı kapılı bir adım                                                          |
-| Depo kaydı            | Bir checkout, `origin` remote'u github.com'a — ya da gitlab.com / bitbucket.org'a — işaret ediyorsa kabul edilir |
-| Ajanın GitHub erişimi | Kimlik bilgisi broker'ı salt okunur bir token'ı `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte eder; push'lar Control Center'dan geçer |
-| Bildirim ping'leri    | GitHub bildirim gelen kutunuzu sunucu tarafında yoklamak "Pull request'te bahsedildi" ve "İnceleme istendi" bildirimlerini tetikler |
-| Kullanıcı profilleri  | Profil üzerine gelme kartları ve yazara göre PR filtreleme                                                     |
+| Özellik                 | Nasıl                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| PR listesi ve ayrıntısı | Sunucudan, kendi oturum açmanızla GitHub REST API’si                                                          |
+| Kontrol çalıştırmaları  | GitHub Checks API'si                                                                                          |
+| İnceleme yayımlama      | İncelemenizi PR'a sizin adınıza gönderen, kullanıcı kapılı bir adım                                            |
+| Depo kaydı              | Bir checkout, `origin` remote'u github.com'a — ya da gitlab.com / bitbucket.org'a — işaret ediyorsa kabul edilir |
+| Ajanın GitHub erişimi   | Çalıştırmanın tek deposu için `GH_TOKEN` / `GITHUB_TOKEN` olarak bir token; push'lar Control Center'dan geçer |
+| Bildirim ping'leri      | GitHub bildirim gelen kutunuzu sunucu tarafında yoklamak "Pull request'te bahsedildi" ve "İnceleme istendi" bildirimlerini tetikler |
+| Kullanıcı profilleri    | Profil üzerine gelme kartları ve yazara göre PR filtreleme                                                     |
 
 Bazı yollar, daha ucuza geldiği yerlerde REST yerine GraphQL API'sini kullanır —
 PR oluşturma seçicisi için dal etkinliği ve bir inceleme istendi bildiriminin
@@ -100,53 +93,50 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
 
 ## Ajanların GitHub'da nasıl davrandığını bilin
 
-- Bir GitHub çalışma ağacında çalışan bir ajan her zaman salt okunur bir GitHub
-  token'ı alır. Bir push, **Uzak depoya push et** kuralına soran ve ardından onu
-  ajanın asla elinde tutmadığı bir yazma token'ıyla ileten Control Center'dan
-  geçer. Bkz.
+- Bir GitHub çalışma ağacında çalışan bir ajan, o tek depo için bir token alır.
+  Hesap verebilir üye push edebiliyorsa kodu okuyabilir ve pull request’lere yorum
+  yapabilir; edemiyorsa yalnızca okuyabilir. Bir push, **Uzak depoya push et**
+  kuralına soran ve ardından onu ajanın asla elinde tutmadığı bir yazma
+  token'ıyla ileten Control Center'dan geçer. Bkz.
   [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
 - Ajanın commit'leri hem yazar hem de committer olarak her zaman isteği yapan kişinin Git kimliğini kullanır. Varsayılan olarak `Co-Authored-By: Control Center <hi@usectrl.dev>` satırı, GitHub `@usectrl`'ü ortak yazar olarak belirtir. **Ayarlar → Siz → Commit atfı** bölümünden kimliğinizi değiştirmeden bu ortak yazar atfını kapatabilirsiniz. **Ayarlar → Çalışma alanı → Genel** bölümündeki çalışma alanı ayarı önceliklidir ve kişisel anahtarı kilitler. Claude Code'un kendi atfı her zaman kapalıdır. Commit imzalama için ayrıca geçerli bir yapılandırma gerekir
-- Bir GitHub App yapılandırıldığında broker, geniş bir token vermek yerine her
-  başlatma için ince taneli, depo kapsamlı, kabaca bir saatlik kurulum token'ları
-  üretir. Kurulum, çalıştırmanın deposunun **sahibinden** çözülür; böylece birkaç
-  hesaba kurulmuş tek bir uygulama, çalıştırmanın hangisine dokunduğuna göre
-  doğru şekilde kapsamlanır. Uygulama yoksa ajanlar, salt okunura daraltılamayan
-  ortam token'ını alır: push kuralı o zaman `git push`'u bağlar, ama token'ı
-  doğrudan kullanan kodu bağlamaz
-- Token her zaman broker'ındır, asla isteği yapan üyenin kendisinin değildir.
-  Sunucunun token'ı, sahibi olmayan ve GitHub'ı bağlamamış bir üye adına hareket
-  eden bir çalıştırmadan esirgenir
+- Bir rig üzerinde açtığınız bir terminal, tek depoya daraltılmış kendi oturum
+  açmanızı alır; dolayısıyla oradaki push’lar sizindir
+- Hiçbir token üretilemediğinde (hesap verebilir kimse oturum açmamışsa, uygulama
+  sahibe kurulu değilse ya da kurulum askıya alınmışsa) çalıştırma token’sız
+  başlar ve notları nedenini belirtir. Yedek bir kimlik bilgisi yoktur
 
 ## Sorun giderme
 
 ### PR listesi boş ve GitHub'ın bağlı olmadığını söylüyor
 
-Bu sunucuda GitHub kimlik bilginiz yok. **Kod barındırma** altında oturum açın
-ya da bir token yapıştırın. Diğer forge'lardaki depolar etkilenmez — yalnızca
-GitHub'ınkiler hiçbir şey katmaz.
+Bu sunucuda GitHub’a oturum açmadınız. **Kod barındırma** altında **GitHub
+hesabıyla oturum aç**’a tıklayın. Diğer forge'lardaki depolar etkilenmez.
 
-### Satır "Token ekle" sunuyor ama "GitHub ile oturum aç" sunmuyor
+### GitHub satırı oturum açmanın bu sunucuda ayarlanmadığını söylüyor
 
-Sunucunun istemci id'si yok — bu, kaynaktan derlenen bir yapı için normal
-durumdur; çünkü kimlik bilgileri yalnızca resmî yapılara gömülür. Bkz.
-[GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/): yaklaşık iki dakika
-sürer ve yalnızca sunucu sahibinin, bir kez yapması gerekir.
+Sunucunun ne kendi GitHub App’i ne de Connect’i var. Sunucu sahibi **Ayarlar →
+Sunucu → Tek oturum açma** bölümünde birini seçer: **GitHub uygulamamı oluştur**
+yaklaşık iki dakika sürer. Bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/).
 
-### Oturum açma iletişim kutusu sağlayıcının cihaz kodu döndürmediğini söylüyor
+### İletişim kutusu kodun eşleşmediğini söylüyor
 
-GitHub App var ama **Device flow** onay kutusu kapalı. Uygulamanın ayarlarında
-(General → Device flow) açıp yeniden deneyin.
+Kodu tarayıcının gösterdiği gibi birebir yazın: 8 harf ve rakam. Beş yanlış kod
+oturum açmayı sonlandırır; yeniden başlatın.
 
-### Satır, kendi hesabımı beklerken "bu sunucunun uygulaması üzerinden" diyor
+### Oturum açma uygulamanın kurulu olmadığını söylüyor
 
-Oturum açmamışsınız; gördüğünüz şey sunucunun uygulama kimliğinin yanıt vermesi.
-O satırda **GitHub ile oturum aç**'a tıklayın.
+GitHub App’in, depoya sahip olan hesapta kurulumu yok. Bir çalışma alanı
+yöneticisi onu **Ayarlar → Çalışma alanı → Genel → GitHub uygulaması kurulumları**
+bölümünden kurar. Control Center’ın paylaşılan App’ini kullanan bir kuruluş için o
+kuruluşun bir yöneticisinin **Bu sunucuyu yetkilendir**’e tıklaması gerekebilir.
+Bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/#bu-sunucuyu-bir-kuruluş-için-yetkilendirme).
 
-### İnce taneli bir PAT birleştirme düğmesi ya da kontrol durumu göstermiyor
+### Herkesin GitHub’a yeniden oturum açması gerekiyor
 
-Token'ın **Contents** ve **Pull requests** (okuma ve yazma) ile **Checks** ve
-**Actions** (okuma) yetkilerine ihtiyacı vardır. Değiştirdikten sonra Kod
-barındırma altında yeniden yapıştırın.
+Sunucu sahibi sunucunun Connect anahtarını değiştirdi, Connect sunucusunu
+değiştirdi ya da veri dizini başka bir makineye geri yüklendi. Connect üzerinden
+yapılan oturum açmalar, onları yapan sunucuya bağlıdır.
 
 ### Depo ekleme reddediliyor
 
@@ -171,4 +161,4 @@ derinleştiremez. Geçici hatalar, `retry-after` değerine uyularak üstel geri
 - [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
 - [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
 - [Bir PR'ı inceleme ve birleştirme](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
-- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Bir GitHub PR'dan Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/)

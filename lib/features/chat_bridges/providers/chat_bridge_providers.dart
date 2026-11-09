@@ -1,8 +1,10 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_app_creation.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bot_profile.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,15 +16,35 @@ final chatClientProvider = Provider<RpcChatClient>(
   (ref) => RpcChatClient(ref.watch(rpcClientProvider)),
 );
 
+/// The browser sign-in lane that installs Control Center's shared app for
+/// [provider], or null when Connect has none for it.
+///
+/// A chat provider's shared-app lane carries the provider's own wire name
+/// (`slack`), so a provider Connect learns to install needs no entry here.
+ConnectOAuthLane? chatSharedAppLane(ChatProvider provider) =>
+    ConnectOAuthLane.fromWire(provider.wire);
+
 /// Every chat provider this server offers, with the active workspace's status.
 ///
 /// The one read the settings surface renders from: a card per entry, its boxes
 /// and buttons generated from the descriptor. Watches [activeWorkspaceIdProvider]
 /// so switching workspaces re-reads — a chat app belongs to one workspace and
 /// showing another's bot as connected here would be a lie.
+///
+/// Also re-reads whenever a shared-app install succeeds, even one whose
+/// sign-in dialog was closed before the browser finished.
 final chatProvidersProvider = FutureProvider<List<ChatProviderView>>((
   ref,
 ) async {
+  ref.watch(
+    providerSignInControllerProvider.select(
+      (s) => [
+        for (final provider in ChatProvider.values)
+          if (chatSharedAppLane(provider) case final lane?)
+            s.successesFor(lane),
+      ].fold(0, (a, b) => a + b),
+    ),
+  );
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
     return const [];
@@ -35,10 +57,9 @@ final chatProvidersProvider = FutureProvider<List<ChatProviderView>>((
 /// One roster across providers: a member's Slack and Discord links are two rows
 /// in the same table, so the surface does not fragment per provider.
 ///
-/// Watched rather than fetched, because a link is made in the *chat app*: the
-/// member types the one-time code into the bot and no client request returns
-/// while that happens. The roster and the open link dialog both follow this
-/// stream so the moment the row lands, both say so.
+/// Watched rather than fetched: a link can land without this client asking
+/// (another client confirms one, an email match links a member, an admin
+/// unlinks someone), and the roster should say so at once.
 final chatUserLinksProvider = StreamProvider<List<ChatUserLinkView>>((ref) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
@@ -130,7 +151,7 @@ class ChatConnectionController extends Notifier<AsyncValue<void>> {
     _refresh();
   }
 
-  /// Mints the one-time code for the caller's own `/cc link CODE`.
+  /// Mints the one-time code the caller sends to the bot in a direct message.
   Future<ChatLinkCodeView?> beginMyLink(ChatProvider provider) async {
     final workspaceId = _workspaceId;
     if (workspaceId == null) {

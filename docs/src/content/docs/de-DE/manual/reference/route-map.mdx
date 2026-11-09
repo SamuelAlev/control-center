@@ -2,16 +2,16 @@
 title: Routenkarte
 description: Jede Route, die Control Center registriert, mit Bildschirm und Query-Parametern.
 slug: de-DE/handbuch/referenz/routenkarte
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## App-Shell
 
-Die App-Shell (`ControlCenterLayout`) umschließt jede Route im Arbeitsbereich über eine `ShellRoute`. **Jedes Ziel in der Shell trägt den Arbeitsbereich als Präfix — `/workspaces/:workspaceId/…` — und die Arbeitsbereichs-ID in der URL ist die einzige Quelle der Wahrheit für den aktiven Arbeitsbereich.** Nur die Flächen vor dem Kontext haben kein Präfix: `/splash`, `/onboarding`, `/signed-out` und die nackte Auswahl `/workspaces`, alle im Vollbild und außerhalb der Shell.
+Die App-Shell (`ControlCenterLayout`) umschließt jede Route im Arbeitsbereich über eine `ShellRoute`. **Jedes Ziel in der Shell trägt den Arbeitsbereich als Präfix — `/workspaces/:workspaceId/…` — und die Arbeitsbereichs-ID in der URL ist die einzige Quelle der Wahrheit für den aktiven Arbeitsbereich.** Nur die Flächen vor dem Kontext haben kein Präfix: `/splash`, `/onboarding` und die nackte Auswahl `/workspaces`, alle im Vollbild und außerhalb der Shell.
 
 Das Gate ist vollständig, wenn mindestens eine Forge **für den angemeldeten User** verbunden ist und mindestens ein Arbeitsbereich existiert.
 
-Fehlende Zugangsdaten und ein fehlendes Setup sind verschiedene Bildschirme, und das Unterscheidungsmerkmal ist `users.onboarding_finished_at`, gelesen vom eigenen `identity.me` des Aufrufers — nie „Arbeitsbereiche existieren“, was in dem Moment falsch ist, in dem jemand in einen Arbeitsbereich eingeladen wird, den diese Person nie angelegt hat. Ohne verbundene Forge geht ein Konto, das das Onboarding abgeschlossen hat, nach `/signed-out`, um sich neu zu authentifizieren; eines, das es nicht abgeschlossen hat, nach `/onboarding`. Solange das Flag noch unbekannt ist, hält der Guard den Splash, statt zu raten, weil er nie aus dem Onboarding wieder herausleitet.
+Fehlende Zugangsdaten und ein fehlendes Setup werden unterschiedlich behandelt, und das Unterscheidungsmerkmal ist `users.onboarding_finished_at`, gelesen vom eigenen `identity.me` des Aufrufers — nie „Arbeitsbereiche existieren“, was in dem Moment falsch ist, in dem jemand in einen Arbeitsbereich eingeladen wird, den diese Person nie angelegt hat. Ohne verbundene Forge bleibt ein Konto, das das Onboarding abgeschlossen hat, in der App: Die Shell des Arbeitsbereichs zeigt eine Warnung mit einem Link zu Einstellungen → Arbeitsbereich → Profil und Identität, wo die Anmeldung liegt. Eines, das es nicht abgeschlossen hat, geht nach `/onboarding`. Solange das Flag noch unbekannt ist, hält der Guard den Splash, statt zu raten, weil er nie aus dem Onboarding wieder herausleitet.
 
 ## Routen ohne Präfix
 
@@ -19,7 +19,6 @@ Fehlende Zugangsdaten und ein fehlendes Setup sind verschiedene Bildschirme, und
 | -------------------------- | ---------------------------------------------------- |
 | `/splash`                  | Start-Splash, der das Onboarding-Gate auflöst |
 | `/onboarding`              | Forge verbinden, einen Arbeitsbereich anlegen oder beitreten, Sandbox, Standard-Adapter, dann Stimme. Der Schritt zum Arbeitsbereich entfällt, wenn das Konto schon zu einem gehört |
-| `/signed-out`              | Neu authentifizieren: dieselbe Karte Code-Hosting, die die Einstellungen zeigen, ohne Schrittleiste und ohne Schaltfläche Weiter — der Router verlässt die Seite von selbst, sobald eine Forge sich meldet |
 | `/workspaces`              | Liste und Auswahl der Arbeitsbereiche                        |
 | `/workspaces/:workspaceId` | Leitet um nach `/workspaces/:workspaceId/inbox`    |
 

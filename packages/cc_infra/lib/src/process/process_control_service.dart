@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// OS-level process control (kill, liveness check) for agent processes.
 ///
 /// Kills follow the same ladder as every other child this repo spawns —
@@ -36,7 +38,7 @@ class ProcessControlService implements ProcessControlPort {
       // Reap the direct child tree FIRST: a wrapper that exits on SIGTERM
       // would otherwise orphan its grandchildren.
       try {
-        await Process.run('pkill', ['-TERM', '-P', '$pid']);
+        await ChildProcess.run('pkill', ['-TERM', '-P', '$pid']);
       } on Object {
         // pkill unavailable — the direct kill below still applies.
       }
@@ -67,7 +69,7 @@ class ProcessControlService implements ProcessControlPort {
     if (Platform.isWindows) {
       // No signals; ask the task list. A missing pid prints a header only.
       try {
-        final result = Process.runSync('tasklist', [
+        final result = ChildProcess.runSync('tasklist', [
           '/FI',
           'PID eq $pid',
           '/NH',
@@ -88,7 +90,7 @@ class ProcessControlService implements ProcessControlPort {
     // signal it.
     final bool exists;
     try {
-      exists = Process.runSync('kill', ['-0', '$pid']).exitCode == 0;
+      exists = ChildProcess.runSync('kill', ['-0', '$pid']).exitCode == 0;
     } on Object {
       return false;
     }
@@ -104,7 +106,7 @@ class ProcessControlService implements ProcessControlPort {
     // this), and treating "no state" as "not alive" made every live process
     // read as dead. Unreadable state ⇒ keep the `kill -0` answer.
     try {
-      final result = Process.runSync('ps', ['-o', 'stat=', '-p', '$pid']);
+      final result = ChildProcess.runSync('ps', ['-o', 'stat=', '-p', '$pid']);
       final state = '${result.stdout}'.trim();
       if (result.exitCode == 0 && state.isNotEmpty) {
         return !state.startsWith('Z');

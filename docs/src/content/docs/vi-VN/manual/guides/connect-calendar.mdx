@@ -1,35 +1,55 @@
 ---
 title: Kết nối Google Calendar
-description: Kết nối Google Calendar với một không gian làm việc, quản lý nhiều tài khoản và kết nối lại khi token hết hạn.
+description: Kết nối Google Calendar với một không gian làm việc, quản lý nhiều tài khoản và kết nối lại khi đăng nhập hết hạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Hướng dẫn này chỉ cho bạn cách kết nối Google Calendar với một không gian làm
-việc. Việc này diễn ra theo từng không gian làm việc: nó đồng bộ sự kiện của
-không gian làm việc đó vào Control Center, ở chế độ chỉ đọc. Xem
+việc. Việc này diễn ra theo từng không gian làm việc và theo từng thành viên: nó đồng
+bộ sự kiện của bạn cho không gian làm việc đó vào Control Center, nơi bạn cũng có thể trả lời lời mời, tạo, dời và xóa sự kiện. Xem
 [Lịch và lên lịch](/vi-VN/so-tay/khai-niem/lich/) để có bức tranh đầy đủ.
+
+## Điều kiện tiên quyết
+
+- Máy chủ có thể đăng nhập người dùng vào Google: hoặc qua Control Center Connect, hoặc
+  bằng máy khách Google riêng của máy chủ ([Tự mang theo client Google của bạn](#tự-mang-theo-client-google-của-bạn)).
+  Chủ máy chủ chọn trong **Cài đặt → Máy chủ → Đăng nhập một lần**
+- Một không gian làm việc đang mở: một tài khoản lịch luôn thuộc về một không gian làm việc
 
 ## Kết nối một tài khoản
 
 1. Mở **Lịch** trên thanh bên.
 2. Nhấp **Thêm tài khoản lịch** trên thanh bên của lịch. (Mục này cũng nằm tại **Cài đặt → Không gian làm việc → Hồ sơ & danh tính**, trong **Google Calendar**.)
-3. Chọn cách ủy quyền:
-   - **Dùng app Google của Control Center** — không cần thiết lập gì. Đây là mặc định khi bản dựng của bạn có kèm sẵn app này.
-   - **Dùng client Google Cloud của tôi** — dán client id và secret từ dự án của riêng bạn (xem [Tự mang theo client Google của bạn](#tự-mang-theo-client-google-của-bạn-bản-fork-và-tự-lưu-trữ)).
-4. Nhấp **Kết nối Google Calendar**. Hộp thoại hiện một mã ngắn và liên kết tới trang thiết bị của Google.
-5. Mở trang đó trên bất kỳ thiết bị nào, nhập mã và phê duyệt quyền truy cập được yêu cầu. Hộp thoại tự đóng và các sự kiện của bạn bắt đầu được đồng bộ.
+3. Nhấp **Kết nối Google Calendar**. Trình duyệt của bạn mở trang đồng ý của Google.
+4. Chọn tài khoản và phê duyệt quyền truy cập sự kiện lịch và danh sách lịch của bạn.
 
-Máy chủ, chứ không phải thiết bị của bạn, thực hiện trao đổi này và giữ refresh
-token thu được — đó là lý do mã được phê duyệt trên “bất kỳ thiết bị nào” thay
-vì cụ thể trong ứng dụng này.
+Cách hoàn tất phụ thuộc vào bên chạy đăng nhập:
 
-Tài khoản chỉ được kết nối **với không gian làm việc đang hoạt động**. Chuyển
+- **Máy khách Google riêng của máy chủ:** Google đưa trình duyệt quay lại máy chủ và
+  hộp thoại tự đóng
+- **Control Center Connect:** trang trình duyệt hiển thị một mã gồm 8 ký tự. Hãy gõ mã
+  đó vào hộp thoại, hoặc để trình duyệt mở Control Center qua liên kết `control-center://`
+  và bỏ qua việc gõ mã
+
+Các sự kiện của bạn bắt đầu được đồng bộ ngay. Máy chủ, chứ không phải thiết bị của
+bạn, hoàn tất trao đổi này và giữ thông tin xác thực.
+
+Tài khoản chỉ được kết nối **với không gian làm việc đang hoạt động**, và nó thuộc về
+bạn: hai thành viên cùng kết nối một địa chỉ Google sẽ có hai tài khoản tách biệt. Chuyển
 không gian làm việc, bạn sẽ thấy lịch của không gian làm việc đó thay vào.
 
-Luồng kết nối yêu cầu `calendar.readonly` cùng email của bạn — cùng các phạm vi
-cho cả app tích hợp sẵn và client bạn dán vào. Control Center đọc sự kiện; nó
-không tạo, sửa, xóa hay phản hồi lời mời trên Google.
+Luồng kết nối yêu cầu `calendar.events` và `calendar.calendarlist.readonly` cùng `openid email`, bất kể máy khách nào chạy nó. Một tài khoản đã kết nối trước khi Control Center có thể ghi lên Google chỉ có phạm vi chỉ đọc; nó sẽ yêu cầu bạn kết nối lại, và đăng nhập mới sẽ cấp phần còn lại.
+
+## Tạo, dời, trả lời và xóa sự kiện
+
+- **Tạo sự kiện:** trong chế độ xem tuần hoặc ngày, kéo qua lưới thời gian để vẽ khoảng thời gian (trong chế độ xem tháng, kéo qua các ngày để tạo sự kiện cả ngày). Một thẻ mở bên cạnh với tiêu đề, giờ, khách mời, liên kết Google Meet, địa điểm, mô tả và lịch để tạo sự kiện. **Lưu** sẽ tạo sự kiện trên Google và mở nó. Nút **+** trong tiêu đề lịch mở cùng thẻ đó cho mốc 15 phút trống tiếp theo. Nhấn Escape để bỏ
+- **Dời sự kiện:** kéo sự kiện sang giờ hoặc ngày khác, hoặc kéo mép dưới để đổi giờ kết thúc. Sự kiện sẽ mở ra khi Google nhận giờ mới; nếu Google từ chối, sự kiện trở về vị trí cũ. Bạn chỉ dời được sự kiện của chính mình và các sự kiện bạn tổ chức; lời mời ở nguyên chỗ người tổ chức đặt
+- **Trả lời lời mời:** mở sự kiện và chọn **Có**, **Có thể** hoặc **Không**
+- **Xóa sự kiện:** mở sự kiện và nhấp biểu tượng thùng rác. Xác nhận cho biết ai bị ảnh hưởng: khách được thông báo rằng một sự kiện bạn tổ chức đã bị hủy, còn xóa một lời mời chỉ gỡ nó khỏi lịch của bạn. Xóa một lần xuất hiện của sự kiện lặp lại sẽ giữ nguyên phần còn lại của chuỗi
+
+Khách nhận được thư mời, cập nhật hoặc hủy của chính Google. Bạn chỉ có thể tạo sự kiện trên các lịch mà tài khoản của bạn được phép ghi, và chỉ bằng tài khoản của chính bạn: lịch đã kết nối của thành viên khác không bao giờ được đề xuất. Việc dời một lần xuất hiện của sự kiện lặp lại cũng giữ nguyên phần còn lại của chuỗi.
+
 
 ## Đồng bộ diễn ra thế nào
 
@@ -44,9 +64,11 @@ trình token đó ra và chỉ nhận những gì đã thay đổi, nhờ vậy 
 chấp nhận được. Cửa sổ được neo lại bằng một lần đồng bộ đầy đủ mỗi 24 giờ và
 mỗi khi Google vô hiệu hóa token.
 
-Refresh token nằm ở phía máy chủ trong `secrets.json` dưới thư mục dữ liệu của
-máy chủ, được ghi với quyền chỉ chủ sở hữu (`0600`) — không nằm trong keychain
-của hệ điều hành và không bao giờ nằm trên thiết bị máy khách.
+Thông tin xác thực nằm ở phía máy chủ trong `secrets.json` dưới thư mục dữ liệu của
+máy chủ, được ghi với quyền chỉ chủ sở hữu (`0600`) — không nằm trong keychain của hệ
+điều hành và không bao giờ nằm trên thiết bị máy khách. Một đăng nhập qua Connect chỉ
+lưu một niêm phong thông tin xác thực mà Connect mở được cho riêng máy chủ này; access
+token của nó chỉ nằm trong bộ nhớ của máy chủ.
 
 ## Kết nối nhiều tài khoản
 
@@ -58,73 +80,71 @@ nối riêng.
 
 ## Kết nối lại một tài khoản đã hết hạn
 
-Nếu Google vô hiệu hóa vĩnh viễn token của một tài khoản (phiên bị thu hồi hoặc
+Nếu Google vô hiệu hóa vĩnh viễn đăng nhập của một tài khoản (phiên bị thu hồi hoặc
 hết hạn từ lâu), quá trình đồng bộ dừng lại và Control Center hiện banner
 **Kết nối lại** trên lịch, kèm một thông báo trên máy tính để bàn. Nhấp
-**Kết nối lại** và phê duyệt một mã mới; banner sẽ biến mất ở lần đồng bộ thành
+**Kết nối lại** và đăng nhập lần nữa; banner sẽ biến mất ở lần đồng bộ thành
 công kế tiếp.
+
+Banner tương tự cũng xuất hiện khi máy chủ này không còn dùng được đăng nhập: chủ máy
+chủ đã đổi máy chủ Connect hoặc xoay khóa Connect, máy khách Google riêng của máy chủ
+đã thay đổi, hoặc thư mục dữ liệu được khôi phục sang một máy khác.
 
 ## Ngắt kết nối một tài khoản
 
 Từ thanh bên của lịch (hoặc **Cài đặt → Không gian làm việc → Hồ sơ & danh
 tính**), nhấp **Ngắt kết nối** trên tài khoản. Thao tác này xóa các sự kiện đã
-đồng bộ và xóa token đã lưu của tài khoản trên máy chủ.
+đồng bộ và xóa thông tin xác thực đã lưu của tài khoản trên máy chủ.
 
-## Kết nối từ một máy chủ không giao diện
+## Tự mang theo client Google của bạn
 
-Máy chủ không gắn giao diện đồ họa kết nối cùng tài khoản đó từ terminal của
-chính nó:
+Chạy client Google riêng khi bạn chọn **Dùng ứng dụng của riêng tôi**. Client của máy chủ chỉ áp dụng khi đó: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả Google, và client của máy chủ vẫn được lưu nhưng không dùng. Để màn hình đồng ý hiển thị tên dự án của bạn trong khi máy chủ dùng Connect, hãy cấp cho không gian làm việc một client riêng ([bên dưới](#cấp-cho-một-không-gian-làm-việc-client-google-riêng)); điều này áp dụng ở mọi chế độ.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. Trong [Google Cloud Console](https://console.cloud.google.com/apis/credentials), bật **Google Calendar API** và cấu hình **OAuth consent screen**, thêm các phạm vi `calendar.events`, `calendar.calendarlist.readonly`, `openid` và `email`. Khi app chưa được xác minh, hãy thêm chính bạn làm **test user**.
+2. Tạo một **OAuth client ID** với loại ứng dụng **Web application**.
+3. Thêm URI chuyển hướng được phép `<server origin>/oauth/google/callback`. **Cài đặt → Máy chủ → Đăng nhập một lần → Ứng dụng nhà cung cấp → Google** hiển thị URL chính xác dưới **URL callback**; hãy sao chép nguyên văn.
+4. Dán **Client id** và **Client secret** vào cùng khối Google đó, hoặc đặt chúng trong tệp `.env` của máy chủ dưới dạng `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Nó in ra một mã và một URL, chờ phê duyệt, rồi lưu token và đồng bộ ở lần quét
-kế tiếp.
+Máy chủ từ chối khởi động khi `GOOGLE_OAUTH_CLIENT_SECRET` được export trong môi trường
+tiến trình của nó; hãy giữ nó trong tệp `.env` (trong Docker, gắn nó tại `/app/bin/.env`).
+Secret không bao giờ rời khỏi máy chủ: không có phản hồi RPC nào mang nó theo. Một
+client id thiếu secret là một thiết lập chưa hoàn tất, và đăng nhập Google bị từ chối cho
+đến khi cả hai được đặt.
 
-Bản dựng từ mã nguồn **không** kèm client Google nào, nên bắt buộc phải có id và
-secret — hãy đặt `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET`. Không
-có cờ `--google-client-id` (các cờ không rõ bị bỏ qua). Nếu thiếu cặp biến môi
-trường, lệnh thoát với lỗi thiếu client.
+Đổi sang một client khác sẽ đăng xuất mọi người khỏi Google Calendar: một đăng nhập thuộc
+về client đã cấp nó.
 
-## Tự mang theo client Google của bạn (bản fork và tự lưu trữ)
+## Cấp cho một không gian làm việc client Google riêng
 
-Các bản phát hành có kèm sẵn một client Google, nên hầu hết mọi người không bao
-giờ cần tới phần này. Hãy tự mang theo client của bạn nếu bạn dựng từ mã nguồn,
-tự chạy máy chủ riêng, hoặc muốn màn hình đồng ý hiển thị tên dự án của chính
-bạn.
+Một không gian làm việc có thể kết nối Google Calendar qua một client riêng thay vì client của máy chủ. Chỉ quản trị viên hoặc chủ sở hữu của không gian làm việc mới có thể thiết lập.
 
-1. Trong [Google Cloud Console](https://console.cloud.google.com/apis/credentials), bật **Google Calendar API** và cấu hình **OAuth consent screen**, thêm các phạm vi `calendar.readonly`, `openid` và `email`. Khi app chưa được xác minh, hãy thêm chính bạn làm **test user**. Thêm `calendar.events` trên màn hình đồng ý không bật được RSVP — Control Center không bao giờ yêu cầu phạm vi đó.
-2. Tạo một **OAuth client ID** với loại ứng dụng **TVs and limited input devices** và sao chép cả client id lẫn client secret.
-3. Cung cấp chúng theo từng lần kết nối (chọn **Dùng client Google Cloud của tôi** trong hộp thoại) hoặc trên toàn máy chủ bằng `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Tạo client Google loại **Web application** như ở bước 1 và 2 phía trên
+2. Vào **Cài đặt → Không gian làm việc → Chung → Ứng dụng nhà cung cấp** và mở **Google Calendar**
+3. Chọn **Dùng ứng dụng riêng của không gian làm việc này**
+4. Thêm URI chuyển hướng mà hàng hiển thị dưới **URL callback** vào client, nguyên văn
+5. Dán **Id client** và **Bí mật client**
 
-Một cặp đặt trên toàn máy chủ sẽ thay thế cặp tích hợp sẵn ở mọi nơi, kể cả
-đằng sau tùy chọn “dùng app Google của Control Center” — nên trên máy chủ của
-riêng bạn, tùy chọn đó chính là app của bạn.
+Các tài khoản lịch được kết nối trong không gian làm việc này khi đó đi qua client đó, bất kể máy chủ đăng nhập người dùng bằng cách nào. Nó không bao giờ rơi về client của máy chủ hay Connect: cho đến khi cả hai trường được đặt, Google Calendar tắt trong không gian làm việc này và hàng sẽ cho biết còn thiếu gì. Bí mật không bao giờ rời khỏi máy chủ.
 
-Client secret không bao giờ rời khỏi máy chủ: không có phản hồi RPC nào mang nó
-theo, và một tài khoản được kết nối qua client của chính máy chủ sẽ lưu một dấu
-tham chiếu thay vì bản sao của cặp khóa, nên việc xoay khóa chỉ là khởi động lại
-với giá trị mới.
+Chuyển đổi giữa client của máy chủ và client của không gian làm việc, hoặc đổi id client của không gian làm việc, sẽ đánh dấu mọi tài khoản Google trong không gian làm việc này để kết nối lại. **Dùng ứng dụng của máy chủ này** sẽ xóa các trường đã lưu của không gian làm việc. Các không gian làm việc khác trên máy chủ không bị ảnh hưởng.
 
-### Xử lý sự cố
+## Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân có thể |
 | --- | --- |
-| Hộp thoại không có tùy chọn tích hợp sẵn | Bản dựng này không kèm client Google nào (bản dựng từ mã nguồn), hoặc máy chủ được khởi động chỉ với một nửa của cặp khóa. Cả id lẫn secret đều bắt buộc |
-| `invalid_scope` khi bắt đầu luồng | Calendar không được cho phép với máy khách mã thiết bị trong dự án Cloud đó. Hãy dùng dự án máy khách loopback hoặc web thay thế |
-| `invalid_client` từ Google | Máy khách không thuộc loại **TVs and limited input devices**, hoặc id và secret đến từ hai máy khách khác nhau |
-| Phê duyệt thành công nhưng đồng bộ trống | Tài khoản của bạn không phải **test user** trên màn hình đồng ý, hoặc `calendar.readonly` không được cấp |
-| Mã hết hạn trước khi bạn phê duyệt | Mã thiết bị có thời hạn ngắn. Hãy bắt đầu kết nối lại để lấy mã mới |
-| “Không thể cập nhật phản hồi của bạn” khi RSVP | Đúng như dự kiến: luồng kết nối không bao giờ yêu cầu `calendar.events` |
-| Đồng bộ dừng lại kèm cảnh báo làm mới trong nhật ký máy chủ | Tài khoản được kết nối bằng một máy khách không còn được cấu hình nữa. Hãy kết nối lại tài khoản, hoặc khôi phục client id và secret đó |
+| **Kết nối Google Calendar** báo đăng nhập chưa được thiết lập | Máy chủ không có máy khách Google riêng cũng không có Connect. Chủ máy chủ chọn một trong hai trong **Cài đặt → Máy chủ → Đăng nhập một lần** |
+| Google hiển thị `redirect_uri_mismatch` | Chuyển hướng đăng ký trên client không khớp chính xác với giá trị **URL callback**, hoặc URL công khai của máy chủ đã thay đổi |
+| `invalid_client` từ Google | Id và secret đến từ hai client khác nhau, hoặc client đã bị xóa |
+| Phê duyệt thành công nhưng đồng bộ trống | Tài khoản của bạn không phải **test user** trên màn hình đồng ý, hoặc một phạm vi được yêu cầu không được cấp |
+| Hộp thoại báo mã không khớp | Hãy gõ đúng 8 ký tự như trình duyệt hiển thị. Năm lần nhập sai sẽ kết thúc đăng nhập; hãy bắt đầu lại |
+| “Không thể cập nhật phản hồi của bạn”, hoặc tạo, dời hay xóa sự kiện thất bại | Tài khoản được kết nối với phạm vi chỉ đọc cũ. Hãy kết nối lại; lịch được chia sẻ chỉ đọc với bạn cũng từ chối ghi |
+| Mọi người phải kết nối lại | Máy khách Google của máy chủ hoặc không gian làm việc đã thay đổi, hoặc lựa chọn Connect hay khóa của máy chủ đã thay đổi. Xem [Kết nối lại một tài khoản đã hết hạn](#kết-nối-lại-một-tài-khoản-đã-hết-hạn) |
 
 ## Hướng dẫn liên quan
 
 - [Ghi và tóm tắt một cuộc họp](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/): biến một sự kiện thành bản ghi
-- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): nơi token và lịch đồng bộ nằm
-- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): nơi thông tin xác thực và lịch đồng bộ nằm
+- [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/)
 
 ## Khái niệm liên quan
 

@@ -1,36 +1,69 @@
 ---
 title: Koble til en Google Calendar
-description: Koble Google Calendar til et arbeidsområde, administrer flere kontoer og koble til på nytt når et token utløper.
+description: Koble Google Calendar til et arbeidsområde, administrer flere kontoer og koble til på nytt når en pålogging utløper.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kalender
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Denne veiledningen viser hvordan du kobler Google Calendar til et
-arbeidsområde. Tilkoblingen gjelder per arbeidsområde: den synkroniserer
-hendelsene i det arbeidsområdet inn i Control Center, kun for lesing. Se
-[Kalender og planlegging](/nb-NO/handbok/konsepter/kalender/) for hele bildet.
+arbeidsområde. Tilkoblingen gjelder per arbeidsområde og per medlem: den
+synkroniserer hendelsene dine for det arbeidsområdet inn i Control Center, der du også kan svare på invitasjoner, booke, flytte og slette hendelser. Se [Kalender og planlegging](/nb-NO/handbok/konsepter/kalender/) for
+hele bildet.
+
+## Forutsetninger
+
+- Serveren kan logge inn personer hos Google: enten via Control Center Connect
+  eller med serverens egen Google-klient
+  ([Ta med din egen Google-klient](#ta-med-din-egen-google-klient)).
+  Servereieren velger under **Innstillinger → Server → Enkel pålogging**
+- Et åpent arbeidsområde: en kalenderkonto tilhører alltid ett
 
 ## Koble til en konto
 
 1. Åpne **Kalender** i sidepanelet.
 2. Klikk på **Legg til kalenderkonto** i kalenderens sidepanel. (Den samme delen finnes under **Innstillinger → Arbeidsområde → Profil og identitet**, under **Google Calendar**.)
-3. Velg hvordan du vil autorisere:
-   - **Bruk Control Centers Google-app** — ingenting å sette opp. Dette er standardvalget når bygget ditt leveres med en slik app.
-   - **Bruk min egen Google Cloud-klient** — lim inn en klient-ID og en klienthemmelighet fra ditt eget prosjekt (se [Ta med din egen Google-klient](#ta-med-din-egen-google-klient-forks-og-selvhosting)).
-4. Klikk på **Koble til Google Calendar**. Dialogen viser en kort kode og en lenke til Googles enhetsside.
-5. Åpne den siden på en hvilken som helst enhet, skriv inn koden og godkjenn tilgangen det bes om. Dialogen lukker seg selv, og hendelsene dine begynner å synkroniseres.
+3. Klikk på **Koble til Google Calendar**. Nettleseren din åpner Googles samtykkeside.
+4. Velg kontoen og godkjenn tilgang til hendelsene og kalenderlisten din.
 
-Det er serveren, ikke enheten din, som utfører denne utvekslingen og beholder
-refresh-tokenet som kommer ut av den — derfor godkjennes koden på «en hvilken
-som helst enhet» og ikke spesielt i denne appen.
+Hvordan det avsluttes, avhenger av hvem som kjører påloggingen:
 
-Kontoen kobles **kun til det aktive arbeidsområdet**. Bytter du arbeidsområde,
-ser du kalenderne til det arbeidsområdet i stedet.
+- **Serverens egen Google-klient:** Google sender nettleseren din tilbake til
+  serveren, og dialogen lukker seg selv
+- **Control Center Connect:** nettlesersiden viser en kode på 8 tegn. Skriv den
+  inn i dialogen, eller la nettleseren åpne Control Center via
+  `control-center://`-lenken og slipp å skrive den
 
-Tilkoblingsflyten ber om `calendar.readonly` i tillegg til e-postadressen din —
-de samme scope-ene for den innebygde appen og for en klient du limer inn.
-Control Center leser hendelser; det oppretter, redigerer, sletter eller svarer
-ikke på invitasjoner hos Google.
+Hendelsene dine begynner å synkroniseres med en gang. Det er serveren, ikke
+enheten din, som fullfører utvekslingen og beholder påloggingsinformasjonen.
+
+Kontoen kobles **kun til det aktive arbeidsområdet**, og den er din: to
+medlemmer som kobler til samme Google-adresse, får hver sin konto. Bytter du
+arbeidsområde, ser du kalenderne til det arbeidsområdet i stedet.
+
+Tilkoblingsflyten ber om `calendar.events` og `calendar.calendarlist.readonly` i tillegg til
+`openid email`, uansett hvilken klient som kjører den. En konto som ble koblet til før Control
+Center kunne skrive til Google, har bare det skrivebeskyttede scopet; den ber deg koble til på
+nytt, og den nye påloggingen gir resten.
+
+## Book, flytt, svar og slett hendelser
+
+- **Book en hendelse:** i uke- eller dagsvisning drar du over tidsrutenettet for å tegne tidsrommet
+  (i månedsvisning drar du over dager for en heldagshendelse). Et kort åpnes ved siden av med tittel,
+  tider, gjester, en Google Meet-lenke, sted, beskrivelse og hvilken kalender som skal brukes. **Lagre**
+  booker den hos Google og åpner hendelsen. **+**-knappen i kalenderhodet åpner det samme kortet for neste
+  ledige kvarter. Trykk Escape for å forkaste det
+- **Flytt en hendelse:** dra den til et annet tidspunkt eller en annen dag, eller dra nedre kant for å endre når den slutter. Den vises på det nye tidspunktet når Google har godtatt det; hvis Google avviser det, går den tilbake dit den var. Bare dine egne hendelser og hendelser du arrangerer, kan flyttes; en invitasjon blir værende der arrangøren plasserte den
+- **Svar på en invitasjon:** åpne hendelsen og velg **Ja**, **Kanskje** eller **Nei**
+- **Slett en hendelse:** åpne den og klikk på søppelbøtte-ikonet. Bekreftelsen viser hvem som berøres:
+  gjester får beskjed om at en hendelse du arrangerer, er avlyst, mens sletting av en invitasjon bare
+  fjerner den fra kalenderen din. Sletting av én forekomst av en gjentakende hendelse lar resten av
+  serien stå
+
+Gjester får Googles egen e-postinvitasjon, oppdatering eller avlysning. Flytting av én forekomst av en gjentakende hendelse lar resten av serien stå. Du kan bare booke i kalendere
+kontoen din har skrivetilgang til, og bare med dine egne kontoer: en tilkoblet kalender som tilhører et
+annet medlem, tilbys aldri.
+
+## Slik fungerer synkroniseringen
 
 ## Slik fungerer synkroniseringen
 
@@ -46,9 +79,11 @@ som er endret, og det er dette som gjør et intervall på to minutter
 overkommelig. Vinduet forankres på nytt med en full synkronisering hvert 24.
 time og hver gang Google gjør tokenet ugyldig.
 
-Refresh-tokens ligger på serversiden i `secrets.json` under serverens
+Påloggingsinformasjonen ligger på serversiden i `secrets.json` under serverens
 datakatalog, skrevet med tilgang bare for eieren (`0600`) — ikke i
-operativsystemets nøkkelring og aldri på en klientenhet.
+operativsystemets nøkkelring og aldri på en klientenhet. En pålogging via
+Connect lagrer bare en forseglet påloggingsinformasjon som Connect kan åpne for
+akkurat denne serveren; tilgangstokenet blir værende i serverens minne.
 
 ## Koble til flere kontoer
 
@@ -59,73 +94,78 @@ og fornyer uavhengig av de andre, og hver av dem kan kobles fra hver for seg.
 
 ## Koble til en utløpt konto på nytt
 
-Hvis Google gjør tokenet til en konto permanent ugyldig (en tilbakekalt eller
-lenge utløpt økt), stopper synkroniseringen, og Control Center viser et banner
-med **Koble til på nytt** i kalenderen, i tillegg til et skrivebordsvarsel.
-Klikk på **Koble til på nytt** og godkjenn en ny kode; banneret forsvinner ved
-neste vellykkede synkronisering.
+Hvis Google gjør påloggingen til en konto permanent ugyldig (en tilbakekalt
+eller lenge utløpt økt), stopper synkroniseringen, og Control Center viser et
+banner med **Koble til på nytt** i kalenderen, i tillegg til et
+skrivebordsvarsel. Klikk på **Koble til på nytt** og logg inn igjen; banneret
+forsvinner ved neste vellykkede synkronisering.
+
+Det samme banneret vises når denne serveren ikke lenger kan bruke påloggingen:
+servereieren har byttet Connect-server eller byttet Connect-nøkkelen, serverens
+egen Google-klient er endret, eller datakatalogen ble gjenopprettet på en annen
+maskin.
 
 ## Koble fra en konto
 
 I kalenderens sidepanel (eller **Innstillinger → Arbeidsområde → Profil og
 identitet**) klikker du på **Koble fra** for kontoen. Dette sletter de
-synkroniserte hendelsene og fjerner de lagrede tokenene på serveren.
+synkroniserte hendelsene og fjerner den lagrede påloggingsinformasjonen på
+serveren.
 
-## Koble til fra en headless server
+## Ta med din egen Google-klient
 
-En server uten tilkoblet grafisk grensesnitt kobler til den samme kontoen fra
-sin egen terminal:
+Kjør din egen Google-klient når du har valgt **Bruk mine egne apper**, eller vil
+at samtykkeskjermen skal navngi ditt eget prosjekt. En egen klient gjelder bare da: med Control Centers eller en egendefinert Connect håndterer Connect alle spor, Google inkludert, og serverens klient forblir lagret, men ubrukt. For å få samtykkeskjermen til å navngi ditt prosjekt mens serveren bruker Connect, gi arbeidsområdet en egen klient ([nedenfor](#gi-ett-arbeidsområde-en-egen-google-klient)); dette gjelder i alle moduser.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktiver **Google Calendar API** og konfigurer **OAuth-samtykkeskjermen**, og legg til scope-ene `calendar.events`, `calendar.calendarlist.readonly`, `openid` og `email`. Mens appen er uverifisert, legger du til deg selv som **testbruker**.2. Opprett en **OAuth-klient-ID** av applikasjonstypen **Nettapplikasjon**.
+3. Legg til den autoriserte omdirigerings-URI-en `<server origin>/oauth/google/callback`. **Innstillinger → Server → Enkel pålogging → Leverandørapper → Google** viser den nøyaktige URL-en under **Callback-URL-er**; kopier den ordrett.
+4. Lim inn **Client id** og **Client secret** i den samme Google-blokken, eller legg dem i serverens `.env`-fil som `GOOGLE_OAUTH_CLIENT_ID` og `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Den skriver ut en kode og en URL, venter på godkjenning, lagrer deretter
-tokenene og synkroniserer ved neste gjennomgang.
+Serveren nekter å starte når `GOOGLE_OAUTH_CLIENT_SECRET` er eksportert i
+prosessmiljøet; hold den i `.env`-filen (i Docker monterer du den på
+`/app/bin/.env`). Hemmeligheten forlater aldri serveren: ingen RPC-respons
+inneholder den. En klient-ID uten hemmeligheten er et uferdig oppsett, og
+Google-pålogginger avvises til begge er satt.
 
-Et bygg fra kildekoden leveres **uten** Google-klient, så ID-en og
-hemmeligheten er påkrevd — sett `GOOGLE_OAUTH_CLIENT_ID` og
-`GOOGLE_OAUTH_CLIENT_SECRET`. Det finnes ingen `--google-client-id`-flagg
-(ukjente flagg ignoreres). Uten miljøvariabelparet avsluttes kommandoen med en
-feil om manglende klient.
+Å bytte til en annen klient logger alle ut av Google Calendar: en pålogging
+tilhører klienten som utstedte den.
 
-## Ta med din egen Google-klient (forks og selvhosting)
+## Gi ett arbeidsområde en egen Google-klient
 
-Utgitte bygg leveres med en Google-klient, så de fleste kommer aldri borti
-dette. Ta med din egen hvis du bygger fra kildekoden, kjører din egen server,
-eller vil at samtykkeskjermen skal navngi ditt eget prosjekt.
+Et arbeidsområde kan koble til Google Calendar via en egen klient i stedet for serverens. Bare en administrator
+eller eier av arbeidsområdet kan sette det opp.
 
-1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktiver **Google Calendar API** og konfigurer **OAuth-samtykkeskjermen**, og legg til scope-ene `calendar.readonly`, `openid` og `email`. Mens appen er uverifisert, legger du til deg selv som **testbruker**. Å legge til `calendar.events` på samtykkeskjermen aktiverer ikke RSVP — Control Center ber aldri om dette scope-et.
-2. Opprett en **OAuth-klient-ID** av applikasjonstypen **TVs and limited input devices**, og kopier både klient-ID-en og klienthemmeligheten.
-3. Oppgi dem enten per tilkobling (velg **Bruk min egen Google Cloud-klient** i dialogen) eller for hele serveren med `GOOGLE_OAUTH_CLIENT_ID` og `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Opprett en Google-klient av typen **Web application** slik som i trinn 1 og 2 over
+2. Gå til **Innstillinger → Arbeidsområde → Generelt → Leverandørapper** og åpne **Google Calendar**
+3. Velg **Bruk arbeidsområdets egen app**
+4. Legg til omdirigerings-URI-en raden viser under **Callback-URL**, i klienten, nøyaktig slik den står
+5. Lim inn **Client id** og **Client secret**
 
-Et serveromfattende par erstatter det innebygde overalt, også bak alternativet
-«bruk Control Centers Google-app» — så på din egen server er det alternativet
-din app.
+Kalenderkontoer som kobles til i dette arbeidsområdet, går via den klienten, uansett hvordan serveren logger
+folk inn. Det faller aldri tilbake til serverens klient eller Connect: til begge feltene er satt, er Google
+Calendar av i dette arbeidsområdet, og raden sier hva som mangler. Hemmeligheten forlater aldri serveren.
 
-Klienthemmeligheten forlater aldri serveren: ingen RPC-respons inneholder den,
-og en konto som er koblet til via serverens egen klient, lagrer en markør i
-stedet for en kopi av paret. Å rotere den er derfor bare et spørsmål om å
-starte på nytt med en ny verdi.
+Å bytte mellom serverens klient og arbeidsområdets klient, eller endre client-ID-en til arbeidsområdet, merker
+hver Google-konto i dette arbeidsområdet for ny tilkobling. **Bruk serverens app** sletter de lagrede feltene
+for arbeidsområdet. Andre arbeidsområder på serveren berøres ikke.
 
-### Feilsøking
+## Feilsøking
 
 | Symptom                                                     | Sannsynlig årsak                                                                                                                                        |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialogen tilbyr ikke noe innebygd alternativ                | Dette bygget leveres uten Google-klient (et kildekodebygg), eller serveren ble startet med bare den ene halvdelen av paret. Både ID-en og hemmeligheten er påkrevd |
-| `invalid_scope` ved start av flyten                         | Kalender er ikke tillatt for en enhetskodeklient i det Cloud-prosjektet. Bruk et loopback- eller webklientprosjekt i stedet                              |
-| `invalid_client` fra Google                                 | Klienten er ikke en **TVs and limited input devices**-klient, eller ID-en og hemmeligheten tilhører forskjellige klienter                               |
-| Godkjenningen lykkes, men synkroniseringen er tom           | Kontoen din er ikke en **testbruker** på samtykkeskjermen, eller `calendar.readonly` ble ikke innvilget                                                 |
-| Koden utløper før du godkjenner den                         | Enhetskoder lever kort. Start tilkoblingen på nytt for å få en ny kode                                                                                  |
-| «Kunne ikke oppdatere svaret ditt» ved RSVP                 | Forventet: tilkoblingsflyten ber aldri om `calendar.events`                                                                                             |
-| Synkroniseringen stopper med en fornyingsadvarsel i serverloggen | Kontoen ble koblet til med en klient som ikke lenger er konfigurert. Koble kontoen til på nytt, eller gjenopprett denne klient-ID-en og hemmeligheten |
+| **Koble til Google Calendar** sier at påloggingen ikke er satt opp | Serveren har verken en egen Google-klient eller Connect. Servereieren velger en av dem under **Innstillinger → Server → Enkel pålogging**        |
+| Google viser `redirect_uri_mismatch`                        | Omdirigeringen som er registrert på klienten, samsvarer ikke nøyaktig med verdien under **Callback-URL-er**, eller serverens offentlige URL er endret |
+| `invalid_client` fra Google                                 | ID-en og hemmeligheten tilhører forskjellige klienter, eller klienten ble slettet                                                                       |
+| Godkjenningen lykkes, men synkroniseringen er tom           | Kontoen din er ikke en **testbruker** på samtykkeskjermen, eller en av de forespurte scope-ene ble ikke innvilget                                                 |
+| Dialogen sier at koden ikke stemmer                         | Skriv inn de 8 tegnene nøyaktig slik nettleseren viser dem. Fem feil koder avslutter påloggingen; start på nytt                                         |
+| «Kunne ikke oppdatere svaret ditt» ved RSVP, eller booking, flytting og sletting mislykkes | Kontoen ble koblet til med det gamle skrivebeskyttede scopet. Koble til på nytt; en kalender som er delt skrivebeskyttet, avviser også skriving                                                                                             |
+| Alle må koble til på nytt                                   | Serverens eller arbeidsområdets Google-klient er endret, eller Connect-valget eller nøkkelen til serveren er endret. Se [Koble til en utløpt konto på nytt](#koble-til-en-utløpt-konto-på-nytt) |
 
 ## Relaterte veiledninger
 
 - [Ta opp og oppsummer et møte](/nb-NO/handbok/slik-gjor-du/ta-opp-mote/): gjør en hendelse om til et opptak
-- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): hvor tokenene og synkroniseringsplanen ligger
-- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): hvor påloggingsinformasjonen og synkroniseringsplanen ligger
+- [Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)
 
 ## Relaterte konsepter
 

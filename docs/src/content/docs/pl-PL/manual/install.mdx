@@ -2,7 +2,7 @@
 title: Instalacja
 description: Korzystaj z Control Center w przeglądarce albo zainstaluj aplikację desktopową, skonfiguruj backend agenta i wybierz, gdzie działa jego serwer.
 slug: pl-PL/podrecznik/instalacja
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center działa na dwa sposoby: jako **aplikacja webowa** pod adresem
@@ -183,24 +183,19 @@ identyfikatora użytkownika — a nie w pęku kluczy systemu klienta. Każde urz
 z którego się logujesz, korzysta z tego samego, a żaden inny członek nie może go
 odczytać.
 
-Jeśli na serwerze jest zarejestrowana GitHub App
-([Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)),
-**Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu** oferuje
-**Zaloguj się przez GitHub** (przepływ z kodem urządzenia, który prowadzi serwer).
-W przeciwnym razie wklej osobisty token dostępu:
+GitHub obsługuje tylko logowanie: **Ustawienia → Obszar roboczy → Profil
+i tożsamość → Hosting kodu** oferuje **Zaloguj się do GitHub** i nie ma tokenu
+do wklejania. Logowanie przebiega przez własną GitHub App serwera
+([Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)) albo przez
+Control Center Connect, zależnie od wyboru właściciela serwera. Z własną
+aplikacją serwera przeglądarka sama wraca na serwer; przez Connect wpisujesz
+8-znakowy kod, który pokazuje przeglądarka, albo pozwalasz jej otworzyć
+Control Center. Zobacz [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/).
 
-- Klasyczny: `repo` i `read:org`
-- Drobnoziarnisty: **Contents** i **Pull requests** (odczyt i zapis), **Checks** i **Actions** (odczyt)
-
-Utwórz go w
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-Serwer sonduje token pod kątem nazwy konta w postaci, w jakiej jest zapisany, więc
-wiersz może pokazać „zalogowano jako …"; nieudane sondowanie nadal zapisuje token,
-a literówka albo brakujący zakres ujawni się później jako nieudane żądanie.
-
-Pierwszy krok onboardingu to właśnie to połączenie. Później ta sama karta służy do
-jego zastąpienia lub usunięcia. GitLab i Bitbucket korzystają z tej samej karty;
-zobacz [Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/).
+Onboarding prosi o to połączenie. Później ta sama karta służy do ponownego
+zalogowania lub rozłączenia. GitLab i Bitbucket korzystają z tej samej karty
+z wklejonym osobistym tokenem; zobacz
+[Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/).
 
 ## Wybierz, gdzie działa serwer
 

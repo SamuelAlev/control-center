@@ -1,11 +1,11 @@
 ---
 title: Configurează integrarea Slack
-description: Conectează o aplicație Slack la un spațiu de lucru Control Center, ca membrii să poată dirija agenți din Slack.
+description: Conectează Slack la un spațiu de lucru Control Center, prin aplicația partajată Control Center sau printr-una proprie, ca membrii să poată dirija agenți din Slack.
 slug: ro-RO/manual/ghiduri-practice/integrare-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Acest ghid arată cum să conectezi Slack la un spațiu de lucru Control Center, fie lăsând Control Center să creeze aplicația, fie construind-o tu.
+Acest ghid arată cum să conectezi Slack la un spațiu de lucru Control Center: adăugând aplicația partajată Control Center sau cu o aplicație proprie, pe care Control Center o creează pentru tine sau pe care o construiești tu.
 
 Pentru o primă rulare ghidată, vezi [Conectează Slack la spațiul tău de lucru](/ro-RO/manual/tutoriale/prima-punte-de-chat/).
 
@@ -19,9 +19,37 @@ există. Nu există nicio implementare pentru Discord, Telegram, Teams sau Matri
 
 - Rolul `owner` sau `admin` în spațiul de lucru Control Center — conectarea unei aplicații de chat este o modificare a setărilor spațiului de lucru
 - Permisiunea de a crea și instala aplicații în spațiul de lucru Slack
-- Nimic accesibil public: conexiunea este spre exterior (Socket Mode), așa că serverul nu are nevoie de port de intrare, tunel sau domeniu
+- Nimic accesibil public: aplicația ta proprie se conectează spre exterior prin Socket Mode, iar evenimentele aplicației partajate ajung la server printr-un long poll către Control Center Connect, așa că serverul nu are nevoie de port de intrare, tunel sau domeniu
 
-## Trei moduri de a obține aplicația
+## Aplicație partajată sau aplicație proprie
+
+Un spațiu de lucru rulează pe exact una dintre acestea la un moment dat.
+
+| Mod                                  | Are nevoie de                                                                                              | Primești                                                                                     |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Aplicația partajată Control Center** | Serverul folosește Control Center Connect (**Setări → Server → Autentificare unică**), iar Connect servește Slack | Un clic și o autentificare Slack. Nicio aplicație de creat, niciun token de lipit, nimic de rotit |
+| **Aplicația ta proprie**             | O aplicație Slack în spațiul tău de lucru Slack, creată într-unul dintre cele trei moduri de mai jos      | Propriul nume de bot, propriile descrieri și propria comandă slash, editabile din Control Center |
+
+### Adaugă aplicația partajată Control Center
+
+1. În Control Center, mergi la **Setări → Spațiu de lucru → General** și derulează până la cardul **Punți de chat**
+2. În blocul Slack, găsește rândul **Adaugă Control Center în Slack** și apasă **Adaugă în Slack**
+3. Browserul deschide Slack. Autentifică-te cu Slack, alege spațiul de lucru Slack și aprobă instalarea
+4. Când browserul afișează un cod, introdu-l în dialogul pe care Control Center l-a lăsat deschis. Dacă browserul te trimite singur înapoi în aplicație, nu ai nimic de tastat
+5. O notificare numește spațiul de lucru Slack în care a fost adăugată aplicația, iar blocul Slack arată conexiunea ca rulând pe aplicația partajată Control Center
+
+Doar un administrator al spațiului de lucru poate adăuga aplicația. Rândul spune de ce nu poate porni atunci când serverul folosește aplicațiile proprii în loc de Connect, când Connect-ul tău nu are nicio aplicație Slack sau când acest spațiu de lucru are deja conectată propria aplicație Slack.
+
+Cum diferă de aplicația ta proprie:
+
+- Slack trimite evenimentele aplicației partajate către Connect. Connect păstrează doar o referință (echipă, canal și id de mesaj) și renunță la textul mesajului; serverul face long poll către Connect după referințe și citește singur fiecare mesaj din Slack. Textul unei comenzi slash trece totuși prin Connect, motiv pentru care [`/cc ticket`](#ciorne-de-tichete-din-slack) doar creează ciorne
+- Tokenul de bot este sigilat pentru acest server și reînnoit prin Connect, așa că nu există niciun token de lipit sau de rotit
+- Numele botului, descrierile și comanda slash sunt ale aplicației partajate. Rândul Slack spune că conexiunea rulează pe aplicația partajată și nu oferă **Personalizează botul**
+- Un spațiu de lucru Slack este legat de un singur server Control Center la un moment dat. Adăugarea aplicației de pe un alt server o mută acolo, iar conexiunea acestui server se oprește
+
+Ca să treci de la un mod la altul, deconectează-te și conectează-te în celălalt mod.
+
+### Aplicația proprie: trei moduri de a o obține
 
 | Cale                 | Tu oferi                                       | Control Center face                                                                                                            |
 | -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -31,7 +59,7 @@ există. Nu există nicio implementare pentru Discord, Telegram, Teams sau Matri
 
 Calea ghidată este singura care lasă aplicația și _administrabilă_ din Control Center, ceea ce face posibilă [Personalizează botul de chat](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/). O aplicație creată prin **Creează în Slack** poate fi promovată ulterior la una administrată, lipind un token de configurare în dialogul de conectare.
 
-Nu există în mod deliberat niciun buton „instalează aplicația Slack a Control Center”. Instalarea unei aplicații Slack distribuite necesită un client secret partajat (Slack nu are PKCE), iar Socket Mode distribuie aleatoriu evenimentele unei aplicații între conexiunile sale — așa că o singură aplicație partajată ar livra mesajele spațiului tău de lucru serverelor altor persoane. Prin urmare, fiecare spațiu de lucru își deține propria aplicație, iar aceste trei căi arată cât de puțină muncă te costă.
+Evenimentele aplicației tale proprii nu trec niciodată prin Connect: Socket Mode le livrează direct acestui server.
 
 ## Opțiunea A: lasă Control Center să creeze aplicația
 
@@ -102,6 +130,8 @@ message.im
 
 ## Conectare
 
+Așa ajung tokenurile aplicației tale proprii la Control Center. Aplicația partajată nu are nevoie de nimic din toate acestea.
+
 1. Mergi la **Setări → Spațiu de lucru → General** și derulează până la cardul **Punți de chat**
 2. În blocul Slack, apasă **Conectează Slack**
 3. Completează câmpurile:
@@ -122,8 +152,8 @@ Fără tokenul opțional de configurare a aplicației, conexiunea funcționează
 
 ## Ce face conectarea
 
-- Stochează credențialele în directorul propriu al spațiului de lucru, lângă baza de date, lizibile doar de proprietar. Ele nu ajung niciodată înapoi la un client
-- Deschide o conexiune Socket Mode pentru acest spațiu de lucru și începe să primească mențiuni, răspunsuri în fire Slack, mesaje directe și comenzi slash
+- Stochează credențialele în directorul propriu al spațiului de lucru, lângă baza de date, lizibile doar de proprietar. Ele nu ajung niciodată înapoi la un client. Pentru aplicația partajată, acesta este grantul sigilat; tokenul de bot de scurtă durată în care se reînnoiește rămâne în memorie
+- Începe să primească mențiuni, răspunsuri în fire Slack, mesaje directe și comenzi slash: printr-o conexiune Socket Mode pentru aplicația ta proprie sau prin singurul long poll Connect al serverului pentru aplicația partajată
 - Reactivează fiecare fir Slack conectat anterior, așa că o reconectare continuă conversațiile existente în loc să le abandoneze
 - Nu costă nimic pentru spațiile de lucru care nu au aplicație de chat: niciun socket, niciun cronometru, niciun trafic
 
@@ -139,8 +169,8 @@ bot active. Corolarul este că restaurarea unui spațiu de lucru în altă parte
 
 Accesul la punte se face prin **apartenența** la spațiul de lucru, niciodată prin
 deținerea unui token. Un cont Slack trebuie legat de un utilizator Control Center
-care este membru cu un rol de scriere. Conectarea, deconectarea, configurarea
-ghidată, linkul de configurare și personalizarea botului sunt toate condiționate
+care este membru cu un rol de scriere. Conectarea, deconectarea, instalarea
+aplicației partajate, configurarea ghidată, linkul de configurare și personalizarea botului sunt toate condiționate
 de privilegii de admin.
 :::
 
@@ -164,7 +194,25 @@ Raționamentul ca un perete de text și ieșirea instrumentelor nu părăsesc ni
 
 Dacă nu se întâmplă nimic când apeși pe el, serverul care a trimis mesajul nu este accesibil de pe mașina de pe care ai apăsat (de exemplu, un server doar pe loopback, apăsat de pe un telefon) sau Control Center nu rulează acolo. Un server fără o adresă accesibilă trimite un card fără buton, în loc de unul care nu duce nicăieri.
 
+## Ciorne de tichete din Slack
+
+Orice membru legat cu un rol de scriere poate propune un tichet din Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Textul dinaintea `|` este titlul, textul de după el descrierea. Botul răspunde că a creat o ciornă a tichetului. Nu se creează încă nimic și nu se declanșează nicio automatizare de tichete: ciorna te așteaptă în **Setări → Spațiu de lucru → Profil și identitate → Ciorne de tichete din chat**, unde poți corecta titlul și descrierea, apoi apeși **Creează tichetul** sau **Renunță**.
+
+- Doar membrul care a rulat comanda vede ciorna
+- O ciornă pe care o lași este eliminată după o zi. Ciornele stau în memorie, așa că și o repornire a serverului le elimină
+- Cardul apare doar cât timp ai ciorne
+
+Textul unei comenzi nu poate fi recitit din Slack și, pe aplicația partajată, a trecut prin Connect. Crearea tichetului în Control Center este ceea ce îl face al tău.
+
 ## Rotește un token
+
+Acest lucru se aplică aplicației tale proprii. Aplicația partajată nu are niciun token de rotit.
 
 Lipește din nou valoarea nouă în dialogul de conectare și apasă **Conectează**. Conectarea înlocuiește orice conexiune care rula pentru acest spațiu de lucru, așa că socketul este refăcut cu noile credențiale.
 
@@ -172,7 +220,7 @@ Cele două tokenuri obligatorii trebuie să fie prezente la fiecare conectare. T
 
 ## Deconectare
 
-Apasă **Deconectează** pe rândul Slack (doar administratorii). Socketul se închide și credențialele sunt uitate.
+Apasă **Deconectează** pe rândul Slack (doar administratorii). Conexiunea se închide și credențialele sunt uitate. Pentru aplicația partajată, Control Center dezinstalează și botul din spațiul de lucru Slack și eliberează legătura lui cu acest server.
 
 Legăturile de spații și de utilizatori supraviețuiesc în mod deliberat: reconectarea aceleiași aplicații restaurează fiecare fir Slack conectat. Ele sunt rânduri limitate la spațiul de lucru, așa că ștergerea spațiului de lucru le elimină oricum.
 
@@ -209,7 +257,7 @@ Cardurile de sarcină ale Slack fac parte din aceeași suprafață nouă Agents 
 
 ### „Control Center are nevoie de un token de configurare a aplicației ca să editeze botul”
 
-Rândul **Personalizează botul** este dezactivat pentru că această conexiune nu are un token de configurare a aplicației. Acest lucru este normal pentru o aplicație creată manual sau prin **Creează în Slack** — Slack nu i-a spus niciodată Control Center care este aplicația. Generează o pereche de tokenuri pe api.slack.com/apps și reconectează cu tokenul de reîmprospătare completat.
+Rândul **Personalizează botul** este dezactivat pentru că această conexiune nu are un token de configurare a aplicației. (Pe aplicația partajată nu există deloc rândul **Personalizează botul**: botul este al aplicației partajate.) Acest lucru este normal pentru o aplicație creată manual sau prin **Creează în Slack** — Slack nu i-a spus niciodată Control Center care este aplicația. Generează o pereche de tokenuri pe api.slack.com/apps și reconectează cu tokenul de reîmprospătare completat.
 
 ### Un răspuns lung este trunchiat
 

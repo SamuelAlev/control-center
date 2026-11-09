@@ -2580,6 +2580,27 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wachten op toestemming in je browser…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Voer de code in die je browser toont';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Dat lijkt geen inlogcode. Codes bestaan uit 8 letters en cijfers.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Die code hoort niet bij deze inlogpoging. Controleer hem en probeer het opnieuw.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Inloggen bij $provider is op deze server nog niet ingesteld.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Het terugkeeradres voor aanmelden van deze server is niet veilig bereikbaar vanaf een telefoon. Meld je aan in de desktopapp of vraag de servereigenaar een openbaar HTTPS-adres in te stellen.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'De aanmelding is verlopen. Begin opnieuw met aanmelden.';
 
@@ -2599,10 +2620,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Aanmelding voltooien';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'De browsercallback van deze server is niet veilig bereikbaar vanaf een telefoon. Vraag de servereigenaar om een openbare HTTPS-callback in te stellen of voeg in plaats daarvan een token toe.';
 
   @override
   String get credentialsUpdateToken => 'Token bijwerken';

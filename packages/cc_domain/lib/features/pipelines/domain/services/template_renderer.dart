@@ -24,17 +24,18 @@ class TemplateRenderer {
   /// Renders [template] against [state] and [trigger].
   ///
   /// [escape], when set, is applied to every resolved value AFTER
-  /// stringification. Pass a shell-escape function when rendering a value that
-  /// is spliced into a shell script (the `bashScript` body) so an untrusted
-  /// trigger value — e.g. a ticket title arriving from an external ticketing
-  /// system — cannot break out of its context into arbitrary commands
-  /// (VULN-007). Leave it null for LLM prompt bodies, where the raw value is
-  /// correct.
+  /// stringification, with the placeholder's offset in [template] so it can
+  /// escape for the context the placeholder sits in. Pass a shell-escape
+  /// function when rendering a value that is spliced into a shell script (the
+  /// `bashScript` body) so an untrusted trigger value — e.g. a ticket title
+  /// arriving from an external ticketing system — cannot break out of its
+  /// context into arbitrary commands (VULN-007). Leave it null for LLM prompt
+  /// bodies, where the raw value is correct.
   RenderResult render(
     String template, {
     required Map<String, dynamic> state,
     Map<String, dynamic>? trigger,
-    String Function(String value)? escape,
+    String Function(String value, int offset)? escape,
   }) {
     final unresolved = <String>{};
     final text = template.replaceAllMapped(_pattern, (m) {
@@ -50,7 +51,7 @@ class TemplateRenderer {
       final raw = (value is Map || value is List)
           ? _jsonEncoder.convert(value)
           : '$value';
-      return escape == null ? raw : escape(raw);
+      return escape == null ? raw : escape(raw, m.start);
     });
     return RenderResult(text: text, unresolved: unresolved);
   }
@@ -60,6 +61,11 @@ class TemplateRenderer {
   Set<String> placeholders(String template) {
     return _pattern.allMatches(template).map((m) => m.group(1)!).toSet();
   }
+
+  /// Where each `{{placeholder}}` starts in [template], in order: the
+  /// offsets [render] passes to its `escape`.
+  Iterable<int> placeholderOffsets(String template) =>
+      _pattern.allMatches(template).map((m) => m.start);
 
   /// Whether [template] contains at least one `{{placeholder}}`.
   bool containsPlaceholders(String template) => _pattern.hasMatch(template);

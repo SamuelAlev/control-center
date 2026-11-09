@@ -2,18 +2,18 @@
 title: Rozmowy w PR
 description: Jak komentarz w PR na GitHubie staje się turą agenta bez webhooka, co autoryzuje autora i komu przypisywana jest każda ze stron rozmowy.
 slug: pl-PL/podrecznik/koncepcje/rozmowy-w-pr
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Pull request to już miejsce, w którym toczy się rozmowa o kodzie. Rozmowy w PR
 czynią z niego powierzchnię obszaru roboczego Control Center — tak samo jak
 [most czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/) czyni nią Slack:
-@wspomnij bota aplikacji GitHub serwera w PR, odpowiedz w jego wątkach
-recenzji albo dodaj etykietę `ai-review`, a praca wykona się w przestrzeni
-recenzji tego PR — z tą samą atrybucją i tymi samymi guardrailami co
-wszystko wpisane w aplikacji. Komentarz podlega dodatkowo bramce członkostwa;
-etykieta nie, bo nie ma autora. Odpowiedzi bota wracają na GitHuba, w tym
-samym wątku, w którym zadano pytanie.
+@wspomnij `@usectrl` (albo bota GitHub App obszaru roboczego) w PR, odpowiedz
+w jego wątkach recenzji albo dodaj etykietę `ai-review`, a praca wykona się
+w przestrzeni recenzji tego PR — z tą samą atrybucją i tymi samymi
+guardrailami co wszystko wpisane w aplikacji. Komentarz i etykieta przechodzą
+przez tę samą bramkę: członka, który je napisał lub dodał. Odpowiedzi wracają
+na GitHuba, w tym samym wątku, w którym zadano pytanie.
 
 Funkcję kształtują trzy decyzje, a każda z nich to ta sama decyzja, którą most
 czatu podjął dla czatu, wyrażona na nowo dla hosta kodu: **w którym kierunku
@@ -25,16 +25,20 @@ biegnie połączenie**, **co autoryzuje komentarz nadchodzący z zewnątrz** ora
 Jedynym kanałem wypychania dla aplikacji na GitHubie jest webhook, a webhook
 potrzebuje przychodzącego adresu URL — czyli dokładnie tego, czego ta
 powierzchnia celowo nigdy nie wymaga. Odkrywanie polega więc na obchodzie:
-mniej więcej raz na minutę jedno wyszukiwanie z aliasem na każdą instalację
-aplikacji pyta GitHuba o PR-y wspominające bota (lub jego krótki slug) oraz
-o otwarte PR-y noszące etykietę recenzji; PR-y, które mają już przestrzeń
-recenzji, mają odczytywane wątki komentarzy, a wszystko jest porównywane po
-identyfikatorze komentarza z tym, co widziano podczas poprzedniego obchodu.
+jedno wyszukiwanie z aliasem na każdą instalację aplikacji pyta GitHuba o PR-y
+wspominające bota (lub jego krótki slug) oraz o otwarte PR-y noszące etykietę
+recenzji; PR-y, które mają już przestrzeń recenzji, mają odczytywane wątki
+komentarzy, a wszystko jest porównywane po identyfikatorze komentarza z tym,
+co widziano podczas poprzedniego obchodu. Własna aplikacja obchodzi co minutę
+najwyżej 25 PR-ów. Przez Connect wywołania idą z własnego limitu GitHuba
+członków, więc obchód działa co dwie minuty na najwyżej 10 PR-ach, a obszar
+roboczy poniżej 15% limitu jest pomijany, dopóki się nie odbuduje. Sam Connect
+nigdy nie widzi treści PR.
 
 Konsekwencje tego projektu warto nazwać:
 
 - **Opóźnienie to interwał obchodu, nie zdarzenie.** Potwierdzenie 👀 pojawia
-  się w ciągu mniej więcej minuty. Nic pilnego na nim nie polega.
+  się w ciągu jednego obchodu. Nic pilnego na nim nie polega.
 - **Dokładnie raz, na komentarz.** Identyfikatory komentarzy są unikalne
   w całym GitHubie; każdy jest zapisywany w chwili zakwalifikowania jako
   kwalifikujący się, zanim cokolwiek na nim zadziała. Awaria może zgubić
@@ -51,53 +55,64 @@ Konsekwencje tego projektu warto nazwać:
   uruchomienia jest wzmianka.
 
 Wyszukiwanie działa raz na konto instalacji, na własnym kliencie tego
-właściciela, ponieważ token instalacji widzi tylko repozytoria swojej
+właściciela, ponieważ token widzi tylko repozytoria swojej
 instalacji — jedno poświadczenie obejmujące cały serwer po cichu pomijałoby
 każdy PR w pozostałych instalacjach aplikacji.
 
 ## Autoryzuje członkostwo, nie komentarz
 
-Komentarz w PR przychodzi z niewiele więcej niż loginem autora —
-nieuwierzytelnioną tożsamością zewnętrzną, dopóki nie zostanie potwierdzona.
-Bot rozwiązuje go za pomocą indeksu odwrotnego członków obszaru roboczego
-i ich połączonych kont GitHub, odbudowywanego według TTL, ponieważ ludzie
-logują się i otrzymują zaproszenia, gdy serwer działa.
+Komentarz w PR przychodzi z autorem — nieuwierzytelnioną tożsamością
+zewnętrzną, dopóki nie zostanie potwierdzona. Serwer rozwiązuje niezmienny
+liczbowy identyfikator konta GitHub autora (nigdy login, który można zmienić
+i użyć ponownie) względem logowań do GitHuba członków obszaru roboczego,
+odbudowywanych według TTL, ponieważ ludzie logują się i otrzymują
+zaproszenia, gdy serwer działa. W przypadku etykiety `ai-review` rozwiązywana
+jest osoba, która dodała ją ostatnio.
 
-Domyślna odmowa układa się w drabinę, a każdy jej szczebel odpowiada w wątku,
-w którym odmówił:
+Trzy sprawdzenia, po kolei, a niepowodzenie któregokolwiek jest ciche — nic
+nie jest publikowane:
 
-- **Nieznany login** — niepołączony albo połączony przez kogoś, kto nie jest
-  członkiem tego obszaru roboczego — dowiaduje się, że powinien się zalogować
-  i upewnić, że należy do tego obszaru roboczego
-- **Członek z uprawnieniami tylko do odczytu** (`viewer` lub `guest`)
-  dowiaduje się, że jego rola nie może rozpoczynać pracy
+- **Zalogowany członek.** Konto musi należeć do członka _tego_ obszaru
+  roboczego, który zalogował się do GitHuba na tym serwerze
+- **Rola z zapisem.** `viewer` i `guest` nie mogą rozpoczynać pracy
+- **Prawo push.** Odpowiedzi używają tokenu `bot` ograniczonego do dostępu
+  tego członka do repozytorium. Jeśli serwer nie może go wydać, nie
+  kontynuuje
 
-Oba przypadki nieznanego loginu mają jedną wspólną odpowiedź: indeks odwrotny
-zwraca wyłącznie członka _tego_ obszaru roboczego, więc konto niepołączone
-i połączone, lecz nienależące do niego, to ta sama sytuacja braku trafienia.
-Żaden z nich nie przechodzi dalej. Komentarz nigdy nie jest przypisywany
-komuś, kto go nie wysłał, a słowa obcego nigdy nie trafiają do obszaru
-roboczego, którego nie widzi.
+Wszystkie sprawdzenia odbywają się przed jakimkolwiek potwierdzeniem, więc
+obcy nie dostaje ani reakcji, ani odpowiedzi. Komentarz nigdy nie jest
+przypisywany komuś, kto go nie wysłał, a słowa obcego nigdy nie trafiają do
+obszaru roboczego, którego nie widzi.
 
-Etykieta `ai-review` nie ma autora do rozwiązania, więc nie wspina się po tej
-drabinie. Jej dodanie rozpoczyna recenzję w obszarze roboczym, który już ma
-połączone repozytorium.
+### Zgłoszenie roszczenia
+
+Ostatnim krokiem przed jakąkolwiek pracą jest reakcja 👀, dodana własnym
+logowaniem autora do GitHuba. GitHub odpowiada `201` dla nowej reakcji i `200`
+dla takiej, która już istnieje, więc reakcja służy też jako blokada: gdy ta
+sama osoba jest zalogowana na dwóch serwerach, które oba łączą repozytorium,
+pracę wykonuje tylko ten, który zareaguje pierwszy. Komentarz widziany przez
+kilka obszarów roboczych na jednym serwerze jest oferowany każdemu z nich,
+a rozstrzyga to samo roszczenie.
 
 ## Dwie tożsamości, celowo
 
 Każda strona rozmowy ma inną tożsamość i właśnie ta różnica jest funkcją:
 
-- **Na GitHubie bot jest serwerem.** Każdy komentarz, reakcja i odpowiedź
-  publikowane przez most jadą na tokenie instalacji aplikacji. Nikt nic nie
-  kliknął w kliencie, więc nic nie pożycza konta osoby — ta sama zasada,
-  która trzyma webhooki i odpytywanie z dala od ludzkich poświadczeń.
+- **Na GitHubie odpowiedź to automatyzacja w Twoim imieniu.** Każda odpowiedź
+  jedzie na tokenie `bot` dla tego jednego repozytorium, ograniczonym do
+  dostępu pytającego członka. Przy własnej aplikacji autorem jest konto
+  `[bot]` aplikacji. Przez Connect token współdzielonej App jest tokenem
+  użytkownika, więc autorem odpowiedzi jest konto pytającego członka,
+  działające przez App. Tak czy inaczej każda odpowiedź zaczyna się od
+  `**Control Center** (for @login):`, co mówi, kto pytał, i służy też jako
+  zabezpieczenie przed pętlą.
 - **W przestrzeni pytanie należy do Ciebie.** Wiadomość jest przypisywana
   członkowi, na którego rozwiązano autora, a uruchomienie agenta przebiega
   w jego imieniu: commity mają go jako współautora, a suwak autonomii
   przestrzeni i guardraile działań obowiązują dokładnie tak samo jak
-  w przypadku wiadomości wpisanej w aplikacji. Zapis do hosta kodu z tego
-  uruchomienia i tak wychodzi jako aplikacja — zgodnie z zasadą z powyższego
-  punktu — a nie na osobistym tokenie członka.
+  w przypadku wiadomości wpisanej w aplikacji. Zapisy do hosta kodu z tego
+  uruchomienia używają tokenów dla jednego repozytorium ograniczonych przez
+  tego członka, nigdy całego przekazanego logowania członka.
 
 Publikowanie ustaleń recenzji z powrotem na GitHuba pozostaje decyzją
 człowieka, podejmowaną w Control Center. Wzmianka może _rozpocząć_ recenzję;
@@ -107,9 +122,10 @@ publikuje ją wyłącznie człowiek.
 
 Wszystko autorstwa konta bota jest odrzucane, zanim zadziała jakakolwiek
 bramka — naszego w szczególności, a także każdego z sufiksem `[bot]`, więc bot
-recenzencki innej aplikacji również nie obudzi naszego. Bez tego własne
-odpowiedzi bota przychodziłyby jako nowe komentarze i wyzwalały go
-w nieskończoność.
+recenzencki innej aplikacji również nie obudzi naszego — podobnie każdy
+komentarz zaczynający się od prefiksu `**Control Center** (for @`, bo
+odpowiedź przez Connect jest publikowana z konta osoby. Bez tego odpowiedzi
+przychodziłyby jako nowe komentarze i wyzwalały most w nieskończoność.
 
 Sufiks `[bot]` jest też powodem, dla którego istnieje forma skrócona. GitHub
 ustala login konta aplikacji na `<slug>[bot]`, nie oferuje dla niego
@@ -126,7 +142,10 @@ kolizję hipotetyczną.
 - **Brak automatycznej publikacji.** Ustalenia trafiają do przestrzeni
   recenzji; publikacja na GitHubie to osobne działanie człowieka
 - **Brak przybliżonej tożsamości.** Autor rozwiązuje się na dokładnie jednego
-  członka albo zostaje odrzucony — nie ma przypisania opartego na zgadywaniu
+  członka albo zostaje zignorowany — nie ma przypisania opartego na zgadywaniu
+- **Brak automatycznego zatwierdzania.** Automatyzacja może komentować i prosić
+  o zmiany, ale recenzja `APPROVE` jest odrzucana przed wysłaniem.
+  Zatwierdzenie to akt człowieka
 - **Brak webhooka aplikacji GitHub.** Ta powierzchnia nigdy go nie rejestruje,
   więc nie ma przychodzącego adresu URL, który trzeba by wystawiać na potrzeby
   komentarzy w PR. Pozostałe webhooki produktu (potoki, synchronizacja
@@ -139,7 +158,7 @@ kolizję hipotetyczną.
 - [Mosty czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/): te same trzy decyzje,
   podjęte dla czatu
 - [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/): skąd bierze się
-  tożsamość bota
+  tożsamość bota własnej aplikacji
 - [Wieloosobowość — tożsamość, członkostwo i obecność](/pl-PL/podrecznik/koncepcje/wieloosobowosc/):
   podmioty i role, przez które rozwiązuje się login
 - [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/): co wolno agentowi,

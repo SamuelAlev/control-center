@@ -22,7 +22,7 @@ extension _DispatchSessionGateway on DispatchSession {
         runId: dispatchId,
         repoOwner: repoOwner,
         repoName: repoName,
-        committerEmail: _gitIdentityEnv['GIT_COMMITTER_EMAIL'],
+        identity: _commitIdentity,
         worktreeRoot: agentDirHostPath,
         runnerStateDirs: _runnerStateDirs,
       ),
@@ -82,7 +82,7 @@ extension _DispatchSessionGateway on DispatchSession {
     for (final tool in tools) {
       final file = File(p.join(directory.path, tool));
       await file.writeAsString(script);
-      await Process.run('/bin/chmod', ['755', file.path]);
+      await ChildProcess.run('/bin/chmod', ['755', file.path]);
     }
     return directory.path;
   }

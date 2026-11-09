@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_server_core/src/connect/linear_sign_in_lane.dart'
+    show LinearAppGrants;
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
@@ -42,35 +44,34 @@ void main() {
     expect(await apps.githubApp(ws), isNull);
   });
 
-  test('pat mode has no App', () async {
-    expect(
-      await apps.githubApp(workspace(id: 'ws-pat', mode: GithubAuthMode.pat)),
-      isNull,
-    );
-  });
+  test(
+    'deleteForWorkspace removes the App key and the Linear app grant',
+    () async {
+      await secrets.writePsk(
+        WorkspaceGitHubAppSettings.privateKeySecret('ws-1'),
+        'pem',
+      );
+      await secrets.writePsk(LinearAppGrants.keyFor('ws-1'), '{"access":"x"}');
+      await secrets.writePsk(LinearAppGrants.keyFor('ws-2'), '{"access":"y"}');
+      await secrets.writePsk('unrelated', 'keep-me');
+      await apps.deleteForWorkspace('ws-1');
+      expect(
+        await secrets.readPsk(
+          WorkspaceGitHubAppSettings.privateKeySecret('ws-1'),
+        ),
+        isNull,
+      );
+      expect(await secrets.readPsk(LinearAppGrants.keyFor('ws-1')), isNull);
+      expect(await secrets.readPsk(LinearAppGrants.keyFor('ws-2')), isNotNull);
+      expect(await secrets.readPsk('unrelated'), 'keep-me');
+    },
+  );
 
-  test('deleteForWorkspace removes the App key and the background PAT',
-      () async {
-    await secrets.writePsk(
-      WorkspaceGitHubAppSettings.privateKeySecret('ws-1'),
-      'pem',
-    );
-    await secrets.writePsk(
-      WorkspaceGitHubAppSettings.backgroundPatSecret('ws-1'),
-      'gho_pat',
-    );
+  test('purgeLegacyTokens deletes stored workspace PATs only', () async {
+    await secrets.writePsk('workspace_forge_github_ws-1', 'gho_pat');
     await secrets.writePsk('unrelated', 'keep-me');
-    await apps.deleteForWorkspace('ws-1');
-    expect(
-      await secrets.readPsk(WorkspaceGitHubAppSettings.privateKeySecret('ws-1')),
-      isNull,
-    );
-    expect(
-      await secrets.readPsk(
-        WorkspaceGitHubAppSettings.backgroundPatSecret('ws-1'),
-      ),
-      isNull,
-    );
+    expect(await apps.purgeLegacyTokens(), 1);
+    expect(await secrets.readPsk('workspace_forge_github_ws-1'), isNull);
     expect(await secrets.readPsk('unrelated'), 'keep-me');
   });
 

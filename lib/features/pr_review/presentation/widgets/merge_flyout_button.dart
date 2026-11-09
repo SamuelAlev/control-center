@@ -9,6 +9,7 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/merge_commit_form.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/merge_conflicts_panel.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -315,10 +316,9 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
           _computeOverlayOffset();
         });
       }
-      toaster.show(
-        l10n.failedToMergePr(e.message),
-        variant: CcToastVariant.danger,
-      );
+      if (mounted) {
+        showPrError(context, ref, e, (l) => l.failedToMergePr(e.message));
+      }
     } on Exception catch (e) {
       toaster.show(l10n.failedToMergePr('$e'), variant: CcToastVariant.danger);
     } finally {

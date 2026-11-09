@@ -129,8 +129,8 @@ final projectServiceProvider = Provider<ProjectService>(buildProjectService);
 /// neither could see the other's work.
 ///
 /// The CREDENTIAL for that vendor stays per-user (server-side, keyed by user
-/// id) — everyone authenticates as themself against the one vendor the
-/// workspace chose. See `ticketing_connection_providers.dart`.
+/// id) — everyone signs in as themself against the one vendor the workspace
+/// chose, through the `linear` sign-in lane (see `TicketingConnectionCard`).
 final activeTicketProviderProvider = Provider<TicketProvider>(
   (ref) => TicketProvider.fromStorage(
     ref.watch(workspaceSettingProvider(ticketingProviderSettingKey)),

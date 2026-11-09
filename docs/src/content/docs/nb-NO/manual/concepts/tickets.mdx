@@ -2,7 +2,7 @@
 title: Saker og delegering
 description: Hvorfor en sak sporer arbeid uten å sende det ut, hvordan delegering er beskyttet, og hva leverandørspeilet eier og ikke eier.
 slug: nb-NO/handbok/konsepter/saker
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 En sak er arbeidsenheten Control Center sporer. Den er med vilje et _dumt_
@@ -139,10 +139,11 @@ leverandørstøttet sak du sletter, slettes ikke i oppfølgingssystemet og kan
 dukke opp igjen ved neste synkronisering. Samarbeidspartnere og barnesaker
 kaskaderer.
 
-Påloggingsinformasjon for adaptere hentes fra serverens lagre for
-påloggingsinformasjon (en Linear-nøkkel eller GitHub-token limt inn i
-Innstillinger plukkes opp ved neste forespørsel; miljøet fyller bare disse
-lagrene med startverdier).
+Påloggingsinformasjon for adaptere hentes for hvert kall på serveren: en persons
+egen Linear- eller GitHub-pålogging for det vedkommende gjør, og arbeidsområdets
+Linear-automatisering (eller serverens Linear-tjenestenøkkel) eller et
+GitHub-token for ett repo for sakssynkronisering. En ny pålogging plukkes opp ved
+neste forespørsel.
 
 ## Saker og pipelines
 

@@ -2573,6 +2573,27 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đang chờ bạn cấp quyền trong trình duyệt…';
 
   @override
+  String get credentialsConnectCodePrompt =>
+      'Nhập mã hiển thị trong trình duyệt';
+
+  @override
+  String get credentialsConnectCodeMalformed =>
+      'Đây có vẻ không phải mã đăng nhập. Mã gồm 8 chữ cái và chữ số.';
+
+  @override
+  String get credentialsSignInInvalidCode =>
+      'Mã này không khớp với lần đăng nhập này. Hãy kiểm tra rồi thử lại.';
+
+  @override
+  String credentialsSignInUnavailable(String provider) {
+    return 'Máy chủ này chưa thiết lập đăng nhập $provider.';
+  }
+
+  @override
+  String get credentialsSignInPhoneUnreachable =>
+      'Không thể truy cập an toàn địa chỉ gọi lại đăng nhập của máy chủ này từ điện thoại. Hãy đăng nhập từ ứng dụng máy tính hoặc nhờ chủ sở hữu máy chủ thiết lập một địa chỉ HTTPS công khai.';
+
+  @override
   String get credentialsLoginTimedOut =>
       'Phiên đăng nhập đã hết hạn. Bắt đầu đăng nhập lại.';
 
@@ -2592,10 +2613,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get credentialsCompleteLogin => 'Hoàn tất đăng nhập';
-
-  @override
-  String get credentialsRedirectUnavailable =>
-      'Điện thoại không thể kết nối an toàn đến địa chỉ callback trình duyệt của máy chủ này. Hãy nhờ chủ máy chủ thiết lập callback HTTPS công khai hoặc thêm token thay thế.';
 
   @override
   String get credentialsUpdateToken => 'Cập nhật token';

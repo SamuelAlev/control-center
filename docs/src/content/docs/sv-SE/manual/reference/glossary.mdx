@@ -2,7 +2,7 @@
 title: Ordlista
 description: Definitioner av centrala begrepp som används i Control Center.
 slug: sv-SE/handbok/referens/ordlista
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Ett DAG-baserat arbetsflöde som kedjar samman steg (agentdispatch, skript, villkor). Definieras av mallar; körs som körningar.'],
 ['Möte', 'En lokalt inspelad och transkriberad mötessession. Fångar mikrofon- och systemljud, transkriberar på enheten med en valbar ASR-modell (Parakeet TDT v3 som standard; Parakeet TDT v2, Whisper large-v3-turbo och Whisper base.en är alternativ), diariserar talare och sammanfattar till anteckningar, åtgärdspunkter och beslut. Den valda ASR-modellen tvångsinstalleras vid start och inspelningsfunktionerna tänds efter en omstart. Arbetsyteavgränsat.'],
 ['CalendarEvent', 'En synkad Google Calendar-post som hör till en arbetsyta och ett anslutet konto. Skild från ett möte: en händelse är ett schemalagt åtagande, ett möte är en inspelad session.'],
-['CalendarAccount', 'Ett anslutet Google-konto, per arbetsyta och e-postadress. OAuth-refresh-tokens lagras på serversidan som google_*-nycklar i filen secrets.json under datakatalogen och når aldrig en klient; en flagga authExpiredAt driver banderollen för återanslutning.'],
+['CalendarAccount', 'Ett anslutet Google-konto, per arbetsyta, medlem och e-postadress. Dess autentiseringsuppgift lagras på serversidan som en google_*-nyckel i filen secrets.json under datakatalogen och når aldrig en klient; en inloggning via Connect lagrar bara ett uppgiftssigill. En flagga authExpiredAt driver banderollen för återanslutning.'],
 ['AgentRole', 'Uppräknad roll (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Avgör persona, minnesåtkomst och hierarki.'],
 ['AgentSkills', 'Skiftlägesokänslig mängd skill-identifierare som injicerar relevant kontext i prompter vid dispatchtillfället.'],
 ['Skillkälla', 'Ett GitHub-repositorium som registreras per arbetsyta som en skillkatalog. Opålitligt till sin konstruktion: repositoriets metadata är enbart för visning och varje installation passerar skanningsgrinden som faller stängt innan något innehåll når disk eller en prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i cent) för en enskild agentkörning.'],
 ['WakeReason', 'Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.'],
 ['SandboxPort', 'Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Präglar avgränsade autentiseringsuppgifter för sandlådestart (bara läsning för en agents miljö, skrivning bara för pushvägen på servern) och återkallar dem vid nedrivning.'],
+['CredentialBrokerPort', 'Präglar avgränsade autentiseringsuppgifter för sandlådestart (en token för ett enda repo för en agents miljö, skrivning bara för pushvägen på servern) och släpper dem vid nedrivning.'],
 ['GitRepoInspectorPort', 'Extraherar metadata (ägare, repo, gren) från en lokal Git-reposökväg.'],
 ['EmbeddingPort', 'Producerar enhetsnormerade textinbäddningsvektorer för semantisk sökning.'],
 ['NotificationPort', 'Visar nativa skrivbordsaviseringar och respekterar grindning per kategori/rutt.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Granskningsutfall', 'ship, hold eller block. Varje P0-fynd med konfidens >= 0.7 blockerar; varje annat P0 eller något P1 håller; annars ship. En grindad axel som fallerar tvingar fram block och kan inte överröstas av fynd.'],
 ['SessionRecording', 'En händelseström plus HTTP/LLM-kassetter och verktygs-I/O inspelade för en körning, parkopplade med en AgentConfigHash.'],
 ['Gyllene session', 'En godkänd SessionRecording som fästs per agent eller playbook.'],
+['Control Center Connect', 'En valfri tjänst som kör leverantörsinloggningar (GitHub, Google, Linear) för servrar utan egna appar. Hostad av Control Center, egenhostad eller avstängd. Den returnerar uppgiftssigill och GitHub-token för ett enda repo och ser aldrig innehållet i repos.'],
+['Uppgiftssigill', 'En krypterad autentiseringsuppgift som bara den Connect som skapade den kan öppna, bunden till leverantören, Connect-adressen, installations-id:t, arbetsytan, kontot, appen och hemlighetsgenerationen. Servern lagrar sigillet; åtkomsttoken stannar i minnet.'],
+['Installations-id', 'En servers identitet mot en Connect-adress, härledd från dess installationsnyckel. Connect godkänner servrar per installations-id; att byta nyckeln ändrar det och loggar ut alla från Connect-spåren.'],
+['Installationsbindning', 'Connects register över vilka servrar som får använda en GitHub-installation av den delade appen. En organisationsinstallation kräver att en administratör auktoriserar varje server.'],
+['Inloggningsspår', 'En leverantörs inloggning i webbläsaren: github, google, linear, linear_app eller slack. Varje spår körs på serverns egen app när den är komplett, annars via Connect, annars är det otillgängligt.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Präglar avgränsade autentiseringsuppgifter för sandlådestart – bara läsning för en agents miljö, skrivning bara för pushvägen på servern – och återkallar dem vid nedrivning.
+**CredentialBrokerPort**: Präglar avgränsade autentiseringsuppgifter för sandlådestart – en token för ett enda repo för en agents miljö, skrivning bara för pushvägen på servern – och släpper dem vid nedrivning.
 
 **GitRepoInspectorPort**: Extraherar metadata (ägare, repo, gren) från en lokal Git-reposökväg.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: En synkad Google Calendar-post som hör till en arbetsyta och ett anslutet konto. Skild från ett möte: en händelse är ett schemalagt åtagande; ett möte är en inspelad session. Länkas ett-till-ett via en `MeetingCalendarLink`.
 
-**CalendarAccount**: Ett anslutet Google-konto, per arbetsyta och e-postadress. OAuth-refresh-tokens lagras på serversidan som `google_*`-nycklar i `<dataDir>/secrets.json` och når aldrig en klient; device code-flödet slutförs på servern. En flagga `authExpiredAt` driver banderollen för återanslutning.
+**CalendarAccount**: Ett anslutet Google-konto, per arbetsyta, medlem och e-postadress (`google:<workspaceId>:<userId>:<email>`). Dess autentiseringsuppgift lagras på serversidan som en `google_*`-nyckel i `<dataDir>/secrets.json` och når aldrig en klient; inloggningen i webbläsaren slutförs på servern. En inloggning via Connect lagrar bara ett uppgiftssigill. En flagga `authExpiredAt` driver banderollen för återanslutning.
 
 ## Arkitekturtermer
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Telefonens tunna klient – en Flutter-webb-PWA som fjärrstyr flottan över den förmedlade relän, med en verktygspolicy som nekar som standard.
 
 **cc_signaling_server**: En tillståndslös WebSocket-reläbroker som hostar inbjudningsgrindade rum – en dum relä som bara vidarebefordrar end-to-end-förseglade frames, håller inga appdata och aldrig ser parkopplings-PSK:n.
+
+**Control Center Connect**: En valfri tjänst som kör leverantörsinloggningar (GitHub, Google Calendar, Linear) för servrar som inte har registrerat egna appar: Control Centers hostade tjänst, en som en organisation kör (`cc-connect`, eller monterad i `cc_server` på `/connect`), eller ingen. Den returnerar uppgiftssigill och GitHub-token för ett enda repo och ser aldrig innehållet i repos. Se [Control Center Connect](/sv-SE/handbok/referens/connect/).
+
+**Uppgiftssigill**: En krypterad autentiseringsuppgift (`credential_seal`) som bara den Connect som skapade den kan öppna, bunden till leverantören, Connect-adressen, installations-id:t, arbetsytan, kontot, appen och hemlighetsgenerationen. Servern lagrar sigillet och installations-id:t det skapades för; åtkomsttoken stannar i minnet. Ett sigill vars installations-id inte längre stämmer kastas, och dess ägare loggar in igen.
+
+**Installations-id**: En servers identitet mot en Connect-adress (`install_id`), härledd från installationsnyckeln i dess hemlighetsfil. Connect godkänner servrar per installations-id. Att byta nyckeln ger ett nytt och loggar ut alla från Connect-spåren.
+
+**Installationsbindning**: Connects register (`install_binding`) över vilka servrar som får använda en GitHub-installation av den delade appen. Att installera via en server binder den; en organisationsadministratörs **Auktorisera den här servern** binder ytterligare en.
+
+**Inloggningsspår**: En leverantörs inloggning i webbläsaren — `github`, `google`, `linear`, `linear_app` eller `slack`. Ett spår körs på serverns egen app när den appen är komplett, annars via Connect, annars är det otillgängligt; en delvis konfigurerad egen app är ett fel, aldrig en reservväg.
 
 ## Se även
 

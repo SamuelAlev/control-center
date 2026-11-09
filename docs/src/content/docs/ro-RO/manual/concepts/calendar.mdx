@@ -1,22 +1,31 @@
 ---
 title: Calendar și programare
-description: Cum sincronizează Control Center Google Calendar pe server, de ce autentificarea este o autorizare prin cod de dispozitiv și ce acoperă domeniul de citire.
+description: Cum sincronizează Control Center Google Calendar pe server, cum ajunge autentificarea în browser la un server headless și ce poate modifica pe Google.
 slug: ro-RO/manual/concepte/calendar
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center se conectează la Google Calendar, astfel încât ziua ta stă
 alături de flota ta. Îți sincronizează evenimentele, le afișează în vizualizările
-de lună, săptămână, zi și agendă, te avertizează înainte să înceapă o întâlnire
+de lună, săptămână, zi și agendă, îți permite să programezi, să muți, să confirmi și să ștergi evenimente, te avertizează înainte să înceapă o întâlnire
 și transformă orice eveniment într-o [întâlnire](/ro-RO/manual/concepte/intalniri/)
 înregistrată și rezumată.
 
 ## Ce schimbă în Google
 
-Aproape nimic. Integrarea preia evenimentele și le afișează. Nu creează, nu
-editează, nu șterge și nu răspunde la invitații. Fiecare conectare prin cod de
-dispozitiv, integrată sau cu acreditările tale, solicită `calendar.readonly`
-plus `openid email`.
+Doar ce faci tu. Poți răspunde la o invitație, programa un eveniment (trăgând
+peste grila de ore sau cu butonul **+**) și șterge un eveniment. Fiecare
+modificare este făcută de server cu propria autentificare a contului tău, pe
+calendarele tale, iar serverul refuză un eveniment pe contul altui membru sau pe
+un calendar partajat cu tine doar pentru citire. Google trimite invitații
+participanților, ca și din Google Calendar. Ștergerea unei apariții dintr-un
+eveniment recurent lasă restul seriei. Poți muta sau redimensiona un eveniment pe grilă; se mută doar evenimentele tale și cele pe care le organizezi.
+
+Fiecare conectare, prin Connect sau prin clientul Google propriu al serverului,
+solicită `calendar.events` (citire și modificare a evenimentelor) și
+`calendar.calendarlist.readonly` (vezi ce calendare are contul) plus
+`openid email`. Serverul refuză o autentificare care se întoarce cu un alt set,
+deci un cont conectat cu domeniul anterior, doar de citire, trebuie reconectat.
 
 Evenimentele sunt sincronizate în baza de date proprie a spațiului de lucru
 **pe server** (`<dataDir>/<workspaceId>/workspace.db`) și sunt afișate de fiecare
@@ -25,47 +34,56 @@ client prin RPC. Niciun client nu deține o acreditare Google.
 ## Conturi pe spațiu de lucru
 
 Conturile de calendar aparțin spațiului de lucru, ca tot restul din Control
-Center. Fiecare [spațiu de lucru](/ro-RO/manual/concepte/spatii-de-lucru/) își
-conectează propriul cont Google (sau mai multe), iar evenimentele și tokenurile
-unui spațiu de lucru nu sunt niciodată vizibile din altul. Schimbarea spațiului
+Center, și fiecare aparține membrului care l-a conectat. Fiecare
+[spațiu de lucru](/ro-RO/manual/concepte/spatii-de-lucru/) își conectează
+propriile conturi Google, iar evenimentele și acreditările unui spațiu de lucru
+nu sunt niciodată vizibile din altul. Doi membri care conectează aceeași adresă
+Google primesc două conturi. Schimbarea spațiului
 de lucru schimbă și calendarele pe care le vezi.
 
 Un spațiu de lucru poate conecta **mai multe** conturi Google, de exemplu un cont
 de serviciu și unul personal, iar evenimentele lor sunt comasate în aceleași
 vizualizări.
 
-## De ce autentificarea este un cod de dispozitiv
+## Cum ajunge autentificarea la server
 
-`cc_server` rulează fără interfață grafică și nu are un browser care să
-intercepteze o redirecționare OAuth. Așa că nu folosește una: autorizează cu
-**autorizarea prin cod de dispozitiv** (RFC 8628). Serverul afișează un cod de
-utilizator scurt și un URL Google, tu aprobi de pe orice dispozitiv care are un
-browser, iar serverul așteaptă până aprobi. O instalare fără interfață grafică
-poate conecta un cont exact pentru că nu există niciun punct final de
-redirecționare de găzduit.
+Conectarea este o autentificare în browser, iar serverul o încheie. Ce client o
+rulează este alegerea proprietarului serverului:
 
-Consecința pe care trebuie să o știi înainte să-ți aduci propriile acreditări:
-tipul de client trebuie să fie "TV and Limited Input devices" al Google. Google
-acordă acelui tip de client doar un set de domenii aflate pe o listă de
-permisiuni, iar un proiect în care Calendar nu este permis pentru el eșuează cu
-`invalid_scope` — ai avea nevoie în schimb de un client loopback sau web.
+- **Clientul Google propriu al serverului.** Un client de tip Web application
+  înregistrat cu redirecționarea `<server origin>/oauth/google/callback`.
+  Google trimite browserul direct înapoi la server, așa că browserul trebuie să
+  îl poată accesa
+- **Control Center Connect.** Google trimite browserul înapoi la Connect, care
+  afișează un cod de 8 caractere și un link `control-center://`. Persoana
+  tastează codul în aplicație sau urmează linkul, iar serverul revendică
+  autentificarea cu el. Serverul nu are nevoie de o adresă publică pentru asta,
+  și așa conectează calendare un server headless dintr-o rețea privată
 
-Tokenurile nu părăsesc niciodată serverul. Sunt scrise în `secrets.json` al
+Un client propriu are întotdeauna prioritate. Un client id fără secretul lui
+este o configurare neterminată și refuză autentificările în loc să revină la
+Connect.
+
+Acreditările nu părăsesc niciodată serverul. Sunt scrise în `secrets.json` al
 serverului, în directorul lui de date, cu cheile
-`google_google:<workspaceId>:<email>`, alături de bazele de date și sub aceeași
-graniță de încredere a sistemului de fișiere al gazdei. Serverul reîmprospătează
-accesul automat și, când Google invalidează definitiv un cont (o sesiune
-revocată sau expirată de mult timp), publică `CalendarAuthExpired` și afișează un
-banner **Reconectează** în loc să eșueze în tăcere.
+`google_google:<workspaceId>:<userId>:<email>`, alături de bazele de date și sub
+aceeași graniță de încredere a sistemului de fișiere al gazdei. O autentificare
+prin clientul propriu își stochează tokenurile de acces și de reîmprospătare. O
+autentificare prin Connect stochează doar o acreditare sigilată pe care Connect
+o deschide doar pentru acest server; tokenul de acces rămâne în memorie.
+Serverul reîmprospătează accesul automat și, când Google invalidează definitiv
+un cont (o sesiune revocată sau expirată de mult timp), publică
+`CalendarAuthExpired` și afișează un banner **Reconectează** în loc să eșueze în
+tăcere. O autentificare pe care acest server nu o mai poate folosi (emisă de un
+alt client propriu sau sigilată pentru o altă instalare ori alt Connect) este
+ștearsă la următoarea citire și afișează același banner.
 
-O construcție din surse nu include **nicio** acreditare Google — îți aduci
-propriul client id și propriul secret. Construcțiile oficiale de lansare includ
-un client de cod de dispozitiv neconfidențial, astfel încât fluxul de conectare
-funcționează imediat; serverul stochează doar un marcaj care îl referă, niciodată
-o copie. `GOOGLE_OAUTH_CLIENT_ID` (și secretul lui) din mediu are întotdeauna
-prioritate față de perechea inclusă. Nu există în mod deliberat un flag
-`--google-client-id`: flag-urile necunoscute sunt ignorate, iar un secret de pe
-linia de comandă poate fi citit prin `ps`.
+Nicio construcție nu conține acreditări Google. Clientul serverului vine din
+**Setări → Server → Autentificare unică → Aplicații provider** sau din fișierul
+`.env` al serverului (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`).
+Nu există în mod deliberat niciun flag de linie de comandă: un secret de pe linia
+de comandă poate fi citit prin `ps`, iar serverul refuză să pornească atunci
+când secretul este exportat în mediul procesului său.
 
 Pentru a rula propriul proiect Google, vezi
 [Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
@@ -130,8 +148,8 @@ propriu de înregistrare al ecranului de întâlniri funcționează în browser.
 
 :::note[Agenții nu pot citi calendarul tău]
 Nu există instrumente MCP pentru calendar. Un agent nu poate lista evenimente,
-nu poate citi detaliile unui eveniment și nu poate confirma participarea în
-numele tău; suprafața `calendar.*` este RPC doar pentru clienții umani.
+nu poate citi detaliile unui eveniment, nu poate programa, muta sau șterge evenimente
+și nu poate confirma participarea în numele tău; suprafața `calendar.*` este RPC doar pentru clienții umani.
 :::
 
 ## Vezi și

@@ -1,30 +1,103 @@
 ---
 title: Sediakan integrasi Linear
-description: Simpan kunci API Linear pada pelayan supaya ejen boleh memanggil Linear, dan pilih Linear sebagai penyedia tiket untuk tiket baharu.
+description: Log masuk ke Linear, sambungkan automasi Linear ruang kerja, dan pilih Linear sebagai pembekal tiket untuk tiket baharu.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Tampal kunci API Linear pada pelayan terhadap pengguna anda, sama seperti anda
-menyambungkan hos kod. Tiket, projek, pautan, kolaborator, perwakilan dan
-penugasan semuanya berfungsi terhadap pangkalan data Control Center sendiri
-tanpa memerlukan perkhidmatan luar — lihat
-[Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/).
+Linear mempunyai dua identiti dalam Control Center, dan kedua-duanya ialah log masuk pelayar: milik anda, untuk
+perkara yang anda lakukan, dan app Control Center ruang kerja, untuk perkara yang dilakukan ejen dan pipeline.
+Tiket, projek, pautan, kolaborator, delegasi dan tugasan semuanya berfungsi pada pangkalan data Control Center
+sendiri tanpa perkhidmatan luaran — lihat [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/).
 
-## Simpan kunci Linear anda
+## Prasyarat
 
-**Kunci API tiket** berada di **Tetapan → Ruang kerja → Umum**, pada kad
-**Tiket**. Ia menyimpan kunci itu pada pelayan terhadap id pengguna anda. Kunci
-pelayan sendiri untuk kerja tanpa pengawasan datang daripada `LINEAR_API_KEY`
-atau kad **Apl penyedia**. Tiada kunci penetikan diletakkan dalam kotak pasir
-ejen: ejen menulis tiket melalui alat Control Center sendiri, yang bertanya
-kepada peraturan **Tulis ke penjejak luaran** terlebih dahulu.
+- Pelayan boleh mendaftar masuk orang ke Linear: melalui Control Center Connect, atau dengan app Linear
+  pelayan itu sendiri ([Daftarkan app Linear anda sendiri](#daftarkan-app-linear-anda-sendiri)). Pemilik pelayan
+  memilih dalam **Tetapan → Pelayan → Daftar masuk tunggal**
+- Pentadbir ruang kerja, untuk memilih Linear sebagai pembekal tiket dan menyambungkan automasi Linear
 
-## Tandakan tiket baharu sebagai Linear
+## Pilih Linear untuk ruang kerja
 
-**Penyedia tiket** (langkah pertama onboarding, dan
-`/workspaces/<workspaceId>/api-keys`) menawarkan `local` dan `linear`. Memilih
-`linear` menandakan `provider: linear` pada tiket yang anda cipta selepas itu.
+1. Pergi ke **Tetapan → Ruang kerja → Umum** dan cari kad **Tiket**
+2. Tetapkan **Penyedia tiket** kepada **Linear**
+
+Tiket yang anda cipta mulai sekarang akan ditanda `provider: linear`. **Setempat** menyimpan tiket dalam pangkalan
+data pelayan ini dan menyembunyikan baris Linear: tiada apa untuk disahkan.
+
+## Log masuk ke Linear
+
+Pada kad yang sama, baris **Linear** ialah milik anda:
+
+1. Klik **Log masuk ke Linear**
+2. Luluskan dalam pelayar anda
+3. Dengan app Linear pelayan, dialog itu mengesannya sendiri. Melalui Connect, taip kod 8 aksara yang dipaparkan
+   pelayar, atau biarkan pelayar membuka Control Center melalui pautan `control-center://`
+
+Apa sahaja yang anda lakukan dalam Linear dari Control Center berjalan dengan log masuk ini dan tidak dengan
+yang lain. Jika anda belum log masuk, apl itu meminta anda log masuk dan bukannya bertindak bagi pihak orang lain.
+
+## Sambungkan automasi Linear
+
+Baris **Automasi Linear** ialah app Control Center ruang kerja dalam Linear. Penyegerakan tiket, pipeline dan
+ejen menulis dengannya, jadi isu dan komen automatik muncul sebagai Control Center dan bukannya sebagai seseorang.
+
+1. Pentadbir ruang kerja klik **Sambung Linear untuk automasi**
+2. Mereka meluluskan app untuk ruang kerja Linear dalam pelayar, seperti di atas
+
+Baris itu kemudian memaparkan "Disambungkan ke _ruang kerja Linear anda_". Hanya pentadbir ruang kerja boleh
+menyambung atau menyahsambungkannya.
+
+Tiada kelayakan Linear diletakkan dalam kotak pasir ejen: ejen menulis tiket melalui alat Control Center sendiri,
+yang bertanya kepada peraturan **Tulis ke penjejak luaran** dahulu.
+
+## Daftarkan app Linear anda sendiri
+
+Gunakan app sendiri apabila anda memilih **Gunakan aplikasi saya sendiri**. App pelayan hanya terpakai dalam kes itu: dengan Connect Control Center atau Connect tersuai, Connect mengendalikan Linear, dan app serta kunci API perkhidmatan pelayan kekal disimpan tetapi tidak digunakan. [App ruang kerja](#berikan-satu-ruang-kerja-app-linear-sendiri) terus terpakai dalam semua mod.
+
+1. Cipta aplikasi OAuth di [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Tambah kedua-dua URL callback yang **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia → Linear**
+   paparkan di bawah **Callback URLs**, tepat seperti itu: `<server origin>/oauth/linear/callback` dan
+   `<server origin>/oauth/linear_app/callback`
+3. Tampal **Client id** ke dalam blok Linear
+
+Tiada client secret: pelayan log masuk dengan PKCE. Token muat semula Linear tamat tempoh selepas 30 hari tidak
+digunakan, jadi pelayan memperbaharui setiap log masuk Linear yang lebih daripada 20 hari sekali sehari.
+
+Blok yang sama menerima **Kunci API perkhidmatan** secara pilihan. Ia ialah kelayakan Linear pelayan itu sendiri
+untuk automasi dalam ruang kerja yang belum menyambungkan automasi Linear. Simpan dalam **Tetapan** atau dalam
+fail `.env` pelayan sebagai `LINEAR_API_KEY`: pelayan enggan bermula apabila `LINEAR_API_KEY` dieksport dalam
+persekitaran prosesnya.
+
+## Berikan satu ruang kerja app Linear sendiri
+
+Ruang kerja boleh log masuk ke Linear melalui app sendiri dan bukannya app pelayan. Hanya pentadbir atau pemilik ruang kerja boleh menyediakannya.
+
+1. Cipta app OAuth Linear seperti langkah di atas
+2. Buka **Tetapan → Ruang kerja → Umum → Apl penyedia** dan buka **Linear**
+3. Pilih **Gunakan apl ruang kerja ini**
+4. Tambahkan kedua-dua URL panggil balik yang dipaparkan oleh baris itu di bawah **URL panggil balik** ke app Linear, betul-betul seperti yang tertera
+5. Tampal **ID klien**, dan secara pilihan **Kunci API perkhidmatan** untuk automasi ruang kerja ini
+
+App ruang kerja ini menjawab setiap log masuk Linear dan permintaan automasi dalam ruang kerja ini, tanpa mengira cara pelayan mendaftar masuk orang. Ia tidak sekali-kali jatuh kembali kepada app pelayan atau Connect: sehingga ID klien ditetapkan, Linear dimatikan dalam ruang kerja ini dan baris itu menyatakan apa yang tiada. Kunci API perkhidmatannya hanya digunakan di sini; tanpanya, penyegerakan memerlukan **Sambung Linear untuk automasi**.
+
+Menukar antara app pelayan dan app ruang kerja, atau menukar ID klien ruang kerja, log keluar semua orang dalam ruang kerja ini daripada Linear dan memutuskan automasinya. Mereka log masuk semula melalui app baharu. **Gunakan apl pelayan ini** memadamkan medan ruang kerja yang disimpan. Rahsia hanya boleh ditulis: baris itu hanya menunjukkan sama ada rahsia disimpan. Ruang kerja lain pada pelayan tidak terjejas.
+
+## Penyelesaian masalah
+
+### Baris Linear memaklumkan log masuk belum disediakan
+
+Pelayan tiada app Linear sendiri mahupun Connect. Pemilik pelayan memilih salah satu dalam
+**Tetapan → Pelayan → Daftar masuk tunggal**. Jika ruang kerja menggunakan app sendiri, baris itu sebaliknya menyatakan persediaannya belum siap: pentadbir ruang kerja menambah ID klien dalam **Tetapan → Ruang kerja → Umum → Apl penyedia**.
+
+### Penyegerakan tiket gagal dengan ralat pengesahan
+
+Ruang kerja belum menyambungkan automasi Linear dan pelayan tiada kunci API perkhidmatan, jadi penyegerakan
+tiada kelayakan. Pentadbir ruang kerja klik **Sambung Linear untuk automasi**.
+
+### Sambungan automasi memaklumkan ruang kerja Linear telah disambungkan di tempat lain
+
+App Control Center untuk ruang kerja Linear itu telah disambungkan kepada pelayan Control Center yang lain.
 
 ## Panduan berkaitan
 
@@ -34,4 +107,4 @@ kepada peraturan **Tulis ke penjejak luaran** terlebih dahulu.
 
 ## Konsep berkaitan
 
-- [Tiket dan perwakilan](/ms-MY/manual-pengguna/konsep/tiket/)
+- [Tiket dan delegasi](/ms-MY/manual-pengguna/konsep/tiket/)

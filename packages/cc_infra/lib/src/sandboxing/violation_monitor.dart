@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
+
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:meta/meta.dart';
 
 /// Streams [SandboxViolation]s parsed from OS-level sandbox denial logs.
@@ -20,6 +22,13 @@ import 'package:meta/meta.dart';
 ///    macOS process and aren't actionable.
 ///  - dedupe by `(action, target)` within [_dedupeWindow] so a retry storm
 ///    surfaces once.
+///
+/// `log stream` never notices its reader is gone: a server that is killed,
+/// crashes or restarts without [close] used to leave its tap running under
+/// launchd forever, and every one stays a `logd` client filtering the whole
+/// machine's log traffic. Hundreds piled up and the machine crawled. So the
+/// tap runs under [tetherScript], which ends it when the server's end of its
+/// stdin closes, as it does however the server dies.
 class SandboxViolationMonitor {
   SandboxViolationMonitor._(this._process, this.stream);
 
@@ -27,6 +36,90 @@ class SandboxViolationMonitor {
 
   /// Broadcast stream of every parsed violation.
   final Stream<SandboxViolation> stream;
+
+  /// The tethering shell's pid; the `log` tap is its child.
+  @visibleForTesting
+  int get pid => _process.pid;
+
+  static const List<String> _logCommand = [
+    '/usr/bin/log',
+    'stream',
+    '--style',
+    'ndjson',
+    '--predicate',
+    'sender == "Sandbox" OR subsystem BEGINSWITH "com.apple.sandbox"',
+  ];
+
+  /// A `/bin/sh -c` program that runs its arguments as a child for exactly
+  /// as long as its own stdin stays open, and exits with the child's status.
+  ///
+  /// The parent never writes to stdin, so stdin reaches EOF only when the
+  /// parent closes it or dies; a SIGKILL closes it all the same. A watcher
+  /// blocks in `cat` on a saved copy of stdin (an asynchronous list's own
+  /// stdin is `/dev/null`) and kills the child at EOF. A child that exits on
+  /// its own stops the watcher first, so no stale pid is ever signalled; the
+  /// watcher's orphaned `cat` ends when the parent closes stdin.
+  @visibleForTesting
+  static const String tetherScript = r'''
+exec 3<&0
+"$@" 3<&- &
+child=$!
+{ /bin/cat <&3 >/dev/null; kill "$child" 2>/dev/null; } >/dev/null 2>&1 &
+watch=$!
+exec 3<&-
+wait "$child"
+status=$?
+kill "$watch" 2>/dev/null
+exit "$status"
+''';
+
+  /// The pids in `ps -wwxo pid=,ppid=,args=` [psOutput] that are taps an
+  /// earlier, untethered server left behind: [_logCommand] exactly, adopted
+  /// by launchd. A live server's tap is a child of its tether, never pid 1.
+  @visibleForTesting
+  static List<int> orphanedTapPids(String psOutput) {
+    final command = _logCommand.join(' ');
+    final pids = <int>[];
+    for (final line in LineSplitter.split(psOutput)) {
+      final match = RegExp(r'^\s*(\d+)\s+(\d+)\s+(.*?)\s*$').firstMatch(line);
+      if (match == null || match.group(2) != '1') {
+        continue;
+      }
+      if (match.group(3) == command) {
+        pids.add(int.parse(match.group(1)!));
+      }
+    }
+    return pids;
+  }
+
+  /// Ends the taps servers from before [tetherScript] leaked, so upgrading
+  /// clears an already clogged machine without a reboot. Best effort.
+  static Future<void> _reapOrphanedTaps() async {
+    try {
+      // `-ww`: never truncate the command line the match depends on.
+      final ps = await ChildProcess.run('/bin/ps', [
+        '-wwxo',
+        'pid=,ppid=,args=',
+      ]);
+      if (ps.exitCode != 0) {
+        return;
+      }
+      for (final pid in orphanedTapPids(ps.stdout as String)) {
+        Process.killPid(pid);
+      }
+    } on Object catch (_) {
+      // Leftovers cost performance, not correctness; never block the tap.
+    }
+  }
+
+  /// Closes the tether's stdin, which ends the tap.
+  static Future<void> _release(Process process) async {
+    try {
+      await process.stdin.close();
+    } on Object catch (_) {
+      // Already gone: the tether exited and the pipe is broken.
+    }
+  }
 
   static const Duration _dedupeWindow = Duration(seconds: 5);
 
@@ -41,13 +134,13 @@ class SandboxViolationMonitor {
     if (!Platform.isMacOS) {
       return null;
     }
+    await _reapOrphanedTaps();
     final controller = StreamController<SandboxViolation>.broadcast();
-    final process = await Process.start('/usr/bin/log', [
-      'stream',
-      '--style',
-      'ndjson',
-      '--predicate',
-      'sender == "Sandbox" OR subsystem BEGINSWITH "com.apple.sandbox"',
+    final process = await ChildProcess.start('/bin/sh', [
+      '-c',
+      tetherScript,
+      'sh',
+      ..._logCommand,
     ]);
 
     final recent = <String, DateTime>{};
@@ -80,9 +173,11 @@ class SandboxViolationMonitor {
     process.stderr.listen((_) {}, onError: (_) {});
 
     unawaited(
-      process.exitCode.then((_) {
+      process.exitCode.then((_) async {
+        // Lets the tether's watcher `cat` go too.
+        await _release(process);
         if (!controller.isClosed) {
-          controller.close();
+          await controller.close();
         }
       }),
     );
@@ -90,10 +185,19 @@ class SandboxViolationMonitor {
     return SandboxViolationMonitor._(process, controller.stream);
   }
 
-  /// Kills the underlying `log stream` process.
+  /// Ends the `log stream` tap and its tether.
+  ///
+  /// A plain signal to the tether would orphan the tap; closing its stdin is
+  /// the same path a dying server takes. The kill only covers a tether that
+  /// somehow outlives that, by when the tap has already been told to stop.
   Future<void> close() async {
-    _process.kill();
-    await _process.exitCode;
+    await _release(_process);
+    try {
+      await _process.exitCode.timeout(const Duration(seconds: 5));
+    } on TimeoutException {
+      _process.kill(ProcessSignal.sigkill);
+      await _process.exitCode;
+    }
   }
 
   /// Parses a single sandbox log line into a [ParsedLine], or returns `null`
@@ -130,11 +234,7 @@ class SandboxViolationMonitor {
       final target = parts.skip(1).join(' ');
       return ParsedLine(
         processName: processName,
-        violation: SandboxViolation(
-          action: action,
-          target: target,
-          raw: line,
-        ),
+        violation: SandboxViolation(action: action, target: target, raw: line),
       );
     } catch (_) {
       return null;

@@ -2,7 +2,7 @@
 title: Snelstart
 description: Installeer Control Center, configureer één agent en zie hem aan je repo werken.
 slug: nl-NL/handleiding/snelstart
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Dit is het kortste volledige pad van niets naar een agent die op je eigen code werkt. Volg het op volgorde; elke stap bouwt voort op de vorige.
@@ -20,18 +20,19 @@ Dezelfde app draait in de browser op [app.usectrl.dev](https://app.usectrl.dev) 
 dezelfde functies. Een browsertab kan de server echter niet hosten, dus lever je er zelf
 een aan — draai `cc_server` lokaal en verbind met `ws://localhost:9030`, of richt hem op een
 server op een andere machine. Deze snelstart neemt het desktoppad, omdat daarvoor geen
-server hoeft te worden ingesteld; zie [Installeren](/nl-NL/handleiding/installeren/#use-it-in-your-browser) voor de browserroute.
+server hoeft te worden ingesteld; zie [Installeren](/nl-NL/handleiding/installeren/#gebruik-het-in-je-browser) voor de browserroute.
 :::
 
 ## Stap 2: Het onboarden doorlopen
 
-Het onboarden bestaat uit vijf stappen en ze lopen op volgorde — vooruit springen kan niet.
+Het onboarden doorloopt zijn stappen op volgorde — vooruit springen kan niet. De eerste stap verschijnt alleen voor de servereigenaar, en op een desktop die zijn eigen server draait, ben jij dat.
 
-1. **Verbinden**: meld je aan met GitHub of plak een persoonlijk toegangstoken met `repo` en `read:org`. De inloggegevens worden op de server opgeslagen en aan je account gekoppeld.
-2. **Werkruimte**: geef je eerste werkruimte een naam en kies optioneel een logo. Bij het aanmaken worden vijf agenten geseed — een CEO plus `qa`, `architect`, `engineer` en `librarian` — en de ingebouwde pipeline-sjablonen.
-3. **Sandbox**: legt een sandboxvoorkeur vast. Bij beide keuzes kun je doorgaan.
-4. **Adapter**: kies de adapter en het model die agenten standaard moeten gebruiken. Kies **Control Center (built-in)** en gebruik dan de providerkiezer die verschijnt om je bij een modelprovider aan te melden — de modellenlijst blijft leeg tot er een is verbonden. Met het afronden van deze stap worden de adapter en het model ook op de CEO-agent van de werkruimte vastgelegd.
-5. **Stem (optioneel)**: installeer een spraakmodel op het apparaat voor dicteren, of sla deze stap over.
+1. **Inloggen** (alleen servereigenaar): kies hoe deze server mensen aanmeldt bij GitHub, Google Calendar en Linear — **De apps van Control Center gebruiken**, **Mijn eigen apps gebruiken** of **Een eigen Connect-server gebruiken**. Met je eigen apps zet **Mijn GitHub-app maken** GitHub in één stap op. Je kunt dit later wijzigen in **Instellingen → Server → Single sign-on**.
+2. **Verbinden**: meld je aan bij GitHub, of plak een GitLab- of Bitbucket-token. De inloggegevens worden op de server opgeslagen en aan je account gekoppeld.
+3. **Werkruimte**: geef je eerste werkruimte een naam en kies optioneel een logo. Bij het aanmaken worden vijf agenten geseed — een CEO plus `qa`, `architect`, `engineer` en `librarian` — en de ingebouwde pipeline-sjablonen.
+4. **Sandbox**: legt een sandboxvoorkeur vast. Bij beide keuzes kun je doorgaan.
+5. **Adapter**: kies de adapter en het model die agenten standaard moeten gebruiken. Kies **Control Center (built-in)** en gebruik dan de providerkiezer die verschijnt om je bij een modelprovider aan te melden — de modellenlijst blijft leeg tot er een is verbonden. Met het afronden van deze stap worden de adapter en het model ook op de CEO-agent van de werkruimte vastgelegd.
+6. **Stem (optioneel)**: installeer een spraakmodel op het apparaat voor dicteren, of sla deze stap over.
 
 Control Center opent daarna het postvak van je werkruimte.
 

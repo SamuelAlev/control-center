@@ -2,7 +2,7 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Gönderim nedir
@@ -54,7 +54,7 @@ Her çalıştırmada, herhangi bir süreç başlatılmadan önce iki kimlik çö
 
 **Git yazarlığı.** Ajanın commit'leri, isteği yapan kişinin çalışma alanında belirlenen Git kimliğini hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` için her zaman kullanır. Programatik çalıştırmalar sunucu sahibinin kimliğini kullanır. Varsayılan olarak `Co-Authored-By: Control Center <hi@usectrl.dev>`, GitHub hesabı `@usectrl`'ü ortak yazar olarak belirtir. Bu satırı çıkarmak için **Ayarlar → Siz → Commit atfı** bölümünden ajana atfı kapatın. Çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümünden ortak yazar atfını zorunlu kılabilir veya kapatabilir; bu ayar önceliklidir ve kayıtlı tercihi değiştirmeden kişisel anahtarı devre dışı bırakır. Değişiklikler bir sonraki çalıştırmada geçerli olur. Claude Code'un kendi commit ve PR yazar satırları her zaman devre dışıdır. Çağıranın ve adaptörün ortam ayarları belirlenen kimliğin yerine geçemez; kimlik eksikse veya belirlenirken hata oluşursa çalıştırma başlamaz. Forge kimlik bilgileri ve commit imzalama yapılandırması etkilenmez; doğru kimlik tek başına doğrulanmış bir imzayı garanti etmez.
 
-**Forge kimliği.** Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca aracının olur — depo kapsamlı bir App kurulum belirteci ya da bunun ortam PAT yedeği — ve asla isteği yapan üyenin kendi sakladığı belirteç olmaz. `actingUserId` PAT yedeğini sınırlar; böylece sunucu sahibi olmayan bir üye sunucunun erişim alanını devralmaz. Ajan ortamına kişisel bir belirteç katmanlanmaz.
+**Forge kimliği.** Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca aracının olur: çalışma alanının GitHub App’inden, sunucunun kendi uygulamasından ya da Control Center Connect’ten çalıştırmanın tek deposu için üretilen bir belirteç. `actingUserId` hesap verebilir kişiyi belirtir (hâlâ üyeyse isteği yapan kişi, değilse çalışma alanı sahibi) ve belirteci o kişinin depoda yapabilecekleriyle sınırlar. Bu asla üyenin bütünüyle devredilmiş kendi oturum açması değildir ve hiçbir yedek yoktur: reddedilen bir üretim, çalıştırmayı belirteçsiz bırakır ve nedenini notlarında belirtir.
 
 **Model sağlayıcısı kimlik bilgileri** sabit bir sırayla çözülür ve sıra önemlidir:
 

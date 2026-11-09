@@ -2,7 +2,7 @@
 title: Vòng đời điều phối agent
 description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Một lần điều phối là gì
@@ -54,7 +54,7 @@ Hai danh tính được xác định cho mỗi lượt chạy, trước khi bấ
 
 **Quyền tác giả Git.** Các commit của agent luôn dùng danh tính Git đã được xác định trong không gian làm việc của người yêu cầu cho cả `GIT_AUTHOR_*` và `GIT_COMMITTER_*`. Những lượt chạy được khởi tạo bằng chương trình dùng danh tính của chủ máy chủ. Theo mặc định, `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận tài khoản GitHub `@usectrl` là đồng tác giả. Tắt ghi công cho agent tại **Cài đặt → Bạn → Ghi công trong commit** để bỏ trailer đó. Quản trị viên có thể buộc bật hoặc tắt việc ghi nhận đồng tác giả tại **Cài đặt → Không gian làm việc → Chung**; thiết lập này được ưu tiên và vô hiệu hóa công tắc cá nhân mà không thay đổi lựa chọn đã lưu. Thay đổi có hiệu lực từ lượt chạy tiếp theo. Các dòng ghi tác giả commit và PR riêng của Claude Code luôn bị tắt. Thiết lập môi trường từ bên gọi và bộ điều hợp không thể thay thế danh tính đã xác định; nếu thiếu danh tính hoặc việc xác định gặp lỗi thì lượt chạy không được khởi động. Thông tin xác thực của forge và cấu hình ký commit không bị ảnh hưởng; chỉ có danh tính đúng không đảm bảo chữ ký được xác minh.
 
-**Danh tính forge.** Thông tin xác thực GitHub của lượt chạy luôn chỉ là của broker — một token cài đặt App giới hạn theo repo, hoặc phương án dự phòng PAT từ môi trường — không bao giờ là token đã lưu của chính thành viên yêu cầu. `actingUserId` giới hạn phương án dự phòng PAT để một thành viên không phải chủ máy chủ không thừa hưởng phạm vi của máy chủ; nó không phủ một token cá nhân lên môi trường của agent.
+**Danh tính forge.** Thông tin xác thực GitHub của lượt chạy luôn chỉ là của broker: một token dành cho đúng một repo của lượt chạy, được cấp từ GitHub App của không gian làm việc, App riêng của máy chủ hoặc Control Center Connect. `actingUserId` chỉ người chịu trách nhiệm (người yêu cầu nếu vẫn là thành viên, nếu không thì là chủ không gian làm việc) và giới hạn token trong những gì người đó được làm trên repo. Đó không bao giờ là đăng nhập GitHub của thành viên được chuyển nguyên vẹn, và không có phương án dự phòng nào: khi không cấp được token, lượt chạy không có token và ghi lý do vào ghi chú của nó.
 
 **Thông tin xác thực của nhà cung cấp mô hình** được xác định theo một thứ tự cố định và thứ tự đó quan trọng:
 

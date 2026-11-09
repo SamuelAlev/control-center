@@ -2,7 +2,7 @@
 title: Gunakan tinjauan bertenaga AI
 description: Jalankan pipeline pr_review pada sebuah PR, baca temuan dan putusannya, lalu publikasikan tinjauan ke GitHub.
 slug: id-ID/panduan-pengguna/panduan-praktis/tinjauan-ai
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Panduan ini menunjukkan cara membuat agen peninjau meninjau sebuah pull request
@@ -120,14 +120,16 @@ GitHub.
 Control Center mengirim **satu** tinjauan GitHub. Temuan yang sudah diselesaikan
 atau ditutup dilewati. Tombol ini menyertakan setiap temuan terbuka yang tersisa
 dan, pada **Ship**, mengirimkan `APPROVE`. (Alat MCP `publish_review_to_github`
-masih hanya menggunakan temuan yang dikonfirmasi rekan secara bawaan dan tidak
-menyetujui kecuali Anda meneruskan `approve_on_ship`.) Temuan yang membawa anchor
+secara bawaan hanya menggunakan temuan yang dikonfirmasi rekan dan tidak pernah
+menyetujui: ia menerbitkan sebagai otomatisasi, sehingga `approve_on_ship` tidak
+berpengaruh di sana.) Temuan yang membawa anchor
 file dan baris menjadi komentar inline; sisanya dilipat ke badan ringkasan,
 masing-masing dengan footer "— Control Center AI review" agar sumbernya tidak
 ambigu. Putusan **Block** dikirim sebagai `REQUEST_CHANGES`; **Hold** sebagai
 `COMMENT`; **Ship** sebagai `APPROVE` dari tombol ini. Sebuah notifikasi kemudian
-menampilkan **Dipublikasikan**. Tinjauan diposting dengan identitas aplikasi
-milik server.
+menampilkan **Dipublikasikan**. Tinjauan diposting atas nama Anda, dengan proses masuk
+GitHub Anda sendiri: jika Anda belum masuk ke GitHub, penerbitan gagal dan meminta Anda
+masuk.
 
 Jika GitHub menolak anchor inline karena barisnya bukan bagian dari diff,
 seluruh tinjauan dikirim ulang dengan setiap temuan dilipat ke badan, sehingga

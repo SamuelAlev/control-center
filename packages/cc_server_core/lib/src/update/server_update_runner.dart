@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_infra/cc_infra.dart' show ChildProcess;
 import 'package:crypto/crypto.dart';
 
 /// Response of one GET through the update runner's HTTP client seam. The
@@ -56,7 +57,7 @@ class ServerUpdateRunner {
                    }
                    return status;
                  }),
-       _process = processRunner ?? Process.run,
+       _process = processRunner ?? ChildProcess.run,
        _environment = environment ?? Platform.environment,
        _scriptPath = scriptPath ?? Platform.script.path,
        _dockerEnvFile = dockerEnvFile ?? '/.dockerenv';
@@ -226,7 +227,7 @@ class ServerUpdateRunner {
       _log('SHA-256 verified (${asset.name}).');
     }
     // Defense in depth on top of the checksum: SLSA provenance when gh exists.
-    if (!await _verifyAttestation(archiveFile)) {
+    if (!await _verifyAttestation(archiveFile, expectedSha)) {
       return failure;
     }
     // A reused archive may sit beside a half-extracted tree from the earlier
@@ -441,9 +442,25 @@ class ServerUpdateRunner {
   /// SLSA provenance via the `gh` CLI when it exists; a soft skip otherwise
   /// (the SHA-256 gate above already ran — this is defense in depth). A hard
   /// refusal only when `gh` IS available and the verification fails.
-  Future<bool> _verifyAttestation(File archiveFile) async {
+  ///
+  /// `gh` never runs as the operator: the bundle comes from the public
+  /// attestations API and is verified offline (`--bundle`), `GH_CONFIG_DIR`
+  /// points at an empty directory, and the child environment strips
+  /// `GH_TOKEN`/`GITHUB_TOKEN`, so no host login can be read or used.
+  Future<bool> _verifyAttestation(File archiveFile, String sha256Hex) async {
+    final ghHome = Directory.systemTemp.createTempSync('cc_update_gh');
+    final ghEnv = {'GH_CONFIG_DIR': ghHome.path};
     try {
-      final gh = await _process('gh', ['--version']);
+      ProcessResult gh;
+      try {
+        gh = await _process('gh', ['--version'], environment: ghEnv);
+      } on ProcessException catch (e) {
+        _log(
+          'gh CLI unavailable ($e) — skipped SLSA attestation verification '
+          '(SHA-256 was verified).',
+        );
+        return true;
+      }
       if (gh.exitCode != 0) {
         _log(
           'gh CLI not found — skipped SLSA attestation verification '
@@ -451,6 +468,12 @@ class ServerUpdateRunner {
         );
         return true;
       }
+      final bundles = await _attestationBundles(sha256Hex);
+      if (bundles == null) {
+        return false;
+      }
+      final bundleFile = File('${ghHome.path}/attestations.jsonl')
+        ..writeAsStringSync(bundles.map(jsonEncode).join('\n'));
       // --repo, not --owner: --owner accepts an artifact attested by ANY
       // repository under the org, which is a much weaker claim than "this
       // archive was built by control-center's release workflow".
@@ -458,9 +481,11 @@ class ServerUpdateRunner {
         'attestation',
         'verify',
         archiveFile.path,
+        '--bundle',
+        bundleFile.path,
         '--repo',
         '$releaseOwner/$releaseRepo',
-      ]);
+      ], environment: ghEnv);
       if (result.exitCode == 0) {
         _log('SLSA attestation verified.');
         return true;
@@ -470,12 +495,54 @@ class ServerUpdateRunner {
         '${(result.stderr as String).trim()}',
       );
       return false;
+    } finally {
+      try {
+        ghHome.deleteSync(recursive: true);
+      } on FileSystemException {
+        // Best effort: an empty temp directory left behind is harmless.
+      }
+    }
+  }
+
+  /// The release's sigstore bundles for the archive digest [sha256Hex], read
+  /// from the public attestations API without credentials. Null (logged) when
+  /// none can be had, which refuses the update like a failed verification.
+  Future<List<Object>?> _attestationBundles(String sha256Hex) async {
+    final uri = Uri.parse(
+      '$releaseApiBase/repos/$releaseOwner/$releaseRepo/attestations/'
+      'sha256:$sha256Hex',
+    );
+    try {
+      final (status, bytes) = await _httpGet(uri);
+      if (status != 200) {
+        _log(
+          'cc_server update: refusing — SLSA attestation verification failed: '
+          'no attestation is published for this archive (HTTP $status).',
+        );
+        return null;
+      }
+      final decoded = jsonDecode(utf8.decode(bytes));
+      final entries = decoded is Map ? decoded['attestations'] : null;
+      final bundles = <Object>[
+        if (entries is List)
+          for (final entry in entries)
+            if (entry is Map && entry['bundle'] is Map)
+              entry['bundle'] as Object,
+      ];
+      if (bundles.isEmpty) {
+        _log(
+          'cc_server update: refusing — SLSA attestation verification failed: '
+          'the attestations API returned no inline bundle for this archive.',
+        );
+        return null;
+      }
+      return bundles;
     } on Object catch (e) {
       _log(
-        'gh CLI unavailable ($e) — skipped SLSA attestation verification '
-        '(SHA-256 was verified).',
+        'cc_server update: refusing — SLSA attestation verification failed: '
+        'could not fetch the attestation ($e).',
       );
-      return true;
+      return null;
     }
   }
 
@@ -869,9 +936,14 @@ int compareVersions(String a, String b) {
   return (withoutBuild.substring(0, dash), withoutBuild.substring(dash + 1));
 }
 
-/// Seam over [Process.run] for tests.
+/// Seam over the child-process runner for tests. [environment] is layered
+/// over the scrubbed child environment, never over the host's.
 typedef ProcessRunner =
-    Future<ProcessResult> Function(String executable, List<String> arguments);
+    Future<ProcessResult> Function(
+      String executable,
+      List<String> arguments, {
+      Map<String, String>? environment,
+    });
 
 /// Captures the single [Digest] a chunked SHA-256 conversion emits on close.
 class _DigestSink implements Sink<Digest> {

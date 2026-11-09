@@ -1,3 +1,6 @@
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show parseOauthDoneDeepLink;
+
 /// Somewhere in the app an external `control-center://` link asks for.
 sealed class DeepLinkTarget {
   const DeepLinkTarget();
@@ -86,6 +89,24 @@ final class TicketDeepLink extends DeepLinkTarget {
   final String ticketId;
 }
 
+/// `control-center://oauth-done?login_id=…&code=…` — the "Open Control
+/// Center" link on Connect's sign-in confirmation page, carrying the
+/// eight-character code for an attempt.
+///
+/// Resolving it says nothing about whether THIS client started [loginId]; the
+/// sign-in controller decides that, and an unknown id is a phishing warning,
+/// never a completion.
+final class OauthDoneDeepLink extends DeepLinkTarget {
+  /// Creates an [OauthDoneDeepLink].
+  const OauthDoneDeepLink({required this.loginId, required this.code});
+
+  /// The attempt the code belongs to.
+  final String loginId;
+
+  /// The normalised confirmation code.
+  final String code;
+}
+
 /// Parses incoming custom-scheme deep links.
 ///
 /// Everything the OS hands the app arrives as a string from outside, so parsing
@@ -140,6 +161,10 @@ final class DeepLinkHandler {
     if (uri == null || uri.scheme != scheme) {
       return null;
     }
+    final oauthDone = _parseOauthDone(uri);
+    if (oauthDone != null) {
+      return oauthDone;
+    }
     final pr = _parsePr(rawUrl);
     if (pr != null) {
       return pr;
@@ -171,6 +196,28 @@ final class DeepLinkHandler {
       'tickets' => TicketDeepLink(workspaceId: workspaceId, ticketId: id),
       _ => null,
     };
+  }
+
+  /// The one link that carries a query, because Connect's page writes it and
+  /// its shape is fixed: exactly `login_id` and `code`, no path, no fragment.
+  /// Anything more is not this link, so the anti-smuggling rule still holds
+  /// for every other shape.
+  static OauthDoneDeepLink? _parseOauthDone(Uri uri) {
+    if (uri.host != 'oauth-done' ||
+        uri.hasFragment ||
+        (uri.path.isNotEmpty && uri.path != '/') ||
+        !uri.queryParametersAll.keys.toSet().containsAll(const {
+          'login_id',
+          'code',
+        }) ||
+        uri.queryParametersAll.length != 2 ||
+        uri.queryParametersAll.values.any((v) => v.length != 1)) {
+      return null;
+    }
+    final parsed = parseOauthDoneDeepLink(uri);
+    return parsed == null
+        ? null
+        : OauthDoneDeepLink(loginId: parsed.loginId, code: parsed.code);
   }
 
   static PrDeepLink? _parsePr(String rawUrl) {

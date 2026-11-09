@@ -2,7 +2,7 @@
 title: Implementación y clientes
 description: Cómo la arquitectura de cliente ligero de Control Center separa un servidor headless de sus clientes de escritorio, web y celular.
 slug: es-MX/manual/conceptos/implementacion
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center no es un único programa. Es una **arquitectura de cliente
@@ -211,7 +211,7 @@ trabajos en arrendamiento.
 | Ejecución de agentes                                   | la ejecuta (o la arrienda) | ejecuta los trabajos en arrendamiento | —                     | —                                                |
 | Representación de la interfaz                          | —                          | —                                     | completa              | completa (web) / mayormente de lectura (celular) |
 | Captura de reuniones (micrófono + audio de la reunión) | —                          | —                                     | captura nativa        | solo web, mediante audio de pantalla compartida  |
-| OAuth de calendario (Google)                           | guarda los tokens          | —                                     | —                     | —                                                |
+| Inicios de sesión de proveedores (GitHub, Google, Linear) | los ejecuta y los guarda | —                                    | —                     | —                                                |
 
 Las dos capas no aplican el mismo aislamiento. `cc_server` envuelve las
 ejecuciones que realiza él mismo en el sandbox del sistema operativo del host
@@ -225,6 +225,13 @@ arrendamiento, por lo tanto, saca la ejecución fuera del sandbox incluso en un
 host que tenga uno. Consulta
 [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/) para saber
 qué acota una ejecución en cada caso.
+
+Los inicios de sesión de proveedores terminan en el servidor, a través de sus
+propias apps o de [Control Center Connect](/es-MX/manual/referencia/connect/), un
+servicio opcional que ejecuta el OAuth de los proveedores para los servidores sin
+apps propias. Connect devuelve una credencial que solo este servidor puede usar y
+nunca ve el contenido de los repositorios. Los clientes solo abren el navegador
+y, en un inicio de sesión a través de Connect, devuelven el código que muestra.
 
 La captura de reuniones ocurre en un cliente porque necesita un micrófono y el
 audio de la reunión: un servidor metido en un clóset no puede grabar tu llamada.

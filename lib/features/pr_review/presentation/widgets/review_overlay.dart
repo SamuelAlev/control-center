@@ -9,6 +9,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -351,10 +352,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       if (optimistic != null) {
         ref.read(prOptimisticReviewStateProvider.notifier).set(prRef, null);
       }
-      toaster.show(
-        l10n.failedToSubmitReview('$e'),
-        variant: CcToastVariant.danger,
-      );
+      showPrError(context, ref, e, (l) => l.failedToSubmitReview('$e'));
     }
   }
 

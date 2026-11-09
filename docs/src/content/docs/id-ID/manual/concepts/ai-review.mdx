@@ -2,7 +2,7 @@
 title: Tinjauan AI
 description: Bagaimana sebuah pull request menjadi pull request yang sudah ditinjau — space tinjauan, node tinjauan dan konsensus sesama peninjau, kohort dan sumbu, putusan Ship/Hold/Block, dan mengapa publikasi tetap menjadi langkah yang Anda ambil.
 slug: id-ID/panduan-pengguna/konsep/tinjauan-ai
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Bentuk sebuah tinjauan
@@ -209,11 +209,13 @@ menekan **Publikasikan ke GitHub**:
   dilipat ke badan agar tidak ada yang hilang diam-diam.
 - Putusan **Block** dikirim sebagai `REQUEST_CHANGES`; **Hold** sebagai
   `COMMENT`; **Ship** sebagai `APPROVE` dari tombol (`approve_on_ship: true`).
-  Alat MCP membiarkan Ship sebagai `COMMENT` kecuali Anda meneruskan
-  `approve_on_ship`.
-- Tinjauan diposting dengan identitas aplikasi milik server. Siapa yang menekan
-  Publikasikan dicatat untuk gerbang peran dan log audit; itu bukan penulis di
-  GitHub.
+  Alat MCP menerbitkan sebagai otomatisasi dan selalu membiarkan Ship sebagai `COMMENT`.
+- Tombol **Publikasikan ke GitHub** memposting tinjauan atas nama orang yang menekan
+  tombol itu, dengan proses masuk GitHub mereka sendiri: gerbang rilis adalah milik
+  mereka, jadi tinjauannya juga. Penerbitan tanpa orang di belakangnya adalah otomatisasi,
+  dan otomatisasi tidak pernah menyetujui: Ship dikirim sebagai `COMMENT`, dan di
+  Control Center Connect posting itu diberi atribusi dengan awalan
+  `**Control Center** (for @login):`.
 
 Publikasi mendeklarasikan kelas tindakan `prPublish`, sehingga titik pengunci
 pagar pengaman menggerbanginya seperti tindakan yang mengubah data lainnya — ia

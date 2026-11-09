@@ -2,7 +2,7 @@
 title: API-kulcsok kezelése
 description: Hol él az egyes hitelesítő adat — a szerveren lévő felhasználói fiókjában, magán a szerveren vagy egy külső CLI-ben —, és hogyan állíthatja be, forgathatja és távolíthatja el.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Ez az útmutató bemutatja, hol tárolja a Control Center az általa használt
@@ -14,27 +14,34 @@ van-e mögötte ember.
 
 | Hitelesítő adat | Hol tárolódik | Ki használja |
 | --- | --- | --- |
-| A kódhoszt- / jegykezelő hitelesítő adata | A szerver 0600 jogosultságú titkosfájlja, a felhasználói azonosítójához rendelve | Minden, amit kér: a PR-felület, az ügynökfuttatásai, a képei |
-| A szerver alkalmazásidentitása | Ugyanaz a fájl, plusz a `server_settings` a nem titkos beállításokhoz | Olyan munka, amelyet nem ember kért: webhookok, PR-lekérdezés, jegyszinkronizálás |
+| Az Ön kódhoszt- / jegykezelő bejelentkezése | A szerver 0600 jogosultságú titkosfájlja, a felhasználói azonosítójához rendelve | Minden, amit Ön tesz: a PR-felület, átnézések, összefésülések, az Ön Linear-műveletei |
+| A szerver szolgáltatói alkalmazásai | Ugyanaz a fájl, plusz a `server_settings` a nem titkos beállításokhoz | Az emberek bejelentkeztetése, valamint egyetlen repóra szóló tokenek ügynököknek, pipeline-oknak és lekérdezésnek |
+| A Connect telepítési kulcsa | Ugyanaz a fájl (`connect_install_key`) | A szerver azonosítása a Control Center Connect felé |
 | Modellszolgáltatói kulcsok és OAuth-tokenek | A szerver saját hitelesítőadat-tára | A beépített adapter, a telepítés minden munkaterületén |
-| Slack-bot tokenek | `<dataDir>/<workspaceId>/chat_credentials/` a szerveren | Az adott munkaterület csevegőhídja |
+| Slack-bot hitelesítő adatok | `<dataDir>/<workspaceId>/chat_credentials/` a szerveren | Az adott munkaterület csevegőhídja: a saját alkalmazás tokenjei vagy a megosztott alkalmazás lepecsételt engedélye |
 | Külső CLI-k hitelesítő adatai | Amit az adott CLI használ | A Claude Code, a szervergépen |
 
-## Két GitHub-hitelesítő adat, amelyek különböző kérdésekre válaszolnak
+## GitHub: az Ön bejelentkezése és egyetlen repóra szóló tokenek
 
-- **Az Öné**, a bejelentkezésből (eszközkódos folyamat) vagy egy token
-  beillesztéséből. Minden, az *Ön nevében* tett kérés ezt használja, így az Ön
-  számára közzétett hozzászólás az Ön nevét viseli. Egy másik tag nem tudja
-  kiolvasni, és a sajátját csatlakoztatja
-- **A szerveré**, az üzemeltető által regisztrált GitHub Appból. Minden olyan
-  kérésre válaszol, amely mögött nincs hívó — így a kódhoszt-hozzáférés nem
-  tűnik el, amikor valaki távozik vagy leforgat egy tokent
+- **Az Öné**, a **Bejelentkezés: GitHub** révén. Minden, az *Ön nevében* tett
+  kérés ezt használja, így az Ön számára közzétett átnézés az Ön nevét viseli.
+  Egy másik tag nem tudja használni, és maga jelentkezik be. Nincs beillesztendő
+  GitHub-token
+- **Az a munka, amelynél senki sem gépel** (ügynökök, pipeline-ok, lekérdezés,
+  botválaszok), egyszerre egyetlen repóra szóló tokent kap, amelyet a szerver
+  GitHub Appja vagy a Control Center Connect állít ki, és arra korlátozódik,
+  amit egy felelős tag ott megtehet. Soha nem az Ön egészben átadott
+  bejelentkezése
 
 Az Öné a **Kódtárhely** kártyán van beállítva a **Beállítások → Munkaterület →
-Profil és identitás** alatt; a szerveré a **Szolgáltatói alkalmazások** alatt a
+Profil és identitás** alatt; a szerver alkalmazása a **Szolgáltatói alkalmazások** alatt a
 **Beállítások → Szerver → Egyszeri bejelentkezés** útvonalon. Lásd a
 [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
 és a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt.
+
+A GitLab és a Bitbucket továbbra is beillesztett személyes tokent vár, amely
+ugyanígy tárolódik. Lásd a
+[Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/) oldalt.
 
 :::note[Van egy kizárólag URL-lel elérhető képernyő is]
 A `/workspaces/<workspaceId>/api-keys` ugyanazt a két kártyát jeleníti meg,
@@ -75,49 +82,62 @@ alkalmas lenne egy kulcs elhelyezésére valamelyikükhöz, de nem az: az eszkö
 
 A **Jegykezelés** kártya a **Beállítások → Munkaterület → Általános** alatt egy
 döntés mindkét felét tartalmazza: hogy melyik szolgáltatónál élnek a jegyei, és
-az ahhoz tartozó hitelesítő adatot. A **Helyi** választása elrejti a hitelesítő
-adat sorát — a helyi jegyek e szerver saját adatbázisában élnek, és nincs
+hogy ki a Control Center, amikor vele beszél. A **Helyi** választása elrejti a
+Linear-sorokat — a helyi jegyek e szerver saját adatbázisában élnek, és nincs
 mihez hitelesíteniük.
 
-A kulcsa a szerveren, a felhasználói azonosítójához rendelve tárolódik,
-akárcsak a kódhoszthoz tartozó. A szerver külön tartja a saját Linear-kulcsát
-(**Szolgáltatói alkalmazások**), és a jegyszinkronizálás ezen fut, amikor nem
-ember kérte. Az ügynök homokozójába nem kerül jegykezelő kulcs; az ügynökök a
-Control Center eszközein keresztül írnak jegyeket, amelyek az **Írás külső
-követőbe** szabályt kérdezik meg. Lásd a
+A Linearnek két bejelentkezése van, és nincs beillesztendő kulcs: a **Linear** az
+Öné, ahhoz, amit Ön tesz, a **Linear-automatizálás** pedig a munkaterület Control
+Center-alkalmazása, amelyet egy adminisztrátor csatlakoztat a
+jegyszinkronizáláshoz, a pipeline-okhoz és az ügynökökhöz. A szerver ezenkívül
+tárolhat egy **Szolgáltatási API-kulcsot** (**Szolgáltatói alkalmazások**) azoknak
+a munkaterületeknek, amelyek nem csatlakoztattak automatizálást. Az ügynök
+homokozójába nem kerül jegykezelő hitelesítő adat; az ügynökök a Control Center
+eszközein keresztül írnak jegyeket, amelyek az **Írás külső követőbe** szabályt
+kérdezik meg. Lásd a
 [Linear-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/) oldalt.
 
 ## Forgatás vagy visszavonás
 
-- **Az Ön GitHub-hitelesítő adata**: nyomja meg a **Leválasztás** gombot, majd
-  jelentkezzen be újra, vagy illessze be az új tokent. A régit a GitHubon vonja
-  vissza
+- **Az Ön GitHub-bejelentkezése**: nyomja meg a **Leválasztás** gombot, majd
+  ismét a **Bejelentkezés: GitHub** gombot. A leválasztás minden olyan tokent is
+  megszüntet, amelyet a szerver az Ön nevében állított ki
+- **Egy GitLab- vagy Bitbucket-token**: nyomja meg a **Token frissítése** gombot,
+  illessze be az újat, majd a régit vonja vissza a kódhoszton
 - **A szerver alkalmazása**: hozzon létre új privát kulcsot vagy client
-  secretet az alkalmazás GitHub-oldalán, illessze be a **Szolgáltatói
+  secretet az alkalmazás szolgáltatói oldalán, illessze be a **Szolgáltatói
   alkalmazások** alatt, és nyomja meg a **Teszt** gombot
+- **A Connect telepítési kulcsa**: **Kulcs cseréje** a **Control Center Connect**
+  kártyán, vagy `cc_server connect rotate-key --yes`. Mindenki, aki a Connecten
+  keresztül jelentkezett be, újra bejelentkezik. Lásd a
+  [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/) oldalt
 - **Egy modellszolgáltató**: a sorában jelentkezzen ki (OAuth), vagy távolítsa
   el a kulcsot, majd csatlakoztassa újra
-- **Slack**: illessze be újra a tokeneket a csatlakozási párbeszédablakban.
-  Lásd a [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) oldalt
+- **Slack**: saját alkalmazásnál illessze be újra a tokeneket a csatlakozási
+  párbeszédablakban. A megosztott Control Center-alkalmazásnak nincs cserélendő
+  tokenje: a bottokenje a Connecten keresztül újul meg, a **Leválasztás** pedig
+  visszavonja, és eltávolítja a botot a Slackből. Lásd a [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) oldalt
 
 ## Hibaelhárítás
 
-### A PR-lista üres, de a token működik a `curl`-ben
+### Egy GitLab- vagy Bitbucket-token működik a `curl`-ben, de itt nem
 
-Ellenőrizze a **Kódtárhely** sorának alcímét. Ha másik forrást nevez meg („a
-szerver alkalmazásán keresztül", „a környezetből"), akkor nem az a hitelesítő
-adat válaszol, amelyet éppen tesztel — az Öné nem került mentésre.
+Ellenőrizze a **Kódtárhely** sorának alcímét. Ha az áll ott, hogy „a
+környezetből", akkor a szerver hitelesítő adata válaszol, nem az Öné — az Öné
+nem került mentésre.
 
-### A token elfogadott, de a későbbi kérések meghiúsulnak
+### Egy GitLab- vagy Bitbucket-token elfogadott, de a későbbi kérések meghiúsulnak
 
 A tokent a tárolásakor ellenőrzi a rendszer, így a sor megnevezi a mögötte lévő
 fiókot — de csak a fiókot, a hatóköröket nem. A túl kevés hatókörrel rendelkező
-token csatlakozik, majd az egyes kérések meghiúsulnak. Ellenőrizze a
-hatóköröket és a lejáratot:
+token csatlakozik, majd az egyes kérések meghiúsulnak. Ellenőrizze a hatóköreit
+és a lejáratát a kódhoszton.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Egy szolgáltató azt írja, hogy a bejelentkezés nincs beállítva ezen a szerveren
+
+A szervernek nincs sem saját alkalmazása az adott szolgáltatóhoz, sem Control
+Center Connectje. A szerver tulajdonosa a **Beállítások → Szerver → Egyszeri
+bejelentkezés** helyen választja ki az egyiket.
 
 ## Kapcsolódó útmutatók
 

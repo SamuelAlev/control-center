@@ -10,7 +10,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.d
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 import 'package:uuid/uuid.dart';
 
 /// Runs `git` in a checkout. Tests pass a stand-in; production uses [Process].
@@ -29,10 +29,11 @@ typedef StackPinnedBase =
       String repoId,
     );
 
-/// A token for [forge], attributed to [actingUserId] when the call has one.
+/// A token for `repo` on its forge, attributed to `actingUserId` when the call
+/// has one.
 typedef StackForgeToken =
     Future<String?> Function(
-      ForgeHost forge,
+      Repo repo,
       String? actingUserId,
       String workspaceId,
     );
@@ -803,7 +804,7 @@ class SpaceStackService implements SpaceStackPort {
     String? actingUserId,
     String workspaceId,
   ) async {
-    final token = await _tokenFor(repo.forge, actingUserId, workspaceId);
+    final token = await _tokenFor(repo, actingUserId, workspaceId);
     if (token == null || token.isEmpty || repo.forge.gitHost.isEmpty) {
       return const {};
     }
@@ -826,15 +827,10 @@ class SpaceStackService implements SpaceStackPort {
     List<String> args, {
     Map<String, String>? environment,
   }) async {
-    final result = await Process.run(
-      'git',
+    final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs(args, workingDirectory: workingDirectory),
       workingDirectory: workingDirectory,
-      environment: {
-        'GIT_TERMINAL_PROMPT': '0',
-        'GIT_CONFIG_NOSYSTEM': '1',
-        ...?environment,
-      },
+      environment: environment,
     );
     return (
       exitCode: result.exitCode,

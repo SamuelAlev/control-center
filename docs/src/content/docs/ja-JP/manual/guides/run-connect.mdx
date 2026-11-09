@@ -1,0 +1,234 @@
+---
+title: Connect サーバーを実行
+description: cc-connect の Docker イメージから独自の Control Center Connect を実行するか、cc_server 内にマウントして、自分で登録したプロバイダーアプリを通じてサーバーが人々をサインインさせるようにします。
+slug: ja-JP/マニュアル/ハウツーガイド/connect-サーバー実行
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect は、独自のアプリを登録していないサーバーのために、プロバイダーのサインイン（GitHub、Google Calendar、Linear、Slack）を実行します。このガイドでは独自の Connect を実行する方法を説明します。そうすれば、プロバイダーアプリ、そのシークレット、それらを使ってよいサーバーの一覧がすべて手元にとどまります。
+
+Connect に何が見え、何が見えないかは [Connect リファレンス](/ja-JP/マニュアル/リファレンス/connect/)にあります。運用するかどうかを検討しているなら、先にそちらを読んでください。
+
+:::note[不要な場合もあります]
+1 台のサーバーなら、代わりに独自のアプリを登録できます。**設定 → サーバー → シングルサインオン → プロバイダーアプリ** で、**自分のGitHubアプリを作成** を使えば GitHub を 1 ステップで設定できます。サーバー自身のアプリが適用されるのは **自分のアプリを使う** の場合だけです。Control Center のものまたはカスタムの Connect を使う場合、Connect がすべてのレーンを担当しますが、ワークスペース自身のアプリは引き続き適用されます。複数のサーバーで 1 組のアプリを共有したい場合に Connect を運用します。
+:::
+
+## 前提条件
+
+- TLS を終端するプロキシの背後にある、Connect 用の公開 **HTTPS** アドレス（例: `https://connect.example.com`）。プレーンな `http` はループバックでのみ受け付けられます
+- Docker、または追加の環境変数を付けて再起動できる `cc_server`
+- 提供したい各プロバイダーにアプリを登録する権限
+- それを使うサーバーと、その所有者への連絡手段。各サーバーには、Connect の許可リストに追加するインストールID があります
+
+## ステップ 1: アドレスを決める
+
+ここで URL を決め、変えないでください。`CONNECT_PUBLIC_URL` は Connect が行うすべてに関わります。リクエストの署名、封印された資格情報、プロバイダーのリダイレクト URL、各サーバーのインストールID は、すべてこれに結び付けられます。後から変更すると、リダイレクトを登録し直し、全員がもう一度サインインすることになります。
+
+## ステップ 2: プロバイダーアプリを登録する
+
+提供したいプロバイダーだけを登録します。変数がそろっていないプロバイダーは Connect の構成から除外され、サーバーからは利用不可として見えます。以下の `<base>` は、あなたの `CONNECT_PUBLIC_URL` です。
+
+| プロバイダー   | 登録するもの                                                                                                                                                                                                                                                         | 控えておくもの                          |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`。Setup URL `<base>/oauth/github/setup` で **Redirect on update** をオンにします。**Request user authorization (OAuth) during installation** はオフのままにします。オンにすると GitHub は Setup URL を無視します。**Expire user authorization tokens** はオンのままにします | App ID、スラッグ、クライアント ID、クライアントシークレット |
+| **Google**     | リダイレクト URI `<base>/oauth/google/callback` を持つ種類 **Web application** の OAuth クライアント。Google Calendar API を有効にします                                                                                                                           | クライアント ID、クライアントシークレット |
+| **Linear**     | コールバック URL `<base>/oauth/linear/callback` と `<base>/oauth/linear_app/callback` を持つ OAuth アプリケーション                                                                                                                                              | クライアント ID のみ                    |
+| **Slack**      | リダイレクト URL `<base>/oauth/slack_oidc/callback` と `<base>/oauth/slack/callback`。Event Subscriptions を `<base>/v1/hooks/slack/events` に（`app_mention`、`message.*`、`assistant_thread_*`、`app_uninstalled`、`tokens_revoked`）。スラッシュコマンドを `<base>/v1/hooks/slack/commands` に。トークンローテーションをオンにします | App ID、クライアント ID、クライアントシークレット、署名シークレット |
+
+GitHub App には次のリポジトリ権限を付与します: **Metadata** は読み取り、**Contents** は読み取りと書き込み、**Pull requests** は読み取りと書き込み、**Issues** は読み取りと書き込み、**Checks**、**Actions**、**Commit statuses** は読み取り。チームへのレビュー依頼のために、組織の **Members** の読み取りも追加します。Webhook はオフのままでかまいません。サーバーはポーリングします。
+
+Connect が GitHub App の秘密鍵を必要とすることはありません。代わりに、個人自身のサインインから 1 リポジトリ限定のトークンを発行します。Linear もシークレットを必要としません。Connect はコードをサーバーに返し、サーバーが自らやり取りを完了します。
+
+## ステップ 3: インストールID を集める
+
+Connect は許可リストにあるサーバーにだけ応答します。各サーバーで、接続先をあなたの Connect にしてから、そのインストールID を読み取ります:
+
+1. **設定 → サーバー → シングルサインオン** に移動し、**Control Center Connect** カードを開いて **カスタムConnectサーバーを使う** を選びます
+2. URL を入力して保存します。カードにサーバーの **インストールID** が表示されます
+
+サーバーホストのターミナルからは、次のようにします:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` はインストールID を出力します。ステップ 5 が終わるまでは `install_blocked` と表示されますが、これは想定どおりです。
+
+インストールID は Connect のアドレスごとに導出されるため、同じサーバーでも、通信する Connect ごとに異なる ID を持ちます。ID が変わるのは、所有者が鍵を更新したときだけです。
+
+## ステップ 4: シール鍵を作成する
+
+Connect は、返すすべての資格情報をシール鍵で暗号化します。1 つ作成し、シークレットファイルとして保管します:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+シール鍵を失うと、全員がサインアウトされます。それなしではどのシールも開けません。
+
+## ステップ 5: コンテナーを起動する
+
+各リリースでは、ビルドの来歴付きで `ghcr.io/samuelalev/cc-connect` が公開されます。本番環境ではバージョンタグを固定してください。
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+リバースプロキシをポート `8790` に向けます。イメージは非特権ユーザーとして動作し、状態を `/data` ボリュームに保持し、組み込みのヘルスチェック（`/healthz` を確認する `cc-connect --healthcheck`）を備えています。
+
+構成が開放的すぎる、安全でない、または未完成の場合、Connect は起動を拒否し（終了コード `78`）、どの変数が誤っているかを出力します。許可リストがない、ループバック以外で `http` のアドレスを使っている、シール鍵の形式が不正、`NAME` と `NAME_FILE` の両方が設定されている、のいずれでも起動は止まります。
+
+チェックポイント: 各サーバーで Connect カードに **動作中** と表示され、**各サインインの実行場所** で、登録したすべてのプロバイダーに **Connect** と表示されます。`cc_server connect status` は `Health: ok` と同じレーンを出力します。
+
+## cc_server 内に Connect をマウントする
+
+サーバーは、別のコンテナーの代わりに、自分自身で Connect をホストできます。マウントされるサービスは、イメージが実行するものと同じです。
+
+1. ステップ 5 と同様に、`CONNECT_*` 変数をサーバーの `.env` ファイル（またはその環境）に置きます
+2. `CC_SERVER_CONNECT_HOST=on` を追加します
+3. サーバーを再起動します。ログに `embedded Connect at <url>` と出力されます
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect は `<server>/connect` で提供されます:
+
+- `CONNECT_PUBLIC_URL` の既定値は、サーバーの公開 URL のオリジンに `/connect` を付けたものです。プロキシの背後では明示的に設定してください。パスは正確に `/connect` でなければならず、ループバックでない限り HTTPS でなければなりません
+- マウントされたサービスに届くのは `CONNECT_*` 変数だけなので、サーバー自身のプロバイダーアプリを借りることはありません
+- `CONNECT_ALLOWED_INSTALLS` は、ホストしているサーバー自身を含めて、引き続き必須です
+- 構成を誤ったマウントは、開放されたブローカーを提供するのではなく、サーバーの起動を止めます
+- デモサーバーがこれをマウントすることはありません
+
+プロバイダーのリダイレクトを `https://<server>/connect` に対して登録し、ステップ 3 と同様に、サーバー（ホストしているサーバーを含む）の接続先をその URL にします。
+
+## 構成リファレンス
+
+すべての設定は環境変数です。どのシークレットも、代わりにマウントしたファイルから読み込めます。`NAME` の代わりに `NAME_FILE` を設定します。Connect はファイルを最大 30 秒ごとに読み直し、最後の正常な値を保持します。**dual** と記したシークレットは、ローテーション中に `NAME_PREVIOUS`（または `NAME_PREVIOUS_FILE`）も受け付けます。
+
+### アドレスとアクセス
+
+| 変数                            | 既定値    | 意味                                                                                                                             |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | 必須      | 正規の公開 URL。HTTPS、またはループバックでのみ `http`。パスがあればマウントを意味します。クエリやフラグメントは不可              |
+| `CONNECT_ALLOWED_INSTALLS`      | 必須      | カンマ区切りのインストールID。`*` は `CONNECT_SIGNED_CONFIG_FILE` と組み合わせた場合にのみ受け付けられます                        |
+| `CONNECT_DENY_INSTALLS`         |           | 許可されていても拒否するインストールID                                                                                           |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | 数値の GitHub オーナー ID。設定すると、それらが所有するリポジトリに対してだけリポジトリトークンが発行されます                     |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | バインドアドレスとポート                                                                                                 |
+| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` で信頼するプロキシのホップ数（0〜8）。アドレス単位のレート制限にのみ使われます                                  |
+
+### プロバイダーのレーン
+
+| 変数                                                                        | 既定値  | 意味                                                                        |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                  |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | シークレット、dual                                                          |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Google クライアント。シークレットは dual                                    |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Linear アプリケーション。シークレットなし                                   |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Slack アプリ                                                                |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |         | シークレット、dual                                                          |
+| `CONNECT_KLIPY_APP_KEY`                                                     |         | Klipy の GIF 検索キー。シークレット、dual                                   |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy` | `proxy` はキーを Connect に保持し、`key` はキーをサーバーに渡します         |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`     | GitHub、Google、Slack: 新しいシールに記録される世代                         |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`     | GitHub、Google、Slack: これより古いシールは再度サインインが必要             |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`  | すべてのレーン: `false` にすると新規サインインを止め、既存のものは更新を続けます |
+
+### シール、状態、ストレージ
+
+| 変数                                                      | 既定値                     | 意味                                                                                                       |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` または `gcp-kms`                                                                                   |
+| `CONNECT_SEAL_KEYS`                                       |                            | シークレット。`local` では必須。カンマ区切りの `kid:key` エントリーで、新しいものが先。古いエントリーも引き続き復号に使われます |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`。`gcp-kms` では必須                                       |
+| `CONNECT_STATE`                                           | `memory`                   | 1 インスタンスなら `memory`、複数なら `redis`                                                              |
+| `CONNECT_REDIS_URL`                                       |                            | シークレット。`redis://` または `rediss://`                                                                |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | `rediss://` 用の CA バンドル                                                                               |
+| `CONNECT_BINDINGS`                                        | `file`                     | GitHub インストールのバインディングの保存先: `file` または `firestore`                                     |
+| `CONNECT_DATA_DIR`                                        | `data`（イメージでは `/data`） | `bindings.json` を保持します                                                                           |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` データベース   | `CONNECT_BINDINGS=firestore` 用                                                                            |
+
+### 構成、ログ、制限
+
+| 変数                                    | 既定値             | 意味                                                                                                |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | オフラインで署名された構成。そのまま提供されます。Control Center がホストする Connect が使います    |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | 署名された構成の検証に使う鍵                                                                        |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | セルフホストの Connect が生成する構成のエポック                                                     |
+| `CONNECT_LOG_HMAC_KEY`                  | プロセスごとにランダム | シークレット。設定すると、インストールID の代わりとなるタグが再起動やインスタンスをまたいで安定します |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | `/v1/version` が報告します                                                                          |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | インストールごとのリクエスト数                                                                      |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | アドレスごとのリクエスト数                                                                          |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | サービス全体のリクエスト数                                                                          |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | チームごとの Slack イベント数                                                                       |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | インストールごとの GIF 検索数                                                                       |
+
+## 複数のインスタンスを実行する
+
+ほとんどの組織では、`CONNECT_STATE=memory` の 1 インスタンスで十分です。1 つのアドレスの背後に複数のインスタンスを置く場合は、`CONNECT_STATE=redis` と、共有の `CONNECT_DATA_DIR` または `CONNECT_BINDINGS=firestore` のどちらかが必要です。そうすれば、あるインスタンスで始まったサインインを別のインスタンスで完了できます。
+
+## プロバイダーのシークレットをローテーションする
+
+誰もサインアウトされません:
+
+1. プロバイダーで新しいシークレットを作成し、古いものは残しておきます
+2. 古い値を `NAME_PREVIOUS` に移し、新しい値を `NAME` に入れて、`CONNECT_<LANE>_SECRET_GENERATION` を上げます。マウントしたファイルは 30 秒以内に反映されます
+3. サインインが更新されるのを待ってから、プロバイダーで古いシークレットを削除し、`NAME_PREVIOUS` を取り除きます
+
+シール鍵をローテーションするには、新しい `cc-connect-config seal-key` のエントリーを `CONNECT_SEAL_KEYS` の先頭に置き、古いエントリーはそのシールが更新されるまで残しておきます。
+
+## アプリを変更する
+
+サーバーは、初めて使ったときにあなたの Connect が通知したアプリ ID とクライアント ID を記憶しています。アプリを置き換えると、すべてのサーバーの Connect カードに **Connectのアプリが変更されました** と表示され、所有者が **新しいアプリを信頼** を押すまで、Connect を通じたサインインは一時停止します。切り替える前にサーバー所有者に知らせておけば、その確認があなたによるものだとわかります。
+
+## サーバーをブロックする
+
+そのインストールID を `CONNECT_DENY_INSTALLS` に追加して再起動します。所有者には「ConnectがこのサーバーのインストールIDをブロックしました。」と表示され、そのサーバーでの Connect によるサインインはすべて停止します。
+
+## トラブルシューティング
+
+### サーバーに、Connect にブロックされたと表示される
+
+そのインストールID が `CONNECT_ALLOWED_INSTALLS` にないか、`CONNECT_DENY_INSTALLS` に含まれています。ID は所有者が鍵を更新すると変わるので、新しい ID を尋ねてください。
+
+### プロバイダーが利用不可と表示される
+
+その変数のいずれかが欠けているため、Connect がレーンを除外しました。起動ログと上の表を確認してください。GitHub には App ID、スラッグ、クライアント ID、クライアントシークレットの 4 つすべてが、Google にはクライアント ID とシークレットの両方が必要です。
+
+### サインインがリダイレクトの不一致で失敗する
+
+プロバイダーに登録したリダイレクトが `CONNECT_PUBLIC_URL` と完全には一致していません。スキーム、ホスト、ポート、そしてマウントした Connect なら `/connect` のパスを比べてください。
+
+### 全員が再度サインインしなければならなかった
+
+シール鍵が変わったか失われた、サーバーが鍵を更新した、またはサーバーのデータが別のマシンに復元されました。封印された資格情報は、それを作成したインストールと Connect に対してだけ開きます。
+
+## 関連ガイド
+
+- [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)
+- [Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
+
+## 関連リファレンス
+
+- [Control Center Connect](/ja-JP/マニュアル/リファレンス/connect/)
+- [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/)

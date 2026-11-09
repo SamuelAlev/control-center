@@ -3,12 +3,6 @@ library;
 
 import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 
-/// Storage key for the GitHub token.
-const String githubTokenKey = 'github_token';
-
-/// Secure-storage key for the remote ticketing provider API key.
-const String ticketingApiKeyKey = 'ticketing_api_key';
-
 /// Storage key for the theme mode preference.
 const String themeModeKey = 'theme_mode';
 

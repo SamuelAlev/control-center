@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Headless sunucunun her bayrağı, ortam değişkeni, alt komutu ve veri dizini yolu.
 slug: tr-TR/kilavuz/referans/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Her süreç bayrağı bir CLI bayrağı ya da bir ortam değişkeni alır; önce bayrak,
-sonra ortam, en son varsayılan geçerlidir. Üçüncü taraf kimlik bilgileri bunun
-istisnasıdır — aşağıya bakın.
+sonra ortam, en son varsayılan geçerlidir. Sağlayıcı kimlik bilgileri bunun
+istisnasıdır — bkz. [Sağlayıcı uygulamaları ve Connect](#sağlayıcı-uygulamaları-ve-connect).
 
 :::caution[Bilinmeyen bayraklar sessizce yok sayılır]
 Bağımsız değişken ayrıştırıcı elle yazılmıştır ve tanımadığı her şeyi atlar; bu
@@ -44,7 +44,7 @@ başlangıç günlük satırlarını denetleyin.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | ayarlı değil                  | Bu ikiliden beklenen SHA-256; her başlatmadan önce doğrulanır                                                                                                                |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | boş                           | Tünel çağrısı için virgülle ayrılmış ek bağımsız değişkenler                                                                                                                  |
 
-## Dizinleme ve üçüncü taraf kimlik bilgileri
+## Dizinleme ve çalışma zamanı
 
 | Bayrak                   | Ortam                           | Varsayılan                            | Anlam                                                                                                                                 |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +54,40 @@ başlangıç günlük satırlarını denetleyin.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Harness çalıştırmalarının küçük bir yerleşik araç kümesi ile bir ad dizini gönderip kalanları ilk kullanımda yükleyip yüklemediği. Aşağıya bakın |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Kendisine hizmet edemeyen bir kimlik bilgisini bir insanın düzeltmesini beklerken bir çalıştırmanın parkta kalacağı saniye (0–3600 aralığına sınırlanır). Aşağıya bakın |
 
-Bir kimlik bilgisi için boş değer ayarlı değil gibi okunur; böylece yerleşik geri
-dönüş yine geçerli olur. Kaynaktan yapılan bir derleme hiçbir yerleşik kimlik
-bilgisi taşımaz.
+## Sağlayıcı uygulamaları ve Connect
 
-Google Calendar ve Klipy GIF seçici **yalnızca ortam değişkeniyle** çalışır —
-`--google-client-id` / `--klipy-app-key` diye bir bayrak yoktur (bilinmeyen
-bayraklar yok sayılır). `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`
-ve `KLIPY_APP_KEY` değişkenlerini ortamda (ya da sunucunun yanındaki bir `.env`
-dosyasında) ayarlayın. Boş bırakmak, başlatmayı başarısız kılmak yerine o
-özelliği devre dışı bırakır.
+Hiçbir derleme sağlayıcı kimlik bilgisi taşımaz. Control Center Connect açıkken Connect her sağlayıcıyı çalıştırır ve sunucunun kendi uygulamaları kayıtlı ama kullanılmadan kalır. **Kendi uygulamalarımı kullan** altında her sağlayıcı, tam olarak yapılandırılmışsa sunucunun kendi uygulamasında çalışır, değilse kullanılamaz. Bir çalışma alanının kendi uygulaması her iki durumda da kazanır. Kendi uygulamalar **Ayarlar →
+Sunucu → Tek oturum açma → Sağlayıcı uygulamaları** bölümünde ayarlanır ya da
+sunucunun `.env` dosyasından bir kez tohumlanır. Bunlar için bayrak yoktur:
+komut satırındaki bir gizli anahtar `ps` üzerinden okunabilir.
+
+| Değişken                       | Anlamı                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Sunucunun GitHub App kimliği                                                                    |
+| `GITHUB_APP_PRIVATE_KEY`       | Özel anahtarı, `\n` kaçışlarıyla tek satırda. **Yalnızca `.env`**                               |
+| `GITHUB_CLIENT_ID`             | Kişileri oturum açtırmak için istemci kimliği                                                   |
+| `GITHUB_CLIENT_SECRET`         | İstemci gizli anahtarı. **Yalnızca `.env`**                                                     |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Sunucunun Google Web uygulaması istemcisi                                                       |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Gizli anahtarı. **Yalnızca `.env`**                                                             |
+| `LINEAR_CLIENT_ID`             | Sunucunun Linear uygulaması (PKCE, gizli anahtar yok)                                           |
+| `LINEAR_API_KEY`               | Otomasyon için bir Linear hizmet anahtarı. **Yalnızca `.env`**                                  |
+| `KLIPY_APP_KEY`                | GIF araması için sunucunun kendi Klipy anahtarı; yalnızca **Kendi uygulamalarımı kullan** altında kullanılır       |
+| `CC_CONNECT_URL`               | `hosted`, `off` ya da bir Connect URL’si. Connect seçimini kilitler; Ayarlar artık onu değiştiremez |
+| `CC_SERVER_CONNECT_HOST`       | `on`, Control Center Connect’i `CONNECT_*` değişkenleriyle yapılandırılmış olarak `<server>/connect` adresine bağlar. Bkz. [Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/#cc_server-içinde-connect-çalıştırma) |
+
+`.env` dosyası sunucunun çalışma dizininden, yürütülebilir dosyanın yanından ya
+da üstündeki bir kaynak kodu kopyasından okunur; Docker’da onu `/app/bin/.env`
+yoluna bağlayın. `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` ya da herhangi bir
+`SLACK_*SECRET*` süreç ortamına dışa aktarıldığında, yani her alt sürecin
+okuyabileceği bir yerdeyken, sunucu **başlamayı reddeder** (çıkış kodu `78`).
+`.env` dosyasından tohumlama alan başına bir kez yapılır; böylece Ayarlar’da daha
+sonra yapılan bir düzenleme yeniden başlatmayla geri alınmaz. Boş bir değer ayarlı
+değil gibi okunur.
+
+GitLab ve Bitbucket arka plan işleri ayrıca `GITLAB_TOKEN` / `CI_JOB_TOKEN` ve
+`BITBUCKET_EMAIL` ile birlikte `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN`
+değişkenlerini okur. GitHub için ortam kimlik bilgisi yoktur.
 
 ### `--sandbox`
 
@@ -118,7 +142,7 @@ bir kimlik bilgisi, bu kapı var olmadan önce olduğu gibi turu sonlandırır.
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Sunucuyu `SIGINT`/`SIGTERM` gelene kadar çalıştırır                                                                                   |
 | `cc_server pair`                              | Bir cihaz sağlar ve kimliğini ve eşleştirme anahtarını yazdırır. Bir sunucunun hâlihazırda hizmet verdiği bir veri dizini karşısında güvenlidir — çalışan sunucu, yeniden başlatma olmadan cihazı alır |
-| `cc_server calendar connect --workspace <id>` | Cihaz kodu akışı üzerinden bir Google hesabını bir çalışma alanına bağlar ve çıkar                                                      |
+| `cc_server connect <command>`                 | Bu sunucunun hangi Control Center Connect’i kullandığını, sunucuyu başlatmadan gösterir ya da değiştirir                                |
 | `cc_server update`                            | Daha yeni bir bağımsız sürümü denetler, indirir ve doğrular                                                                            |
 | `cc_server --version`                         | Derleme sürümünü ve git SHA'sını yazdırır — `/healthz` ve RPC el sıkışmasının duyurduğu kimliğin aynısı                                |
 
@@ -145,6 +169,25 @@ eşleştirme panelinden üretilen farklı bir yükle eşleşir — sunucunun tam
 tanımlayıcısı ve bir son kullanma tarihi. İkisi birbirinin yerine kullanılamaz —
 bkz. [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
 :::
+
+### `connect`
+
+**Ayarlar → Sunucu → Tek oturum açma** içindeki **Control Center Connect**
+kartıyla aynı ayarları veri dizininden okur ve yazar. Çalışan bir sunucu bir
+değişikliği 10 dakika içinde ya da yeniden başlatıldığında alır.
+
+| Komut                                  | Ne yapar                                                                                                         |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`             | Modu, URL’yi, `CC_CONNECT_URL` tarafından kilitlenip kilitlenmediğini, kurulum kimliğini, sağlığı ve her hattın kaynağını (`own`, `connect` ya da `off`) yazdırır |
+| `cc_server connect enable`             | Control Center’ın barındırdığı Connect’i kullanır                                                                |
+| `cc_server connect enable --url <url>` | O URL’deki özel bir Connect’i kullanır (HTTPS ya da loopback üzerinde `http`)                                    |
+| `cc_server connect disable`            | Connect kullanımını durdurur. Kişileri yalnızca sunucunun kendi uygulamaları oturum açtırır                     |
+| `cc_server connect rotate-key --yes`   | Yeni bir kurulum anahtarı ve kurulum kimliği üretir. Connect üzerinden oturum açan herkes yeniden oturum açar. `--yes` olmadan yalnızca uyarır ve `2` ile çıkar |
+
+Komut verilmezse varsayılan `status` olur. Her komut `--data-dir` kabul eder.
+`CC_CONNECT_URL`, bunların sakladığı her şeyi geçersiz kılar. Bilinmeyen bir komut
+`64` ile çıkar. Modlar, kurulum kimliği ve durum kodları için bkz.
+[Control Center Connect](/tr-TR/kilavuz/referans/connect/).
 
 ### `update`
 
@@ -190,7 +233,7 @@ uygulama verisi dizini çözümlenemediğinde kullanılır.
 | `global.db`                       | Çalışma alanı kaydı, kullanıcılar, eşleştirilmiş cihazlar, haber akışı ve filo kuyruğu |
 | `<workspaceId>/workspace.db`      | Çalışma alanı başına bir veritabanı — ajanlar, alanlar, biletler, bellek, kod grafiği |
 | `<workspaceId>/chat_credentials/` | Sohbet botu belirteçleri, düz JSON olarak; böylece çalışma alanıyla birlikte taşınırlar |
-| `secrets.json`                    | Eşleştirme anahtarları, sağlayıcı uygulama kimliği, kullanıcı başına belirteçler ve Google belirteçleri, SSO (`0600`) |
+| `secrets.json`                    | Eşleştirme anahtarları, Connect kurulum anahtarı, sağlayıcı uygulamaları, kişilerin oturum açmaları (Connect üzerinden yapıldıysa mühürlü), SSO (`0600`) |
 | `backups/<timestamp>/`            | Bir kurulum anlık görüntüsü — `manifest.json`, `global.db` ve her çalışma alanının bir kopyası |
 | `backups/exports/`                | Tek çalışma alanı dışa aktarımları, `<workspaceId>-<timestamp>.db`              |
 | `backups/transfer/`               | Yedek indirme ve yüklemeleri için hazırlık alanı; onu yazan rota tarafından temizlenir |

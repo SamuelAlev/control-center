@@ -2,7 +2,7 @@
 title: Arkitektur
 description: Hvordan Control Center er strukturert med en tynnklient- og servermodell, funksjonsorientert Clean Architecture og porter og adaptere.
 slug: nb-NO/handbok/konsepter/arkitektur
-sourceHash: 89716f2545488a747b4df9e27938f2215ba0a689
+sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
 ---
 
 ## Oversikt
@@ -112,9 +112,9 @@ Begge databasene eies av `cc_persistence` og åpnes bare av `cc_server`; ingen k
 **go_router**, med ett faktum som styrer resten: **enhver destinasjon i appen har arbeidsområdeprefiks** i form av `/workspaces/:workspaceId/…`. Arbeidsområde-ID-en i URL-en er den eneste kilden til sannhet for det aktive arbeidsområdet — `activeWorkspaceIdProvider` drives fra ruten, ikke omvendt — og derfor har lesing av arbeidsområdespesifikke data utenfor en rute med prefiks ingen steder å hente ID-en fra.
 
 - Rute-bygger-_funksjoner_ i `router/routes.dart`, som hver tar arbeidsområde-ID-en som første argument, ikke strengkonstanter
-- Fire ruter utenfor kontekst har ikke prefiks: `/splash`, `/onboarding`, `/signed-out` og `/workspaces` (velgeren)
-- `ShellRoute` omslutter appskallet; de fire flatene gjengis i fullskjerm utenfor det
-- Autentiseringsvakt: ufullstendig oppsett går til `/onboarding`; et fullført oppsett der kodevertlegitimasjonen er borte, går til `/signed-out`. Fullført betyr at minst én kodevert er tilkoblet for den innloggede brukeren og at minst ett arbeidsområde finnes — ikke GitHub spesifikt, og `gh`-CLI-en er ikke en autentiseringsmetode
+- Tre ruter utenfor kontekst har ikke prefiks: `/splash`, `/onboarding` og `/workspaces` (velgeren)
+- `ShellRoute` omslutter appskallet; de tre flatene gjengis i fullskjerm utenfor det
+- Autentiseringsvakt: ufullstendig oppsett går til `/onboarding`; et fullført oppsett der kodevertlegitimasjonen er borte, blir i appen, og arbeidsområdeskallet viser en advarsel med lenke til pålogging. Fullført betyr at minst én kodevert er tilkoblet for den innloggede brukeren og at minst ett arbeidsområde finnes — ikke GitHub spesifikt, og `gh`-CLI-en er ikke en autentiseringsmetode
 - Onboarding-port i `features/auth/providers/`
 
 ## Nettverk (serverside)

@@ -109,7 +109,11 @@ void main() {
         'ticketing.connection',
         'calendar.accounts',
         'chat_bridges.my-account-link',
+        'chat_bridges.ticket-drafts',
         'chat_bridges.workspace-setup',
+        'connect.connect',
+        'settings.provider-apps',
+        'settings.workspace-provider-apps',
       });
       expect(
         {for (final s in registry.sections) s.id: s.slot},
@@ -119,7 +123,11 @@ void main() {
           'ticketing.connection': SettingsSlot.workspaceGeneral,
           'calendar.accounts': SettingsSlot.workspaceProfile,
           'chat_bridges.my-account-link': SettingsSlot.workspaceProfile,
+          'chat_bridges.ticket-drafts': SettingsSlot.workspaceProfile,
           'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
+          'connect.connect': SettingsSlot.serverSignIn,
+          'settings.provider-apps': SettingsSlot.serverSignIn,
+          'settings.workspace-provider-apps': SettingsSlot.workspaceGeneral,
         },
       );
     });

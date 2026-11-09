@@ -2,96 +2,93 @@
 title: Skonfiguruj integrację GitHub
 description: Zaloguj się do GitHuba, aby powierzchnia pull requestów, rejestracja repozytoriów i uruchomienia agentów działały.
 slug: pl-PL/podrecznik/poradniki/integracja-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Ten poradnik obejmuje części konfiguracji właściwe dla GitHuba. GitHub to jeden
-z trzech obsługiwanych hostów kodu — jak połączyć GitLab lub Bitbucket i jak
+z trzech obsługiwanych hostów kodu. Jak połączyć GitLab lub Bitbucket i jak
 jeden obszar roboczy łączy je wszystkie, opisuje
 [Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/).
 
 ## Wymagania wstępne
 
 - Konto GitHub z dostępem do repozytoriów, na których chcesz pracować
-- Albo GitHub App zarejestrowana dla Twojego serwera (zobacz
-  [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)), aby móc się
-  **zalogować**, **albo** osobisty token dostępu z `repo` i `read:org` do wklejenia
+- Serwer, który potrafi logować ludzi do GitHuba: przez własną GitHub App (zobacz
+  [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)) albo przez
+  Control Center Connect, co wybiera właściciel serwera w **Ustawienia → Serwer →
+  Logowanie jednokrotne**
 
 :::note[Poświadczenia żyją na serwerze, przypisane do Ciebie]
-Nic nie jest przechowywane na maszynie, na której piszesz. Twoje poświadczenie
-trzyma Twój `cc_server`, przypisane do Twojego identyfikatora użytkownika,
-i korzysta z niego każde urządzenie, z którego się logujesz — desktop, wersja
-webowa i telefon. Inny członek tego samego serwera nie może go odczytać,
+Nic nie jest przechowywane na maszynie, na której piszesz. Twoje logowanie do
+GitHuba trzyma Twój `cc_server`, przypisane do Twojego identyfikatora
+użytkownika, i korzysta z niego każde urządzenie, z którego się logujesz:
+desktop, wersja webowa i telefon. Inny członek tego samego serwera nie może go użyć,
 a zalogowanie go to coś, co robi on sam.
 :::
 
-## Zaloguj się przez GitHub
+## Zaloguj się do GitHuba
 
-**Przepływ urządzenia**: GitHub pokazuje krótki kod, zatwierdzasz go na
-github.com, a serwer otrzymuje poświadczenie — żaden adres URL wywołania
-zwrotnego, żaden port, nic do wystawienia na zewnątrz. Dostępne zawsze, gdy
-serwer ma identyfikator klienta, który oficjalna kompilacja już zawiera.
+GitHub obsługuje wyłącznie logowanie: nie ma tokenu do wklejania.
 
 1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**
    (albo do pierwszego kroku konfiguracji)
-2. W wierszu **GitHub** kliknij **Zaloguj się przez GitHub**
-3. Okno dialogowe pokazuje ośmioznakowy kod i otwiera
-   [github.com/login/device](https://github.com/login/device) w Twojej
-   przeglądarce. Kod jest już w Twoim schowku
-4. Wklej go, zatwierdź aplikację i wróć. Wiersz sam zmieni się na
-   „Zalogowano jako _your-username_”
+2. W wierszu **GitHub** kliknij **Zaloguj się do GitHub**
+3. Przeglądarka otwiera GitHuba. Zatwierdź aplikację
 
-Okno dialogowe można zamknąć, kiedy kończysz w przeglądarce — serwer odpytuje
-dalej, aż kod wygaśnie (około 15 minut), więc logowanie i tak się dokona.
+To, jak logowanie się kończy, zależy od tego, kto je obsługuje:
 
-## Albo wklej token
+- **Własna aplikacja serwera:** GitHub odsyła przeglądarkę z powrotem do serwera,
+  a okno dialogowe samo to zauważa. Nie trzeba nic wpisywać
+- **Control Center Connect:** strona w przeglądarce pokazuje 8-znakowy kod. Wpisz
+  go w oknie dialogowym albo pozwól przeglądarce otworzyć Control Center przez
+  link `control-center://` i pomiń wpisywanie
 
-Rozwiązanie zapasowe, gdy serwer nie ma aplikacji, gdy aplikacja nie jest
-zainstalowana na koncie, którego potrzebujesz, albo gdy po prostu wolisz użyć
-tokenu PAT.
+Punkt kontrolny: wiersz **GitHub** głosi „Zalogowano jako _your-username_”.
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**
-2. W wierszu **GitHub** kliknij **Dodaj token**
-3. Wklej token z `repo` i `read:org` (klasyczny) i zapisz. Token
-   **drobnoziarnisty** wymaga uprawnień repozytorium **Contents** i **Pull requests**
-   (odczyt i zapis) oraz **Checks** i **Actions** (odczyt).
+Okno dialogowe odrzuca kod lub link, którego samo nie rozpoczęło, komunikatem
+**Logowanie nie zostało rozpoczęte tutaj**. Jeśli ktoś przyśle Ci link
+logowania, nie kontynuuj: dokończenie go połączyłoby Twoje konto z jego serwerem.
 
-Token jest sprawdzany już przy zapisie, więc wiersz może podać konto, do którego
-należy. Kliknij **Rozłącz**, aby go usunąć.
+Kliknij **Rozłącz**, aby usunąć swoje logowanie. Wylogowanie z GitHuba albo
+usunięcie z obszaru roboczego również unieważnia każdy token, który serwer
+utworzył w Twoim imieniu.
 
-Punkt kontrolny: wiersz **GitHub** głosi „Zalogowano jako _your-username_”. Gdy
-odpowiadające poświadczenie nie jest Twoje, przyrostek wskazuje jego źródło —
-„przez aplikację tego serwera” albo „ze środowiska”.
+## W czyim imieniu działa Twoje poświadczenie
 
-:::note[Kolejność jest stała]
-Żądanie wysłane w Twoim imieniu używa **Twoich** poświadczeń i niczego więcej —
-środowisko to poświadczenie serwera, nie Twoje, więc nigdy nie zastępuje Ciebie.
-Praca bez człowieka w tle (webhooki, odpytywanie PR-ów, synchronizacja zgłoszeń)
-sięga po tożsamość aplikacji serwera, potem po poświadczenia właściciela serwera,
-a na końcu po środowisko.
-:::
+- **Wszystko, co robisz Ty** (otwieranie strony PR, publikowanie recenzji,
+  zatwierdzanie, scalanie), działa na **Twoim** logowaniu i na niczym innym.
+  Jeśli nie jesteś zalogowany, aplikacja to mówi i prosi o zalogowanie. Żadne
+  inne poświadczenie Cię nie zastępuje
+- **Praca, przy której nikt nie pisze** (uruchomienia agentów, pipeline'y,
+  odpytywanie PR-ów, odpowiedzi bota, klonowanie), dostaje token dla jednego
+  repozytorium, utworzony z GitHub App serwera albo przez Connect. Jest
+  ograniczony do tego, co może tam zrobić odpowiedzialny członek: ten, który
+  poprosił, a w przeciwnym razie właściciel obszaru roboczego. Członek, który nie
+  może wykonywać push, ogranicza token do odczytu
+- **Automatyzacja nigdy nie zatwierdza** pull requesta. Zatwierdzenie to akt
+  człowieka
 
 ## Co daje Ci ta integracja
 
 | Możliwość                | Jak                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Lista i szczegóły PR-ów  | Interfejs REST API GitHuba, z serwera, na tożsamości aplikacji albo na Twoich własnych poświadczeniach                |
+| Lista i szczegóły PR-ów  | Interfejs REST API GitHuba, z serwera, na Twoim własnym logowaniu                                                    |
 | Uruchomienia kontroli    | Interfejs Checks API GitHuba                                                                                           |
-| Publikowanie recenzji    | Krok wymagający zatwierdzenia przez użytkownika, który publikuje Twoją recenzję w PR                                   |
-| Rejestracja repozytoriów | Kopia robocza jest przyjmowana, jeśli jej zdalne repozytorium `origin` wskazuje na github.com — albo na gitlab.com / bitbucket.org |
-| Dostęp agentów do GitHuba | Broker poświadczeń wstrzykuje token tylko do odczytu jako `GH_TOKEN` / `GITHUB_TOKEN`; push przechodzi przez Control Center |
+| Publikowanie recenzji    | Krok wymagający zatwierdzenia przez użytkownika, który publikuje Twoją recenzję w PR jako Ty                           |
+| Rejestracja repozytoriów | Kopia robocza jest przyjmowana, jeśli jej zdalne repozytorium `origin` wskazuje na github.com albo na gitlab.com / bitbucket.org |
+| Dostęp agentów do GitHuba | Token dla jednego repozytorium uruchomienia jako `GH_TOKEN` / `GITHUB_TOKEN`; push przechodzi przez Control Center |
 | Sygnały powiadomień      | Odpytywanie po stronie serwera Twojej skrzynki powiadomień GitHub wywołuje „Wzmianka w pull requeście” i „Prośba o recenzję” |
 | Profile użytkowników     | Karty profili po najechaniu i filtrowanie PR-ów według autora                                                           |
 
-Niektóre ścieżki używają interfejsu GraphQL API zamiast REST, gdy jest to tańsze
-— aktywność gałęzi dla selektora tworzenia PR-a oraz bieżący stan recenzji,
+Niektóre ścieżki używają interfejsu GraphQL API zamiast REST, gdy jest to tańsze:
+aktywność gałęzi dla selektora tworzenia PR-a oraz bieżący stan recenzji,
 który decyduje, czy powiadomienie o prośbie o recenzję jest nadal oczekujące.
 
 ## Uważaj na awarie GitHuba
 
 Pasek tytułu pokazuje wskaźnik statusu, gdy któryś dostawca działa ze
 zmniejszoną sprawnością — obejmuje to GitHuba, Claude, OpenAI i Kimi. **Jest
-ukryty, dopóki wszystko działa poprawnie** — obecność wskaźnika sygnalizuje
+ukryty, dopóki wszystko działa poprawnie**: obecność wskaźnika sygnalizuje
 problem, nie jego brak.
 
 Kliknij wskaźnik, aby otworzyć panel wysuwany ze stanem każdego dostawcy
@@ -99,53 +96,53 @@ i przyciskiem odświeżania. Statusy odświeżają się same co dwie minuty.
 
 ## Wiedz, jak agenci działają na GitHubie
 
-- Agent pracujący w worktree GitHuba zawsze otrzymuje token GitHub tylko do
-  odczytu. Push przechodzi przez Control Center, który pyta regułę **Push do
+- Agent pracujący w worktree GitHuba otrzymuje token dla tego jednego
+  repozytorium. Może czytać kod i komentować pull requesty, gdy odpowiedzialny
+  członek może wykonywać push, a tylko czytać, gdy nie może. Push przechodzi przez Control Center, który pyta regułę **Push do
   zdalnego repozytorium**, a potem przekazuje go z tokenem zapisu, którego
   agent nigdy nie posiada. Zobacz
   [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/)
 - Commity agenta zawsze używają tożsamości Git osoby zlecającej pracę jako autora i zatwierdzającego. Domyślnie stopka `Co-Authored-By: Control Center <hi@usectrl.dev>` wskazuje konto GitHub `@usectrl` jako współautora. W **Ustawienia → Ty → Przypisanie autorstwa commitów** można wyłączyć wskazywanie współautora bez zmiany swojej tożsamości. Ustawienie obszaru roboczego w **Ustawienia → Obszar roboczy → Ogólne** ma pierwszeństwo i blokuje osobisty przełącznik. Własne przypisywanie autorstwa Claude Code jest zawsze wyłączone. Podpisywanie commitów nadal wymaga osobnej, prawidłowej konfiguracji
-- Gdy skonfigurowano GitHub App, broker tworzy przy każdym uruchomieniu
-  drobnoziarniste tokeny instalacji o zasięgu repozytorium, ważne około godziny,
-  zamiast przekazywać szeroki token. Instalacja jest ustalana na podstawie
-  **właściciela** repozytorium danego uruchomienia, więc jedna aplikacja
-  zainstalowana na kilku kontach obejmuje właściwe z nich — to, którego dotknie
-  uruchomienie. Bez aplikacji agenci otrzymują token ze środowiska, którego nie
-  da się ograniczyć do odczytu: reguła push wiąże wtedy `git push`, ale nie kod,
-  który używa tokenu bezpośrednio
-- Token zawsze należy do brokera, nigdy do członka, który zlecił uruchomienie.
-  Token serwera jest wstrzymywany dla uruchomienia działającego w imieniu
-  członka, który nie jest właścicielem i nie połączył GitHuba
+- Terminal, który otwierasz na rigu, dostaje Twoje własne logowanie, zawężone do
+  jednego repozytorium, więc push z niego jest Twój
+- Gdy nie da się utworzyć tokenu (nikt odpowiedzialny nie jest zalogowany,
+  aplikacja nie jest zainstalowana u właściciela albo instalacja jest
+  zawieszona), uruchomienie startuje bez tokenu, a jego notatki wyjaśniają
+  dlaczego. Nie ma zapasowego poświadczenia
 
 ## Rozwiązywanie problemów
 
 ### Lista PR-ów jest pusta i informuje, że GitHub nie jest połączony
 
-Nie masz poświadczenia GitHub na tym serwerze. Zaloguj się albo wklej token
-w **Hostingu kodu**. Repozytoria na innych forge pozostają bez zmian — tylko te
-z GitHuba nie wnoszą nic.
+Nie jesteś zalogowany do GitHuba na tym serwerze. Kliknij **Zaloguj się do
+GitHub** w **Hostingu kodu**. Repozytoria na innych forge pozostają bez zmian.
 
-### Wiersz oferuje „Dodaj token”, ale nie „Zaloguj się przez GitHub”
+### Wiersz GitHub informuje, że logowanie nie jest skonfigurowane na tym serwerze
 
-Serwer nie ma identyfikatora klienta — to normalny stan dla kompilacji ze
-źródeł, ponieważ poświadczenia są wbudowywane wyłącznie w oficjalne kompilacje.
-Zobacz [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/): zajmuje to
-około dwóch minut i raz musi to zrobić tylko właściciel serwera.
+Serwer nie ma ani własnej GitHub App, ani Connect. Właściciel serwera wybiera
+jedno z nich w **Ustawienia → Serwer → Logowanie jednokrotne**: **Utwórz moją
+aplikację GitHub** zajmuje około dwóch minut. Zobacz
+[Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/).
 
-### Okno logowania informuje, że dostawca nie zwrócił kodu urządzenia
+### Okno dialogowe informuje, że kod się nie zgadza
 
-GitHub App istnieje, ale jej pole wyboru **Device flow** jest wyłączone. Włącz je
-w ustawieniach aplikacji (General → Device flow) i spróbuj ponownie.
+Wpisz kod dokładnie tak, jak pokazuje go przeglądarka: 8 liter i cyfr. Pięć
+błędnych kodów kończy logowanie; zacznij je od nowa.
 
-### Wiersz mówi „przez aplikację tego serwera”, choć oczekujesz własnego konta
+### Logowanie informuje, że aplikacja nie jest zainstalowana
 
-Nie zalogowałeś się; to, co widzisz, to odpowiadająca tożsamość aplikacji
-serwera. Kliknij **Zaloguj się przez GitHub** w tym wierszu.
+GitHub App nie ma instalacji na koncie, które jest właścicielem repozytorium.
+Administrator obszaru roboczego instaluje ją w **Ustawienia → Obszar roboczy →
+Ogólne → Instalacje aplikacji GitHub**. W przypadku organizacji korzystającej ze
+współdzielonej App od Control Center administrator tej organizacji może musieć
+kliknąć **Autoryzuj ten serwer**. Zobacz
+[Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/#autoryzuj-ten-serwer-dla-organizacji).
 
-### Drobnoziarnisty PAT nie pokazuje przycisku scalania ani stanu kontroli
+### Wszyscy muszą ponownie zalogować się do GitHuba
 
-Token wymaga **Contents** i **Pull requests** (odczyt i zapis) oraz **Checks**
-i **Actions** (odczyt). Po zmianie wklej go ponownie w **Hostingu kodu**.
+Właściciel serwera wymienił klucz Connect serwera, przełączył serwer Connect
+albo katalog danych został przywrócony na innej maszynie. Logowania przez
+Connect są powiązane z serwerem, który je utworzył.
 
 ### Dodanie repozytorium zostaje odrzucone
 
@@ -170,4 +167,4 @@ z poszanowaniem nagłówka `retry-after`.
 - [Zarządzaj kluczami API](/pl-PL/podrecznik/poradniki/klucze-api/)
 - [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)
 - [Zrecenzuj i scal PR](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/)
-- [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/)
+- [Rozmawiaj z Control Center z PR w GitHub](/pl-PL/podrecznik/poradniki/rozmowy-w-pr-github/)

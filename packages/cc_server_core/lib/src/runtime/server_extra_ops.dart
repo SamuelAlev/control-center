@@ -1,3 +1,4 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
@@ -22,24 +23,31 @@ import 'package:cc_persistence/cc_persistence.dart'
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
+import 'package:cc_server_core/src/catalog/calendar_write_ops.dart';
 import 'package:cc_server_core/src/catalog/changelog_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
+import 'package:cc_server_core/src/catalog/gif_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
-import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
+import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
+import 'package:cc_server_core/src/catalog/workspace_provider_app_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/code_graph/code_graph_rpc.dart';
+import 'package:cc_server_core/src/connect/klipy_gifs.dart';
+import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
 import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
+import 'package:cc_server_core/src/google_calendar_server.dart'
+    show ServerCalendarWrites;
 import 'package:cc_server_core/src/identity/caching_workspace_membership_repository.dart';
-import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/sso_ops.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_rpc.dart';
 import 'package:cc_server_core/src/identity/workspace_profile_rpc.dart';
+import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
 import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
@@ -65,7 +73,10 @@ ExtraOpsResult buildServerExtraOps({
   required WorkspaceFilesystemPort workspaceFilesystem,
   required DaoWorkspaceRepository workspaceRepository,
   required CachingWorkspaceMembershipRepository membershipRepository,
-  required ProviderOAuthService? providerOAuth,
+  required ProviderSignInService? providerSignIn,
+  Future<void> Function(String userId, ConnectOAuthLane lane)?
+  onSignInDisconnected,
+  List<RepoOp> connectOps = const [],
   required String pairingServerUrl,
   required DomainEventBus eventBus,
   required ContextInspectionService contextInspection,
@@ -82,6 +93,9 @@ ExtraOpsResult buildServerExtraOps({
   required CodeGraphRepository codeGraphRepository,
   CodeGraphTreePort? codeGraphTree,
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
+  WorkspaceProviderAppSettings? workspaceProviderApps,
+  KlipyGifs? klipyGifs,
+  ServerCalendarWrites? calendarWrites,
   PrMergeConflictService? prMergeConflicts,
   required DatabaseBackupPort? databaseBackup,
   required ConversationTitlePort? conversationTitles,
@@ -117,12 +131,20 @@ ExtraOpsResult buildServerExtraOps({
       workspaceRepository: workspaceRepository,
       apps: workspaceGitHubApps,
     ),
-    ...buildProviderOAuthOps(
-      providerOAuth: providerOAuth,
+    ...buildWorkspaceProviderAppOps(
+      apps: workspaceProviderApps,
+      pairingServerUrl: pairingServerUrl,
+    ),
+    ...buildGifOps(klipyGifs),
+    ...buildCalendarWriteOps(calendarWrites),
+    ...buildSignInOps(
+      signIn: providerSignIn,
       workspaces: workspaceRepository,
       members: membershipRepository,
       pairingServerUrl: pairingServerUrl,
+      onDisconnected: onSignInDisconnected,
     ),
+    ...connectOps,
     ...buildCodeGraphOps(
       workspaceRepository: workspaceRepository,
       codeGraph: codeGraphRepository,

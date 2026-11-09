@@ -1,81 +1,71 @@
 ---
 title: Bercakap dengan Control Center dari PR GitHub
-description: Minta semakan atau ajukan soalan kepada bot GitHub App pelayan anda terus dari perbualan PR itu sendiri, tanpa webhook atau URL awam.
+description: Minta Control Center untuk semakan atau ajukan soalan terus dari perbualan PR, tanpa webhook atau URL awam.
 slug: ms-MY/manual-pengguna/panduan-cara/perbualan-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
-Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan
-GitHub: minta semakan AI dari halaman PR, tanya bot sesuatu soalan dalam komen,
-dan teruskan perbualan dalam benang semakannya.
+Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan GitHub: minta semakan AI dari
+halaman PR, ajukan soalan kepada bot dalam satu komen, dan teruskan perbualan dalam benang semakannya.
 
-Bot itu ialah [GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/) pelayan anda sendiri — yang
-sama yang sudah membenarkan orang daftar masuk dan menjalankan kerja latar
-belakang. Tiada apa-apa baharu didaftarkan, dan tiada apa-apa perlu boleh
-dicapai dari internet: pelayan menemui apa yang diperkatakan di GitHub melalui
-pengundian, jadi komputer riba di belakang NAT berkelakuan sama seperti
-penerapan awam.
+Balasan datang melalui lorong GitHub ruang kerja: [GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+milik pelayan anda sendiri, atau App kongsi Control Center melalui Connect. Tiada apa-apa baharu didaftarkan,
+dan tiada apa-apa perlu boleh dicapai dari internet: pelayan mengesan apa yang dikatakan di GitHub melalui
+pengundian, jadi komputer riba di sebalik NAT berkelakuan sama seperti penempatan awam.
 
 ## Prasyarat
 
-- Pelayan mempunyai GitHub App-nya [didaftarkan dan
-  dipasang](/ms-MY/manual-pengguna/panduan-cara/github-app/), dengan **Pull requests: read and write**
-  (untuk komen, benang dan reaksi) dan **Issues: read** (untuk carian komen).
-  Kedua-duanya sudah ada dalam senarai kebenaran panduan itu
-- Repositori itu dipautkan ke ruang kerja dalam Control Center
-- Tiada URL webhook, tiada terowong, tiada callback — tiada apa-apa untuk
-  dikonfigurasikan di sisi rangkaian
+- Ruang kerja mempunyai lorong GitHub: GitHub App pelayan atau Connect, dengan app
+  [dipasang](/ms-MY/manual-pengguna/panduan-cara/github-app/) pada akaun pemilik repositori. App sendiri
+  memerlukan kebenaran baca dan tulis **Pull requests** dan **Issues**, yang sudah diberikan oleh **Cipta aplikasi GitHub saya**
+- Repositori telah dipautkan ke ruang kerja dalam Control Center
+- Anda sudah [log masuk ke GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/) pada pelayan ini,
+  dan anda boleh push ke repositori itu
+- Tiada URL webhook, tiada terowong, tiada callback — tiada apa yang perlu dikonfigurasikan di bahagian rangkaian
 
 ## Cari nama bot anda
 
-Sebut `@usectrl`, akaun GitHub khusus Control Center. Ini ialah pencetus lalai; GitHub App yang dikonfigurasikan pada pelayan anda masih mengendalikan permintaan dan menyiarkan balasan. Anda tidak memerlukan kelayakan bagi akaun `usectrl`.
+Sebut `@usectrl`, akaun GitHub khusus Control Center. Ini ialah pencetus lalai; lorong GitHub ruang kerja anda
+tetap memproses permintaan dan menghantar balasan. Anda tidak memerlukan kelayakan akaun `usectrl`.
 
-Log masuk aplikasi itu sendiri, `<appslug>[bot]`, serta bentuk ringkas `@appslug` juga berfungsi. Untuk mencari alias pilihan ini:
+Log masuk app itu sendiri, `<appslug>[bot]`, dan bentuk pendek `@appslug` juga berfungsi. Untuk mencari alias
+pilihan itu pada app sendiri anda:
 
-1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal** dan tatal ke kad
-   **Apl penyedia**
+1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal** dan tatal ke kad **Apl penyedia**
 2. Buka blok **GitHub** dan klik **Uji**
-3. Salin **Log masuk bot** apabila nilainya terisi. Jika ia masih memaparkan
-   petunjuk kosong, log masuk itu sentiasa `<appslug>[bot]` — taip nilai itu,
-   atau bentuk pendek `@appslug`
+3. Salin **Log masuk bot** apabila nilainya diisi. Jika medan itu masih menunjukkan teks petunjuk kosong, log
+   masuk itu sentiasa `<appslug>[bot]` — taip itu, atau bentuk pendek `@appslug`
 
-GitHub tidak memaparkan akaun App dalam autolengkap `@`, jadi alias App perlu ditaip atau disalin. Pengguna khusus `@usectrl` ialah cara panggilan lalai; `@myapp` dan `@myapp[bot]` masih diterima sebagai alias App.
+GitHub tidak mencadangkan akaun App dalam autolengkap `@`, jadi alias App mesti ditaip atau disalin.
+`@usectrl` ialah cara lalai untuk memanggilnya; `@myapp` dan `@myapp[bot]` tetap diterima sebagai alias App.
 
-:::note[Pilih nama aplikasi yang tersendiri]
-Bentuk pendek dipadankan sebagai teks. Jika kebetulan seorang pengguna GitHub
-manusia berkongsi slug aplikasi anda, menyebut pengguna itu dengan bentuk
-pendek juga sampai kepada bot. Bentuk penuh `@myapp[bot]` sentiasa tidak
-mengelirukan.
+:::note[Pilih nama app yang tersendiri]
+Bentuk pendek dipadankan sebagai teks. Jika seorang pengguna GitHub kebetulan mempunyai slug yang sama dengan app
+anda, menyebut pengguna itu dengan bentuk pendek juga akan sampai kepada bot. Bentuk penuh `@myapp[bot]` sentiasa tidak samar.
 :::
 
 ## Minta semakan dari GitHub
 
-Dua cara, kedua-duanya memulakan pipeline `pr_review` yang dibenihkan yang sama
-seperti yang dimulakan oleh butang **Tanya AI**:
+Ada dua cara, kedua-duanya memulakan pipeline `pr_review` terbina dalam yang sama seperti yang dimulakan oleh
+butang **Tanya AI**:
 
-- **Tambahkan label `ai-review`** pada PR. Inilah cara paling hampir yang
-  ditawarkan GitHub untuk menetapkan bot sebagai penyemak — akaun aplikasi tidak
-  boleh memegang slot penyemak yang diminta secara asli. Tiada komen untuk
-  diberi reaksi, jadi tiada apa-apa disiarkan di GitHub; semakan itu bermula
-  dalam Control Center
-- **Komen `@usectrl review`** (atau hanya `@usectrl`) pada perbualan PR. Bot itu
-  memberi reaksi 👀, kemudian membalas apabila semakan telah bermula (atau
-  bahawa satu semakan sedang berjalan)
+- **Tambah label `ai-review`** pada PR. Ini ialah perkara paling hampir yang ditawarkan GitHub untuk menugaskan
+  bot sebagai penyemak — akaun app tidak boleh mengisi slot penyemak yang diminta secara asli. Akaun anda memberi
+  reaksi 👀 pada PR dan semakan bermula dalam Control Center; tiada komen disiarkan
+- **Komen `@usectrl review`** (atau hanya `@usectrl`) dalam perbualan PR. 👀 muncul pada komen anda, kemudian
+  balasan memaklumkan semakan sudah bermula (atau satu semakan sudah berjalan)
 
-Penyemak bekerja dalam ruang semakan PR itu; baca dan terbitkan penemuan seperti
-dalam [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/). Menerbitkan semula
-ke GitHub kekal sebagai keputusan yang anda buat dalam Control Center —
-memulakan semakan dari GitHub tidak menerbitkan apa-apa ke GitHub dengan
-sendirinya.
+Penyemak bekerja dalam ruang semakan PR; baca dan terbitkan penemuannya seperti dalam
+[Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/). Penerbitan semula ke GitHub kekal
+sebagai keputusan yang anda buat dalam Control Center — memulakan semakan dari GitHub tidak menerbitkan apa-apa
+ke GitHub dengan sendirinya.
 
-Label itu tercetus sekali sahaja bagi setiap PR: menambahnya ialah
-permintaannya, dan ia tidak dipasang semula apabila dibuang dan ditambah
-semula. Untuk menjalankan semakan sekali lagi — selepas push, misalnya — sebut
-bot itu.
+Label ini dicetuskan sekali bagi setiap PR: menambahnya ialah permintaannya, dan label ini tidak dicetuskan semula
+apabila ia dibuang dan ditambah semula. Untuk menjalankan semakan lagi — contohnya selepas push — sebut bot.
 
-## Tanya soalan
+## Ajukan soalan
 
-Komen pada perbualan PR:
+Komen dalam perbualan PR:
 
 ```text
 @usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
@@ -83,22 +73,19 @@ Komen pada perbualan PR:
 
 Apa yang berlaku, mengikut urutan:
 
-1. Bot itu memberi reaksi 👀 supaya anda tahu komen itu telah dilihat
-2. Soalan itu disiarkan ke dalam ruang semakan PR **sebagai anda** — atribusi
-   yang sama seperti jika anda menaipnya dalam Control Center
-3. Seorang ejen menjawab dalam ruang itu, dan jawapan itu disiarkan semula pada
-   PR sebagai komen yang @-menyebut anda
+1. 👀 muncul pada komen anda, daripada akaun anda sendiri, supaya anda tahu komen itu telah dilihat
+2. Soalan itu disiarkan ke ruang semakan PR **atas nama anda** — atribusi yang sama seperti jika anda menaipnya
+   dalam Control Center
+3. Seorang ejen menjawab dalam ruang itu, dan jawapan disiarkan semula ke PR. Setiap balasan bermula dengan
+   `**Control Center** (for @your-login):`
 
-Soalan pada PR yang belum mempunyai semakan akan membangunkan ejen ketua (CEO)
-ruang kerja itu; apabila sesuatu semakan telah dijalankan, ejen yang bercakap
-terakhir akan menjawab, jadi susulan sampai kepada sesiapa yang mempunyai
-konteksnya.
+Soalan pada PR yang belum disemak akan membangkitkan ejen CEO ruang kerja; selepas semakan berjalan, ejen yang
+bercakap paling akhir akan menjawab, supaya susulan sampai kepada pihak yang memegang konteks.
 
-## Susuli dalam benang semakan
+## Teruskan dalam benang semakan
 
-Balas di dalam benang semakan sebaris yang bot itu sertai — komen diff yang
-ditinggalkannya, atau jawapan yang disiarkannya dalam benang itu. Tiada sebutan
-diperlukan; benang itu **ialah** penujukannya:
+Balas di dalam benang semakan sebaris tempat bot menjadi sebahagian daripadanya — komen pada diff yang bot
+tinggalkan, atau jawapan yang bot siarkan dalam benang itu. Tiada sebutan diperlukan; benang itu sendiri ialah alamatnya:
 
 ```text
 > @usectrl the retry loop looks O(n²) to me
@@ -106,80 +93,78 @@ diperlukan; benang itu **ialah** penujukannya:
 what would the complexity be with the bounded queue instead?
 ```
 
-Perbualan berbilang giliran berfungsi dengan cara yang sama: setiap balasan
-ialah satu lagi soalan dalam perbualan yang sama, dengan ruang semakan sebagai
-konteks, dan jawapan itu kembali dalam benang itu.
+Perbualan berbilang giliran berfungsi dengan cara yang sama: setiap balasan ialah soalan lain dalam perbualan
+yang sama, dengan ruang semakan sebagai konteks, dan jawapan kembali dalam benang itu.
 
-Susulan pada garis masa perbualan PR ialah komen peringkat atas yang baharu,
-jadi ia masih memerlukan @sebutan.
+Susulan pada garis masa perbualan PR ialah komen peringkat atas yang baharu, jadi ia masih memerlukan sebutan @.
 
-## Kepada siapa bot itu bercakap
+## Dengan siapa bot bercakap
 
-Komen GitHub tiba dengan tidak lebih daripada satu log masuk, jadi bot itu
-menyelesaikan penulisnya sebelum melakukan apa-apa:
+Pelayan menyelesaikan pengarang sesuatu komen, atau sesiapa yang menambah label `ai-review`, sebelum melakukan apa-apa:
 
-- **Akaun GitHub anda mesti dipautkan kepada identiti anda** dalam Control
-  Center — [daftar masuk dengan GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/), atau
-  tampal token, dari **Tetapan → Ruang kerja → Profil & identiti → Hos kod**
-- **Anda mesti ahli dengan peranan tulis** (`member`, `admin`, atau `owner`)
-  dalam ruang kerja yang memautkan repositori itu
+- **Akaun GitHub mesti telah log masuk** pada pelayan ini. Padanan berdasarkan id akaun GitHub berangka, tidak
+  pernah log masuk. Log masuk dari **Tetapan → Ruang kerja → Profil & identiti → Hos kod**
+- **Mereka mesti ahli dengan peranan tulis** (`member`, `admin` atau `owner`) dalam ruang kerja yang memautkan
+  repositori tersebut
+- **Mereka mesti boleh push** ke repositori di GitHub. Balasan menggunakan token yang dihadkan kepada akses orang
+  itu, jadi seseorang yang hanya boleh membaca tidak mendapat balasan
 
-Sesiapa yang lain menerima satu balasan sopan yang menerangkan apa yang tiada —
-log masuk yang tidak dikenali (tidak dipautkan, atau dipautkan tetapi bukan
-ahli di sini) dan peranan baca sahaja ialah dua kesnya — dan kata-kata mereka
-tidak pernah memasuki ruang kerja itu. Label `ai-review` tidak dikawal dengan
-cara ini: ia tiada penulis, jadi ia memulakan semakan dalam ruang kerja yang
-sudah memautkan repositori itu.
+Sesiapa selain itu diabaikan secara senyap: tiada apa yang disiarkan, dan kata-kata mereka tidak pernah memasuki
+ruang kerja. Komen daripada bot, dan balasan Control Center itu sendiri, tidak pernah dianggap sebagai soalan.
 
-## Apa yang dijangka
+### Dua pelayan, satu PR
 
-| Perkara              | Tingkah laku                                                              |
+Reaksi 👀 juga menjadi cara pelayan bersetuju tentang siapa yang menjawab. Ia ditambah dengan log masuk pengarang
+itu sendiri, dan GitHub memberitahu pelayan sama ada reaksi itu baharu. Jika anda log masuk pada dua pelayan
+Control Center yang kedua-duanya memautkan repositori, yang pertama bereaksi akan menjawab dan yang lain kekal
+senyap. Perkara yang sama berlaku untuk label.
+
+## Apa yang boleh dijangka
+
+| Perkara             | Kelakuan                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
-| Pengakuan           | 👀 pada komen dalam masa kira-kira satu minit — selang sapuan. Label `ai-review` tiada komen untuk diberi reaksi |
-| Jawapan             | Disiarkan sebagai bot (aplikasi itu), dalam lorong tempat soalan itu ditanya |
-| Atribusi dalam ruang | Soalan itu milik anda; ejen berjalan bagi pihak anda, di bawah tetapan autonomi ruang itu |
-| Semakan             | Penemuan mendarat dalam ruang semakan; penerbitan ke GitHub adalah manual |
+| Pengakuan           | 👀 daripada akaun anda pada komen (atau pada PR, untuk label), dalam satu sapuan |
+| Jawapan             | Disiarkan dalam lorong tempat soalan diajukan, bermula dengan `**Control Center** (for @your-login):`. Pada app sendiri, pengarangnya ialah akaun bot app; melalui Connect, ia ialah akaun anda, bertindak melalui App |
+| Atribusi dalam ruang | Soalan ialah milik anda; ejen berjalan bagi pihak anda, di bawah tetapan autonomi ruang |
+| Semakan             | Penemuan mendarat dalam ruang semakan; menerbitkan ke GitHub adalah secara manual |
 
-Kependaman kira-kira satu minit itulah harganya kerana tidak memerlukan
-sebarang akses rangkaian masuk. Tiada apa-apa tentang sapuan itu yang mendesak,
-dan tiada apa-apa hilang semasa pelayan di luar talian — komen yang tiba semasa
-waktu henti akan ditangkap pada sapuan berikutnya.
+Sapuan berjalan setiap minit pada app sendiri dan menyemak sehingga 25 PR; melalui Connect, ia berjalan setiap
+dua minit dan menyemak sehingga 10, kerana panggilan itu berkongsi kuota GitHub setiap ahli. Ruang kerja yang
+kuota GitHubnya di bawah 15% akan dilangkau sehingga pulih. Kelewatan ialah harga yang dibayar untuk tidak
+memerlukan sebarang akses rangkaian masuk. Tiada apa yang hilang apabila pelayan luar talian — komen yang
+tiba semasa henti akan ditangkap pada sapuan seterusnya.
 
 ## Penyelesaian masalah
 
-**Tiada apa-apa berlaku bagi komen yang menyebut bot.**
+**Tiada apa yang berlaku untuk komen yang menyebut bot.**
 
-- Adakah aplikasi itu **dipasang** pada akaun yang memiliki repositori itu, dan
-  repositori itu **dipautkan** ke ruang kerja? Repositori yang tidak dipautkan
-  dilangkau sebelum apa-apa direkodkan, jadi memautkannya kemudian tetap
-  menyampaikannya
-- Adakah akaun GitHub anda dipautkan, dan adakah anda ahli dengan peranan
-  tulis? Semak PR untuk balasan penolakan bot itu — ia menyatakan yang mana
-- Masih tiada apa-apa? Log pelayan menamakan sapuan dan PR itu apabila sesuatu
-  gagal; cari `pr_conversation:` (pengundi) dan `github_pr_conversation:`
-  (jambatan)
+- Adakah app telah **dipasang** pada akaun yang memiliki repo itu, dan repo itu telah **dipautkan** ke ruang
+  kerja? Repo yang tidak dipautkan dilangkau sebelum apa-apa direkodkan, jadi memautkannya kemudian masih akan berjaya
+- Adakah anda sudah log masuk ke GitHub pada pelayan ini, adakah anda ahli dengan peranan tulis, dan bolehkah
+  anda push ke repo itu? Pelayan mengabaikan sesiapa selain itu tanpa membalas
+- Pada app kongsi Control Center, adakah pemasangan organisasi telah diberi kuasa untuk pelayan ini? Lihat
+  [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+- Masih tiada? Log pelayan menamakan sapuan dan PR apabila sesuatu gagal; cari `pr_conversation:` (pengundi) dan
+  `github_pr_conversation:` (jambatan)
 
-**Label itu tidak memulakan semakan.**
+**Label tidak memulakan semakan.**
 
-Ia tercetus sekali sahaja bagi setiap PR. Jika semakan sudah dijalankan, atau
-label itu ditambah sebelum pelayan pernah melihat PR itu (sapuan pertama
-merekodkan tunggakan itu secara senyap dan bukannya mencetuskannya sekaligus),
-sebut bot itu sebagai gantinya — `@myapp review` sentiasa memulakan satu
-kecuali satu semakan sudah pun berjalan.
+Label ini dicetuskan sekali bagi setiap PR, dan orang yang menambahnya melepasi pemeriksaan yang sama seperti
+pengarang komen. Jika semakan sudah pernah berjalan, atau label ditambah sebelum pelayan pernah melihat PR itu
+(sapuan pertama merekodkan tunggakan secara senyap dan bukannya membanjirinya), sebut bot sebaliknya —
+`@usectrl review` sentiasa memulakan semakan melainkan satu semakan sudah berjalan.
 
-**Jawapan bot itu tidak pernah sampai ke GitHub.**
+**Jawapan bot tidak pernah sampai ke GitHub.**
 
-Jawapan itu sendiri tidak pernah hilang — ia ada dalam ruang semakan PR itu
-dalam Control Center. Kegagalan penyiaran (GitHub tidak beroperasi, kebenaran
-berubah) akan dilogkan dan balasan itu tidak dicuba semula; tanya lagi dalam
+Jawapan itu sendiri tidak pernah hilang — ia berada dalam ruang semakan PR dalam Control Center. Kegagalan
+siaran (GitHub down, kebenaran berubah) akan direkodkan dan balasan itu tidak dicuba semula; tanya semula dalam
 benang itu jika ia penting.
 
 ## Panduan berkaitan
 
-- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/): pendaftaran yang melahirkan
-  bot itu
-- [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/): membaca penemuan
-  yang dihasilkan oleh semakan yang dimulakan melalui sebutan
-- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/): memautkan
-  akaun GitHub anda sendiri, yang menjadi asas bot menyelesaikan identiti anda
-- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/): ruang tempat semua ini mendarat
+- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/): tempat identiti bot app sendiri berasal
+- [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/): membaca penemuan yang dihasilkan
+  oleh semakan yang dimulakan oleh sebutan
+- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/): memautkan akaun GitHub anda
+  sendiri, yang menjadi asas bot menyelesaikan identiti anda
+- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/): bilik tempat semua ini bermuara

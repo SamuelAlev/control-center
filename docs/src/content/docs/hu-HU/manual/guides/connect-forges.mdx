@@ -2,7 +2,7 @@
 title: Kódhoszt csatlakoztatása
 description: Csatlakoztassa a GitHubot, a GitLabot vagy a Bitbucketet, hogy a PR-felület, a repóregisztráció és az ügynökfutások működjenek — egy munkaterület mindhármat használhatja.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa
-sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
+sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
 ---
 
 A Control Center három kódhoszttal működik együtt, amelyeket az alkalmazás végig **forge** néven említ: **GitHub**, **GitLab** és **Bitbucket Cloud**. Egyik sem az alapértelmezett. Ha egyet csatlakoztat, minden működik; ha többet, egyetlen munkaterület egyszerre mindháromról tarthat repókat.
@@ -13,9 +13,9 @@ A forge minden **repó** tulajdonsága: regisztráláskor annak `origin` remote-
 
 1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás** (`/settings/workspace/profile`) oldalt.
 2. Keresse meg a **Kódtárhely** kártyát. Minden támogatott forge szerepel rajta, akár csatlakoztatva van, akár nem.
-3. Nyomja meg a **Bejelentkezés ezzel: …** gombot, ha a sor felkínálja, vagy a **Token hozzáadása** gombot, és illesszen be egyet.
+3. A **GitHub** sorban nyomja meg a **Bejelentkezés: GitHub** gombot. A **GitLab** vagy **Bitbucket** sorban nyomja meg a **Token hozzáadása** gombot, és illesszen be egyet.
 
-A **Bejelentkezés** azoknál a forge-oknál jelenik meg, amelyekhez a szerverének van regisztrált alkalmazása — ez ma a GitHub, eszközkódos folyamattal (lásd [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)). Minden más esetben beillesztett tokenről van szó, ami az őszinte megoldás, nem pedig egy gomb, amely nem tud sikerrel járni.
+**A GitHub kizárólag bejelentkezéssel működik.** A bejelentkezés a szerver saját GitHub Appján vagy a Control Center Connecten keresztül fut, aszerint, hogy a szerver tulajdonosa melyiket állította be (lásd [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)); nincs beillesztendő GitHub-token. A GitLab és a Bitbucket továbbra is személyes tokent vár.
 
 Akár így, akár úgy, a hitelesítő adat **az Öné, és a szerveren él**, a felhasználói azonosítójához rendelve: nem tárolódik token azon a gépen, amelyre beírta, minden eszköz, amelyről bejelentkezik, ugyanazt használja, és más tag nem tudja kiolvasni. A **következő kérésnél** lép életbe — nincs mit újraindítani, a leválasztás pedig azonnal leállítja a küldését.
 
@@ -24,29 +24,28 @@ Minden sor megmondja, honnan származik a hitelesítő adata, mert ez a különb
 | Felirat                          | Jelentés                                                           |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `Bejelentkezve mint octocat`     | A saját hitelesítő adata van használatban                          |
-| `Bejelentkezve mint octocat · ennek a szervernek az alkalmazásán keresztül` | A szerver alkalmazásidentitása válaszol — Ön nincs bejelentkezve |
-| `Bejelentkezve mint octocat · a környezetből` | Egy szerverkörnyezeti változó válaszol, nem az Ön hitelesítő adata |
+| `Bejelentkezve mint octocat · a környezetből` | Csak GitLab vagy Bitbucket: egy szerverkörnyezeti változó válaszol, nem az Ön tokenje |
 | `Nincs csatlakoztatva`           | Nincs hitelesítő adata ehhez a forge-hoz                           |
+| `A(z) GitHub bejelentkezés még nincs beállítva ezen a szerveren.` | A szervernek sincs saját GitHub Appja, és Connectje sincs; a szerver tulajdonosa beállítja az egyiket |
 
 ### Milyen tokent vár el az egyes forge-ok
 
 | Forge         | Token                                                     | Hol hozza létre                                           |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Klasszikus: `repo` és `read:org`. Finomhangolt: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | Személyes hozzáférési token `api` jogosultsággal          | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Atlassian API-token, valamint a fiókja e-mail-címe        | id.atlassian.com → Security → API tokens                   |
 
 A Bitbucket a **fiókja e-mail-címét használja felhasználónévként**, a tokent pedig jelszóként. Állítsa be a `BITBUCKET_EMAIL` változót a szerver környezetében, hogy tudja, melyik e-mail-címet párosítsa a tokenhez.
 
-### Vagy használja a környezetet
+### Háttérmunka
 
-Headless vagy CI-telepítés esetén a szerver ezeket olvassa:
+Az ember nélkül futó munkának (ügynökfutások, pipeline-ok, PR-lekérdezés) is kell hitelesítő adat, és ezt minden forge másképp oldja meg:
 
-- **GitHub** — `GITHUB_TOKEN`, majd `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, majd `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, majd `BITBUCKET_TOKEN` (a `BITBUCKET_EMAIL` változóval)
+- **GitHub** — egyszerre egyetlen repóra szóló token, amelyet a szerver GitHub Appja vagy a Connect állít ki, és arra korlátozódik, amit egy felelős tag ott megtehet. Soha nem egy személy bejelentkezése adódik át egészben, és semmilyen környezeti változó vagy beillesztett token nem lép a helyébe. Lásd: [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/#kinek-a-nevében-szól-a-hitelesítő-adata)
+- **GitLab** — a szerver tulajdonosának beillesztett tokenje, majd `GITLAB_TOKEN`, majd `CI_JOB_TOKEN`
+- **Bitbucket** — a szerver tulajdonosának beillesztett tokenje, majd `BITBUCKET_API_TOKEN`, majd `BITBUCKET_TOKEN` (a `BITBUCKET_EMAIL` változóval)
 
-Ezek a **szerver** hitelesítő adatai, nem az Öné, és ez a megkülönböztetés döntő: az Ön nevében indított kérés az Ön hitelesítő adatát használja, és semmi mást, így a környezet soha nem lép csendben az Ön helyébe. Az ember nélkül futó munka — webhookok, PR-lekérdezés, jegyszinkronizálás — először a szerver alkalmazásidentitását oldja fel, aztán a szerver tulajdonosának hitelesítő adatát, végül a környezetet. A sorrend rögzített, hogy a „Bejelentkeztem, és semmi sem változott” soha ne legyen támogatott eredmény.
+A GitLab és a Bitbucket környezeti változói a **szerver** hitelesítő adatai, nem az Öné: az Ön nevében indított kérés az Ön tokenjét használja, és semmi mást, így a környezet soha nem lép csendben az Ön helyébe.
 
 ## Ön minden forge-on más személy
 
@@ -94,11 +93,11 @@ A GitLab a pull requestet **merge request**nek hívja. A Control Center a saját
 
 ### A PR-lista üres, és azt írja, hogy egy forge nincs csatlakoztatva
 
-Nincs hitelesítő adata ahhoz a forge-hoz. Jelentkezzen be, vagy illesszen be egy tokent a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** alatt. A többi forge repóit ez nem érinti.
+Nincs hitelesítő adata ahhoz a forge-hoz. Jelentkezzen be a GitHubra, vagy illesszen be egy GitLab- vagy Bitbucket-tokent a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** alatt. A többi forge repóit ez nem érinti.
 
 ### Csatlakoztattam egy forge-ot, de a repói továbbra sem mutatnak semmit
 
-Ellenőrizze a sor feliratát. Ha az áll ott, hogy „ennek a szervernek az alkalmazásán keresztül” vagy „a környezetből”, akkor más hitelesítő adat válaszol, mint amire számított — bármit is kér, az Ön saját hitelesítő adata élvez elsőbbséget, tehát ha más szerepel, az Öné nem lett elmentve.
+Ellenőrizze a sor feliratát. Ha egy GitLab- vagy Bitbucket-sorban az áll, hogy „a környezetből”, akkor más hitelesítő adat válaszol, mint amire számított — bármit is kér, az Ön saját tokenje élvez elsőbbséget, tehát ha más szerepel, az Öné nem lett elmentve. GitHubon ellenőrizze, hogy a GitHub App telepítve van-e a repók tulajdonosának fiókján.
 
 ### Egy repó nem regisztrálódik
 

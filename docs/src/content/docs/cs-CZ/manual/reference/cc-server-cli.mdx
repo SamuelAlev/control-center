@@ -2,12 +2,12 @@
 title: CLI cc_server
 description: Všechny příznaky, proměnné prostředí, podpříkazy a cesty v datovém adresáři headless serveru.
 slug: cs-CZ/prirucka/referencni-prirucka/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Každý příznak procesu se zadává příznakem CLI nebo proměnnou prostředí. Vyhraje
 příznak, pak prostředí, pak výchozí hodnota. Výjimkou jsou přihlašovací údaje
-třetích stran. Viz níže.
+poskytovatelů. Viz [Aplikace poskytovatelů a Connect](#aplikace-poskytovatelů-a-connect).
 
 :::caution[Neznámé příznaky se tiše ignorují]
 Parser argumentů je ruční a přeskočí všechno, co nezná, takže překlep
@@ -43,7 +43,7 @@ hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | nenastaveno                   | Očekávaný SHA-256 té binárky, ověřený před každým spuštěním                                                                                                  |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | prázdné                       | Další argumenty volání tunelu, oddělené čárkami                                                                                                              |
 
-## Indexování a přihlašovací údaje třetích stran
+## Indexování a běh
 
 | Příznak                  | Proměnná                        | Výchozí                               | Význam                                                                                                                      |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -53,15 +53,40 @@ hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Jestli běhy harnessu posílají malou rezidentní sadu nástrojů plus jmenný index a zbytek načtou při prvním použití. Viz níže |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Sekundy, po které běh zůstane pozastavený a čeká, než člověk opraví přihlašovací údaj, který ho neumí obsloužit (oříznuto na 0–3600). Viz níže |
 
-Prázdná hodnota přihlašovacího údaje se čte jako nenastavená, takže pořád
-platí vestavěná hodnota. Sestavení ze zdrojů žádné vestavěné přihlašovací
-údaje neveze.
+## Aplikace poskytovatelů a Connect
 
-Google Calendar a výběr GIF z Klipy jsou **jen z prostředí**. Příznak
-`--google-client-id` ani `--klipy-app-key` neexistuje (neznámé příznaky se
-ignorují). Nastav `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` a
-`KLIPY_APP_KEY` v prostředí (nebo v `.env` vedle serveru). Prázdná hodnota
-funkci vypne, místo aby shodila start.
+Žádné sestavení přihlašovací údaje poskytovatelů neveze. Každý poskytovatel
+běží na vlastní aplikaci serveru jen při **Použít vlastní aplikace**, když je úplně nastavená, jinak není dostupný; s Control Center Connect zapnutým běží přes Connect každý poskytovatel a vlastní aplikace zůstávají uložené, ale nepoužité. Vlastní aplikace se
+nastavují v **Nastavení → Server → Jednotné přihlášení → Aplikace
+poskytovatelů**, nebo se jednou naplní ze souboru `.env` serveru. Příznaky pro
+ně neexistují: secret na příkazovém řádku je čitelný přes `ps`.
+
+| Proměnná                       | Význam                                                                                        |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Id GitHub App serveru                                                                         |
+| `GITHUB_APP_PRIVATE_KEY`       | Její soukromý klíč, na jednom řádku s escapováním `\n`. **Jen `.env`**                       |
+| `GITHUB_CLIENT_ID`             | Její client id, pro přihlašování lidí                                                         |
+| `GITHUB_CLIENT_SECRET`         | Její client secret. **Jen `.env`**                                                            |
+| `GOOGLE_OAUTH_CLIENT_ID`       | Klient Google serveru typu Web application                                                    |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Jeho secret. **Jen `.env`**                                                                   |
+| `LINEAR_CLIENT_ID`             | Aplikace Linear serveru (PKCE, bez secretu)                                                   |
+| `LINEAR_API_KEY`               | Servisní klíč Linear pro automatizaci. **Jen `.env`**                                         |
+| `KLIPY_APP_KEY`                | Vlastní klíč Klipy serveru pro hledání GIF, použitý jen při **Použít vlastní aplikace**          |
+| `CC_CONNECT_URL`               | `hosted`, `off` nebo URL Connect. Volbu Connect napevno zamkne; Nastavení ji pak nezmění      |
+| `CC_SERVER_CONNECT_HOST`       | `on` připojí Control Center Connect na `<server>/connect`, nastavený proměnnými `CONNECT_*`. Viz [Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/#vestav-connect-do-cc_server) |
+
+Soubor `.env` se čte z pracovního adresáře serveru, ze složky vedle
+spustitelného souboru nebo z checkoutu zdrojů nad ní; v Dockeru ho připoj na
+`/app/bin/.env`. Server **odmítne nastartovat** (exit kód `78`), když je
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+`LINEAR_API_KEY` nebo kterékoli `SLACK_*SECRET*` exportované v prostředí jeho
+procesu, kde by ho přečetl každý podřízený proces. Naplnění z `.env` proběhne
+pro každé pole jednou, takže pozdější úpravu v Nastavení restart nevrátí.
+Prázdná hodnota se čte jako nenastavená.
+
+Práce na pozadí pro GitLab a Bitbucket čte i `GITLAB_TOKEN` / `CI_JOB_TOKEN`
+a `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` s `BITBUCKET_EMAIL`. GitHub žádné
+pověření z prostředí nemá.
 
 ### `--sandbox`
 
@@ -111,7 +136,7 @@ přihlašovací údaj ukončí tah přesně tak, jako před tou branou.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Běží, dokud nepřijde `SIGINT`/`SIGTERM`                                                             |
 | `cc_server pair`                              | Vystaví zařízení a vypíše jeho id a párovací klíč. Jde to i proti datovému adresáři, který server už obsluhuje. Běžící server zařízení vezme bez restartu |
-| `cc_server calendar connect --workspace <id>` | Připojí účet Google k pracovnímu prostoru tokem kódu zařízení a skončí                              |
+| `cc_server connect <command>`                 | Ukáže nebo změní, který Control Center Connect tento server používá, aniž by ho spustil            |
 | `cc_server update`                            | Zkontroluje, stáhne a ověří novější samostatné vydání                                               |
 | `cc_server --version`                         | Vypíše verzi sestavení a git SHA. Stejná identita, kterou inzerují `/healthz` a handshake RPC       |
 
@@ -136,6 +161,25 @@ serveru, id zařízení a klíč ve fragmentu URL). Telefon se páruje jiným
 payloadem, vystaveným z panelu párování v aplikaci: úplný deskriptor spojení
 serveru plus expirace. Nejdou zaměnit. Viz [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/).
 :::
+
+### `connect`
+
+Čte a zapisuje stejná nastavení jako karta **Control Center Connect**
+v **Nastavení → Server → Jednotné přihlášení**, z datového adresáře. Běžící
+server změnu převezme do 10 minut nebo při restartu.
+
+| Příkaz                          | Co dělá                                                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Vypíše režim, URL, jestli ho `CC_CONNECT_URL` zamyká, ID instalace, stav a zdroj každé dráhy (`own`, `connect` nebo `off`) |
+| `cc_server connect enable`      | Použije hostovaný Connect od Control Center                                                                      |
+| `cc_server connect enable --url <url>` | Použije vlastní Connect na té URL (HTTPS, nebo `http` na loopbacku)                                      |
+| `cc_server connect disable`     | Přestane Connect používat. Lidi přihlašují jen vlastní aplikace serveru                                           |
+| `cc_server connect rotate-key --yes` | Vystaví nový instalační klíč a ID instalace. Každý, kdo se přihlásil přes Connect, se přihlásí znovu. Bez `--yes` jen varuje a skončí s `2` |
+
+Bez příkazu je výchozí `status`. Každý příkaz bere `--data-dir`.
+`CC_CONNECT_URL` přebije cokoli, co tyto příkazy uloží. Neznámý příkaz skončí
+s `64`. Režimy, identitu instalace a stavové kódy popisuje
+[Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/).
 
 ### `update`
 
@@ -179,7 +223,7 @@ použije jen tehdy, když se nevyřeší domovský adresář ani adresář dat a
 | `global.db`                       | Registr pracovních prostorů, uživatelé, spárovaná zařízení, kanál novinek a fronta flotily |
 | `<workspaceId>/workspace.db`      | Jedna databáze na pracovní prostor: agenti, prostory, tickety, paměť, graf kódu |
 | `<workspaceId>/chat_credentials/` | Tokeny chatbotů jako prosté JSON, aby šly s pracovním prostorem                |
-| `secrets.json`                    | Párovací klíče, identita aplikace poskytovatele, tokeny uživatelů a Google, SSO (`0600`) |
+| `secrets.json`                    | Párovací klíče, instalační klíč Connect, aplikace poskytovatelů, přihlášení lidí (zapečetěná, když vznikla přes Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Jeden snímek instalace: `manifest.json`, `global.db` a kopie každého pracovního prostoru |
 | `backups/exports/`                | Exporty jednoho pracovního prostoru, `<workspaceId>-<timestamp>.db`             |
 | `backups/transfer/`               | Odkladiště stahování a nahrávání záloh. Uklidí ho trasa, která ho zapisuje     |

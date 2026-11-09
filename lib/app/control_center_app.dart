@@ -6,7 +6,6 @@ import 'package:control_center/core/theme/app_theme.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/legacy_material_bridge.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
-import 'package:control_center/features/auth/providers/credential_migration.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
@@ -58,10 +57,6 @@ class ControlCenterApp extends ConsumerWidget {
     // Two-way per-user preference sync (theme follows the user across
     // desktop/web/phone).
     ref.watch(userPreferencesSyncProvider);
-    // One-shot: hand any credential still in THIS machine's keychain to the
-    // server, then delete it locally. Provider credentials are the user's, not
-    // the machine's.
-    ref.watch(legacyCredentialMigrationProvider);
     // Presence lane (PRD 16 §1–§5): mirrors the route onto my own locus,
     // drives follow-mode navigation and auto-navigates to an active
     // spotlight. All three are pure side-effect sinks kept alive for the

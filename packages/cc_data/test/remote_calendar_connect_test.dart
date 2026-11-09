@@ -1,11 +1,13 @@
+import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
-/// Exercises [RemoteCalendarConnect] — the device-code Google Calendar connect
-/// over RPC. Pins the begin/poll/disconnect ops, the args shape, the status
-/// switch (incl. the unknown fallback) and the duration parsing defaults.
+/// Pins the client data layer behind sign-ins: the generic `oauth.*` surface
+/// (lanes, begin/status/complete, connections, disconnect), Google Calendar
+/// riding the `google` lane with its workspace, the owner-only `connect.*`
+/// ops and the GitHub App setup ops.
 void main() {
   late _Host host;
   late RemoteRpcClient client;
@@ -18,95 +20,270 @@ void main() {
 
   tearDown(() async => client.close());
 
-  group('RemoteCalendarConnect.begin', () {
-    test('maps the begin DTO and forwards client id + secret', () async {
-      host.callResults['calendar.beginConnect'] = {
-        'handle': 'h-1',
-        'user_code': 'ABC-123',
-        'verification_url': 'https://google.com/device',
-        'interval_seconds': 7,
-        'expires_in_seconds': 1800,
-      };
-      final connect = RemoteCalendarConnect(client);
-      final begin = await connect.begin(clientId: 'cid', clientSecret: 'sec');
-      expect(begin.handle, 'h-1');
-      expect(begin.userCode, 'ABC-123');
-      expect(begin.verificationUrl, 'https://google.com/device');
-      expect(begin.interval, const Duration(seconds: 7));
-      expect(begin.expiresIn, const Duration(seconds: 1800));
-      final call = host.lastCall('calendar.beginConnect')!;
-      expect(call.args['client_id'], 'cid');
-      expect(call.args['client_secret'], 'sec');
+  Map<String, dynamic> attempt({
+    String status = 'pending',
+    String mode = 'connect',
+    String? error,
+    String lane = 'google',
+  }) => {
+    'login_id': 'AAAAAAAAAAAAAAAAAAAAAA',
+    'lane': lane,
+    'mode': mode,
+    'url': 'https://accounts.google.com/o/oauth2/v2/auth?x=1',
+    'expires_at': '2026-11-08T12:10:00Z',
+    'status': status,
+    'account': ?(status == 'succeeded' ? 'sam@example.com' : null),
+    'error': ?error,
+  };
+
+  group('Google Calendar connect', () {
+    test('begins on the google lane, scoped to the workspace', () async {
+      host.callResults['oauth.begin'] = attempt();
+      final started = await RemoteProviderSignIn(
+        client,
+      ).begin(ConnectOAuthLane.google, workspaceId: 'ws-1');
+      final call = host.lastCall('oauth.begin')!;
+      expect(call.args, {'lane': 'google', 'workspace_id': 'ws-1'});
+      expect(started.lane, ConnectOAuthLane.google);
+      expect(started.mode, SignInLaneMode.connect);
+      expect(started.status, SignInAttemptStatus.pending);
+      expect(started.expiresAt, DateTime.utc(2026, 11, 8, 12, 10));
     });
 
-    test('defaults interval/expiresIn when the fields are absent', () async {
-      host.callResults['calendar.beginConnect'] = {
-        'handle': 'h-1',
-        'user_code': 'X',
-        'verification_url': 'u',
-      };
-      final connect = RemoteCalendarConnect(client);
-      final begin = await connect.begin(clientId: 'c', clientSecret: 's');
-      expect(begin.interval, const Duration(seconds: 5));
-      expect(begin.expiresIn, const Duration(seconds: 1800));
-    });
-  });
-
-  group('RemoteCalendarConnect.poll', () {
-    test('maps each status and the account_email', () async {
-      host.callResults['calendar.pollConnect'] = {
-        'status': 'connected',
-        'account_email': 'sam@example.com',
-      };
-      final connect = RemoteCalendarConnect(client);
-      final poll = await connect.poll('h-1');
-      expect(poll.status, CalendarConnectPollStatus.connected);
-      expect(poll.accountEmail, 'sam@example.com');
-      expect(host.lastCall('calendar.pollConnect')!.args['handle'], 'h-1');
-    });
-
-    test('maps the pending status', () async {
-      host.callResults['calendar.pollConnect'] = {'status': 'pending'};
-      final connect = RemoteCalendarConnect(client);
-      expect(
-        (await connect.poll('h-1')).status,
-        CalendarConnectPollStatus.pending,
-      );
-    });
-
-    test('maps the denied status', () async {
-      host.callResults['calendar.pollConnect'] = {'status': 'denied'};
-      final connect = RemoteCalendarConnect(client);
-      expect(
-        (await connect.poll('h-1')).status,
-        CalendarConnectPollStatus.denied,
-      );
-    });
-
-    test('maps the expired status', () async {
-      host.callResults['calendar.pollConnect'] = {'status': 'expired'};
-      final connect = RemoteCalendarConnect(client);
-      expect(
-        (await connect.poll('h-1')).status,
-        CalendarConnectPollStatus.expired,
-      );
-    });
-
-    test('falls back to unknown for an unrecognised status', () async {
-      host.callResults['calendar.pollConnect'] = {'status': 'weird'};
-      final connect = RemoteCalendarConnect(client);
-      expect(
-        (await connect.poll('h-1')).status,
-        CalendarConnectPollStatus.unknown,
-      );
-    });
-  });
-
-  group('RemoteCalendarConnect.disconnect', () {
-    test('forwards the account_id', () async {
-      final connect = RemoteCalendarConnect(client);
-      await connect.disconnect('acc-1');
+    test('disconnect forwards the account_id', () async {
+      await RemoteCalendarConnect(client).disconnect('acc-1');
       expect(host.lastCall('calendar.disconnect')!.args['account_id'], 'acc-1');
+    });
+
+    test('never calls the deleted device-flow ops', () async {
+      host.callResults['oauth.begin'] = attempt();
+      await RemoteProviderSignIn(
+        client,
+      ).begin(ConnectOAuthLane.google, workspaceId: 'ws-1');
+      await RemoteCalendarConnect(client).disconnect('acc-1');
+      expect(
+        host.calls.map((c) => c.op),
+        isNot(
+          anyOf(
+            contains('calendar.connectInfo'),
+            contains('calendar.beginConnect'),
+            contains('calendar.pollConnect'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('RemoteProviderSignIn', () {
+    test('lanes parse mode, callback and error; unknown lanes drop', () async {
+      host.callResults['oauth.lanes'] = {
+        'lanes': [
+          {
+            'lane': 'github',
+            'mode': 'own',
+            'redirect_uri': 'https://cc.example/oauth/github/callback',
+            'error': '',
+          },
+          {'lane': 'linear_app', 'mode': 'connect'},
+          {'lane': 'google', 'mode': 'unavailable', 'error': 'Not set up.'},
+          {'lane': 'myspace', 'mode': 'own'},
+        ],
+      };
+      final lanes = await RemoteProviderSignIn(client).lanes();
+      expect(host.lastCall('oauth.lanes')!.args, {'workspace_id': null});
+      expect(lanes.map((l) => l.lane), [
+        ConnectOAuthLane.github,
+        ConnectOAuthLane.linearApp,
+        ConnectOAuthLane.google,
+      ]);
+      expect(lanes[0].mode, SignInLaneMode.own);
+      expect(lanes[0].redirectUri, 'https://cc.example/oauth/github/callback');
+      expect(lanes[1].mode, SignInLaneMode.connect);
+      expect(lanes[2].mode, SignInLaneMode.unavailable);
+      expect(lanes[2].error, 'Not set up.');
+    });
+
+    test('status and complete carry the login id and workspace', () async {
+      host.callResults['oauth.status'] = attempt(
+        status: 'failed',
+        error: 'access_denied',
+      );
+      host.callResults['oauth.complete'] = attempt(status: 'succeeded');
+      final sign = RemoteProviderSignIn(client);
+      final polled = await sign.status(
+        'AAAAAAAAAAAAAAAAAAAAAA',
+        workspaceId: 'ws-1',
+      );
+      expect(polled.status, SignInAttemptStatus.failed);
+      expect(polled.error, SignInFailure.accessDenied);
+      final done = await sign.complete(
+        loginId: 'AAAAAAAAAAAAAAAAAAAAAA',
+        code: 'ABCD2345',
+        workspaceId: 'ws-1',
+      );
+      expect(host.lastCall('oauth.complete')!.args, {
+        'login_id': 'AAAAAAAAAAAAAAAAAAAAAA',
+        'code': 'ABCD2345',
+        'workspace_id': 'ws-1',
+      });
+      expect(done.status, SignInAttemptStatus.succeeded);
+      expect(done.account, 'sam@example.com');
+    });
+
+    test('an unknown failure code reads as unknown, not as success', () {
+      final parsed = SignInAttempt.fromJson(
+        attempt(status: 'failed', error: 'brand_new_code'),
+      );
+      expect(parsed.error, SignInFailure.unknown);
+      expect(parsed.status.isTerminal, isTrue);
+    });
+
+    test(
+      'connections parse every field and disconnect names the lane',
+      () async {
+        host.callResults['oauth.connections'] = {
+          'connections': [
+            {
+              'lane': 'linear',
+              'connected': true,
+              'account': 'Sam',
+              'account_id': 42,
+              'slot': 'global',
+              'source': 'connect',
+              'needs_sign_in': false,
+            },
+            {
+              'lane': 'linear_app',
+              'connected': false,
+              'slot': 'workspace',
+              'needs_sign_in': true,
+            },
+          ],
+        };
+        final sign = RemoteProviderSignIn(client);
+        final list = await sign.connections(workspaceId: 'ws-1');
+        expect(list.first.account, 'Sam');
+        expect(list.first.accountId, '42');
+        expect(list.first.source, SignInLaneMode.connect);
+        expect(list.last.slot, SignInSlot.workspace);
+        expect(list.last.needsSignIn, isTrue);
+
+        await sign.disconnect(ConnectOAuthLane.linearApp, workspaceId: 'ws-1');
+        expect(host.lastCall('oauth.disconnect')!.args, {
+          'lane': 'linear_app',
+          'workspace_id': 'ws-1',
+        });
+      },
+    );
+  });
+
+  group('RemoteConnectSettings', () {
+    test('status decodes health, pins and lanes', () async {
+      host.callResults['connect.status'] = {
+        'mode': 'hosted',
+        'url': 'https://connect.example',
+        'locked': true,
+        'install_id': 'inst_123',
+        'usable': false,
+        'error': 'hosted_unprovisioned',
+        'stale': true,
+        'pending_pins': {'k1': 'v1'},
+        'epoch': 7,
+        'lanes': [
+          {'lane': 'github', 'source': 'own', 'error': ''},
+          {'lane': 'klipy', 'source': 'connect'},
+        ],
+      };
+      final status = await RemoteConnectSettings(client).status();
+      expect(status.mode, ConnectModeSetting.hosted);
+      expect(status.locked, isTrue);
+      expect(status.installId, 'inst_123');
+      expect(status.error, ConnectHealthError.hostedUnprovisioned);
+      expect(status.stale, isTrue);
+      expect(status.pendingPins, {'k1': 'v1'});
+      expect(status.epoch, 7);
+      expect(status.lanes.map((l) => l.source), [
+        ConnectLaneSource.own,
+        ConnectLaneSource.connect,
+      ]);
+    });
+
+    test('configure sends the mode and only a custom url', () async {
+      host.callResults['connect.configure'] = {'mode': 'custom'};
+      final settings = RemoteConnectSettings(client);
+      await settings.configure(
+        ConnectModeSetting.custom,
+        url: 'https://connect.example',
+      );
+      expect(host.lastCall('connect.configure')!.args, {
+        'mode': 'custom',
+        'url': 'https://connect.example',
+      });
+      await settings.configure(ConnectModeSetting.off);
+      expect(host.lastCall('connect.configure')!.args, {'mode': 'off'});
+    });
+
+    test('test, confirmPins and rotateKey hit their ops', () async {
+      final settings = RemoteConnectSettings(client);
+      await settings.test();
+      await settings.confirmPins();
+      await settings.rotateKey();
+      expect(host.calls.map((c) => c.op), [
+        'connect.test',
+        'connect.confirmPins',
+        'connect.rotateKey',
+      ]);
+    });
+  });
+
+  group('RemoteGitHubAppSetup', () {
+    test('installations decode and say who can authorize', () async {
+      host.callResults['github.installations'] = {
+        'installations': [
+          {
+            'installation_id': 9,
+            'account_id': 5,
+            'account_login': 'acme',
+            'target_type': 'Organization',
+            'bound_here': false,
+            'suspended': false,
+            'caller_is_admin': true,
+          },
+          {
+            'installation_id': 10,
+            'account_login': 'sam',
+            'target_type': 'User',
+            'bound_here': true,
+          },
+        ],
+      };
+      final setup = RemoteGitHubAppSetup(client);
+      final list = await setup.installations(workspaceId: 'ws-1');
+      expect(list.first.installationId, '9');
+      expect(list.first.canAuthorizeHere, isTrue);
+      expect(list.last.canAuthorizeHere, isFalse);
+
+      await setup.authorizeServer(workspaceId: 'ws-1', installationId: '9');
+      expect(host.lastCall('github.authorizeServer')!.args, {
+        'workspace_id': 'ws-1',
+        'installation_id': 9,
+      });
+    });
+
+    test('manifest and install return their urls', () async {
+      host.callResults['github.manifest.begin'] = {'url': 'https://a'};
+      host.callResults['github.install.begin'] = {'url': 'https://b'};
+      final setup = RemoteGitHubAppSetup(client);
+      expect(await setup.beginManifest(), 'https://a');
+      expect(host.lastCall('github.manifest.begin')!.args, isEmpty);
+      await setup.beginManifest(organization: '  acme ');
+      expect(host.lastCall('github.manifest.begin')!.args, {
+        'organization': 'acme',
+      });
+      expect(await setup.beginInstall(workspaceId: 'ws-1'), 'https://b');
+      expect(host.lastCall('github.install.begin')!.args, {
+        'workspace_id': 'ws-1',
+      });
     });
   });
 }

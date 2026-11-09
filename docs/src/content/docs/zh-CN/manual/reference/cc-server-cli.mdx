@@ -2,10 +2,10 @@
 title: cc_server CLI
 description: 无界面服务器的每一个标志、环境变量、子命令和数据目录路径。
 slug: zh-CN/手册/参考/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
-每个进程标志都可以通过命令行标志或环境变量设置；优先级依次是标志、环境变量、默认值。第三方凭据是例外——见下文。
+每个进程标志都可以通过命令行标志或环境变量设置；优先级依次是标志、环境变量、默认值。提供商凭据是例外——见[提供商应用与 Connect](#提供商应用与-connect)。
 
 :::caution[未知标志会被静默忽略]
 参数解析器是手写的，会跳过任何它不认识的内容，因此写错标志（`--tls-key-file`、`--bindany`）不会报错——服务器只是按默认值启动。当某个标志看起来没有生效时，请检查启动日志。
@@ -39,7 +39,7 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | 未设置                        | 该二进制文件的预期 SHA-256，每次启动前都会校验                                                                                                           |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | 空                            | 隧道调用所需的额外参数，以逗号分隔                                                                                                                       |
 
-## 索引与第三方凭据
+## 索引与运行时
 
 | 标志                     | 环境变量                        | 默认值                                | 含义                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -49,9 +49,27 @@ sourceHash: f18330f8028244afe533d32fe595b7167b925804
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | 运行框架发出的请求是否只带一小批常驻工具加一份名称索引，其余工具在首次使用时加载。见下文                      |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | 当凭据无法为某次运行提供服务时，该运行等待人工修复的挂起秒数（限制在 0–3600）。见下文                          |
 
-凭据取空值会被视为未设置，因此内置的回退值仍然生效。从源码构建的版本完全不带任何内置凭据。
+## 提供商应用与 Connect
 
-Google Calendar 和 Klipy GIF 选择器**只能通过环境变量**配置——不存在 `--google-client-id` / `--klipy-app-key` 标志（未知标志会被忽略）。请在环境中（或服务器旁的 `.env` 文件中）设置 `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` 以及 `KLIPY_APP_KEY`。留空会禁用该功能，而不会导致启动失败。
+任何构建版本都不带提供商凭据。开启 Control Center Connect 时，Connect 会运行每个提供商，服务器自己的应用则保留但不使用。在**使用我自己的应用**下，每个提供商在服务器自己的应用配置完整时使用该应用，否则不可用。工作区自己的应用在两种情况下都优先。自有应用在 **设置 → 服务器 → 单点登录 → 提供商应用** 中设置，或从服务器的 `.env` 文件中一次性赋值。它们没有对应的标志：命令行上的密钥可以通过 `ps` 读到。
+
+| 变量                           | 含义                                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | 服务器 GitHub App 的 id                                                                       |
+| `GITHUB_APP_PRIVATE_KEY`       | 其私钥，单行，使用 `\n` 转义。**仅限 `.env`**                                                  |
+| `GITHUB_CLIENT_ID`             | 其客户端 id，用于让人们登录                                                                    |
+| `GITHUB_CLIENT_SECRET`         | 其客户端密钥。**仅限 `.env`**                                                                  |
+| `GOOGLE_OAUTH_CLIENT_ID`       | 服务器的 Google Web 应用客户端                                                                 |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | 其密钥。**仅限 `.env`**                                                                        |
+| `LINEAR_CLIENT_ID`             | 服务器的 Linear 应用（PKCE，无密钥）                                                           |
+| `LINEAR_API_KEY`               | 用于自动化的 Linear 服务密钥。**仅限 `.env`**                                                  |
+| `KLIPY_APP_KEY`                | 服务器自己的 Klipy GIF 搜索密钥，仅在**使用我自己的应用**下使用                              |
+| `CC_CONNECT_URL`               | `hosted`、`off` 或 Connect 的 URL。锁定 Connect 的选择；之后设置无法更改它                      |
+| `CC_SERVER_CONNECT_HOST`       | `on` 会在 `<server>/connect` 挂载 Control Center Connect，由 `CONNECT_*` 变量配置。参见[运行 Connect 服务器](/zh-CN/手册/操作指南/运行-connect-服务器/#在-cc_server-内挂载-connect) |
+
+`.env` 文件从服务器的工作目录、可执行文件旁，或其上层的源码检出目录中读取；在 Docker 中，把它挂载到 `/app/bin/.env`。当 `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、`LINEAR_API_KEY` 或任何 `SLACK_*SECRET*` 被导出到服务器的进程环境中时（所有子进程都能读取），服务器会**拒绝启动**（退出代码 `78`）。从 `.env` 的赋值每个字段只发生一次，因此之后在设置中所做的编辑不会被重启撤销。空值视为未设置。
+
+GitLab 和 Bitbucket 的后台工作还会读取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`，以及 `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` 配合 `BITBUCKET_EMAIL`。GitHub 没有环境凭据。
 
 ### `--sandbox`
 
@@ -79,7 +97,7 @@ Google Calendar 和 Klipy GIF 选择器**只能通过环境变量**配置——�
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | 运行服务器，直到收到 `SIGINT`/`SIGTERM`                                                                     |
 | `cc_server pair`                              | 预配一台设备，并打印其 id 和配对密钥。即使服务器正在为某个数据目录提供服务也可安全执行——运行中的服务器无需重启即可接纳该设备 |
-| `cc_server calendar connect --workspace <id>` | 通过设备码流程把一个 Google 账户连接到工作区，然后退出                                                       |
+| `cc_server connect <command>`                 | 查看或更改本服务器使用哪个 Control Center Connect，而不启动服务器                                          |
 | `cc_server update`                            | 检查、下载并校验更新的独立版本                                                                              |
 | `cc_server --version`                         | 打印构建版本和 git SHA——与 `/healthz` 及 RPC 握手对外公布的身份相同                                          |
 
@@ -97,6 +115,20 @@ Google Calendar 和 Klipy GIF 选择器**只能通过环境变量**配置——�
 :::caution[`--client-url` 的二维码不是手机二维码]
 `pair --client-url` 会填写 **Web** 客户端的连接表单（服务器 URL、设备 id 和密钥都在 URL 片段中）。手机配对用的是从应用内配对面板签发的另一种负载——服务器的完整连接描述符加上一个有效期。二者不可互换——参见[配对设备](/zh-CN/手册/操作指南/配对设备/)。
 :::
+
+### `connect`
+
+读写与 **设置 → 服务器 → 单点登录** 中 **Control Center Connect** 卡片相同的设置，数据来自数据目录。正在运行的服务器会在 10 分钟内或重启后采纳变更。
+
+| 命令                                | 作用                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`          | 打印模式、地址、`CC_CONNECT_URL` 是否锁定了它、安装 ID、健康状况，以及每条通道的来源（`own`、`connect` 或 `off`） |
+| `cc_server connect enable`          | 使用 Control Center 托管的 Connect                                                                          |
+| `cc_server connect enable --url <url>` | 使用该地址的自定义 Connect（HTTPS，或回环地址上的 `http`）                                              |
+| `cc_server connect disable`         | 停止使用 Connect。只有服务器自己的应用能让人们登录                                                          |
+| `cc_server connect rotate-key --yes` | 生成新的安装密钥与安装 ID。所有通过 Connect 登录的人都需要重新登录。不带 `--yes` 时只会发出警告并以退出代码 `2` 退出 |
+
+不带命令的 `status` 是默认行为。每个命令都接受 `--data-dir`。`CC_CONNECT_URL` 会覆盖这些设置中存储的值。未知命令以退出代码 `64` 退出。模式、安装身份与状态代码参见 [Control Center Connect](/zh-CN/手册/参考/connect/)。
 
 ### `update`
 
@@ -131,7 +163,7 @@ Google Calendar 和 Klipy GIF 选择器**只能通过环境变量**配置——�
 | `global.db`                       | 工作区注册表、用户、已配对设备、新闻流和机群队列                          |
 | `<workspaceId>/workspace.db`      | 每个工作区一个数据库——智能体、空间、工单、记忆、代码图                    |
 | `<workspaceId>/chat_credentials/` | 聊天机器人令牌，以明文 JSON 保存，因此会随工作区一起迁移                  |
-| `secrets.json`                    | 配对密钥、提供商应用身份、按用户区分的令牌和 Google 令牌、SSO（`0600`）   |
+| `secrets.json`                    | 配对密钥、Connect 安装密钥、提供商应用、人们的登录（通过 Connect 完成时为封存的）、SSO（`0600`） |
 | `backups/<timestamp>/`            | 一份安装快照——`manifest.json`、`global.db` 以及每个工作区的副本          |
 | `backups/exports/`                | 单工作区导出，`<workspaceId>-<timestamp>.db`                              |
 | `backups/transfer/`               | 备份下载和上传的暂存区；由写入它的路由负责清理                            |

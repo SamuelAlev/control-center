@@ -2,7 +2,7 @@
 title: Cipta templat pipeline
 description: Karang templat aliran kerja DAG dalam editor pipeline — tambah nod, sambungkannya, isytiharkan input dan jadikannya boleh dijalankan.
 slug: ms-MY/manual-pengguna/panduan-cara/cipta-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Templat pipeline dikarang dalam tetapan ruang kerja. Entri **Pipeline** dalam
@@ -128,10 +128,11 @@ Menambah **Skrip Bash**. Tiada medan direktori kerja atau persekitaran, kerana
 kedua-duanya tidak boleh dikonfigurasi:
 
 - Setiap langkah bash dalam satu larian berkongsi cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` disuntik daripada stor kelayakan, jadi `gh` dan
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` berfungsi tanpa penyediaan.
-- Skrip itu dilancarkan sebagai boleh laksana literal `bash`, jadi `bash` mesti
-  ada pada `PATH` hos pelayan. Itu pertimbangan Windows.
+- Skrip berjalan di dalam sandbox OS hos, seperti arahan ejen. Hos tanpa sandbox (Windows, atau Linux tanpa `bwrap`) menggagalkan langkah itu dan bukannya menjalankannya tanpa kekangan. Direktori data dan fail `.env` pelayan tidak boleh dibaca dari dalam.
+- Git dan `gh` tidak melihat sebarang konfigurasi hos: tiada log masuk tersimpan, credential helper, atau hook global.
+- Apabila pipeline menamakan repo GitHub yang dipautkan kepada ruang kerja (`repo_full_name` dalam keadaan atau payload pencetus), `GH_TOKEN` dan `GITHUB_TOKEN` memegang token yang hanya boleh membaca repo itu, jadi `gh` dan `git clone` terhadapnya berfungsi tanpa penyediaan. Jika tidak, tiada token GitHub langsung.
+- Hanya pentadbir ruang kerja boleh mencipta atau menyunting pipeline dengan langkah bash.
+- Skrip itu dilancarkan sebagai boleh laksana literal `bash`, jadi `bash` mesti ada pada `PATH` hos pelayan.
 
 ### Router
 

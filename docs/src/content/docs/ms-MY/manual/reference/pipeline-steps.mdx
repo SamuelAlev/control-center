@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Rujukan untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya dan hasil langkah.
 slug: ms-MY/manual-pengguna/rujukan/langkah-pipeline
-sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
+sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 ---
 
 Satu langkah pipeline mempunyai dua paksi bebas:
@@ -42,7 +42,7 @@ Langkah shell tanpa ejen (`bash -c`). Pemegang tempat `{{key}}` dalam skrip diga
 | `script`          | Perintah shell untuk dilaksanakan (wajib)                |
 | `outputKey`       | Kunci keadaan yang menerima stdout yang dipangkas pada keluar 0 |
 
-Berjalan dengan cwd `<cc_root>/pipelines/<pipelineRunId>/` (dikongsi oleh semua langkah bash dalam sesuatu larian) dan `GITHUB_TOKEN` dalam persekitaran. Juga menulis `<stepId>_runDir` ke keadaan. Keluar bukan sifar menggagalkan langkah itu dengan hujung stderr.
+Berjalan di dalam sandbox OS hos dengan cwd `<cc_root>/pipelines/<pipelineRunId>/` (dikongsi oleh semua langkah bash dalam sesuatu larian); hos tanpa sandbox menggagalkan langkah. Direktori data dan fail `.env` pelayan tidak boleh dibaca, git dan `gh` tidak melihat konfigurasi hos, dan `GH_TOKEN` / `GITHUB_TOKEN` hanya memegang token `read` satu-repo apabila `repo_full_name` (dalam keadaan atau payload pencetus) menamakan repo GitHub yang dipautkan kepada ruang kerja. Mencipta atau menyunting templat dengan langkah ini memerlukan pentadbir ruang kerja. Juga menulis `<stepId>_runDir` ke keadaan. Keluar dengan kod bukan sifar menggagalkan langkah bersama ekor stderr.
 
 ### `conversation.promptAgent`
 

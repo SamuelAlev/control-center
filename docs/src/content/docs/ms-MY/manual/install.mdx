@@ -2,7 +2,7 @@
 title: Pasang
 description: Gunakan Control Center dalam penyemak imbas atau pasang apl desktop, sediakan bahagian belakang ejen dan pilih tempat pelayanannya berjalan.
 slug: ms-MY/manual-pengguna/pasang
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 Control Center berjalan dalam dua cara: sebagai **apl web** di
@@ -172,25 +172,9 @@ Kelayakan GitHub ialah **milik anda dan tinggal pada pelayan**, dikunci oleh id 
 anda — bukan dalam rantai kunci OS klien. Setiap peranti yang anda daftar masuk menggunakan
 yang sama, dan tiada ahli lain boleh membacanya.
 
-Jika pelayan mempunyai GitHub App yang didaftarkan
-([Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)),
-**Tetapan → Ruang kerja → Profil & identiti → Hos kod** menawarkan **Log masuk dengan
-GitHub** (aliran peranti yang dijalankan oleh pelayan). Jika tidak, tampal token akses
-peribadi:
+GitHub hanya menggunakan log masuk: **Tetapan → Ruang kerja → Profil & identiti → Hos kod** menawarkan **Log masuk ke GitHub**, dan tiada token untuk ditampal. Log masuk berjalan melalui GitHub App pelayan ([Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)) atau melalui Control Center Connect, bergantung pada pilihan pemilik pelayan. Dengan app pelayan sendiri, pelayar kembali ke pelayan dengan sendirinya; melalui Connect, anda taip kod 8 aksara yang dipaparkan pelayar, atau biarkannya membuka Control Center. Lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/).
 
-- Klasik: `repo` dan `read:org`
-- Berbutir halus: **Contents** dan **Pull requests** (baca dan tulis), **Checks** dan
-  **Actions** (baca)
-
-Cipta satu di
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-Pelayan menyiasat token itu untuk nama akaun semasa ia disimpan, jadi baris itu boleh
-menyatakan "didaftar masuk sebagai …"; siasatan yang gagal masih menyimpan token itu, dan
-salah taip atau skop yang hilang akan muncul sebagai permintaan yang gagal kemudian.
-
-Langkah pertama onboarding ialah sambungan ini. Selepas itu kad yang sama ialah tempat anda
-menggantikan atau mengosongkannya. GitLab dan Bitbucket menggunakan kad yang sama; lihat
-[Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
+Persediaan awal memerlukan sambungan ini. Selepas itu, kad yang sama ialah tempat anda log masuk semula atau memutuskannya. GitLab dan Bitbucket menggunakan kad yang sama dengan token peribadi yang ditampal; lihat [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
 
 ## Pilih tempat pelayan berjalan
 

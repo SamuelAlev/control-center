@@ -1,36 +1,74 @@
 ---
 title: Połącz Google Calendar
-description: Połącz Kalendarz Google z obszarem roboczym, zarządzaj wieloma kontami i połącz ponownie, gdy token wygaśnie.
+description: Połącz Kalendarz Google z obszarem roboczym, zarządzaj wieloma kontami i połącz ponownie, gdy logowanie wygaśnie.
 slug: pl-PL/podrecznik/poradniki/podlaczanie-kalendarza
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Ten poradnik pokazuje, jak połączyć Kalendarz Google z obszarem roboczym. Połączenie
-działa w zakresie obszaru roboczego: synchronizuje wydarzenia tego obszaru roboczego
-do Control Center w trybie tylko do odczytu. Pełny obraz znajdziesz w sekcji
-[Kalendarz i planowanie](/pl-PL/podrecznik/koncepcje/kalendarz/).
+działa w zakresie obszaru roboczego i członka: synchronizuje Twoje wydarzenia dla
+tego obszaru roboczego do Control Center, gdzie możesz też odpowiadać na zaproszenia
+oraz dodawać, przenosić i usuwać wydarzenia. Pełny obraz
+znajdziesz w sekcji [Kalendarz i planowanie](/pl-PL/podrecznik/koncepcje/kalendarz/).
+
+## Wymagania wstępne
+
+- Serwer potrafi logować ludzi do Google: przez Control Center Connect albo
+  własnym klientem Google serwera
+  ([Własny klient Google](#własny-klient-google)). Wybiera właściciel serwera
+  w **Ustawienia → Serwer → Logowanie jednokrotne**
+- Otwarty obszar roboczy: konto kalendarza zawsze należy do jednego
 
 ## Połącz konto
 
 1. Otwórz **Kalendarz** na pasku bocznym.
 2. Kliknij **Dodaj konto kalendarza** na pasku bocznym kalendarza. (Ta sama sekcja znajduje się w **Ustawienia → Obszar roboczy → Profil i tożsamość**, pod **Kalendarz Google**.)
-3. Wybierz sposób autoryzacji:
-   - **Użyj aplikacji Google od Control Center** — nic nie trzeba konfigurować. To ustawienie domyślne, gdy Twoja kompilacja zawiera taką aplikację.
-   - **Użyj mojego własnego klienta Google Cloud** — wklej identyfikator klienta i sekret z własnego projektu (zobacz [Własny klient Google (forki i self-hosting)](#własny-klient-google-forki-i-self-hosting)).
-4. Kliknij **Połącz Kalendarz Google**. W oknie dialogowym pojawia się krótki kod i link do strony weryfikacji Google.
-5. Otwórz tę stronę na dowolnym urządzeniu, wpisz kod i zatwierdź żądany dostęp. Okno dialogowe zamknie się samo, a Twoje wydarzenia zaczną się synchronizować.
+3. Kliknij **Połącz Kalendarz Google**. Przeglądarka otwiera stronę zgody Google.
+4. Wybierz konto i zatwierdź dostęp do wydarzeń w kalendarzu oraz do listy kalendarzy.
 
-Tę wymianę przeprowadza serwer, a nie Twoje urządzenie, i to on przechowuje powstały
-token odświeżania — dlatego kod zatwierdza się na „dowolnym urządzeniu”, a nie
-specjalnie w tej aplikacji.
+Sposób zakończenia zależy od tego, kto prowadzi logowanie:
 
-Konto jest połączone **tylko z aktywnym obszarem roboczym**. Przełącz obszar roboczy,
-a zobaczysz kalendarze tego obszaru roboczego.
+- **Własny klient Google serwera:** Google odsyła przeglądarkę na serwer, a okno
+  dialogowe zamyka się samo
+- **Control Center Connect:** strona w przeglądarce pokazuje 8-znakowy kod.
+  Wpisz go w oknie dialogowym albo pozwól przeglądarce otworzyć Control Center
+  przez link `control-center://` i pomiń wpisywanie
 
-Przepływ łączenia żąda zakresu `calendar.readonly` oraz dostępu do Twojego adresu
-e-mail — tych samych zakresów zarówno w przypadku aplikacji wbudowanej, jak i wklejonego
-klienta. Control Center odczytuje wydarzenia; nie tworzy ich, nie edytuje, nie usuwa
-ani nie odpowiada na zaproszenia w Google.
+Twoje wydarzenia zaczynają się synchronizować od razu. Wymianę kończy serwer, a nie
+Twoje urządzenie, i to on przechowuje poświadczenie.
+
+Konto jest połączone **tylko z aktywnym obszarem roboczym** i jest Twoje: dwóch
+członków, którzy połączą ten sam adres Google, dostaje osobne konta. Przełącz
+obszar roboczy, a zobaczysz kalendarze tego obszaru roboczego.
+
+Przepływ łączenia żąda zakresów `calendar.events` oraz `calendar.calendarlist.readonly`
+oraz `openid email`, niezależnie od tego, który klient go prowadzi. Konto połączone
+zanim Control Center mógł zapisywać w Google, ma tylko zakres do odczytu; system prosi
+wtedy o ponowne połączenie, a nowe logowanie przyznaje resztę.
+
+## Dodawanie, przenoszenie, odpowiadanie i usuwanie wydarzeń
+
+- **Dodaj wydarzenie:** w widoku tygodnia lub dnia przeciągnij po siatce czasu, aby
+  wyznaczyć przedział (w widoku miesiąca przeciągnij po dniach, aby utworzyć wydarzenie
+  całodniowe). Obok pojawia się karta z tytułem, godzinami, gośćmi, linkiem Google Meet,
+  miejscem, opisem i kalendarzem, w którym wydarzenie ma zostać dodane. **Zapisz** dodaje
+  je w Google i je otwiera. Przycisk **+** w nagłówku kalendarza otwiera tę samą kartę dla
+  najbliższego wolnego kwadransa. Naciśnij Escape, aby ją odrzucić
+- **Przesuń wydarzenie:** przeciągnij je na inną godzinę lub dzień albo przeciągnij jego
+  dolną krawędź, aby zmienić godzinę zakończenia. Wydarzenie otwiera się, gdy Google
+  zapisze nowy termin; jeśli Google odmówi, wraca na poprzednie miejsce. Możesz przesuwać
+  własne wydarzenia i te, których jesteś organizatorem; zaproszenie zostaje tam, gdzie
+  umieścił je organizator
+- **Odpowiedz na zaproszenie:** otwórz wydarzenie i wybierz **Tak**, **Może** lub **Nie**
+- **Usuń wydarzenie:** otwórz je i kliknij ikonę kosza. Potwierdzenie informuje, kogo to
+  dotyczy: goście dostają informację, że wydarzenie, którego jesteś organizatorem, zostało
+  anulowane, a usunięcie zaproszenia usuwa je tylko z Twojego kalendarza. Usunięcie jednego
+  wystąpienia wydarzenia cyklicznego zostawia resztę serii
+
+Goście otrzymują własne e-maile Google z zaproszeniem, aktualizacją lub anulowaniem,
+a przesunięcie jednego wystąpienia wydarzenia cyklicznego zostawia resztę serii.
+Wydarzenia można dodawać tylko w kalendarzach, do których Twoje konto ma prawo zapisu,
+i tylko na własnych kontach: połączony kalendarz innego członka nigdy nie jest proponowany.
 
 ## Jak działa synchronizacja
 
@@ -44,9 +82,12 @@ przejścia przekazują ten token i otrzymują wyłącznie zmiany — właśnie d
 co dwie minuty jest opłacalny. Okno jest zakotwiczane od nowa przez pełną
 synchronizację co 24 godziny oraz za każdym razem, gdy Google unieważni token.
 
-Tokeny odświeżania są przechowywane po stronie serwera w pliku `secrets.json` w
+Poświadczenia są przechowywane po stronie serwera w pliku `secrets.json` w
 katalogu danych serwera, z uprawnieniami tylko dla właściciela (`0600`) — nie w
 magazynie poświadczeń systemu operacyjnego i nigdy na urządzeniu klienta.
+Logowanie przez Connect zapisuje tylko zapieczętowane poświadczenie, które
+Connect może otworzyć wyłącznie dla tego serwera; jego token dostępu zostaje
+w pamięci serwera.
 
 ## Połącz wiele kont
 
@@ -57,70 +98,85 @@ niezależnie, a każde można rozłączyć osobno.
 
 ## Połącz ponownie wygasłe konto
 
-Jeśli Google trwale unieważni token konta (unieważniona sesja lub sesja dawno
+Jeśli Google trwale unieważni logowanie konta (unieważniona sesja lub sesja dawno
 wygasła), synchronizacja się zatrzymuje, a Control Center pokazuje w kalendarzu baner
-**Połącz ponownie** oraz powiadomienie na pulpicie. Kliknij **Połącz ponownie** i
-zatwierdź nowy kod; baner zniknie po następnej udanej synchronizacji.
+**Połącz ponownie** oraz powiadomienie na pulpicie. Kliknij **Połącz ponownie**
+i zaloguj się ponownie; baner zniknie po następnej udanej synchronizacji.
+
+Ten sam baner pojawia się, gdy ten serwer nie może już użyć logowania: właściciel
+serwera przełączył serwer Connect lub wymienił klucz Connect, zmienił się własny
+klient Google serwera albo katalog danych przywrócono na innej maszynie.
 
 ## Rozłącz konto
 
 Na pasku bocznym kalendarza (albo w **Ustawienia → Obszar roboczy → Profil i
 tożsamość**) kliknij **Rozłącz** przy koncie. Spowoduje to usunięcie
-zsynchronizowanych wydarzeń i wyczyszczenie zapisanych tokenów tego konta na serwerze.
+zsynchronizowanych wydarzeń i wyczyszczenie zapisanego poświadczenia tego konta
+na serwerze.
 
-## Połącz z serwera headless
+## Własny klient Google
 
-Serwer bez podłączonego interfejsu graficznego łączy to samo konto ze swojego
-terminala:
+Uruchom własnego klienta Google, gdy wybrano **Użyj własnych aplikacji**. Klient
+serwera obowiązuje tylko wtedy: przy aplikacjach Control Center albo własnym serwerze
+Connect Connect obsługuje każdą ścieżkę, także Google, a klient serwera pozostaje
+zapisany, ale nieużywany. Aby na ekranie zgody widniała nazwa Twojego projektu, gdy serwer korzysta
+z Connect, nadaj obszarowi roboczemu własnego klienta
+([poniżej](#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google)); działa to we
+wszystkich trybach.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. W [konsoli Google Cloud](https://console.cloud.google.com/apis/credentials) włącz **Google Calendar API** i skonfiguruj **ekran zgody OAuth**, dodając zakresy `calendar.events`, `calendar.calendarlist.readonly`, `openid` i `email`. Dopóki aplikacja nie jest zweryfikowana, dodaj siebie jako **użytkownika testowego**.
+2. Utwórz **identyfikator klienta OAuth** o typie aplikacji **Web application**.
+3. Dodaj autoryzowany identyfikator URI przekierowania `<server origin>/oauth/google/callback`. **Ustawienia → Serwer → Logowanie jednokrotne → Aplikacje dostawców → Google** pokazuje dokładny adres pod **Adresy URL wywołania zwrotnego**; skopiuj go dosłownie.
+4. Wklej **Identyfikator klienta** i **Sekret klienta** w tym samym bloku Google albo umieść je w pliku `.env` serwera jako `GOOGLE_OAUTH_CLIENT_ID` i `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Polecenie wyświetla kod i adres URL, czeka na zatwierdzenie, a następnie zapisuje
-tokeny i synchronizuje przy następnym przeglądzie.
+Serwer odmawia startu, gdy `GOOGLE_OAUTH_CLIENT_SECRET` jest wyeksportowany
+w środowisku jego procesu; trzymaj go w pliku `.env` (w Dockerze zamontuj go
+pod `/app/bin/.env`). Sekret nigdy nie opuszcza serwera: żadna odpowiedź RPC
+go nie przenosi. Identyfikator klienta bez sekretu to niedokończona
+konfiguracja, a logowania do Google są odrzucane, dopóki nie zostaną ustawione
+oba.
 
-Kompilacja ze źródeł nie zawiera **żadnego** klienta Google, więc identyfikator i
-sekret są wymagane — ustaw `GOOGLE_OAUTH_CLIENT_ID` i `GOOGLE_OAUTH_CLIENT_SECRET`.
-Nie ma flagi `--google-client-id` (nieznane flagi są ignorowane). Bez tej pary
-zmiennych środowiskowych polecenie kończy się błędem braku klienta.
+Zmiana na innego klienta wylogowuje wszystkich z Kalendarza Google: logowanie
+należy do klienta, który je wydał.
 
-## Własny klient Google (forki i self-hosting)
+## Daj jednemu obszarowi roboczemu własnego klienta Google
 
-Kompilacje wydania zawierają klienta Google, więc większość osób nigdy tego nie
-potrzebuje. Użyj własnego, jeśli budujesz ze źródeł, prowadzisz własny serwer albo
-chcesz, aby na ekranie zgody widniała nazwa Twojego projektu.
+Obszar roboczy może połączyć Kalendarz Google przez własnego klienta zamiast klienta
+serwera. Ustawić go może tylko administrator lub właściciel obszaru roboczego.
 
-1. W [konsoli Google Cloud](https://console.cloud.google.com/apis/credentials) włącz **Google Calendar API** i skonfiguruj **ekran zgody OAuth**, dodając zakresy `calendar.readonly`, `openid` i `email`. Dopóki aplikacja nie jest zweryfikowana, dodaj siebie jako **użytkownika testowego**. Dodanie zakresu `calendar.events` na ekranie zgody nie włącza RSVP — Control Center nigdy nie żąda tego zakresu.
-2. Utwórz **identyfikator klienta OAuth** o typie aplikacji **„TVs and limited input devices”** i skopiuj zarówno identyfikator klienta, jak i sekret klienta.
-3. Podaj je albo przy pojedynczym łączeniu (wybierz w oknie dialogowym **Użyj mojego własnego klienta Google Cloud**), albo dla całego serwera przez `GOOGLE_OAUTH_CLIENT_ID` i `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Utwórz klienta Google typu **Web application** tak jak w krokach 1 i 2 powyżej
+2. Przejdź do **Ustawienia → Obszar roboczy → Ogólne → Aplikacje dostawców** i otwórz **Kalendarz Google**
+3. Wybierz **Użyj własnej aplikacji tego obszaru roboczego**
+4. Dodaj do klienta URI przekierowania, który wiersz pokazuje pod **Adres URL wywołania zwrotnego**, dosłownie
+5. Wklej **Identyfikator klienta** i **Sekret klienta**
 
-Para ustawiona dla całego serwera zastępuje wbudowaną wszędzie, również za opcją „użyj
-aplikacji Google od Control Center” — więc na własnym serwerze ta opcja oznacza Twoją
-aplikację.
+Konta kalendarza połączone w tym obszarze roboczym przechodzą wtedy przez tego klienta,
+niezależnie od tego, jak serwer loguje ludzi. Nigdy nie przechodzą na klienta serwera ani
+na Connect: dopóki oba pola nie są wypełnione, Kalendarz Google jest w tym obszarze
+roboczym wyłączony, a wiersz mówi, czego brakuje. Sekret nigdy nie opuszcza serwera.
 
-Sekret klienta nigdy nie opuszcza serwera: żadna odpowiedź RPC go nie przenosi, a
-konto połączone przez klienta samego serwera zapisuje znacznik, a nie kopię pary —
-więc jego rotacja sprowadza się do ponownego uruchomienia z nową wartością.
+Przełączenie między klientem serwera a klientem obszaru roboczego albo zmiana identyfikatora
+klienta obszaru roboczego oznacza do ponownego połączenia wszystkie konta Google w tym
+obszarze roboczym. **Użyj aplikacji tego serwera** usuwa zapisane pola obszaru roboczego.
+Inne obszary robocze na serwerze nie są zmieniane.
 
-### Rozwiązywanie problemów
+## Rozwiązywanie problemów
 
-| Objaw                                                        | Prawdopodobna przyczyna                                                                                                                                                            |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W oknie dialogowym nie ma opcji wbudowanej                    | Ta kompilacja nie zawiera klienta Google (kompilacja ze źródeł) albo serwer uruchomiono tylko z połową pary. Wymagane są zarówno identyfikator, jak i sekret                          |
-| `invalid_scope` przy rozpoczynaniu przepływu                  | Kalendarz nie jest dozwolony dla klienta kodu urządzenia w tym projekcie Cloud. Użyj zamiast tego projektu z klientem loopback lub web                                               |
-| `invalid_client` od Google                                    | Klient nie jest klientem typu **„TVs and limited input devices”** albo identyfikator i sekret pochodzą z różnych klientów                                                          |
-| Zatwierdzenie się udaje, ale synchronizacja jest pusta        | Twoje konto nie jest **użytkownikiem testowym** na ekranie zgody albo nie przyznano zakresu `calendar.readonly`                                                                     |
-| Kod wygasa, zanim go zatwierdzisz                             | Kody urządzenia są krótkotrwałe. Rozpocznij łączenie ponownie, aby otrzymać nowy                                                                                                    |
-| „Nie udało się zaktualizować odpowiedzi” przy RSVP            | Oczekiwane: przepływ łączenia nigdy nie żąda zakresu `calendar.events`                                                                                                              |
-| Synchronizacja zatrzymuje się z ostrzeżeniem o odświeżaniu w logu serwera | Konto połączono klientem, który nie jest już skonfigurowany. Połącz konto ponownie albo przywróć identyfikator i sekret tego klienta                                    |
+| Objaw                                                        | Prawdopodobna przyczyna                                                                                                                       |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Połącz Kalendarz Google** informuje, że logowanie nie jest skonfigurowane | Serwer nie ma ani własnego klienta Google, ani Connect. Właściciel serwera wybiera jedno z nich w **Ustawienia → Serwer → Logowanie jednokrotne** |
+| Google pokazuje `redirect_uri_mismatch`                      | Przekierowanie zarejestrowane w kliencie nie odpowiada dokładnie wartości **Adresy URL wywołania zwrotnego** albo zmienił się publiczny adres URL serwera |
+| `invalid_client` od Google                                    | Identyfikator i sekret pochodzą z różnych klientów albo klient został usunięty                                                                |
+| Zatwierdzenie się udaje, ale synchronizacja jest pusta        | Twoje konto nie jest **użytkownikiem testowym** na ekranie zgody albo nie przyznano jednego z żądanych zakresów                                |
+| Okno dialogowe informuje, że kod się nie zgadza              | Wpisz 8 znaków dokładnie tak, jak pokazuje je przeglądarka. Pięć błędnych kodów kończy logowanie; zacznij od nowa                              |
+| „Nie udało się zaktualizować odpowiedzi” albo dodawanie, przesuwanie lub usuwanie wydarzenia się nie udaje | Konto połączono ze starym zakresem tylko do odczytu. Połącz je ponownie; kalendarz udostępniony Ci tylko do odczytu też odrzuca zmiany |
+| Wszyscy muszą połączyć się ponownie                          | Zmienił się klient Google serwera lub obszaru roboczego albo wybór Connect na serwerze bądź jego klucz. Zobacz [Połącz ponownie wygasłe konto](#połącz-ponownie-wygasłe-konto)   |
 
 ## Powiązane poradniki
 
 - [Nagraj i podsumuj spotkanie](/pl-PL/podrecznik/poradniki/nagrywanie-spotkania/): zamień wydarzenie w nagranie
-- [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): gdzie przechowywane są tokeny i gdzie działa harmonogram synchronizacji
-- [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
+- [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): gdzie przechowywane są poświadczenia i gdzie działa harmonogram synchronizacji
+- [Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/)
 
 ## Powiązane koncepcje
 

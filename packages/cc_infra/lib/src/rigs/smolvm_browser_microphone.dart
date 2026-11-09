@@ -54,7 +54,7 @@ class _SmolvmBrowserMicrophone {
       await _closeProcess();
       _sampleRate = resolvedRate;
       _channels = resolvedChannels;
-      _process = await Process.start(binary, [
+      _process = await ChildProcess.start(binary, [
         'machine',
         'exec',
         '--name',

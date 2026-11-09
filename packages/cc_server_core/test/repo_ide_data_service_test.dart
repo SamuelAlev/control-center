@@ -1421,11 +1421,11 @@ void main() {
       push: false,
     );
 
-    test('the fixture runs a planted fsmonitor without the guard', () async {
+    test('a planted fsmonitor never runs, even without the guard', () async {
       final script = await planted();
       tamper(script);
       await sync();
-      expect(File(ran).existsSync(), isTrue);
+      expect(File(ran).existsSync(), isFalse);
     });
 
     test('syncToPrHead switches a known fsmonitor off', () async {
@@ -1561,15 +1561,23 @@ void main() {
 
     RepoIdeDataService svcWith(String wt, List<String?> seenActingUserIds) =>
         RepoIdeDataService(
-          repoRepository: _FakeRepoRepo(),
+          // A linked GitHub repository: tokens are minted for one repo.
+          repoRepository: _FakeRepoRepo({'repo1': repo('repo1', wt)}),
           workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
           isolatedRepoRepository: _FakeIsolatedRepoRepo()
             ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
           fileSearch: DartFileSearch(),
-          githubToken: ({actingUserId, workspaceId}) async {
-            seenActingUserIds.add(actingUserId);
-            return null;
-          },
+          githubToken:
+              ({
+                required workspaceId,
+                required owner,
+                required repo,
+                actingUserId,
+                write = false,
+              }) async {
+                seenActingUserIds.add(actingUserId);
+                return null;
+              },
         );
 
     test('commitAndPush resolves the token as the acting user', () async {

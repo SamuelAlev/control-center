@@ -1,4 +1,9 @@
 {
+  "credentialsConnectCodePrompt": "輸入瀏覽器中顯示的代碼",
+  "credentialsConnectCodeMalformed": "這看起來不像登入代碼。代碼由 8 個字母和數字組成。",
+  "credentialsSignInInvalidCode": "此代碼與這次登入不符。請檢查後再試一次。",
+  "credentialsSignInUnavailable": "此伺服器尚未設定 {provider} 登入。",
+  "credentialsSignInPhoneUnreachable": "無法從手機安全存取此伺服器的登入回傳地址。請在桌面應用程式中登入，或請伺服器擁有者設定公開的 HTTPS 地址。",
   "@@locale": "zh_HK",
   "failureUnreachable": "無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試",
   "permissionHostExecution": "在主機上執行指令"

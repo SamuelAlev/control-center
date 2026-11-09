@@ -2,7 +2,7 @@
 title: "Ciclo di vita dell'invio degli agenti"
 description: "Cosa accade tra l'arrivo di un messaggio e la chiusura di un log di esecuzione: composizione del prompt, worktree, identità, cosa delimita un'esecuzione e come il suo esito viene registrato con onestà."
 slug: it-IT/manuale/concetti/ciclo-di-vita-invio
-sourceHash: 781e03487b61d53f4032d785370f70457df0156b
+sourceHash: c60f7551054397d66a0bbf9bc68b9eed132917a4
 ---
 
 ## Che cos'è un invio
@@ -54,7 +54,7 @@ Per ogni esecuzione vengono risolte due identità, prima che qualsiasi processo 
 
 **Paternità Git.** I commit degli agenti usano sempre l'identità Git della persona che ha fatto la richiesta, determinata nello spazio di lavoro, sia in `GIT_AUTHOR_*` sia in `GIT_COMMITTER_*`. Le esecuzioni avviate tramite programmazione usano l'identità del proprietario del server. Per impostazione predefinita, il trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` accredita l'account GitHub `@usectrl` come coautore. Disattiva l'attribuzione all'agente in **Impostazioni → Tu → Attribuzione dei commit** per omettere il trailer. Un amministratore può imporre o disattivare il credito al coautore in **Impostazioni → Spazio di lavoro → Generale**; questa scelta ha la precedenza e disabilita l'interruttore personale senza modificarne la preferenza salvata. Le modifiche si applicano dall'esecuzione successiva. Le attribuzioni proprie di Claude Code nei commit e nelle PR sono sempre disabilitate. Le impostazioni d'ambiente del chiamante e dell'adattatore non possono sostituire l'identità determinata; se manca l'identità o la sua risoluzione non riesce, l'esecuzione si arresta. Le credenziali della forge e la configurazione della firma dei commit restano invariate; l'identità corretta da sola non garantisce una firma verificata.
 
-**Identità della forge.** La credenziale GitHub dell'esecuzione è sempre e solo quella del broker — un token di installazione dell'App con ambito sul repo, o il suo fallback PAT dall'ambiente — mai il token memorizzato del membro richiedente. `actingUserId` delimita il fallback PAT, così un membro che non è il proprietario del server non eredita la portata del server; non sovrappone un token personale all'ambiente dell'agente.
+**Identità della forge.** La credenziale GitHub dell'esecuzione è sempre e solo quella del broker: un token per l'unico repository dell'esecuzione, emesso dalla GitHub App dello spazio di lavoro, dall'app del server o da Control Center Connect. `actingUserId` indica la persona responsabile (il richiedente finché è ancora membro, altrimenti il proprietario dello spazio di lavoro) e limita il token a ciò che quella persona può fare sul repository. Non è mai l'accesso del membro consegnato per intero, e non esiste alcun fallback: un'emissione rifiutata lascia l'esecuzione senza token e ne spiega il motivo nelle sue note.
 
 **Le credenziali del provider di modelli** vengono risolte in un ordine fisso e l'ordine conta:
 

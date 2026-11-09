@@ -2,12 +2,20 @@ import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/provider_token.dart';
 
-/// Maps a GitHub login to the workspace member who connected that account.
+/// The GitHub credential [userId] has stored for [workspaceId] (the workspace
+/// overlay, else their global sign-in where the workspace inherits), or null.
+typedef GitHubCredentialLookup =
+    Future<ProviderToken?> Function(String userId, String workspaceId);
+
+/// Maps a GitHub account to the workspace member who signed in with it.
 ///
-/// Unmapped logins are external identities — no workspace write access until linked.
+/// Matching is by GitHub's immutable numeric account id (`user.id`, stored on
+/// the sign-in as [ProviderToken.accountId]), never by login: a login can be
+/// renamed and then registered by someone else, who would otherwise inherit
+/// the member's access. Unmapped accounts are external identities with no
+/// workspace access.
 class GitHubLoginDirectory {
   /// Creates a [GitHubLoginDirectory].
   GitHubLoginDirectory({
@@ -26,7 +34,7 @@ class GitHubLoginDirectory {
   }
 
   final WorkspaceMembershipRepository _members;
-  final UserCredentialsStore _credentials;
+  final GitHubCredentialLookup _credentials;
 
   /// How long credential mappings are trusted. Membership removals and role
   /// changes invalidate the index immediately through membership events; TTL
@@ -37,19 +45,20 @@ class GitHubLoginDirectory {
 
   final Map<String, _WorkspaceIndex> _byWorkspace = {};
 
-  /// The member of [workspaceId] whose GitHub connection is [login], or null.
+  /// The member of [workspaceId] who signed in to GitHub as account
+  /// [accountId], or null.
   ///
-  /// Null is the refusal answer: not connected, or connected by a non-member.
-  Future<WorkspaceMember?> memberForLogin(
+  /// Null is the refusal answer: unknown id, not signed in, a sign-in that
+  /// predates account ids, or a non-member.
+  Future<WorkspaceMember?> memberForAccountId(
     String workspaceId,
-    String login,
+    int accountId,
   ) async {
-    final key = login.trim().toLowerCase();
-    if (workspaceId.isEmpty || key.isEmpty) {
+    if (workspaceId.isEmpty || accountId <= 0) {
       return null;
     }
     final index = await _indexFor(workspaceId);
-    final userId = index.logins[key];
+    final userId = index.accounts['$accountId'];
     if (userId == null) {
       return null;
     }
@@ -62,25 +71,20 @@ class GitHubLoginDirectory {
       return cached;
     }
     final members = await _members.getForWorkspace(workspaceId);
-    final logins = <String, String>{};
+    final accounts = <String, String>{};
     for (final member in members) {
-      var token = await _credentials.forgeToken(
-        member.userId,
-        ForgeHost.github,
-        workspaceId: workspaceId,
-      );
-      token ??= await _credentials.forgeToken(member.userId, ForgeHost.github);
-      final login = token?.accountLogin ?? '';
-      if (login.isEmpty) {
+      final token = await _credentials(member.userId, workspaceId);
+      final accountId = token?.accountId.trim() ?? '';
+      if (accountId.isEmpty) {
         continue;
       }
       // putIfAbsent: the OLDEST member wins (the port returns members
       // oldest-first), so a duplicate claim is deterministic.
-      logins.putIfAbsent(login.toLowerCase(), () => member.userId);
+      accounts.putIfAbsent(accountId, () => member.userId);
     }
     return _byWorkspace[workspaceId] = _WorkspaceIndex(
       members: members,
-      logins: logins,
+      accounts: accounts,
       builtAt: _now(),
     );
   }
@@ -96,11 +100,13 @@ class GitHubLoginDirectory {
 class _WorkspaceIndex {
   _WorkspaceIndex({
     required this.members,
-    required this.logins,
+    required this.accounts,
     required this.builtAt,
   });
 
   final List<WorkspaceMember> members;
-  final Map<String, String> logins;
+
+  /// GitHub account id (decimal) → user id.
+  final Map<String, String> accounts;
   final DateTime builtAt;
 }

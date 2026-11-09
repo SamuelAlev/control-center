@@ -2809,29 +2809,30 @@ typedef ReviewedByFetcher =
     Future<Set<String>> Function(List<Repo> repos, String actingUserId);
 
 /// Runs the PR-queue free-text search (the raw [query] string, parsed
-/// server-side) across a workspace's linked [repos] on [workspaceId]'s
-/// background GitHub identity, grouped per repo.
+/// server-side) across a workspace's linked [repos] on [userId]'s own GitHub
+/// sign-in, grouped per repo.
 typedef PrSearchFetcher =
     Future<List<({Repo repo, List<PullRequest> prs})>> Function(
       List<Repo> repos,
       String query, {
       required String workspaceId,
+      required String userId,
     });
 
 /// Fetches the public members of the GitHub orgs owning [owners] (resolved from
-/// the bound workspace's repos) on [workspaceId]'s GitHub identity, as
+/// the bound workspace's repos) on [userId]'s own GitHub sign-in, as
 /// `GitHubUser` wire maps (`{login, avatar_url, name}`).
 typedef OrgMembersFetcher =
     Future<List<Map<String, dynamic>>> Function(
       List<String> owners, {
       required String workspaceId,
+      required String userId,
     });
 
 /// Bundled SERVER-side GitHub read fetchers for the compose-PR / peek / profile
-/// / pagination surfaces a thin client can no longer fetch itself (it holds no
-/// gh token). Each repo-scoped fetcher takes the bound `workspaceId` so the
-/// read follows that workspace's GitHub identity mode (inherit / own App /
-/// background PAT) rather than whichever install-App installation answers.
+/// / pagination surfaces a thin client cannot fetch itself (it holds no GitHub
+/// token). Each repo-scoped fetcher takes the bound `workspaceId` so the read
+/// follows that workspace's GitHub App, not whichever installation answers.
 /// A fetcher whose caller or workspace has no GitHub credential degrades to an
 /// empty result, decided per call. Owner/repo args are validated against the
 /// bound workspace's linked repos in the op handler BEFORE the fetch runs
@@ -2951,27 +2952,6 @@ typedef SubscriptionUsageFetcher =
 /// operator which login still has headroom.
 typedef ClaudeAccountUsageFetcher =
     Future<Map<String, dynamic>?> Function(String configDir);
-
-/// Searches Klipy for GIFs matching a query (the composer's GIF picker), as
-/// flat `GifResult` wire maps. Null when the host has no Klipy app key — the
-/// `gif.search` op then returns no results.
-typedef GifSearchFetcher =
-    Future<List<Map<String, dynamic>>> Function(String query);
-
-/// Klipy's trending GIFs, as flat `GifResult` wire maps. Null when the host has
-/// no Klipy app key — the `gif.trending` op then returns no results.
-typedef GifTrendingFetcher = Future<List<Map<String, dynamic>>> Function();
-
-/// Writes the connected user's RSVP ([responseStatus] = `accepted` /
-/// `declined` / `tentative`) for the local calendar event [eventId] in
-/// [workspaceId], SERVER-SIDE on the host's Google OAuth token. Backs the
-/// `calendar.rsvp` op.
-typedef CalendarRsvpFn =
-    Future<void> Function({
-      required String workspaceId,
-      required String eventId,
-      required String responseStatus,
-    });
 
 /// Triggers an immediate Google Calendar sync for [workspaceId] on the host
 /// (the manual "refresh" button). Backs the `calendar.refreshNow` op.
@@ -3250,23 +3230,24 @@ typedef WorktreeCheckoutFn =
       bool detach,
     });
 
-/// Applies an orchestration action (approve / cancel) for `(workspaceId,
-/// orchestrationId)`. Approving/cancelling hires agents + starts/cancels
-/// pipelines via the concrete engine + use-cases, so it runs SERVER-SIDE; the
-/// composition root wires it as a closure over the host's orchestration
-/// use-cases. Only a host that owns the engine wires it (the desktop in-process
-/// host); absent on a headless server.
+/// Cancels the orchestration `(workspaceId, orchestrationId)` and its pipelines,
+/// SERVER-SIDE through the server's orchestration use-cases.
 typedef OrchestrationActionFn =
     Future<void> Function(String workspaceId, String orchestrationId);
 
-/// Dispatches an agent to address PR-review findings in a space, executing
-/// SERVER-SIDE (spawns a sandboxed agent process against the workspace's
-/// on-disk checkout). The working directory is resolved by the host from the
-/// bound `workspaceId` — it is NOT supplied by the client, so a thin client
-/// cannot point the agent at an arbitrary server path. The composition root
-/// wires this as a closure over the host's `AgentDispatchService`; only a host
-/// that owns the dispatch stack wires it (the desktop in-process host), absent
-/// on a headless server.
+/// Approves an orchestration for [approvedByUserId], the person who pressed
+/// approve: it hires agents and starts pipelines that record them as their
+/// requester.
+typedef OrchestrationApproveFn =
+    Future<void> Function(
+      String workspaceId,
+      String orchestrationId, {
+      String? approvedByUserId,
+    });
+
+/// Dispatches an agent to address PR-review findings in a space, SERVER-SIDE
+/// against the workspace's on-disk checkout. The server resolves the working
+/// directory from the bound `workspaceId`; a client never names a server path.
 typedef ReviewDispatchFn =
     Future<void> Function({
       required String workspaceId,

@@ -2,7 +2,7 @@
 title: Sandbox-Richtlinien konfigurieren
 description: Was einen Agentenlauf begrenzt, wie du erkennst, ob die Betriebssystem-Sandbox ihn umhüllt, und wie die Aktionsregeln entscheiden, was ein Agent pushen oder erreichen darf.
 slug: de-DE/handbuch/anleitungen/sandbox-richtlinien
-sourceHash: 3f09c07776d3741173b18b1b510d4f56173dec42
+sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
 ---
 
 Ob ein Agentenlauf in der Sandbox läuft, entscheidet der Server beim Start
@@ -77,8 +77,9 @@ bekommst du eine Freigabe mit Repo und Refs; bei **Verweigern** gibt git
 Wie jede Regel den Lauf erreicht:
 
 - **Push** wird über das durchgesetzt, was der Lauf besitzt. Sein GitHub-Token
-  ist ein Installationstoken der GitHub App, das nur lesen darf: Es kann
-  Inhalte lesen und mit Pull Requests arbeiten. Seine Git-Konfiguration
+  deckt das eine Repository des Laufs ab und kann nicht pushen: Es kann Inhalte
+  lesen und, wenn das verantwortliche Mitglied pushen darf, Pull Requests
+  kommentieren. Seine Git-Konfiguration
   schickt jeden GitHub-Push an ein Loopback-Gateway auf `cc_server`, das die
   Regel fragt und den Push erst dann mit einem Schreib-Token weiterleitet, das
   der Agent nie sieht. Das Gateway leitet nur an das eigene Repo des Worktrees
@@ -97,18 +98,14 @@ Wie jede Regel den Lauf erreicht:
   des Harness weiterhin bei jedem Aufruf. Solange das Netzwerk an ist, steht
   GitHub immer auf der Ausgangs-Zulassungsliste.
 
-:::caution[Ohne GitHub App ist die Push-Regel nur ein Hinweis]
-Ist keine GitHub App konfiguriert, bekommt der Lauf ersatzweise das Personal
-Access Token, das sich nicht auf Lesen beschränken lässt. `git push` läuft
-weiterhin durch das Gateway und die Regel, aber Code, der das Token direkt
-nutzt, kann an ihr vorbei pushen. Konfiguriere die GitHub App, damit die Regel
-bindet.
-
-Die GitHub-Zugangsdaten des Laufs sind immer nur die des Brokers — ein auf das
-Repo begrenztes Installationstoken der GitHub App oder ersatzweise das PAT —,
-nie das gespeicherte Token des anfragenden Mitglieds. Das Server-PAT wird einem
-Lauf vorenthalten, der für ein Mitglied handelt, das nicht der Besitzer ist und
-GitHub nicht verbunden hat.
+:::note[Woher das GitHub-Token des Laufs kommt]
+Das Token wird für den Lauf über die GitHub App des Arbeitsbereichs, die eigene
+App des Servers oder Control Center Connect ausgestellt und ist auf das begrenzt,
+was das verantwortliche Mitglied (die Person, die gefragt hat, sonst der
+Besitzer des Arbeitsbereichs) in diesem Repository tun darf. Es ist nie die
+vollständig weitergereichte Anmeldung eines Mitglieds, und es gibt kein
+Ersatz-Token: Lässt sich keines ausstellen, startet der Lauf ohne, und seine
+Notizen nennen den Grund.
 :::
 
 ## Prüfen, ob deine Agentenläufe in der Sandbox laufen

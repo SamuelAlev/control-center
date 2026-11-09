@@ -1,0 +1,179 @@
+---
+title: Referentie voor Control Center Connect
+description: Wat Connect wel en nooit ziet, de drie modi, de installatie-identiteit, verzegelde inloggegevens, het vertrouwen in de configuratie en elke instelling, bewerking en statuscode.
+slug: nl-NL/handleiding/referentie/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect voert provider-aanmeldingen uit voor servers die geen
+eigen apps hebben geregistreerd. Een server gebruikt de gehoste Connect van
+Control Center, een Connect die zijn organisatie draait
+([Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)),
+of geen. De keuze staat in **Instellingen → Server → Single sign-on → Control
+Center Connect**, in `cc_server connect` of in `CC_CONNECT_URL`.
+
+## Routes
+
+Elke provider is een route. Onder **Mijn eigen apps gebruiken** (of voordat iemand kiest) draait een route op de eigen app van de server als
+die volledig is geconfigureerd, en anders is hij niet beschikbaar. Met de Connect van Control Center of een eigen
+Connect verzorgt Connect elke route die hij bedient: eigen apps van de server blijven opgeslagen maar worden niet
+gebruikt voor aanmelding, servertaken of de status die de server meldt. De app van de werkruimte wint in elke modus.
+
+| Route        | Eigen app heeft nodig                                | Via Connect                                                         |
+| ------------ | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| `github`     | App-id, privésleutel, client-id en client-secret     | Mensen melden zich aan bij de gedeelde GitHub App                   |
+| `google`     | Client-id en client-secret                           | Mensen verbinden Google Calendar                                    |
+| `linear`     | Client-id                                            | Mensen melden zich aan bij Linear                                   |
+| `linear_app` | Client-id                                            | Een werkruimtebeheerder verbindt de app-actor van Linear            |
+| `slack`      | Een eigen Slack-appverbinding van een werkruimte     | Een werkruimtebeheerder verbindt Slack met de gedeelde Slack-app    |
+| `klipy`      | `KLIPY_APP_KEY`                                      | GIF-zoeken, via Connect als proxy                                   |
+
+Een eigen app die maar deels is geconfigureerd, maakt van zijn route een fout,
+nooit een stille terugval op Connect. Een werkruimte die haar eigen GitHub App
+gebruikt (**Instellingen → Werkruimte → Algemeen → GitHub-identiteit**), gaat
+voor GitHub nooit via Connect. Een werkruimte die eigen Google-, Linear- of Klipy-apps gebruikt (**Instellingen → Werkruimte → Algemeen → Provider-apps**) gaat voor die provider nooit via de app van de server of via Connect. Een wijziging van de Connect-keuze meldt niemand af van de eigen app van een werkruimte.
+
+## Wat Connect wel en nooit ziet
+
+| Connect ziet                                                                                  | Connect ziet nooit                                                    |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Het installatie-ID van de server en de aanvraagsignaturen                                     | Broncode, repositoryinhoud, diffs of tekst van pull requests          |
+| Het provideraccount dat zich aanmeldde, tijdens de aanmelding                                 | Tickets, transcripties of iets anders in een werkruimtedatabase       |
+| Bij welke werkruimte inloggegevens horen, als ondoorzichtig ID binnen het zegel               | De privésleutel van een GitHub App: repositorytokens komen uit de aanmelding van een persoon |
+| De repository waarvoor een GitHub-token voor één repository wordt uitgegeven                  | Refreshtokens in rust: die bestaan alleen in zegels die de server bewaart |
+| GitHub-installatie-ID's die aan de server zijn gebonden                                       | Linear-secrets: de server wisselt de code van Linear zelf in          |
+| GIF-zoektermen, wanneer het als proxy voor Klipy dient                                        | Wachtwoorden, koppelsleutels of sleutels van modelproviders           |
+| Verwijzingen naar Slack-gebeurtenissen (team, kanaal, bericht-ID) en de tekst van slash-commando's | De tekst van Slack-berichten: Connect gooit die bij aankomst weg en de server leest het bericht zelf uit Slack |
+
+Connect bewaart kortlevende state (lopende aanmeldingen, nonces, caches)
+hoogstens 15 minuten. De enige blijvende gegevens zijn installatiebindingen:
+welke servers welke GitHub-installatie mogen gebruiken, en aan welke server elk
+Slack-team is gebonden. Fouten bevatten een code, nooit het antwoord van de
+provider, en logs leggen installatie-ID's alleen vast als hashes met een sleutel.
+
+## Modi
+
+| Modus        | Instelling                          | Gedrag                                                                                                   |
+| ------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Niet gekozen | Nieuwe server                       | Geen enkele route gebruikt Connect. De onboarding vraagt de servereigenaar te kiezen                     |
+| `hosted`     | **De apps van Control Center gebruiken** | `https://connect.usectrl.dev`, met een offline ondertekende configuratie. Eigen apps van de server worden niet gebruikt                            |
+| `custom`     | **Een eigen Connect-server gebruiken** | Een Connect op een HTTPS-URL (`http` alleen op loopback), vertrouwd bij het eerste gebruik. Eigen apps van de server worden niet gebruikt            |
+| `off`        | **Mijn eigen apps gebruiken**       | Geen enkele route gebruikt Connect. Alleen eigen apps melden mensen aan                                  |
+
+`CC_CONNECT_URL` in de omgeving van de server of in `.env` vergrendelt de keuze:
+`hosted`, `off` of een Connect-URL. Instellingen toont dan de vergrendeling en kan
+de keuze niet wijzigen.
+
+Deze build bevat geen sleutel voor de gehoste configuratie, dus de gehoste modus
+meldt `hosted_unprovisioned` en bedient geen enkele route. Eigen apps en een
+eigen Connect werken wel.
+
+Een server leest de configuratie van Connect hoogstens elke 10 minuten en wacht
+hoogstens 5 seconden op elke aanroep. Is Connect onbereikbaar, dan blijft de
+laatste goede configuratie in gebruik en markeert Instellingen die als verouderd.
+
+## Installatie-identiteit
+
+| Onderdeel            | Wat het is                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Installatiesleutel   | Een seed van 32 bytes in het secretsbestand van de server (`connect_install_key`), los van de sleutels voor apparaatkoppeling |
+| Sleutel per Connect  | Een Ed25519-sleutel, afgeleid van de seed en het adres van de Connect. Elk verzoek aan Connect wordt ermee ondertekend (RFC 9421) |
+| Installatie-ID       | 26 tekens, afgeleid van die publieke sleutel. Getoond in Instellingen en door `cc_server connect status`           |
+
+Dezelfde server heeft een ander installatie-ID voor elk Connect-adres. Het ID
+verandert alleen wanneer de sleutel wordt vervangen.
+
+## Verzegelde inloggegevens
+
+Een aanmelding via Connect levert een **inloggegevenszegel** op: een
+versleutelde blob die alleen de Connect die hem maakte kan openen. Het zegel is
+gebonden aan de provider, het Connect-adres, het installatie-ID, de werkruimte,
+het provideraccount, de app en de secretgeneratie.
+
+- De server bewaart het zegel en het installatie-ID waarvoor het is verzegeld.
+  Toegangstokens blijven in het geheugen
+- Om te vernieuwen stuurt de server het zegel terug en krijgt hij een nieuw
+  toegangstoken en een nieuw zegel
+- Een zegel waarvan het installatie-ID of het Connect-adres niet meer klopt,
+  wordt bij de volgende keer lezen verwijderd, en die persoon meldt zich opnieuw
+  aan. Dat gebeurt na een sleutelvervanging, een overstap naar een andere
+  Connect of een gegevensmap die op een andere server is hersteld
+- Een zegel dat Connect niet kan openen, wordt geweigerd met `access_denied`
+
+## GitHub-installaties
+
+Een installatie van de gedeelde GitHub App is alleen bruikbaar voor een server
+als Connect haar aan het installatie-ID van die server heeft gebonden.
+
+- **GitHub-app installeren** in **Instellingen → Werkruimte → Algemeen** opent
+  GitHub met een ticket van 15 minuten. Connect bindt de nieuwe installatie
+  wanneer degene die installeert het persoonlijke account bezit of de organisatie
+  beheert
+- **Deze server autoriseren** bindt een installatie die al bestaat. Alleen een
+  beheerder van de organisatie kan dat doen
+- Een organisatie-installatie kan aan meerdere servers worden gebonden; elke
+  server heeft de autorisatie van een beheerder nodig
+
+## Vertrouwen in de configuratie
+
+| Connect | Hoe de server de configuratie vertrouwt                                                                                                   |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Gehost  | Verifieert een Ed25519-signatuur tegen sleutels die in de build zijn meegecompileerd. Weigert een epoch lager dan het hoogste dat hij heeft gezien (`rollback`) |
+| Eigen   | Pint bij het eerste gebruik de app-id en client-id van GitHub, de client-id's van Google en Linear en de app- en client-id's van Slack. Een wijziging pauzeert aanmeldingen via Connect (`pins_changed`) tot de servereigenaar op **Nieuwe apps vertrouwen** drukt |
+
+## Bewerkingen
+
+Alle Connect-instellingen zijn alleen voor de servereigenaar.
+
+| Bewerking             | Doet                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `connect.status`      | Modus, URL, vergrendeling, installatie-ID, gezondheid, configuratie-epoch en de bron van elke route |
+| `connect.configure`   | Stelt `hosted`, `custom` (met `url`) of `off` in                                             |
+| `connect.test`        | Haalt de configuratie opnieuw op en meldt de gezondheid                                      |
+| `connect.confirmPins` | Accepteert de gewijzigde identifiers van een eigen Connect                                   |
+| `connect.rotateKey`   | Maakt een nieuwe installatiesleutel. Elke aanmelding via Connect op deze server werkt dan niet meer |
+
+De aanmeldingen zelf gebruiken `oauth.lanes`, `oauth.begin`, `oauth.status`,
+`oauth.complete`, `oauth.connections` en `oauth.disconnect`. De persoon is altijd
+de aangemelde aanroeper.
+
+## Aanmelden via Connect
+
+1. De server vraagt Connect de route te starten en krijgt de autorisatie-URL van
+   de provider terug, die hij controleert voordat hij hem toont
+2. De persoon keurt goed in de browser. De provider keert terug naar Connect
+3. Connect toont een code van 8 tekens en een link `control-center://oauth-done`
+4. De persoon typt de code in de app of volgt de link. De server claimt de
+   aanmelding met de code en zijn eigen bewijs van het verzoek
+
+Een aanmelding verloopt na 10 minuten. Vijf foute codes beëindigen haar. Een link
+die deze app niet heeft gestart, wordt geweigerd met **Inloggen niet hier
+gestart**.
+
+## De installatiesleutel vervangen
+
+**Sleutel vervangen** op de Connect-kaart, of `cc_server connect rotate-key --yes`:
+
+- Geeft de server een nieuwe installatiesleutel en een nieuw installatie-ID
+- Meldt iedereen af bij elke route die via Connect loopt
+- Laat aanmeldingen via de eigen apps van de server ongemoeid
+- Vereist dat het nieuwe installatie-ID wordt toegevoegd aan de toegestane lijst
+  van een eigen Connect
+
+## Statuscodes
+
+| Code                   | Betekenis                                                            |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Deze build heeft geen sleutel voor de gehoste configuratie           |
+| `signature`            | De gehoste configuratie is niet door de signatuurcontrole gekomen    |
+| `rollback`             | Connect serveerde een oudere configuratie dan de server al had gezien |
+| `unreachable`          | De server kan Connect niet bereiken                                  |
+| `install_blocked`      | Connect staat dit installatie-ID niet toe                            |
+| `pins_changed`         | Een eigen Connect kondigde andere app-identifiers aan                |
+| `protocol`             | Connect antwoordde in een vorm die deze server niet begrijpt         |
+
+## Gerelateerd
+
+- [Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)
+- [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)
+- [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/)

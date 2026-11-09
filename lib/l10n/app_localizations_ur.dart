@@ -1137,6 +1137,99 @@ class AppLocalizationsUr extends AppLocalizations {
   String get calendarRsvpFailed => 'آپ کا جواب اپ ڈیٹ نہیں ہو سکا';
 
   @override
+  String get calendarNewEvent => 'نیا ایونٹ';
+
+  @override
+  String get calendarComposerTitleHint => 'عنوان شامل کریں';
+
+  @override
+  String get calendarComposerStarts => 'شروع';
+
+  @override
+  String get calendarComposerEnds => 'ختم';
+
+  @override
+  String get calendarComposerDate => 'تاریخ';
+
+  @override
+  String get calendarComposerEndDate => 'آخری دن';
+
+  @override
+  String get calendarComposerGuestsHint => 'ای میل کے ذریعے مہمان شامل کریں';
+
+  @override
+  String get calendarComposerMeet => 'Google Meet لنک شامل کریں';
+
+  @override
+  String get calendarComposerLocationHint => 'مقام شامل کریں';
+
+  @override
+  String get calendarComposerDescriptionHint => 'تفصیل شامل کریں';
+
+  @override
+  String get calendarComposerCalendar => 'کیلنڈر';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'ایونٹ محفوظ کرنے کے لیے عنوان شامل کریں';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'مہمانوں کی ای میلز میں سے ایک درست نہیں ہے';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'ایونٹ کا شروع ہونے کے بعد ختم ہونا ضروری ہے';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'ایونٹ نہیں بن سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'مہمانوں کو Google کی طرف سے ای میل دعوت ملتی ہے۔';
+
+  @override
+  String get calendarDeleteEvent => 'ایونٹ حذف کریں';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '“$title” حذف کریں؟';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody =>
+      'یہ Google Calendar سے ہٹا دیا جاتا ہے۔';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'یہ Google Calendar سے ہٹا دیا جاتا ہے، اور ہر مہمان کو اس کے منسوخ ہونے کی اطلاع دی جاتی ہے۔';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'یہ صرف آپ کے کیلنڈر سے ہٹتا ہے۔ منتظم اور دوسرے مہمان اسے برقرار رکھتے ہیں۔';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'صرف یہ واقعہ حذف ہوگا؛ باقی سلسلہ برقرار رہے گا۔';
+
+  @override
+  String get calendarDeleteFailed => 'ایونٹ حذف نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get calendarMoveFailed =>
+      'ایونٹ منتقل نہیں ہو سکا۔ یہ دوبارہ اپنی پرانی جگہ پر چلا گیا۔';
+
+  @override
+  String get activityCreatedCalendarEvent => 'کیلنڈر ایونٹ بنایا';
+
+  @override
+  String get activityMovedCalendarEvent => 'کیلنڈر ایونٹ منتقل کیا';
+
+  @override
+  String get activityDeletedCalendarEvent => 'کیلنڈر ایونٹ حذف کیا';
+
+  @override
   String get calendarAddAccount => 'کیلنڈر اکاؤنٹ شامل کریں';
 
   @override
@@ -1147,9 +1240,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس ورک اسپیس میں ایونٹس ہم آہنگ کرنے کے لیے Google اکاؤنٹ جوڑیں۔ یہ کیلنڈرز یہاں آپ کے ہیں۔';
 
   @override
-  String get calendarConnecting => 'منسلک ہو رہا ہے…';
-
-  @override
   String get calendarSyncNow => 'اب سنک کریں';
 
   @override
@@ -1158,32 +1248,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Google Calendar منسلک نہیں ہو سکا';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'اپنے پروجیکٹ کا Google OAuth ڈیوائس کوڈ client ID اور secret درج کریں۔ سرور کنکشن اور سنک چلاتا ہے — آپ کا براؤزر ٹوکن نہیں رکھتا۔';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'کسی بھی ڈیوائس پر تصدیقی صفحہ کھولیں، سائن ان کریں اور یہ کوڈ درج کریں:';
-
-  @override
-  String get calendarConnectOpenPage => 'تصدیقی صفحہ کھولیں';
-
-  @override
-  String get calendarConnectWaiting => 'منظوری کا انتظار…';
-
-  @override
-  String get calendarConnectDenied => 'اجازت مسترد ہو گئی۔ دوبارہ کوشش کریں۔';
-
-  @override
-  String get calendarConnectExpired => 'کوڈ ختم ہو گیا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get notificationMeetingStartsSoon => 'میٹنگ جلد شروع ہو رہی ہے';
@@ -2400,9 +2464,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get activityChangedMemberRepoAccess => 'رکن کی ریپوزٹری رسائی بدلی';
 
   @override
-  String get activityUpdatedGitHubToken => 'GitHub ٹوکن اپ ڈیٹ کیا';
-
-  @override
   String get activityRefreshedWeather => 'موسم کی پیش گوئی تازہ کی';
 
   @override
@@ -2438,9 +2499,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => 'ایونٹ دعوت کا جواب دیا';
-
-  @override
-  String get activityStartedCalendarConnect => 'کیلنڈر کنکشن شروع کیا';
 
   @override
   String get activityDisconnectedCalendar => 'کیلنڈر منقطع کیا';
@@ -4724,7 +4782,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get searchGifs => 'GIFs تلاش کریں';
 
   @override
-  String get searchGifsHint => 'GIFs تلاش کریں...';
+  String get searchGifsHint => 'KLIPY میں تلاش کریں';
 
   @override
   String get searchInDiffHint => 'Diff میں تلاش…';
@@ -5206,9 +5264,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'بے نام ایجنٹ';
-
-  @override
-  String get updateKey => 'کلید اپ ڈیٹ کریں';
 
   @override
   String get updateLabel => 'اپ ڈیٹ';
@@ -6259,7 +6314,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      '⁨bash -c⁩ سے چلتا ہے۔ ⁨GITHUB_TOKEN⁩ سیٹ ہوتا ہے۔ عمل سے پہلے پلیس ہولڈرز بدل جاتے ہیں۔';
+      '⁨bash -c⁩ سے آپریٹنگ سسٹم کے سینڈ باکس میں چلتا ہے۔ ⁨GH_TOKEN⁩ اور ⁨GITHUB_TOKEN⁩ میں منسلک ریپوزٹری کے لیے صرف پڑھنے والا ٹوکن ہوتا ہے۔ عمل سے پہلے پلیس ہولڈرز کو اقتباس میں رکھ کر بدلا جاتا ہے۔';
 
   @override
   String get nodeConfigRouteKeys => 'روٹ کلیدیں';
@@ -6926,7 +6981,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub میں سائن اِن کریں یا ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں';
+      'ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں GitHub میں سائن اِن کریں';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -11868,7 +11923,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '⁨$provider⁩ میں بوٹ کا ذکر کریں تاکہ ایجنٹ کو کام دیں، یا ⁨$command⁩ سے ٹکٹ فائل کریں۔';
+    return '⁨$provider⁩ میں بوٹ کا ذکر کریں تاکہ ایجنٹ کو کام دیں، یا ⁨$command⁩ سے ٹکٹ کے مسودے بنائیں۔';
   }
 
   @override
@@ -11955,7 +12010,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return '⁨$provider⁩ میں بوٹ کو یہ کمانڈ بھیجیں۔ ایک بار چلتی ہے اور 15 منٹ میں ختم ہوتی ہے۔';
+    return 'یہ کوڈ براہِ راست پیغام میں ⁨$provider⁩ بوٹ کو بھیجیں۔ ایک بار چلتا ہے اور 15 منٹ میں ختم ہو جاتا ہے۔';
   }
 
   @override
@@ -12121,22 +12176,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → بوٹ یوزر OAuth ٹوکن کاپی کریں۔';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'Control Center کی Google ایپ استعمال کریں';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'اپنے Google اکاؤنٹ سے منظور کریں۔ Google Cloud میں کچھ سیٹ اپ نہیں۔';
-
-  @override
-  String get calendarUseOwnClient =>
-      'میرا اپنا Google Cloud کلائنٹ استعمال کریں';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'اپنے Google Cloud پروجیکٹ سے OAuth کلائنٹ درج کریں۔';
 
   @override
   String get aboutTitle => 'کے بارے میں';
@@ -12827,18 +12866,15 @@ class AppLocalizationsUr extends AppLocalizations {
   String get signInAgain => 'دوبارہ سائن اِن کریں';
 
   @override
-  String get signInNotFinished =>
-      'سائن اِن ابھی واپس نہیں آیا۔ براؤزر میں مکمل کریں، پھر دوبارہ چیک کریں۔';
+  String get forgeSignInBannerTitle =>
+      'اس ورک اسپیس میں کوڈ ہوسٹنگ منسلک نہیں ہے';
 
   @override
-  String get signedOutTitle => 'آپ سائن آؤٹ ہیں';
+  String get forgeSignInBannerBody =>
+      'کسی سائن اِن کی میعاد ختم ہو گئی یا اسے منسوخ کر دیا گیا، یا یہ ورک اسپیس اپنا GitHub App استعمال کرتی ہے۔ سائن اِن کرنے تک پُل ریکویسٹس، ریویوز اور ریپوزٹری کی ہم آہنگی رکی ہوئی ہیں۔';
 
   @override
-  String get signedOutSubtitle =>
-      'آپ کا کوڈ ہوسٹنگ کنکشن اب درست نہیں — ٹوکن ختم ہوا، یا اس کی رسائی منسوخ ہوئی۔ باقی کچھ نہیں بدلا: دوبارہ سائن اِن کریں اور سب ویسا ہی ہے۔';
-
-  @override
-  String get viaServerApp => 'اس سرور کی ایپ کے ذریعے';
+  String get forgeSignInBannerAction => 'سائن اِن کریں';
 
   @override
   String get ticketing => 'ٹکٹنگ';
@@ -12856,14 +12892,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ticketProviderLocal => 'مقامی';
 
   @override
-  String get addKey => 'کلید شامل کریں';
-
-  @override
   String get providerApps => 'فراہم کنندہ ایپس';
 
   @override
   String get providerAppsDescription =>
-      'ورک اسپیسز یہ GitHub App وراثت میں لیتے ہیں جب تک وہ دوسرا App یا ذاتی رسائی ٹوکن نہ چنیں۔ پس منظر کام — ویب ہکس، پولنگ، ہم آہنگی — ایپ پر چلتا ہے، کسی شخص کے ٹوکن پر نہیں۔';
+      'وہ ایپس جو اس سرور نے ہر فراہم کنندہ کے پاس خود رجسٹر کی ہیں۔ لوگ ان کے ذریعے سائن اِن کرتے ہیں، اور پس منظر کا کام جیسے webhooks، پولنگ اور ہم آہنگی انہی پر چلتا ہے، کبھی کسی شخص کے سائن اِن پر نہیں۔';
 
   @override
   String get providerAppId => 'App id';
@@ -12876,9 +12909,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Client secret';
-
-  @override
-  String get providerApiKey => 'API کلید';
 
   @override
   String get providerCallbackUrl => 'Callback URL';
@@ -12899,17 +12929,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'کریڈینشلز کام کرتے ہیں۔ انسٹال: ⁨$accounts⁩';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'ابھی کھلے ⁨$provider⁩ صفحے پر یہ کوڈ درج کریں۔ کلپ بورڈ پر کاپی ہو چکا ہے۔';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'براؤزر میں مکمل ہونے کا انتظار…';
-
-  @override
-  String get copyCodeAndOpen => 'کوڈ کاپی کریں اور کھولیں';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13251,7 +13270,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'ان ورک اسپیسز کے لیے جو اس تنصیب کا GitHub App وراثت میں لیتے ہیں۔ اپنے App یا PAT والی ورک اسپیس ورک اسپیس → عمومی میں ترتیب پاتی ہے۔';
+      'ان ورک اسپیسز کے ذریعے استعمال ہوتی ہے جو اس انسٹال کی GitHub ایپ وراثت میں لیتی ہیں۔ اپنی ایپ والی ورک اسپیس اسے ورک اسپیس ← عام میں ترتیب دیتی ہے۔';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request گفتگوئیں';
@@ -14799,7 +14818,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'اس ورک اسپیس میں پس منظر GitHub کام کی تصدیق کیسے ہوتی ہے۔ تنصیب کا App وراثت میں لیں، دوسرا App استعمال کریں، یا صرف ذاتی رسائی ٹوکن۔';
+      'اس ورک اسپیس میں پس منظر کا GitHub کام کیسے تصدیق کرتا ہے: اس انسٹال کی ایپ سے، یا ورک اسپیس کی اپنی ایپ سے۔';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -14809,28 +14828,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get workspaceGitHubModeApp => 'کوئی اور GitHub App استعمال کریں';
 
   @override
-  String get workspaceGitHubModePat => 'صرف ذاتی رسائی ٹوکن';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'سرور → فراہم کنندہ ایپس کا GitHub App استعمال کرتا ہے۔';
 
   @override
   String get workspaceGitHubAppHint =>
       'اس ورک اسپیس کی بوٹ اور پولنگ شناخت۔ اراکین آپ میں اس App کے ذریعے سائن ان کرتے ہیں۔';
-
-  @override
-  String get workspaceGitHubPatLabel => 'پس منظر ٹوکن';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'اس ورک اسپیس میں پولنگ اور ایجنٹس کے لیے۔ رکن کا پروفائل ٹوکن نہیں۔';
-
-  @override
-  String get workspaceGitHubHasPat => 'پس منظر ٹوکن محفوظ ہے۔';
-
-  @override
-  String get workspaceGitHubNoPat => 'کوئی پس منظر ٹوکن محفوظ نہیں۔';
 
   @override
   String get profileOverlayHint =>
@@ -16686,4 +16689,538 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'ورک اسپیس تبدیل کریں';
+
+  @override
+  String signInToProvider(String provider) {
+    return '$provider میں سائن اِن کریں';
+  }
+
+  @override
+  String get linearConnectAutomation => 'آٹومیشن کے لیے Linear منسلک کریں';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'براؤزر میں $provider کھولا جا رہا ہے…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'براؤزر میں $provider کے صفحے پر درخواست منظور کریں۔ یہ ونڈو خود پہچان لے گی کہ آپ فارغ ہو گئے۔';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '$provider کا انتظار…';
+  }
+
+  @override
+  String get signInFailedTitle => 'سائن اِن مکمل نہیں ہوا';
+
+  @override
+  String get signInReopenPage => 'سائن اِن صفحہ دوبارہ کھولیں';
+
+  @override
+  String get signInCodePrompt => 'براؤزر میں دکھایا گیا کوڈ درج کریں';
+
+  @override
+  String get signInCodeMalformed =>
+      'یہ سائن اِن کوڈ نہیں لگتا۔ کوڈز میں 8 حروف اور ہندسے ہوتے ہیں۔';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'اگر براؤزر Control Center کھولنے کی پیشکش کرے تو اجازت دیں، پھر کوڈ ٹائپ کرنے کی ضرورت نہیں ہوگی۔';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '$provider میں $account کے طور پر سائن اِن ہو گیا';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '$provider میں سائن اِن ہو گیا';
+  }
+
+  @override
+  String get signInErrorExpired =>
+      'اس سائن اِن کی میعاد ختم ہو گئی۔ دوبارہ شروع کریں۔';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider سائن اِن منسوخ یا مسترد کر دیا گیا۔';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider نے Control Center کی ضرورت سے کم اجازتیں دیں۔ دوبارہ سائن اِن کریں اور تمام اجازتیں منظور کریں۔';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider اس وقت جواب نہیں دے رہا۔ چند منٹ بعد دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider نے سائن اِن قبول کر لیا، لیکن سرور اسے مکمل نہیں کر سکا۔ دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'اس سرور کی $provider ایپ غلط ترتیب دی گئی ہے۔ سرور کے مالک سے ترتیبات ← سرور ← سنگل سائن آن چیک کرنے کو کہیں۔';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'آپ کا $provider سائن اِن ختم ہو گیا ہے۔ اپنے نام سے کام جاری رکھنے کے لیے دوبارہ سائن اِن کریں۔';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '$provider ایپ وہاں انسٹال نہیں جہاں اس کی ضرورت ہے۔ اسے انسٹال کریں اور دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'GitHub ایپ کی یہ انسٹالیشن پہلے ہی کسی اور Control Center سرور کے لیے مجاز ہے۔';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'یہ Linear ورک اسپیس پہلے ہی کسی اور Control Center سرور سے منسلک ہے۔';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Slack ورک اسپیس کو پہلی بار Control Center سے صرف اس کا کوئی ایڈمن یا مالک ہی جوڑ سکتا ہے۔ ان میں سے کسی سے ایپ شامل کرنے کو کہیں۔';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider ایپ معطل ہے۔ $provider پر معطلی ختم کریں اور دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect نے اس سرور کو بلاک کر دیا ہے۔ اپنے Connect سرور کے آپریٹر سے رابطہ کریں۔';
+
+  @override
+  String get signInErrorUnknown =>
+      'سائن اِن ایسی وجہ سے ناکام ہوا جو سرور نے نہیں بتائی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get signInPhishingTitle => 'یہ سائن اِن یہاں سے شروع نہیں ہوا';
+
+  @override
+  String get signInPhishingBody =>
+      'یہ سائن اِن اس ایپ سے شروع نہیں ہوا۔ اگر کسی نے آپ کو یہ لنک بھیجا ہے تو آگے نہ بڑھیں۔';
+
+  @override
+  String get signInPhishingDetail =>
+      'کچھ نہیں بھیجا گیا۔ کسی اور کا شروع کیا ہوا سائن اِن مکمل کرنے سے آپ کا اکاؤنٹ اس کے سرور سے منسلک ہو جاتا۔';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '$provider سائن اِن درکار ہے';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'یہ $provider پر آپ کے نام سے چلتا ہے، اور آپ سائن اِن نہیں ہیں۔ سائن اِن کریں، پھر دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'آپ $provider میں سائن اِن نہیں ہیں۔ یہاں آپ جو بھی کرتے ہیں وہ آپ کے نام سے چلتا ہے، اس لیے پہلے سائن اِن کریں۔';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '$provider سائن اِن ابھی اس سرور پر ترتیب نہیں دیا گیا۔';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub ایپ کی انسٹالیشنز';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub ایپ کہاں انسٹال ہے، ان اکاؤنٹس میں سے جن سے اس ورک اسپیس کے ریپوزٹری تعلق رکھتے ہیں۔ کسی تنظیم کی انسٹالیشن صرف ان سرورز پر کام کرتی ہے جنہیں اس کے ایڈمنز مجاز کریں۔';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'GitHub ایپ ان میں سے کسی اکاؤنٹ پر انسٹال نہیں جن سے اس ورک اسپیس کے ریپوزٹری تعلق رکھتے ہیں۔';
+
+  @override
+  String get githubInstallApp => 'GitHub ایپ انسٹال کریں';
+
+  @override
+  String get githubAuthorizeServer => 'اس سرور کو مجاز کریں';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'یہ سرور اب $account پر موجود انسٹالیشن استعمال کر سکتا ہے۔';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'معطل';
+
+  @override
+  String get githubInstallationAuthorized => 'مجاز';
+
+  @override
+  String get githubInstallationNotAuthorized => 'غیر مجاز';
+
+  @override
+  String get linearAutomationTitle => 'Linear آٹومیشن';
+
+  @override
+  String get linearAutomationHint =>
+      'اس ورک اسپیس کے ایجنٹس اور پائپ لائنز کو Linear میں کسی شخص کی بجائے ایپ کے طور پر کام کرنے دیتا ہے۔ ورک اسپیس کے ایڈمنز اسے منسلک کرتے ہیں۔';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '$account سے منسلک';
+  }
+
+  @override
+  String get connectModeHosted => 'Control Center کی ایپس استعمال کریں';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'سائن اِن Control Center Connect کے ذریعے ہوتے ہیں۔ Connect ہر سائن اِن کو اس طرح سیل کرتا ہے کہ صرف یہی سرور اسے کھول سکے، ایک ریپوزٹری تک محدود GitHub ٹوکن جاری کرتا ہے، کوئی ریپوزٹری کلید نہیں رکھتا، اور آپ کا سورس کوڈ کبھی وصول نہیں کرتا۔';
+
+  @override
+  String get connectModeOwn => 'اپنی ایپس استعمال کریں';
+
+  @override
+  String get connectModeOwnHint =>
+      'GitHub، Google اور Linear ایپس خود ترتیبات ← سرور ← سنگل سائن آن میں رجسٹر کریں، اور ہر ورک اسپیس کی اپنی Slack ایپ اس کی ترتیبات میں جوڑیں۔ \"میری GitHub ایپ بنائیں\" ایک قدم میں GitHub ترتیب دیتا ہے۔';
+
+  @override
+  String get connectModeCustom => 'اپنا Connect سرور استعمال کریں';
+
+  @override
+  String get connectModeCustomHint =>
+      'آپ کی تنظیم اپنا Connect سرور چلاتی ہے۔ سائن اِن Control Center کے سرور کی بجائے وہاں جاتے ہیں۔';
+
+  @override
+  String get connectModeUnset => 'ابھی ترتیب نہیں دیا گیا';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect سرور کا URL';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'HTTPS پتہ درج کریں، جیسے https://connect.example.com۔';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'سادہ ⁨HTTP⁩ صرف اسی مشین پر موجود Connect تک پہنچتا ہے۔ نیٹ ورک پر کسی بھی چیز کے لیے ⁨HTTPS⁩ استعمال کریں۔';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Control Center کی ہوسٹڈ ایپس ابھی اس بلڈ میں دستیاب نہیں۔ اپنی ایپس یا اپنا Connect سرور استعمال کریں۔';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect کی کنفیگریشن دستخط کی جانچ میں ناکام رہی۔ Connect کے ذریعے سائن اِن دوبارہ تصدیق تک روک دیے گئے ہیں۔';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect نے اس سے پرانی کنفیگریشن دی جو یہ سرور پہلے دیکھ چکا ہے، اس لیے اسے مسترد کر دیا گیا۔ Connect کے ذریعے سائن اِن روک دیے گئے ہیں۔';
+
+  @override
+  String get connectErrorUnreachable =>
+      'یہ سرور اس وقت Connect تک نہیں پہنچ پا رہا۔ اسے استعمال کرنے والے سائن اِن اس کی واپسی تک ناکام ہوں گے۔';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect نے اس سرور کی انسٹال آئی ڈی بلاک کر دی ہے۔ اپنے Connect سرور کے آپریٹر سے رابطہ کریں۔';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect کی ایپس بدل گئی ہیں';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect نے ایسا جواب دیا جو یہ سرور نہیں سمجھتا۔ سرور اپ ڈیٹ کریں یا Connect کا URL چیک کریں۔';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect نے بغیر وضاحت کے ایک مسئلہ رپورٹ کیا۔ دوبارہ کوشش کے لیے ٹیسٹ چلائیں۔';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'آپ کا Connect سرور اب ان سے مختلف GitHub، Google، Linear یا Slack ایپس بتا رہا ہے جو اس سرور نے پہلی بار استعمال پر پن کی تھیں۔ ان پر صرف تب بھروسہ کریں جب اس کے آپریٹر نے آپ کو پہلے سے بتایا ہو۔';
+
+  @override
+  String get connectConfirmPins => 'نئی ایپس پر بھروسہ کریں';
+
+  @override
+  String get connectStale =>
+      'زیرِ استعمال کنفیگریشن توقع سے پرانی ہے۔ اسے تازہ کرنے کے لیے ٹیسٹ چلائیں۔';
+
+  @override
+  String get connectLaneSourceOwn => 'اپنی ایپ';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'بند';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'یہ سرور GitHub، Google Calendar، Linear، Slack اور GIF تلاش کے لیے کس کی ایپس استعمال کرتا ہے۔';
+
+  @override
+  String get connectFactMode => 'سائن اِن ایپس';
+
+  @override
+  String get connectFactHealth => 'حالت';
+
+  @override
+  String get connectFactEpoch => 'کنفیگریشن ورژن';
+
+  @override
+  String get connectHealthOff => 'استعمال میں نہیں';
+
+  @override
+  String get connectHealthOk => 'کام کر رہا ہے';
+
+  @override
+  String get connectHealthDown => 'کام نہیں کر رہا';
+
+  @override
+  String get connectLocked =>
+      'اسے اس سرور کے ماحول میں CC_CONNECT_URL طے کرتا ہے۔ اسے وہیں بدلیں اور سرور دوبارہ شروع کریں۔';
+
+  @override
+  String get connectLanesTitle => 'ہر سائن اِن کہاں چلتا ہے';
+
+  @override
+  String get connectLanesDescription =>
+      'اپنی ایپ کو اپنے فراہم کنندہ کے لیے ہمیشہ Connect پر ترجیح حاصل ہوتی ہے۔';
+
+  @override
+  String get connectServerGroup => 'یہ سرور';
+
+  @override
+  String get connectInstallId => 'انسٹال آئی ڈی';
+
+  @override
+  String get connectInstallIdHint =>
+      'اس سرور کی Connect کے سامنے شناخت کرتی ہے۔ مانگنے پر اسے تنظیم کے مالک یا Connect آپریٹر کو دیں۔';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'جب یہ سرور پہلی بار Connect استعمال کرے گا تب تفویض ہوگی۔';
+
+  @override
+  String get connectTestOk => 'Connect کام کر رہا ہے۔';
+
+  @override
+  String get connectRotateKey => 'کلید بدلیں';
+
+  @override
+  String get connectRotateKeyTitle => 'اس سرور کی Connect کلید بدلیں؟';
+
+  @override
+  String get connectRotateKeyBody =>
+      'اس سرور کو نئی کلید اور نئی انسٹال آئی ڈی ملتی ہے۔ Connect کے ذریعے کیے گئے تمام سائن اِن کام کرنا بند کر دیتے ہیں، اور سب کو دوبارہ سائن اِن کرنا ہوگا۔ آپ کی اپنی ایپس کے ذریعے سائن اِن متاثر نہیں ہوتے۔';
+
+  @override
+  String get connectRotateKeyDone =>
+      'کلید بدل دی گئی۔ Connect کے ذریعے سائن اِن کرنے والے ہر شخص کو دوبارہ سائن اِن کرنا ہوگا۔';
+
+  @override
+  String get connectCliLabel => 'ٹرمینل سے';
+
+  @override
+  String get onboardingStepSignIn => 'سائن اِن';
+
+  @override
+  String get onboardingConnectTitle => 'منتخب کریں کہ لوگ کیسے سائن اِن کریں';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center ہر فراہم کنندہ کے پاس رجسٹرڈ ایپس کے ذریعے GitHub، Google Calendar، Linear، Slack اور GIF تلاش کے ساتھ کام کرتا ہے۔ منتخب کریں کہ یہ سرور کس کی ایپس استعمال کرے۔ آپ اسے بعد میں ترتیبات ← سرور ← سنگل سائن آن میں بدل سکتے ہیں۔';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'ابھی اس سرور کے لیے GitHub ایپ بنائیں، یا اپنی ایپس بعد میں ترتیبات ← سرور ← سنگل سائن آن میں شامل کریں۔';
+
+  @override
+  String get providerServiceApiKey => 'سروس API کلید';
+
+  @override
+  String get providerAppPartial => 'سیٹ اپ مکمل نہیں ہوا';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'ابھی کمی ہے: $fields۔ جب تک تمام خانے پُر نہ ہوں، اس فراہم کنندہ کے سائن اِن Connect سے گزرنے کی بجائے مسترد کر دیے جاتے ہیں۔';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'کلائنٹ آئی ڈی اراکین کو سائن اِن کرتی ہے۔ سروس API کلید اس سرور کو Linear میں خود پڑھنے اور لکھنے دیتی ہے۔';
+
+  @override
+  String get providerCallbackUrls => 'کال بیک URLs';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'اسے فراہم کنندہ کے پاس بالکل اسی طرح رجسٹر کریں جیسا دکھایا گیا ہے۔';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'GitHub ایپ بنائیں';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub درست اجازتوں اور کال بیک کے ساتھ ایک ایپ رجسٹر کرتا ہے، پھر اس کی اسناد اس سرور کے حوالے کرتا ہے۔ ہاتھ سے کچھ کاپی نہیں کرنا۔';
+
+  @override
+  String get providerAppCreateGitHub => 'میری GitHub ایپ بنائیں';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'تنظیم (اختیاری)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'ایپ اپنے GitHub اکاؤنٹ کے تحت بنانے کے لیے خالی چھوڑ دیں۔ کسی تنظیم کے تحت بنانے کے لیے اس تنظیم کا مالک ہونا ضروری ہے۔';
+
+  @override
+  String get providerAppSignInReady => 'لوگ سائن اِن کر سکتے ہیں۔';
+
+  @override
+  String get chatLinkWaiting => 'آپ کے براہِ راست پیغام کا انتظار ہے…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'کیا یہ آپ کا ⁨$provider⁩ اکاؤنٹ ہے؟';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'اس اکاؤنٹ نے آپ کا کوڈ بوٹ کو بھیجا ہے۔ صرف تب تصدیق کریں جب یہ آپ کا ہو: لنک ہونے کے بعد یہ ⁨$provider⁩ میں جو بھیجے گا وہ اس ورک اسپیس میں آپ کے طور پر کام کرے گا۔';
+  }
+
+  @override
+  String get chatLinkDecline => 'مسترد کریں';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'کچھ بھی لنک نہیں ہوا۔ اگر آپ اب بھی اپنا ⁨$provider⁩ اکاؤنٹ لنک کرنا چاہتے ہیں تو نیا کوڈ لیں۔';
+  }
+
+  @override
+  String get chatLinkNewCode => 'نیا کوڈ لیں';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return '⁨$provider⁩ میں Control Center شامل کریں';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center کو ⁨$workspace⁩ میں شامل کر دیا گیا';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'مشترکہ Control Center ایپ آپ کی ⁨$provider⁩ ورک اسپیس میں انسٹال کرتا ہے۔ نہ کوئی ایپ بنانی ہے نہ کوئی ٹوکن چسپاں کرنا ہے۔';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '⁨$provider⁩ میں شامل کریں';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'مشترکہ Control Center ایپ پر چلتا ہے، اس لیے یہاں سنبھالنے کے لیے کوئی ٹوکن یا بوٹ ترتیبات نہیں ہیں۔';
+
+  @override
+  String get chatTicketDraftsTitle => 'چیٹ سے ٹکٹ کے مسودے';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'مسودہ صرف تب بیک لاگ کا ٹکٹ بنتا ہے جب آپ اسے یہاں بنائیں۔ چھوڑے گئے مسودے ایک دن بعد ہٹا دیے جاتے ہیں۔';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return '⁨$provider⁩ سے';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'ٹکٹ بنائیں';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '⁨$key⁩ بن گیا';
+  }
+
+  @override
+  String get workspaceProviderApps => 'پرووائیڈر ایپس';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'یہ ورک اسپیس Google Calendar، Linear اور Klipy کی کون سی ایپس استعمال کرتا ہے۔ ڈیفالٹ طور پر یہ اس سرور کی ایپس یا Control Center Connect استعمال کرتا ہے۔ اپنی ایپ والا ورک اسپیس کبھی ان پر واپس نہیں جاتا۔';
+
+  @override
+  String get workspaceProviderAppModeInherit => 'اس سرور کی ایپ استعمال کریں';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'سائن ان اور درخواستیں اس سرور کی ایپ، یا Control Center Connect، سے جاتی ہیں۔';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'اس ورک اسپیس کی اپنی ایپ استعمال کریں';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'صرف اس ورک اسپیس کی ایپ استعمال ہوتی ہے۔ جب تک یہ مکمل نہ ہو، یہ پرووائیڈر یہاں بند رہتا ہے اور کسی اور ایپ پر واپس نہیں جاتا۔';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'سرور کی ایپ';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'اپنی ایپ';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'ابھی باقی ہے: $fields۔ جب تک تمام فیلڈز مکمل نہ ہوں، یہ پرووائیڈر اس ورک اسپیس میں بند رہتا ہے۔ یہ اس سرور کی ایپ پر واپس نہیں جاتا۔';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'ایپ بدلنے سے اس ورک اسپیس کے ہر فرد کا سائن آؤٹ ہو جاتا ہے۔ وہ نئی ایپ سے دوبارہ سائن ان کریں گے۔';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'ایپ کلید';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'اس ورک اسپیس میں GIF سرچ اسی کلید سے ہوتی ہے۔';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '$provider ایپ تبدیل کریں؟';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'اس ورک اسپیس میں جو بھی اس سرور کی ایپ کے ذریعے $provider سے جڑا ہے، اسے ورک اسپیس کی ایپ کے ساتھ دوبارہ سائن ان کرنا ہوگا۔';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'اس سے ورک اسپیس کی $provider اسناد حذف ہو جائیں گی۔ ورک اسپیس کی ایپ سے جڑے ہر فرد کو دوبارہ سائن ان کرنا ہوگا۔';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'ایپ تبدیل کریں';
 }

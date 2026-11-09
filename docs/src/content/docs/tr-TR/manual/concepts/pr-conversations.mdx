@@ -2,18 +2,18 @@
 title: PR konuşmaları
 description: Bir GitHub PR yorumunun webhook olmadan nasıl bir ajan turuna dönüştüğü, yazarı neyin yetkilendirdiği ve konuşmanın her iki tarafının kime atfedildiği.
 slug: tr-TR/kilavuz/kavramlar/pr-konusmalari
-sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
+sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
 ---
 
 Kod hakkındaki konuşma zaten bir pull request'te gerçekleşir. PR konuşmaları
 onu bir Control Center çalışma alanında bir yüzey haline getirir; tıpkı bir
 [sohbet köprüsünün](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/) Slack'i böyle
-bir yüzey haline getirmesi gibi: bir PR'da sunucunun GitHub App botunu @ ile
-anın, inceleme konularının içinde yanıtlayın veya `ai-review` etiketini ekleyin
-ve iş, PR'ın inceleme alanında gerçekleşir — uygulamada yazılan her şeyle aynı
-atıf ve korumalar altında. Bir yorum ayrıca üyeliğe bağlıdır; etiket değildir,
-çünkü onun bir yazarı yoktur. Botun yanıtları, sorunun sorulduğu kanal üzerinden
-GitHub'a geri döner.
+bir yüzey haline getirmesi gibi: bir PR'da `@usectrl`'ü (ya da çalışma alanının
+GitHub App botunu) @ ile anın, inceleme konularının içinde yanıtlayın veya
+`ai-review` etiketini ekleyin ve iş, PR'ın inceleme alanında gerçekleşir —
+uygulamada yazılan her şeyle aynı atıf ve korumalar altında. Bir yorum ve bir
+etiket aynı şekilde denetlenir: onu yazan ya da ekleyen üyeye göre. Yanıtlar,
+sorunun sorulduğu kanal üzerinden GitHub'a geri döner.
 
 Bu özelliği üç karar şekillendirir ve her biri, sohbet köprüsünün sohbet için
 verdiği aynı kararın bir forge için yeniden ifade edilmiş halidir: **bağlantının
@@ -24,16 +24,20 @@ hangi yönde çalıştığı**, **dışarıdan gelen bir yorumu neyin yetkilendi
 
 GitHub'ın bir uygulama için sunduğu tek push kanalı bir webhook'tur ve bir
 webhook gelen bir URL gerektirir — bu yüzeyin bilinçli olarak asla talep
-etmediği tek şey. Dolayısıyla keşif bir taramadır: yaklaşık her dakika, her
-uygulama kurulumu için takma adlı tek bir arama GitHub'dan botu (veya kısa
-slug'ını) anan PR'ları ve inceleme etiketini taşıyan açık PR'ları ister,
-hâlihazırda bir inceleme alanı olan PR'ların yorum konuları okunur ve her şeyin
-farkı, yorum kimliği üzerinden son taramada görülenlere göre alınır.
+etmediği tek şey. Dolayısıyla keşif bir taramadır: her uygulama kurulumu için
+takma adlı tek bir arama GitHub'dan botu (veya kısa slug'ını) anan PR'ları ve
+inceleme etiketini taşıyan açık PR'ları ister, hâlihazırda bir inceleme alanı
+olan PR'ların yorum konuları okunur ve her şeyin farkı, yorum kimliği üzerinden
+son taramada görülenlere göre alınır. Kendi uygulama her dakika en fazla 25 PR
+üzerinde tarama yapar. Connect üzerinden çağrılar üyelerin kendi GitHub
+kotasını kullanır; bu yüzden tarama iki dakikada bir en fazla 10 PR üzerinde
+çalışır ve kotasının %15'inin altına düşen bir çalışma alanı, kota toparlanana
+kadar atlanır. Connect'in kendisi PR içeriğini asla görmez.
 
 Tasarımın sonuçlarını adlandırmaya değer:
 
-- **Gecikme bir olay değil, bir tarama aralığıdır.** 👀 onayı yaklaşık bir
-  dakika içinde düşer. Buna bağlı acil bir şey yok.
+- **Gecikme bir olay değil, bir tarama aralığıdır.** 👀 onayı tek bir tarama
+  içinde düşer. Buna bağlı acil bir şey yok.
 - **Her yorum için tam olarak bir kez.** Yorum kimlikleri GitHub genelinde
   benzersizdir; her biri uygun olarak sınıflandırıldığı anda, üzerinde herhangi
   bir şey işlem yapmadan önce kaydedilir. Bir çökme bir yorumun işlenmesini
@@ -50,52 +54,58 @@ Tasarımın sonuçlarını adlandırmaya değer:
   anmadır.
 
 Arama, her kurulum hesabı için o sahibin kendi istemcisi üzerinden bir kez
-çalışır; çünkü bir kurulum token'ı yalnızca kendi kurulumunun depolarını görür —
+çalışır; çünkü bir token yalnızca kendi kurulumunun depolarını görür —
 sunucu genelinde tek bir kimlik bilgisi, uygulamanın diğer kurulumları altındaki
 her PR'ı sessizce kaçırırdı.
 
 ## Yetkilendiren şey yorum değil, üyeliktir
 
-Bir PR yorumu, bir yazar giriş adından biraz fazlasını taşıyarak gelir —
-kanıtlanana kadar kimliği doğrulanmamış bir dış kimlik. Bot bunu, çalışma
-alanının üyeleri ile onların bağlı GitHub hesaplarının ters dizinine karşı
-çözer; bu dizin, insanlar sunucu çalışırken oturum açıp davet aldığı için bir
-TTL ile yeniden kurulur.
+Bir PR yorumu bir yazar taşıyarak gelir — kanıtlanana kadar kimliği
+doğrulanmamış bir dış kimlik. Sunucu, yazarın değişmez sayısal GitHub hesap
+kimliğini (asla yeniden adlandırılıp yeniden kullanılabilen giriş adını değil)
+çalışma alanı üyelerinin GitHub oturum açmalarına karşı çözer; bu dizin,
+insanlar sunucu çalışırken oturum açıp davet aldığı için bir TTL ile yeniden
+kurulur. `ai-review` etiketi için çözülen kişi, onu en son ekleyen kişidir.
 
-Kapalı tarafa düşmek bir merdiven gibidir ve her basamak, reddettiği konuda
-yanıt verir:
+Sırayla üç denetim yapılır ve herhangi birinde başarısız olmak sessizdir —
+hiçbir şey gönderilmez:
 
-- **Bilinmeyen bir giriş adına** — bağlı değil ya da bu çalışma alanının üyesi
-  olmayan biri tarafından bağlanmış — oturum açması ve buraya ait olduğundan
-  emin olması söylenir
-- **Salt okunur bir üyeye** (`viewer` veya `guest`) rolünün iş başlatamayacağı
-  söylenir
+- **Oturum açmış bir üye.** Hesap, bu sunucuda GitHub'a oturum açmış _bu_
+  çalışma alanının bir üyesine ait olmalıdır
+- **Yazma rolü.** `viewer` ve `guest` iş başlatamaz
+- **Push erişimi.** Yanıtlar, o üyenin depoya erişimiyle sınırlı bir `bot`
+  token'ı kullanır. Sunucu bunu üretemezse devam etmez
 
-İki bilinmeyen giriş adı durumu tek bir yanıtı paylaşır: ters dizin yalnızca
-_bu_ çalışma alanının bir üyesini döndürür; dolayısıyla bağlı olmayan bir hesap
-ile bağlı olan ama üye olmayan biri aynı ıskalamadır. Hiçbiri devam etmez. Bir
-yorum asla onu göndermeyen birine atfedilmez ve bir yabancının sözleri,
-göremediği bir çalışma alanına asla girmez.
+Her denetim herhangi bir onaydan önce çalışır; böylece bir yabancı ne bir tepki
+ne de bir yanıt alır. Bir yorum asla onu göndermeyen birine atfedilmez ve bir
+yabancının sözleri, göremediği bir çalışma alanına asla girmez.
 
-`ai-review` etiketinin çözülecek bir yazarı yoktur; dolayısıyla bu merdiveni
-tırmanmaz. Onun eklenmesi, depoyu zaten bağlamış olan çalışma alanında
-incelemeyi başlatır.
+### Sahiplenme
+
+Herhangi bir işten önceki son adım, yazarın kendi GitHub oturum açmasıyla
+eklenen bir 👀 tepkisidir. GitHub yeni bir tepki için `201`, zaten var olan bir
+tepki için `200` döndürür; dolayısıyla tepki aynı zamanda bir kilit işlevi
+görür: aynı kişi, depoyu bağlamış iki sunucuda oturum açmışsa işi yalnızca ilk
+tepki veren yapar. Tek bir sunucudaki birkaç çalışma alanının gördüğü bir yorum
+her birine sunulur ve aynı sahiplenme karar verir.
 
 ## Bilinçli olarak iki kimlik
 
 Konuşmanın her tarafı farklı bir kimlik taşır ve fark da özelliğin kendisidir:
 
-- **GitHub'da bot sunucudur.** Köprünün gönderdiği her yorum, tepki ve yanıt
-  uygulamanın kurulum token'ını kullanır. Hiç kimse bir istemcide bir şeye
-  tıklamadı; dolayısıyla hiçbir şey bir kişinin hesabını ödünç almaz —
-  webhook'ları ve yoklamayı insan kimlik bilgilerinden uzak tutan kuralın
-  aynısı.
+- **GitHub'da yanıt, sizin adınıza yapılan bir otomasyondur.** Her yanıt, o tek
+  depo için soran üyenin erişimiyle sınırlı bir `bot` token'ı kullanır. Kendi
+  uygulamada yazar, uygulamanın `[bot]` hesabıdır. Connect üzerinden paylaşılan
+  App için bir token bir kullanıcı token'ıdır; dolayısıyla yanıtın yazarı, App
+  aracılığıyla hareket eden soran üyenin hesabıdır. Her iki durumda da her yanıt
+  `**Control Center** (for @login):` ile başlar; bu, kimin sorduğunu söyler ve
+  aynı zamanda döngü koruması işlevi görür.
 - **Alanın içinde soru size aittir.** İleti, yazarın çözümlendiği üyeye
   atfedilir ve ajan çalıştırması onun adına yürütülür: commit'ler onları ortak
   yazar olarak gösterir ve alanın özerklik kadranı ile eylem korumaları, tıpkı
   uygulamada yazılan bir iletiye uygulandığı gibi uygulanır. Çalıştırmadan gelen
-  forge yazmaları yine de uygulama olarak çıkar — yukarıdaki maddenin aynı
-  kuralı — üyenin kişisel token'ıyla değil.
+  forge yazmaları o üyeyle sınırlanmış tek depoluk token'lar kullanır, asla
+  onun bütünüyle devredilmiş oturum açmasını değil.
 
 İnceleme bulgularını GitHub'a geri yayımlamak, Control Center'da verilen bir kişi
 kararı olarak kalır. Bir anma bir incelemeyi _başlatabilir_; onu yalnızca bir
@@ -105,8 +115,10 @@ insan yayımlar.
 
 Bir bot hesabı tarafından yazılan her şey, herhangi bir denetim çalışmadan önce
 düşürülür — özellikle bizimki ve her `[bot]` son eki; böylece başka bir
-uygulamanın inceleme botu da bizimkini uyandıramaz. Bu olmasaydı botun kendi
-yanıtları yeni yorumlar olarak gelir ve onu sonsuza dek yeniden tetiklerdi.
+uygulamanın inceleme botu da bizimkini uyandıramaz — ve
+`**Control Center** (for @` önekiyle başlayan her yorum da düşürülür, çünkü
+Connect üzerinden yapılan bir yanıtı bir kişinin hesabı yazar. Bu olmasaydı
+yanıtlar yeni yorumlar olarak gelir ve köprüyü sonsuza dek yeniden tetiklerdi.
 
 `[bot]` son eki, kısa biçimin var olmasının nedenidir. GitHub bir uygulama
 hesabının giriş adını `<slug>[bot]` olarak sabitler, onun için otomatik
@@ -121,8 +133,11 @@ uygulama adları bu çakışmayı varsayımsal kılar.
 
 - **Otomatik yayımlama yok.** Bulgular inceleme alanına düşer; GitHub'a
   yayımlamak ayrı, insan eliyle yapılan bir eylemdir
-- **Bulanık kimlik yok.** Yazar tam olarak tek bir üyeye çözülür ya da
-  reddedilir — tahmine dayalı atıf yoktur
+- **Bulanık kimlik yok.** Yazar tam olarak tek bir üyeye çözülür ya da yok
+  sayılır — tahmine dayalı atıf yoktur
+- **Otomatik onay yok.** Otomasyon yorum yapabilir ve değişiklik isteyebilir,
+  ama bir `APPROVE` incelemesi gönderilmeden önce reddedilir. Onaylamak bir
+  kişinin eylemidir
 - **GitHub App webhook'u yok.** Bu yüzey hiçbir zaman bir webhook kaydetmez;
   dolayısıyla PR yorumları için açığa çıkarılacak bir gelen URL yoktur. Diğer
   ürün webhook'ları (pipeline'lar, bilet eşitleme) ayrı ve isteğe bağlı bir
@@ -134,8 +149,8 @@ uygulama adları bu çakışmayı varsayımsal kılar.
   tüm bunların nasıl yapıldığı
 - [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/): sohbet için
   verilen aynı üç karar
-- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/): bot
-  kimliğinin nereden geldiği
+- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/): kendi
+  uygulama bot kimliğinin nereden geldiği
 - [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/):
   bir giriş adının çözümlendiği Principal'lar ve roller
 - [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): yanıt veren ajanın neler

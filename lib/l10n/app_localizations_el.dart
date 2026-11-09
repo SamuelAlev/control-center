@@ -1159,6 +1159,100 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δεν ήταν δυνατή η ενημέρωση της απάντησής σας';
 
   @override
+  String get calendarNewEvent => 'Νέο γεγονός';
+
+  @override
+  String get calendarComposerTitleHint => 'Προσθήκη τίτλου';
+
+  @override
+  String get calendarComposerStarts => 'Έναρξη';
+
+  @override
+  String get calendarComposerEnds => 'Λήξη';
+
+  @override
+  String get calendarComposerDate => 'Ημερομηνία';
+
+  @override
+  String get calendarComposerEndDate => 'Τελευταία μέρα';
+
+  @override
+  String get calendarComposerGuestsHint => 'Προσθήκη καλεσμένων με email';
+
+  @override
+  String get calendarComposerMeet => 'Προσθήκη συνδέσμου Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Προσθήκη τοποθεσίας';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Προσθήκη περιγραφής';
+
+  @override
+  String get calendarComposerCalendar => 'Ημερολόγιο';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Προσθέστε τίτλο για να αποθηκευτεί το γεγονός';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Μία από τις διευθύνσεις email των καλεσμένων δεν είναι έγκυρη';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Το γεγονός πρέπει να λήγει μετά την έναρξή του';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Δεν ήταν δυνατή η δημιουργία του γεγονότος. Δοκιμάστε ξανά.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Οι καλεσμένοι λαμβάνουν πρόσκληση με email από την Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Διαγραφή γεγονότος';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Διαγραφή του «$title»;';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Αφαιρείται από το Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Αφαιρείται από το Google Calendar, και όλοι οι καλεσμένοι ενημερώνονται ότι ακυρώθηκε.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Αφαιρείται μόνο από το ημερολόγιό σας. Ο διοργανωτής και οι άλλοι καλεσμένοι το διατηρούν.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Διαγράφεται μόνο αυτή η εμφάνιση· η υπόλοιπη σειρά παραμένει.';
+
+  @override
+  String get calendarDeleteFailed =>
+      'Δεν ήταν δυνατή η διαγραφή του γεγονότος. Δοκιμάστε ξανά.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Δεν ήταν δυνατή η μετακίνηση του γεγονότος. Επανήλθε στην αρχική του θέση.';
+
+  @override
+  String get activityCreatedCalendarEvent =>
+      'Δημιούργησε ένα γεγονός ημερολογίου';
+
+  @override
+  String get activityMovedCalendarEvent => 'Μετακίνησε ένα γεγονός ημερολογίου';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Διέγραψε ένα γεγονός ημερολογίου';
+
+  @override
   String get calendarAddAccount => 'Προσθήκη λογαριασμού ημερολογίου';
 
   @override
@@ -1167,9 +1261,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get calendarSettingsDescription =>
       'Συνδέστε λογαριασμό Google για συγχρονισμό εκδηλώσεων σε αυτόν τον χώρο. Αυτά τα ημερολόγια είναι δικά σας εδώ.';
-
-  @override
-  String get calendarConnecting => 'Σύνδεση…';
 
   @override
   String get calendarSyncNow => 'Συγχρονισμός τώρα';
@@ -1181,33 +1272,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get calendarConnectError =>
       'Δεν ήταν δυνατή η σύνδεση του Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Εισαγάγετε το Google OAuth device-code client ID και το secret του έργου σας. Ο διακομιστής εκτελεί τη σύνδεση και τον συγχρονισμό — το πρόγραμμα περιήγησης δεν κρατά ποτέ τα tokens.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Ανοίξτε τη σελίδα επαλήθευσης σε οποιαδήποτε συσκευή, συνδεθείτε και εισαγάγετε αυτόν τον κωδικό:';
-
-  @override
-  String get calendarConnectOpenPage => 'Άνοιγμα σελίδας επαλήθευσης';
-
-  @override
-  String get calendarConnectWaiting => 'Αναμονή έγκρισης…';
-
-  @override
-  String get calendarConnectDenied =>
-      'Η εξουσιοδότηση απορρίφθηκε. Δοκιμάστε ξανά.';
-
-  @override
-  String get calendarConnectExpired => 'Ο κωδικός έληξε. Δοκιμάστε ξανά.';
 
   @override
   String get notificationMeetingStartsSoon => 'Η σύσκεψη ξεκινά σύντομα';
@@ -2434,9 +2498,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Άλλαξε την πρόσβαση αποθετηρίου ενός μέλους';
 
   @override
-  String get activityUpdatedGitHubToken => 'Ενημέρωσε το token του GitHub';
-
-  @override
   String get activityRefreshedWeather => 'Ανανέωσε την πρόγνωση καιρού';
 
   @override
@@ -2474,10 +2535,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get activityRespondedToInvitation =>
       'Απάντησε στην πρόσκληση γεγονότος';
-
-  @override
-  String get activityStartedCalendarConnect =>
-      'Ξεκίνησε τη σύνδεση ημερολογίου';
 
   @override
   String get activityDisconnectedCalendar => 'Αποσύνδεσε το ημερολόγιο';
@@ -4791,7 +4848,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get searchGifs => 'Αναζήτηση GIF';
 
   @override
-  String get searchGifsHint => 'Αναζήτηση GIF...';
+  String get searchGifsHint => 'Αναζήτηση στο KLIPY';
 
   @override
   String get searchInDiffHint => 'Αναζήτηση στο diff…';
@@ -5279,9 +5336,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Ανώνυμος πράκτορας';
-
-  @override
-  String get updateKey => 'Ενημέρωση κλειδιού';
 
   @override
   String get updateLabel => 'Ενημέρωση';
@@ -6346,7 +6400,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Εκτελείται με bash -c. Το GITHUB_TOKEN ορίζεται. Τα υποκατάστατα αντικαθίστανται πριν την εκτέλεση.';
+      'Εκτελείται με bash -c στο sandbox του λειτουργικού συστήματος. Τα GH_TOKEN και GITHUB_TOKEN περιέχουν ένα διακριτικό μόνο ανάγνωσης για το συνδεδεμένο αποθετήριο. Τα υποκατάστατα μπαίνουν σε εισαγωγικά και αντικαθίστανται πριν την εκτέλεση.';
 
   @override
   String get nodeConfigRouteKeys => 'Κλειδιά δρομολόγησης';
@@ -7029,7 +7083,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
+      'Συνδεθείτε στο GitHub στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -12023,7 +12077,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Αναφέρετε το bot στο $provider για να βάλετε έναν πράκτορα σε κάτι, ή ανοίξτε εισιτήρια με ⁨$command⁩.';
+    return 'Αναφέρετε το bot στο $provider για να βάλετε έναν πράκτορα σε κάτι, ή συντάξτε προσχέδια εισιτηρίων με ⁨$command⁩.';
   }
 
   @override
@@ -12110,7 +12164,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Στείλτε αυτή την εντολή στο bot στο $provider. Λειτουργεί μία φορά και λήγει σε 15 λεπτά.';
+    return 'Στείλτε αυτόν τον κωδικό στο bot του $provider με απευθείας μήνυμα. Λειτουργεί μία φορά και λήγει σε 15 λεπτά.';
   }
 
   @override
@@ -12277,21 +12331,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → αντιγράψτε το bot user OAuth token.';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'Χρήση της εφαρμογής Google του Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Εγκρίνετε με τον λογαριασμό σας Google. Τίποτα να ρυθμίσετε στο Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Χρήση του δικού μου πελάτη Google Cloud';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Εισαγάγετε έναν πελάτη OAuth από το δικό σας έργο Google Cloud.';
 
   @override
   String get aboutTitle => 'Πληροφορίες';
@@ -12995,18 +13034,15 @@ class AppLocalizationsEl extends AppLocalizations {
   String get signInAgain => 'Σύνδεση ξανά';
 
   @override
-  String get signInNotFinished =>
-      'Η σύνδεση δεν έχει επιστρέψει ακόμη. Ολοκληρώστε την στο πρόγραμμα περιήγησης και ελέγξτε ξανά.';
+  String get forgeSignInBannerTitle =>
+      'Η φιλοξενία κώδικα δεν είναι συνδεδεμένη σε αυτόν τον χώρο εργασίας';
 
   @override
-  String get signedOutTitle => 'Έχετε αποσυνδεθεί';
+  String get forgeSignInBannerBody =>
+      'Μια σύνδεση έληξε ή ανακλήθηκε, ή αυτός ο χώρος εργασίας χρησιμοποιεί δικό του GitHub App. Τα pull request, οι αξιολογήσεις και ο συγχρονισμός αποθετηρίων έχουν παυθεί μέχρι να συνδεθείτε.';
 
   @override
-  String get signedOutSubtitle =>
-      'Η σύνδεση φιλοξενίας κώδικα δεν είναι πλέον έγκυρη — ένα token έληξε ή η πρόσβασή του ανακλήθηκε. Τίποτα άλλο δεν άλλαξε: συνδεθείτε ξανά και όλα είναι εκεί που τα αφήσατε.';
-
-  @override
-  String get viaServerApp => 'μέσω της εφαρμογής αυτού του διακομιστή';
+  String get forgeSignInBannerAction => 'Σύνδεση';
 
   @override
   String get ticketing => 'Εισιτήρια';
@@ -13024,14 +13060,11 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ticketProviderLocal => 'Τοπικό';
 
   @override
-  String get addKey => 'Προσθήκη κλειδιού';
-
-  @override
   String get providerApps => 'Εφαρμογές παρόχων';
 
   @override
   String get providerAppsDescription =>
-      'Οι χώροι εργασίας κληρονομούν αυτό το GitHub App εκτός αν επιλέξουν άλλο App ή προσωπικό διακριτικό. Η εργασία στο παρασκήνιο — webhooks, polling, sync — τρέχει στην εφαρμογή, ποτέ στο διακριτικό ενός ατόμου.';
+      'Εφαρμογές που καταχώρισε ο ίδιος αυτός ο διακομιστής σε κάθε πάροχο. Οι χρήστες συνδέονται μέσω αυτών, και οι εργασίες παρασκηνίου όπως webhooks, polling και συγχρονισμός εκτελούνται σε αυτές, ποτέ στη σύνδεση ενός ατόμου.';
 
   @override
   String get providerAppId => 'ID εφαρμογής';
@@ -13044,9 +13077,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Μυστικό πελάτη';
-
-  @override
-  String get providerApiKey => 'Κλειδί API';
 
   @override
   String get providerCallbackUrl => 'URL επιστροφής';
@@ -13067,18 +13097,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Τα διαπιστευτήρια λειτουργούν. Εγκατεστημένα σε: ⁨$accounts⁩';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Εισαγάγετε αυτόν τον κωδικό στη σελίδα $provider που μόλις άνοιξε. Έχει αντιγραφεί στο πρόχειρό σας.';
-  }
-
-  @override
-  String get deviceCodeWaiting =>
-      'Αναμονή ολοκλήρωσης στο πρόγραμμα περιήγησης…';
-
-  @override
-  String get copyCodeAndOpen => 'Αντιγραφή κωδικού και άνοιγμα';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13428,7 +13446,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Για χώρους που κληρονομούν το GitHub App αυτής της εγκατάστασης. Ένας χώρος με δικό του App ή PAT ρυθμίζεται στο Χώρος εργασίας → Γενικά.';
+      'Τη χρησιμοποιούν οι χώροι εργασίας που κληρονομούν την εφαρμογή GitHub αυτής της εγκατάστασης. Ένας χώρος εργασίας με δική του εφαρμογή τη ρυθμίζει στο Χώρος εργασίας → Γενικά.';
 
   @override
   String get providerAppsGroupPrConversations => 'Συνομιλίες pull request';
@@ -14998,7 +15016,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Πώς πιστοποιείται η εργασία GitHub στο παρασκήνιο σε αυτόν τον χώρο εργασίας. Κληρονομιά του App της εγκατάστασης, άλλο App ή μόνο προσωπικό διακριτικό πρόσβασης.';
+      'Πώς ταυτοποιείται η εργασία GitHub στο παρασκήνιο σε αυτόν τον χώρο εργασίας: με την εφαρμογή αυτής της εγκατάστασης ή με δική του εφαρμογή.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -15008,29 +15026,12 @@ class AppLocalizationsEl extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Χρήση διαφορετικού GitHub App';
 
   @override
-  String get workspaceGitHubModePat => 'Μόνο προσωπικό διακριτικό πρόσβασης';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Χρησιμοποιεί το GitHub App στο Διακομιστής → Εφαρμογές παρόχων.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Ταυτότητα bot και polling αυτού του χώρου. Τα μέλη συνδέονται στο Εσείς μέσω αυτού του App.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Διακριτικό παρασκηνίου';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Για polling και πράκτορες σε αυτόν τον χώρο. Όχι το διακριτικό προφίλ ενός μέλους.';
-
-  @override
-  String get workspaceGitHubHasPat =>
-      'Υπάρχει αποθηκευμένο διακριτικό παρασκηνίου.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Δεν υπάρχει διακριτικό παρασκηνίου.';
 
   @override
   String get profileOverlayHint =>
@@ -16917,4 +16918,540 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Εναλλαγή χώρου εργασίας';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Σύνδεση στο $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Σύνδεση του Linear για αυτοματοποίηση';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Άνοιγμα του $provider στο πρόγραμμα περιήγησης…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Εγκρίνετε το αίτημα στη σελίδα του $provider στο πρόγραμμα περιήγησης. Αυτό το παράθυρο καταλαβαίνει μόνο του πότε τελειώσατε.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Αναμονή για το $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Η σύνδεση δεν ολοκληρώθηκε';
+
+  @override
+  String get signInReopenPage => 'Ξανά άνοιγμα της σελίδας σύνδεσης';
+
+  @override
+  String get signInCodePrompt =>
+      'Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης';
+
+  @override
+  String get signInCodeMalformed =>
+      'Αυτό δεν μοιάζει με κωδικό σύνδεσης. Οι κωδικοί έχουν 8 γράμματα και ψηφία.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Αν το πρόγραμμα περιήγησης προτείνει να ανοίξει το Control Center, επιτρέψτε το και δεν θα χρειαστεί να πληκτρολογήσετε τον κωδικό.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Συνδεθήκατε στο $provider ως $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Συνδεθήκατε στο $provider';
+  }
+
+  @override
+  String get signInErrorExpired => 'Αυτή η σύνδεση έληξε. Ξεκινήστε ξανά.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Η σύνδεση στο $provider ακυρώθηκε ή απορρίφθηκε.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return 'Το $provider έδωσε λιγότερα δικαιώματα από όσα χρειάζεται το Control Center. Συνδεθείτε ξανά και εγκρίνετε όλα τα δικαιώματα.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return 'Το $provider δεν αποκρίνεται αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγα λεπτά.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return 'Το $provider αποδέχτηκε τη σύνδεση, αλλά ο διακομιστής δεν μπόρεσε να την ολοκληρώσει. Δοκιμάστε ξανά.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Η εφαρμογή $provider αυτού του διακομιστή έχει ρυθμιστεί λάθος. Ζητήστε από τον κάτοχο του διακομιστή να ελέγξει τις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Η σύνδεσή σας στο $provider έληξε. Συνδεθείτε ξανά για να συνεχίσετε να εργάζεστε ως εσείς.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'Η εφαρμογή $provider δεν είναι εγκατεστημένη εκεί που χρειάζεται. Εγκαταστήστε την και δοκιμάστε ξανά.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Αυτή η εγκατάσταση της εφαρμογής GitHub είναι ήδη εξουσιοδοτημένη για άλλον διακομιστή Control Center.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Αυτός ο χώρος εργασίας του Linear είναι ήδη συνδεδεμένος με άλλον διακομιστή Control Center.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Μόνο ένας διαχειριστής ή κάτοχος του χώρου εργασίας Slack μπορεί να τον συνδέσει στο Control Center για πρώτη φορά. Ζητήστε από κάποιον τους να προσθέσει την εφαρμογή.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'Η εφαρμογή $provider έχει ανασταλεί. Άρετε την αναστολή στο $provider και δοκιμάστε ξανά.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Το Control Center Connect έχει αποκλείσει αυτόν τον διακομιστή. Επικοινωνήστε με τον διαχειριστή του διακομιστή Connect σας.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Η σύνδεση απέτυχε για λόγο που ο διακομιστής δεν ανέφερε. Δοκιμάστε ξανά.';
+
+  @override
+  String get signInPhishingTitle => 'Η σύνδεση δεν ξεκίνησε από εδώ';
+
+  @override
+  String get signInPhishingBody =>
+      'Αυτή η σύνδεση δεν ξεκίνησε από αυτή την εφαρμογή. Αν κάποιος σας έστειλε αυτόν τον σύνδεσμο, μη συνεχίσετε.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Δεν στάλθηκε τίποτα. Αν ολοκληρώνατε μια σύνδεση που ξεκίνησε κάποιος άλλος, ο λογαριασμός σας θα συνδεόταν με τον διακομιστή του.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Απαιτείται σύνδεση στο $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Αυτό εκτελείται εκ μέρους σας στο $provider και δεν έχετε συνδεθεί. Συνδεθείτε και δοκιμάστε ξανά.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Δεν έχετε συνδεθεί στο $provider. Ό,τι κάνετε εδώ εκτελείται εκ μέρους σας, οπότε συνδεθείτε πρώτα.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Η σύνδεση στο $provider δεν έχει ρυθμιστεί ακόμη σε αυτόν τον διακομιστή.';
+  }
+
+  @override
+  String get githubInstallations => 'Εγκαταστάσεις της εφαρμογής GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Πού είναι εγκατεστημένη η εφαρμογή GitHub, ανάμεσα στους λογαριασμούς στους οποίους ανήκουν τα αποθετήρια αυτού του χώρου εργασίας. Η εγκατάσταση ενός οργανισμού λειτουργεί μόνο σε διακομιστές που εξουσιοδοτούν οι διαχειριστές του.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'Η εφαρμογή GitHub δεν είναι εγκατεστημένη σε κανέναν λογαριασμό στον οποίο ανήκουν τα αποθετήρια αυτού του χώρου εργασίας.';
+
+  @override
+  String get githubInstallApp => 'Εγκατάσταση εφαρμογής GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Εξουσιοδότηση αυτού του διακομιστή';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Αυτός ο διακομιστής μπορεί πλέον να χρησιμοποιεί την εγκατάσταση στο $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Σε αναστολή';
+
+  @override
+  String get githubInstallationAuthorized => 'Εξουσιοδοτημένη';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Μη εξουσιοδοτημένη';
+
+  @override
+  String get linearAutomationTitle => 'Αυτοματοποίηση Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Επιτρέπει στους πράκτορες και τις ροές αυτού του χώρου εργασίας να ενεργούν στο Linear ως εφαρμογή και όχι ως άτομο. Τη συνδέουν οι διαχειριστές του χώρου.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Συνδέθηκε με $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Χρήση των εφαρμογών του Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Οι συνδέσεις περνούν από το Control Center Connect. Το Connect σφραγίζει κάθε σύνδεση ώστε μόνο αυτός ο διακομιστής να μπορεί να την ανοίξει, εκδίδει διακριτικά GitHub περιορισμένα σε ένα αποθετήριο, δεν κρατά κανένα κλειδί αποθετηρίου και δεν λαμβάνει ποτέ τον πηγαίο κώδικά σας.';
+
+  @override
+  String get connectModeOwn => 'Χρήση των δικών μου εφαρμογών';
+
+  @override
+  String get connectModeOwnHint =>
+      'Καταχωρίστε μόνοι σας εφαρμογές GitHub, Google και Linear στις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση και συνδέστε τη δική του εφαρμογή Slack κάθε χώρου εργασίας στις ρυθμίσεις του. Το «Δημιουργία της εφαρμογής μου GitHub» ρυθμίζει το GitHub σε ένα βήμα.';
+
+  @override
+  String get connectModeCustom => 'Χρήση προσαρμοσμένου διακομιστή Connect';
+
+  @override
+  String get connectModeCustomHint =>
+      'Ο οργανισμός σας λειτουργεί δικό του διακομιστή Connect. Οι συνδέσεις πηγαίνουν εκεί αντί για του Control Center.';
+
+  @override
+  String get connectModeUnset => 'Δεν έχει ρυθμιστεί ακόμη';
+
+  @override
+  String get connectCustomUrlLabel => 'URL διακομιστή Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Εισαγάγετε μια διεύθυνση HTTPS, π.χ. https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'Το απλό HTTP φτάνει μόνο σε Connect σε αυτόν τον υπολογιστή. Χρησιμοποιήστε HTTPS για οτιδήποτε σε δίκτυο.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Οι φιλοξενούμενες εφαρμογές του Control Center δεν είναι ακόμη διαθέσιμες σε αυτή την έκδοση. Χρησιμοποιήστε τις δικές σας εφαρμογές ή έναν προσαρμοσμένο διακομιστή Connect.';
+
+  @override
+  String get connectErrorSignature =>
+      'Η διαμόρφωση του Connect απέτυχε στον έλεγχο υπογραφής. Οι συνδέσεις μέσω Connect είναι σε παύση μέχρι να επαληθευτεί ξανά.';
+
+  @override
+  String get connectErrorRollback =>
+      'Το Connect έδωσε παλαιότερη διαμόρφωση από αυτή που έχει ήδη δει αυτός ο διακομιστής, γι’ αυτό απορρίφθηκε. Οι συνδέσεις μέσω Connect είναι σε παύση.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Αυτός ο διακομιστής δεν μπορεί να φτάσει το Connect αυτή τη στιγμή. Οι συνδέσεις που το χρησιμοποιούν θα αποτυγχάνουν μέχρι να επανέλθει.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Το Connect έχει αποκλείσει το αναγνωριστικό εγκατάστασης αυτού του διακομιστή. Επικοινωνήστε με τον διαχειριστή του διακομιστή Connect σας.';
+
+  @override
+  String get connectErrorPinsChanged => 'Οι εφαρμογές του Connect άλλαξαν';
+
+  @override
+  String get connectErrorProtocol =>
+      'Το Connect απάντησε με τρόπο που αυτός ο διακομιστής δεν καταλαβαίνει. Ενημερώστε τον διακομιστή ή ελέγξτε το URL του Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Το Connect ανέφερε πρόβλημα χωρίς εξήγηση. Εκτελέστε δοκιμή για να ξαναπροσπαθήσετε.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Ο διακομιστής Connect σας δηλώνει τώρα διαφορετικές εφαρμογές GitHub, Google, Linear ή Slack από αυτές που καρφίτσωσε αυτός ο διακομιστής στην πρώτη χρήση. Εμπιστευτείτε τες μόνο αν ο διαχειριστής του σας είχε προειδοποιήσει.';
+
+  @override
+  String get connectConfirmPins => 'Εμπιστοσύνη στις νέες εφαρμογές';
+
+  @override
+  String get connectStale =>
+      'Η διαμόρφωση σε χρήση είναι παλαιότερη από το αναμενόμενο. Εκτελέστε δοκιμή για να την ανανεώσετε.';
+
+  @override
+  String get connectLaneSourceOwn => 'Δική σας εφαρμογή';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Ανενεργό';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Ποιανού τις εφαρμογές χρησιμοποιεί αυτός ο διακομιστής για GitHub, Google Calendar, Linear, Slack και αναζήτηση GIF.';
+
+  @override
+  String get connectFactMode => 'Εφαρμογές σύνδεσης';
+
+  @override
+  String get connectFactHealth => 'Κατάσταση';
+
+  @override
+  String get connectFactEpoch => 'Έκδοση διαμόρφωσης';
+
+  @override
+  String get connectHealthOff => 'Εκτός χρήσης';
+
+  @override
+  String get connectHealthOk => 'Λειτουργεί';
+
+  @override
+  String get connectHealthDown => 'Δεν λειτουργεί';
+
+  @override
+  String get connectLocked =>
+      'Αυτό το ορίζει το CC_CONNECT_URL στο περιβάλλον του διακομιστή. Αλλάξτε το εκεί και επανεκκινήστε τον διακομιστή.';
+
+  @override
+  String get connectLanesTitle => 'Πού εκτελείται κάθε σύνδεση';
+
+  @override
+  String get connectLanesDescription =>
+      'Μια δική σας εφαρμογή έχει πάντα προτεραιότητα έναντι του Connect για τον πάροχό της.';
+
+  @override
+  String get connectServerGroup => 'Αυτός ο διακομιστής';
+
+  @override
+  String get connectInstallId => 'Αναγνωριστικό εγκατάστασης';
+
+  @override
+  String get connectInstallIdHint =>
+      'Ταυτοποιεί αυτόν τον διακομιστή στο Connect. Δώστε το σε κάτοχο οργανισμού ή διαχειριστή Connect που το ζητά.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Αποδίδεται την πρώτη φορά που αυτός ο διακομιστής χρησιμοποιεί το Connect.';
+
+  @override
+  String get connectTestOk => 'Το Connect λειτουργεί.';
+
+  @override
+  String get connectRotateKey => 'Εναλλαγή κλειδιού';
+
+  @override
+  String get connectRotateKeyTitle =>
+      'Εναλλαγή του κλειδιού Connect αυτού του διακομιστή;';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Αυτός ο διακομιστής παίρνει νέο κλειδί και νέο αναγνωριστικό εγκατάστασης. Κάθε σύνδεση που έγινε μέσω Connect σταματά να λειτουργεί και όλοι πρέπει να συνδεθούν ξανά. Οι συνδέσεις μέσω των δικών σας εφαρμογών δεν επηρεάζονται.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Το κλειδί άλλαξε. Όσοι συνδέθηκαν μέσω Connect πρέπει να συνδεθούν ξανά.';
+
+  @override
+  String get connectCliLabel => 'Από τερματικό';
+
+  @override
+  String get onboardingStepSignIn => 'Σύνδεση';
+
+  @override
+  String get onboardingConnectTitle => 'Επιλέξτε πώς συνδέονται τα άτομα';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Το Control Center συνεργάζεται με GitHub, Google Calendar, Linear, Slack και την αναζήτηση GIF μέσω εφαρμογών καταχωρισμένων σε κάθε πάροχο. Επιλέξτε ποιανού τις εφαρμογές χρησιμοποιεί αυτός ο διακομιστής. Μπορείτε να το αλλάξετε αργότερα στις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Δημιουργήστε τώρα μια εφαρμογή GitHub για αυτόν τον διακομιστή ή προσθέστε τις εφαρμογές σας αργότερα στις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση.';
+
+  @override
+  String get providerServiceApiKey => 'Κλειδί API υπηρεσίας';
+
+  @override
+  String get providerAppPartial => 'Η ρύθμιση δεν ολοκληρώθηκε';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Λείπουν ακόμη: $fields. Μέχρι να συμπληρωθούν όλα τα πεδία, οι συνδέσεις για αυτόν τον πάροχο απορρίπτονται αντί να περνούν από το Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'Το αναγνωριστικό πελάτη συνδέει τα μέλη. Το κλειδί API υπηρεσίας επιτρέπει σε αυτόν τον διακομιστή να διαβάζει και να γράφει στο Linear μόνος του.';
+
+  @override
+  String get providerCallbackUrls => 'URL επιστροφής κλήσης';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Καταχωρίστε το στον πάροχο ακριβώς όπως εμφανίζεται.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Δημιουργία εφαρμογής GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'Το GitHub καταχωρίζει μια εφαρμογή με τα σωστά δικαιώματα και την σωστή επιστροφή κλήσης και παραδίδει τα διαπιστευτήριά της σε αυτόν τον διακομιστή. Τίποτα δεν αντιγράφεται με το χέρι.';
+
+  @override
+  String get providerAppCreateGitHub => 'Δημιουργία της εφαρμογής μου GitHub';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Οργανισμός (προαιρετικό)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Αφήστε το κενό για να δημιουργηθεί η εφαρμογή στον δικό σας λογαριασμό GitHub. Για να δημιουργηθεί σε οργανισμό, χρειάζεται κάτοχος του οργανισμού.';
+
+  @override
+  String get providerAppSignInReady => 'Τα άτομα μπορούν να συνδεθούν.';
+
+  @override
+  String get chatLinkWaiting => 'Αναμονή για το απευθείας μήνυμά σας…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Είναι αυτός ο λογαριασμός σας $provider;';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Αυτός ο λογαριασμός έστειλε τον κωδικό σας στο bot. Επιβεβαιώστε μόνο αν είναι δικός σας: μετά τη σύνδεση, ό,τι στέλνει στο $provider ενεργεί ως εσείς σε αυτόν τον χώρο εργασίας.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Απόρριψη';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Δεν συνδέθηκε τίποτα. Πάρτε νέο κωδικό αν θέλετε ακόμα να συνδέσετε τον λογαριασμό σας $provider.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Λήψη νέου κωδικού';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Προσθήκη του Control Center στο $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Το Control Center προστέθηκε στο $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Εγκαθιστά την κοινόχρηστη εφαρμογή Control Center στον χώρο εργασίας σας στο $provider. Δεν χρειάζεται να δημιουργήσετε εφαρμογή ούτε να επικολλήσετε διακριτικό.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Προσθήκη στο $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Λειτουργεί με την κοινόχρηστη εφαρμογή Control Center, οπότε δεν υπάρχουν εδώ διακριτικά ή ρυθμίσεις bot για διαχείριση.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Προσχέδια εισιτηρίων από τη συνομιλία';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Ένα προσχέδιο γίνεται εισιτήριο στο backlog μόνο όταν το δημιουργήσετε εδώ. Τα προσχέδια που μένουν απορρίπτονται μετά από μία ημέρα.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Από $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Δημιουργία εισιτηρίου';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return 'Δημιουργήθηκε το $key';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Εφαρμογές παρόχων';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Ποιες εφαρμογές Google Calendar, Linear και Klipy χρησιμοποιεί αυτός ο χώρος εργασίας. Από προεπιλογή χρησιμοποιεί τις εφαρμογές αυτού του διακομιστή ή το Control Center Connect. Ένας χώρος εργασίας με τη δική του εφαρμογή δεν επιστρέφει ποτέ σε αυτές.';
+
+  @override
+  String get workspaceProviderAppModeInherit =>
+      'Χρήση της εφαρμογής του διακομιστή';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Οι συνδέσεις και τα αιτήματα χρησιμοποιούν την εφαρμογή αυτού του διακομιστή ή το Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Χρήση της δικής του εφαρμογής του χώρου εργασίας';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Χρησιμοποιείται μόνο η εφαρμογή αυτού του χώρου εργασίας. Όσο δεν είναι πλήρης, ο πάροχος είναι απενεργοποιημένος εδώ και δεν επιστρέφει σε άλλη εφαρμογή.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Εφαρμογή διακομιστή';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Δική του εφαρμογή';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Λείπουν ακόμη: $fields. Μέχρι να συμπληρωθούν όλα τα πεδία, ο πάροχος είναι απενεργοποιημένος σε αυτόν τον χώρο εργασίας. Δεν επιστρέφει στην εφαρμογή του διακομιστή.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Η αλλαγή της εφαρμογής αποσυνδέει από αυτήν όλους όσους βρίσκονται στον χώρο εργασίας. Θα συνδεθούν ξανά με τη νέα.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Κλειδί εφαρμογής';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Η αναζήτηση GIF σε αυτόν τον χώρο εργασίας χρησιμοποιεί αυτό το κλειδί.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Αλλαγή της εφαρμογής $provider;';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Όλοι όσοι είναι συνδεδεμένοι με τον $provider σε αυτόν τον χώρο εργασίας μέσω της εφαρμογής του διακομιστή πρέπει να συνδεθούν ξανά με την εφαρμογή του χώρου εργασίας.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Αυτό διαγράφει τα διαπιστευτήρια του $provider του χώρου εργασίας. Όσοι είναι συνδεδεμένοι μέσω της εφαρμογής του χώρου εργασίας πρέπει να συνδεθούν ξανά.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Αλλαγή εφαρμογής';
 }

@@ -2,7 +2,7 @@
 title: Usar revisión con IA
 description: Ejecuta el pipeline pr_review sobre una PR, lee los hallazgos y el veredicto y, después, publica la revisión en GitHub.
 slug: es-ES/manual/guias/revision-con-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Esta guía explica cómo hacer que los agentes revisores revisen una pull request y
@@ -121,14 +121,16 @@ GitHub.
 Control Center envía **una sola** revisión de GitHub. Los hallazgos ya resueltos o
 descartados se omiten. El botón incluye todos los hallazgos abiertos restantes y,
 con **Ship**, envía `APPROVE`. (La herramienta MCP `publish_review_to_github`
-sigue limitándose de forma predeterminada a los hallazgos confirmados por pares y
-no aprueba a menos que pases `approve_on_ship`.) Los que llevan un anclaje de
+se limita de forma predeterminada a los hallazgos confirmados por pares y nunca
+aprueba: publica como automatización, así que `approve_on_ship` no tiene efecto
+ahí.) Los que llevan un anclaje de
 archivo y línea se convierten en comentarios en línea; todo lo demás se integra en
 el cuerpo del resumen, cada elemento con un pie de «— Control Center AI review»
 para que la fuente no deje lugar a dudas. Un veredicto **Block** se envía como
 `REQUEST_CHANGES`; **Hold** como `COMMENT`; **Ship** como `APPROVE` desde este
-botón. Después aparece un aviso que dice **Publicado**. La revisión se publica con
-la identidad de aplicación del servidor.
+botón. Después aparece un aviso que dice **Publicado**. La revisión se publica en
+tu nombre, con tu propio inicio de sesión de GitHub: si no has iniciado sesión en
+GitHub, la publicación falla y te pide que inicies sesión.
 
 Si GitHub rechaza un anclaje en línea porque la línea no forma parte del diff, se
 reenvía toda la revisión con todos los hallazgos integrados en el cuerpo, para que

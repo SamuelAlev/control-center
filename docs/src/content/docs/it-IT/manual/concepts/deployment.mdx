@@ -2,7 +2,7 @@
 title: Deployment e client
 description: Come l'architettura thin client di Control Center separa un server headless dai suoi client desktop, web e mobile.
 slug: it-IT/manuale/concetti/deployment
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center non è un unico programma. È un'**architettura thin client**: un
@@ -206,7 +206,7 @@ invece di essere eseguito. Oggi solo un vero `cc_worker` esegue lavori in lease.
 | Esecuzione degli agenti                                | la esegue (o la cede in lease) | esegue i lavori in lease       | —              | —                                                |
 | Rendering dell'interfaccia                             | —                           | —                                 | completo       | completo (web) / prevalentemente in lettura (telefono) |
 | Cattura delle riunioni (microfono + audio della riunione) | —                        | —                                 | cattura nativa | solo web, tramite l'audio di condivisione schermo |
-| OAuth del calendario (Google)                          | conserva i token            | —                                 | —              | —                                                |
+| Accessi ai provider (GitHub, Google, Linear)           | li esegue e li conserva     | —                                 | —              | —                                                |
 
 I due livelli non applicano lo stesso sandbox. `cc_server` avvolge le esecuzioni
 che esegue da sé nel sandbox del sistema operativo dell'host dove esiste un
@@ -219,6 +219,13 @@ che gli è stato assegnato. Cedere lavoro all'esterno sposta quindi l'esecuzione
 fuori dal sandbox anche su un host che ne ha uno. Vedi
 [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per ciò che
 delimita un'esecuzione in ciascun caso.
+
+Gli accessi ai provider si completano sul server, tramite le sue app o tramite
+[Control Center Connect](/it-IT/manuale/riferimento/connect/), un servizio
+facoltativo che esegue l'OAuth dei provider per i server senza app proprie.
+Connect restituisce una credenziale che solo questo server può usare e non vede
+mai il contenuto dei repository. I client si limitano ad aprire il browser e, per
+un accesso tramite Connect, a restituire il codice che mostra.
 
 La cattura delle riunioni avviene su un client perché richiede un microfono e
 l'audio della riunione: un server chiuso in un armadio non può registrare la tua

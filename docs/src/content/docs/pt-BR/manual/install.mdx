@@ -2,7 +2,7 @@
 title: Instalar
 description: Use o Control Center no navegador ou instale o aplicativo de desktop, configure um backend de agentes e escolha onde o servidor dele é executado.
 slug: pt-BR/manual/instalar
-sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
+sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
 ---
 
 O Control Center é executado de duas formas: como um **aplicativo web** em
@@ -185,25 +185,19 @@ Uma credencial do GitHub é **sua e fica no servidor**, associada ao id do seu
 usuário — não no keychain do sistema operacional do cliente. Todos os dispositivos
 em que você entrar usam a mesma, e nenhum outro membro consegue lê-la.
 
-Se o servidor tiver um GitHub App registrado
-([Criar o GitHub App](/pt-BR/manual/guias/github-app/)),
-**Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código**
-oferece **Entrar com GitHub** (um fluxo por código de dispositivo que o servidor
-executa). Caso contrário, cole um token de acesso pessoal:
+O GitHub só aceita login: **Configurações → Espaço de trabalho → Perfil e
+identidade → Hospedagem de código** oferece **Entrar no GitHub**, e não há
+nenhum token para colar. O login passa pelo GitHub App do próprio servidor
+([Criar o GitHub App](/pt-BR/manual/guias/github-app/)) ou pelo Control Center
+Connect, o que o proprietário do servidor tiver escolhido. Com o app do próprio
+servidor, o navegador volta sozinho para o servidor; pelo Connect, você digita
+o código de 8 caracteres que o navegador mostra, ou deixa que ele abra o
+Control Center. Consulte
+[Configurar a integração com o GitHub](/pt-BR/manual/guias/integracao-github/).
 
-- Clássico: `repo` e `read:org`
-- Granular: **Contents** e **Pull requests** (leitura e escrita), **Checks** e
-  **Actions** (leitura)
-
-Crie um em
-[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-O servidor sonda o token em busca do nome da conta no momento em que ele é
-armazenado, para que a linha possa dizer "conectado como …"; uma sondagem
-malsucedida ainda salva o token, e um erro de digitação ou um escopo ausente aparece
-como uma requisição malsucedida mais tarde.
-
-O primeiro passo do onboarding é esta conexão. Depois disso, o mesmo cartão é onde
-você a substitui ou a remove. O GitLab e o Bitbucket usam o mesmo cartão; consulte
+O onboarding pede esta conexão. Depois disso, o mesmo cartão é onde você entra
+de novo ou se desconecta. O GitLab e o Bitbucket usam o mesmo cartão, com um
+token pessoal colado; consulte
 [Conectar um host de código](/pt-BR/manual/guias/conectar-host-de-codigo/).
 
 ## Escolher onde o servidor é executado

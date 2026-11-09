@@ -2,7 +2,7 @@
 title: AI 리뷰
 description: 풀 리퀘스트가 리뷰된 PR이 되는 과정 — 리뷰 스페이스, 리뷰 노드와 동료 합의, 코호트와 축, Ship/Hold/Block 판정, 그리고 게시가 왜 사용자가 직접 밟는 단계로 남는지 설명합니다.
 slug: ko-KR/매뉴얼/개념/ai-리뷰
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## 리뷰의 구조
@@ -201,9 +201,12 @@ PR의 리뷰 컨텍스트는 모드 `review`, 종류 `pr`인 메시징 스페이
   누락되지 않도록 모든 발견 사항을 본문에 합쳐 전체 리뷰를 다시 보냅니다.
 - **Block** 판정은 `REQUEST_CHANGES`로, **Hold**는 `COMMENT`로, **Ship**은
   버튼에서 `APPROVE`로 제출됩니다(`approve_on_ship: true`). MCP 도구는
-  `approve_on_ship`을 전달하지 않으면 Ship을 `COMMENT`로 둡니다.
-- 리뷰는 서버의 앱 아이덴티티로 게시됩니다. 누가 게시를 눌렀는지는 역할
-  게이트와 감사 로그를 위해 기록되며, GitHub 작성자가 되는 것은 아닙니다.
+  자동화로 게시하므로 Ship을 항상 `COMMENT`로 둡니다.
+- **GitHub에 게시** 버튼은 누른 사람 본인의 GitHub 로그인으로, 그 사람으로서
+  리뷰를 게시합니다. 릴리스 게이트가 그 사람의 것이므로 리뷰도 그 사람의 것입니다.
+  뒤에 사람이 없는 게시는 자동화이며 결코 승인하지 않습니다. 이때 Ship은 `COMMENT`로
+  나가고, Control Center Connect에서는 게시물에 `**Control Center** (for @login):`
+  접두사가 붙습니다.
 
 게시는 `prPublish` 액션 클래스를 선언하므로, 가드레일 초크포인트가 다른 모든
 변경 액션과 마찬가지로 이를 게이트합니다. 기본적으로 프롬프트를 띄우고,

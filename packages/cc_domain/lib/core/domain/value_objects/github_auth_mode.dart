@@ -1,25 +1,22 @@
-/// How one workspace authenticates to GitHub for background work.
+/// How one workspace authenticates to GitHub.
 ///
-/// The install-wide GitHub App remains the default. A workspace whose orgs
-/// refused that App picks a different App or a PAT, and background work in
-/// that workspace never silently falls through to the install App.
+/// GitHub is App-only: people act through their own App user token, and
+/// everything else through one-repository tokens minted from an App. There is
+/// no personal-access-token mode.
 enum GithubAuthMode {
-  /// Use this install's GitHub App (the `ProviderAppSettings` identity).
+  /// Use this server's GitHub lane: its own GitHub App when one is fully
+  /// configured, otherwise Control Center Connect.
   inherit,
 
   /// Use a GitHub App configured on this workspace. Missing credentials are
-  /// fail-closed — they do not inherit the install App.
-  app,
-
-  /// Never use any GitHub App. Background work uses a workspace PAT, then the
-  /// server owner's pasted PAT, then the environment.
-  pat;
+  /// fail-closed — they never fall back to the server's lane.
+  app;
 
   /// The value persisted in the database and sent over the wire.
   String get wireName => name;
 
-  /// Parses a stored/wire value; unknown or empty values are [inherit] so a
-  /// workspace predating this field keeps today's behaviour.
+  /// Parses a stored/wire value; anything else (including the deleted
+  /// `pat` mode) is [inherit].
   static GithubAuthMode fromWire(String? value) {
     for (final mode in GithubAuthMode.values) {
       if (mode.name == value) {

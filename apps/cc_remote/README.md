@@ -21,12 +21,13 @@ fvm flutter test --platform chrome --concurrency=2 \
   test/remote_feed_window_test.dart test/remote_locales_test.dart \
   test/rtl_locale_test.dart test/bottom_tabs_test.dart \
   test/agent_transcript_test.dart test/sent_attachments_test.dart \
-  test/push_browser_test.dart test/settings_language_test.dart
+  test/push_browser_test.dart test/settings_language_test.dart \
+  test/personal_connection_card_test.dart
 ```
 
 The filesystem checks in `material_free_test.dart` cannot run on Chrome. Chrome currently ignores the concurrency option; retain the package cap in commands.
 
-Deploy `build/web` to Cloudflare Pages using `wrangler.jsonc` (SPA fallback). HTTPS is required for service workers and IndexedDB. The server-side pairing panel encodes the deployed PWA URL into its QR link. This app imports only web-safe `cc_ui`, `cc_domain`, `cc_rpc` and `cc_data`, never the root `control_center` app, `dart:io` or native plugins. It uses `WidgetsApp.router`, `CcTheme` and go_router, not Material widgets; `lib/app_icons.dart` avoids the large icon class that overflows web DDC.
+Deploy `build/web` to Cloudflare Pages using `wrangler.jsonc` (SPA fallback). HTTPS is required for service workers and IndexedDB. The server-side pairing panel encodes the deployed PWA URL into its QR link. This app imports only web-safe `cc_ui`, `cc_domain`, `cc_rpc`, `cc_data` and `cc_connect_core`, never the root `control_center` app, `dart:io` or native plugins. It uses `WidgetsApp.router`, `CcTheme` and go_router, not Material widgets; `lib/app_icons.dart` avoids the large icon class that overflows web DDC.
 
 Presentation files keep the standard 250-line screen and 300-line widget
 budgets. Adjacent same-library parts hold private rendering, form and action

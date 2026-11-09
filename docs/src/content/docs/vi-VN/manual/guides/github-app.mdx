@@ -1,210 +1,184 @@
 ---
 title: Tạo GitHub App
-description: Đăng ký một GitHub App cho máy chủ của bạn để thành viên có thể đăng nhập, và để công việc nền chạy với tư cách ứng dụng thay vì một con người.
+description: Cấp cho máy chủ của bạn một GitHub App riêng chỉ với một cú nhấp, cài đặt nó ở nơi có kho mã của bạn, và ủy quyền máy chủ cho bản cài đặt của một tổ chức.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Hướng dẫn này cho bạn biết cách cấp cho máy chủ của mình một danh tính GitHub
-riêng. Việc này mất khoảng hai phút, chỉ chủ sở hữu máy chủ thực hiện, và chỉ
-phải làm một lần cho mỗi máy chủ.
+Hướng dẫn này cho bạn biết cách cấp cho máy chủ của mình một GitHub App riêng. Việc
+này mất khoảng hai phút, chỉ chủ sở hữu máy chủ thực hiện, và chỉ phải làm một lần
+cho mỗi máy chủ.
 
 :::note[Bạn có thể không cần đến nó]
-Một bản dựng chính thức đã kèm sẵn **id client** GitHub, nên
-[Đăng nhập với GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/) hoạt
-động ngay mà không cần đăng ký gì — luồng thiết bị chỉ xác thực bằng id client,
-nên việc phát hành nó là an toàn. Hãy đăng ký ứng dụng riêng khi bạn muốn MÁY
-CHỦ hành động với tư cách của chính nó (webhook, thăm dò PR và đồng bộ phiếu
-chạy trên một bản cài ứng dụng thay vì trên thông tin xác thực của một người),
-hoặc khi bạn xây dựng từ mã nguồn.
+Khi đã bật Control Center Connect, mọi người đăng nhập GitHub qua app dùng chung của
+Control Center, hoặc qua app mà Connect của tổ chức bạn dùng. Hãy đăng ký app riêng khi bạn chọn **Dùng ứng dụng của riêng tôi**: app riêng của máy chủ chỉ được dùng khi đó. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
 :::
 
-Để kết nối tài khoản của chính bạn sau đó, xem
+Để đăng nhập vào tài khoản của chính bạn sau đó, xem
 [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
 
-## Vì sao máy chủ của bạn cần ứng dụng riêng
+## Ứng dụng này làm gì
 
-Một lần đăng ký tạo ra hai công việc khác nhau, và chính ứng dụng là thứ khiến cả
-hai trung thực:
+Một lần đăng ký đáp ứng hai công việc khác nhau:
 
 | Công việc | Thứ trả lời nó | Vì sao quan trọng |
 | --- | --- | --- |
-| **Một người đăng nhập** | Id client của ứng dụng, qua luồng thiết bị | Bạn có thông tin xác thực thuộc về mình, trên máy chủ, trên mọi thiết bị — không có mã thông báo nào phải dán hay xoay vòng |
-| **Máy chủ hành động** | Id ứng dụng + khóa riêng → mã thông báo cài đặt | Webhook, thăm dò PR và đồng bộ phiếu không còn phụ thuộc vào việc mã thông báo của một con người vẫn còn hiệu lực |
+| **Một người đăng nhập** | Id client và bí mật client của app | Mọi người có một thông tin xác thực GitHub của riêng mình, trên máy chủ, trên mọi thiết bị |
+| **Máy chủ hành động** | Id app và khóa riêng | Agent, pipeline, các bộ thăm dò và câu trả lời của bot nhận token cho một kho mã tại một thời điểm |
 
-Lưu ý thứ **không** có trong bảng đó: bí mật client. Luồng thiết bị của GitHub
-chỉ xác thực bằng id client — cả yêu cầu mã thiết bị lẫn thăm dò mã thông báo —
-nên không có bí mật nào phải giữ để đăng nhập.
+Công việc thứ hai không bao giờ mượn thông tin xác thực của một người trọn gói. Mỗi
+token mà máy chủ cấp chỉ bao phủ một kho mã và được giới hạn trong những gì một thành
+viên chịu trách nhiệm có thể làm ở đó. Đọc một kho mã đã liên kết chỉ cần app; mọi thao
+tác ghi cần một thành viên có quyền push. Tự động hóa không bao giờ phê duyệt một pull request.
 
-Không có ứng dụng riêng, việc thứ nhất vẫn hoạt động nhờ id client mà bản dựng
-kèm sẵn; việc thứ hai chuyển sang dùng thông tin xác thực của chủ sở hữu máy
-chủ, nên công việc nền dựa vào người thiết lập đầu tiên.
-
-:::note[Không có nút "cài đặt GitHub App của Control Center"]
-Một GitHub App phân phối sẽ đồng nghĩa với một bí mật client dùng chung và một
-bản cài dùng chung trên máy chủ của mọi người, khiến quyền truy cập kho mã của
-mọi không gian làm việc đều đi qua những thông tin xác thực mà không ai trong
-không gian đó kiểm soát. Vì vậy mỗi máy chủ sở hữu ứng dụng riêng — hướng dẫn
-này cho thấy điều đó tốn ít đến mức nào.
-:::
+App riêng của máy chủ chỉ được dùng khi chọn **Dùng ứng dụng của riêng tôi**. Với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả GitHub; app của máy chủ vẫn được lưu nhưng không dùng cho đến khi bạn chuyển lại. App của một không gian làm việc ([Dùng một app khác cho một không gian làm việc](#dùng-một-app-khác-cho-một-không-gian-làm-việc)) vẫn áp dụng ở mọi chế độ. Một app thiếu một số trường là một lỗi, không phải phương án dự phòng: đăng nhập GitHub bị từ chối cho đến khi mọi trường được đặt.
 
 ## Điều kiện tiên quyết
 
-- Bạn là **chủ sở hữu máy chủ** — các thao tác `providerApps.*` chỉ dành cho vai
-  trò đó, và những người khác không nhìn thấy thẻ này
-- Một tài khoản GitHub, hoặc một tổ chức mà bạn có thể tạo ứng dụng trong đó
-- Không cần gì truy cập được từ công khai: đăng nhập dùng **luồng thiết bị**, nên
-  máy chủ không cần cổng vào, tunnel, URL callback hay tên miền nào
+- Bạn là **chủ sở hữu máy chủ**. Thẻ **Ứng dụng nhà cung cấp** không hiển thị với những người khác
+- Một tài khoản GitHub. App được tạo dưới tài khoản đó
+- Một địa chỉ máy chủ mà trình duyệt của bạn truy cập được. Địa chỉ công khai của máy
+  chủ (hoặc loopback, với máy chủ riêng của máy tính để bàn) là nơi GitHub đưa bạn quay về
 
-## Đăng ký ứng dụng
+## Tạo chỉ với một cú nhấp
 
-1. Mở [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (với tổ chức: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — gì cũng được; `Control Center (yourname)` là ổn. Tên này
-   hiện trên các commit và bình luận mà máy chủ tạo
-3. **Homepage URL** — gì cũng được, ví dụ `https://github.com/your-name`
-4. **Callback URL** — để trống. Luồng thiết bị không dùng nó
-5. Tích **Enable Device Flow**. Đây là thiết lập duy nhất mà đăng nhập không thể
-   hoạt động nếu thiếu
-6. Bỏ tích **Webhook → Active** trừ khi bạn nối webhook riêng
-7. Trong **Repository permissions**, cấp ít nhất:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (bắt buộc)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, nếu bạn dùng GitHub Issues cho phiếu, và cho
-     việc bot tìm bình luận trong hội thoại PR
-     (xem [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/))
-   - **Checks**: Read-only, để hiển thị trạng thái CI trên trang PR
-8. Trong **Where can this GitHub App be installed?**, chọn cái nào phù hợp —
-   "Only on this account" là đúng cho máy chủ cá nhân
-9. Nhấn **Create GitHub App**
+1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ **Ứng dụng nhà cung cấp**
+2. Trên khối **GitHub**, tùy chọn gõ tên tổ chức GitHub sẽ sở hữu app vào
+   **Tổ chức (tùy chọn)**. Để trống để tạo app dưới tài khoản của bạn; tạo dưới một tổ
+   chức cần là chủ sở hữu của tổ chức đó
+3. Nhấn **Tạo ứng dụng GitHub của tôi**
+4. Trình duyệt của bạn mở GitHub với app đã được điền sẵn. Nhấn **Create GitHub App**
+5. GitHub đưa bạn quay về máy chủ, máy chủ lưu id app, khóa riêng, id client và bí mật
+   client, rồi mở trang cài đặt của app
 
-## Thu thập ba giá trị
+Không có gì được sao chép bằng tay, và mã chuyển đổi đi thẳng từ GitHub tới máy chủ
+của bạn. Liên kết chỉ dùng được một lần và hết hạn sau mười phút; nếu hết hạn, hãy nhấn
+**Tạo ứng dụng GitHub của tôi** lần nữa.
 
-Trên trang của ứng dụng, ngay sau khi tạo:
+App được đặt tên `Control Center <code>` và chỉ yêu cầu đúng những gì Control Center dùng:
 
-| Giá trị | Ở đâu |
-| --- | --- |
-| **App ID** | Tab **General**, gần phía trên |
-| **Client ID** | Tab **General**, dưới "Client secrets" |
-| **Private key** | **Generate a private key** — một tệp `.pem` được tải xuống |
+| Quyền                                      | Truy cập       |
+| ------------------------------------------ | -------------- |
+| Metadata                                   | Chỉ đọc        |
+| Contents                                   | Đọc và ghi     |
+| Pull requests                              | Đọc và ghi     |
+| Issues                                     | Đọc và ghi     |
+| Checks, Actions, Commit statuses           | Chỉ đọc        |
+| Organization members                       | Chỉ đọc        |
 
-Tệp khóa riêng chỉ tải xuống một lần và GitHub không bao giờ hiển thị lại. Hãy
-giữ nó cho đến khi bạn đã dán; bạn luôn có thể tạo một cái khác.
+Webhook đều tắt: máy chủ thăm dò. Để chuyển app bạn đã tạo dưới tài khoản của mình sang
+một tổ chức về sau, hãy dùng **Transfer ownership** trong phần cài đặt nâng cao của app
+trên GitHub.
 
-**Bí mật client** là tùy chọn và chỉ mang lại đúng một thứ: nếu bạn để "Expire
-user authorization tokens" BẬT, nó là thứ âm thầm gia hạn mã thông báo của một
-người thay vì yêu cầu họ đăng nhập lại sau mỗi tám giờ. Bản thân việc đăng nhập
-không bao giờ dùng nó.
+Điểm kiểm tra: khối GitHub hiển thị "Máy chủ có thể hành động với tư cách của chính nó,
+và mọi người có thể đăng nhập".
 
-Thiết lập đơn giản hơn là TẮT thời hạn đó, và khi đó không cần bí mật nào ở đâu
-cả. Nếu bạn giữ nó bật, hãy tạo một bí mật và dán vào
-**Cài đặt → Máy chủ → Đăng nhập một lần** (thẻ **Ứng dụng nhà cung cấp**) — không có biến môi trường nào cho
-nó, và cũng không có biến nào được nhúng vào bản dựng, nên nó ở lại trên máy chủ
-của bạn.
+## Cài đặt ở nơi có kho mã của bạn
 
-## Cài đặt nó trên tài khoản của bạn
-
-Một ứng dụng đã đăng ký nhưng chưa cài đặt có thể xác thực người dùng và không
+Một ứng dụng đã đăng ký nhưng chưa cài đặt thì có thể đăng nhập người dùng nhưng không
 đọc được gì.
 
-1. Trên trang của ứng dụng, mở **Install App**
-2. Cài đặt nó trên tài khoản hoặc tổ chức của bạn
-3. Chọn **All repositories**, hoặc chọn những kho mã mà máy chủ này nên thấy
+1. Chọn tài khoản hoặc tổ chức sở hữu các kho mã của bạn trên trang cài đặt mà GitHub đã mở
+2. Chọn **All repositories**, hoặc chọn những kho mã mà máy chủ này nên thấy
 
-## Dán nó vào Control Center
+Để cài đặt trên một tài khoản khác về sau, một quản trị viên không gian làm việc vào
+**Cài đặt → Không gian làm việc → Chung**, tìm **Các bản cài đặt ứng dụng GitHub** trên
+thẻ danh tính GitHub và nhấn **Cài ứng dụng GitHub**. Danh sách hiển thị mọi tài khoản mà
+app đã được cài đặt và đánh dấu một bản cài đặt bị tạm ngưng.
 
-1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
-   **Ứng dụng nhà cung cấp**
-2. Trên khối **GitHub**, đặt từng trường:
-   - **Id ứng dụng** — App ID dạng số
-   - **Khóa riêng** — dán toàn bộ tệp `.pem`, kể cả các dòng `BEGIN` và `END`
-   - **Id client** — từ cùng trang đó
-   - **Bí mật client** — chỉ khi bạn đã tạo một cái (để gia hạn mã thông báo)
-3. Nhấn **Kiểm thử**
+## Ủy quyền máy chủ này cho một tổ chức
 
-Khóa được phân tích ngay khi lưu, nên một lần dán bị cắt cụt hay sai định dạng
-sẽ bị từ chối ngay tại đó thay vì thất bại trên một yêu cầu nền hàng giờ sau.
-**Kiểm thử** đi xa hơn và hỏi GitHub xem ứng dụng đã được cài trên những tài
-khoản nào — "đã lưu" và "hoạt động" là hai khẳng định khác nhau, và chỉ khẳng
-định thứ hai mới có nghĩa là sẽ có gì đó chạy.
+Trên app dùng chung của Control Center, bản cài đặt của một tổ chức chỉ phục vụ những
+máy chủ mà quản trị viên của nó đã ủy quyền. Cài đặt qua **Cài ứng dụng GitHub** sẽ ủy
+quyền máy chủ đã khởi chạy nó. Với một bản cài đặt đã tồn tại:
 
-Điểm kiểm tra: khối GitHub hiển thị "Máy chủ có thể hành động với tư cách của
-chính nó, và mọi người có thể đăng nhập.", và hàng **GitHub** trong
-**Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** giờ đây có
-**Đăng nhập với GitHub**.
+1. Một quản trị viên của tổ chức đó đăng nhập GitHub trên máy chủ này
+2. Họ mở **Cài đặt → Không gian làm việc → Chung → Các bản cài đặt ứng dụng GitHub**
+3. Hàng của tổ chức ghi **Chưa được ủy quyền**. Họ nhấn **Ủy quyền máy chủ này**
 
-## Cấu hình bằng biến môi trường thay thế
+Hàng đó sau đó ghi **Đã ủy quyền**. App riêng của bạn không cần điều này: mọi bản cài
+đặt của nó đều thuộc về máy chủ của bạn.
 
-Với bản cài không giao diện hoặc chạy bằng script, máy chủ nạp mỗi trường từ môi
-trường trong lần đầu nó không có giá trị nào được lưu:
+## Đăng ký bằng tay thay thế
+
+Thẻ **Ứng dụng nhà cung cấp** cũng nhận các giá trị trực tiếp, cho một app mà bạn tự đăng ký:
+
+| Nhóm                         | Các trường                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Hành động thay máy chủ**   | **Id ứng dụng**, và **Khóa riêng** (toàn bộ `.pem`, kể cả các dòng `BEGIN` và `END`)            |
+| **Đăng nhập người dùng**     | **Id client** và **Bí mật client**. **URL callback** hiển thị URL cần đăng ký, nguyên văn       |
+| **Hội thoại PR**             | **Tên đăng nhập bot**, được phân giải khi bạn kiểm thử kết nối                                  |
+
+Đăng ký URL callback `<server origin>/oauth/github/callback` đúng như thẻ hiển thị, để
+**Expire user authorization tokens** bật, và cấp các quyền trong bảng trên. Nhấn
+**Kiểm thử**: nó hỏi GitHub xem app đã được cài trên những tài khoản nào, nên "đã lưu" và
+"hoạt động" không bị nhầm lẫn.
+
+## Cấu hình từ `.env` của máy chủ
+
+Với bản cài đặt không giao diện hoặc chạy bằng script, máy chủ nạp mỗi trường từ tệp
+`.env` của nó trong lần đầu nó không có giá trị nào được lưu:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Không có cờ dòng lệnh nào cho những giá trị này — một bí mật trên dòng lệnh thì
-mọi tiến trình trên máy chủ đều đọc được qua `ps`. Môi trường là nơi duy nhất để
-cấu hình chúng, và nó thắng bất kể thứ gì bản dựng kèm theo.
-`.env.template` là danh sách đầy đủ.
-
-Khi phát triển cục bộ, tệp `.env` ở gốc kho mã mang cùng các giá trị đó và ứng
-dụng desktop truyền chúng cho máy chủ mà nó khởi chạy. Hãy đặt khóa trên **một
-dòng** ở đó: một giá trị `.env` là một dòng, và `\n` bên trong dấu ngoặc kép được
-giải mã thành ký tự xuống dòng.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` và `GITHUB_APP_PRIVATE_KEY` là cùng những tên mà trình môi giới
-mã thông báo của sandbox vốn đã đọc, nên một máy chủ đã cấu hình mã thông báo
-agent chi tiết sẽ có sẵn làn đăng nhập. Việc nạp diễn ra **một lần cho mỗi
-trường** — sau đó giá trị đã lưu thắng, nên chỉnh sửa trong Cài đặt không bị lần
-khởi động lại kế tiếp hoàn tác.
+Hãy đặt khóa trên **một dòng**: một giá trị `.env` là một dòng, và `\n` bên trong dấu
+ngoặc kép được giải mã thành ký tự xuống dòng. Máy chủ từ chối khởi động khi
+`GITHUB_APP_PRIVATE_KEY` hoặc `GITHUB_CLIENT_SECRET` được export trong môi trường tiến
+trình của nó, nơi mọi tiến trình con đều có thể đọc được; hãy giữ chúng trong tệp `.env`
+(trong Docker, gắn nó tại `/app/bin/.env`). Việc nạp diễn ra **một lần cho mỗi trường**,
+nên việc chỉnh sửa trong Cài đặt không bị lần khởi động lại kế tiếp hoàn tác.
 
-## Làm điều tương tự với Linear
+## Dùng một app khác cho một không gian làm việc
 
-Linear không có luồng thiết bị, nên đăng nhập của nó là một vòng qua trình duyệt
-và nó thực sự cần URL callback — thẻ **Ứng dụng nhà cung cấp** cho bạn thấy chính
-xác URL cần đăng ký.
+Một không gian làm việc có thể dùng một app riêng thay vì app của máy chủ. Một quản trị
+viên không gian làm việc vào **Cài đặt → Không gian làm việc → Chung**, chọn **Dùng một
+GitHub App khác** trên thẻ **Danh tính GitHub** và nhập id, khóa riêng, id client và bí
+mật client của app đó. Thành viên khi đó đăng nhập vào app đó cho không gian làm việc
+này. Một không gian làm việc dùng app riêng không bao giờ rơi về app của máy chủ hay về
+Connect: cho đến khi các trường của nó đầy đủ, công việc GitHub của nó bị từ chối. Điều này áp dụng bất kể máy chủ đăng nhập người dùng bằng cách nào, kể cả qua Connect.
 
-1. Tạo một ứng dụng OAuth tại
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Đặt **Callback URL** bằng URL mà thẻ hiển thị, nguyên văn
-3. Dán **Client ID** và **Client secret** vào khối Linear
-4. Tùy chọn thêm một **khóa API** của không gian làm việc — đó là thông tin xác
-   thực mà máy chủ dùng để đồng bộ phiếu khi không có con người yêu cầu
+Thẻ **Ứng dụng nhà cung cấp** trên cùng trang làm điều tương tự cho Google Calendar, Linear và tìm GIF. Xem [Cấp cho một không gian làm việc ứng dụng Linear riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/#cấp-cho-một-không-gian-làm-việc-ứng-dụng-linear-riêng) và [Cấp cho một không gian làm việc client Google riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/#cấp-cho-một-không-gian-làm-việc-client-google-riêng).
 
 ## Xử lý sự cố
 
-### Hộp thoại đăng nhập báo nhà cung cấp không trả về mã thiết bị
+### Tạo ứng dụng GitHub của tôi báo máy chủ không có địa chỉ
 
-**Enable Device Flow** đang tắt trên ứng dụng. Hãy bật nó trong **General** rồi
-thử lại.
+Máy chủ không có URL công khai nào để trình duyệt quay về. Hãy đặt `CC_SERVER_PUBLIC_URL`
+(hoặc `--public-url`) rồi thử lại.
 
-### Kiểm thử báo thông tin xác thực hoạt động nhưng ứng dụng không được cài ở đâu cả
+### GitHub báo liên kết đã hết hạn
 
-Đăng ký và cài đặt là hai bước riêng biệt. Mở **Install App** trên trang của ứng
-dụng rồi cài đặt nó.
+Trang dùng một lần đã được sử dụng, hoặc đã qua mười phút. Hãy bắt đầu lại từ Cài đặt.
+
+### Kiểm thử báo thông tin xác thực hoạt động nhưng ứng dụng chưa được cài ở đâu cả
+
+Đăng ký và cài đặt là hai bước riêng biệt. Mở trang cài đặt của app, hoặc dùng
+**Cài ứng dụng GitHub** trong Không gian làm việc → Chung.
 
 ### Kiểm thử báo không đọc được khóa riêng
 
-Hãy dán toàn bộ tệp `.pem`, kể cả các dòng `-----BEGIN` và `-----END`. Không thể
-dùng khóa `ed25519` hay EC — GitHub App ký bằng RSA.
+Hãy dán toàn bộ tệp `.pem`, kể cả các dòng `-----BEGIN` và `-----END`. Không thể dùng
+khóa `ed25519` hay EC: GitHub App ký bằng RSA.
 
 ### Một thành viên đã đăng nhập nhưng không thấy kho mã nào
 
-Ứng dụng chưa được cài trên tài khoản sở hữu chúng, hoặc bản cài của nó chọn
-những kho mã khác. Việc đăng nhập của chính họ chỉ cấp những gì ứng dụng được
-phép thấy.
+Ứng dụng chưa được cài trên tài khoản sở hữu chúng, hoặc bản cài đặt của nó chọn những
+kho mã khác. Một lần đăng nhập chỉ cấp những gì app được phép thấy.
+
+### Agent báo bản cài đặt GitHub App đã bị tạm ngưng
+
+Ai đó đã tạm ngưng bản cài đặt trên GitHub. Hãy bỏ tạm ngưng trong **Settings →
+Applications → Installed GitHub Apps** của tài khoản.
 
 ## Hướng dẫn liên quan
 
 - [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
 - [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/)
 - [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
+- [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/)
 - [Quản lý khóa API](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
-- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)

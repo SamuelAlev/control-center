@@ -1,11 +1,11 @@
 ---
 title: Sett opp Slack-integrasjon
-description: Koble en Slack-app til et Control Center-arbeidsområde, slik at medlemmer kan styre agenter fra Slack.
+description: Koble Slack til et Control Center-arbeidsområde, via den delte Control Center-appen eller en egen app, slik at medlemmer kan styre agenter fra Slack.
 slug: nb-NO/handbok/slik-gjor-du/slack-integrasjon
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Denne guiden viser deg hvordan du kobler Slack til et Control Center-arbeidsområde, enten ved å la Control Center opprette appen eller ved å bygge den selv.
+Denne guiden viser deg hvordan du kobler Slack til et Control Center-arbeidsområde: ved å legge til den delte Control Center-appen, eller med en egen app som Control Center oppretter for deg eller som du bygger selv.
 
 For en veiledet første gjennomkjøring, se [Koble Slack til arbeidsområdet ditt](/nb-NO/handbok/veiledninger/forste-chatbro/).
 
@@ -19,9 +19,37 @@ ingen Discord-, Telegram-, Teams- eller Matrix-implementasjon.
 
 - Rollen `owner` eller `admin` i Control Center-arbeidsområdet — å koble til en chatapp er en endring i arbeidsområdeinnstillingene
 - Tillatelse til å opprette og installere apper i Slack-arbeidsområdet
-- Ingenting som må være offentlig tilgjengelig: tilkoblingen går utgående (Socket Mode), så serveren trenger ingen innkommende port, tunnel eller domene
+- Ingenting som må være offentlig tilgjengelig: din egen app kobler seg utover via Socket Mode, og hendelsene til den delte appen når serveren gjennom en long poll mot Control Center Connect, så serveren trenger ingen innkommende port, tunnel eller domene
 
-## Tre måter å skaffe appen på
+## Delt app eller din egen
+
+Et arbeidsområde kjører på nøyaktig én av disse om gangen.
+
+| Modus                          | Krever                                                                                                       | Du får                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| **Delt Control Center-app**    | Serveren bruker Control Center Connect (**Innstillinger → Server → Enkel pålogging**), og Connect betjener Slack | Ett klikk og en Slack-pålogging. Ingen app å opprette, ikke noe token å lime inn, ingenting å rotere |
+| **Din egen app**               | En Slack-app i Slack-arbeidsområdet ditt, laget på en av de tre måtene nedenfor                              | Ditt eget botnavn, egne beskrivelser og egen skråstrekkommando, redigerbare fra Control Center |
+
+### Legg til den delte Control Center-appen
+
+1. I Control Center går du til **Innstillinger → Arbeidsområde → Generelt** og ruller ned til kortet **Chat-broer**
+2. Finn raden **Legg til Control Center i Slack** i Slack-blokken og klikk på **Legg til i Slack**
+3. Nettleseren åpner Slack. Logg inn med Slack, velg Slack-arbeidsområdet og godkjenn installasjonen
+4. Når nettleseren viser en kode, skriver du den inn i dialogen Control Center lot stå åpen. Hvis nettleseren sender deg tilbake til appen av seg selv, er det ingenting å skrive
+5. Et varsel navngir Slack-arbeidsområdet appen ble lagt til i, og Slack-blokken viser at tilkoblingen kjører på den delte Control Center-appen
+
+Bare en administrator i arbeidsområdet kan legge til appen. Raden sier hvorfor den ikke kan starte når serveren bruker sine egne apper i stedet for Connect, når Connect-en din ikke har noen Slack-app, eller når dette arbeidsområdet allerede har koblet til en egen Slack-app.
+
+Slik skiller den seg fra din egen app:
+
+- Slack sender hendelsene til den delte appen til Connect. Connect beholder bare en referanse (team, kanal og meldings-ID) og forkaster meldingsteksten; serveren gjør long polling mot Connect etter referanser og leser hver melding fra Slack selv. Teksten i en skråstrekkommando går derimot gjennom Connect, og derfor lager [`/cc ticket`](#lag-sakutkast-fra-slack) bare et utkast
+- Bot-tokenet forsegles for denne serveren og fornyes via Connect, så det finnes ikke noe token å lime inn eller rotere
+- Botens navn, beskrivelser og skråstrekkommando er den delte appens. Slack-raden sier at tilkoblingen kjører på den delte appen, og tilbyr ingen **Tilpass bot**
+- Et Slack-arbeidsområde er bundet til én Control Center-server om gangen. Å legge til appen fra en annen server flytter den dit, og denne serverens tilkobling stopper
+
+For å bytte modus kobler du fra og kobler til på den andre måten.
+
+### Din egen app: tre måter å skaffe den på
 
 | Vei                 | Du skaffer                                        | Control Center gjør                                                                                                                    |
 | ------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +59,7 @@ ingen Discord-, Telegram-, Teams- eller Matrix-implementasjon.
 
 Den veiledede veien er den eneste som også gjør appen _administrerbar_ fra Control Center, og det er dette som muliggjør [Tilpass chatboten](/nb-NO/handbok/slik-gjor-du/tilpass-chatbot/). En app opprettet med **Opprett i Slack** kan senere forfremmes til en administrert app ved å lime inn et konfigurasjonstoken i kobledialogen.
 
-Det finnes bevisst ingen «installer Control Centers Slack-app»-knapp. Å installere en distribuert Slack-app krever en delt klienthemmelighet (Slack har ingen PKCE), og Socket Mode fordeler en apps hendelser tilfeldig på tvers av tilkoblingene — så én delt app ville levert arbeidsområdets meldinger til andre folks servere. Hvert arbeidsområde eier derfor sin egen app, og disse tre veiene handler om hvor lite arbeid det koster deg.
+Hendelsene til din egen app går aldri gjennom Connect: Socket Mode leverer dem rett til denne serveren.
 
 ## Alternativ A: la Control Center opprette appen
 
@@ -102,6 +130,8 @@ message.im
 
 ## Koble til
 
+Slik når tokenene til din egen app Control Center. Den delte appen trenger ingenting av dette.
+
 1. Gå til **Innstillinger → Arbeidsområde → Generelt** og rull ned til kortet **Chat-broer**
 2. I Slack-blokken klikker du på **Koble til Slack**
 3. Fyll inn feltene:
@@ -123,8 +153,8 @@ Uten det valgfrie appkonfigurasjonstokenet fungerer tilkoblingen fint — du kan
 
 ## Hva tilkoblingen gjør
 
-- Lagrer legitimasjonen i arbeidsområdets egen katalog, ved siden av databasen, kun lesbar for eieren. Den går aldri tilbake til en klient
-- Åpner én Socket Mode-tilkobling for dette arbeidsområdet og begynner å motta omtaler, Slack-trådsvar, direktemeldinger og skråstrekkommandoer
+- Lagrer legitimasjonen i arbeidsområdets egen katalog, ved siden av databasen, kun lesbar for eieren. Den går aldri tilbake til en klient. For den delte appen er det den forseglede tillatelsen; det kortlivede bot-tokenet den fornyes til, blir værende i minnet
+- Begynner å motta omtaler, Slack-trådsvar, direktemeldinger og skråstrekkommandoer: over én Socket Mode-tilkobling for din egen app, eller gjennom serverens ene long poll mot Connect for den delte appen
 - Aktiverer på nytt hver Slack-tråd som ble broet tidligere, slik at en gjentilkobling fortsetter eksisterende samtaler i stedet for å strande dem
 - Koster ingenting for arbeidsområder som ikke har noen chatapp: ingen socket, ingen timere, ingen trafikk
 
@@ -140,8 +170,8 @@ nytt der.
 
 Tilgang til broen er arbeidsområde-**medlemskap**, aldri besittelse av et token.
 En Slack-konto må være knyttet til en Control Center-bruker som er medlem med en
-skriverolle. Koble til, koble fra, veiledet oppsett, oppsettslenken og
-tilpasning av boten er alle admin-styrt.
+skriverolle. Koble til, koble fra, installasjonen av den delte appen,
+veiledet oppsett, oppsettslenken og tilpasning av boten er alle admin-styrt.
 :::
 
 ## Verifiser
@@ -164,7 +194,25 @@ Resonnering som en vegg av tekst og verktøyutdata forlater aldri Control Center
 
 Hvis ingenting skjer når du klikker på den, er serveren som sendte meldingen, ikke tilgjengelig fra maskinen du klikket fra (for eksempel en server som bare lytter på loopback, klikket fra en telefon), eller så kjører ikke Control Center der. En server uten en tilgjengelig adresse sender et kort uten knapp i stedet for en som ikke fører noe sted.
 
+## Lag sakutkast fra Slack
+
+Ethvert koblet medlem med en skriverolle kan foreslå en sak fra Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+Teksten før `|` er tittelen, teksten etter er beskrivelsen. Boten svarer at den har laget et utkast til saken. Ingenting opprettes ennå, og ingen saksautomatisering utløses: utkastet venter på deg under **Innstillinger → Arbeidsområde → Profil og identitet → Sakutkast fra chat**, der du kan rette tittelen og beskrivelsen og deretter klikke på **Opprett sak** eller **Forkast**.
+
+- Bare medlemmet som kjørte kommandoen, ser utkastet
+- Et utkast du lar ligge, forkastes etter et døgn. Utkast ligger i minnet, så en omstart av serveren forkaster dem også
+- Kortet vises bare mens du har utkast
+
+Teksten i en kommando kan ikke leses på nytt fra Slack, og på den delte appen har den gått gjennom Connect. Det er når du oppretter saken i Control Center, at den blir din.
+
 ## Roter et token
+
+Dette gjelder din egen app. Den delte appen har ikke noe token å rotere.
 
 Lim inn den nye verdien på nytt i kobledialogen og klikk på **Koble til**. En tilkobling erstatter uansett hvilken tilkobling som kjørte for dette arbeidsområdet, så socketen ringes opp på nytt med den nye legitimasjonen.
 
@@ -172,7 +220,7 @@ De to påkrevde tokenene må være til stede ved hver tilkobling. Det valgfrie a
 
 ## Koble fra
 
-Klikk på **Koble fra** i Slack-raden (bare for admin). Socketen lukkes, og legitimasjonen glemmes.
+Klikk på **Koble fra** i Slack-raden (bare for admin). Tilkoblingen lukkes, og legitimasjonen glemmes. For den delte appen avinstallerer Control Center også boten fra Slack-arbeidsområdet og frigjør bindingen til denne serveren.
 
 Koblinger for områder og brukere overlever med vilje: å koble den samme appen til på nytt gjenoppretter hver broet Slack-tråd. De er rader knyttet til arbeidsområdet, så å slette arbeidsområdet fjerner dem uansett.
 
@@ -209,7 +257,7 @@ Slacks oppgavekort er en del av den samme nye Agents & AI Apps-flaten som strøm
 
 ### «Control Center trenger et appkonfigurasjonstoken for å redigere boten»
 
-Raden **Tilpass bot** er deaktivert fordi tilkoblingen ikke har noe appkonfigurasjonstoken. Dette er forventet for en app som er laget for hånd eller gjennom **Opprett i Slack** — Slack fortalte aldri Control Center hvilken app det er. Generer et tokenpar på api.slack.com/apps og koble til på nytt med oppdateringstokenet utfylt.
+Raden **Tilpass bot** er deaktivert fordi tilkoblingen ikke har noe appkonfigurasjonstoken. (På den delte appen finnes det ingen **Tilpass bot**-rad i det hele tatt: boten er den delte appens.) Dette er forventet for en app som er laget for hånd eller gjennom **Opprett i Slack** — Slack fortalte aldri Control Center hvilken app det er. Generer et tokenpar på api.slack.com/apps og koble til på nytt med oppdateringstokenet utfylt.
 
 ### Et langt svar blir avkortet
 

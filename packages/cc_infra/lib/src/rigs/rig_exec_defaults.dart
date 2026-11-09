@@ -4,7 +4,7 @@ import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
     show ForgeRemote, parseForgeRemote;
 import 'package:cc_domain/features/sandboxing/domain/network_baseline.dart'
     show kBaselineAllowedDomains;
-import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
+import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 
 /// What a terminal (exec) rig may reach, and the repo its credentials scope to.
 ///
@@ -50,8 +50,7 @@ Future<ForgeRemote?> detectWorktreeForge(String path) async {
     return null;
   }
   try {
-    final result = await Process.run(
-      'git',
+    final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs(['-C', path, 'remote', 'get-url', 'origin']),
     );
     if (result.exitCode != 0) {

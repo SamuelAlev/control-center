@@ -2,7 +2,7 @@
 title: Telepítés és kliensek
 description: Hogyan választja szét a Control Center vékonykliens-architektúrája a headless szervert az asztali, webes és mobil klienseitől.
 slug: hu-HU/kezikonyv/fogalmak/telepites
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 A Control Center nem egyetlen program. **Vékonykliens-architektúra**: egy
@@ -209,7 +209,7 @@ egy valódi `cc_worker` hajt végre lízingelt feladatokat.
 | Ügynökvégrehajtás                                     | végrehajtja (vagy lízingbe adja) | lízingelt feladatokat hajt végre | —              | —                                              |
 | Felület renderelése                                   | —                                | —                                | teljes         | teljes (web) / túlnyomórészt olvasás (telefon) |
 | Megbeszélés rögzítése (mikrofon + megbeszélés hangja) | —                                | —                                | natív rögzítés | csak weben, képmegosztás hangján keresztül     |
-| Naptár OAuth (Google)                                 | tokeneket tárol                  | —                                | —              | —                                              |
+| Szolgáltatói bejelentkezések (GitHub, Google, Linear) | futtatja és tárolja őket         | —                                | —              | —                                              |
 
 A két szint homokozása nem egyforma. A `cc_server` az általa maga végrehajtott
 futásokat a gazdagép operációs rendszerének homokozójába csomagolja, ahol van
@@ -223,6 +223,14 @@ homokozón kívülre viszi a végrehajtást, ha a gazdagépen van homokozó. Hog
 szab határt egy futásnak az egyes esetekben, azt lásd a
 [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
 oldalon.
+
+A szolgáltatói bejelentkezések a szerveren fejeződnek be, a saját alkalmazásain
+vagy a [Control Center Connecten](/hu-HU/kezikonyv/referencia/connect/)
+keresztül. Ez utóbbi egy opcionális szolgáltatás, amely a szolgáltatói OAuth-ot
+futtatja a saját alkalmazással nem rendelkező szerverek számára. A Connect olyan
+hitelesítő adatot ad vissza, amelyet csak ez a szerver használhat, és soha nem
+látja a repók tartalmát. A kliensek csak megnyitják a böngészőt, és Connect-es
+bejelentkezésnél visszaadják az általa mutatott kódot.
 
 A megbeszélés rögzítése egy kliensen történik, mert mikrofonra és a megbeszélés
 hangjára van szükség — egy szekrényben álló szerver nem tudja rögzíteni az Ön

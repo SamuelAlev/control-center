@@ -1155,6 +1155,99 @@ class AppLocalizationsCs extends AppLocalizations {
   String get calendarRsvpFailed => 'Odpověď se nepodařilo aktualizovat';
 
   @override
+  String get calendarNewEvent => 'Nová událost';
+
+  @override
+  String get calendarComposerTitleHint => 'Přidejte název';
+
+  @override
+  String get calendarComposerStarts => 'Začátek';
+
+  @override
+  String get calendarComposerEnds => 'Konec';
+
+  @override
+  String get calendarComposerDate => 'Datum';
+
+  @override
+  String get calendarComposerEndDate => 'Poslední den';
+
+  @override
+  String get calendarComposerGuestsHint => 'Přidejte hosty e-mailem';
+
+  @override
+  String get calendarComposerMeet => 'Přidat odkaz Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Přidejte místo';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Přidejte popis';
+
+  @override
+  String get calendarComposerCalendar => 'Kalendář';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Pro uložení události přidejte název';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'Jedna z e-mailových adres hostů není platná';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'Událost musí skončit až po svém začátku';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Událost se nepodařilo vytvořit. Zkuste to znovu.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Hosté dostanou e-mailovou pozvánku od Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Smazat událost';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Smazat „$title“?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Bude odstraněna z Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Bude odstraněna z Google Calendar a všichni hosté budou informováni, že byla zrušena.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Bude odstraněna jen z vašeho kalendáře. Organizátor a ostatní hosté ji zachovají.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Smaže se jen tento výskyt; zbytek série zůstane.';
+
+  @override
+  String get calendarDeleteFailed =>
+      'Událost se nepodařilo smazat. Zkuste to znovu.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Událost se nepodařilo přesunout. Vrátila se na původní místo.';
+
+  @override
+  String get activityCreatedCalendarEvent => 'Vytvořil(a) událost v kalendáři';
+
+  @override
+  String get activityMovedCalendarEvent => 'Přesunul(a) událost v kalendáři';
+
+  @override
+  String get activityDeletedCalendarEvent => 'Smazal(a) událost v kalendáři';
+
+  @override
   String get calendarAddAccount => 'Přidat účet kalendáře';
 
   @override
@@ -1165,9 +1258,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Propojte účet Google a synchronizujte události do tohoto workspace. Tyto kalendáře jsou tady vaše.';
 
   @override
-  String get calendarConnecting => 'Připojování…';
-
-  @override
   String get calendarSyncNow => 'Synchronizovat teď';
 
   @override
@@ -1176,33 +1266,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Google Calendar se nepodařilo připojit';
-
-  @override
-  String get calendarClientIdLabel => 'Client ID';
-
-  @override
-  String get calendarClientSecretLabel => 'Client secret';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Zadejte Google OAuth device-code client ID a secret svého projektu. Připojení a synchronizaci provádí server — prohlížeč tokeny nikdy nedrží.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Otevřete ověřovací stránku na libovolném zařízení, přihlaste se a zadejte tento kód:';
-
-  @override
-  String get calendarConnectOpenPage => 'Otevřít ověřovací stránku';
-
-  @override
-  String get calendarConnectWaiting => 'Čeká se na schválení…';
-
-  @override
-  String get calendarConnectDenied =>
-      'Autorizace byla odmítnuta. Zkuste to znovu.';
-
-  @override
-  String get calendarConnectExpired => 'Kód vypršel. Zkuste to znovu.';
 
   @override
   String get notificationMeetingStartsSoon => 'Schůzka brzy začíná';
@@ -2430,9 +2493,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Změněn přístup člena k repozitáři';
 
   @override
-  String get activityUpdatedGitHubToken => 'Aktualizován token GitHub';
-
-  @override
   String get activityRefreshedWeather => 'Obnovena předpověď počasí';
 
   @override
@@ -2469,9 +2529,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get activityRespondedToInvitation =>
       'Odpovězeno na pozvánku k události';
-
-  @override
-  String get activityStartedCalendarConnect => 'Zahájeno připojení kalendáře';
 
   @override
   String get activityDisconnectedCalendar => 'Kalendář odpojen';
@@ -4795,7 +4852,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get searchGifs => 'Hledat GIF';
 
   @override
-  String get searchGifsHint => 'Hledat GIF…';
+  String get searchGifsHint => 'Hledat v KLIPY';
 
   @override
   String get searchInDiffHint => 'Hledat v diffu…';
@@ -5281,9 +5338,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get unnamedAgent => 'Nepojmenovaný agent';
-
-  @override
-  String get updateKey => 'Aktualizovat klíč';
 
   @override
   String get updateLabel => 'Aktualizovat';
@@ -6353,7 +6407,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Běží přes bash -c. GITHUB_TOKEN je nastaven. Zástupné znaky se nahradí před spuštěním.';
+      'Běží přes bash -c v sandboxu operačního systému. GH_TOKEN a GITHUB_TOKEN obsahují token jen pro čtení k propojenému repozitáři. Zástupné znaky se před spuštěním vloží do uvozovek a nahradí.';
 
   @override
   String get nodeConfigRouteKeys => 'Klíče trasy';
@@ -7025,7 +7079,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Přihlaste se na GitHub nebo přidejte token v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
+      'Přihlaste se na GitHub v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -12059,7 +12113,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Zmiňte bota v $provider a nasaďte agenta na něco, nebo zakládejte tickety příkazem $command.';
+    return 'Zmiňte bota v $provider a nasaďte agenta na něco, nebo navrhujte tickety příkazem $command.';
   }
 
   @override
@@ -12146,7 +12200,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Pošlete tento příkaz botovi v $provider. Funguje jednou a vyprší za 15 minut.';
+    return 'Pošlete tento kód botovi $provider v přímé zprávě. Funguje jednou a vyprší za 15 minut.';
   }
 
   @override
@@ -12314,20 +12368,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → zkopírujte OAuth token uživatelského bota.';
-
-  @override
-  String get calendarUseBuiltinApp => 'Použít Google aplikaci Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Schvalte účtem Google. V Google Cloud není co nastavovat.';
-
-  @override
-  String get calendarUseOwnClient => 'Použít vlastní klienta Google Cloud';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Zadejte OAuth klienta z vlastního projektu Google Cloud.';
 
   @override
   String get aboutTitle => 'O aplikaci';
@@ -13026,18 +13066,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get signInAgain => 'Přihlásit se znovu';
 
   @override
-  String get signInNotFinished =>
-      'Přihlášení se ještě nevrátilo. Dokončete ho v prohlížeči a zkontrolujte znovu.';
+  String get forgeSignInBannerTitle =>
+      'Hostování kódu není v tomto pracovním prostoru připojeno';
 
   @override
-  String get signedOutTitle => 'Jste odhlášeni';
+  String get forgeSignInBannerBody =>
+      'Přihlášení vypršelo nebo bylo odvoláno, případně tento pracovní prostor používá vlastní GitHub App. Pull requesty, revize a synchronizace repozitářů jsou pozastavené, dokud se nepřihlásíte.';
 
   @override
-  String get signedOutSubtitle =>
-      'Připojení k hostiteli kódu už není platné — token vypršel, nebo byl přístup odvolán. Nic jiného se nezměnilo: přihlaste se zpět a vše je tam, kde jste to nechali.';
-
-  @override
-  String get viaServerApp => 'přes aplikaci tohoto serveru';
+  String get forgeSignInBannerAction => 'Přihlásit se';
 
   @override
   String get ticketing => 'Ticketing';
@@ -13055,14 +13092,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ticketProviderLocal => 'Místní';
 
   @override
-  String get addKey => 'Přidat klíč';
-
-  @override
   String get providerApps => 'Aplikace poskytovatelů';
 
   @override
   String get providerAppsDescription =>
-      'Workspacy dědí tuto GitHub App, pokud si nevyberou jinou App nebo osobní přístupový token. Práce na pozadí — webhooky, polling, sync — běží na app, nikdy na tokenu osoby.';
+      'Aplikace, které si tento server sám zaregistroval u jednotlivých poskytovatelů. Lidé se přes ně přihlašují a běží na nich práce na pozadí, jako jsou webhooky, dotazování a synchronizace – nikdy na přihlášení konkrétního člověka.';
 
   @override
   String get providerAppId => 'ID aplikace';
@@ -13075,9 +13109,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Client secret';
-
-  @override
-  String get providerApiKey => 'API klíč';
 
   @override
   String get providerCallbackUrl => 'Callback URL';
@@ -13098,17 +13129,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Přihlašovací údaje fungují. Nainstalováno na: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Zadejte tento kód na stránce $provider, která se právě otevřela. Byl zkopírován do schránky.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'Čeká se, až dokončíte v prohlížeči…';
-
-  @override
-  String get copyCodeAndOpen => 'Kopírovat kód a otevřít';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13453,7 +13473,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Pro workspacy, které dědí GitHub App této instalace. Workspace s vlastní App nebo PAT se nastavuje v Workspace → Obecné.';
+      'Používají ji pracovní prostory, které dědí aplikaci GitHub této instalace. Pracovní prostor s vlastní aplikací ji nastavuje v Pracovní prostor → Obecné.';
 
   @override
   String get providerAppsGroupPrConversations => 'Konverzace pull requestů';
@@ -15019,7 +15039,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Jak se v tomto workspace ověřuje práce na GitHubu na pozadí. Zdění App této instalace, jiná App, nebo jen osobní přístupový token.';
+      'Jak se ověřuje práce s GitHubem na pozadí v tomto pracovním prostoru: aplikací této instalace, nebo vlastní aplikací pracovního prostoru.';
 
   @override
   String get workspaceGitHubModeInherit => 'Použít GitHub App této instalace';
@@ -15028,28 +15048,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Použít jinou GitHub App';
 
   @override
-  String get workspaceGitHubModePat => 'Pouze osobní přístupový token';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Používá GitHub App v Server → Aplikace poskytovatelů.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Bot a identita pollingu tohoto workspace. Členové se na You přihlašují přes tuto App.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Token na pozadí';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Pro polling a agenty v tomto workspace. Nejde o profilový token člena.';
-
-  @override
-  String get workspaceGitHubHasPat => 'Token na pozadí je uložen.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Žádný token na pozadí není uložen.';
 
   @override
   String get profileOverlayHint =>
@@ -16937,4 +16941,537 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Přepnout pracovní prostor';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Přihlásit se k $provider';
+  }
+
+  @override
+  String get linearConnectAutomation => 'Připojit Linear pro automatizaci';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Otevírání $provider v prohlížeči…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Schvalte žádost na stránce $provider v prohlížeči. Toto okno samo pozná, až budete hotovi.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'Čekání na $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'Přihlášení nebylo dokončeno';
+
+  @override
+  String get signInReopenPage => 'Znovu otevřít přihlašovací stránku';
+
+  @override
+  String get signInCodePrompt => 'Zadejte kód zobrazený v prohlížeči';
+
+  @override
+  String get signInCodeMalformed =>
+      'To nevypadá jako přihlašovací kód. Kódy mají 8 písmen a číslic.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Pokud prohlížeč nabídne otevření Control Center, povolte to a kód nebudete muset psát.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Přihlášeno k $provider jako $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Přihlášeno k $provider';
+  }
+
+  @override
+  String get signInErrorExpired => 'Toto přihlášení vypršelo. Začněte znovu.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'Přihlášení k $provider bylo zrušeno nebo zamítnuto.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider udělil méně oprávnění, než Control Center potřebuje. Přihlaste se znovu a schvalte všechna oprávnění.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider právě neodpovídá. Zkuste to znovu za pár minut.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider přihlášení přijal, ale server ho nedokázal dokončit. Zkuste to znovu.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'Aplikace $provider na tomto serveru je špatně nastavená. Požádejte vlastníka serveru o kontrolu Nastavení → Server → Jednotné přihlášení.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Vaše přihlášení k $provider vypršelo. Přihlaste se znovu, abyste mohli dál pracovat pod svým jménem.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'Aplikace $provider není nainstalovaná tam, kde je potřeba. Nainstalujte ji a zkuste to znovu.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Tato instalace aplikace GitHub je už autorizovaná pro jiný server Control Center.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Tento pracovní prostor Linear je už připojený k jinému serveru Control Center.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Pracovní prostor Slack může poprvé připojit ke Control Center jen jeho správce nebo vlastník. Požádejte některého z nich, aby aplikaci přidal.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'Aplikace $provider je pozastavená. Obnovte ji na $provider a zkuste to znovu.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect zablokoval tento server. Obraťte se na provozovatele svého serveru Connect.';
+
+  @override
+  String get signInErrorUnknown =>
+      'Přihlášení selhalo z důvodu, který server neuvedl. Zkuste to znovu.';
+
+  @override
+  String get signInPhishingTitle => 'Přihlášení nebylo zahájeno zde';
+
+  @override
+  String get signInPhishingBody =>
+      'Toto přihlášení nebylo zahájeno z této aplikace. Pokud vám tento odkaz někdo poslal, nepokračujte.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Nic nebylo odesláno. Dokončení přihlášení, které zahájil někdo jiný, by připojilo váš účet k jeho serveru.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Je potřeba přihlášení k $provider';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Tato akce běží pod vaším jménem na $provider a nejste přihlášeni. Přihlaste se a zkuste to znovu.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Nejste přihlášeni k $provider. Vše, co tu děláte, běží pod vaším jménem, proto se nejdřív přihlaste.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'Přihlášení k $provider zatím na tomto serveru není nastavené.';
+  }
+
+  @override
+  String get githubInstallations => 'Instalace aplikace GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Kde je aplikace GitHub nainstalovaná, mezi účty, kterým patří repozitáře tohoto pracovního prostoru. Instalace organizace funguje jen na serverech, které autorizují její správci.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'Aplikace GitHub není nainstalovaná na žádném účtu, kterému patří repozitáře tohoto pracovního prostoru.';
+
+  @override
+  String get githubInstallApp => 'Nainstalovat aplikaci GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Autorizovat tento server';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Tento server teď může používat instalaci v $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Pozastaveno';
+
+  @override
+  String get githubInstallationAuthorized => 'Autorizováno';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Neautorizováno';
+
+  @override
+  String get linearAutomationTitle => 'Automatizace Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Umožňuje agentům a pipelinám tohoto pracovního prostoru jednat v Linear jako aplikace, ne jako osoba. Připojují ji správci prostoru.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Připojeno k $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Použít aplikace Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Přihlášení probíhají přes Control Center Connect. Connect každé přihlášení zapečetí tak, aby ho mohl otevřít jen tento server, vydává tokeny GitHub omezené na jeden repozitář, nedrží žádný klíč k repozitáři a nikdy nedostane váš zdrojový kód.';
+
+  @override
+  String get connectModeOwn => 'Použít vlastní aplikace';
+
+  @override
+  String get connectModeOwnHint =>
+      'Zaregistrujte aplikace GitHub, Google a Linear sami v Nastavení → Server → Jednotné přihlášení a vlastní aplikaci Slack připojte v nastavení každého pracovního prostoru. „Vytvořit moji aplikaci GitHub“ nastaví GitHub jedním krokem.';
+
+  @override
+  String get connectModeCustom => 'Použít vlastní server Connect';
+
+  @override
+  String get connectModeCustomHint =>
+      'Vaše organizace provozuje vlastní server Connect. Přihlášení jdou tam místo na server Control Center.';
+
+  @override
+  String get connectModeUnset => 'Zatím nenastaveno';
+
+  @override
+  String get connectCustomUrlLabel => 'URL serveru Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Zadejte adresu HTTPS, například https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'Prosté HTTP dosáhne jen na Connect na tomto počítači. Pro cokoli v síti použijte HTTPS.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Hostované aplikace Control Center v tomto sestavení zatím nejsou k dispozici. Použijte vlastní aplikace nebo vlastní server Connect.';
+
+  @override
+  String get connectErrorSignature =>
+      'Konfigurace Connect neprošla kontrolou podpisu. Přihlášení přes Connect jsou pozastavena, dokud nebude znovu ověřena.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect poskytl starší konfiguraci, než jakou už tento server viděl, proto byla odmítnuta. Přihlášení přes Connect jsou pozastavena.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Tento server se teď nemůže spojit s Connect. Přihlášení, která ho používají, budou selhávat, dokud nebude zpět.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect zablokoval ID instalace tohoto serveru. Obraťte se na provozovatele svého serveru Connect.';
+
+  @override
+  String get connectErrorPinsChanged => 'Aplikace Connect se změnily';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect odpověděl způsobem, kterému tento server nerozumí. Aktualizujte server nebo zkontrolujte URL Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect nahlásil problém bez vysvětlení. Spusťte test a zkuste to znovu.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Váš server Connect teď uvádí jiné aplikace GitHub, Google, Linear nebo Slack, než jaké si tento server při prvním použití připnul. Důvěřujte jim jen tehdy, pokud vás na to jeho provozovatel upozornil.';
+
+  @override
+  String get connectConfirmPins => 'Důvěřovat novým aplikacím';
+
+  @override
+  String get connectStale =>
+      'Používaná konfigurace je starší, než se čekalo. Spusťte test a obnovte ji.';
+
+  @override
+  String get connectLaneSourceOwn => 'Vlastní aplikace';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Vypnuto';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Čí aplikace tento server používá pro GitHub, Google Calendar, Linear, Slack a vyhledávání GIFů.';
+
+  @override
+  String get connectFactMode => 'Přihlašovací aplikace';
+
+  @override
+  String get connectFactHealth => 'Stav';
+
+  @override
+  String get connectFactEpoch => 'Verze konfigurace';
+
+  @override
+  String get connectHealthOff => 'Nepoužívá se';
+
+  @override
+  String get connectHealthOk => 'Funguje';
+
+  @override
+  String get connectHealthDown => 'Nefunguje';
+
+  @override
+  String get connectLocked =>
+      'Toto určuje CC_CONNECT_URL v prostředí tohoto serveru. Změňte to tam a server restartujte.';
+
+  @override
+  String get connectLanesTitle => 'Kde probíhá každé přihlášení';
+
+  @override
+  String get connectLanesDescription =>
+      'Vlastní aplikace má pro svého poskytovatele vždy přednost před Connect.';
+
+  @override
+  String get connectServerGroup => 'Tento server';
+
+  @override
+  String get connectInstallId => 'ID instalace';
+
+  @override
+  String get connectInstallIdHint =>
+      'Identifikuje tento server vůči Connect. Předejte ho vlastníkovi organizace nebo provozovateli Connect, který o něj požádá.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Přidělí se, když tento server poprvé použije Connect.';
+
+  @override
+  String get connectTestOk => 'Connect funguje.';
+
+  @override
+  String get connectRotateKey => 'Vyměnit klíč';
+
+  @override
+  String get connectRotateKeyTitle => 'Vyměnit klíč Connect tohoto serveru?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Tento server dostane nový klíč a nové ID instalace. Všechna přihlášení provedená přes Connect přestanou fungovat a všichni se musí přihlásit znovu. Přihlášení přes vaše vlastní aplikace to neovlivní.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Klíč vyměněn. Všichni, kdo se přihlásili přes Connect, se musí přihlásit znovu.';
+
+  @override
+  String get connectCliLabel => 'Z terminálu';
+
+  @override
+  String get onboardingStepSignIn => 'Přihlášení';
+
+  @override
+  String get onboardingConnectTitle => 'Zvolte, jak se lidé přihlašují';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center pracuje s GitHubem, Google Calendar, Linear, Slackem a vyhledáváním GIFů přes aplikace registrované u každého poskytovatele. Zvolte, čí aplikace tento server používá. Později to můžete změnit v Nastavení → Server → Jednotné přihlášení.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Vytvořte teď aplikaci GitHub pro tento server, nebo přidejte své aplikace později v Nastavení → Server → Jednotné přihlášení.';
+
+  @override
+  String get providerServiceApiKey => 'Servisní klíč API';
+
+  @override
+  String get providerAppPartial => 'Nastavení není dokončené';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Stále chybí: $fields. Dokud nebudou vyplněna všechna pole, přihlášení pro tohoto poskytovatele se odmítají, místo aby šla přes Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'ID klienta přihlašuje členy. Servisní klíč API umožňuje tomuto serveru samostatně číst a zapisovat v Linear.';
+
+  @override
+  String get providerCallbackUrls => 'Adresy URL zpětného volání';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Zaregistrujte ji u poskytovatele přesně tak, jak je zobrazena.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Vytvořit aplikaci GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub zaregistruje aplikaci se správnými oprávněními a zpětným voláním a předá její přihlašovací údaje tomuto serveru. Nic není třeba kopírovat ručně.';
+
+  @override
+  String get providerAppCreateGitHub => 'Vytvořit moji aplikaci GitHub';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Organizace (volitelné)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Nechte prázdné a aplikace vznikne pod vaším vlastním účtem GitHub. Pod organizací ji může vytvořit jen vlastník organizace.';
+
+  @override
+  String get providerAppSignInReady => 'Lidé se mohou přihlásit.';
+
+  @override
+  String get chatLinkWaiting => 'Čeká se na vaši přímou zprávu…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Je to váš účet $provider?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Tento účet poslal botovi váš kód. Potvrďte jen tehdy, když je váš: po propojení bude to, co v $provider pošle, jednat za vás v tomto pracovním prostoru.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Odmítnout';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Nic nebylo propojeno. Pokud chcete svůj účet $provider stále propojit, vyžádejte si nový kód.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Získat nový kód';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Přidat Control Center do $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center byl přidán do $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Nainstaluje sdílenou aplikaci Control Center do vašeho pracovního prostoru $provider. Není třeba vytvářet aplikaci ani vkládat token.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Přidat do $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Běží na sdílené aplikaci Control Center, takže tu nejsou žádné tokeny ani nastavení bota ke správě.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Návrhy ticketů z chatu';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Návrh se stane ticketem v backlogu, až když ho tady vytvoříte. Ponechané návrhy se po jednom dni zahodí.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Z $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Vytvořit ticket';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return 'Vytvořeno: $key';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Aplikace poskytovatelů';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Které aplikace Google Calendar, Linear a Klipy tento pracovní prostor používá. Ve výchozím stavu používá aplikace tohoto serveru nebo Control Center Connect. Pracovní prostor s vlastní aplikací se k nim nikdy nevrací.';
+
+  @override
+  String get workspaceProviderAppModeInherit => 'Použít aplikaci serveru';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Přihlášení a požadavky používají aplikaci tohoto serveru nebo Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Použít vlastní aplikaci pracovního prostoru';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Používá se jen aplikace tohoto pracovního prostoru. Dokud není kompletní, je tento poskytovatel zde vypnutý a nevrací se k jiné aplikaci.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Aplikace serveru';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Vlastní aplikace';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Stále chybí: $fields. Dokud nejsou vyplněna všechna pole, je tento poskytovatel v tomto pracovním prostoru vypnutý. Nevrací se k aplikaci serveru.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Změna aplikace odhlásí všechny v tomto pracovním prostoru. Přihlásí se znovu přes novou aplikaci.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Klíč aplikace';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'Vyhledávání GIFů v tomto pracovním prostoru používá tento klíč.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Přepnout aplikaci $provider?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Všichni, kdo jsou v tomto pracovním prostoru připojeni k $provider přes aplikaci serveru, se musí znovu přihlásit aplikací pracovního prostoru.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Tím se smažou přihlašovací údaje $provider pracovního prostoru. Všichni připojení přes aplikaci pracovního prostoru se musí znovu přihlásit.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Přepnout aplikaci';
 }

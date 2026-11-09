@@ -1,11 +1,21 @@
 import 'dart:async';
 
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, normaliseConfirmCode;
+import 'package:cc_data/cc_data.dart'
+    show
+        RemoteProviderSignIn,
+        SignInAttempt,
+        SignInAttemptStatus,
+        SignInFailure,
+        SignInLaneInfo,
+        SignInLaneMode;
 import 'package:cc_remote/credential_providers.dart';
 import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,8 +24,9 @@ part 'personal_connection_flow.dart';
 part 'personal_connection_forms.dart';
 part 'personal_connection_view.dart';
 
-/// A caller-owned forge or ticketing identity, using the server's advertised
-/// device-code/redirect sign-in or a write-only personal access token.
+/// A caller-owned forge or ticketing identity. GitHub and Linear sign in
+/// through the server's browser sign-in [lane]; GitLab and Bitbucket take a
+/// write-only personal token.
 class PersonalConnectionCard extends ConsumerStatefulWidget {
   const PersonalConnectionCard({
     required this.providerId,
@@ -25,8 +36,8 @@ class PersonalConnectionCard extends ConsumerStatefulWidget {
     required this.connected,
     required this.username,
     required this.canManage,
-    required this.signInFlow,
-    required this.redirectUri,
+    this.lane,
+    this.laneInfo,
     this.statusError,
     this.hostManaged = false,
     super.key,
@@ -39,8 +50,12 @@ class PersonalConnectionCard extends ConsumerStatefulWidget {
   final bool connected;
   final String username;
   final bool canManage;
-  final String? signInFlow;
-  final String redirectUri;
+
+  /// The browser sign-in lane, or null for a provider that takes a token.
+  final ConnectOAuthLane? lane;
+
+  /// How this server runs [lane]'s sign-in; null while unknown.
+  final SignInLaneInfo? laneInfo;
   final String? statusError;
   final bool hostManaged;
 

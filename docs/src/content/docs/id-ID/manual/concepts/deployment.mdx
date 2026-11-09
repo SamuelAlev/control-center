@@ -2,7 +2,7 @@
 title: Deployment dan klien
 description: Bagaimana arsitektur thin-client Control Center memisahkan server headless dari klien desktop, web, dan selulernya.
 slug: id-ID/panduan-pengguna/konsep/deployment
-sourceHash: 78782d3cc4e668ba21d6ad936e9dad42f5b63856
+sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
 ---
 
 Control Center bukan satu program. Control Center adalah **arsitektur
@@ -203,7 +203,7 @@ sungguhan yang mengeksekusi pekerjaan sewaan.
 | Eksekusi agen                                  | menjalankannya (atau menyewakannya) | mengeksekusi pekerjaan sewaan | —              | —                                |
 | Perenderan UI                                  | —                          | —                             | lengkap        | lengkap (web) / sebagian besar baca (ponsel) |
 | Perekaman rapat (mikrofon + audio rapat)       | —                          | —                             | perekaman native | hanya web, melalui audio berbagi layar  |
-| OAuth kalender (Google)                        | menyimpan token            | —                             | —              | —                                |
+| Proses masuk penyedia (GitHub, Google, Linear) | menjalankan dan menyimpannya | —                           | —              | —                                |
 
 Kedua tingkat ini tidak melakukan sandbox dengan cara yang sama. `cc_server`
 membungkus jalan yang dieksekusinya sendiri dalam sandbox OS host di tempat
@@ -217,6 +217,13 @@ Menyewakan pekerjaan ke luar karena itu memindahkan eksekusi ke luar sandbox
 bahkan pada host yang memilikinya. Lihat
 [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
 untuk apa yang membatasi sebuah jalan di setiap kasus.
+
+Proses masuk penyedia diselesaikan di server, melalui aplikasi miliknya sendiri atau
+melalui [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/), layanan
+opsional yang menjalankan OAuth penyedia untuk server yang belum memiliki aplikasi
+sendiri. Connect mengembalikan kredensial yang hanya dapat digunakan server ini dan tidak
+pernah melihat isi repositori. Klien hanya membuka peramban dan, untuk proses masuk
+melalui Connect, meneruskan kembali kode yang ditampilkannya.
 
 Perekaman rapat terjadi di klien karena memerlukan mikrofon dan audio rapat —
 server di dalam lemari tidak dapat merekam panggilan Anda. Rekaman itu kemudian

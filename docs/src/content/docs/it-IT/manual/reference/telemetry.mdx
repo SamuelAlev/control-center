@@ -2,7 +2,7 @@
 title: Statistiche di utilizzo
 description: Cosa registra Control Center quando le statistiche di utilizzo sono attive, chi decide e cosa non viene mai inviato.
 slug: it-IT/manuale/riferimento/statistiche-di-utilizzo
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center può inviare **eventi di utilizzo pseudonimi** a un'istanza di [Umami](https://umami.is). Le statistiche di utilizzo sono **disattivate finché l'operatore del server non le attiva**. L'impostazione appartiene al server e si applica a ogni client connesso: l'app desktop, l'app web, il telefono e il server stesso.
@@ -95,9 +95,12 @@ Registrati dall'app desktop, dall'app web e dal telefono per le azioni compiute 
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | È stata ritentata un'esecuzione non riuscita |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Un'esecuzione è stata annullata dall'app |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | È stato terminato forzatamente un passaggio in esecuzione |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Si è concluso un tentativo di accesso al calendario |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true quando l'accesso è passato da Control Center Connect invece che dal client Google del server), `duration_s` | Si è concluso un tentativo di accesso al calendario |
 | `calendar_disconnected` | `workspace_id` | È stato disconnesso un account di calendario |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | È stata data una risposta a un invito |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (numero), `conference` | Un evento è stato prenotato su Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Un evento è stato spostato o ridimensionato sulla griglia del calendario |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Un evento è stato eliminato da Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | È stata avviata una registrazione da un evento del calendario |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | È stato aperto il link di una riunione (telefono). Dal link si ricava solo il provider |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | È stato usato il centro notifiche |

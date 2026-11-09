@@ -2,7 +2,7 @@
 title: Vincular sua conta do Slack
 description: Comprove que uma identidade do Slack é sua para que os agentes ajam sobre suas mensagens e seu trabalho seja atribuído a você.
 slug: pt-BR/manual/guias/vincular-conta-de-chat
-sourceHash: 7017efd948c19e99688629b49f9650384c056d07
+sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
 ---
 
 Este guia mostra como vincular sua identidade de chat ao seu usuário do Control Center e como desfazer um vínculo.
@@ -17,29 +17,38 @@ Um membro sem vínculo que menciona o bot recebe uma resposta naquele thread do 
 
 ## Vincular com um código
 
+Vincular exige os dois lados: enviar um código pelo Slack comprova a conta do Slack, e confirmá-lo no Control Center comprova que essa conta é sua.
+
 1. Vá em **Configurações → Espaço de trabalho → Perfil e identidade** e role até o cartão **Contas de chat vinculadas**
-2. No bloco do Slack, clique em **Vincular minha conta do Slack**
-3. Copie o comando que ele mostra, por exemplo:
+2. No bloco do Slack, clique em **Vincular minha conta do Slack**. A caixa de diálogo mostra um código de uso único, por exemplo:
 
 ```text
-/cc link K7M2QP
+K7M2QP
 ```
 
-4. No Slack, envie esse comando ao bot — uma DM é o lugar mais simples
-5. O bot confirma com qual usuário do Control Center você está vinculado agora, e a caixa de diálogo que você deixou aberta se atualiza para dizer o mesmo no exato momento — você não precisa fechá-la para conferir
+3. No Slack, envie esse código ao bot em uma **mensagem direta**: só o código, mais nada
+4. O bot responde "Recebido. Confirme esta conta do Slack no Control Center para concluir o vínculo." e a caixa de diálogo que você deixou aberta mostra o perfil do Slack que enviou o código: o nome e o id de membro do Slack
+5. Se for a sua conta, clique em **Confirmar**. O vínculo é feito, a caixa de diálogo informa isso e o bot confirma na mesma mensagem direta
+6. Se não for a sua, clique em **Recusar**. Nada é vinculado e o código deixa de funcionar; clique em **Gerar um novo código** para tentar de novo
+
+Fechar a caixa de diálogo não faz perder uma solicitação de vínculo. Um código que chegar depois fica aguardando na linha **Vincular minha conta do Slack** da sua página de perfil, com os mesmos **Confirmar** e **Recusar**.
+
+Por que a etapa de confirmação: um código lido por cima do seu ombro e enviado pela conta do Slack de outra pessoa faria, de outra forma, essa conta agir como você. Só você pode confirmar, e só o perfil exato que enviou o código.
 
 O código:
 
 - É de uso único e expira **15 minutos** depois de ser gerado
 - É sempre gerado para _você_, nunca para um colega de equipe
+- Só funciona em uma mensagem direta ao bot. Em um canal, é apenas uma mensagem
+- Só pode ser reivindicado por um membro pleno do espaço de trabalho do Slack em que o bot está instalado, e não por um convidado nem por alguém de outra organização
 - Substitui qualquer código que você já tenha, então apertar o botão de novo invalida o anterior
 - Vive apenas na memória, então reiniciar o servidor invalida os códigos pendentes — aperte o botão de novo
 
-Um código desconhecido, expirado ou gerado para outro espaço de trabalho falha da mesma forma indistinguível: "esse código não é válido (ou expirou)".
+Um código desconhecido, expirado, recusado ou gerado para outro espaço de trabalho falha da mesma forma indistinguível: "Esse código não é válido (ou expirou)."
 
 ## Vinculação automática por e-mail
 
-Se seu perfil do Slack traz um e-mail verificado que corresponde a um usuário do Control Center que **já é membro deste espaço de trabalho**, a ponte vincula você na primeira vez que você conversa com ela. Nenhum código é necessário.
+Se seu perfil do Slack traz um e-mail confirmado que corresponde ao e-mail verificado de um usuário do Control Center que **já é membro deste espaço de trabalho**, a ponte vincula você na primeira vez que você conversa com ela. Nenhum código é necessário.
 
 As duas metades importam: a correspondência de e-mail prova a identidade, mas só a associação concede acesso, então um desconhecido cujo e-mail por acaso existe no servidor não vincula nada. A lista mostra como cada vínculo foi feito ("associado por e-mail" ou "vinculado com um código").
 
@@ -51,7 +60,7 @@ A lista é administração do espaço de trabalho, então ela fica na outra meta
 
 O seu próprio estado fica na sua página de perfil: a linha **Vincular minha conta do Slack** mostra "Vinculado a _your-slack-id_" quando você já tem vínculo e pede que você vincule quando não tem.
 
-A lista é uma assinatura ao vivo, porque a mudança acontece do outro lado — você digita o código no Slack, então nenhuma requisição do app pode trazer a resposta de volta.
+A lista e a solicitação de vínculo são assinaturas ao vivo, porque a mudança acontece do outro lado: você envia o código no Slack, então nenhuma requisição do app pode trazer a resposta de volta.
 
 ## Desvincular
 
@@ -73,9 +82,13 @@ Sua conta do Slack está vinculada a um usuário do Control Center, mas esse usu
 
 As funções `viewer` e `guest` não podem iniciar trabalho. Um admin precisa elevar sua função para `member` ou superior.
 
-### O comando slash não é reconhecido
+### O bot diz que o código não é válido
 
-Verifique se o comando slash existe no Slack e se você está enviando o comando que a caixa de diálogo das configurações mostrou — um admin pode tê-lo renomeado, e nesse caso a caixa de diálogo mostra o nome atual.
+O código expirou, já foi usado, foi recusado ou foi substituído por um mais novo. Clique em **Vincular minha conta do Slack** de novo e envie o código novo.
+
+### O bot trata o meu código como uma solicitação
+
+Você o enviou em um canal, ou a sua conta do Slack já está vinculada. Os códigos só são aceitos em uma mensagem direta, e uma mensagem com formato de código vinda de uma conta vinculada é uma solicitação comum.
 
 ## Guias relacionados
 

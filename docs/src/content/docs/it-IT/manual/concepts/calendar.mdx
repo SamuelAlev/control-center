@@ -1,22 +1,31 @@
 ---
 title: Calendario e pianificazione
-description: Come Control Center sincronizza Google Calendar sul server, perché l'accesso avviene con una concessione del codice dispositivo e cosa copre lo scope di sola lettura.
+description: Come Control Center sincronizza Google Calendar sul server, come l'accesso dal browser raggiunge un server headless e cosa può modificare su Google.
 slug: it-IT/manuale/concetti/calendario
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center si collega a Google Calendar per tenere la tua giornata accanto
 alla tua flotta. Sincronizza i tuoi eventi, li mostra nelle viste mese,
-settimana, giorno e agenda, ti avvisa prima dell'inizio di una riunione e
+settimana, giorno e agenda, ti permette di prenotare, spostare, rispondere a ed eliminare eventi, ti avvisa
+prima dell'inizio di una riunione e
 trasforma qualsiasi evento in una [riunione](/it-IT/manuale/concetti/riunioni/)
 registrata e riassunta.
 
 ## Cosa cambia su Google
 
-Quasi nulla. L'integrazione importa gli eventi e li visualizza. Non li crea, non
-li modifica, non li elimina e non risponde agli inviti. Ogni connessione con
-codice dispositivo, integrata o con credenziali proprie, richiede
-`calendar.readonly` più `openid email`.
+Solo ciò che fai tu. Puoi rispondere a un invito, prenotare un evento (trascinando
+sulla griglia oraria, oppure con il pulsante **+**), spostare o allungare un evento sulla griglia ed eliminare un evento. Solo i tuoi eventi e quelli che organizzi si spostano: se lo spostasse un ospite, tutti gli altri resterebbero all'orario vecchio. Ogni modifica
+viene eseguita dal server con l'accesso del tuo account, sui tuoi calendari; il server
+rifiuta un evento su un account di un altro membro, o su un calendario condiviso con te
+in sola lettura. Google invia email agli ospiti, come farebbe da Google Calendar.
+Spostare o eliminare un'occorrenza di un evento ricorrente lascia intatto il resto della serie.
+
+Ogni connessione, tramite Connect o tramite il client Google del server, richiede
+`calendar.events` (leggere e modificare eventi) e `calendar.calendarlist.readonly`
+(vedere i calendari dell'account) più `openid email`. Il server rifiuta un accesso che
+torna con un insieme diverso, quindi un account collegato con il precedente scope di
+sola lettura va ricollegato.
 
 Gli eventi vengono sincronizzati nel database dello spazio di lavoro
 **sul server** (`<dataDir>/<workspaceId>/workspace.db`) e visualizzati da ogni
@@ -25,46 +34,52 @@ client tramite RPC. Nessun client conserva credenziali Google.
 ## Account per spazio di lavoro
 
 Gli account del calendario sono legati allo spazio di lavoro, come tutto il
-resto in Control Center. Ogni
-[spazio di lavoro](/it-IT/manuale/concetti/spazi-di-lavoro/) collega il proprio
-account Google (o più di uno) e gli eventi e i token di uno spazio non sono mai
-visibili da un altro. Cambiando spazio di lavoro cambiano i calendari che vedi.
+resto in Control Center, e ognuno appartiene al membro che l'ha collegato. Ogni
+[spazio di lavoro](/it-IT/manuale/concetti/spazi-di-lavoro/) collega i propri
+account Google e gli eventi e le credenziali di uno spazio non sono mai visibili
+da un altro. Due membri che collegano lo stesso indirizzo Google ottengono due
+account. Cambiando spazio di lavoro cambiano i calendari che vedi.
 
 Uno spazio di lavoro può collegare **più** account Google, ad esempio un account
 di lavoro e uno personale, e i loro eventi confluiscono nelle stesse viste.
 
-## Perché l'accesso avviene con un codice dispositivo
+## Come l'accesso raggiunge il server
 
-Il `cc_server` headless non ha un browser che possa intercettare un redirect
-OAuth. Quindi non ne usa uno: si autorizza con la
-**concessione del codice dispositivo** (RFC 8628). Il server mostra un breve
-codice utente e un URL di Google, tu approvi da qualsiasi dispositivo dotato di
-browser e il server esegue il polling finché non lo fai. Un'installazione
-headless può collegare un account proprio perché non c'è alcun endpoint di
-redirect da ospitare.
+Il collegamento è un accesso dal browser, e lo completa il server. Quale client
+lo esegue è una scelta del proprietario del server:
 
-La conseguenza da conoscere prima di usare le tue credenziali: il tipo di client
-deve essere "TV and Limited Input devices" di Google. Google concede a quel tipo
-di client solo un insieme di scope esplicitamente consentito e un progetto in cui
-Calendar non è abilitato per quel tipo di client fallisce con `invalid_scope` —
-ti servirebbe invece un client loopback o web.
+- **Il client Google del server.** Un client di tipo Web application registrato
+  con il redirect `<server origin>/oauth/google/callback`. Google rimanda il
+  browser direttamente al server, quindi il browser deve poterlo raggiungere
+- **Control Center Connect.** Google rimanda il browser a Connect, che mostra un
+  codice di 8 caratteri e un link `control-center://`. La persona digita il
+  codice nell'app, o segue il link, e il server rivendica l'accesso con quel
+  codice. Al server non serve alcun indirizzo pubblico per questo, ed è così che
+  un server headless su una rete privata collega i calendari
 
-I token non lasciano mai il server. Vengono scritti nel `secrets.json` del
+Un client proprio ha sempre la precedenza. Un client id senza il suo secret è una
+configurazione incompleta e rifiuta gli accessi invece di ripiegare su Connect.
+
+Le credenziali non lasciano mai il server. Vengono scritte nel `secrets.json` del
 server, nella sua directory dati, con chiave
-`google_google:<workspaceId>:<email>`, accanto ai database e sotto lo stesso
-confine di fiducia del filesystem dell'host. Il server aggiorna l'accesso
+`google_google:<workspaceId>:<userId>:<email>`, accanto ai database e sotto lo
+stesso confine di fiducia del filesystem dell'host. Un accesso con client proprio
+memorizza i suoi token di accesso e di aggiornamento. Un accesso tramite Connect
+memorizza solo una credenziale sigillata che Connect apre esclusivamente per
+questo server; il token di accesso resta in memoria. Il server aggiorna l'accesso
 automaticamente e, quando Google invalida definitivamente un account (una
 sessione revocata o scaduta da tempo), pubblica `CalendarAuthExpired` e mostra
-un banner **Riconnetti** invece di fallire in silenzio.
+un banner **Riconnetti** invece di fallire in silenzio. Un accesso che questo
+server non può più usare (emesso da un altro client proprio, o sigillato per
+un'altra installazione o un altro Connect) viene cancellato alla lettura
+successiva e mostra lo stesso banner.
 
-Una build dai sorgenti non include **nessuna** credenziale Google — client id e
-secret li fornisci tu. Le build di rilascio ufficiali integrano un client con
-codice dispositivo non riservato, così il flusso di connessione funziona da
-subito; il server memorizza solo un marcatore che lo referenzia, mai una copia.
-`GOOGLE_OAUTH_CLIENT_ID` (e il suo secret) nell'ambiente ha sempre la precedenza
-sulla coppia integrata. Non esiste deliberatamente un flag `--google-client-id`:
-i flag sconosciuti vengono ignorati, e un secret sulla riga di comando è
-leggibile tramite `ps`.
+Nessuna build include credenziali Google. Il client del server proviene da
+**Impostazioni → Server → Accesso single sign-on → App del fornitore** o dal file
+`.env` del server (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`). Non
+esiste deliberatamente alcun flag da riga di comando: un secret sulla riga di
+comando è leggibile tramite `ps`, e il server si rifiuta di avviarsi quando il
+secret è esportato nell'ambiente del suo processo.
 
 Per usare un tuo progetto Google, vedi
 [Collega un Google Calendar](/it-IT/manuale/guide/collega-calendario/).
@@ -128,7 +143,7 @@ registrazione della schermata Riunioni funziona nel browser.
 
 :::note[Gli agenti non possono leggere il tuo calendario]
 Non esistono strumenti MCP per il calendario. Un agente non può elencare eventi,
-leggere i dettagli di un evento né rispondere a un invito per tuo conto; la
+leggere i dettagli di un evento, prenotare, spostare, eliminare o rispondere a un invito per tuo conto; la
 superficie `calendar.*` è RPC solo per i client umani.
 :::
 

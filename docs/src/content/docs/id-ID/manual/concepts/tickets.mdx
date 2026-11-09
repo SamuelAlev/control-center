@@ -2,7 +2,7 @@
 title: Tiket dan delegasi
 description: Mengapa tiket melacak pekerjaan tanpa mengirimkannya, bagaimana delegasi dijaga, dan apa yang dicakup cermin penyedia serta apa yang tidak.
 slug: id-ID/panduan-pengguna/konsep/tiket
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Tiket adalah unit pekerjaan yang dilacak Control Center. Tiket sengaja dibuat
@@ -143,10 +143,10 @@ saja**, jadi tiket yang didukung penyedia yang Anda hapus tidak ikut terhapus
 di pelacak dan bisa muncul lagi pada sinkronisasi berikutnya. Kolaborator dan
 tiket anak ikut terhapus berjenjang.
 
-Kredensial adapter diselesaikan dari penyimpanan kredensial server (kunci
-Linear atau token GitHub yang ditempel di Pengaturan akan terbaca pada
-permintaan berikutnya; lingkungan hanya menjadi nilai awal bagi penyimpanan
-itu).
+Kredensial adapter diselesaikan per panggilan di server: proses masuk Linear atau GitHub
+milik orang itu untuk apa yang mereka lakukan, dan automasi Linear ruang kerja (atau kunci
+layanan Linear server) atau token GitHub satu-repositori untuk sinkronisasi tiket. Proses
+masuk baru dibaca pada permintaan berikutnya.
 
 ## Tiket dan pipeline
 

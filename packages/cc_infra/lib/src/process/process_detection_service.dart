@@ -6,6 +6,8 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 
+import 'package:cc_infra/src/process/child_process.dart';
+
 /// Detects running agent processes by querying the agent run log database.
 class ProcessDetectionService implements ProcessDetectionPort {
   /// Creates a [ProcessDetectionService] backed by the given repositories.
@@ -77,7 +79,7 @@ class ProcessDetectionService implements ProcessDetectionPort {
 
   Future<bool> _isPidAlive(int pid) async {
     try {
-      final result = await Process.run('kill', ['-0', pid.toString()]);
+      final result = await ChildProcess.run('kill', ['-0', pid.toString()]);
       return result.exitCode == 0;
     } catch (_) {
       return false;

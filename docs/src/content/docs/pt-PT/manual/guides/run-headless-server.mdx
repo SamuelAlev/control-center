@@ -1,9 +1,9 @@
 ---
 title: Executar um servidor headless
 description: Execute o binário headless cc_server ou a sua imagem Docker, emparelhe um cliente com ele e configure-o com toda a superfície de flags da CLI e de variáveis de ambiente.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: pt-PT/manual/guias/executar-servidor-headless
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Execute o `cc_server` numa máquina que fique ligada e depois ligue-se a ele a
@@ -15,8 +15,10 @@ agentes e faz todas as chamadas a APIs externas; os clientes apenas renderizam.
 ## Executar no Docker (imagens pré-compiladas)
 
 Cada versão publica um stack autoalojado de quatro imagens GHCR — o backend, os
-dois clientes finos estáticos e o relay de emparelhamento opcional — mais uma
-imagem `cc-server-demo` separada para o anfitrião de demonstração público. Uma
+dois clientes finos estáticos e o relay de emparelhamento opcional — mais o
+serviço de início de sessão opcional `cc-connect`
+([Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/))
+e uma imagem `cc-server-demo` separada para o anfitrião de demonstração público. Uma
 instalação autoalojada não precisa de nenhuma cópia do código-fonte. Fixe uma
 etiqueta de versão (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ou acompanhe a
 `latest`.
@@ -70,6 +72,12 @@ Aspetos que vale a pena saber antes de expor isto para além do loopback:
   dispositivos emparelhados, os modelos descarregados e o áudio das reuniões
   residem todos no volume — faça uma cópia de segurança dele e o contentor torna-se
   descartável.
+- **Os segredos dos fornecedores vão num `.env` montado, nunca em `-e`.** O
+  servidor recusa-se a arrancar quando `GITHUB_APP_PRIVATE_KEY`,
+  `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` ou um
+  `SLACK_*SECRET*` estão no ambiente do respetivo processo. Monte o ficheiro só
+  de leitura em `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`), ou
+  configure as apps nas Definições.
 - **Emparelhe um cliente a partir do interior da imagem** antes da primeira
   ligação, o equivalente em contentor do [passo 3](#passo-3-emparelhar-um-cliente-antes-do-primeiro-arranque):
 
@@ -284,22 +292,38 @@ extensão do editor iniciada pelo servidor através de um proxy público. Os ped
 HTTP públicos sensíveis são recusados; os recursos exigem uma sessão cifrada
 autenticada.
 
-## Passo 6: Ligar um Google Calendar (opcional)
+## Passo 6: Escolher como as pessoas iniciam sessão
 
-Para sincronizar o calendário de um espaço de trabalho sem nenhuma interface
-gráfica ligada, use o fluxo de código de dispositivo:
+O primeiro cliente a ligar-se como proprietário do servidor é questionado sobre
+a forma como este servidor inicia a sessão das pessoas no GitHub, no Google
+Calendar e no Linear: **Usar os apps do Control Center**, **Usar as minhas
+próprias apps** ou **Usar um servidor Connect próprio**. A partir do terminal, a
+mesma escolha é:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Imprime um código e um URL para aprovar noutro dispositivo, guarda o refresh token
-do lado do servidor e termina. Uma compilação a partir do código-fonte não inclui
-nenhum cliente Google, por isso as variáveis de ambiente do id e do segredo são
-obrigatórias — não existe nenhuma flag `--google-client-id`. Consulte
-[Ligar um Google Calendar](/pt-PT/manual/guias/ligar-calendario/).
+`CC_CONNECT_URL` (`hosted`, `off` ou um URL) no ambiente do servidor ou no
+`.env` fixa a escolha em vez disso. Com **Usar as minhas próprias apps**, registe
+cada fornecedor em **Definições → Servidor → Início de sessão único →
+Aplicações do fornecedor**; **Criar a minha app do GitHub** configura o GitHub
+num único passo. Os segredos dos fornecedores pertencem ao ficheiro `.env` do
+servidor, nunca ao ambiente exportado. Consulte
+[Criar a GitHub App](/pt-PT/manual/guias/github-app/) e
+[Control Center Connect](/pt-PT/manual/referencia/connect/).
+
+Os inícios de sessão através do Connect terminam com um código que o navegador
+mostra, pelo que o servidor não precisa de endereço público para eles. Os
+inícios de sessão através das apps do próprio servidor devolvem o navegador ao
+URL público do servidor, por isso defina `--public-url` com um endereço que os
+navegadores das pessoas consigam alcançar.
+
+Para alojar o Connect para outros servidores a partir deste, defina
+`CC_SERVER_CONNECT_HOST=on`; consulte
+[Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/#montar-o-connect-dentro-do-cc_server).
 
 ## Configuração
 
@@ -359,6 +383,7 @@ recursos):
 - [Emparelhar um dispositivo](/pt-PT/manual/guias/emparelhar-dispositivo/)
 - [Executar um worker da frota](/pt-PT/manual/guias/executar-worker-da-frota/)
 - [Ligar um Google Calendar](/pt-PT/manual/guias/ligar-calendario/)
+- [Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/)
 
 ## Conceitos relacionados
 

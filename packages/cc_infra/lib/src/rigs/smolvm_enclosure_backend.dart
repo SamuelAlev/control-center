@@ -11,6 +11,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_image_settings.
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart'
     show RigLaunchException, RigToolException;
 import 'package:cc_infra/src/rigs/rig_browser_defaults.dart';
@@ -1371,7 +1372,7 @@ class SmolvmEnclosureBackend {
   /// process of ours whose exit means "the machine died". A held `machine exec`
   /// connection is the next best thing: when the VMM goes, it drops.
   Future<Process> _startSentinel(String binary, String name) async {
-    final sentinel = await Process.start(binary, [
+    final sentinel = await ChildProcess.start(binary, [
       'machine',
       'exec',
       '--name',
@@ -1776,18 +1777,9 @@ class SmolvmEnclosureBackend {
     if (cached != null) {
       return cached;
     }
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        'smolvm',
-      ]);
-      if (result.exitCode == 0) {
-        final path = '${result.stdout}'.split('\n').first.trim();
-        if (path.isNotEmpty) {
-          return path;
-        }
-      }
-    } on Object {
-      // No PATH lookup available; fall through to the well-known locations.
+    final onPath = await ChildProcess.which('smolvm');
+    if (onPath != null) {
+      return onPath;
     }
     final home = Platform.environment['HOME'];
     if (home != null) {
@@ -1824,7 +1816,7 @@ class SmolvmEnclosureBackend {
         args,
       ).timeout(timeout, onTimeout: () => _timedOut(binary, args, timeout));
     }
-    final process = await Process.start(binary, args);
+    final process = await ChildProcess.start(binary, args);
     final stdoutFuture = process.stdout.transform(utf8.decoder).join();
     final stderrFuture = process.stderr.transform(utf8.decoder).join();
     try {
@@ -1964,7 +1956,7 @@ class SmolvmEnclosureBackend {
         'rig/smolvm: delete of $name hit read-only pack layers; making '
         '$blockedPath writable and retrying',
       );
-      await Process.run('chmod', ['-R', 'u+w', blockedPath]);
+      await ChildProcess.run('chmod', ['-R', 'u+w', blockedPath]);
       final retry = await _run(binary, [
         'machine',
         'delete',
@@ -2023,7 +2015,7 @@ class SmolvmEnclosureBackend {
   }
 
   Future<void> _chmod(String mode, String path) async {
-    final result = await Process.run('chmod', [mode, path]);
+    final result = await ChildProcess.run('chmod', [mode, path]);
     if (result.exitCode != 0) {
       throw RigToolException(
         tool: 'chmod',

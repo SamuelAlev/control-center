@@ -1,0 +1,189 @@
+---
+title: Referência do Control Center Connect
+description: O que o Connect vê e o que nunca vê, os três modos, a identidade de instalação, as credenciais seladas, a confiança na configuração e cada definição, operação e código de estado.
+slug: pt-PT/manual/referencia/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+O Control Center Connect executa os inícios de sessão dos fornecedores para os
+servidores que não registaram as suas próprias apps. Um servidor usa o Connect
+alojado do Control Center, um Connect que a respetiva organização executa
+([Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/)),
+ou nenhum. A escolha encontra-se em **Definições → Servidor → Início de sessão
+único → Control Center Connect**, em `cc_server connect` ou em `CC_CONNECT_URL`.
+
+## Faixas
+
+Cada fornecedor é uma faixa. Em **Usar as minhas próprias apps** (ou antes de alguém
+escolher), uma faixa funciona com a app do próprio servidor quando esta está totalmente
+configurada, caso contrário fica indisponível. Com as apps do Control Center ou um
+Connect próprio, o Connect executa cada faixa que serve: as apps próprias do servidor
+continuam guardadas, mas não são usadas para inícios de sessão, para a automação do
+servidor nem para o estado que o servidor comunica. A app de um espaço de trabalho
+prevalece em todos os modos.
+
+| Faixa        | O que a app própria precisa                         | Através do Connect                                                  |
+| ------------ | --------------------------------------------------- | ------------------------------------------------------------------- |
+| `github`     | Id da app, chave privada, id de cliente e segredo de cliente | As pessoas iniciam sessão na GitHub App partilhada        |
+| `google`     | Id de cliente e segredo de cliente                  | As pessoas ligam o Google Calendar                                  |
+| `linear`     | Id de cliente                                       | As pessoas iniciam sessão no Linear                                 |
+| `linear_app` | Id de cliente                                       | Um administrador do espaço de trabalho liga o ator de app do Linear |
+| `slack`      | A ligação de um espaço de trabalho à sua própria app do Slack | Um administrador do espaço de trabalho liga o Slack à app do Slack partilhada |
+| `klipy`      | `KLIPY_APP_KEY`                                     | Pesquisa de GIFs, através do proxy do Connect                       |
+
+Uma app própria apenas parcialmente configurada transforma a respetiva faixa
+num erro, nunca numa passagem silenciosa para o Connect. Um espaço de trabalho
+que usa a sua própria GitHub App (**Definições → Espaço de trabalho → Geral →
+Identidade GitHub**) nunca passa pelo Connect para o GitHub, e um que usa a sua própria
+aplicação do Google, do Linear ou do Klipy (**Definições → Espaço de trabalho → Geral →
+Aplicativos de provedores**) nunca passa pela app do servidor nem pelo Connect nesse
+fornecedor. Mudar a escolha do Connect não termina a sessão de ninguém na app própria de
+um espaço de trabalho.
+
+## O que o Connect vê e o que nunca vê
+
+| O Connect vê                                                                                    | O Connect nunca vê                                                    |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| O id de instalação do servidor e as assinaturas dos pedidos                                     | Código-fonte, conteúdo de repositórios, diffs ou texto de pull requests |
+| A conta do fornecedor que iniciou sessão, durante o início de sessão                            | Tickets, transcrições ou qualquer coisa da base de dados de um espaço de trabalho |
+| A que espaço de trabalho pertence uma credencial, como um id opaco dentro do selo               | A chave privada de uma GitHub App: os tokens de repositório vêm do início de sessão de uma pessoa |
+| O repositório para o qual é emitido um token do GitHub de um único repositório                  | Tokens de atualização em repouso: só existem dentro dos selos que o servidor guarda |
+| Os ids de instalação do GitHub associados ao servidor                                           | Segredos do Linear: o servidor troca ele próprio o código do Linear   |
+| Os termos de pesquisa de GIFs, quando faz de proxy do Klipy                                     | Palavras-passe, chaves de emparelhamento ou chaves de fornecedores de modelos |
+| Referências de eventos do Slack (equipa, canal, id da mensagem) e o texto dos comandos slash    | O texto das mensagens do Slack: o Connect descarta-o à chegada e o servidor lê ele próprio a mensagem a partir do Slack |
+
+O Connect guarda estado de curta duração (inícios de sessão em preparação,
+nonces, caches) durante no máximo 15 minutos. Os seus únicos registos
+duradouros são as associações de instalação: que servidores podem usar que
+instalação do GitHub, e a que servidor está associada cada equipa do Slack. Os
+erros trazem um código, nunca a resposta do fornecedor, e os registos guardam
+os ids de instalação apenas como hashes com chave.
+
+## Modos
+
+| Modo     | Definição                   | Comportamento                                                                                            |
+| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Não definido | Servidor novo           | Nenhuma faixa usa o Connect. O onboarding pede ao proprietário do servidor que escolha                   |
+| `hosted` | **Usar os apps do Control Center** | `https://connect.usectrl.dev`, com uma configuração assinada offline. As apps próprias do servidor não são usadas |
+| `custom` | **Usar um servidor Connect próprio** | Um Connect num URL HTTPS (`http` apenas em loopback), considerado fidedigno na primeira utilização. As apps próprias do servidor não são usadas |
+| `off`    | **Usar as minhas próprias apps** | Nenhuma faixa usa o Connect. Só as apps próprias iniciam a sessão das pessoas                       |
+
+`CC_CONNECT_URL` no ambiente do servidor ou no `.env` bloqueia a escolha:
+`hosted`, `off` ou um URL do Connect. As Definições mostram então o bloqueio e
+não o podem alterar.
+
+Esta compilação não inclui nenhuma chave de configuração alojada, pelo que o
+modo alojado comunica `hosted_unprovisioned` e não serve nenhuma faixa. As apps
+próprias e um Connect próprio funcionam.
+
+Um servidor lê a configuração do Connect no máximo a cada 10 minutos e espera
+no máximo 5 segundos por cada chamada. Quando o Connect está inacessível, a
+última configuração válida continua em uso e as Definições marcam-na como
+desatualizada.
+
+## Identidade de instalação
+
+| Elemento       | O que é                                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Chave de instalação | Uma semente de 32 bytes no ficheiro de segredos do servidor (`connect_install_key`), separada das chaves de emparelhamento de dispositivos |
+| Chave por Connect | Uma chave Ed25519 derivada da semente e do endereço do Connect. Cada pedido ao Connect é assinado com ela (RFC 9421) |
+| ID de instalação | 26 caracteres derivados dessa chave pública. Mostrado nas Definições e por `cc_server connect status`          |
+
+O mesmo servidor tem um id de instalação diferente para cada endereço do
+Connect. O id só muda quando a chave é trocada.
+
+## Credenciais seladas
+
+Um início de sessão através do Connect devolve um **selo de credencial**: um
+blob cifrado que só o Connect que o criou consegue abrir. Fica vinculado ao
+fornecedor, ao endereço do Connect, ao id de instalação, ao espaço de trabalho,
+à conta do fornecedor, à app e à geração do segredo.
+
+- O servidor guarda o selo e o id de instalação para o qual foi selado. Os
+  tokens de acesso ficam em memória
+- Para renovar, o servidor envia de volta o selo e recebe um novo token de
+  acesso e um novo selo
+- Um selo cujo id de instalação ou endereço do Connect já não corresponda é
+  eliminado da próxima vez que for lido, e essa pessoa volta a iniciar sessão.
+  Isto acontece depois de uma troca de chave, de uma mudança para outro Connect
+  ou de um diretório de dados restaurado num servidor diferente
+- Um selo que o Connect não consiga abrir é recusado com `access_denied`
+
+## Instalações do GitHub
+
+Um servidor só pode usar uma instalação da GitHub App partilhada quando o
+Connect a associou ao id de instalação desse servidor.
+
+- **Instalar o app do GitHub** em **Definições → Espaço de trabalho → Geral**
+  abre o GitHub com um bilhete de 15 minutos. O Connect associa a nova
+  instalação quando quem a instala é dono da conta pessoal ou administra a
+  organização
+- **Autorizar este servidor** associa uma instalação que já existe. Só um
+  administrador da organização o pode fazer
+- Uma instalação de organização pode ser associada a vários servidores; cada um
+  precisa da autorização de um administrador
+
+## Confiança na configuração
+
+| Connect  | Como o servidor confia na respetiva configuração                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Alojado  | Verifica uma assinatura Ed25519 com as chaves compiladas na versão. Recusa uma época inferior à mais alta que já viu (`rollback`)          |
+| Próprio  | Fixa, na primeira utilização, o id da app e o id de cliente do GitHub, os ids de cliente do Google e do Linear, e os ids de app e de cliente do Slack. Uma alteração põe em pausa os inícios de sessão através do Connect (`pins_changed`) até o proprietário do servidor clicar em **Confiar nas novas apps** |
+
+## Operações
+
+Todas as definições do Connect estão reservadas ao proprietário do servidor.
+
+| Operação              | O que faz                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `connect.status`      | Modo, URL, bloqueio, id de instalação, estado de saúde, época da configuração e a origem de cada faixa |
+| `connect.configure`   | Define `hosted`, `custom` (com `url`) ou `off`                                          |
+| `connect.test`        | Obtém de novo a configuração e comunica o estado de saúde                               |
+| `connect.confirmPins` | Aceita os identificadores alterados de um Connect próprio                               |
+| `connect.rotateKey`   | Emite uma nova chave de instalação. Todos os inícios de sessão através do Connect neste servidor deixam de funcionar |
+
+Os próprios inícios de sessão usam `oauth.lanes`, `oauth.begin`,
+`oauth.status`, `oauth.complete`, `oauth.connections` e `oauth.disconnect`. A
+pessoa é sempre quem faz a chamada com sessão iniciada.
+
+## Início de sessão através do Connect
+
+1. O servidor pede ao Connect que inicie a faixa e recebe o URL de autorização
+   do fornecedor, que verifica antes de o mostrar
+2. A pessoa aprova no navegador. O fornecedor regressa ao Connect
+3. O Connect mostra um código de 8 caracteres e uma ligação
+   `control-center://oauth-done`
+4. A pessoa escreve o código na aplicação, ou segue a ligação. O servidor
+   reclama o início de sessão com o código e com a sua própria prova do pedido
+
+Um início de sessão expira ao fim de 10 minutos. Cinco códigos errados
+terminam-no. Uma ligação que esta aplicação não iniciou é recusada com **Login
+não iniciado aqui**.
+
+## Trocar a chave de instalação
+
+**Trocar a chave** no cartão do Connect, ou `cc_server connect rotate-key --yes`:
+
+- Dá ao servidor uma nova chave de instalação e um novo id de instalação
+- Termina a sessão de toda a gente em todas as faixas que passam pelo Connect
+- Não mexe nos inícios de sessão através das apps do próprio servidor
+- Exige que o novo id de instalação seja adicionado à lista de permissões de um
+  Connect próprio
+
+## Códigos de estado
+
+| Código                 | Significado                                                          |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Esta compilação não tem chave de configuração alojada                |
+| `signature`            | A configuração alojada falhou a verificação da assinatura            |
+| `rollback`             | O Connect serviu uma configuração mais antiga do que a que o servidor já tinha visto |
+| `unreachable`          | O servidor não consegue alcançar o Connect                           |
+| `install_blocked`      | O Connect não permite este id de instalação                          |
+| `pins_changed`         | Um Connect próprio anunciou identificadores de app diferentes        |
+| `protocol`             | O Connect respondeu num formato que este servidor não compreende     |
+
+## Relacionado
+
+- [Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/)
+- [Criar a GitHub App](/pt-PT/manual/guias/github-app/)
+- [CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli/)

@@ -1,37 +1,40 @@
 ---
 title: Parler à Control Center depuis une PR GitHub
-description: Demandez au bot de la GitHub App de votre serveur une revue ou posez-lui une question directement depuis la conversation de la PR, sans webhook ni URL publique.
+description: Demandez à Control Center une revue ou posez-lui une question directement depuis la conversation de la PR, sans webhook ni URL publique.
 slug: fr-FR/manuel/guides/conversations-pr-github
-sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
+sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 ---
 
 Ce guide explique comment travailler avec Control Center sans quitter GitHub :
 demandez une revue par IA depuis la page de la PR, posez une question au bot
 dans un commentaire, et poursuivez la conversation dans ses fils de revue.
 
-Le bot est la [GitHub App](/fr-FR/manuel/guides/github-app/) propre à votre
-serveur — celle qui permet déjà aux utilisateurs de se connecter et exécute le
-travail en arrière-plan. Rien de nouveau n’est enregistré, et rien n’a besoin
-d’être joignable depuis Internet : le serveur découvre ce qui a été dit sur
-GitHub par sondage, si bien qu’un ordinateur portable derrière un NAT se
+Les réponses passent par la voie GitHub de l’espace de travail : la
+[GitHub App](/fr-FR/manuel/guides/github-app/) propre à votre serveur, ou l’App
+partagée de Control Center via Connect. Rien de nouveau n’est enregistré, et rien
+n’a besoin d’être joignable depuis Internet : le serveur découvre ce qui a été
+dit sur GitHub par sondage, si bien qu’un ordinateur portable derrière un NAT se
 comporte exactement comme un déploiement public.
 
 ## Prérequis
 
-- Le serveur a sa GitHub App [enregistrée et
-  installée](/fr-FR/manuel/guides/github-app/), avec **Pull requests: read and
-  write** (pour les commentaires, les fils et les réactions) et **Issues: read**
-  (pour la recherche de commentaires). Les deux figurent déjà dans la liste des
-  autorisations de ce guide
+- L’espace de travail dispose d’une voie GitHub : la GitHub App propre au
+  serveur ou Connect, avec l’application
+  [installée](/fr-FR/manuel/guides/github-app/#installer-là-où-se-trouvent-vos-dépôts)
+  sur le compte propriétaire du dépôt. Une application propre a besoin de
+  **Pull requests** et **Issues** en lecture et écriture, ce que **Créer mon
+  application GitHub** accorde déjà
 - Le dépôt est lié à un espace de travail dans Control Center
+- Vous êtes [connecté à GitHub](/fr-FR/manuel/guides/integration-github/) sur ce
+  serveur, et vous pouvez pousser vers le dépôt
 - Ni URL de webhook, ni tunnel, ni callback — il n’y a rien à configurer côté
   réseau
 
 ## Trouver le nom de votre bot
 
-Mentionnez `@usectrl`, le compte GitHub dédié à Control Center. C’est le déclencheur par défaut ; la GitHub App configurée sur votre serveur traite toujours la demande et publie les réponses. Vous n’avez pas besoin des identifiants du compte `usectrl`.
+Mentionnez `@usectrl`, le compte GitHub dédié à Control Center. C’est le déclencheur par défaut ; la voie GitHub de votre espace de travail traite toujours la demande et publie les réponses. Vous n’avez pas besoin des identifiants du compte `usectrl`.
 
-L’identifiant propre à l’application, `<appslug>[bot]`, et sa forme courte `@appslug` fonctionnent aussi. Pour trouver cet alias facultatif :
+L’identifiant propre à l’application, `<appslug>[bot]`, et sa forme courte `@appslug` fonctionnent aussi. Pour trouver cet alias facultatif sur votre propre application :
 
 1. Ouvrez **Paramètres → Serveur → Authentification unique** et faites défiler
    jusqu’à la carte **Applications fournisseur**
@@ -57,11 +60,11 @@ bouton **Ask AI** :
 - **Ajoutez l’étiquette `ai-review`** à la PR. C’est ce que GitHub propose de
   plus proche d’une affectation du bot comme relecteur — les comptes
   d’application ne peuvent pas occuper le créneau natif de relecteur demandé.
-  Il n’y a aucun commentaire auquel réagir, donc rien n’est publié sur GitHub ;
-  la revue démarre dans Control Center
+  Votre compte réagit à la PR avec 👀 et la revue démarre dans Control Center ;
+  aucun commentaire n’est publié
 - **Commentez `@usectrl review`** (ou simplement `@usectrl`) dans la conversation de
-  la PR. Le bot réagit avec 👀, puis répond lorsque la revue a démarré (ou
-  qu’une revue est déjà en cours)
+  la PR. Un 👀 apparaît sur votre commentaire, puis une réponse indique que la
+  revue a démarré (ou qu’une revue est déjà en cours)
 
 Les relecteurs travaillent dans l’espace de revue de la PR ; lisez et publiez
 les constats comme dans [Utiliser la revue assistée par
@@ -83,11 +86,12 @@ Commentez dans la conversation de la PR :
 
 Ce qui se passe, dans l’ordre :
 
-1. Le bot réagit avec 👀 pour vous montrer que le commentaire a été vu
+1. Un 👀 apparaît sur votre commentaire, depuis votre propre compte, pour vous
+   montrer que le commentaire a été vu
 2. La question est publiée dans l’espace de revue de la PR **en votre nom** —
    même attribution que si vous l’aviez saisie dans Control Center
-3. Un agent répond dans l’espace, et la réponse est renvoyée sur la PR sous
-   forme de commentaire qui vous @-mentionne
+3. Un agent répond dans l’espace, et la réponse est renvoyée sur la PR. Chaque
+   réponse commence par `**Control Center** (for @your-login):`
 
 Une question sur une PR qui n’a pas encore de revue réveille l’agent CEO de
 l’espace de travail ; une fois qu’une revue a tourné, c’est l’agent qui a parlé
@@ -115,36 +119,48 @@ commentaire de premier niveau, elle nécessite donc toujours une @mention.
 
 ## À qui le bot s’adresse
 
-Un commentaire GitHub n’arrive guère avec autre chose qu’un identifiant de
-connexion, le bot résout donc l’auteur avant de faire quoi que ce soit :
+Le serveur résout l’auteur d’un commentaire, ou la personne qui a ajouté
+l’étiquette `ai-review`, avant de faire quoi que ce soit :
 
-- **Votre compte GitHub doit être lié à votre identité** dans Control Center —
-  [connectez-vous avec GitHub](/fr-FR/manuel/guides/integration-github/), ou
-  collez un jeton, depuis **Paramètres → Espace de travail → Profil et identité
-  → Hébergement de code**
-- **Vous devez être membre avec un rôle d’écriture** (`member`, `admin` ou
+- **Le compte GitHub doit être connecté** sur ce serveur. La correspondance se
+  fait sur l’identifiant numérique du compte GitHub, jamais sur l’identifiant de
+  connexion. Connectez-vous depuis **Paramètres → Espace de travail → Profil et
+  identité → Hébergement de code**
+- **La personne doit être membre avec un rôle d’écriture** (`member`, `admin` ou
   `owner`) dans l’espace de travail qui lie le dépôt
+- **Elle doit pouvoir pousser** vers le dépôt sur GitHub. Les réponses utilisent
+  un jeton limité à l’accès de cette personne, si bien que quelqu’un qui ne peut
+  que lire n’obtient aucune réponse
 
-Toute autre personne reçoit une seule réponse courtoise expliquant ce qui manque
-— un identifiant inconnu (non lié, ou lié mais pas membre ici) et un rôle en
-lecture seule constituent les deux cas — et ses propos n’entrent jamais dans
-l’espace de travail. L’étiquette `ai-review` n’est pas soumise à cette
-condition : elle n’a pas d’auteur, elle lance donc la revue dans l’espace de
-travail qui lie déjà le dépôt.
+Toute autre personne est ignorée en silence : rien n’est publié, et ses propos
+n’entrent jamais dans l’espace de travail. Les commentaires des bots, et les
+propres réponses de Control Center, ne sont jamais traités comme des questions.
+
+### Deux serveurs, une PR
+
+Le 👀 est aussi la façon dont les serveurs s’accordent sur celui qui répond. Il
+est ajouté avec la connexion propre à l’auteur, et GitHub indique au serveur si
+cette réaction est nouvelle. Si vous êtes connecté sur deux serveurs Control
+Center qui lient tous deux le dépôt, le premier à réagir répond et l’autre reste
+silencieux. Il en va de même pour l’étiquette.
 
 ## Ce à quoi vous attendre
 
 | Élément | Comportement |
 | ------------------- | ------------------------------------------------------------------------ |
-| Accusé de réception | 👀 sur un commentaire en une minute environ — l’intervalle de balayage. L’étiquette `ai-review` n’a aucun commentaire auquel réagir |
-| Réponses | Publiées en tant que bot (l’application), dans le fil où la question a été posée |
+| Accusé de réception | 👀 depuis votre compte sur le commentaire (ou sur la PR, pour l’étiquette), en l’espace d’un balayage |
+| Réponses | Publiées dans le fil où la question a été posée, en commençant par `**Control Center** (for @your-login):`. Avec une application propre, l’auteur est le bot de l’application ; via Connect, c’est votre compte, agissant au travers de l’App partagée |
 | Attribution dans l’espace | La question est la vôtre ; l’agent s’exécute en votre nom, selon les réglages d’autonomie de l’espace |
 | Revues | Les constats arrivent dans l’espace de revue ; la publication vers GitHub est manuelle |
 
-Cette latence d’environ une minute est le prix à payer pour n’avoir besoin
-d’aucun accès réseau entrant. Rien dans le balayage n’est urgent, et rien n’est
-perdu pendant que le serveur est hors ligne — un commentaire qui arrive pendant
-une interruption est rattrapé au balayage suivant.
+Un balayage a lieu toutes les minutes avec une application propre et examine
+jusqu’à 25 pull requests ; via Connect, il a lieu toutes les deux minutes et en
+examine jusqu’à 10, car ces appels partagent le quota GitHub propre à chaque
+membre. Un espace de travail dont le quota GitHub est inférieur à 15 % est ignoré
+jusqu’à ce qu’il se rétablisse. Cette latence est le prix à payer pour n’avoir
+besoin d’aucun accès réseau entrant. Rien n’est perdu pendant que le serveur est
+hors ligne — un commentaire qui arrive pendant une interruption est rattrapé au
+balayage suivant.
 
 ## Dépannage
 
@@ -154,19 +170,24 @@ une interruption est rattrapé au balayage suivant.
   dépôt **lié** à un espace de travail ? Un dépôt non lié est ignoré avant que
   quoi que ce soit ne soit enregistré, donc le lier plus tard livre quand même
   le commentaire
-- Votre compte GitHub est-il lié, et êtes-vous membre avec un rôle d’écriture ?
-  Cherchez sur la PR la réponse de refus du bot — elle indique lequel
+- Êtes-vous connecté à GitHub sur ce serveur, membre avec un rôle d’écriture et
+  en mesure de pousser vers le dépôt ? Le serveur ignore toute autre personne
+  sans répondre
+- Sur l’App partagée de Control Center, l’installation de l’organisation
+  est-elle autorisée pour ce serveur ? Voir
+  [Autoriser ce serveur pour une organisation](/fr-FR/manuel/guides/github-app/#autoriser-ce-serveur-pour-une-organisation)
 - Toujours rien ? Le journal du serveur nomme le balayage et la PR en cas
   d’échec ; cherchez `pr_conversation:` (l’interrogateur) et
   `github_pr_conversation:` (la passerelle)
 
 **L’étiquette ne lance pas de revue.**
 
-Elle ne se déclenche qu’une fois par PR. Si une revue a déjà tourné, ou si
-l’étiquette a été ajoutée avant que le serveur n’ait jamais vu la PR (le premier
-balayage enregistre l’arriéré en silence au lieu de le traiter en rafale),
-mentionnez plutôt le bot — `@myapp review` en lance toujours une, sauf si une
-revue est déjà en cours.
+Elle ne se déclenche qu’une fois par PR, et la personne qui l’a ajoutée passe
+les mêmes contrôles que l’auteur d’un commentaire. Si une revue a déjà tourné, ou
+si l’étiquette a été ajoutée avant que le serveur n’ait jamais vu la PR (le
+premier balayage enregistre l’arriéré en silence au lieu de le traiter en
+rafale), mentionnez plutôt le bot — `@usectrl review` en lance toujours une, sauf
+si une revue est déjà en cours.
 
 **La réponse du bot n’est jamais arrivée sur GitHub.**
 

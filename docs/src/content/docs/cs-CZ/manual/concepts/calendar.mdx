@@ -1,20 +1,20 @@
 ---
 title: Kalendář a plánování
-description: Jak Control Center na serveru synchronizuje Google Calendar, proč je přihlášení device-code grant a co pokrývá rozsah jen ke čtení.
+description: Jak Control Center na serveru synchronizuje Google Calendar, jak přihlášení v prohlížeči dosáhne na headless server a co smí změnit u Google.
 slug: cs-CZ/prirucka/koncepty/kalendar
-sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
+sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
 ---
 
 Control Center se připojuje ke Google Calendar, takže máš den vedle flotily.
 Události synchronizuje, ukazuje je v zobrazení měsíce, týdne, dne a agendy,
-upozorní tě, než schůzka začne, a z libovolné události udělá nahranou
+umožní ti rezervovat, přesouvat, odpovídat na pozvánky a mazat události, upozorní tě, než schůzka začne, a z libovolné události udělá nahranou
 a shrnutou [schůzku](/cs-CZ/prirucka/koncepty/schuzky/).
 
 ## Co se na Google mění
 
-Skoro nic. Integrace události stáhne a vykreslí. Nevytváří je, neupravuje,
-nemaže ani na pozvánky neodpovídá. Každé připojení přes device code, vestavěné
-i s vlastním klientem, žádá `calendar.readonly` a `openid email`.
+Jen to, co uděláš sám. Můžeš odpovědět na pozvánku, rezervovat událost (tažením po časové mřížce nebo tlačítkem **+**), přesunout nebo zvětšit událost a událost smazat. Každou změnu provede server s přihlášením tvého vlastního účtu, ve tvých vlastních kalendářích; server odmítne událost na účtu jiného člena nebo v kalendáři, který ti byl sdílen jen pro čtení. Google posílá hostům e-maily, jako by to dělal v Google Calendar. Přesouvat lze jen vlastní události a ty, které organizuješ: změna hosta by ostatní nechala na staré době. Přesunutí nebo smazání jednoho výskytu opakované události nechá zbytek série být.
+
+Každé připojení, přes Connect i přes vlastního klienta Google serveru, žádá `calendar.events` (čtení a změny událostí) a `calendar.calendarlist.readonly` (zjištění, které kalendáře účet má) a `openid email`. Přihlášení, které se vrátí s jinou sadou, server odmítne, takže účet připojený se starým scope jen pro čtení je třeba připojit znovu.
 
 Události se synchronizují do vlastní databáze pracovního prostoru **na
 serveru** (`<dataDir>/<workspaceId>/workspace.db`) a každý klient je vykreslí
@@ -23,42 +23,51 @@ přes RPC. Žádný klient přihlašovací údaje Google nedrží.
 ## Účty na pracovní prostor
 
 Účty kalendáře patří k pracovnímu prostoru, stejně jako všechno ostatní
-v Control Center. Každý [pracovní prostor](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
-si připojí vlastní účet Google (nebo jich několik) a události ani tokeny
-jednoho prostoru nejsou z jiného vidět. Přepnutí pracovního prostoru přepne
-i kalendáře, které vidíš.
+v Control Center, a každý patří členovi, který ho připojil. Každý
+[pracovní prostor](/cs-CZ/prirucka/koncepty/pracovni-prostory/) si připojí
+vlastní účty Google a události ani pověření jednoho prostoru nejsou z jiného
+vidět. Dva členové, kteří připojí stejnou adresu Google, dostanou dva účty.
+Přepnutí pracovního prostoru přepne i kalendáře, které vidíš.
 
 Pracovní prostor může připojit **více** účtů Google, třeba pracovní a osobní,
 a jejich události se sloučí do stejných zobrazení.
 
-## Proč je přihlášení kódem zařízení
+## Jak se přihlášení dostane na server
 
-Bezhlavý `cc_server` nemá prohlížeč, který by zachytil OAuth přesměrování.
-Proto ho nepoužívá: autorizuje se **device-code grantem** (RFC 8628). Server
-ukáže krátký uživatelský kód a adresu Google, schválení uděláš na libovolném
-zařízení s prohlížečem a server se ptá, dokud ho nepotvrdíš. Bezhlavá
-instalace účet připojí právě proto, že nemá koncový bod přesměrování, který
-by musela hostovat.
+Připojení je přihlášení v prohlížeči a dokončí ho server. Kterým klientem
+proběhne, volí vlastník serveru:
 
-Než si přineseš vlastní údaje, platí jedno: typ klienta musí být u Google
-"TV and Limited Input devices". Google tomuto typu klienta uděluje jen
-povolenou sadu scopes a projekt, kde Calendar pro tento typ povolený není,
-skončí chybou `invalid_scope` — pak je potřeba loopback nebo webový klient.
+- **Vlastní klient Google serveru.** Klient typu Web application
+  zaregistrovaný s přesměrováním `<server origin>/oauth/google/callback`.
+  Google pošle prohlížeč rovnou zpět na server, takže prohlížeč na něj musí
+  dosáhnout
+- **Control Center Connect.** Google pošle prohlížeč zpět na Connect, který
+  ukáže 8místný kód a odkaz `control-center://`. Člověk kód opíše do aplikace
+  nebo otevře odkaz a server si s ním přihlášení vyzvedne. Server k tomu
+  nepotřebuje veřejnou adresu, a tak kalendáře připojí i headless server
+  v privátní síti
 
-Tokeny server neopouštějí. Zapíšou se do `secrets.json` v datovém adresáři
-serveru pod klíčem `google_google:<workspaceId>:<email>`, vedle databází
-a pod stejnou hranicí důvěry souborového systému hostitele. Server přístup
+Vlastní klient má vždy přednost. Client ID bez secretu je nedokončené
+nastavení a přihlášení odmítá, místo aby přešlo na Connect.
+
+Pověření server neopouštějí. Zapíšou se do `secrets.json` v datovém adresáři
+serveru pod klíčem `google_google:<workspaceId>:<userId>:<email>`, vedle
+databází a pod stejnou hranicí důvěry souborového systému hostitele.
+Přihlášení přes vlastního klienta uloží přístupový a obnovovací token.
+Přihlášení přes Connect uloží jen zapečetěné pověření, které Connect otevře
+výhradně pro tento server; přístupový token zůstává v paměti. Server přístup
 obnovuje sám a když Google účet trvale zneplatní (zrušená nebo dlouho prošlá
 relace), publikuje `CalendarAuthExpired` a místo tichého selhání ukáže banner
-**Znovu připojit**.
+**Znovu připojit**. Přihlášení, které tento server už použít nemůže (vydal ho
+jiný vlastní klient nebo je zapečetěné pro jinou instalaci či jiný Connect),
+se při dalším čtení smaže a ukáže stejný banner.
 
-Sestavení ze zdrojů **žádné** údaje Google neobsahuje — client ID a secret
-dodáváš ty. Oficiální vydání mají zapečený veřejný device-code klient, aby
-připojení fungovalo rovnou; server si uloží jen značku, která na něj odkazuje,
-nikdy kopii. `GOOGLE_OAUTH_CLIENT_ID` (a jeho secret) v prostředí má vždy
-přednost před zapečenou dvojicí. Příznak `--google-client-id` záměrně
-neexistuje: neznámé příznaky se ignorují a secret na příkazovém řádku je
-čitelný přes `ps`.
+Žádné sestavení údaje Google neobsahuje. Klient serveru pochází z **Nastavení
+→ Server → Jednotné přihlášení → Aplikace poskytovatelů** nebo ze souboru
+`.env` serveru (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`).
+Příznak příkazového řádku záměrně neexistuje: secret na příkazovém řádku je
+čitelný přes `ps` a server odmítne nastartovat, když je secret exportovaný
+v prostředí jeho procesu.
 
 Jak si rozběhnout vlastní projekt Google, popisuje
 [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
@@ -117,7 +126,7 @@ na obrazovce schůzek v prohlížeči funguje.
 
 :::note[Agenti tvůj kalendář nečtou]
 Pro kalendář nejsou žádné nástroje MCP. Agent neumí vypsat události, přečíst
-detail události ani za tebe odpovědět na pozvánku; rozhraní `calendar.*` je
+detail události, rezervovat, přesunout, smazat ani za tebe odpovědět na pozvánku; rozhraní `calendar.*` je
 RPC jen pro lidské klienty.
 :::
 

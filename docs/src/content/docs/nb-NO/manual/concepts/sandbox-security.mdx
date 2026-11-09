@@ -2,7 +2,7 @@
 title: Sandkasse og sikkerhet
 description: Hva som faktisk begrenser en agent i Control Center i dag, hvor langt OS-sandkassen rekker, og hvilke grenser som holder på en vert uten backend.
 slug: nb-NO/handbok/konsepter/sandkasse-og-sikkerhet
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Hvor OS-sandkassen rekker, og hvor den ikke rekker]
@@ -120,7 +120,7 @@ godkjenningsforespørsel. Lese-, skrive- og redigeringskallene dens skjer inne i
 Der en backend finnes, skjer disse usynlige kallene fortsatt inne i
 sandkasseinnpakningen, så OS-et er grensen rundt dem. Der ingen finnes, er
 ingenting det. Hver adapter oppgir dette i sin håndhevingsmatrise — se
-[adapter-ærlighetsmatrisen](/nb-NO/handbok/konsepter/tillatelsesregler/#the-adapter-honesty-matrix).
+[adapter-ærlighetsmatrisen](/nb-NO/handbok/konsepter/tillatelsesregler/#ærlighetsmatrisen-for-adaptere).
 
 ## Pusher går gjennom Control Center
 
@@ -131,10 +131,11 @@ tillat, spør først eller nekt — og de samme reglene gjelder uansett hvilken
 adapter som kjører agenten.
 
 En push er handlingen som må holde selv mot en agent som prøver å omgå en regel,
-så den håndheves gjennom det agenten har, ikke det den kjører. Med en GitHub App
-konfigurert får en kjøring i en GitHub-worktree et repo-begrenset
-installasjonstoken som kan lese innhold og jobbe med pull requests, men ikke
-pushe. Kjøringens git-konfigurasjon skriver om hver push-URL til GitHub
+så den håndheves gjennom det agenten har, ikke det den kjører. En kjøring i en
+GitHub-worktree får et token for det ene repoet, utstedt fra arbeidsområdets
+GitHub App, serverens egen app eller Control Center Connect. Det kan lese
+innhold og, når det ansvarlige medlemmet kan pushe, kommentere på pull requests,
+men det kan ikke pushe. Kjøringens git-konfigurasjon skriver om hver push-URL til GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) til
 **agentkjøringsgatewayen**, et loopback-endepunkt på `cc_server`. Gatewayen
 leser hvilke refs pushen oppdaterer, spør regelen **Push til en remote** — så en
@@ -162,12 +163,10 @@ nettverket**. Dette kjenner igjen den vanlige skrivemåten for en handling, og e
 agent som er fast bestemt på å skjule en (`eval`, en skriptfil, et direkte
 API-kall), klarer det. Pusher er ikke avhengige av det.
 
-:::caution[Uten GitHub App er push-regelen bare veiledende]
-Uten en konfigurert GitHub App faller megleren tilbake på et personlig
-tilgangstoken, som ikke kan begrenses til bare lesing. Regelen gjelder
-fortsatt for `git push`, fordi git sender pushen til gatewayen, men kode som
-bruker tokenet i miljøet direkte, kan pushe forbi den.
-:::
+Hvert GitHub-token en kjøring får, er begrenset to ganger: til ett repo, og til
+det det ansvarlige medlemmet (den som spurte, ellers eieren av arbeidsområdet)
+kan gjøre der. Det finnes ingen reservelegitimasjon. Når det ikke kan utstedes
+noe token, starter kjøringen uten, og notatene forklarer hvorfor.
 
 Ingen API-nøkkel for saker legges i en sandkasse. Agenter skriver saker gjennom
 Control Centers MCP-verktøy, som spør **Skriv til et eksternt
@@ -176,9 +175,10 @@ oppfølgingssystem**.
 Regelen **Bruk nettverket** leses én gang, når kjøringen starter. Nettverket i
 en sandkasse er enten på eller av, så nekt slår det av, mens tillat og spør
 først lar det stå på; harnessens `web_fetch`- og `web_search`-verktøy spør
-fortsatt ved hvert kall. Legitimasjon tilbakekalles når kjøringen avsluttes,
-sammen med alle skrivetokener gatewayen har utstedt, så et håndtak overlever
-ikke kjøringen.
+fortsatt ved hvert kall. Kjøringens legitimasjonshåndtak frigis når den
+avsluttes. Tokenene bak dem deles per medlem og repo og utløper innen omtrent en
+time; et medlem som logger ut av GitHub eller forlater arbeidsområdet, fjerner
+med én gang alle tokener som er utstedt på vegne av vedkommende.
 
 ## Hva sandkassen tilfører, og hvor den stopper
 

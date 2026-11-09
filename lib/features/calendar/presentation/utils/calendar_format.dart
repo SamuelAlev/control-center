@@ -66,3 +66,17 @@ Map<DateTime, List<CalendarEvent>> groupEventsByDay(
       key: byDay[key]!..sort((a, b) => a.startTime.compareTo(b.startTime)),
   };
 }
+
+/// A compact duration such as `15m`, `1h` or `1h 30m`.
+String formatDurationShort(Duration d) {
+  final mins = d.inMinutes;
+  if (mins <= 0) {
+    return '0m';
+  }
+  if (mins < 60) {
+    return '${mins}m';
+  }
+  final hours = mins ~/ 60;
+  final rem = mins % 60;
+  return rem == 0 ? '${hours}h' : '${hours}h ${rem}m';
+}

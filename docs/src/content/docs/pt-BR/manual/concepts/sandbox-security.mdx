@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que de fato restringe um agente no Control Center hoje, até onde o sandbox do sistema operacional chega e quais fronteiras se sustentam em um host sem backend.
 slug: pt-BR/manual/conceitos/sandbox-e-seguranca
-sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
+sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ---
 
 :::note[Onde o sandbox do sistema operacional chega e onde não chega]
@@ -137,9 +137,11 @@ executa o agente.
 
 O push é a ação que precisa resistir até a um agente que tenta contornar uma
 regra, então ele é aplicado pelo que o agente tem, e não pelo que ele executa.
-Com um GitHub App configurado, uma execução em uma worktree do GitHub recebe um
-token de instalação com escopo de repositório que pode ler conteúdo e trabalhar
-com pull requests, mas não fazer push. A configuração do git da execução
+Uma execução em uma worktree do GitHub recebe um token para aquele único
+repositório, emitido a partir do GitHub App do espaço de trabalho, do app
+próprio do servidor ou do Control Center Connect. Ele pode ler conteúdo e,
+quando o membro responsável pode fazer push, comentar em pull requests, mas não
+pode fazer push. A configuração do git da execução
 reescreve toda URL de push do GitHub (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) para o **gateway de execuções de agentes**, um endpoint
 de loopback no `cc_server`. O gateway lê quais refs o push atualiza, pergunta à
@@ -168,12 +170,11 @@ são **Acessar a rede**. Isso reconhece a grafia convencional de uma ação, e u
 agente determinado a escondê-la (`eval`, um arquivo de script, uma chamada
 direta à API) consegue. Os pushes não dependem disso.
 
-:::caution[Sem GitHub App, a regra de push é só indicativa]
-Sem um GitHub App configurado, o broker recorre a um token de acesso pessoal,
-que não pode ser restrito a somente leitura. A regra continua valendo para
-`git push`, porque o git envia o push ao gateway, mas um código que use
-diretamente o token do ambiente consegue fazer push contornando-a.
-:::
+Todo token do GitHub que uma execução recebe é limitado duas vezes: a um único
+repositório e ao que o membro responsável (quem pediu ou, caso contrário, o
+proprietário do espaço de trabalho) pode fazer nele. Não existe credencial
+substituta. Quando nenhum token pode ser emitido, a execução começa sem um e as
+notas dela explicam o motivo.
 
 Nenhuma chave de API de tickets é colocada em um sandbox. Os agentes escrevem
 tickets pelas ferramentas MCP do Control Center, que perguntam a **Escrever em
@@ -182,9 +183,11 @@ um rastreador externo**.
 A regra **Acessar a rede** é lida uma única vez, quando a execução começa. A
 rede de um sandbox está ligada ou desligada, então negar a desliga, enquanto
 permitir e perguntar primeiro a mantêm ligada; as ferramentas `web_fetch` e
-`web_search` do harness continuam perguntando a cada chamada. As credenciais são
-revogadas quando a execução é desmontada, junto com qualquer token de escrita
-que o gateway tenha emitido, então um identificador não sobrevive à execução.
+`web_search` do harness continuam perguntando a cada chamada. Os
+identificadores de credencial da execução são liberados quando ela é
+desmontada. Os tokens por trás deles são compartilhados por membro e
+repositório e expiram em cerca de uma hora; um membro que sai do GitHub ou deixa
+o espaço de trabalho derruba de uma vez todos os tokens emitidos em nome dele.
 
 ## O que o sandbox acrescenta e onde ele para
 

@@ -88,6 +88,10 @@ void main() {
           (req) => httpTextResponse(req, {
             'token': 'ghs_scoped123',
             'expires_at': '2026-07-06T13:00:00Z',
+            'repository_selection': 'selected',
+            'repositories': [
+              {'id': 1, 'name': 'my-repo'},
+            ],
           }),
         );
         final minted = await b.minter.mint(
@@ -120,6 +124,49 @@ void main() {
         throwsA(isA<Object>()),
       );
     });
+
+    test('an empty repository list never reaches GitHub', () async {
+      final b = build((req) => httpTextResponse(req, const {}));
+      await expectLater(
+        b.minter.mint(repositories: const []),
+        throwsArgumentError,
+      );
+      expect(b.fake.requests, isEmpty);
+    });
+
+    test(
+      'a token GitHub did not limit to the requested repository is revoked '
+      'and refused',
+      () async {
+        for (final body in [
+          {'token': 'ghs_wide', 'repository_selection': 'all'},
+          {'token': 'ghs_wide'},
+          {
+            'token': 'ghs_wide',
+            'repository_selection': 'selected',
+            'repositories': [
+              {'name': 'my-repo'},
+              {'name': 'other'},
+            ],
+          },
+        ]) {
+          final b = build(
+            (req) => req.method.value == 'DELETE'
+                ? httpTextResponse(req, const {}, statusCode: 204)
+                : httpTextResponse(req, body),
+          );
+          await expectLater(
+            b.minter.mint(repositories: ['my-repo']),
+            throwsStateError,
+          );
+          expect(
+            b.fake.requests.map((r) => r.method.value),
+            ['POST', 'DELETE'],
+            reason: '$body',
+          );
+        }
+      },
+    );
 
     test('revoke DELETEs /installation/token authed with the token', () async {
       final b = build(

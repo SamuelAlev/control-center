@@ -1,9 +1,9 @@
 ---
 title: ヘッドレスサーバーを実行
 description: cc_server のヘッドレスバイナリまたはその Docker イメージを実行し、クライアントをペアリングして、CLI フラグと環境変数の完全なサーフェスで設定します。
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 常時稼働するマシンで `cc_server` を実行し、デスクトップ、ブラウザー、またはスマートフォンから接続します。サーバーは純粋な Dart のネイティブバイナリで、Flutter
@@ -13,8 +13,9 @@ sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
 ## Docker で実行する（ビルド済みイメージ）
 
 各リリースでは、4 つの GHCR イメージからなるセルフホスト用スタック — バックエンド、
-2 つの静的なシンクライアント、任意のペアリングリレー — と、公開デモホスト用の別個の
-`cc-server-demo` イメージが公開されます。セルフホストでのインストールにソースのチェックアウトは
+2 つの静的なシンクライアント、任意のペアリングリレー — に加えて、任意の
+`cc-connect` サインインサービス（[Connect サーバーを実行](/ja-JP/マニュアル/ハウツーガイド/connect-サーバー実行/)）と、
+公開デモホスト用の別個の `cc-server-demo` イメージが公開されます。セルフホストでのインストールにソースのチェックアウトは
 不要です。バージョンタグ（`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`）を固定するか、`latest` を使い続けます。
 
 | イメージ                                             | 内容                                   | 公開ポート        |
@@ -65,6 +66,11 @@ volumes:
 - **`/data` が唯一の状態です。** SQLite データベース、ペアリング済みデバイスのシークレット、
   ダウンロードしたモデル、ミーティングの音声はすべてこのボリュームにあります — これを
   バックアップしておけば、コンテナは使い捨てにできます。
+- **プロバイダーのシークレットはマウントした `.env` に置き、`-e` では渡しません。**
+  `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、
+  `LINEAR_API_KEY`、または `SLACK_*SECRET*` がプロセス環境にあると、サーバーは起動を
+  拒否します。ファイルを `/app/bin/.env` に読み取り専用でマウントする
+  （`-v /secure/cc.env:/app/bin/.env:ro`）か、アプリを設定画面で構成してください。
 - **最初の接続の前に、イメージの内部からクライアントをペアリングします** — [ステップ 3](#ステップ-3-初回起動の前にクライアントをペアリングする) の
   コンテナ版です:
 
@@ -269,20 +275,33 @@ node tool/stage_resource_assets.mjs build/web
 公開しないでください。機微な公開 HTTP リクエストは拒否されます。リソースには
 認証済みの暗号化セッションが必要です。
 
-## ステップ 6: Google Calendar を接続する（任意）
+## ステップ 6: サインイン方法を選ぶ
 
-GUI を伴わずにワークスペースのカレンダーを同期するには、デバイスコードフローを使います:
+サーバー所有者として最初に接続したクライアントは、このサーバーが GitHub、Google Calendar、
+Linear へのサインインをどう処理するかを尋ねられます: **Control Centerのアプリを使う**、
+**自分のアプリを使う**、**カスタムConnectサーバーを使う** のいずれかです。ターミナルからは、
+同じ選択を次のように行います:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-別のデバイスで承認するためのコードと URL が出力され、リフレッシュトークンはサーバー側に
-保存されて終了します。ソースからのビルドには Google クライアントが同梱されないため、id と
-secret の環境変数が必須です — `--google-client-id`
-というフラグはありません。[Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)を参照してください。
+代わりに、サーバーの環境または `.env` で `CC_CONNECT_URL`（`hosted`、`off`、または URL）を
+指定すると、選択が固定されます。**自分のアプリを使う** の場合は、各プロバイダーを
+**設定 → サーバー → シングルサインオン → プロバイダーアプリ** で登録します。**自分のGitHubアプリを作成**
+で GitHub を 1 ステップで設定できます。プロバイダーのシークレットは、エクスポートされた環境
+ではなく、サーバーの `.env` ファイルに置きます。[GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)
+と [Control Center Connect](/ja-JP/マニュアル/リファレンス/connect/) を参照してください。
+
+Connect を通じたサインインは、ブラウザーに表示されるコードで完了するため、サーバーに
+公開アドレスは必要ありません。サーバー自身のアプリを通じたサインインは、ブラウザーを
+サーバーの公開 URL に戻すため、`--public-url` には人々のブラウザーから到達できるアドレスを
+設定してください。
+
+このサーバーから他のサーバー向けに Connect をホストするには、`CC_SERVER_CONNECT_HOST=on` を
+設定します。[Connect サーバーを実行](/ja-JP/マニュアル/ハウツーガイド/connect-サーバー実行/#cc_server-内に-connect-をマウントする)を参照してください。
 
 ## 設定
 
@@ -336,6 +355,7 @@ Windows では `%APPDATA%\control-center`、それ以外では `$XDG_DATA_HOME/c
 - [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)
 - [フリートワーカーを実行](/ja-JP/マニュアル/ハウツーガイド/フリートワーカー実行/)
 - [Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
+- [Connect サーバーを実行](/ja-JP/マニュアル/ハウツーガイド/connect-サーバー実行/)
 
 ## 関連コンセプト
 

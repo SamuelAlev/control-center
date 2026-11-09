@@ -2,19 +2,22 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 
 /// Where a forge's credential came from.
 ///
-/// Ordered by precedence, most specific first: a token the user minted by
-/// signing in beats one they pasted, which beats the server's own app identity,
-/// which beats an ambient environment variable.
+/// Every source is a person's own credential except [environment], a GitLab
+/// or Bitbucket token the operator put in the server's environment. GitHub is
+/// only ever [oauth] or [connect]: automation reaches it through one-repository
+/// scoped tokens that are never reported as a connection.
 enum ForgeCredentialSource {
-  /// Minted by signing in to the forge (OAuth), held for that user.
+  /// Minted by signing in to the forge through this server's own app (OAuth),
+  /// held for that user.
   oauth,
 
-  /// A token the user pasted, held for that user.
-  settings,
+  /// Minted by signing in through Control Center Connect. The server holds
+  /// only a seal bound to its install id; the access token lives in memory.
+  connect,
 
-  /// The server's own app identity (a GitHub App installation token, a Linear
-  /// app key). Answers work no human asked for — webhooks, polling, sync.
-  app,
+  /// A token the user pasted, held for that user. Never GitHub: GitHub is
+  /// sign-in only.
+  settings,
 
   /// Read from the server process environment.
   environment,

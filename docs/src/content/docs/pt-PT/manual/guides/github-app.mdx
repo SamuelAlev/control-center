@@ -1,215 +1,217 @@
 ---
 title: Criar a GitHub App
-description: Registe uma GitHub App para o seu servidor para que os membros possam iniciar sessão e para que o trabalho em segundo plano corra como a app e não como uma pessoa.
+description: Dê ao seu servidor uma GitHub App própria com um clique, instale-a onde estão os seus repositórios e autorize o servidor para a instalação de uma organização.
 slug: pt-PT/manual/guias/github-app
-sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
+sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 ---
 
-Este guia mostra como dar ao seu servidor uma identidade própria no GitHub. Demora
-cerca de dois minutos, só o proprietário do servidor o faz e só tem de acontecer
-uma vez por servidor.
+Este guia mostra como dar ao seu servidor uma GitHub App própria. Demora cerca
+de dois minutos, só o proprietário do servidor o faz e só tem de acontecer uma
+vez por servidor.
 
 :::note[Pode não precisar disto]
-Uma build oficial já inclui um **ID de cliente** do GitHub, pelo que
-[Entrar com GitHub](/pt-PT/manual/guias/integracao-github/) funciona de imediato
-sem nada registado — um fluxo de dispositivo autentica-se apenas com o ID de
-cliente, pelo que é seguro incluí-lo na build. Registe a sua própria app quando
-quiser que o SERVIDOR atue por si próprio (webhooks, sondagem de PRs e
-sincronização de tickets a correr numa instalação da app e não nas credenciais de
-uma pessoa), ou quando estiver a compilar a partir do código-fonte.
+Com o Control Center Connect ativado, as pessoas iniciam sessão no GitHub
+através da App partilhada do Control Center, ou da App que o Connect da sua
+organização usa. Registe a sua quando tiver escolhido **Usar as minhas próprias
+apps**: a app própria do servidor só é usada nesse caso. Consulte
+[Control Center Connect](/pt-PT/manual/referencia/connect/).
 :::
 
-Para ligar a sua própria conta posteriormente, consulte
+Para iniciar sessão com a sua própria conta posteriormente, consulte
 [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/).
 
-## Porque é que o seu servidor precisa de uma app própria
+## O que a app faz
 
-Um único registo dá origem a duas tarefas diferentes, e é a app que torna ambas
-honestas:
+Um único registo dá resposta a duas tarefas diferentes:
 
-| Tarefa                     | O que lhe responde                                   | Porque é que importa                                                                                  |
-| -------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Uma pessoa inicia sessão** | O ID de cliente da app, através do fluxo de dispositivo | Fica com uma credencial que é sua, no servidor, em todos os dispositivos — sem tokens para colar ou renovar |
-| **O servidor atua**        | O id da app + a chave privada → token de instalação   | Os webhooks, a sondagem de PRs e a sincronização de tickets deixam de depender de o token de uma pessoa continuar válido |
+| Tarefa                         | O que lhe responde                                 | Porque é que importa                                                                             |
+| ------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Uma pessoa inicia sessão**   | O ID de cliente e o segredo de cliente da app      | Cada pessoa recebe uma credencial do GitHub só sua, no servidor, em todos os dispositivos        |
+| **O servidor atua**            | O ID da app e a chave privada                      | Agentes, pipelines, processos de sondagem e respostas do bot recebem tokens para um repositório de cada vez |
 
-Repare no que **não** está nessa tabela: um segredo de cliente. O fluxo de
-dispositivo do GitHub autentica-se apenas com o ID de cliente — tanto no pedido
-do código de dispositivo como na sondagem do token — pelo que não há segredo
-nenhum a guardar para iniciar sessão.
+A segunda tarefa nunca pede emprestada a credencial de uma pessoa por inteiro.
+Cada token que o servidor emite abrange um único repositório e está limitado ao
+que um membro responsável pode fazer nele. Ler um repositório ligado só exige a
+app; tudo o que escreva exige um membro que possa fazer push. A automação nunca
+aprova uma pull request.
 
-Sem uma app própria, a primeira tarefa continua a funcionar através do ID de
-cliente incluído na build; a segunda recorre às credenciais do proprietário do
-servidor, pelo que o trabalho em segundo plano fica dependente de quem fez o
-onboarding primeiro.
-
-:::note[Não existe um botão “instalar a GitHub App do Control Center”]
-Uma GitHub App distribuída significaria um segredo de cliente partilhado e uma
-instalação partilhada por todos os servidores, pelo que o acesso aos repositórios
-de cada espaço de trabalho passaria por credenciais que ninguém desse espaço de
-trabalho controla. Por isso, cada servidor tem a sua própria app — este guia
-explica como isso custa pouco.
-:::
+A app própria do servidor só se aplica em **Usar as minhas próprias apps**. Com as
+apps do Control Center ou um Connect próprio, o Connect executa todas as faixas,
+incluindo a do GitHub; a app do servidor continua guardada, mas sem uso, até voltar a
+trocar. A app de um espaço de trabalho ([Dar a um espaço de trabalho uma app diferente](#dar-a-um-espaço-de-trabalho-uma-app-diferente))
+continua a valer em todos os modos. Uma app com alguns campos em falta é um erro, e não
+um motivo para recorrer a outra coisa: os inícios de sessão no GitHub são recusados até
+que todos os campos estejam definidos.
 
 ## Pré-requisitos
 
-- É o **proprietário do servidor** — as operações `providerApps.*` estão
-  reservadas a ele, e o cartão é invisível para todos os outros
-- Uma conta do GitHub, ou uma organização onde possa criar apps
-- Nada acessível publicamente: o início de sessão é um **fluxo de dispositivo**,
-  pelo que o servidor não precisa de portas de entrada, túnel, URL de callback
-  nem domínio
+- É o **proprietário do servidor**. O cartão **Aplicações do fornecedor** é
+  invisível para toda a gente
+- Uma conta do GitHub. A app é criada nela
+- Um endereço do servidor que o seu navegador consiga alcançar. O URL público
+  do servidor (ou o loopback, no caso do servidor do próprio computador) é para
+  onde o GitHub o envia de volta
 
-## Registar a app
+## Criar com um clique
 
-1. Vá a [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (para uma organização: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — qualquer coisa; `Control Center (yourname)` serve. Aparece
-   nos commits e nos comentários que o servidor faz
-3. **Homepage URL** — qualquer coisa, por exemplo `https://github.com/your-name`
-4. **Callback URL** — deixe-a vazia. O fluxo de dispositivo não tem nenhuma
-5. Assinale **Enable Device Flow**. Esta é a única definição sem a qual o início
-   de sessão não funciona
-6. Desmarque **Webhook → Active**, a menos que esteja a configurar webhooks em
-   separado
-7. Em **Repository permissions**, conceda pelo menos:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (obrigatória)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, se usar o GitHub Issues para tickets, e para a
-     pesquisa de comentários de conversas de PR do bot
-     (consulte [Falar com o Control Center a partir de uma PR do GitHub](/pt-PT/manual/guias/conversas-pr-github/))
-   - **Checks**: Read-only, para o estado da CI na página da PR
-8. Em **Where can this GitHub App be installed?**, escolha a opção que se adequar —
-   “Only on this account” é a certa para um servidor pessoal
-9. Clique em **Create GitHub App**
-
-## Recolher os três valores
-
-Na página da app, imediatamente após a criação:
-
-| Valor           | Onde                                              |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | O separador **General**, perto do topo            |
-| **Client ID**   | O separador **General**, em “Client secrets”      |
-| **Private key** | **Generate a private key** — descarrega um `.pem` |
-
-O ficheiro da chave privada é descarregado uma única vez e o GitHub nunca o volta
-a mostrar. Guarde-o até o ter colado; pode sempre gerar outro.
-
-Um **segredo de cliente** é opcional e serve exatamente para uma coisa: se
-mantiver “Expire user authorization tokens” ATIVADA, é ele que renova o token de
-alguém discretamente, em vez de lhe pedir que inicie sessão de novo a cada oito
-horas. O início de sessão em si nunca o utiliza.
-
-A configuração mais simples é desligar essa expiração, e então não é preciso
-nenhum segredo. Se a mantiver ligada, gere um segredo e cole-o em
-**Definições → Servidor → Início de sessão único** (o cartão **Aplicações do
-fornecedor**) — não existe nenhuma variável de ambiente para ele, nem vem
-incorporado em nenhuma build, pelo que fica no seu servidor.
-
-## Instalar a app na sua conta
-
-Uma app registada mas não instalada consegue autenticar pessoas e não consegue
-ler nada.
-
-1. Na página da app, abra **Install App**
-2. Instale-a na sua conta ou organização
-3. Escolha **All repositories**, ou selecione os repositórios que este servidor
-   deve ver
-
-## Colar os valores no Control Center
-
-1. Vá a **Definições → Servidor → Início de sessão único** e desça até ao
+1. Vá a **Definições → Servidor → Início de sessão único** e desloque-se até ao
    cartão **Aplicações do fornecedor**
-2. No bloco **GitHub**, preencha cada campo:
-   - **Id da aplicação** — o App ID numérico
-   - **Chave privada** — cole o `.pem` completo, incluindo as linhas `BEGIN` e `END`
-   - **Id de cliente** — da mesma página
-   - **Segredo de cliente** — apenas se tiver gerado um (para renovação do token)
-3. Clique em **Testar**
+2. No bloco **GitHub**, escreva, se quiser, a organização do GitHub que deve ser
+   proprietária da app em **Organização (opcional)**. Deixe em branco para criar
+   a app na sua própria conta; criá-la numa organização exige um proprietário
+   dessa organização
+3. Clique em **Criar a minha app do GitHub**
+4. O navegador abre o GitHub com a app já preenchida. Clique em
+   **Create GitHub App**
+5. O GitHub envia-o de volta para o servidor, que guarda o ID da app, a chave
+   privada, o ID de cliente e o segredo de cliente e, em seguida, abre a página
+   de instalação da app
 
-A chave é analisada no momento em que é guardada, pelo que uma colagem truncada
-ou com o formato errado é rejeitada de imediato, em vez de falhar num pedido em
-segundo plano horas mais tarde. **Testar** vai mais longe e pergunta ao GitHub em
-que contas a app está instalada — “guardado” e “funciona” são afirmações
-diferentes, e só a segunda significa que algo vai correr.
+Nada é copiado à mão, e o código de conversão vai diretamente do GitHub para o
+seu servidor. A ligação funciona uma única vez e expira ao fim de dez minutos;
+se expirar, clique de novo em **Criar a minha app do GitHub**.
+
+A app chama-se `Control Center <code>` e pede exatamente o que o Control Center
+usa:
+
+| Permissão                                  | Acesso              |
+| ------------------------------------------ | ------------------- |
+| Metadata                                   | Leitura             |
+| Contents                                   | Leitura e escrita   |
+| Pull requests                              | Leitura e escrita   |
+| Issues                                     | Leitura e escrita   |
+| Checks, Actions, Commit statuses           | Leitura             |
+| Organization members                       | Leitura             |
+
+Os webhooks ficam desativados: o servidor faz sondagem. Para transferir mais
+tarde para uma organização uma app que criou na sua própria conta, use
+**Transfer ownership** nas definições avançadas da app no GitHub.
 
 Ponto de verificação: o bloco do GitHub indica “O servidor pode agir por si
-próprio e as pessoas podem entrar.”, e a linha **GitHub** em
-**Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código**
-passa a oferecer **Entrar com GitHub**.
+próprio e as pessoas podem entrar.”
 
-## Configurar a app com variáveis de ambiente em alternativa
+## Instalar onde estão os seus repositórios
 
-Para uma instalação headless ou por script, o servidor preenche cada campo a
-partir do ambiente na primeira vez que não tem nenhum valor guardado:
+Uma app registada mas não instalada consegue iniciar a sessão das pessoas e não
+lê nada.
+
+1. Na página de instalação que o GitHub abriu, escolha a conta ou a organização
+   proprietária dos seus repositórios
+2. Escolha **All repositories**, ou selecione os que este servidor deve ver
+
+Para a instalar noutra conta mais tarde, um administrador do espaço de trabalho
+vai a **Definições → Espaço de trabalho → Geral**, encontra **Instalações do
+app do GitHub** no cartão de identidade do GitHub e clica em **Instalar o app
+do GitHub**. A lista mostra todas as contas em que a app está instalada e
+assinala uma instalação suspensa.
+
+## Autorizar este servidor para uma organização
+
+Na App partilhada do Control Center, a instalação de uma organização só serve
+os servidores que os administradores dela autorizaram. Instalar através de
+**Instalar o app do GitHub** autoriza o servidor que iniciou a instalação. Para
+uma instalação que já existe:
+
+1. Um administrador dessa organização inicia sessão no GitHub neste servidor
+2. Abre **Definições → Espaço de trabalho → Geral → Instalações do app do
+   GitHub**
+3. A linha da organização diz **Não autorizada**. Clica em **Autorizar este
+   servidor**
+
+A linha passa então a dizer **Autorizada**. A sua própria app não precisa de
+nada disto: todas as instalações dela pertencem ao seu servidor.
+
+## Registar manualmente
+
+O cartão **Aplicações do fornecedor** também aceita os valores diretamente,
+para uma app que registou por si:
+
+| Grupo                          | Campos                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Agir como o servidor**       | **Id da aplicação** e **Chave privada** (o `.pem` completo, incluindo as linhas `BEGIN` e `END`)       |
+| **Entrada das pessoas**        | **Id de cliente** e **Segredo de cliente**. **URLs de callback** mostra o URL a registar, tal como está |
+| **Conversas de pull request**  | **Login do bot**, resolvido quando testa a ligação                                                     |
+
+Registe a callback URL `<server origin>/oauth/github/callback` exatamente como
+o cartão a mostra, deixe **Expire user authorization tokens** ativado e conceda
+as permissões da tabela acima. Clique em **Testar**: pergunta ao GitHub em que
+contas a app está instalada, para que “guardado” e “funciona” não se
+confundam.
+
+## Configurar a partir do `.env` do servidor
+
+Numa instalação headless ou automatizada, o servidor preenche cada campo a
+partir do ficheiro `.env` na primeira vez que não tem nenhum valor guardado:
 
 ```bash
 GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
-GITHUB_CLIENT_ID=Iv1.0123456789abcdef
-```
-
-Não existem flags de linha de comandos para isto — um segredo na linha de
-comandos é legível por qualquer processo no host através de `ps`. O ambiente é o
-único sítio onde os configurar, e sobrepõe-se ao que a build incluir.
-O `.env.template` tem a lista completa.
-
-Para desenvolvimento local, o `.env` na raiz do repo contém os mesmos valores e a
-aplicação para computador passa-os ao servidor que inicia. Coloque lá a chave
-numa **única linha**: um valor de `.env` é uma linha só, e `\n` entre aspas
-duplas é descodificado como uma nova linha.
-
-```
+GITHUB_CLIENT_ID=Iv23li0123456789abcd
+GITHUB_CLIENT_SECRET=<secret>
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` e `GITHUB_APP_PRIVATE_KEY` são os mesmos nomes que o mediador de
-tokens da sandbox já lê, pelo que um host que configurou tokens de agente de
-granularidade fina ganha a via de início de sessão de graça. O preenchimento
-acontece **uma vez por campo** — a partir daí, o valor guardado prevalece, pelo
-que editar em Definições não é revertido no reinício seguinte.
+Coloque a chave numa **única linha**: um valor do `.env` ocupa uma linha, e
+`\n` entre aspas duplas é descodificado como mudança de linha. O servidor
+recusa-se a arrancar quando `GITHUB_APP_PRIVATE_KEY` ou `GITHUB_CLIENT_SECRET`
+é exportado no ambiente do processo, onde qualquer processo filho o poderia
+ler; mantenha-os no ficheiro `.env` (no Docker, monte-o em `/app/bin/.env`). O
+preenchimento acontece **uma vez por campo**, pelo que o que edita nas
+Definições não é desfeito no reinício seguinte.
 
-## Faça o mesmo para o Linear
+## Dar a um espaço de trabalho uma app diferente
 
-O Linear não tem fluxo de dispositivo, pelo que o seu início de sessão é uma ida
-e volta pelo navegador e precisa mesmo de uma URL de callback — o cartão
-**Aplicações do fornecedor** mostra-lhe exatamente qual deve registar.
+Um espaço de trabalho pode usar uma app própria em vez da do servidor. Um
+administrador do espaço de trabalho vai a **Definições → Espaço de trabalho →
+Geral**, escolhe **Usar outro GitHub App** no cartão **Identidade GitHub** e
+introduz o ID da app, a chave privada, o ID de cliente e o segredo de cliente
+dessa app. Os membros passam então a iniciar sessão nessa app para este espaço
+de trabalho. Um espaço de trabalho com app própria nunca recorre à app do
+servidor nem ao Connect: enquanto os campos dele não estiverem completos, o
+trabalho dele no GitHub é recusado. Isto aplica-se seja qual for a forma como o servidor
+inicia a sessão das pessoas, inclusive através do Connect.
 
-1. Crie uma aplicação OAuth em
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Defina a **Callback URL** com a URL que o cartão mostra, exatamente como está
-3. Cole o **Client ID** e o **Client secret** no bloco do Linear
-4. Opcionalmente, adicione uma **API key** do espaço de trabalho — é a credencial
-   que o servidor usa para sincronizar tickets quando nenhuma pessoa o pediu
+O cartão **Aplicativos de provedores** nesta mesma página faz o mesmo para o Google
+Calendar, o Linear e a pesquisa de GIFs. Consulte
+[Dê ao espaço de trabalho a sua própria aplicação do Linear](/pt-PT/manual/guias/integracao-linear/#dê-ao-espaço-de-trabalho-a-sua-própria-aplicação-do-linear)
+e [Dê ao espaço de trabalho o seu próprio cliente Google](/pt-PT/manual/guias/ligar-calendario/#dê-ao-espaço-de-trabalho-o-seu-próprio-cliente-google).
 
 ## Resolução de problemas
 
-### A caixa de diálogo de início de sessão diz que o fornecedor não devolveu nenhum código de dispositivo
+### “Criar a minha app do GitHub” diz que o servidor não tem endereço
 
-**Enable Device Flow** está desligada na app. Ligue-a em **General** e tente
-novamente.
+O servidor não tem um URL público para o qual um navegador possa voltar.
+Defina `CC_SERVER_PUBLIC_URL` (ou `--public-url`) e tente novamente.
+
+### O GitHub diz que a ligação expirou
+
+A página de utilização única já foi usada, ou passaram dez minutos. Recomece a
+partir das Definições.
 
 ### O teste diz que as credenciais funcionam mas a app não está instalada em lado nenhum
 
-O registo e a instalação são passos separados. Abra **Install App** na página da
-app e instale-a.
+O registo e a instalação são passos separados. Abra a página de instalação da
+app ou use **Instalar o app do GitHub** em Espaço de trabalho → Geral.
 
 ### O teste diz que não foi possível ler a chave privada
 
 Cole o ficheiro `.pem` completo, incluindo as linhas `-----BEGIN` e `-----END`.
-Uma chave `ed25519` ou EC não pode ser usada — as GitHub Apps assinam com RSA.
+Uma chave `ed25519` ou EC não pode ser usada: as GitHub Apps assinam com RSA.
 
 ### Um membro iniciou sessão mas não vê repositórios
 
 A app não está instalada na conta que é proprietária deles, ou a sua instalação
-seleciona repositórios diferentes. O início de sessão do próprio membro só
-concede o que a app tem permissão para ver.
+seleciona repositórios diferentes. Um início de sessão só concede o que a app
+tem permissão para ver.
+
+### Os agentes dizem que a instalação da GitHub App está suspensa
+
+Alguém suspendeu a instalação no GitHub. Reative-a em
+**Settings → Applications → Installed GitHub Apps** da conta.
 
 ## Guias relacionados
 
 - [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/)
 - [Falar com o Control Center a partir de uma PR do GitHub](/pt-PT/manual/guias/conversas-pr-github/)
 - [Ligar um host de código](/pt-PT/manual/guias/ligar-host-de-codigo/)
+- [Executar um servidor Connect](/pt-PT/manual/guias/executar-servidor-connect/)
 - [Gerir chaves de API](/pt-PT/manual/guias/chaves-de-api/)
-- [Configurar a integração com o Slack](/pt-PT/manual/guias/integracao-slack/)

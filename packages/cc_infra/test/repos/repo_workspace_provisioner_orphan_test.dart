@@ -41,7 +41,7 @@ void main() {
       isolation: isolation,
       registry: registry,
       workspaces: workspaces,
-      githubToken: () async => null,
+      githubToken: (_, _) async => null,
       branchTemplate: (_) async => '{type}/{key}',
     );
   });
@@ -52,7 +52,8 @@ void main() {
     }
   });
 
-  String orphanPath() => p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
+  String orphanPath() =>
+      p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
 
   test('an orphaned worktree directory is reaped before provisioning, so the '
       'first attempt succeeds', () async {
@@ -75,17 +76,14 @@ void main() {
       repoAllowlist: const {'repo-1'},
     );
 
-    expect(
-      isolation.destroyed,
-      [orphanPath()],
-      reason: 'the orphan must be torn down, not provisioned over',
-    );
+    expect(isolation.destroyed, [
+      orphanPath(),
+    ], reason: 'the orphan must be torn down, not provisioned over');
     expect(isolation.provisioned, hasLength(1));
-    expect(
-      isolation.order,
-      ['destroy', 'provision'],
-      reason: 'the reap has to happen BEFORE the backend is asked to create',
-    );
+    expect(isolation.order, [
+      'destroy',
+      'provision',
+    ], reason: 'the reap has to happen BEFORE the backend is asked to create');
     expect(
       registry.upserts.single.path,
       orphanPath(),
@@ -156,7 +154,8 @@ class _RecordingIsolation implements RepoIsolationPort {
     required String name,
     required String branch,
     String baseRef = '',
-    String? authUrl,
+    String? fetchUrl,
+    String? fetchToken,
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
@@ -166,10 +165,7 @@ class _RecordingIsolation implements RepoIsolationPort {
     provisioned.add(path);
     order.add('provision');
     Directory(path).createSync(recursive: true);
-    return RepoIsolationResult(
-      path: path,
-      backend: RepoIsolationBackend.rift,
-    );
+    return RepoIsolationResult(path: path, backend: RepoIsolationBackend.rift);
   }
 
   @override

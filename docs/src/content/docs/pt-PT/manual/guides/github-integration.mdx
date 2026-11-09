@@ -2,7 +2,7 @@
 title: Configurar a integração com o GitHub
 description: Inicie sessão no GitHub para que a superfície de PR, o registo de repos e as execuções de agentes funcionem.
 slug: pt-PT/manual/guias/integracao-github
-sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
+sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ---
 
 Este guia aborda as partes da configuração específicas do GitHub. O GitHub é um
@@ -14,75 +14,72 @@ forges.
 ## Pré-requisitos
 
 - Uma conta do GitHub com acesso aos repos nos quais quer trabalhar
-- Uma GitHub App registada para o seu servidor (consulte
-  [Criar a GitHub App](/pt-PT/manual/guias/github-app/)) para que possa
-  **iniciar sessão**, **ou** um token de acesso pessoal com `repo` e `read:org`
-  para colar
+- Um servidor que consiga iniciar a sessão das pessoas no GitHub: com a sua
+  própria GitHub App (consulte
+  [Criar a GitHub App](/pt-PT/manual/guias/github-app/)) ou com o Control
+  Center Connect, escolhido pelo proprietário do servidor em
+  **Definições → Servidor → Início de sessão único**
 
 :::note[As credenciais residem no servidor, associadas a si]
-Nada é guardado na máquina em que está a escrever. A sua credencial é detida pelo
-seu `cc_server`, indexada pelo id do seu utilizador, e todos os dispositivos em
-que inicia sessão usam-na — ambiente de trabalho, web e telefone. Outro membro do
-mesmo servidor não a consegue ler, e iniciar sessão por ele é algo que ele próprio
-faz.
+Nada é guardado na máquina em que está a escrever. O seu início de sessão no
+GitHub é detido pelo seu `cc_server`, indexado pelo id do seu utilizador, e
+todos os dispositivos em que inicia sessão usam-no: computador, web e telefone.
+Outro membro do mesmo servidor não o consegue usar, e iniciar sessão é algo que
+cada um faz por si.
 :::
 
-## Iniciar sessão com o GitHub
+## Iniciar sessão no GitHub
 
-Um **fluxo de dispositivo**: o GitHub mostra-lhe um código curto, você aprova-o
-em github.com e o servidor recebe a credencial — sem URL de callback, sem porta,
-nada a expor. Disponível sempre que o servidor tenha um id de cliente, que uma
-compilação oficial já inclui.
+O GitHub só aceita início de sessão: não há nenhum token para colar.
 
 1. Vá a **Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de
    código** (ou ao primeiro passo do onboarding)
-2. Na linha **GitHub**, clique em **Entrar com o GitHub**
-3. Uma caixa de diálogo mostra um código de oito caracteres e abre
-   [github.com/login/device](https://github.com/login/device) no seu navegador.
-   O código já está na sua área de transferência
-4. Cole-o, aprove a aplicação e volte. A linha passa sozinha para
-   «Ligado como _your-username_»
+2. Na linha **GitHub**, clique em **Entrar no GitHub**
+3. O navegador abre o GitHub. Aprove a aplicação
 
-Pode fechar a caixa de diálogo enquanto termina no navegador — o servidor
-continua a sondar até o código expirar (cerca de 15 minutos), pelo que o início
-de sessão é concluído na mesma.
+A forma como o início de sessão termina depende de quem o executa:
 
-## Ou colar um token
-
-A alternativa quando o servidor não tem app, quando a app não está instalada numa
-conta de que precisa, ou quando simplesmente prefere usar um PAT.
-
-1. Vá a **Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de
-   código**
-2. Na linha **GitHub**, clique em **Adicionar token**
-3. Cole um token com `repo` e `read:org` (clássico) e guarde. Um token
-   **granular** precisa de **Contents** e **Pull requests** do repositório
-   (leitura e escrita), mais **Checks** e **Actions** (leitura).
-
-O token é testado à medida que é guardado, pelo que a linha consegue indicar a
-conta a que pertence. Clique em **Desligar** para o remover.
+- **A aplicação do próprio servidor:** o GitHub envia o navegador de volta ao
+  servidor e a caixa de diálogo deteta-o sozinha. Não há nada para escrever
+- **Control Center Connect:** a página do navegador mostra um código de 8
+  caracteres. Escreva-o na caixa de diálogo, ou deixe o navegador abrir o
+  Control Center através da ligação `control-center://` e evite escrevê-lo
 
 Ponto de verificação: a linha **GitHub** apresenta «Ligado como
-_your-username_». Um sufixo indica a origem quando a credencial que responde não
-é a sua — «pela aplicação deste servidor» ou «do ambiente».
+_your-username_».
 
-:::note[A precedência é fixa]
-Um pedido feito em seu nome usa a **sua** credencial, e mais nada — o ambiente é
-a credencial do servidor, não a sua, pelo que nunca o substitui. O trabalho sem
-ninguém por trás (webhooks, sondagem de PRs, sincronização de tickets) usa a
-identidade de app do servidor, depois a credencial do proprietário do servidor e,
-por fim, o ambiente.
-:::
+A caixa de diálogo recusa um código ou uma ligação que não tenha sido ela a
+iniciar, com **Login não iniciado aqui**. Se alguém lhe enviar uma ligação de
+início de sessão, não continue: concluí-la ligaria a sua conta ao servidor
+dessa pessoa.
+
+Clique em **Desligar** para remover o seu início de sessão. Terminar sessão no
+GitHub, ou ser removido de um espaço de trabalho, também faz cair todos os
+tokens que o servidor emitiu em seu nome.
+
+## Em nome de quem fala a sua credencial
+
+- **Tudo o que faz** (abrir a página da PR, publicar uma revisão, aprovar,
+  fazer merge) é executado com o **seu** início de sessão e mais nada. Se não
+  tiver sessão iniciada, a aplicação indica-o e pede-lhe que inicie sessão.
+  Nenhuma outra credencial o substitui
+- **O trabalho sem ninguém a escrever** (execuções de agentes, pipelines,
+  sondagem de PRs, respostas do bot, clones) recebe um token para um único
+  repositório, emitido a partir da GitHub App do servidor ou através do
+  Connect. Está limitado ao que um membro responsável pode fazer aí: o membro
+  que pediu ou, caso contrário, o proprietário do espaço de trabalho. Um membro
+  que não pode fazer push restringe o token a leitura
+- **A automação nunca aprova** uma pull request. Aprovar é um ato de uma pessoa
 
 ## O que a integração lhe oferece
 
 | Funcionalidade            | Como                                                                                                                    |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Lista e detalhe de PRs    | A API REST do GitHub, a partir do servidor, com a identidade da app ou com a sua própria credencial                      |
+| Lista e detalhe de PRs    | A API REST do GitHub, a partir do servidor, com o seu próprio início de sessão                                           |
 | Execuções de verificação  | A API GitHub Checks                                                                                                     |
-| Publicação de revisões    | Um passo sujeito a uma ação do utilizador que publica a sua revisão na PR                                                |
+| Publicação de revisões    | Um passo sujeito a uma ação do utilizador que publica a sua revisão na PR, em seu nome                                   |
 | Registo de repos          | Um checkout é aceite se o seu remoto `origin` apontar para github.com — ou para gitlab.com / bitbucket.org               |
-| Acesso dos agentes ao GitHub | O intermediário de credenciais injeta um token só de leitura como `GH_TOKEN` / `GITHUB_TOKEN`; os pushes passam pelo Control Center |
+| Acesso dos agentes ao GitHub | Um token para o único repositório da execução como `GH_TOKEN` / `GITHUB_TOKEN`; os pushes passam pelo Control Center |
 | Sinais de notificação     | Uma sondagem do lado do servidor à sua caixa de entrada de notificações do GitHub levanta «mencionado numa pull request» e «revisão solicitada» |
 | Perfis de utilizador      | Cartões de perfil ao passar o rato e filtragem de PRs por autor                                                          |
 
@@ -104,54 +101,55 @@ minutos.
 
 ## Saber como os agentes atuam no GitHub
 
-- Um agente que trabalha numa worktree do GitHub recebe sempre um token do
-  GitHub só de leitura. Um push passa pelo Control Center, que pergunta à regra
-  **Fazer push para um remoto** e depois o reencaminha com um token de escrita
-  que o agente nunca detém. Consulte
+- Um agente que trabalha numa worktree do GitHub recebe um token para esse
+  único repositório. Pode ler o código e comentar em pull requests quando o
+  membro responsável pode fazer push, e apenas ler quando não pode. Um push
+  passa pelo Control Center, que pergunta à regra **Fazer push para um
+  remoto** e depois o reencaminha com um token de escrita que o agente nunca
+  detém. Consulte
   [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/)
 - Os commits do agente usam sempre a identidade Git de quem fez o pedido como autor e committer. Por predefinição, o trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` credita a conta GitHub `@usectrl` como coautora. Em **Definições → Você → Atribuição de autoria dos commits**, pode desativar esse crédito de coautoria sem mudar a sua identidade. Uma definição do espaço de trabalho em **Definições → Espaço de trabalho → Geral** prevalece e bloqueia esse controlo pessoal. A atribuição própria do Claude Code está sempre desativada. A assinatura de commits continua a exigir uma configuração válida própria
-- Com uma GitHub App configurada, o intermediário emite, por lançamento, tokens
-  de instalação granulares, limitados ao repo e com cerca de uma hora de duração,
-  em vez de entregar um token amplo. A instalação é resolvida a partir do
-  **proprietário** do repo da execução, pelo que uma app instalada em várias
-  contas fica corretamente limitada àquela que a execução tocar. Sem app, os
-  agentes recebem o token do ambiente, que não pode ser restringido a só
-  leitura: a regra de push vincula então o `git push`, mas não código que use o
-  token diretamente
-- O token é sempre o do intermediário, nunca o do próprio membro que faz o
-  pedido. O token do servidor é retido a uma execução que atua por um membro
-  que não seja o proprietário e não tenha ligado o GitHub
+- Um terminal que abra num rig recebe o seu próprio início de sessão, limitado
+  a esse único repositório, pelo que os pushes feitos aí são seus
+- Quando nenhum token pode ser emitido (ninguém responsável tem sessão
+  iniciada, a app não está instalada no proprietário ou a instalação está
+  suspensa), a execução começa sem um e as notas dela explicam porquê. Não
+  existe credencial alternativa
 
 ## Resolução de problemas
 
 ### A lista de PRs está vazia e diz que o GitHub não está ligado
 
-Não tem nenhuma credencial do GitHub neste servidor. Inicie sessão ou cole um
-token em **Hospedagem de código**. Os repos de outras forges não são afetados —
-só os do GitHub é que não contribuem em nada.
+Não iniciou sessão no GitHub neste servidor. Clique em **Entrar no GitHub** em
+**Hospedagem de código**. Os repos de outras forges não são afetados.
 
-### A linha oferece «Adicionar token» mas não «Entrar com o GitHub»
+### A linha do GitHub diz que o início de sessão não está configurado neste servidor
 
-O servidor não tem id de cliente — o que é o estado normal para uma compilação a
-partir do código-fonte, já que as credenciais só são integradas em compilações
-oficiais. Consulte [Criar a GitHub App](/pt-PT/manual/guias/github-app/): demora
-cerca de dois minutos e só o proprietário do servidor tem de o fazer, uma vez.
+O servidor não tem nem uma GitHub App própria nem o Connect. O proprietário do
+servidor escolhe uma das opções em **Definições → Servidor → Início de sessão
+único**: **Criar a minha app do GitHub** demora cerca de dois minutos. Consulte
+[Criar a GitHub App](/pt-PT/manual/guias/github-app/).
 
-### A caixa de diálogo de início de sessão diz que o fornecedor não devolveu nenhum código de dispositivo
+### A caixa de diálogo diz que o código não corresponde
 
-A GitHub App existe, mas a caixa de verificação **Device flow** está desmarcada.
-Ative-a nas definições da app (General → Device flow) e tente de novo.
+Escreva o código exatamente como o navegador o mostra: 8 letras e algarismos.
+Cinco códigos errados terminam o início de sessão; recomece.
 
-### A linha diz «pela aplicação deste servidor» quando eu esperava a minha própria conta
+### O início de sessão diz que a app não está instalada
 
-Não iniciou sessão; o que está a ver é a identidade de app do servidor a
-responder. Clique em **Entrar com o GitHub** nessa linha.
+A GitHub App não tem nenhuma instalação na conta proprietária do repositório.
+Um administrador do espaço de trabalho instala-a em **Definições → Espaço de
+trabalho → Geral → Instalações do app do GitHub**. No caso de uma organização
+na App partilhada do Control Center, um administrador dessa organização pode
+ter de clicar em **Autorizar este servidor**. Consulte
+[Criar a GitHub App](/pt-PT/manual/guias/github-app/#autorizar-este-servidor-para-uma-organização).
 
-### Um PAT granular não mostra botão de merge nem o estado das verificações
+### Toda a gente tem de voltar a iniciar sessão no GitHub
 
-O token precisa de **Contents** e **Pull requests** (leitura e escrita), mais
-**Checks** e **Actions** (leitura). Depois de o alterar, cole-o novamente em
-Hospedagem de código.
+O proprietário do servidor trocou a chave do Connect do servidor, mudou de
+servidor Connect, ou o diretório de dados foi restaurado noutra máquina. Os
+inícios de sessão através do Connect ficam associados ao servidor que os
+criou.
 
 ### Adicionar um repo é rejeitado
 
@@ -176,4 +174,4 @@ três vezes com recuo exponencial, respeitando `retry-after`.
 - [Gerir chaves de API](/pt-PT/manual/guias/chaves-de-api/)
 - [Adicionar repos a um espaço de trabalho](/pt-PT/manual/guias/adicionar-repos/)
 - [Rever e fazer merge de uma PR](/pt-PT/manual/guias/rever-e-fazer-merge-de-pr/)
-- [Configurar a integração com o Slack](/pt-PT/manual/guias/integracao-slack/)
+- [Falar com o Control Center a partir de uma PR do GitHub](/pt-PT/manual/guias/conversas-pr-github/)

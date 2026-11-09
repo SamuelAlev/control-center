@@ -9,8 +9,7 @@
 /// breadcrumb-registry keys).
 ///
 /// The only routes WITHOUT a workspace prefix are the pre-context surfaces:
-/// [splashRoute], [onboardingRoute], [signedOutRoute] and [workspaceListRoute]
-/// (the picker).
+/// [splashRoute], [onboardingRoute] and [workspaceListRoute] (the picker).
 library;
 
 import 'package:flutter/widgets.dart';
@@ -28,16 +27,10 @@ const String splashRoute = '/splash';
 /// First-run onboarding (API keys + first workspace).
 const String onboardingRoute = '/onboarding';
 
-/// Re-authentication for an operator who is already set up but whose forge
-/// credential expired or was revoked. Distinct from [onboardingRoute] because
-/// nothing needs setting up — sending someone through a five-step first-run
-/// flow to fix one expired token reads as if their install was reset.
-const String signedOutRoute = '/signed-out';
-
-/// Whether a route is still showing startup, sign-in or first-run setup.
-/// App settings and the command palette stay unavailable on these surfaces.
+/// Whether a route is still showing startup or first-run setup. App settings
+/// and the command palette stay unavailable on these surfaces.
 bool isAuthenticationRoute(String path) =>
-    path == splashRoute || path == onboardingRoute || path == signedOutRoute;
+    path == splashRoute || path == onboardingRoute;
 
 /// Workspaces list / picker. Full-screen (outside the workspace shell) — it is where the user chooses or creates the workspace whose context everything else runs in.
 const String workspaceListRoute = '/workspaces';

@@ -89,7 +89,7 @@ class GlobalDatabase extends _$GlobalDatabase {
   final void Function(String tag, String message)? onError;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   /// The `server_meta` key holding this install's uuid.
   static const installIdKey = 'install_id';
@@ -187,6 +187,16 @@ class GlobalDatabase extends _$GlobalDatabase {
       if (existing.isEmpty) {
         await m.createTable(environmentSlotLeasesTable);
       }
+    }),
+    // v8: GitHub is App-only. The personal-access-token workspace mode is
+    // gone; a workspace that used it follows the server's GitHub lane (its
+    // own App or Connect) and its members sign in once. The stored PATs
+    // themselves lived in secrets.json and are purged at boot.
+    MigrationStep(7, 8, (m) async {
+      await customStatement(
+        "UPDATE workspaces SET github_auth_mode = 'inherit' "
+        "WHERE github_auth_mode = 'pat'",
+      );
     }),
   ];
 

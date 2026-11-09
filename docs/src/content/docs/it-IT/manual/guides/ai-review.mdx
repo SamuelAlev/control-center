@@ -2,7 +2,7 @@
 title: Usa la revisione basata sull'IA
 description: Esegui la pipeline pr_review su una PR, leggi i rilievi e il verdetto, poi pubblica la revisione su GitHub.
 slug: it-IT/manuale/guide/revisione-ia
-sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
+sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
 ---
 
 Questa guida mostra come far revisionare una pull request agli agenti revisori e
@@ -119,15 +119,17 @@ la pubblica su GitHub.
 
 Control Center invia **una sola** revisione GitHub. I rilievi già risolti o
 scartati vengono saltati. Il pulsante include ogni rilievo ancora aperto e, con
-**Ship**, invia `APPROVE`. (Lo strumento MCP `publish_review_to_github` usa ancora
-come impostazione predefinita solo i rilievi confermati dai pari e non approva,
-a meno che tu non passi `approve_on_ship`.) I rilievi ancorati a un file e a una
+**Ship**, invia `APPROVE`. (Lo strumento MCP `publish_review_to_github` usa
+come impostazione predefinita solo i rilievi confermati dai pari e non approva
+mai: pubblica come automazione, quindi lì `approve_on_ship` non ha effetto.) I
+rilievi ancorati a un file e a una
 riga diventano commenti inline; tutto il resto si ripiega nel corpo del
 riepilogo, ciascuno con un piè di pagina “— Control Center AI review” perché la
 fonte sia inequivocabile. Un verdetto **Block** viene inviato come
 `REQUEST_CHANGES`; **Hold** come `COMMENT`; **Ship** come `APPROVE` da questo
-pulsante. Poi un avviso recita **Pubblicato**. La revisione viene pubblicata
-sotto l'identità dell'app del server.
+pulsante. Poi un avviso recita **Pubblicato**. La revisione viene pubblicata a
+tuo nome, con il tuo accesso GitHub: se non hai effettuato l'accesso a GitHub,
+la pubblicazione non riesce e ti chiede di accedere.
 
 Se GitHub rifiuta un ancoraggio inline perché la riga non fa parte del diff,
 l'intera revisione viene inviata di nuovo con ogni rilievo ripiegato nel corpo,

@@ -3,11 +3,9 @@ part of 'dispatch_session.dart';
 extension _AcpMethods on DispatchSession {
   /// `<cliPath> <acpArgs> <argsOverride>` as a subprocess, speaks JSON-RPC 2.0
   /// over stdio and translates `session/update` notifications into events.
-  Future<void> _runAcp({
-    required List<String> scopedNotes,
-  }) async {
+  Future<void> _runAcp({required ScopedCredentials scoped}) async {
     final backend = deps.backendRegistry.backendFor(cliName)!;
-    for (final note in scopedNotes) {
+    for (final note in scoped.notes) {
       addEvent(DebugEvent(content: '[acp] $note'));
     }
 
@@ -37,8 +35,10 @@ extension _AcpMethods on DispatchSession {
     if (!await _preflightCommand(argv)) {
       return;
     }
+    // The broker-minted, one-repo credential reaches ACP agents like every
+    // other transport; `_mergedEnv` re-asserts it over adapter config.
     final mergedEnv = _mergedEnv(
-      scopedEnv: const {},
+      scopedEnv: scoped.environment,
       backendEnv: backend.defaultEnv(),
     );
 
@@ -47,7 +47,6 @@ extension _AcpMethods on DispatchSession {
     late Process process;
     try {
       final manager = deps.sandboxManager;
-      final sanitizedParent = const EnvSanitizer().hardenPlatform({});
       if (manager != null) {
         // Route through the OS sandbox (sandbox-exec / bwrap).
         final config = await _buildSandboxConfig();
@@ -56,26 +55,24 @@ extension _AcpMethods on DispatchSession {
           argv: argv,
           workingDirectory: agentDirHostPath,
         );
-        process = await Process.start(
+        process = await ChildProcess.start(
           wrap.executable,
           wrap.argv,
           workingDirectory: agentDirHostPath,
-          environment: {...sanitizedParent, ...wrap.environment, ...mergedEnv},
-          includeParentEnvironment: false,
-          runInShell: false,
+          environment: {...wrap.environment, ...mergedEnv},
+          toolchain: true,
         );
       } else {
         CcInfraLog.warning(
           '[acp] No native sandbox available; '
-          'spawning $cliName with env sanitization only.',
+          'spawning $cliName with the allowlisted environment only.',
         );
-        process = await Process.start(
+        process = await ChildProcess.start(
           cliPath,
           argv.skip(1).toList(),
           workingDirectory: agentDirHostPath,
-          environment: {...sanitizedParent, ...mergedEnv},
-          includeParentEnvironment: false,
-          runInShell: false,
+          environment: mergedEnv,
+          toolchain: true,
         );
       }
     } on Object catch (e) {

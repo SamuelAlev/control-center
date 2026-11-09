@@ -2,7 +2,7 @@
 title: Quick start
 description: Install Control Center, configure one agent and watch it work on your repo.
 slug: en-GB/manual/quick-start
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
@@ -25,13 +25,14 @@ setup; see [Install](/en-GB/manual/install/#use-it-in-your-browser) for the brow
 
 ## Step 2: Work through onboarding
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Onboarding runs its steps in order — there is no skipping ahead. The first one appears only for the server owner, which on a desktop running its own server is you.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Sign-in** (server owner only): choose how this server signs people in to GitHub, Google Calendar and Linear — **Use Control Center's apps**, **Use my own apps**, or **Use a custom Connect server**. With your own apps, **Create my GitHub App** sets up GitHub in one step. You can change this later in **Settings → Server → Single sign-on**.
+2. **Connect**: sign in to GitHub, or paste a GitLab or Bitbucket token. The credential is stored on the server, attached to your account.
+3. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
+4. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
+5. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
+6. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
 
 Control Center then opens your workspace inbox.
 

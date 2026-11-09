@@ -2,7 +2,7 @@
 title: Revizuire IA
 description: Cum devine un pull request unul revizuit — spații de revizuire, noduri de revizuire și consensul între colegi, cohorte și axe, verdictul Ship/Hold/Block și de ce publicarea rămâne un pas pe care îl faci tu.
 slug: ro-RO/manual/concepte/revizuire-ia
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## Forma unei revizuiri
@@ -211,10 +211,13 @@ ori. Când apeși **Publică pe GitHub**:
   tăcere.
 - Un verdict **Block** este trimis ca `REQUEST_CHANGES`; **Hold** ca `COMMENT`;
   **Ship** ca `APPROVE` din buton (`approve_on_ship: true`). Instrumentul MCP
-  lasă Ship ca `COMMENT` dacă nu transmiți `approve_on_ship`.
-- Revizuirea este postată sub identitatea de aplicație a serverului. Cine a
-  apăsat Publică este înregistrat pentru poarta de rol și jurnalul de audit; nu
-  este autorul GitHub.
+  publică drept automatizare și lasă mereu Ship ca `COMMENT`.
+- Butonul **Publică pe GitHub** postează revizuirea ca persoana care l-a apăsat,
+  pe propria ei autentificare GitHub: poarta de lansare este a ei, deci și
+  revizuirea. O publicare fără o persoană în spate este automatizare, iar
+  automatizarea nu aprobă niciodată: Ship pleacă atunci ca `COMMENT`, iar prin
+  Control Center Connect postarea este atribuită cu prefixul
+  `**Control Center** (for @login):`.
 
 Publicarea declară clasa de acțiune `prPublish`, astfel încât punctul de control
 al guardrail-urilor o condiționează ca orice acțiune care mută date — solicită

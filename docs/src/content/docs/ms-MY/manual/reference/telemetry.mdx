@@ -2,7 +2,7 @@
 title: Analitik penggunaan
 description: Perkara yang direkodkan oleh Control Center apabila analitik penggunaan dihidupkan, siapa yang membuat keputusan, dan perkara yang tidak pernah dihantar.
 slug: ms-MY/manual-pengguna/rujukan/analitik-penggunaan
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center boleh menghantar **peristiwa penggunaan berpseudonim** ke tika [Umami](https://umami.is). Analitik penggunaan **dimatikan sehingga pengendali pelayan menghidupkannya**. Tetapan ini milik pelayan dan terpakai kepada setiap klien yang bersambung dengannya: apl desktop, apl web, telefon dan pelayan itu sendiri.
@@ -95,9 +95,12 @@ Direkodkan oleh apl desktop, apl web dan telefon bagi perkara yang dilakukan ole
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Larian yang gagal dicuba semula |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Larian dibatalkan daripada apl |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Langkah yang sedang berjalan dihentikan secara paksa |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Percubaan log masuk kalendar tamat |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (benar apabila log masuk berjalan melalui Control Center Connect dan bukan klien Google pelayan itu sendiri), `duration_s` | Percubaan log masuk kalendar tamat |
 | `calendar_disconnected` | `workspace_id` | Akaun kalendar diputuskan |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Jemputan telah dijawab |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (bilangan), `conference` | Acara ditempah pada Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | Acara telah dialih atau diubah saiznya pada grid kalendar |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | Acara dipadamkan daripada Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Rakaman dimulakan daripada acara kalendar |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Pautan mesyuarat dibuka (telefon). Hanya pembekal yang diperoleh daripada pautan itu |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Pusat pemberitahuan digunakan |

@@ -9,6 +9,7 @@ import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/evaluation/controlled_claude_mcp_bridge.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
 import 'package:path/path.dart' as p;
 
@@ -99,14 +100,14 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     String configDir,
     String flag,
   ) async {
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       executable,
       [flag],
       environment: {
         'PATH': _pathFor(executable),
         'CLAUDE_CONFIG_DIR': configDir,
       },
-      includeParentEnvironment: false,
+      inheritBase: false,
     );
     final text = StringBuffer();
     var length = 0;
@@ -505,7 +506,7 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     required void Function() stopAttempt,
     required void Function(Map<String, dynamic>) onInitEvent,
   }) async {
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       executable,
       args,
       workingDirectory: cwd,
@@ -521,7 +522,7 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
         if (localApiEndpointForTesting != null)
           'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': '1',
       },
-      includeParentEnvironment: false,
+      inheritBase: false,
     );
     final stderr = StringBuffer();
     var bytes = 0;

@@ -880,8 +880,10 @@ CachedPrReviewRepository _makeRepo({
   PrDiffSource? localDiffSource,
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
+  String? cacheMemberId,
 }) => CachedPrReviewRepository(
   db: db,
+  cacheMemberId: cacheMemberId,
   // The repository is forge-agnostic now, so the fake HTTP surface is driven
   // through the real GitHub adapter — which means these tests also cover the
   // adapter's mapping rather than bypassing it.
@@ -1696,6 +1698,47 @@ void main() {
       expect(await db.cacheDao.read('ws1', 'prDetail', '7'), isNull);
       await sub.cancel();
     });
+
+    test(
+      'an unlinked repo\'s rows are keyed by the member, never shared',
+      () async {
+        mockPr.pullRequests['o/r/7'] = _testPR(7);
+        final alice = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          changeSignals: signals,
+          cacheMemberId: 'u-alice',
+        );
+        final sub = alice.watchPullRequest(7).listen((_) {});
+        await pump();
+        expect(
+          await db.cacheDao.read('ws1', 'prDetail', 'u:u-alice|o/r#7'),
+          isNotNull,
+        );
+        expect(
+          await db.cacheDao.read('ws1', 'prDetail', 'o/r#7'),
+          isNull,
+          reason: 'the shared key is for linked repos only',
+        );
+        await sub.cancel();
+
+        // Bob's repository never sees Alice's row: it fetches with his own
+        // credential instead of serving hers from disk.
+        mockPr.pullRequests.remove('o/r/7');
+        final bob = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          cacheMemberId: 'u-bob',
+        );
+        final seen = await bob.watchPullRequest(7).handleError((_) {}).toList();
+        expect(seen.whereType<PullRequest>(), isEmpty);
+        // Bob's own row holds only what his fetch found: nothing.
+        expect(
+          await db.cacheDao.read('ws1', 'prDetail', 'u:u-bob|o/r#7'),
+          anyOf(isNull, 'null'),
+        );
+      },
+    );
   });
 
   // -- FakePrReviewRepository tests -----------------------------------------

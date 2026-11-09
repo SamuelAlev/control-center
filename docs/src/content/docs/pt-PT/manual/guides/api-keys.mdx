@@ -2,7 +2,7 @@
 title: Gerir chaves de API
 description: Onde reside cada credencial — a sua conta de utilizador no servidor, o próprio servidor ou uma CLI externa — e como defini-la, renová-la e removê-la.
 slug: pt-PT/manual/guias/chaves-de-api
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Este guia mostra onde é guardada cada credencial que o Control Center utiliza e
@@ -14,27 +14,35 @@ haver ou não uma pessoa por trás dele.
 
 | Credencial                            | Onde é guardada                                            | Quem a utiliza                                                      |
 | ------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
-| A sua credencial de forge / de tickets | O ficheiro de segredos 0600 do servidor, indexado pelo id do seu utilizador | Tudo o que pedir: a superfície de PR, as execuções dos seus agentes, as suas imagens |
-| A identidade da aplicação do servidor  | O mesmo ficheiro, mais `server_settings` para o que não são segredos | Trabalho que nenhuma pessoa pediu: webhooks, sondagem de PRs, sincronização de tickets |
+| O seu início de sessão de forge / de tickets | O ficheiro de segredos 0600 do servidor, indexado pelo id do seu utilizador | Tudo o que fizer: a superfície de PR, as revisões, os merges, as suas ações no Linear |
+| As aplicações de fornecedor do servidor | O mesmo ficheiro, mais `server_settings` para o que não são segredos | Iniciar a sessão das pessoas e emitir tokens de um único repositório para agentes, pipelines e sondagem |
+| A chave de instalação do Connect      | O mesmo ficheiro (`connect_install_key`)                   | Identificar este servidor perante o Control Center Connect          |
 | Chaves de fornecedores de modelos e tokens OAuth | O armazenamento de credenciais do próprio servidor | O adaptador integrado, para todos os espaços de trabalho da instalação |
-| Tokens de bot do Slack                | `<dataDir>/<workspaceId>/chat_credentials/` no servidor    | A ponte de chat desse espaço de trabalho                            |
+| Credenciais de bot do Slack           | `<dataDir>/<workspaceId>/chat_credentials/` no servidor    | A ponte de chat desse espaço de trabalho: os tokens da sua própria aplicação, ou a concessão selada da aplicação partilhada |
 | Credenciais de CLIs externas          | O que essa CLI utilizar                                    | Claude Code, no host do servidor                                    |
 
-## Duas credenciais do GitHub, que respondem a perguntas diferentes
+## GitHub: o seu início de sessão e tokens de um único repositório
 
-- **A sua**, obtida ao iniciar sessão (fluxo de dispositivo) ou ao colar um
-  token. É a que é usada em todos os pedidos feitos *em seu nome*, pelo que um
-  comentário publicado por si traz o seu nome. Outro membro não a consegue ler, e
-  liga a sua própria
-- **A do servidor**, obtida a partir da GitHub App que o operador registou.
-  Responde a tudo o que não tem autor — pelo que o acesso ao forge não desaparece
-  quando alguém sai ou renova um token
+- **O seu**, obtido com **Entrar no GitHub**. É o que é usado em todos os
+  pedidos feitos *em seu nome*, pelo que uma revisão publicada por si traz o seu
+  nome. Outro membro não o consegue usar, e cada um inicia sessão por si. Não há
+  nenhum token do GitHub para colar
+- **O trabalho sem ninguém a escrever** (agentes, pipelines, sondagem,
+  respostas do bot) recebe um token para um repositório de cada vez, emitido a
+  partir da GitHub App do servidor ou através do Control Center Connect, e
+  limitado ao que um membro responsável pode fazer aí. Nunca é o seu início de
+  sessão entregue por inteiro
 
-A sua é definida no cartão **Hospedagem de código**, em **Definições → Espaço de
-trabalho → Perfil e identidade**; a do servidor no cartão **Aplicações do
-fornecedor**, em **Definições → Servidor → Início de sessão único**. Consulte
+O seu é definido no cartão **Hospedagem de código**, em **Definições → Espaço de
+trabalho → Perfil e identidade**; a aplicação do servidor no cartão
+**Aplicações do fornecedor**, em **Definições → Servidor → Início de sessão
+único**. Consulte
 [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/) e
 [Criar a GitHub App](/pt-PT/manual/guias/github-app/).
+
+O GitLab e o Bitbucket continuam a aceitar um token pessoal colado, guardado da
+mesma forma. Consulte
+[Ligar um host de código](/pt-PT/manual/guias/ligar-host-de-codigo/).
 
 :::note[Existe também um ecrã acessível apenas por URL]
 `/workspaces/<workspaceId>/api-keys` apresenta os mesmos dois cartões do
@@ -72,48 +80,63 @@ enquanto o servidor lê a sua própria cópia e nada liga as duas. Consulte
 ## Ligar um fornecedor de tickets
 
 O cartão **Tickets** em **Definições → Espaço de trabalho → Geral** contém as duas
-metades de uma mesma decisão: em que fornecedor residem os seus tickets e a
-credencial correspondente. Escolher **Local** oculta a linha da credencial — os
-tickets locais residem na própria base de dados deste servidor e não há nada a
-autenticar.
+metades de uma mesma decisão: em que fornecedor residem os seus tickets e quem é
+o Control Center quando fala com ele. Escolher **Local** oculta as linhas do
+Linear — os tickets locais residem na própria base de dados deste servidor e
+não há nada a autenticar.
 
-A sua chave é guardada no servidor associada ao id do seu utilizador, tal como a
-do forge. O servidor guarda a sua própria chave do Linear em separado
-(**Aplicações do fornecedor**), que é a usada pela sincronização de tickets
-quando nenhuma pessoa o pediu. Nenhuma chave de tickets é injetada na sandbox de
-um agente; os agentes escrevem tickets através das ferramentas do Control
-Center, que perguntam à regra **Escrever num rastreador externo**. Consulte
+O Linear tem dois inícios de sessão e nenhuma chave para colar: **Linear** é o
+seu, para o que fizer, e **Automação do Linear** é a aplicação do Control Center
+do espaço de trabalho, ligada por um administrador, para a sincronização de
+tickets, os pipelines e os agentes. O servidor pode também ter uma **Chave de
+API de serviço** (**Aplicações do fornecedor**) para os espaços de trabalho sem
+a automação ligada. Nenhuma credencial de tickets é injetada na sandbox de um
+agente; os agentes escrevem tickets através das ferramentas do Control Center,
+que perguntam à regra **Escrever num rastreador externo**. Consulte
 [Configurar a integração com o Linear](/pt-PT/manual/guias/integracao-linear/).
 
 ## Renovar ou revogar
 
-- **A sua credencial do GitHub**: carregue em **Desligar** e volte a iniciar
-  sessão ou cole o novo token. Revogue a antiga no GitHub
+- **O seu início de sessão no GitHub**: carregue em **Desligar** e depois de
+  novo em **Entrar no GitHub**. Desligar também faz cair todos os tokens que o
+  servidor emitiu em seu nome
+- **Um token do GitLab ou do Bitbucket**: carregue em **Atualizar token**, cole
+  o novo e depois revogue o antigo na forge
 - **A aplicação do servidor**: gere uma nova chave privada ou um novo segredo de
-  cliente na página da aplicação no GitHub, cole-a em **Aplicações do
+  cliente na página da aplicação no fornecedor, cole-a em **Aplicações do
   fornecedor** e carregue em **Testar**
+- **A chave de instalação do Connect**: **Trocar a chave** no cartão
+  **Control Center Connect**, ou `cc_server connect rotate-key --yes`. Toda a
+  gente que iniciou sessão através do Connect tem de voltar a iniciar sessão.
+  Consulte [Control Center Connect](/pt-PT/manual/referencia/connect/)
 - **Um fornecedor de modelos**: na respetiva linha, termine a sessão (OAuth) ou
   remova a chave e volte a ligar
-- **Slack**: volte a colar os tokens na caixa de diálogo de ligação. Consulte
+- **Slack**: no caso da sua própria aplicação, volte a colar os tokens na caixa
+  de diálogo de ligação. A aplicação partilhada do Control Center não tem token
+  para renovar: o token de bot dela é renovado através do Connect, e
+  **Desligar** revoga-o e desinstala o bot do Slack. Consulte
   [Configurar a integração com o Slack](/pt-PT/manual/guias/integracao-slack/)
 
 ## Resolução de problemas
 
-### A lista de PRs está vazia, mas o meu token funciona no `curl`
+### Um token do GitLab ou do Bitbucket funciona no `curl`, mas não aqui
 
-Verifique o subtítulo da linha **Hospedagem de código**. Se indicar outra origem
-(“através da aplicação deste servidor”, “do ambiente”), a credencial que está a
-testar não é a que responde — a sua não foi guardada.
+Verifique o subtítulo da linha **Hospedagem de código**. Se indicar “do
+ambiente”, a credencial que responde é a do servidor, não a sua — a sua não foi
+guardada.
 
-### O token é aceite, mas pedidos posteriores falham
+### Um token do GitLab ou do Bitbucket é aceite, mas pedidos posteriores falham
 
 O token é testado tal como está guardado, pelo que a linha indica a conta por
 trás dele — mas apenas a conta, não os escopos. Um token com poucos escopos
-liga-se e depois falha pedidos individuais. Verifique os escopos e a validade:
+liga-se e depois falha pedidos individuais. Verifique os escopos e a validade
+dele na forge.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### Um fornecedor diz que o início de sessão não está configurado neste servidor
+
+O servidor não tem nem uma aplicação própria para esse fornecedor nem o Control
+Center Connect. O proprietário do servidor escolhe uma das opções em
+**Definições → Servidor → Início de sessão único**.
 
 ## Guias relacionados
 

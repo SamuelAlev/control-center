@@ -1,32 +1,142 @@
 ---
 title: Configurează integrarea Linear
-description: Stochează o cheie API Linear pe server pentru ca agenții să poată apela Linear și alege Linear ca provider de ticketing pentru tichetele noi.
+description: Autentifică-te în Linear, conectează automatizarea Linear a unui spațiu de lucru și alege Linear ca provider de ticketing pentru tichetele noi.
 slug: ro-RO/manual/ghiduri-practice/integrare-linear
-sourceHash: 470ac554cdd74eea362575f193b6a0d47bc2d486
+sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
 ---
 
-Lipește o cheie API Linear pe server, asociată utilizatorului tău, exact la fel
-cum conectezi un forge. Tichetele, proiectele, legăturile, colaboratorii,
-delegarea și atribuirea funcționează toate pe baza propriei baze de date a
-Control Center, fără să fie nevoie de vreun serviciu extern — vezi
+Linear are două identități în Control Center și ambele sunt autentificări în
+browser: a ta, pentru ce faci tu, și aplicația Control Center a spațiului de
+lucru, pentru ce fac agenții și pipeline-urile. Tichetele, proiectele,
+legăturile, colaboratorii, delegarea și atribuirea funcționează toate pe baza
+propriei baze de date a Control Center, fără să fie nevoie de vreun serviciu
+extern — vezi
 [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/).
 
-## Stochează cheia Linear
+## Cerințe preliminare
 
-**Cheie API ticketing** se află în **Setări → Spațiu de lucru → General**, pe
-cardul **Ticketing**. Ea stochează cheia pe server, asociată ID-ului tău de
-utilizator. Cheia proprie a serverului pentru lucrul nesupravegheat provine din
-`LINEAR_API_KEY` sau din cardul **Aplicații provider**. Nicio cheie de ticketing
-nu este pusă în sandbox-ul unui agent: agenții scriu tichete prin instrumentele
-proprii ale Control Center, care întreabă mai întâi regula **Scrie într-un
-tracker extern**.
+- Serverul poate autentifica oamenii în Linear: prin Control Center Connect sau
+  cu aplicația Linear proprie a serverului
+  ([Înregistrează propria aplicație Linear](#înregistrează-propria-aplicație-linear)).
+  Proprietarul serverului alege în **Setări → Server → Autentificare unică**
+- Un administrator al spațiului de lucru, care să aleagă Linear ca provider de
+  ticketing și să conecteze automatizarea Linear
 
-## Marchează tichetele noi ca Linear
+## Alege Linear pentru spațiul de lucru
 
-**Provider de ticketing** (primul pas din onboarding și
-`/workspaces/<workspaceId>/api-keys`) oferă `local` și `linear`. Alegerea
-variantei `linear` marchează cu `provider: linear` tichetele pe care le creezi
-de acum înainte.
+1. Mergi la **Setări → Spațiu de lucru → General** și găsește cardul **Ticketing**
+2. Setează **Provider de ticketing** la **Linear**
+
+Tichetele pe care le creezi de acum înainte sunt marcate cu `provider: linear`.
+**Local** păstrează tichetele în baza de date proprie a acestui server și ascunde
+rândurile Linear: nu există nimic la care să te autentifici.
+
+## Autentifică-te în Linear
+
+Pe același card, rândul **Linear** este al tău:
+
+1. Apasă **Autentifică-te în Linear**
+2. Aprobă în browser
+3. Cu aplicația proprie a serverului, dialogul observă singur. Prin Connect,
+   tastează codul de 8 caractere pe care îl afișează browserul sau lasă-l să
+   deschidă Control Center prin linkul `control-center://`
+
+Tot ce faci în Linear din Control Center rulează pe această autentificare și pe
+nimic altceva. Dacă nu ești autentificat, aplicația îți cere să te autentifici în
+loc să acționeze ca altcineva.
+
+## Conectează automatizarea Linear
+
+Rândul **Automatizare Linear** este aplicația Control Center a spațiului de lucru
+în Linear. Sincronizarea tichetelor, pipeline-urile și agenții scriu cu ea, așa
+că issue-urile și comentariile automate apar ca venind de la Control Center, nu
+de la o persoană.
+
+1. Un administrator al spațiului de lucru apasă **Conectează Linear pentru
+   automatizare**
+2. Aprobă aplicația pentru spațiul de lucru Linear în browser, ca mai sus
+
+Rândul afișează apoi „Conectat la _spațiul tău de lucru Linear_”. Doar
+administratorii spațiului de lucru îl pot conecta sau deconecta.
+
+Nicio acreditare Linear nu este pusă în sandbox-ul unui agent: agenții scriu
+tichete prin instrumentele proprii ale Control Center, care întreabă mai întâi
+regula **Scrie într-un tracker extern**.
+
+## Înregistrează propria aplicație Linear
+
+Folosește propria aplicație când ai ales **Folosește aplicațiile mele**. Aplicația
+serverului se aplică doar atunci: cu Control Center Connect sau cu un Connect propriu,
+Connect gestionează fiecare bandă, inclusiv Linear, iar aplicația serverului și cheia
+API de serviciu rămân salvate, dar nefolosite. O aplicație a spațiului de lucru
+([mai jos](#dă-unui-spațiu-de-lucru-propria-aplicație-linear)) se aplică în continuare
+în orice mod.
+
+1. Creează o aplicație OAuth la
+   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+2. Adaugă ambele URL-uri de callback pe care **Setări → Server → Autentificare
+   unică → Aplicații provider → Linear** le afișează sub **URL-uri de
+   callback**, întocmai: `<server origin>/oauth/linear/callback` și
+   `<server origin>/oauth/linear_app/callback`
+3. Lipește **Client id** în blocul Linear
+
+Nu există client secret: serverul se autentifică cu PKCE. Tokenurile de
+reîmprospătare Linear expiră după 30 de zile de nefolosire, așa că serverul
+reînnoiește o dată pe zi fiecare autentificare Linear mai veche de 20 de zile.
+
+Același bloc acceptă o **Cheie API de serviciu** opțională. Este acreditarea
+Linear proprie a serverului pentru automatizare în spațiile de lucru care nu au
+conectat automatizarea Linear. Păstreaz-o în **Setări** sau în fișierul `.env`
+al serverului ca `LINEAR_API_KEY`: serverul refuză să pornească atunci când
+`LINEAR_API_KEY` este exportată în mediul procesului său.
+
+## Dă unui spațiu de lucru propria aplicație Linear
+
+Un spațiu de lucru se poate autentifica în Linear printr-o aplicație proprie, în locul
+celei a serverului. Doar un administrator sau un proprietar al spațiului de lucru o
+poate configura.
+
+1. Creează o aplicație OAuth Linear ca în pașii de mai sus
+2. Mergi la **Setări → Spațiu de lucru → General → Aplicații ale providerilor** și deschide **Linear**
+3. Alege **Folosește aplicația proprie a acestui spațiu de lucru**
+4. Adaugă în aplicația Linear ambele URL-uri de callback pe care rândul le afișează sub **URL-uri de callback**, întocmai
+5. Lipește **Client id** și, opțional, o **Cheie API de serviciu** pentru automatizarea acestui spațiu de lucru
+
+Aplicația spațiului de lucru răspunde apoi la fiecare autentificare și cerere de
+automatizare Linear din acest spațiu de lucru, indiferent cum autentifică serverul
+oamenii. Nu revine niciodată la aplicația serverului sau la Connect: până când nu
+este setat un client id, Linear este oprit în acest spațiu de lucru, iar rândul spune
+ce lipsește. Cheia API de serviciu este folosită doar aici; fără ea, sincronizarea
+are nevoie de **Conectează Linear pentru automatizare**.
+
+Trecerea între aplicația serverului și cea a spațiului de lucru, sau schimbarea
+client id-ului spațiului de lucru, deconectează din Linear pe toți cei din acest
+spațiu de lucru și le oprește automatizarea. Se autentifică din nou prin noua
+aplicație. **Folosește aplicația acestui server** șterge câmpurile salvate ale
+spațiului de lucru. Secretele sunt doar pentru scriere: rândul arată doar dacă unul
+este salvat. Celelalte spații de lucru de pe server nu sunt afectate.
+
+## Depanare
+
+### Rândul Linear spune că autentificarea nu este configurată
+
+Serverul nu are nici aplicație Linear proprie, nici Connect. Proprietarul
+serverului alege una dintre ele în **Setări → Server → Autentificare unică**. Când spațiul de lucru folosește
+propria aplicație, rândul spune în schimb că configurarea lui nu este terminată: un
+administrator al spațiului de lucru adaugă client id-ul în **Setări → Spațiu de lucru
+→ General → Aplicații ale providerilor**.
+
+### Sincronizarea tichetelor eșuează cu o eroare de autentificare
+
+Spațiul de lucru nu are conectată automatizarea Linear, iar serverul nu are o
+cheie API de serviciu, așa că sincronizarea nu are nicio acreditare. Un
+administrator al spațiului de lucru apasă **Conectează Linear pentru
+automatizare**.
+
+### Conectarea automatizării spune că spațiul de lucru Linear este conectat în altă parte
+
+Aplicația Control Center a acelui spațiu de lucru Linear este deja conectată la
+un alt server Control Center.
 
 ## Ghiduri conexe
 

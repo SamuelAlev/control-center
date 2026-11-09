@@ -1,9 +1,9 @@
 ---
 title: Kör en headless-server
 description: Kör headless-binären cc_server eller dess Docker-avbildning, parkoppla en klient mot den och konfigurera den med hela ytan av CLI-flaggor och miljövariabler.
-dateModified: 2026-10-11
+dateModified: 2026-11-08
 slug: sv-SE/handbok/how-to-guider/kor-headless-server
-sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
+sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
 ---
 
 Kör `cc_server` på en maskin som står på, och anslut sedan till den från
@@ -16,7 +16,9 @@ renderar bara.
 
 Varje release publicerar en egenhostad stack med fyra GHCR-avbildningar –
 backend, de två statiska tunna klienterna och det valfria parkopplingsreläet –
-plus en separat `cc-server-demo`-avbildning för den publika demovärden. En
+plus den valfria inloggningstjänsten `cc-connect`
+([Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)) och
+en separat `cc-server-demo`-avbildning för den publika demovärden. En
 egenhostad installation kräver ingen källkodsutcheckning. Lås en versionstagg
 (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) eller följ `latest`.
 
@@ -69,6 +71,12 @@ Saker som är värda att veta innan du exponerar något av detta utanför loopba
 - **`/data` är det enda tillståndet.** SQLite-databaserna, hemligheterna för
   parkopplade enheter, nedladdade modeller och mötesljud ligger allt i volymen –
   säkerhetskopiera den och containern kan slängas.
+- **Leverantörshemligheter hör hemma i en monterad `.env`, aldrig i `-e`.**
+  Servern vägrar starta när `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
+  `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY` eller en `SLACK_*SECRET*` finns
+  i dess processmiljö. Montera filen skrivskyddad på `/app/bin/.env`
+  (`-v /secure/cc.env:/app/bin/.env:ro`), eller konfigurera apparna i
+  Inställningar.
 - **Parkoppla en klient inifrån avbildningen** före den första anslutningen,
   containerns motsvarighet till [steg 3](#steg-3-parkoppla-en-klient-före-första-starten):
 
@@ -275,22 +283,35 @@ loopback-porten för rapporter och kommandon från det serverstartade
 redigerartillägget genom en publik proxy. Känsliga offentliga HTTP-förfrågningar
 avvisas; resurser kräver en autentiserad krypterad session.
 
-## Steg 6: Anslut en Google Calendar (valfritt)
+## Steg 6: Välj hur personer loggar in
 
-För att synkronisera en arbetsytas kalender utan något GUI använder du
-enhetskodsflödet:
+Den första klienten som ansluter som serverägare får frågan hur den här servern
+loggar in personer på GitHub, Google Calendar och Linear: **Använd Control
+Centers appar**, **Använd mina egna appar** eller **Använd en egen
+Connect-server**. Från terminalen är samma val:
 
 ```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id>
+./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect enable --url https://connect.example.com --data-dir ./data
+./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-Kommandot skriver ut en kod och en URL att godkänna på en annan enhet, lagrar
-refresh-token på serversidan och avslutar. Ett källkodsbygge levereras utan
-någon Google-klient, så miljövariablerna för ID och hemlighet krävs – det finns
-ingen flagga `--google-client-id`. Se
-[Anslut en Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/).
+`CC_CONNECT_URL` (`hosted`, `off` eller en URL) i serverns miljö eller `.env`
+låser valet i stället. Med **Använd mina egna appar** registrerar du varje
+leverantör under **Inställningar → Server → Enkel inloggning →
+Leverantörsappar**; **Skapa min GitHub-app** konfigurerar GitHub i ett steg.
+Leverantörshemligheter hör hemma i serverns `.env`-fil, aldrig i den exporterade
+miljön. Se [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/) och
+[Control Center Connect](/sv-SE/handbok/referens/connect/).
+
+Inloggningar via Connect avslutas med en kod som webbläsaren visar, så servern
+behöver ingen offentlig adress för dem. Inloggningar via serverns egna appar
+skickar tillbaka webbläsaren till serverns offentliga URL, så ange `--public-url`
+till en adress som personernas webbläsare kan nå.
+
+För att vara värd för Connect åt andra servrar från den här anger du
+`CC_SERVER_CONNECT_HOST=on`; se
+[Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/#montera-connect-i-cc_server).
 
 ## Konfiguration
 
@@ -345,6 +366,7 @@ Två saker att känna till innan du exponerar porten utanför loopback:
 - [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/)
 - [Kör en fleet-worker](/sv-SE/handbok/how-to-guider/kor-fleet-worker/)
 - [Anslut en Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/)
+- [Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)
 
 ## Relaterade koncept
 

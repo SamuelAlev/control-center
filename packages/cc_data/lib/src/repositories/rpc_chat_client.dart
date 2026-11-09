@@ -94,23 +94,155 @@ class ChatUserLinkView {
   String get userLabel => userDisplayName ?? userHandle ?? userId;
 }
 
-/// A one-time code the member types as `/cc link CODE` in the chat app.
+/// The chat profile that sent a member's link code to the bot, waiting for
+/// that member to confirm it is theirs.
+///
+/// Sending the code only *claims* it. Nothing is linked until the member who
+/// minted the code recognizes this profile in Control Center and confirms it.
+class ChatLinkClaimView {
+  /// Creates a [ChatLinkClaimView].
+  const ChatLinkClaimView({
+    required this.externalTeamId,
+    required this.externalUserId,
+    required this.label,
+    this.claimedAt,
+  });
+
+  /// Parses the `claim` map of a pending link.
+  factory ChatLinkClaimView.fromWire(Map<String, dynamic> w) =>
+      ChatLinkClaimView(
+        externalTeamId: w['externalTeamId'] as String? ?? '',
+        externalUserId: w['externalUserId'] as String? ?? '',
+        label: w['label'] as String? ?? '',
+        claimedAt: DateTime.tryParse(w['claimedAt'] as String? ?? ''),
+      );
+
+  /// The provider-side team the sender belongs to.
+  final String externalTeamId;
+
+  /// The provider-side member who sent the code (Slack `U…`).
+  final String externalUserId;
+
+  /// Their display label as the provider reports it.
+  final String label;
+
+  /// When the code arrived.
+  final DateTime? claimedAt;
+
+  /// The best name for the profile: its label, else its id.
+  String get displayName => label.isEmpty ? externalUserId : label;
+}
+
+/// A one-time code the member sends to the bot in a direct message, plus the
+/// profile that sent it once somebody has.
 class ChatLinkCodeView {
   /// Creates a [ChatLinkCodeView].
-  const ChatLinkCodeView({required this.code, required this.expiresAt});
+  const ChatLinkCodeView({
+    required this.code,
+    required this.expiresAt,
+    this.claim,
+  });
 
-  /// Parses from the `chat.beginUserLink` wire map.
+  /// Parses the `chat.beginUserLink` response.
   factory ChatLinkCodeView.fromWire(Map<String, dynamic> w) => ChatLinkCodeView(
     code: w['code'] as String? ?? '',
     expiresAt:
         DateTime.tryParse(w['expires_at'] as String? ?? '') ?? DateTime.now(),
   );
 
-  /// The code to type in the chat app.
+  /// Parses the `pending` map of `chat.pendingUserLink` /
+  /// `chat.watchPendingUserLink`, which also carries the claim.
+  factory ChatLinkCodeView.fromPendingWire(Map<String, dynamic> w) {
+    final claim = (w['claim'] as Map?)?.cast<String, dynamic>();
+    return ChatLinkCodeView(
+      code: w['code'] as String? ?? '',
+      expiresAt:
+          DateTime.tryParse(w['expiresAt'] as String? ?? '') ?? DateTime.now(),
+      claim: claim == null ? null : ChatLinkClaimView.fromWire(claim),
+    );
+  }
+
+  /// The code to send to the bot.
   final String code;
 
   /// When it stops working.
   final DateTime expiresAt;
+
+  /// Who sent it to the bot, once somebody has.
+  final ChatLinkClaimView? claim;
+}
+
+/// A ticket a member drafted from chat (`/cc ticket …`), waiting for them to
+/// create it in Control Center.
+///
+/// A draft is a proposal, never a ticket: it fires no ticket trigger and lives
+/// only in the server's memory until its reporter creates or discards it.
+class ChatTicketDraftView {
+  /// Creates a [ChatTicketDraftView].
+  const ChatTicketDraftView({
+    required this.id,
+    required this.provider,
+    required this.title,
+    this.description,
+    this.createdAt,
+    this.expiresAt,
+  });
+
+  /// Parses one entry of the `drafts` wire list.
+  factory ChatTicketDraftView.fromWire(Map<String, dynamic> w) =>
+      ChatTicketDraftView(
+        id: w['id'] as String? ?? '',
+        provider: ChatProvider.fromWire(w['provider'] as String?),
+        title: w['title'] as String? ?? '',
+        description: w['description'] as String?,
+        createdAt: DateTime.tryParse(w['createdAt'] as String? ?? ''),
+        expiresAt: DateTime.tryParse(w['expiresAt'] as String? ?? ''),
+      );
+
+  /// Opaque draft id.
+  final String id;
+
+  /// The chat app the command came from.
+  final ChatProvider provider;
+
+  /// The proposed ticket title.
+  final String title;
+
+  /// The proposed description, when one was given.
+  final String? description;
+
+  /// When the command arrived.
+  final DateTime? createdAt;
+
+  /// When the draft is dropped unconfirmed.
+  final DateTime? expiresAt;
+}
+
+/// The backlog ticket a confirmed draft became.
+class ChatCreatedTicket {
+  /// Creates a [ChatCreatedTicket].
+  const ChatCreatedTicket({
+    required this.id,
+    required this.key,
+    required this.title,
+  });
+
+  /// Parses the `ticket` map of `chat.confirmTicketDraft`.
+  factory ChatCreatedTicket.fromWire(Map<String, dynamic> w) =>
+      ChatCreatedTicket(
+        id: w['id'] as String? ?? '',
+        key: w['key'] as String? ?? '',
+        title: w['title'] as String? ?? '',
+      );
+
+  /// Ticket id.
+  final String id;
+
+  /// The ticket's display key (`CC-12`).
+  final String key;
+
+  /// The title it was created with.
+  final String title;
 }
 
 /// Drives the workspace's chat-provider connections over RPC.
@@ -194,12 +326,9 @@ class RpcChatClient {
         .toList();
   }
 
-  /// Watches the same roster, so a link made in the chat app shows up here
-  /// without asking again.
-  ///
-  /// The linking happens on the *other* side — a member types the code into the
-  /// bot — so there is no response to a client call that could carry it. The
-  /// settings roster and the open link dialog both follow this.
+  /// Watches the same roster, so a link made elsewhere (another client, an
+  /// email match, an admin unlinking someone) shows up here without asking
+  /// again.
   Stream<List<ChatUserLinkView>> watchUserLinks(
     String workspaceId, {
     ChatProvider? provider,
@@ -226,6 +355,96 @@ class RpcChatClient {
     });
     return ChatLinkCodeView.fromWire(data);
   }
+
+  /// The caller's outstanding link code on [provider], with the profile that
+  /// claimed it once one has, or null when there is none.
+  Future<ChatLinkCodeView?> pendingUserLink(
+    String workspaceId,
+    ChatProvider provider,
+  ) async {
+    final data = await _client.call('chat.pendingUserLink', {
+      'workspace_id': workspaceId,
+      'provider': provider.wire,
+    });
+    return _pendingFromWire(data);
+  }
+
+  /// Watches the caller's outstanding code on [provider].
+  ///
+  /// The claim arrives from the chat app — the member sends the code to the
+  /// bot in a direct message — so no client call could carry it back.
+  Stream<ChatLinkCodeView?> watchPendingUserLink(
+    String workspaceId,
+    ChatProvider provider,
+  ) => _client
+      .subscribe('chat.watchPendingUserLink', {
+        'workspace_id': workspaceId,
+        'provider': provider.wire,
+      })
+      .map(_pendingFromWire);
+
+  /// Links the caller to [externalUserId], the profile that claimed their
+  /// code on [provider]. The server refuses any other profile.
+  Future<ChatUserLinkView> confirmUserLink({
+    required String workspaceId,
+    required ChatProvider provider,
+    required String externalUserId,
+  }) async {
+    final data = await _client.call('chat.confirmUserLink', {
+      'workspace_id': workspaceId,
+      'provider': provider.wire,
+      'external_user_id': externalUserId,
+    });
+    return ChatUserLinkView.fromWire(
+      (data['link'] as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  /// Refuses the claim on the caller's code on [provider]; the code is
+  /// revoked with it.
+  Future<void> declineUserLink(String workspaceId, ChatProvider provider) =>
+      _client.call('chat.declineUserLink', {
+        'workspace_id': workspaceId,
+        'provider': provider.wire,
+      });
+
+  /// The caller's ticket drafts from chat, oldest first.
+  Future<List<ChatTicketDraftView>> ticketDrafts(String workspaceId) async =>
+      _draftsFromWire(
+        await _client.call('chat.ticketDrafts', {'workspace_id': workspaceId}),
+      );
+
+  /// Watches the caller's ticket drafts: they arrive from a chat command.
+  Stream<List<ChatTicketDraftView>> watchTicketDrafts(String workspaceId) =>
+      _client
+          .subscribe('chat.watchTicketDrafts', {'workspace_id': workspaceId})
+          .map(_draftsFromWire);
+
+  /// Creates the backlog ticket [draftId] proposes, with the [title] and
+  /// [description] the caller corrected. An empty [description] clears it.
+  Future<ChatCreatedTicket> confirmTicketDraft({
+    required String workspaceId,
+    required String draftId,
+    String? title,
+    String? description,
+  }) async {
+    final data = await _client.call('chat.confirmTicketDraft', {
+      'workspace_id': workspaceId,
+      'draft_id': draftId,
+      'title': ?title,
+      'description': ?description,
+    });
+    return ChatCreatedTicket.fromWire(
+      (data['ticket'] as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  /// Drops [draftId] without creating anything.
+  Future<void> discardTicketDraft(String workspaceId, String draftId) =>
+      _client.call('chat.discardTicketDraft', {
+        'workspace_id': workspaceId,
+        'draft_id': draftId,
+      });
 
   /// Unlinks [userId] on [provider] (the caller themselves when omitted; anyone
   /// else needs an admin role, which the server enforces).
@@ -318,4 +537,15 @@ class RpcChatClient {
     final step = (data['remaining_step'] as Map?)?.cast<String, dynamic>();
     return step == null ? null : ChatSetupStep.fromJson(step);
   }
+
+  static ChatLinkCodeView? _pendingFromWire(Map<String, dynamic> data) {
+    final pending = (data['pending'] as Map?)?.cast<String, dynamic>();
+    return pending == null ? null : ChatLinkCodeView.fromPendingWire(pending);
+  }
+
+  static List<ChatTicketDraftView> _draftsFromWire(Map<String, dynamic> data) =>
+      ((data['drafts'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((m) => ChatTicketDraftView.fromWire(m.cast<String, dynamic>()))
+          .toList();
 }

@@ -1,37 +1,58 @@
 ---
 title: Conectar un Google Calendar
-description: Conecta Google Calendar a un espacio de trabajo, gestiona varias cuentas y vuelve a conectar cuando caduque un token.
+description: Conecta Google Calendar a un espacio de trabajo, gestiona varias cuentas y vuelve a conectar cuando caduque un inicio de sesión.
 slug: es-ES/manual/guias/conectar-calendario
-sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
+sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ---
 
 Esta guía te muestra cómo conectar Google Calendar a un espacio de trabajo. La
-conexión es por espacio de trabajo: sincroniza los eventos de ese espacio en
-Control Center, en modo de solo lectura. Consulta [Calendario y
+conexión es por espacio de trabajo y por miembro: sincroniza tus eventos de ese
+espacio en Control Center, donde también puedes responder a invitaciones, reservar, mover y eliminar eventos. Consulta [Calendario y
 programación](/es-ES/manual/conceptos/calendario/) para ver el panorama
 completo.
+
+## Requisitos previos
+
+- El servidor puede iniciar la sesión de las personas en Google: a través de
+  Control Center Connect o con el cliente de Google propio del servidor
+  ([Trae tu propio cliente de Google](#trae-tu-propio-cliente-de-google)). El
+  propietario del servidor lo elige en
+  **Ajustes → Servidor → Inicio de sesión único**
+- Un espacio de trabajo abierto: una cuenta de calendario siempre pertenece a
+  uno
 
 ## Conectar una cuenta
 
 1. Abre **Calendario** en la barra lateral.
 2. Haz clic en **Añadir cuenta de calendario** en la barra lateral del calendario. (La misma sección está en **Ajustes → Espacio de trabajo → Perfil e identidad**, dentro de **Google Calendar**.)
-3. Elige cómo autorizar:
-   - **Usar la app de Google de Control Center** — no hay nada que configurar. Es la opción predeterminada cuando tu compilación incluye una.
-   - **Usar mi propio cliente de Google Cloud** — pega el ID de cliente y el secreto de tu propio proyecto (consulta [Trae tu propio cliente de Google](#trae-tu-propio-cliente-de-google-forks-y-autohospedaje)).
-4. Haz clic en **Conectar Google Calendar**. El cuadro de diálogo muestra un código corto y un enlace a la página de dispositivos de Google.
-5. Abre esa página en cualquier dispositivo, introduce el código y aprueba el acceso solicitado. El cuadro de diálogo se cierra solo y tus eventos empiezan a sincronizarse.
+3. Haz clic en **Conectar Google Calendar**. El navegador abre la página de consentimiento de Google.
+4. Elige la cuenta y aprueba el acceso a tus eventos y a la lista de calendarios.
 
-El servidor, y no tu dispositivo, realiza este intercambio y conserva el token
-de actualización resultante — por eso el código se aprueba en «cualquier
-dispositivo» y no en esta app en concreto.
+Cómo termina depende de quién ejecute el inicio de sesión:
 
-La cuenta se conecta **solo al espacio de trabajo activo**. Cambia de espacio de
-trabajo y verás los calendarios de ese espacio en su lugar.
+- **El cliente de Google propio del servidor:** Google devuelve el navegador al
+  servidor y el cuadro de diálogo se cierra solo
+- **Control Center Connect:** la página del navegador muestra un código de 8
+  caracteres. Escríbelo en el cuadro de diálogo, o deja que el navegador abra
+  Control Center con el enlace `control-center://` y te ahorras escribirlo
 
-El flujo de conexión solicita `calendar.readonly` además de tu correo — los
-mismos ámbitos para la app integrada y para un cliente que pegues tú. Control
-Center lee los eventos; no crea, edita ni elimina eventos en Google, ni responde
-a invitaciones.
+Tus eventos empiezan a sincronizarse de inmediato. El servidor, y no tu
+dispositivo, completa el intercambio y conserva la credencial.
+
+La cuenta se conecta **solo al espacio de trabajo activo**, y es tuya: dos
+miembros que conectan la misma dirección de Google obtienen cuentas separadas.
+Cambia de espacio de trabajo y verás los calendarios de ese espacio en su lugar.
+
+El flujo de conexión solicita `calendar.events` y `calendar.calendarlist.readonly` además de `openid email`, sea cual sea el cliente que lo ejecute. Una cuenta conectada antes de que Control Center pudiera escribir en Google solo tiene el ámbito de lectura: te pedirá que vuelvas a conectarla, y el nuevo inicio de sesión concede el resto.
+
+## Reservar, mover, responder y eliminar eventos
+
+- **Reservar un evento:** en la vista de semana o de día, arrastra sobre la cuadrícula horaria para dibujar el intervalo (en la vista de mes, arrastra sobre los días para un evento de todo el día). Se abre una tarjeta junto a él con el título, las horas, los invitados, un enlace de Google Meet, la ubicación, la descripción y el calendario en el que reservar. **Guardar** lo reserva en Google y lo abre. El botón **+** de la cabecera del calendario abre la misma tarjeta para el siguiente cuarto de hora libre. Pulsa Escape para descartarla
+- **Mover un evento:** arrástralo a otra hora o a otro día, o arrastra su borde inferior para cambiar cuándo termina. Se abre cuando Google tiene la nueva hora; si Google lo rechaza, vuelve a su sitio. Solo puedes mover tus propios eventos y los que organizas; una invitación se queda donde la colocó quien la organiza
+- **Responder a una invitación:** abre el evento y elige **Sí**, **Quizás** o **No**
+- **Eliminar un evento:** ábrelo y haz clic en el icono de la papelera. La confirmación indica quién se ve afectado: los invitados reciben el aviso de que un evento que organizas se cancela, mientras que eliminar una invitación la quita solo de tu calendario. Eliminar una ocurrencia de un evento recurrente deja el resto de la serie
+
+Google envía a los invitados su propia invitación, actualización o cancelación por correo. Mover una ocurrencia de un evento recurrente deja el resto de la serie. Solo puedes reservar en calendarios en los que tu cuenta tenga permiso de escritura, y solo con tus propias cuentas: nunca se ofrece el calendario conectado de otro miembro.
 
 ## Cómo funciona la sincronización
 
@@ -47,9 +68,12 @@ solo lo que ha cambiado, que es lo que hace asumible una cadencia de dos minutos
 La ventana se reancla con una sincronización completa cada 24 horas y siempre
 que Google invalide el token.
 
-Los tokens de actualización residen en el servidor, en `secrets.json` dentro del
+Las credenciales residen en el servidor, en `secrets.json` dentro del
 directorio de datos del servidor, con permisos solo para el propietario (`0600`)
-— no en el llavero del sistema operativo y nunca en un dispositivo cliente.
+— no en el llavero del sistema operativo y nunca en un dispositivo cliente. Un
+inicio de sesión a través de Connect guarda solo una credencial sellada que
+Connect puede abrir únicamente para este servidor; su token de acceso se queda
+en la memoria del servidor.
 
 ## Conectar varias cuentas
 
@@ -61,74 +85,73 @@ por separado.
 
 ## Reconectar una cuenta caducada
 
-Si Google invalida de forma permanente el token de una cuenta (una sesión
-revocada o caducada desde hace mucho), la sincronización se detiene y Control
-Center muestra un aviso de **Reconectar** en el calendario, además de una
-notificación de escritorio. Haz clic en **Reconectar** y aprueba un código
-nuevo; el aviso desaparece con la siguiente sincronización correcta.
+Si Google invalida de forma permanente el inicio de sesión de una cuenta (una
+sesión revocada o caducada desde hace mucho), la sincronización se detiene y
+Control Center muestra un aviso de **Reconectar** en el calendario, además de
+una notificación de escritorio. Haz clic en **Reconectar** y vuelve a iniciar
+sesión; el aviso desaparece con la siguiente sincronización correcta.
+
+El mismo aviso aparece cuando este servidor ya no puede usar el inicio de
+sesión: el propietario del servidor cambió de servidor Connect o rotó la clave
+de Connect, cambió el cliente de Google propio del servidor o el directorio de
+datos se restauró en otra máquina.
 
 ## Desconectar una cuenta
 
 Desde la barra lateral del calendario (o **Ajustes → Espacio de trabajo → Perfil
 e identidad**), haz clic en **Desconectar** en la cuenta. Esto elimina sus
-eventos sincronizados y borra sus tokens almacenados en el servidor.
+eventos sincronizados y borra su credencial almacenada en el servidor.
 
-## Conectar desde un servidor headless
+## Trae tu propio cliente de Google
 
-Un servidor sin interfaz gráfica conecta la misma cuenta desde su propio
-terminal:
+Usa tu propio cliente de Google cuando hayas elegido **Usar mis propias apps**. El cliente del servidor solo se aplica en ese caso: con Control Center o un Connect propio, Connect ejecuta cada carril, también el de Google, y el cliente del servidor se queda guardado pero sin usar. Para que la pantalla de consentimiento muestre el nombre de tu propio proyecto mientras el servidor usa Connect, dale al espacio de trabajo su propio cliente ([más abajo](#dale-a-un-espacio-de-trabajo-su-propio-cliente-de-google)); eso vale en cualquier modo.
 
-```bash
-GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
-  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
-```
+1. En la [Google Cloud Console](https://console.cloud.google.com/apis/credentials), habilita la **Google Calendar API** y configura la **pantalla de consentimiento de OAuth**, añadiendo los ámbitos `calendar.events`, `calendar.calendarlist.readonly`, `openid` y `email`. Mientras la app no esté verificada, añádete como **usuario de prueba**.
+2. Crea un **ID de cliente de OAuth** con el tipo de aplicación **Aplicación web**.
+3. Añade el URI de redirección autorizado `<server origin>/oauth/google/callback`. **Ajustes → Servidor → Inicio de sesión único → Aplicaciones de proveedor → Google** muestra la URL exacta en **URL de retorno**; cópiala tal cual.
+4. Pega el **Id de cliente** y el **Secreto de cliente** en ese mismo bloque de Google, o ponlos en el archivo `.env` del servidor como `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-Imprime un código y una URL, espera la aprobación y luego almacena los tokens y
-sincroniza en el siguiente barrido.
+El servidor se niega a arrancar cuando `GOOGLE_OAUTH_CLIENT_SECRET` está
+exportado en el entorno de su proceso; guárdalo en el archivo `.env` (en
+Docker, móntalo en `/app/bin/.env`). El secreto nunca sale del servidor:
+ninguna respuesta RPC lo transporta. Un ID de cliente sin su secreto es una
+configuración sin terminar, y los inicios de sesión de Google se rechazan hasta
+que estén definidos los dos.
 
-Una compilación desde el código fuente **no** incluye ningún cliente de Google,
-así que el ID y el secreto son obligatorios — define
-`GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET`. No existe ningún flag
-`--google-client-id` (los flags desconocidos se ignoran). Sin el par de variables
-de entorno, el comando finaliza con un error de cliente ausente.
+Cambiar a otro cliente cierra la sesión de Google Calendar de todo el mundo: un
+inicio de sesión pertenece al cliente que lo emitió.
 
-## Trae tu propio cliente de Google (forks y autohospedaje)
+## Dale a un espacio de trabajo su propio cliente de Google
 
-Las compilaciones publicadas incluyen un cliente de Google, así que la mayoría
-de la gente nunca necesita tocar esto. Trae el tuyo si compilas desde el código
-fuente, ejecutas tu propio servidor o quieres que la pantalla de consentimiento
-muestre el nombre de tu propio proyecto.
+Un espacio de trabajo puede conectar Google Calendar con un cliente propio en lugar del del servidor. Solo un administrador o el propietario del espacio de trabajo puede configurarlo.
 
-1. En la [Google Cloud Console](https://console.cloud.google.com/apis/credentials), habilita la **Google Calendar API** y configura la **pantalla de consentimiento de OAuth**, añadiendo los ámbitos `calendar.readonly`, `openid` y `email`. Mientras la app no esté verificada, añádete como **usuario de prueba**. Añadir `calendar.events` en la pantalla de consentimiento no habilita la respuesta a invitaciones — Control Center nunca solicita ese ámbito.
-2. Crea un **ID de cliente de OAuth** con el tipo de aplicación **Televisores y dispositivos de entrada limitada** y copia tanto el ID de cliente como el secreto de cliente.
-3. Proporciónalos por conexión (elige **Usar mi propio cliente de Google Cloud** en el cuadro de diálogo) o para todo el servidor con `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Crea un cliente de Google de tipo **Aplicación web**, como en los pasos 1 y 2 de arriba
+2. Ve a **Ajustes → Espacio de trabajo → General → Aplicaciones de proveedor** y abre **Google Calendar**
+3. Elige **Usar la aplicación propia de este espacio de trabajo**
+4. Añade al cliente, tal cual, el URI de redirección que muestra la fila en **URL de retorno**
+5. Pega el **Id de cliente** y el **Secreto de cliente**
 
-Un par definido para todo el servidor sustituye al integrado en todas partes,
-incluso detrás de la opción «usar la app de Google de Control Center» — así que,
-en tu propio servidor, esa opción es tu app.
+Las cuentas de calendario conectadas en este espacio de trabajo pasan entonces por ese cliente, sea cual sea la forma en que el servidor inicia la sesión de las personas. Nunca recurre al cliente del servidor ni a Connect: hasta que se definan los dos campos, Google Calendar está desactivado en este espacio de trabajo y la fila indica qué falta. El secreto nunca sale del servidor.
 
-El secreto de cliente nunca sale del servidor: ninguna respuesta RPC lo
-transporta, y una cuenta conectada mediante el cliente propio del servidor
-almacena un marcador en lugar de una copia del par, así que rotarlo es cuestión
-de reiniciar con un valor nuevo.
+Cambiar entre el cliente del servidor y el del espacio de trabajo, o cambiar el id de cliente del espacio de trabajo, marca todas las cuentas de Google de este espacio de trabajo para volver a conectarse. **Usar la aplicación de este servidor** elimina los campos guardados del espacio de trabajo. Los demás espacios de trabajo del servidor no se ven afectados.
 
-### Solución de problemas
+## Solución de problemas
 
-| Síntoma                                             | Causa probable                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| El cuadro de diálogo no ofrece la opción integrada  | Esta compilación no incluye ningún cliente de Google (una compilación desde el código fuente), o el servidor se inició solo con una mitad del par. Tanto el ID como el secreto son obligatorios |
-| `invalid_scope` al iniciar el flujo                 | El calendario no está permitido para un cliente de código de dispositivo en ese proyecto de Cloud. Usa mejor un proyecto con un cliente de bucle invertido o web |
-| `invalid_client` de Google                          | El cliente no es un cliente de **Televisores y dispositivos de entrada limitada**, o el ID y el secreto son de clientes distintos                      |
-| La aprobación se realiza pero la sincronización está vacía | Tu cuenta no es **usuario de prueba** en la pantalla de consentimiento, o no se concedió `calendar.readonly`                                          |
-| El código caduca antes de que lo apruebes           | Los códigos de dispositivo duran poco. Inicia de nuevo la conexión para obtener uno nuevo                                                             |
-| «No se pudo actualizar tu respuesta» al responder a una invitación | Es lo esperado: el flujo de conexión nunca solicita `calendar.events`                                                                     |
-| La sincronización se detiene con un aviso de actualización en el registro del servidor | La cuenta se conectó con un cliente que ya no está configurado. Vuelve a conectar la cuenta, o restaura ese ID de cliente y ese secreto |
+| Síntoma                                             | Causa probable                                                                                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Conectar Google Calendar** dice que el inicio de sesión no está configurado | El servidor no tiene ni su propio cliente de Google ni Connect. El propietario del servidor elige uno en **Ajustes → Servidor → Inicio de sesión único** |
+| Google muestra `redirect_uri_mismatch`              | La redirección registrada en el cliente no coincide exactamente con el valor de **URL de retorno**, o la URL pública del servidor cambió |
+| `invalid_client` de Google                          | El ID y el secreto son de clientes distintos, o el cliente se eliminó                                                                |
+| La aprobación se realiza pero la sincronización está vacía | Tu cuenta no es **usuario de prueba** en la pantalla de consentimiento, o no se concedió alguno de los ámbitos solicitados                  |
+| El cuadro de diálogo dice que el código no coincide | Escribe los 8 caracteres exactamente como los muestra el navegador. Cinco códigos erróneos terminan el inicio de sesión; vuelve a empezar |
+| «No se pudo actualizar tu respuesta», o reservar, mover o eliminar falla | La cuenta se conectó con el antiguo ámbito de solo lectura. Vuelve a conectarla; un calendario que se te ha compartido en solo lectura también rechaza las escrituras                                                 |
+| Todo el mundo tiene que volver a conectarse         | Cambió el cliente de Google del servidor o del espacio de trabajo, o la elección o la clave de Connect del servidor. Consulta [Reconectar una cuenta caducada](#reconectar-una-cuenta-caducada) |
 
 ## Guías relacionadas
 
 - [Grabar y resumir una reunión](/es-ES/manual/guias/grabar-reunion/): convierte un evento en una grabación
-- [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/): dónde residen los tokens y la programación de la sincronización
-- [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/)
+- [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/): dónde residen las credenciales y la programación de la sincronización
+- [Ejecutar un servidor Connect](/es-ES/manual/guias/ejecutar-servidor-connect/)
 
 ## Conceptos relacionados
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_infra/cc_infra.dart' show ChildProcess;
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
@@ -22,19 +23,29 @@ void main() {
   ProcessRunner tarRunner({
     bool ghPresent = false,
     bool attestationPasses = true,
-  }) => (String exe, List<String> args) async {
-    if (exe == 'gh') {
-      if (!ghPresent) {
-        return ProcessResult(0, 1, '', 'gh not installed (test fake)');
-      }
-      final isVerify = args.contains('verify');
-      if (isVerify && !attestationPasses) {
-        return ProcessResult(0, 1, '', 'no attestation matches (test fake)');
-      }
-      return ProcessResult(0, 0, '', '');
-    }
-    return Process.run(exe, args);
-  };
+  }) =>
+      (
+        String exe,
+        List<String> args, {
+        Map<String, String>? environment,
+      }) async {
+        if (exe == 'gh') {
+          if (!ghPresent) {
+            return ProcessResult(0, 1, '', 'gh not installed (test fake)');
+          }
+          final isVerify = args.contains('verify');
+          if (isVerify && !attestationPasses) {
+            return ProcessResult(
+              0,
+              1,
+              '',
+              'no attestation matches (test fake)',
+            );
+          }
+          return ProcessResult(0, 0, '', '');
+        }
+        return Process.run(exe, args);
+      };
 
   ServerUpdateRunner runner({
     bool apply = false,
@@ -134,6 +145,19 @@ void main() {
     fixtures['/download/cc_server-1.2.3-linux-x64.tar.gz'] = archive;
     fixtures['/download/SHA256SUMS.txt'] = utf8.encode(
       '${sha256.convert(archive)}  cc_server-1.2.3-linux-x64.tar.gz\n',
+    );
+    fixtures['/repos/SamuelAlev/control-center/attestations/'
+        'sha256:${sha256.convert(archive)}'] = utf8.encode(
+      jsonEncode({
+        'attestations': [
+          {
+            'repository_id': 1,
+            'bundle': {
+              'mediaType': 'application/vnd.dev.sigstore.bundle.v0.3+json',
+            },
+          },
+        ],
+      }),
     );
   });
 
@@ -335,42 +359,98 @@ void main() {
     );
   });
 
-  test('verifies the attestation against the repo, not just the owner', () async {
-    final calls = <List<String>>[];
-    final recording = ServerUpdateRunner(
-      log: log.add,
-      installDir: bundle.path,
-      archOverride: 'x64',
-      osOverride: 'linux',
-      releaseApiBase: 'https://example.test',
-      environment: const {},
-      scriptPath: '/opt/cc/bin/cc_server',
-      dockerEnvFile: '${tmp.path}/no-dockerenv',
-      httpGet: (uri) async {
-        final bytes = fixtures[uri.path];
-        return bytes == null
-            ? (404, utf8.encode('not found'))
-            : (200, bytes);
-      },
-      processRunner: (exe, args) async {
+  test(
+    'verifies the attestation against the repo, not just the owner',
+    () async {
+      final calls = <List<String>>[];
+      final ghEnvironments = <Map<String, String>?>[];
+      final bundleContents = <String>[];
+      final recording = ServerUpdateRunner(
+        log: log.add,
+        installDir: bundle.path,
+        archOverride: 'x64',
+        osOverride: 'linux',
+        releaseApiBase: 'https://example.test',
+        environment: const {},
+        scriptPath: '/opt/cc/bin/cc_server',
+        dockerEnvFile: '${tmp.path}/no-dockerenv',
+        httpGet: (uri) async {
+          final bytes = fixtures[uri.path];
+          return bytes == null ? (404, utf8.encode('not found')) : (200, bytes);
+        },
+        processRunner: (exe, args, {environment}) async {
+          if (exe == 'gh') {
+            calls.add(args);
+            ghEnvironments.add(environment);
+            final bundleAt = args.indexOf('--bundle');
+            if (bundleAt >= 0) {
+              bundleContents.add(File(args[bundleAt + 1]).readAsStringSync());
+            }
+            return ProcessResult(0, 0, '', '');
+          }
+          return Process.run(exe, args);
+        },
+      );
+      expect(await recording.run(), 0);
+
+      final verify = calls.firstWhere((a) => a.contains('verify'));
+      expect(verify, contains('--repo'));
+      expect(verify, contains('SamuelAlev/control-center'));
+      expect(
+        verify,
+        isNot(contains('--owner')),
+        reason: '--owner accepts an artifact from any repo under the org',
+      );
+      // Offline verification of the publicly fetched bundle: gh never reaches
+      // the API with a login of its own.
+      expect(verify, contains('--bundle'));
+      expect(bundleContents.single, contains('sigstore.bundle'));
+      expect(log.join('\n'), contains('SLSA attestation verified'));
+    },
+  );
+
+  test('gh runs with an empty config dir and no host token', () async {
+    final environments = <Map<String, String>?>[];
+    final recording = runner(
+      process: (exe, args, {environment}) async {
         if (exe == 'gh') {
-          calls.add(args);
+          environments.add(environment);
+          final configDir = environment?['GH_CONFIG_DIR'];
+          expect(configDir, isNotNull);
+          expect(
+            Directory(
+              configDir!,
+            ).listSync().where((e) => !e.path.endsWith('attestations.jsonl')),
+            isEmpty,
+          );
           return ProcessResult(0, 0, '', '');
         }
         return Process.run(exe, args);
       },
     );
     expect(await recording.run(), 0);
-
-    final verify = calls.firstWhere((a) => a.contains('verify'));
-    expect(verify, contains('--repo'));
-    expect(verify, contains('SamuelAlev/control-center'));
+    expect(environments, hasLength(2));
+    for (final env in environments) {
+      expect(env!.keys.toList(), ['GH_CONFIG_DIR']);
+    }
+    // The empty config dir is removed after verification.
     expect(
-      verify,
-      isNot(contains('--owner')),
-      reason: '--owner accepts an artifact from any repo under the org',
+      Directory(environments.first!['GH_CONFIG_DIR']!).existsSync(),
+      isFalse,
     );
-    expect(log.join('\n'), contains('SLSA attestation verified'));
+    // The default runner layers that over the scrubbed child environment.
+    final scrubbed = ChildProcess.environmentFor(
+      environment: environments.first,
+    );
+    for (final key in ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN']) {
+      expect(scrubbed, isNot(contains(key)));
+    }
+  });
+
+  test('refuses when gh is present but no attestation is published', () async {
+    fixtures.removeWhere((path, _) => path.contains('/attestations/'));
+    expect(await runner(process: tarRunner(ghPresent: true)).run(), 1);
+    expect(log.join('\n'), contains('no attestation is published'));
   });
 
   test('a second run reuses the verified staged archive', () async {

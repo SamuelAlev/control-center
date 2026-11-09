@@ -1,11 +1,11 @@
 ---
 title: Configurar a integração com o Slack
-description: Ligue uma aplicação do Slack a um espaço de trabalho do Control Center para que os membros possam conduzir agentes a partir do Slack.
+description: Ligue o Slack a um espaço de trabalho do Control Center, através da aplicação partilhada do Control Center ou de uma sua, para que os membros possam conduzir agentes a partir do Slack.
 slug: pt-PT/manual/guias/integracao-slack
-sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
+sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
 ---
 
-Este guia mostra-lhe como ligar o Slack a um espaço de trabalho do Control Center, quer deixando o Control Center criar a aplicação, quer construindo-a por si mesmo.
+Este guia mostra-lhe como ligar o Slack a um espaço de trabalho do Control Center: adicionando a aplicação partilhada do Control Center, ou com uma aplicação sua, que o Control Center cria por si ou que constrói por si mesmo.
 
 Para uma primeira utilização guiada, consulte [Ligar o Slack ao seu espaço de trabalho](/pt-PT/manual/tutoriais/primeira-ponte-de-chat/).
 
@@ -20,9 +20,37 @@ Telegram, Teams ou Matrix.
 
 - O papel `owner` ou `admin` no espaço de trabalho do Control Center — ligar uma aplicação de chat é uma alteração das definições do espaço de trabalho
 - Autorização para criar e instalar aplicações no espaço de trabalho do Slack
-- Nada acessível publicamente: a ligação é de saída (Socket Mode), pelo que o servidor não precisa de porta de entrada, túnel nem domínio
+- Nada acessível publicamente: a sua própria aplicação liga-se para fora através do Socket Mode e os eventos da aplicação partilhada chegam ao servidor através de uma sondagem longa ao Control Center Connect, pelo que o servidor não precisa de porta de entrada, túnel nem domínio
 
-## Três formas de obter a aplicação
+## A aplicação partilhada ou a sua própria
+
+Um espaço de trabalho funciona com exatamente uma destas de cada vez.
+
+| Modo                                     | O que é preciso                                                                                                  | O que obtém                                                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Aplicação partilhada do Control Center** | O servidor usa o Control Center Connect (**Definições → Servidor → Início de sessão único**) e o Connect serve o Slack | Um clique e um início de sessão no Slack. Nenhuma aplicação para criar, nenhum token para colar, nada para renovar |
+| **A sua própria aplicação**              | Uma aplicação do Slack no seu espaço de trabalho do Slack, criada de uma das três formas abaixo                  | O nome, as descrições e o comando slash do seu próprio bot, editáveis a partir do Control Center |
+
+### Adicionar a aplicação partilhada do Control Center
+
+1. No Control Center, vá a **Definições → Espaço de trabalho → Geral** e desloque-se até ao cartão **Pontes de chat**
+2. No bloco do Slack, encontre a linha **Adicionar o Control Center ao Slack** e clique em **Adicionar ao Slack**
+3. O navegador abre o Slack. Inicie sessão com o Slack, escolha o espaço de trabalho do Slack e aprove a instalação
+4. Quando o navegador mostrar um código, introduza-o na caixa de diálogo que o Control Center deixou aberta. Se o navegador o devolver sozinho à aplicação, não há nada para escrever
+5. Uma notificação indica o espaço de trabalho do Slack ao qual a aplicação foi adicionada, e o bloco do Slack mostra que a ligação está a correr na aplicação partilhada do Control Center
+
+Só um administrador do espaço de trabalho pode adicionar a aplicação. A linha explica porque não pode começar quando o servidor usa as suas próprias apps em vez do Connect, quando o seu Connect não tem aplicação do Slack ou quando este espaço de trabalho já tem a sua própria aplicação do Slack ligada.
+
+Em que difere da sua própria aplicação:
+
+- O Slack envia os eventos da aplicação partilhada para o Connect. O Connect guarda apenas uma referência (equipa, canal e id da mensagem) e descarta o texto da mensagem; o servidor faz uma sondagem longa ao Connect à procura de referências e lê ele próprio cada mensagem a partir do Slack. O texto de um comando slash passa de facto pelo Connect, e é por isso que [`/cc ticket`](#criar-rascunhos-de-tickets-a-partir-do-slack) só cria rascunhos
+- O token do bot fica selado para este servidor e é renovado através do Connect, pelo que não há nenhum token para colar ou renovar
+- O nome, as descrições e o comando slash do bot são os da aplicação partilhada. A linha do Slack indica que a ligação corre na aplicação partilhada e não oferece **Personalizar o bot**
+- Um espaço de trabalho do Slack fica associado a um único servidor do Control Center de cada vez. Adicionar a aplicação a partir de outro servidor move-a para lá e a ligação deste servidor para
+
+Para mudar de modo, desligue e ligue da outra forma.
+
+### A sua própria aplicação: três formas de a obter
 
 | Caminho            | O que fornece                         | O que o Control Center faz                                                                                                     |
 | ------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -32,7 +60,7 @@ Telegram, Teams ou Matrix.
 
 O caminho guiado é o único que também deixa a aplicação _gerível_ a partir do Control Center, e é isso que permite [Personalizar o bot de chat](/pt-PT/manual/guias/personalizar-bot-de-chat/). Uma aplicação criada com **Criar no Slack** pode ser promovida mais tarde a aplicação gerida, colando um token de configuração na caixa de diálogo de ligação.
 
-Não existe deliberadamente nenhum botão «instalar a aplicação Slack do Control Center». Instalar uma aplicação Slack distribuída exige um segredo de cliente partilhado (o Slack não tem PKCE) e o Socket Mode distribui os eventos de uma aplicação aleatoriamente pelas suas ligações — pelo que uma aplicação partilhada entregaria as mensagens do seu espaço de trabalho aos servidores de outras pessoas. Cada espaço de trabalho tem, por isso, a sua própria aplicação, e estes três caminhos existem para lhe mostrar quão pouco trabalho isso lhe custa.
+Os eventos da sua própria aplicação nunca passam pelo Connect: o Socket Mode entrega-os diretamente a este servidor.
 
 ## Opção A: deixar o Control Center criar a aplicação
 
@@ -103,6 +131,8 @@ message.im
 
 ## Ligar
 
+É assim que os tokens da sua própria aplicação chegam ao Control Center. A aplicação partilhada não precisa de nada disto.
+
 1. Vá a **Definições → Espaço de trabalho → Geral** e desloque-se até ao cartão **Pontes de chat**
 2. No bloco do Slack, clique em **Ligar Slack**
 3. Preencha os campos:
@@ -125,8 +155,8 @@ Sem o token de configuração da aplicação opcional, a ligação funciona bem 
 
 ## O que a ligação faz
 
-- Guarda as credenciais no diretório próprio do espaço de trabalho, ao lado da sua base de dados, legíveis apenas pelo proprietário. Nunca voltam para um cliente
-- Abre uma ligação Socket Mode para este espaço de trabalho e começa a receber menções, respostas em threads do Slack, mensagens diretas e comandos slash
+- Guarda as credenciais no diretório próprio do espaço de trabalho, ao lado da sua base de dados, legíveis apenas pelo proprietário. Nunca voltam para um cliente. No caso da aplicação partilhada, trata-se da concessão selada; o token do bot de curta duração em que é renovada fica em memória
+- Começa a receber menções, respostas em threads do Slack, mensagens diretas e comandos slash: através de uma ligação Socket Mode para a sua própria aplicação, ou através da única sondagem longa do servidor ao Connect para a aplicação partilhada
 - Rearma todas as threads do Slack que já tinham sido ligadas, para que uma reconexão continue as conversas existentes em vez de as deixar penduradas
 - Não custa nada aos espaços de trabalho sem aplicação de chat: sem socket, sem temporizadores, sem tráfego
 
@@ -142,9 +172,9 @@ espaço de trabalho noutro sítio implica voltar a ligar o Slack lá.
 
 O acesso à ponte é a **pertença** ao espaço de trabalho, nunca a posse de um
 token. Uma conta do Slack tem de estar associada a um utilizador do Control
-Center que seja membro com um papel de escrita. Ligar, desligar, a configuração
-guiada, a ligação de configuração e a personalização do bot estão todos
-reservados a administradores.
+Center que seja membro com um papel de escrita. Ligar, desligar, a instalação da
+aplicação partilhada, a configuração guiada, a ligação de configuração e a
+personalização do bot estão todos reservados a administradores.
 :::
 
 ## Verificar
@@ -167,7 +197,25 @@ O raciocínio como uma parede de texto e a saída das ferramentas nunca saem do 
 
 Se não acontecer nada quando clica, o servidor que enviou a mensagem não está acessível a partir da máquina onde clicou (um servidor apenas em loopback clicado a partir de um telemóvel, por exemplo), ou o Control Center não está a correr lá. Um servidor sem endereço acessível envia um cartão sem botão em vez de um que não leva a lado nenhum.
 
+## Criar rascunhos de tickets a partir do Slack
+
+Qualquer membro associado com um papel de escrita pode propor um ticket a partir do Slack:
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+O texto antes do `|` é o título e o texto depois dele a descrição. O bot responde que criou o rascunho do ticket. Ainda nada é criado e nenhuma automação de tickets dispara: o rascunho fica à sua espera em **Definições → Espaço de trabalho → Perfil e identidade → Rascunhos de tickets do chat**, onde pode corrigir o título e a descrição e depois clicar em **Criar ticket** ou **Descartar**.
+
+- Só o membro que executou o comando vê o rascunho
+- Um rascunho que deixe ficar é descartado ao fim de um dia. Os rascunhos ficam em memória, pelo que reiniciar o servidor também os descarta
+- O cartão só aparece enquanto tiver rascunhos
+
+O texto de um comando não pode ser lido de novo a partir do Slack e, na aplicação partilhada, passou pelo Connect. É criar o ticket no Control Center que o torna seu.
+
 ## Renovar um token
+
+Isto aplica-se à sua própria aplicação. A aplicação partilhada não tem nenhum token para renovar.
 
 Volte a colar o novo valor na caixa de diálogo de ligação e clique em **Ligar**. Ligar substitui a ligação que estivesse a correr para este espaço de trabalho, pelo que o socket é restabelecido com as novas credenciais.
 
@@ -175,7 +223,7 @@ Os dois tokens obrigatórios têm de estar presentes em cada ligação. O token 
 
 ## Desligar
 
-Clique em **Desligar** na linha do Slack (apenas administradores). O socket fecha e as credenciais são esquecidas.
+Clique em **Desligar** na linha do Slack (apenas administradores). A ligação fecha e as credenciais são esquecidas. No caso da aplicação partilhada, o Control Center também desinstala o bot do espaço de trabalho do Slack e liberta a sua associação a este servidor.
 
 As associações de espaços e de utilizadores sobrevivem deliberadamente: voltar a ligar a mesma aplicação restaura todas as threads do Slack ligadas. São linhas próprias do espaço de trabalho, pelo que eliminar o espaço de trabalho as remove de qualquer forma.
 
@@ -212,7 +260,7 @@ Os cartões de tarefa do Slack fazem parte da mesma superfície nova Agents & AI
 
 ### «O Control Center precisa de um token de configuração da aplicação para editar o bot»
 
-A linha **Personalizar o bot** está desativada porque a ligação não tem token de configuração da aplicação. Isto é o esperado numa aplicação criada à mão ou através de **Criar no Slack** — o Slack nunca disse ao Control Center qual é a aplicação. Gere um par de tokens em api.slack.com/apps e volte a ligar com o token de renovação preenchido.
+A linha **Personalizar o bot** está desativada porque a ligação não tem token de configuração da aplicação. (Na aplicação partilhada não existe sequer a linha **Personalizar o bot**: o bot é o da aplicação partilhada.) Isto é o esperado numa aplicação criada à mão ou através de **Criar no Slack** — o Slack nunca disse ao Control Center qual é a aplicação. Gere um par de tokens em api.slack.com/apps e volte a ligar com o token de renovação preenchido.
 
 ### Uma resposta longa é cortada
 

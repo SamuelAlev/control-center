@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
@@ -153,10 +154,10 @@ void main() {
       );
       final lease = withLease
           ? await gateway.open(
-              const AgentRunGrant(
+              AgentRunGrant(
                 workspaceId: 'ws',
                 conversationId: 'c',
-                committerEmail: email,
+                identity: AgentCommitIdentity.owner(name: 'Ada', email: email),
               ),
             )
           : null;

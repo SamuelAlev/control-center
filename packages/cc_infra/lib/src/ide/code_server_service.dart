@@ -12,6 +12,7 @@ import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_infra/src/ide/code_server_bridge_extension.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:path/path.dart' as p;
 
 part 'code_server_workbench_settings.dart';
@@ -161,7 +162,7 @@ class CodeServerService implements CodeServerPort {
     }
     try {
       // Synchronous, runs once per probe; cheap enough for an open-editor path.
-      final result = Process.runSync('uname', ['-m']);
+      final result = ChildProcess.runSync('uname', ['-m']);
       if (result.exitCode == 0) {
         final out = (result.stdout as String).trim().toLowerCase();
         if (out.contains('arm64') || out.contains('aarch64')) {
@@ -353,8 +354,11 @@ class CodeServerService implements CodeServerPort {
     ];
     // Port-forward links retain code-server's proxy sub-path. Bridge reports
     // and reverse commands use the private loopback resource listener only.
-    final env = Map<String, String>.from(Platform.environment)
-      ..['VSCODE_PROXY_URI'] = '/proxy/vscode/{{session}}/{{port}}/';
+    // The IDE (and every terminal and task inside it) gets the child
+    // allowlist plus the toolchain, never the server's own environment.
+    final env = <String, String>{
+      'VSCODE_PROXY_URI': '/proxy/vscode/{{session}}/{{port}}/',
+    };
     final reportUrl = _bridgeReportUrl(bridgeId);
     if (reportUrl != null) {
       env['CC_IDE_REPORT_URL'] = reportUrl;
@@ -364,10 +368,11 @@ class CodeServerService implements CodeServerPort {
       env['CC_IDE_COMMANDS_URL'] = commandsUrl;
     }
 
-    final process = await Process.start(
+    final process = await ChildProcess.start(
       binary,
       args,
       environment: env,
+      toolchain: true,
       workingDirectory: worktree.path,
     );
     final port = await _readEphemeralPort(process).timeout(
@@ -677,7 +682,7 @@ class CodeServerService implements CodeServerPort {
       // disk. `--strip-components=1` drops the archive's top-level
       // `code-server-<version>-<os>-<arch>/` dir so `bin/code-server` + `lib/…`
       // land directly in the managed dir.
-      final res = await Process.run('tar', [
+      final res = await ChildProcess.run('tar', [
         '-xzf',
         tarball.path,
         '-C',
@@ -731,7 +736,7 @@ class CodeServerService implements CodeServerPort {
       return;
     }
     try {
-      final r = Process.runSync('chmod', ['755', path]);
+      final r = ChildProcess.runSync('chmod', ['755', path]);
       if (r.exitCode != 0) {
         CcInfraLog.warning('chmod 755 $path failed (exit ${r.exitCode}).');
       }
@@ -1082,7 +1087,7 @@ class CodeServerService implements CodeServerPort {
       _pruneOldBridgeDirs();
       final vsix = await _buildBridgeVsix();
       try {
-        final res = await Process.run(binary, [
+        final res = await ChildProcess.run(binary, [
           '--install-extension',
           vsix.path,
           '--extensions-dir',

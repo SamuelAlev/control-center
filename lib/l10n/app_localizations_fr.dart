@@ -1155,6 +1155,102 @@ class AppLocalizationsFr extends AppLocalizations {
   String get calendarRsvpFailed => 'Impossible de mettre à jour votre réponse';
 
   @override
+  String get calendarNewEvent => 'Nouvel événement';
+
+  @override
+  String get calendarComposerTitleHint => 'Ajouter un titre';
+
+  @override
+  String get calendarComposerStarts => 'Début';
+
+  @override
+  String get calendarComposerEnds => 'Fin';
+
+  @override
+  String get calendarComposerDate => 'Date';
+
+  @override
+  String get calendarComposerEndDate => 'Dernier jour';
+
+  @override
+  String get calendarComposerGuestsHint => 'Ajouter des invités par e-mail';
+
+  @override
+  String get calendarComposerMeet => 'Ajouter un lien Google Meet';
+
+  @override
+  String get calendarComposerLocationHint => 'Ajouter un lieu';
+
+  @override
+  String get calendarComposerDescriptionHint => 'Ajouter une description';
+
+  @override
+  String get calendarComposerCalendar => 'Calendrier';
+
+  @override
+  String get calendarComposerTitleRequired =>
+      'Ajoutez un titre pour enregistrer l\'événement';
+
+  @override
+  String get calendarComposerInvalidGuests =>
+      'L\'une des adresses e-mail des invités n\'est pas valide';
+
+  @override
+  String get calendarComposerEndBeforeStart =>
+      'L\'événement doit se terminer après son début';
+
+  @override
+  String get calendarComposerSaveFailed =>
+      'Impossible de créer l\'événement. Réessayez.';
+
+  @override
+  String get calendarComposerGuestsNotified =>
+      'Les invités reçoivent une invitation par e-mail de la part de Google.';
+
+  @override
+  String get calendarDeleteEvent => 'Supprimer l\'événement';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return 'Supprimer « $title » ?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Il est supprimé de Google Calendar.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Il est supprimé de Google Calendar, et tous les invités sont informés de son annulation.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      'Il est supprimé de votre seul calendrier. L\'organisateur et les autres invités le conservent.';
+
+  @override
+  String get calendarDeleteConfirmRecurring =>
+      'Seule cette occurrence est supprimée ; le reste de la série est conservé.';
+
+  @override
+  String get calendarDeleteFailed =>
+      'Impossible de supprimer l\'événement. Réessayez.';
+
+  @override
+  String get calendarMoveFailed =>
+      'Impossible de déplacer l\'événement. Il est revenu à sa place d\'origine.';
+
+  @override
+  String get activityCreatedCalendarEvent =>
+      'A créé un événement de calendrier';
+
+  @override
+  String get activityMovedCalendarEvent =>
+      'A déplacé un événement de calendrier';
+
+  @override
+  String get activityDeletedCalendarEvent =>
+      'A supprimé un événement de calendrier';
+
+  @override
   String get calendarAddAccount => 'Ajouter un compte de calendrier';
 
   @override
@@ -1165,9 +1261,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connectez un compte Google pour synchroniser les événements dans cet espace de travail. Ces calendriers sont les vôtres ici.';
 
   @override
-  String get calendarConnecting => 'Connexion…';
-
-  @override
   String get calendarSyncNow => 'Synchroniser';
 
   @override
@@ -1176,33 +1269,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Impossible de connecter Google Calendar';
-
-  @override
-  String get calendarClientIdLabel => 'ID client';
-
-  @override
-  String get calendarClientSecretLabel => 'Secret client';
-
-  @override
-  String get calendarConnectCredsHint =>
-      'Saisissez l\'ID client et le secret OAuth (device-code) de votre projet Google. Le serveur gère la connexion et la synchronisation — votre navigateur ne détient jamais les jetons.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      'Ouvrez la page de vérification sur n\'importe quel appareil, connectez-vous et saisissez ce code :';
-
-  @override
-  String get calendarConnectOpenPage => 'Ouvrir la page de vérification';
-
-  @override
-  String get calendarConnectWaiting => 'En attente d\'approbation…';
-
-  @override
-  String get calendarConnectDenied =>
-      'L\'autorisation a été refusée. Veuillez réessayer.';
-
-  @override
-  String get calendarConnectExpired => 'Le code a expiré. Veuillez réessayer.';
 
   @override
   String get notificationMeetingStartsSoon => 'Réunion imminente';
@@ -2425,9 +2491,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'A modifié l\'accès d\'un membre aux dépôts';
 
   @override
-  String get activityUpdatedGitHubToken => 'A mis à jour le token GitHub';
-
-  @override
   String get activityRefreshedWeather => 'A actualisé la prévision météo';
 
   @override
@@ -2465,10 +2528,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get activityRespondedToInvitation =>
       'A répondu à l\'invitation à l\'événement';
-
-  @override
-  String get activityStartedCalendarConnect =>
-      'A démarré la connexion du calendrier';
 
   @override
   String get activityDisconnectedCalendar => 'A déconnecté le calendrier';
@@ -4784,7 +4843,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchGifs => 'Rechercher des GIFs';
 
   @override
-  String get searchGifsHint => 'Rechercher des GIFs...';
+  String get searchGifsHint => 'Rechercher sur KLIPY';
 
   @override
   String get searchInDiffHint => 'Rechercher dans le diff...';
@@ -5272,9 +5331,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get unnamedAgent => 'Agent sans nom';
 
   @override
-  String get updateKey => 'Mettre à jour la clé';
-
-  @override
   String get updateLabel => 'Mettre à jour';
 
   @override
@@ -5662,7 +5718,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'La protection de branche bloque cette fusion';
 
   @override
-  String get confirm => 'Confirm';
+  String get confirm => 'Confirmer';
 
   @override
   String get trustedSitesSectionTitle => 'Sites de confiance';
@@ -6336,7 +6392,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'Exécuté avec bash -c. GITHUB_TOKEN est défini. Les placeholders sont substitués avant exécution.';
+      'Exécuté avec bash -c dans le bac à sable du système. GH_TOKEN et GITHUB_TOKEN contiennent un jeton en lecture seule pour le dépôt lié. Les placeholders sont mis entre guillemets et substitués avant exécution.';
 
   @override
   String get nodeConfigRouteKeys => 'Clés de route';
@@ -7015,7 +7071,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Connectez-vous à GitHub ou ajoutez un jeton dans Paramètres → Espace de travail → Profil et identité → Hébergement de code';
+      'Connectez-vous à GitHub dans Paramètres → Espace de travail → Profil et identité → Hébergement de code';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -12011,7 +12067,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return 'Mentionnez le bot dans $provider pour confier une tâche à un agent, ou créez des tickets avec $command.';
+    return 'Mentionnez le bot dans $provider pour confier une tâche à un agent, ou rédigez des brouillons de tickets avec $command.';
   }
 
   @override
@@ -12098,7 +12154,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return 'Envoyez cette commande au bot dans $provider. Elle ne fonctionne qu\'une fois et expire dans 15 minutes.';
+    return 'Envoyez ce code au bot $provider dans un message direct. Il ne fonctionne qu\'une fois et expire dans 15 minutes.';
   }
 
   @override
@@ -12265,21 +12321,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get chatStepInstallHint =>
       'Install app → copiez le jeton OAuth de l\'utilisateur bot.';
-
-  @override
-  String get calendarUseBuiltinApp =>
-      'Utiliser l\'app Google de Control Center';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Autorisez avec votre compte Google. Rien à configurer dans Google Cloud.';
-
-  @override
-  String get calendarUseOwnClient => 'Utiliser mon propre client Google Cloud';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      'Saisissez un client OAuth de votre propre projet Google Cloud.';
 
   @override
   String get aboutTitle => 'À propos';
@@ -12983,18 +13024,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signInAgain => 'Se reconnecter';
 
   @override
-  String get signInNotFinished =>
-      'La connexion n\'est pas encore revenue. Terminez-la dans votre navigateur, puis vérifiez à nouveau.';
+  String get forgeSignInBannerTitle =>
+      'L\'hébergement de code n\'est pas connecté dans cet espace de travail';
 
   @override
-  String get signedOutTitle => 'Vous êtes déconnecté';
+  String get forgeSignInBannerBody =>
+      'Une connexion a expiré ou a été révoquée, ou cet espace de travail utilise sa propre GitHub App. Les pull requests, les revues et la synchronisation des dépôts sont en pause jusqu\'à ce que vous vous connectiez.';
 
   @override
-  String get signedOutSubtitle =>
-      'Votre connexion à l\'hébergeur de code n\'est plus valide — un jeton a expiré, ou son accès a été révoqué. Rien d\'autre n\'a changé : reconnectez-vous et tout sera là où vous l\'aviez laissé.';
-
-  @override
-  String get viaServerApp => 'via l\'application de ce serveur';
+  String get forgeSignInBannerAction => 'Se connecter';
 
   @override
   String get ticketing => 'Tickets';
@@ -13012,14 +13050,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ticketProviderLocal => 'Local';
 
   @override
-  String get addKey => 'Ajouter une clé';
-
-  @override
   String get providerApps => 'Applications fournisseur';
 
   @override
   String get providerAppsDescription =>
-      'Les espaces de travail héritent de cette GitHub App, sauf s\'ils choisissent une autre App ou un jeton d\'accès personnel. Le travail en arrière-plan — webhooks, sondage, sync — s\'exécute sur l\'app, jamais sur le jeton d\'une personne.';
+      'Les apps que ce serveur a enregistrées lui-même auprès de chaque fournisseur. Les personnes se connectent par leur intermédiaire, et le travail en arrière-plan comme les webhooks, l\'interrogation et la synchronisation s\'exécute sur elles, jamais sur la connexion d\'une personne.';
 
   @override
   String get providerAppId => 'Identifiant d\'application';
@@ -13032,9 +13067,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerClientSecret => 'Secret client';
-
-  @override
-  String get providerApiKey => 'Clé d\'API';
 
   @override
   String get providerCallbackUrl => 'URL de rappel';
@@ -13055,17 +13087,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return 'Les identifiants fonctionnent. Installée sur : $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return 'Saisissez ce code sur la page $provider qui vient de s\'ouvrir. Il a été copié dans votre presse-papiers.';
-  }
-
-  @override
-  String get deviceCodeWaiting => 'En attente de la fin dans le navigateur…';
-
-  @override
-  String get copyCodeAndOpen => 'Copier le code et ouvrir';
 
   @override
   String get couldNotOpenBrowser =>
@@ -13414,7 +13435,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Utilisé par les espaces de travail qui héritent de la GitHub App de cette installation. Un espace avec sa propre App ou un PAT se configure sous Espace de travail → Général.';
+      'Utilisée par les espaces de travail qui héritent de l\'application GitHub de cette installation. Un espace de travail doté de sa propre application la configure dans Espace de travail → Général.';
 
   @override
   String get providerAppsGroupPrConversations =>
@@ -14979,7 +15000,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      'Comment le travail GitHub en arrière-plan s\'authentifie dans cet espace. Hériter de l\'App de l\'installation, utiliser une autre App, ou un jeton d\'accès personnel uniquement.';
+      'Comment le travail GitHub en arrière-plan de cet espace de travail s\'authentifie : avec l\'application de cette installation, ou avec une application propre à l\'espace de travail.';
 
   @override
   String get workspaceGitHubModeInherit =>
@@ -14989,29 +15010,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workspaceGitHubModeApp => 'Utiliser une autre GitHub App';
 
   @override
-  String get workspaceGitHubModePat => 'Jeton d\'accès personnel uniquement';
-
-  @override
   String get workspaceGitHubInheritHint =>
       'Utilise la GitHub App dans Serveur → Apps fournisseurs.';
 
   @override
   String get workspaceGitHubAppHint =>
       'Identité bot et sondage de cet espace. Les membres se connectent dans Vous via cette App.';
-
-  @override
-  String get workspaceGitHubPatLabel => 'Jeton d\'arrière-plan';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      'Pour le sondage et les agents dans cet espace. Pas le jeton de profil d\'un membre.';
-
-  @override
-  String get workspaceGitHubHasPat =>
-      'Un jeton d\'arrière-plan est enregistré.';
-
-  @override
-  String get workspaceGitHubNoPat => 'Aucun jeton d\'arrière-plan enregistré.';
 
   @override
   String get profileOverlayHint =>
@@ -16888,6 +16892,545 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => 'Changer d\'espace de travail';
+
+  @override
+  String signInToProvider(String provider) {
+    return 'Se connecter à $provider';
+  }
+
+  @override
+  String get linearConnectAutomation =>
+      'Connecter Linear pour l\'automatisation';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return 'Ouverture de $provider dans votre navigateur…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return 'Approuvez la demande sur la page de $provider dans votre navigateur. Cette fenêtre détecte seule quand vous avez terminé.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return 'En attente de $provider…';
+  }
+
+  @override
+  String get signInFailedTitle => 'La connexion n\'a pas abouti';
+
+  @override
+  String get signInReopenPage => 'Rouvrir la page de connexion';
+
+  @override
+  String get signInCodePrompt =>
+      'Saisissez le code affiché dans votre navigateur';
+
+  @override
+  String get signInCodeMalformed =>
+      'Ce n\'est pas un code de connexion valide. Les codes comptent 8 lettres et chiffres.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      'Si votre navigateur propose d\'ouvrir Control Center, acceptez : vous n\'aurez pas à saisir le code.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return 'Connecté à $provider en tant que $account';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return 'Connecté à $provider';
+  }
+
+  @override
+  String get signInErrorExpired => 'Cette connexion a expiré. Recommencez.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return 'La connexion à $provider a été annulée ou refusée.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider a accordé moins d\'autorisations que Control Center n\'en a besoin. Reconnectez-vous et approuvez toutes les autorisations.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      'Ce code ne correspond pas à cette connexion. Vérifiez-le et réessayez.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider ne répond pas pour le moment. Réessayez dans quelques minutes.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider a accepté la connexion, mais le serveur n\'a pas pu la finaliser. Réessayez.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return 'L\'application $provider de ce serveur est mal configurée. Demandez au propriétaire du serveur de vérifier Paramètres → Serveur → Authentification unique.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return 'Votre connexion à $provider a expiré. Reconnectez-vous pour continuer à agir en votre nom.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return 'L\'application $provider n\'est pas installée là où elle est nécessaire. Installez-la, puis réessayez.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      'Cette installation de l\'application GitHub est déjà autorisée pour un autre serveur Control Center.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      'Cet espace Linear est déjà connecté à un autre serveur Control Center.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Seul un administrateur ou propriétaire de l\'espace de travail Slack peut le connecter à Control Center la première fois. Demandez à l\'un d\'eux d\'ajouter l\'application.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return 'L\'application $provider est suspendue. Réactivez-la sur $provider, puis réessayez.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect a bloqué ce serveur. Contactez l\'opérateur de votre serveur Connect.';
+
+  @override
+  String get signInErrorUnknown =>
+      'La connexion a échoué pour une raison que le serveur n\'a pas indiquée. Réessayez.';
+
+  @override
+  String get signInPhishingTitle => 'Connexion non lancée d\'ici';
+
+  @override
+  String get signInPhishingBody =>
+      'Cette connexion n\'a pas été lancée depuis cette application. Si quelqu\'un vous a envoyé ce lien, ne continuez pas.';
+
+  @override
+  String get signInPhishingDetail =>
+      'Rien n\'a été envoyé. Finaliser une connexion lancée par quelqu\'un d\'autre relierait votre compte à son serveur.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return 'Connexion à $provider requise';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return 'Cette action s\'exécute en votre nom sur $provider, et vous n\'êtes pas connecté. Connectez-vous, puis réessayez.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return 'Vous n\'êtes pas connecté à $provider. Tout ce que vous faites ici s\'exécute en votre nom : connectez-vous d\'abord.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return 'La connexion à $provider n\'est pas encore configurée sur ce serveur.';
+  }
+
+  @override
+  String get githubInstallations => 'Installations de l\'application GitHub';
+
+  @override
+  String get githubInstallationsDescription =>
+      'Où l\'application GitHub est installée, parmi les comptes auxquels appartiennent les dépôts de cet espace de travail. L\'installation d\'une organisation ne fonctionne que sur les serveurs autorisés par ses administrateurs.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      'L\'application GitHub n\'est installée sur aucun des comptes auxquels appartiennent les dépôts de cet espace de travail.';
+
+  @override
+  String get githubInstallApp => 'Installer l\'application GitHub';
+
+  @override
+  String get githubAuthorizeServer => 'Autoriser ce serveur';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return 'Ce serveur peut désormais utiliser l\'installation sur $account.';
+  }
+
+  @override
+  String get githubInstallationSuspended => 'Suspendue';
+
+  @override
+  String get githubInstallationAuthorized => 'Autorisée';
+
+  @override
+  String get githubInstallationNotAuthorized => 'Non autorisée';
+
+  @override
+  String get linearAutomationTitle => 'Automatisation Linear';
+
+  @override
+  String get linearAutomationHint =>
+      'Permet aux agents et pipelines de cet espace de travail d\'agir dans Linear en tant qu\'application plutôt qu\'en tant que personne. Les administrateurs de l\'espace la connectent.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return 'Connecté à $account';
+  }
+
+  @override
+  String get connectModeHosted => 'Utiliser les applications de Control Center';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      'Les connexions passent par Control Center Connect. Connect scelle chaque connexion pour que seul ce serveur puisse l\'ouvrir, émet des jetons GitHub limités à un seul dépôt, ne détient aucune clé de dépôt et ne reçoit jamais votre code source.';
+
+  @override
+  String get connectModeOwn => 'Utiliser mes propres applications';
+
+  @override
+  String get connectModeOwnHint =>
+      'Enregistrez vous-même les applications GitHub, Google et Linear dans Paramètres → Serveur → Authentification unique, et connectez l\'application Slack propre à chaque espace de travail dans ses paramètres. « Créer mon application GitHub » configure GitHub en une étape.';
+
+  @override
+  String get connectModeCustom => 'Utiliser un serveur Connect personnalisé';
+
+  @override
+  String get connectModeCustomHint =>
+      'Votre organisation gère son propre serveur Connect. Les connexions y passent au lieu de celui de Control Center.';
+
+  @override
+  String get connectModeUnset => 'Pas encore configuré';
+
+  @override
+  String get connectCustomUrlLabel => 'URL du serveur Connect';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'Saisissez une adresse HTTPS, par exemple https://connect.example.com.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      'Le HTTP simple n\'atteint qu\'un Connect sur cette machine. Utilisez HTTPS pour tout ce qui passe par un réseau.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      'Les applications hébergées de Control Center ne sont pas encore disponibles dans cette version. Utilisez vos propres applications ou un serveur Connect personnalisé.';
+
+  @override
+  String get connectErrorSignature =>
+      'La configuration de Connect n\'a pas passé la vérification de signature. Les connexions via Connect sont suspendues jusqu\'à ce qu\'elle soit de nouveau vérifiée.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect a fourni une configuration plus ancienne que celle déjà vue par ce serveur, elle a donc été refusée. Les connexions via Connect sont suspendues.';
+
+  @override
+  String get connectErrorUnreachable =>
+      'Ce serveur ne peut pas joindre Connect pour le moment. Les connexions qui l\'utilisent échoueront jusqu\'à son retour.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect a bloqué l\'identifiant d\'installation de ce serveur. Contactez l\'opérateur de votre serveur Connect.';
+
+  @override
+  String get connectErrorPinsChanged =>
+      'Les applications de Connect ont changé';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect a répondu d\'une façon que ce serveur ne comprend pas. Mettez à jour le serveur ou vérifiez l\'URL de Connect.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect a signalé un problème sans l\'expliquer. Lancez un test pour réessayer.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Votre serveur Connect désigne maintenant d\'autres applications GitHub, Google, Linear ou Slack que celles que ce serveur a épinglées lors de la première utilisation. Ne leur faites confiance que si son opérateur vous l\'a annoncé.';
+
+  @override
+  String get connectConfirmPins => 'Faire confiance aux nouvelles applications';
+
+  @override
+  String get connectStale =>
+      'La configuration utilisée est plus ancienne que prévu. Lancez un test pour la rafraîchir.';
+
+  @override
+  String get connectLaneSourceOwn => 'Application propre';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => 'Désactivé';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      'Les applications que ce serveur utilise pour GitHub, Google Calendar, Linear, Slack et la recherche de GIF.';
+
+  @override
+  String get connectFactMode => 'Applications de connexion';
+
+  @override
+  String get connectFactHealth => 'État';
+
+  @override
+  String get connectFactEpoch => 'Version de la configuration';
+
+  @override
+  String get connectHealthOff => 'Non utilisé';
+
+  @override
+  String get connectHealthOk => 'Fonctionne';
+
+  @override
+  String get connectHealthDown => 'Ne fonctionne pas';
+
+  @override
+  String get connectLocked =>
+      'CC_CONNECT_URL dans l\'environnement de ce serveur définit ce réglage. Modifiez-le là et redémarrez le serveur.';
+
+  @override
+  String get connectLanesTitle => 'Où s\'exécute chaque connexion';
+
+  @override
+  String get connectLanesDescription =>
+      'Une application propre a toujours priorité sur Connect pour son fournisseur.';
+
+  @override
+  String get connectServerGroup => 'Ce serveur';
+
+  @override
+  String get connectInstallId => 'Identifiant d\'installation';
+
+  @override
+  String get connectInstallIdHint =>
+      'Identifie ce serveur auprès de Connect. Communiquez-le au propriétaire d\'une organisation ou à l\'opérateur Connect qui le demande.';
+
+  @override
+  String get connectInstallIdEmpty =>
+      'Attribué la première fois que ce serveur utilise Connect.';
+
+  @override
+  String get connectTestOk => 'Connect fonctionne.';
+
+  @override
+  String get connectRotateKey => 'Renouveler la clé';
+
+  @override
+  String get connectRotateKeyTitle =>
+      'Renouveler la clé Connect de ce serveur ?';
+
+  @override
+  String get connectRotateKeyBody =>
+      'Ce serveur reçoit une nouvelle clé et un nouvel identifiant d\'installation. Toutes les connexions faites via Connect cessent de fonctionner et tout le monde doit se reconnecter. Les connexions via vos propres applications ne sont pas concernées.';
+
+  @override
+  String get connectRotateKeyDone =>
+      'Clé renouvelée. Toutes les personnes connectées via Connect doivent se reconnecter.';
+
+  @override
+  String get connectCliLabel => 'Depuis un terminal';
+
+  @override
+  String get onboardingStepSignIn => 'Connexion';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Choisissez comment les personnes se connectent';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center fonctionne avec GitHub, Google Calendar, Linear, Slack et la recherche de GIF via des applications enregistrées auprès de chaque fournisseur. Choisissez les applications de qui ce serveur utilise. Vous pourrez changer cela plus tard dans Paramètres → Serveur → Authentification unique.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      'Créez dès maintenant une application GitHub pour ce serveur, ou ajoutez vos applications plus tard dans Paramètres → Serveur → Authentification unique.';
+
+  @override
+  String get providerServiceApiKey => 'Clé API de service';
+
+  @override
+  String get providerAppPartial => 'Configuration inachevée';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return 'Il manque encore : $fields. Tant que tous les champs ne sont pas renseignés, les connexions pour ce fournisseur sont refusées au lieu de passer par Connect.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      'L\'identifiant client connecte les membres. La clé API de service permet à ce serveur de lire et d\'écrire dans Linear par lui-même.';
+
+  @override
+  String get providerCallbackUrls => 'URL de rappel';
+
+  @override
+  String get providerCallbackUrlHint =>
+      'Enregistrez-la auprès du fournisseur exactement telle qu\'affichée.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'Créer une application GitHub';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub enregistre une application avec les bonnes autorisations et le bon rappel, puis transmet ses identifiants à ce serveur. Rien à copier à la main.';
+
+  @override
+  String get providerAppCreateGitHub => 'Créer mon application GitHub';
+
+  @override
+  String get providerAppCreateGitHubOrg => 'Organisation (facultatif)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      'Laissez vide pour créer l’application sous votre propre compte GitHub. La créer sous une organisation nécessite un propriétaire de cette organisation.';
+
+  @override
+  String get providerAppSignInReady => 'Les personnes peuvent se connecter.';
+
+  @override
+  String get chatLinkWaiting => 'En attente de votre message direct…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return 'Est-ce votre compte $provider ?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return 'Ce compte a envoyé votre code au bot. Ne confirmez que s\'il est à vous : une fois lié, ce qu\'il envoie dans $provider agit en votre nom dans cet espace de travail.';
+  }
+
+  @override
+  String get chatLinkDecline => 'Refuser';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return 'Rien n\'a été lié. Obtenez un nouveau code si vous voulez toujours lier votre compte $provider.';
+  }
+
+  @override
+  String get chatLinkNewCode => 'Obtenir un nouveau code';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return 'Ajouter Control Center à $provider';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return 'Control Center a été ajouté à $workspace';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return 'Installe l\'application Control Center partagée dans votre espace de travail $provider. Aucune application à créer, aucun jeton à coller.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return 'Ajouter à $provider';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      'Fonctionne avec l\'application Control Center partagée : il n\'y a ici ni jeton ni réglage du bot à gérer.';
+
+  @override
+  String get chatTicketDraftsTitle => 'Brouillons de tickets depuis le chat';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      'Un brouillon ne devient un ticket du backlog que lorsque vous le créez ici. Les brouillons laissés de côté sont supprimés au bout d\'un jour.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return 'Depuis $provider';
+  }
+
+  @override
+  String get chatTicketDraftCreate => 'Créer le ticket';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '$key créé';
+  }
+
+  @override
+  String get workspaceProviderApps => 'Applications des fournisseurs';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      'Les applications Google Calendar, Linear et Klipy utilisées par cet espace de travail. Par défaut, il utilise l\'application de ce serveur ou Control Center Connect. Un espace de travail avec sa propre application ne revient jamais à celles-ci.';
+
+  @override
+  String get workspaceProviderAppModeInherit =>
+      'Utiliser l\'application de ce serveur';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      'Les connexions et les requêtes utilisent l\'application de ce serveur ou Control Center Connect.';
+
+  @override
+  String get workspaceProviderAppModeOwn =>
+      'Utiliser l\'application propre à cet espace de travail';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      'Seule l\'application de cet espace de travail est utilisée. Tant qu\'elle est incomplète, ce fournisseur est désactivé ici au lieu de revenir à une autre application.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => 'Application du serveur';
+
+  @override
+  String get workspaceProviderAppStatusOwn => 'Application propre';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return 'Il manque encore : $fields. Tant que tous les champs ne sont pas renseignés, ce fournisseur est désactivé dans cet espace de travail. Il ne revient pas à l\'application de ce serveur.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      'Changer d\'application déconnecte tous les membres de cet espace de travail. Ils doivent se reconnecter avec la nouvelle.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => 'Clé d\'application';
+
+  @override
+  String get workspaceProviderAppKlipyHint =>
+      'La recherche de GIF dans cet espace de travail utilise cette clé.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return 'Changer l\'application $provider ?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return 'Toutes les personnes connectées à $provider dans cet espace de travail via l\'application de ce serveur doivent se reconnecter avec l\'application de l\'espace de travail.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return 'Cela supprime les identifiants $provider de l\'espace de travail. Toutes les personnes connectées via l\'application de l\'espace de travail doivent se reconnecter.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => 'Changer d\'application';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

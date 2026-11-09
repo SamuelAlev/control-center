@@ -20,8 +20,8 @@ class ScopedCredentials {
   /// revoke if the sandbox outlives the credential.
   final DateTime? expiresAt;
 
-  /// Human-readable notes shown in the UI (e.g. "Using raw PAT — swap in
-  /// fine-grained tokens for production").
+  /// Human-readable notes shown in the UI (which repository and scope the
+  /// token covers, or why none was minted).
   final List<String> notes;
 }
 
@@ -31,10 +31,15 @@ class ScopedCredentials {
 /// network is decided by the action policy (allow / ask / deny), not by
 /// withholding a token up front.
 enum ForgeTokenScope {
-  /// Read the repository and work with pull requests — what lands in an
-  /// agent's own environment. It cannot push: pushes go through the agent run
-  /// gateway, which consults the push rule before using a [write] token.
+  /// Read the repository, its pull requests and CI — and nothing else.
+  /// Pipeline shell steps, clones and enclosures.
   read,
+
+  /// [read] plus pull request comments and reviews, when the accountable
+  /// human can push — what lands in an agent's own environment. It cannot
+  /// push: pushes go through the agent run gateway, which consults the push
+  /// rule before using a [write] token.
+  review,
 
   /// Write the repository contents. Held server-side by whatever applies the
   /// push rule (the agent run gateway, a rig's credential endpoint); never
@@ -56,9 +61,13 @@ abstract interface class CredentialBrokerPort {
   /// Without it the only boundary is between servers, and every member of one
   /// server shares whatever its owner can reach.
   ///
-  /// Null means "no human asked" — a webhook, a reconciler, a scheduled run —
-  /// and falls back to the server's own identity, which is the same behaviour
-  /// as before this parameter existed.
+  /// Null means "no human asked" — a schedule, a reconciler — and the bound
+  /// is the workspace's accountable human (its owner, when a member), never
+  /// an unrelated server owner.
+  ///
+  /// [personal] marks a person's own interactive session (a terminal rig):
+  /// the token is that person's own sign-in narrowed to the one repository,
+  /// so what they do there is theirs on the forge, never an App's.
   Future<ScopedCredentials> mint({
     required String conversationId,
     required ForgeTokenScope scope,
@@ -66,6 +75,7 @@ abstract interface class CredentialBrokerPort {
     String? repoName,
     String? actingUserId,
     String? workspaceId,
+    bool personal = false,
   });
 
   /// Revokes a previously-minted grant. Idempotent.

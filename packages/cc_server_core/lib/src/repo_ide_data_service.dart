@@ -8,6 +8,8 @@ import 'package:cc_domain/core/domain/ports/session_diff_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 // Narrow on purpose: this service needs exactly one cc_infra type. The
 // package-wide barrel would drag the whole dispatch/chat/infra surface into
@@ -19,6 +21,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 part 'repo_ide_change_gate.dart';
+part 'repo_ide_content_search.dart';
 
 /// Options for [RepoIdeDataService.searchContent], mirroring VS Code's search
 /// controls. Defaults (`caseSensitive: false`, `regex: false`, `wholeWord:
@@ -123,6 +126,18 @@ typedef RepoChangeGroups = ({
   int aheadOfBase,
 });
 
+/// A GitHub token for git against one linked repository: `actingUserId`'s
+/// own when given (a push a person clicked), else a one-repository token
+/// (`write` for pushes).
+typedef GitHubRepoGitToken =
+    Future<String?> Function({
+      required String workspaceId,
+      required String owner,
+      required String repo,
+      String? actingUserId,
+      bool write,
+    });
+
 /// Server-side data for the messaging IDE (Explorer, Source Control, file viewer) over `repos.*` /
 /// `conversation.changes`. Clients are thin; the server owns checkouts and CoW worktrees.
 ///
@@ -162,14 +177,12 @@ class RepoIdeDataService with _WorktreeChangeGate {
   final SessionDiffPort _diff;
   final FileSearch _fileSearch;
 
-  /// Resolves the GitHub credential a network-touching git command rides.
-  /// [_githubToken]'s `actingUserId` names the human whose click drove the
-  /// operation, so their push is authored on GitHub as THEM (per-actor lane);
-  /// omitted, it resolves the server chain (app → owner → environment), which
-  /// is only right for work with no human behind it. `workspaceId` selects
-  /// that workspace's GitHub overlay rather than another workspace's token.
-  final Future<String?> Function({String? actingUserId, String? workspaceId})?
-  _githubToken;
+  /// Resolves the GitHub credential a network-touching git command rides,
+  /// for one linked repository. `actingUserId` names the human whose click
+  /// drove the operation, so their push is theirs on GitHub; without one it
+  /// is a one-repository read token. The repository always comes from the
+  /// workspace's linked repo record, never from a worktree's git remote.
+  final GitHubRepoGitToken? _githubToken;
 
   /// Open pull request head for a branch this checkout has never fetched.
   /// Null leaves publication entirely to local git refs.
@@ -292,7 +305,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       // Behind is counted against local refs, which only a fetch moves. A
       // branch that was never published has nothing upstream to fetch.
       if (autoFetch && sync.hasUpstream) {
-        _scheduleAutoFetch(p.normalize(root), workspaceId);
+        _scheduleAutoFetch(p.normalize(root), workspaceId, repoId);
       }
       return (
         staged: grouped.staged,
@@ -507,7 +520,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// Starts [_fetchUpstream] for [root] unless one is running or the last one
   /// started within [_autoFetchInterval]. A failed fetch still waits out the
   /// interval, so an unreachable remote is not retried on every poll.
-  void _scheduleAutoFetch(String root, String workspaceId) {
+  void _scheduleAutoFetch(String root, String workspaceId, String repoId) {
     final interval = _autoFetchInterval;
     if (interval == null || _autoFetches.containsKey(root)) {
       return;
@@ -521,7 +534,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
       _autoFetchedAt.removeWhere((_, at) => now.difference(at) >= interval);
     }
     _autoFetchedAt[root] = now;
-    final run = _fetchUpstream(root, workspaceId).catchError((Object _) {});
+    final run = _fetchUpstream(
+      root,
+      workspaceId,
+      repoId,
+    ).catchError((Object _) {});
     _autoFetches[root] = run;
     unawaited(run.whenComplete(() => _autoFetches.remove(root)));
   }
@@ -535,7 +552,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// remote-tracking ref: the configured upstream, else `origin/<branch>`.
   /// The explicit refspec writes that ref even when the remote's configured
   /// fetch refspec does not cover the branch. Only that one branch, no tags.
-  Future<void> _fetchUpstream(String root, String workspaceId) async {
+  Future<void> _fetchUpstream(
+    String root,
+    String workspaceId,
+    String repoId,
+  ) async {
     const env = {
       'GIT_TERMINAL_PROMPT': '0',
       'GIT_ASKPASS': 'echo',
@@ -577,8 +598,10 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
 
     var authEnv = const <String, String>{};
-    if (url.startsWith('https://github.com/')) {
-      final token = await _githubToken?.call(workspaceId: workspaceId);
+    // SSH spellings count: server-run git rewrites them to HTTPS
+    // ([IsolatedGit.githubHttpsRewrites]) and never uses the host's SSH.
+    if (_isGitHubRemote(url)) {
+      final token = await _githubTokenForRepo(workspaceId, repoId);
       if (token != null && token.isNotEmpty) {
         final b64 = base64Encode(utf8.encode('x-access-token:$token'));
         authEnv = {
@@ -588,8 +611,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       }
     }
 
-    final process = await Process.start(
-      'git',
+    final process = await IsolatedGit.start(
       RigWorktreeGuard.gitArgs([
         '-c',
         'credential.helper=',
@@ -915,11 +937,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       // The listing stands without git: it just keeps what git would hide.
       return;
     }
-    final process = await Process.start(
-      'git',
-      arguments,
-      workingDirectory: root,
-    );
+    final process = await IsolatedGit.start(arguments, workingDirectory: root);
     final batch = StringBuffer();
     for (final entry in entries) {
       batch
@@ -1159,141 +1177,6 @@ class RepoIdeDataService with _WorktreeChangeGate {
     return out;
   }
 
-  /// Include pathspecs for a grep: exact [SearchContentOptions.paths]
-  /// (optionally filtered by [SearchContentOptions.include] globs) or, when
-  /// paths is empty, the include globs themselves.
-  static List<String> _includePathspecs(SearchContentOptions options) {
-    if (options.paths.isEmpty) {
-      return [
-        for (final raw in options.include)
-          if (raw.trim().isNotEmpty) raw.trim(),
-      ];
-    }
-    final paths = [
-      for (final raw in options.paths)
-        if (raw.trim().isNotEmpty) raw.trim(),
-    ];
-    final globs = [
-      for (final raw in options.include)
-        if (raw.trim().isNotEmpty) raw.trim(),
-    ];
-    if (globs.isEmpty) {
-      return paths;
-    }
-    return [
-      for (final path in paths)
-        if (globs.any((glob) => _pathspecMatches(path, glob))) path,
-    ];
-  }
-
-  /// Git's default pathspec glob: `*` matches across `/`, `?` is one character.
-  static bool _pathspecMatches(String path, String glob) {
-    final buf = StringBuffer('^');
-    for (var i = 0; i < glob.length; i++) {
-      final c = glob[i];
-      switch (c) {
-        case '*':
-          buf.write('.*');
-        case '?':
-          buf.write('.');
-        default:
-          buf.write(RegExp.escape(c));
-      }
-    }
-    buf.write(r'$');
-    return RegExp(buf.toString(), caseSensitive: false).hasMatch(path);
-  }
-
-  /// Repo-relative POSIX path if [raw] names a file inside [root], else null.
-  /// Rejects `..` / absolute escapes so a client-supplied path cannot leave
-  /// the worktree. Missing files (deleted PR paths) return null.
-  static String? _existingWorktreeRel(String root, String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    final joined = p.normalize(p.join(root, trimmed));
-    if (joined == root || !p.isWithin(root, joined)) {
-      return null;
-    }
-    if (!File(joined).existsSync()) {
-      return null;
-    }
-    final rel = p.relative(joined, from: root);
-    return Platform.isWindows ? rel.replaceAll('\\', '/') : rel;
-  }
-
-  /// Keeps at most [_contentMaxLineChars] of [text]. A match that already
-  /// fits in the leading window stays put (the client ellipsizes the lead).
-  /// A match past that window is recentered so the payload still contains it;
-  /// without this, a hit on a long line is sliced off before the preview can
-  /// show it. A query our matcher cannot place falls back to the leading
-  /// window — the same bytes the old truncation sent.
-  static String _clipContentLine(
-    String text,
-    String query,
-    SearchContentOptions options,
-  ) {
-    const max = _contentMaxLineChars;
-    if (text.length <= max) {
-      return text;
-    }
-    final match = _firstContentMatch(text, query, options);
-    if (match == null || match.end <= max) {
-      return text.substring(0, max);
-    }
-    const lead = 80;
-    var start = match.start - lead;
-    if (start < 0) {
-      start = 0;
-    }
-    var end = start + max;
-    if (end > text.length) {
-      end = text.length;
-      start = end - max;
-      if (start < 0) {
-        start = 0;
-      }
-    }
-    if (match.start < start) {
-      start = match.start;
-    }
-    if (match.start >= end) {
-      start = match.start;
-      end = text.length < start + max ? text.length : start + max;
-    }
-    return text.substring(start, end);
-  }
-
-  /// First match of [query] in [text], using the same case/regex/word flags
-  /// `git grep` ran with. Null when the pattern is empty or not a Dart regex
-  /// (git's ERE and Dart's regex are not the same dialect).
-  static RegExpMatch? _firstContentMatch(
-    String text,
-    String query,
-    SearchContentOptions options,
-  ) {
-    final q = query.trim();
-    if (q.isEmpty) {
-      return null;
-    }
-    final String pattern;
-    if (options.regex) {
-      pattern = options.wholeWord ? '\\b(?:$q)\\b' : q;
-    } else {
-      final escaped = RegExp.escape(q);
-      pattern = options.wholeWord ? '\\b$escaped\\b' : escaped;
-    }
-    try {
-      return RegExp(
-        pattern,
-        caseSensitive: options.caseSensitive,
-      ).firstMatch(text);
-    } on FormatException {
-      return null;
-    }
-  }
-
   /// Runs the prebuilt `git grep` [grepArgs] in [root] and groups the output
   /// per file (`{repoId, relativePath, matches: [{line, text}]}`), attributing
   /// each group to [repoId]. Bounded by [remaining] total matching lines and
@@ -1368,70 +1251,6 @@ class RepoIdeDataService with _WorktreeChangeGate {
     ];
   }
 
-  /// Builds the `git grep` argv for [query] under [options].
-  ///
-  /// Legacy defaults (`caseSensitive: false`, `regex: false`) emit
-  /// `-i -F`. Whole-word adds `-w`; regex replaces `-F` with `-E` (extended
-  /// regex — git grep's default BRE doesn't recognise `\d` etc.). Include/
-  /// exclude globs become pathspecs after `--`: a default pathspec already
-  /// treats `*` as a wildcard across the whole path (so `*skip.dart` matches
-  /// `lib/skip.dart`) and excludes are prefixed with `:(exclude)`. The argv is
-  /// bounded by [_contentMaxPathspecs] defensively, except when
-  /// [includeOverride] is a pre-batched chunk of exact paths (already sized).
-  static List<String> _buildGrepArgs(
-    String query,
-    SearchContentOptions options, {
-    List<String>? includeOverride,
-  }) {
-    final args = <String>[
-      'grep',
-      '-n',
-      '-I',
-      '--untracked',
-      '--no-color',
-      if (!options.caseSensitive) '-i',
-      if (options.regex) '-E' else '-F',
-      if (options.wholeWord) '-w',
-      '-e',
-      query,
-    ];
-    final includes =
-        includeOverride ??
-        [
-          for (final raw in options.include)
-            if (raw.trim().isNotEmpty) raw.trim(),
-        ];
-    final pathspecs = <String>[];
-    var count = 0;
-    final includeCap = includeOverride != null
-        ? includes.length
-        : _contentMaxPathspecs;
-    for (final glob in includes) {
-      if (count >= includeCap) {
-        break;
-      }
-      pathspecs.add(glob);
-      count++;
-    }
-    for (final raw in options.exclude) {
-      if (includeOverride == null && count >= _contentMaxPathspecs) {
-        break;
-      }
-      final glob = raw.trim();
-      if (glob.isEmpty) {
-        continue;
-      }
-      pathspecs.add(':(exclude)$glob');
-      count++;
-    }
-    if (pathspecs.isNotEmpty) {
-      args
-        ..add('--')
-        ..addAll(pathspecs);
-    }
-    return args;
-  }
-
   /// Adapter that satisfies the RPC fetcher typedef: parses a raw options map
   /// (from the wire) into [SearchContentOptions] and delegates to
   /// [searchContent]. Unknown keys are ignored; missing keys fall back to the
@@ -1465,52 +1284,6 @@ class RepoIdeDataService with _WorktreeChangeGate {
       repoId,
       query,
       options: _parseSearchOptions(options),
-    );
-  }
-
-  /// Parses the wire `options` map into [SearchContentOptions]. Tolerates a
-  /// missing map and wrong-typed values (each falls back to the default).
-  static SearchContentOptions _parseSearchOptions(
-    Map<String, Object?> options,
-  ) {
-    bool boolOpt(String key) {
-      final v = options[key];
-      return v is bool ? v : false;
-    }
-
-    List<String> listOpt(String key) {
-      final v = options[key];
-      if (v is List) {
-        return v.whereType<String>().where((s) => s.isNotEmpty).toList();
-      }
-      if (v is String && v.isNotEmpty) {
-        // Accept a single comma/space-separated glob string for ergonomics.
-        return v
-            .split(RegExp(r'[,\s]+'))
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-      }
-      return const [];
-    }
-
-    // Exact file paths must stay a JSON list — comma-splitting would break
-    // paths with spaces and would OR a joined blob as one glob.
-    List<String> pathsOpt() {
-      final v = options['paths'];
-      if (v is List) {
-        return v.whereType<String>().where((s) => s.isNotEmpty).toList();
-      }
-      return const [];
-    }
-
-    return SearchContentOptions(
-      caseSensitive: boolOpt('case_sensitive'),
-      regex: boolOpt('regex'),
-      wholeWord: boolOpt('whole_word'),
-      include: listOpt('include'),
-      exclude: listOpt('exclude'),
-      paths: pathsOpt(),
     );
   }
 
@@ -1717,10 +1490,10 @@ class RepoIdeDataService with _WorktreeChangeGate {
     // Commit with a per-invocation identity (never touches global git config).
     final name = (authorName?.trim().isNotEmpty ?? false)
         ? authorName!.trim()
-        : 'Control Center';
+        : AgentCommitIdentity.controlCenterName;
     final email = (authorEmail?.trim().isNotEmpty ?? false)
         ? authorEmail!.trim()
-        : 'control-center@localhost';
+        : AgentCommitIdentity.controlCenterEmail;
     // `--amend` rewrites HEAD; with an empty message we keep the prior one
     // (`--no-edit`), otherwise the supplied message replaces it.
     final keepMessage = amend && message.trim().isEmpty;
@@ -1749,9 +1522,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
     final branch = (pushBranch?.trim().isNotEmpty ?? false)
         ? pushBranch!.trim()
         : worktree.branch;
-    final token = await _githubToken?.call(
+    final token = await _githubTokenForRepo(
+      workspaceId,
+      repoId,
       actingUserId: actingUserId,
-      workspaceId: workspaceId,
+      write: true,
     );
     var env = <String, String>{};
     if (token != null && token.isNotEmpty) {
@@ -1777,7 +1552,14 @@ class RepoIdeDataService with _WorktreeChangeGate {
         branch,
       ], env: env);
       if (fetch.exitCode == 0) {
-        final rebase = await git(['rebase', 'FETCH_HEAD']);
+        final rebase = await git([
+          '-c',
+          'user.name=$name',
+          '-c',
+          'user.email=$email',
+          'rebase',
+          'FETCH_HEAD',
+        ]);
         if (rebase.exitCode != 0) {
           await git(['rebase', '--abort']);
           return {
@@ -1857,9 +1639,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
     // The ACTING USER's credential, so publishing the branch is attributed on
     // GitHub to the human who clicked, not to the server's App.
-    final token = await _githubToken?.call(
+    final token = await _githubTokenForRepo(
+      workspaceId,
+      repoId,
       actingUserId: actingUserId,
-      workspaceId: workspaceId,
+      write: true,
     );
     var env = <String, String>{};
     if (token != null && token.isNotEmpty) {
@@ -1940,9 +1724,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
       };
     }
 
-    final token = await _githubToken?.call(
+    final token = await _githubTokenForRepo(
+      workspaceId,
+      repoId,
       actingUserId: actingUserId,
-      workspaceId: workspaceId,
+      write: true,
     );
     var env = <String, String>{};
     if (token != null && token.isNotEmpty) {
@@ -2309,7 +2095,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
     // Fetching a PR head-ref needs auth — bail (never hit the network) without a
     // token. The token rides in the git auth header env (never argv, so
     // invisible to `ps`), mirroring commitAndPush / the rift isolation adapter.
-    final token = await _githubToken?.call(workspaceId: workspaceId);
+    final token = await _githubTokenForRepo(workspaceId, repoId);
     if (token == null || token.isEmpty) {
       return {'ok': false, 'error': 'GitHub authentication required'};
     }
@@ -2413,16 +2199,43 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
   /// Host git in [root], which a rig may have mounted: hardened there, and
   /// throws [RigWorktreeTampered] when the rig changed its git metadata.
+  ///
+  /// Isolated like every server-run git ([IsolatedGit]): a space worktree is
+  /// the server's copy, so the operator's global config, credential helpers,
+  /// signing key and SSH agent never apply to a member's commit, fetch or
+  /// push. Toolchain variables pass through for the repo's own commit hooks.
+  /// A rebase needs a committer, which no global config supplies any more:
+  /// [_serverIdentity] stands in, and a caller's own `-c user.*` (a commit's
+  /// author) comes later and wins.
   Future<ProcessResult> _hostGit(
     String root,
     List<String> args, {
     Map<String, String>? environment,
-  }) => Process.run(
-    'git',
-    RigWorktreeGuard.gitArgs(args, workingDirectory: root),
+  }) => IsolatedGit.run(
+    RigWorktreeGuard.gitArgs([
+      ..._serverIdentity,
+      ...args,
+    ], workingDirectory: root),
     workingDirectory: root,
     environment: environment,
+    toolchain: true,
   );
+
+  /// Who a server-side history rewrite (a pull's rebase) is committed by when
+  /// the caller names nobody: the server, never the operator's global
+  /// identity.
+  static const List<String> _serverIdentity = [
+    '-c',
+    'user.name=${AgentCommitIdentity.controlCenterName}',
+    '-c',
+    'user.email=${AgentCommitIdentity.controlCenterEmail}',
+  ];
+
+  /// Whether [url] names a github.com repository, over HTTPS or SSH.
+  static bool _isGitHubRemote(String url) =>
+      url.startsWith('https://github.com/') ||
+      url.startsWith('git@github.com:') ||
+      url.startsWith('ssh://git@github.com/');
 
   Future<IsolatedRepo?> _worktreeFor(
     String workspaceId,
@@ -2456,6 +2269,33 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
   Future<List<Repo>> _linkedRepos(String workspaceId) =>
       _workspaces.watchReposForWorkspace(workspaceId).first;
+
+  /// The token for a linked GitHub repository, or null when [repoId] is not
+  /// linked to [workspaceId] or not on GitHub.
+  Future<String?> _githubTokenForRepo(
+    String workspaceId,
+    String repoId, {
+    String? actingUserId,
+    bool write = false,
+  }) async {
+    final lookup = _githubToken;
+    if (lookup == null) {
+      return null;
+    }
+    final repo = await _linkedRepo(workspaceId, repoId);
+    if (repo == null ||
+        repo.forge != ForgeHost.github ||
+        !repo.hasForgeRemote) {
+      return null;
+    }
+    return lookup(
+      workspaceId: workspaceId,
+      owner: repo.remoteOwner,
+      repo: repo.remoteName,
+      actingUserId: actingUserId,
+      write: write,
+    );
+  }
 
   Future<Repo?> _linkedRepo(String workspaceId, String repoId) async {
     if (!await _workspaces.isRepoLinkedToWorkspace(workspaceId, repoId)) {

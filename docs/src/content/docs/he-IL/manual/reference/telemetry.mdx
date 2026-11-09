@@ -2,7 +2,7 @@
 title: נתוני שימוש
 description: מה Control Center מתעד כשנתוני השימוש מופעלים, מי מחליט על כך ומה אף פעם לא נשלח.
 slug: he-IL/מדריך-למשתמש/עזר/נתוני-שימוש
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center יכול לשלוח **אירועי שימוש בשמות בדויים** למופע של [Umami](https://umami.is). נתוני השימוש **כבויים עד שמפעיל השרת מדליק אותם**. ההגדרה שייכת לשרת וחלה על כל לקוח שמחובר אליו: אפליקציית המחשב, אפליקציית הרשת, הטלפון והשרת עצמו.
@@ -95,9 +95,12 @@ Control Center יכול לשלוח **אירועי שימוש בשמות בדוי
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | הרצה שנכשלה נוסתה שוב |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | הרצה בוטלה מהאפליקציה |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | שלב שרץ הופסק בכוח |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | ניסיון התחברות ללוח שנה הסתיים |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true כשהכניסה עברה דרך Control Center Connect ולא דרך לקוח ה-Google של השרת עצמו), `duration_s` | ניסיון התחברות ללוח שנה הסתיים |
 | `calendar_disconnected` | `workspace_id` | חשבון לוח שנה נותק |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | ניתנה תשובה להזמנה |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (ספירה), `conference` | נקבע אירוע ב-Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | אירוע הוזז או שונה בגודלו ברשת היומן |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | אירוע נמחק מ-Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | הקלטה התחילה מאירוע בלוח השנה |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | נפתח קישור לפגישה (טלפון). מהקישור נגזר רק הספק |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | נעשה שימוש במרכז ההתראות |

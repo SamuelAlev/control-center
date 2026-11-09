@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_infra/cc_infra.dart';
 
@@ -27,7 +26,7 @@ class AdapterDetectionService {
         );
       }
 
-      final versionResult = await Process.run(path, ['--version']);
+      final versionResult = await ChildProcess.run(path, ['--version']);
 
       if (versionResult.exitCode == 0) {
         return DetectedAdapter(

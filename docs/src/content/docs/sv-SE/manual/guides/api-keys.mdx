@@ -2,7 +2,7 @@
 title: Hantera API-nycklar
 description: Var varje autentiseringsuppgift finns – ditt användarkonto på servern, servern själv eller en extern CLI – och hur du anger, roterar och tar bort den.
 slug: sv-SE/handbok/how-to-guider/api-nycklar
-sourceHash: 3f7cf37663b7e70c2aafdd234737355e0e55d748
+sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 ---
 
 Den här guiden visar var varje autentiseringsuppgift som Control Center använder
@@ -14,26 +14,31 @@ människa bakom den.
 
 | Autentiseringsuppgift                     | Lagras                                                                      | Vem som använder den                                                |
 | ----------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Din kodvärds-/ärendeautentiseringsuppgift | Serverns hemlighetsfil med rättigheterna 0600, knuten till ditt användar-id | Allt du ber om: PR-ytan, dina agentkörningar, dina images           |
-| Serverns appidentitet                     | Samma fil, plus `server_settings` för det som inte är hemligheter           | Arbete som ingen människa bad om: webhooks, PR-pollning, ärendesynk |
+| Din inloggning hos kodvärd/ärenden        | Serverns hemlighetsfil med rättigheterna 0600, knuten till ditt användar-id | Allt du gör: PR-ytan, granskningar, sammanfogningar, dina Linear-åtgärder |
+| Serverns leverantörsappar                 | Samma fil, plus `server_settings` för det som inte är hemligheter           | Inloggning av personer, och token för ett enda repo till agenter, pipelines och pollning |
+| Connects installationsnyckel              | Samma fil (`connect_install_key`)                                           | Identifierar den här servern mot Control Center Connect             |
 | Modellleverantörsnycklar och OAuth-tokens | Serverns eget uppgiftslager                                                 | Den inbyggda adaptern, för varje arbetsyta i installationen         |
-| Slack-bottokens                           | `<dataDir>/<workspaceId>/chat_credentials/` på servern                      | Chattbryggan för den arbetsytan                                     |
+| Autentiseringsuppgifter för Slack-botten  | `<dataDir>/<workspaceId>/chat_credentials/` på servern                      | Chattbryggan för den arbetsytan: din egen apps tokens, eller den delade appens förseglade bemyndigande |
 | Autentiseringsuppgifter för externa CLI:n | Det som det CLI:t använder                                                  | Claude Code, på servervärden                                        |
 
-## Två GitHub-autentiseringsuppgifter som svarar på olika frågor
+## GitHub: din inloggning, och token för ett enda repo
 
-- **Din egen**, från inloggningen (device-code-flödet) eller från att du klistrar
-  in en token. Det är den som varje begäran som görs *för din räkning* använder,
-  så en kommentar som publiceras för dig bär ditt namn. En annan medlem kan inte
-  läsa den, och ansluter sin egen
-- **Serverns egen**, från GitHub-appen som operatören registrerade. Den svarar på
-  allt som inte har någon anropare – så åtkomsten till kodvärden försvinner inte
-  när någon slutar eller roterar en token
+- **Din egen**, från **Logga in på GitHub**. Det är den som varje begäran som
+  görs *för din räkning* använder, så en granskning som publiceras för dig bär
+  ditt namn. En annan medlem kan inte använda den, och loggar in själv. Det finns
+  ingen GitHub-token att klistra in
+- **Arbete där ingen skriver** (agenter, pipelines, pollning, botsvar) får en
+  token för ett repo i taget, utfärdad från serverns GitHub-app eller via Control
+  Center Connect, och begränsad till vad en ansvarig medlem kan göra där. Det är
+  aldrig din inloggning överlämnad i sin helhet
 
 Din egen anges i kortet **Kodvärd** under **Inställningar → Arbetsyta → Profil och
-identitet**; serverns i **Leverantörsappar** under **Inställningar → Server → Enkel
-inloggning**. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
+identitet**; serverns app i **Leverantörsappar** under **Inställningar → Server →
+Enkel inloggning**. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
 och [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/).
+
+GitLab och Bitbucket tar fortfarande emot en inklistrad personlig token, lagrad
+på samma sätt. Se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
 
 :::note[Det finns även en skärm som bara nås via URL]
 `/workspaces/<workspaceId>/api-keys` visar samma två kort som första steget i
@@ -72,47 +77,60 @@ läser sin egen kopia och ingenting överbryggar de två. Se
 
 Kortet **Ärenden** under **Inställningar → Arbetsyta → Allmänt** rymmer båda
 halvorna av ett och samma beslut: hos vilken leverantör dina ärenden ligger, och
-autentiseringsuppgiften för den. Om du väljer **Lokal** döljs raden för
-autentiseringsuppgiften – lokala ärenden ligger i serverns egen databas och har
-inget att autentisera mot.
+vem Control Center är när det pratar med den. Om du väljer **Lokal** döljs
+Linear-raderna – lokala ärenden ligger i serverns egen databas och har inget att
+autentisera mot.
 
-Din nyckel lagras på servern knuten till ditt användar-id, precis som
-kodvärdsnyckeln. Servern håller sin egen Linear-nyckel separat
-(**Leverantörsappar**), och det är den ärendesynken kör på när ingen människa har
-bett om något. Ingen ärendenyckel injiceras i en agents sandlåda; agenter
-skriver ärenden via Control Centers verktyg, som frågar regeln **Skriv till ett
-externt ärendesystem**. Se
+Linear har två inloggningar och ingen inklistrad nyckel: **Linear** är din, för
+det du gör, och **Linear-automatisering** är arbetsytans Control Center-app,
+ansluten av en administratör, för ärendesynk, pipelines och agenter. Servern kan
+också ha en **Tjänst-API-nyckel** (**Leverantörsappar**) för arbetsytor utan
+ansluten automatisering. Ingen autentiseringsuppgift för ärenden injiceras i en
+agents sandlåda; agenter skriver ärenden via Control Centers verktyg, som frågar
+regeln **Skriv till ett externt ärendesystem**. Se
 [Konfigurera Linear-integration](/sv-SE/handbok/how-to-guider/linear-integration/).
 
 ## Rotera eller återkalla
 
-- **Din GitHub-autentiseringsuppgift**: tryck på **Koppla från** och logga sedan
-  in igen eller klistra in den nya token. Återkalla den gamla på GitHub
+- **Din GitHub-inloggning**: tryck på **Koppla från** och sedan på **Logga in på
+  GitHub** igen. Att koppla från tar också bort alla token som servern har
+  utfärdat för din räkning
+- **En GitLab- eller Bitbucket-token**: tryck på **Uppdatera token** och klistra in
+  den nya, och återkalla sedan den gamla hos kodvärden
 - **Serverns app**: generera en ny privat nyckel eller klienthemlighet på appens
-  GitHub-sida, klistra in den i **Leverantörsappar** och tryck på **Test**
+  sida hos leverantören, klistra in den i **Leverantörsappar** och tryck på
+  **Test**
+- **Connects installationsnyckel**: **Byt nyckel** på kortet **Control Center
+  Connect**, eller `cc_server connect rotate-key --yes`. Alla som loggade in via
+  Connect loggar in igen. Se
+  [Control Center Connect](/sv-SE/handbok/referens/connect/)
 - **En modellleverantör**: logga ut på dess rad (OAuth) eller ta bort nyckeln och
   anslut sedan igen
-- **Slack**: klistra in tokens igen i anslutningsdialogen. Se
+- **Slack**: för din egen app klistrar du in tokens igen i anslutningsdialogen.
+  Den delade Control Center-appen har ingen token att rotera: dess bottoken
+  förnyas via Connect, och **Koppla från** återkallar den och avinstallerar botten
+  från Slack. Se
   [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)
 
 ## Felsökning
 
-### PR-listan är tom men min token fungerar i `curl`
+### En GitLab- eller Bitbucket-token fungerar i `curl` men inte här
 
-Kontrollera undertexten på raden **Kodvärd**. Om den anger en annan källa (”via
-den här serverns app”, ”från miljön”) är det inte autentiseringsuppgiften du
-testar som svarar – din sparades inte.
+Kontrollera undertexten på raden **Kodvärd**. Om den lyder ”från miljön” är det
+serverns autentiseringsuppgift som svarar, inte din – din sparades inte.
 
-### Token accepteras men senare begäranden misslyckas
+### En GitLab- eller Bitbucket-token accepteras men senare begäranden misslyckas
 
 Token avsöks så som den lagras, så raden namnger kontot bakom den – men bara
 kontot, inte behörigheterna. En token med för få behörigheter ansluter och
-misslyckas sedan med enskilda begäranden. Kontrollera behörigheterna och
-giltighetstiden:
+misslyckas sedan med enskilda begäranden. Kontrollera dess behörigheter och
+giltighetstid hos kodvärden.
 
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-```
+### En leverantör säger att inloggningen inte är konfigurerad på den här servern
+
+Servern har varken en egen app för den leverantören eller Control Center
+Connect. Serverägaren väljer en av dem under **Inställningar → Server → Enkel
+inloggning**.
 
 ## Relaterade guider
 

@@ -471,10 +471,8 @@ Map<String, Set<String>> parseViewerGitHubTeams(Object? raw) {
   return byOrg;
 }
 
-// There is no client credentials repository any more. Provider tokens belong
-// to the USER and live on the server (`credentials.*` / `oauth.*`), not in this
-// machine's keychain — see `features/auth/providers/credential_migration.dart`,
-// which hands over what an older build stored here.
+// There is no client credentials repository. Provider sign-ins belong to the
+// USER and live on the server (`oauth.*`), never in this machine's keychain.
 
 /// Provides the [NotificationPreferencesPort] implementation.
 final notificationPreferencesProvider = Provider<NotificationPreferencesPort>((

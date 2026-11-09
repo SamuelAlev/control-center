@@ -1,0 +1,155 @@
+---
+title: Rujukan Control Center Connect
+description: Apa yang Connect lihat dan tidak pernah lihat, tiga mod, identiti pemasangan, pemeteraian kelayakan, kepercayaan konfigurasi dan setiap tetapan, operasi serta kod status.
+slug: ms-MY/manual-pengguna/rujukan/connect
+sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+---
+
+Control Center Connect menjalankan log masuk pembekal untuk pelayan yang belum mendaftarkan apl mereka sendiri. Sebuah
+pelayan sama ada menggunakan Connect yang dihoskan oleh Control Center, atau Connect yang dijalankan oleh sebuah organisasi
+([Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)), atau tiada. Pilihannya terdapat dalam
+**Tetapan → Pelayan → Daftar masuk tunggal → Control Center Connect**, arahan `cc_server connect`, atau `CC_CONNECT_URL`.
+
+## Lorong
+
+Setiap pembekal ialah satu lorong. Di bawah **Gunakan aplikasi saya sendiri** (atau sebelum sesiapa memilih), lorong berjalan pada apl pelayan apabila apl itu dikonfigurasikan sepenuhnya, jika tidak ia tidak tersedia. Dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong yang dilayaninya: apl pelayan kekal disimpan tetapi tidak digunakan untuk log masuk, automasi pelayan atau status yang dilaporkan pelayan. Apl ruang kerja sentiasa diutamakan dalam semua mod.
+
+| Lorong      | Apl sendiri memerlukan                          | Melalui Connect                                           |
+| ----------- | ----------------------------------------------- | --------------------------------------------------------- |
+| `github`    | ID apl, kunci peribadi, ID klien dan rahsia klien | Orang log masuk ke GitHub App kongsi                    |
+| `google`    | ID klien dan rahsia klien                       | Orang menyambungkan Google Calendar                       |
+| `linear`    | ID klien                                        | Orang log masuk ke Linear                                 |
+| `linear_app`| ID klien                                        | Pentadbir ruang kerja menyambungkan aktor apl Linear      |
+| `slack`     | Sambungan apl Slack sendiri bagi ruang kerja    | Pentadbir ruang kerja menyambungkan Slack ke apl Slack kongsi |
+| `klipy`     | `KLIPY_APP_KEY`                                 | Carian GIF, diproksikan oleh Connect                      |
+
+Apl sendiri yang hanya dikonfigurasikan sebahagian menjadikan lorongnya ralat, tidak sekali-kali jatuh kembali kepada Connect
+secara senyap. Ruang kerja yang menggunakan GitHub App sendiri (**Tetapan → Ruang kerja → Umum → Identiti GitHub**) tidak
+sekali-kali melalui Connect untuk GitHub. Ruang kerja yang menggunakan Google, Linear atau Klipy sendiri (**Tetapan → Ruang kerja → Umum → Apl penyedia**) tidak sekali-kali melalui apl pelayan atau Connect untuk pembekal itu. Menukar pilihan Connect tidak mengeluarkan sesiapa daripada apl sendiri ruang kerja.
+
+## Apa yang Connect lihat dan tidak pernah lihat
+
+| Connect melihat                                                                               | Connect tidak pernah melihat                                          |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ID pemasangan pelayan dan tandatangan permintaan                                              | Kod sumber, kandungan repo, diff atau teks pull request               |
+| Akaun pembekal yang log masuk, semasa log masuk                                               | Tiket, transkrip atau apa-apa dalam pangkalan data ruang kerja        |
+| Ruang kerja mana yang dimiliki oleh sesuatu kelayakan, sebagai id legap di dalam pemeteraian | Kunci peribadi GitHub App: token repo datang daripada log masuk seseorang |
+| Repo yang diberi token GitHub satu-repo                                                       | Token muat semula dalam keadaan tersimpan: ia hanya wujud di dalam pemeteraian yang pelayan simpan |
+| Pemasangan GitHub yang terikat kepada pelayan                                                 | Rahsia Linear: pelayan menukar kod Linear sendiri                     |
+| Istilah carian GIF, apabila ia memproksikan Klipy                                             | Kata laluan, kunci pemasangan atau kunci pembekal model               |
+| Rujukan peristiwa Slack (pasukan, saluran, ID mesej) dan teks perintah slash                  | Teks mesej Slack: Connect membuangnya sebaik diterima, dan pelayan membaca mesej dari Slack sendiri |
+
+Connect menyimpan keadaan jangka pendek (log masuk yang tertangguh, nonce, cache) selama paling lama 15 minit. Satu-satunya
+rekod jangka panjangnya ialah ikatan pemasangan: pelayan mana boleh menggunakan pemasangan GitHub mana, dan setiap pasukan
+Slack terikat kepada pelayan mana. Ralat membawa kod, tidak sekali-kali respons pembekal, dan log hanya merekodkan ID
+pemasangan sebagai hash berkunci.
+
+## Mod
+
+| Mod      | Tetapan                       | Kelakuan                                                                                                 |
+| -------- | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Tidak ditetapkan | Pelayan baharu            | Tiada lorong menggunakan Connect. Onboarding meminta pemilik pelayan memilih                             |
+| `hosted` | **Gunakan aplikasi Control Center** | `https://connect.usectrl.dev`, dengan konfigurasi yang ditandatangani secara luar talian. Apl pelayan tidak digunakan            |
+| `custom` | **Gunakan pelayan Connect tersuai** | Connect pada URL HTTPS (`http` hanya pada loopback), dipercayai pada penggunaan pertama. Apl pelayan tidak digunakan               |
+| `off`    | **Gunakan aplikasi saya sendiri** | Tiada lorong menggunakan Connect. Hanya apl sendiri yang boleh mendaftar masuk orang                    |
+
+`CC_CONNECT_URL` dalam persekitaran atau `.env` pelayan mengunci pilihan itu: `hosted`, `off`, atau URL Connect. Tetapan
+kemudian memaparkan kunci dan tidak dapat menukarnya.
+
+Binaan ini tidak menyertakan kunci konfigurasi hosted, jadi mod hosted melaporkan `hosted_unprovisioned` dan tidak melayani
+mana-mana lorong. Apl sendiri dan Connect tersuai tetap berfungsi.
+
+Sebuah pelayan membaca konfigurasi Connect paling kerap setiap 10 minit dan menunggu paling lama 5 saat bagi setiap panggilan.
+Apabila Connect tidak dapat dihubungi, konfigurasi baik terakhir kekal digunakan dan Tetapan menandainya sebagai lapuk.
+
+## Identiti pemasangan
+
+| Item            | Maksud                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Kunci pemasangan | Benih 32 bait dalam fail rahsia pelayan (`connect_install_key`), berasingan daripada kunci pasangan peranti        |
+| Kunci setiap-Connect | Kunci Ed25519 yang diperoleh daripada benih dan alamat Connect. Setiap permintaan ke Connect ditandatangani dengannya (RFC 9421) |
+| ID pemasangan   | 26 aksara yang diperoleh daripada kunci awam itu. Dipaparkan dalam Tetapan dan oleh `cc_server connect status`        |
+
+Pelayan yang sama mempunyai ID pemasangan yang berbeza bagi setiap alamat Connect. ID itu hanya berubah apabila kuncinya diputar.
+
+## Pemeteraian kelayakan
+
+Log masuk melalui Connect memulangkan **pemeteraian kelayakan**: blob tersulit yang hanya boleh dibuka oleh Connect yang
+mencipta. Ia terikat kepada pembekal, alamat Connect, ID pemasangan, ruang kerja, akaun pembekal, apl dan generasi rahsia.
+
+- Pelayan menyimpan pemeteraian dan ID pemasangan ia dicipta untuknya. Token akses kekal dalam memori
+- Untuk menyegarkan, pelayan menghantar pemeteraian kembali dan menerima token akses baharu serta pemeteraian baharu
+- Pemeteraian yang ID pemasangan atau alamat Connectnya tidak lagi sepadan akan dibuang apabila dibaca seterusnya, dan
+  pemiliknya log masuk semula. Ini berlaku selepas putaran kunci, apabila bertukar kepada Connect lain, atau apabila direktori
+  data dipulihkan ke pelayan yang berbeza
+- Pemeteraian yang tidak dapat dibuka oleh Connect ditolak dengan `access_denied`
+
+## Pemasangan GitHub
+
+Pemasangan GitHub App kongsi hanya boleh digunakan oleh pelayan apabila Connect telah mengikatnya kepada ID pemasangan
+pelayan itu.
+
+- **Pasang GitHub App** dalam **Tetapan → Ruang kerja → Umum** membuka GitHub dengan tiket 15 minit. Connect mengikat
+  pemasangan baharu apabila pemasangnya memiliki akaun peribadi atau mentadbir organisasi
+- **Benarkan pelayan ini** mengikat pemasangan yang sudah wujud. Hanya pentadbir organisasi boleh melakukannya
+- Pemasangan organisasi boleh diikat kepada beberapa pelayan; setiap pelayan memerlukan kebenaran pentadbir
+
+## Kepercayaan konfigurasi
+
+| Connect | Cara pelayan mempercayai konfigurasinya                                                                                                                                                                                  |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosted  | Mengesahkan tandatangan Ed25519 berbanding kunci yang disusun dalam binaan. Menolak epoch yang lebih rendah daripada epoch tertinggi yang pernah dilihatnya (`rollback`)                                                 |
+| Custom  | Mengunci ID app GitHub dan ID klien, ID klien Google dan Linear, serta ID app dan klien Slack pada penggunaan pertama. Perubahan menjeda log masuk Connect (`pins_changed`) sehingga pemilik pelayan menekan **Percayai aplikasi baharu** |
+
+## Operasi
+
+Semua tetapan Connect hanya untuk pemilik pelayan.
+
+| Operasi               | Fungsinya                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `connect.status`      | Mod, URL, kunci, ID pemasangan, kesihatan, epoch konfigurasi dan sumber setiap lorong          |
+| `connect.configure`   | Menetapkan `hosted`, `custom` (dengan `url`) atau `off`                                        |
+| `connect.test`        | Mengambil semula konfigurasi dan melaporkan kesihatan                                          |
+| `connect.confirmPins` | Menerima pengecam yang berubah bagi Connect tersuai                                            |
+| `connect.rotateKey`   | Mencipta kunci pemasangan baharu. Setiap log masuk melalui Connect pada pelayan ini berhenti berfungsi |
+
+Log masuk sendiri menggunakan `oauth.lanes`, `oauth.begin`, `oauth.status`, `oauth.complete`, `oauth.connections` dan
+`oauth.disconnect`. Orang itu sentiasa pemanggil yang telah log masuk.
+
+## Log masuk melalui Connect
+
+1. Pelayan meminta Connect memulakan lorong dan menerima URL kebenaran pembekal, yang disemaknya sebelum dipaparkan
+2. Orang itu meluluskan dalam pelayar. Pembekal menghantar pelayar kembali ke Connect
+3. Connect memaparkan kod 8 aksara dan pautan `control-center://oauth-done`
+4. Orang itu menaip kod ke dalam apl, atau mengikut pautan. Pelayan mengklaim log masuk dengan kod itu bersama bukti
+   miliknya tentang permintaan tersebut
+
+Log masuk tamat tempoh selepas 10 minit. Lima kod salah akan menamatkannya. Pautan yang tidak dimulakan oleh apl ini
+akan ditolak dengan **Log masuk tidak dimulakan di sini**.
+
+## Putar kunci pemasangan
+
+**Putar kunci** pada kad Connect, atau `cc_server connect rotate-key --yes`:
+
+- Memberi pelayan kunci pemasangan baharu dan ID pemasangan baharu
+- Mengeluarkan semua orang daripada setiap lorong yang berjalan melalui Connect
+- Tidak menjejaskan log masuk melalui apl pelayan sendiri
+- Memerlukan ID pemasangan baharu ditambah ke senarai benar Connect tersuai
+
+## Kod status
+
+| Kod                    | Maksud                                                               |
+| ---------------------- | -------------------------------------------------------------------- |
+| `hosted_unprovisioned` | Binaan ini tiada kunci konfigurasi hosted                            |
+| `signature`            | Konfigurasi hosted gagal pemeriksaan tandatangannya                  |
+| `rollback`             | Connect menghidangkan konfigurasi yang lebih lama daripada yang telah dilihat pelayan |
+| `unreachable`          | Pelayan tidak dapat menghubungi Connect                              |
+| `install_blocked`      | Connect tidak membenarkan ID pemasangan ini                          |
+| `pins_changed`         | Connect tersuai mengumumkan pengecam apl yang berbeza                |
+| `protocol`             | Connect menjawab dalam bentuk yang tidak difahami pelayan ini        |
+
+## Berkaitan
+
+- [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)
+- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+- [Rujukan CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server/)

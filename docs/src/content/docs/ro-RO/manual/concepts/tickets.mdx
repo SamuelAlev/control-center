@@ -2,7 +2,7 @@
 title: Tichete și delegare
 description: De ce un tichet urmărește munca fără să o trimită, cum este protejată delegarea și ce deține și ce nu deține oglinda furnizorului.
 slug: ro-RO/manual/concepte/tichete
-sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
+sourceHash: e139984223b114246514863db4a564b44d6d4e6d
 ---
 
 Un tichet este unitatea de lucru pe care o urmărește Control Center. Este în mod
@@ -145,9 +145,11 @@ Tichetul din Control Center este cel principal. Ștergerea unui tichet este
 este șters și din tracker și poate reapărea la următoarea sincronizare.
 Colaboratorii și tichetele copil se șterg în cascadă.
 
-Acreditările adaptorului se rezolvă din depozitele de acreditări ale serverului
-(o cheie Linear sau un token GitHub lipit în Setări este preluat la următoarea
-cerere; mediul doar alimentează inițial acele depozite).
+Acreditările adaptorului se rezolvă pe server, la fiecare apel: autentificarea
+Linear sau GitHub proprie a unei persoane pentru ce face ea, iar pentru
+sincronizarea tichetelor automatizarea Linear a spațiului de lucru (sau cheia de
+serviciu Linear a serverului) ori un token GitHub pentru un singur depozit. O
+autentificare nouă este preluată la următoarea cerere.
 
 ## Tichete și pipeline-uri
 

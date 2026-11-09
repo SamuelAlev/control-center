@@ -2,7 +2,7 @@
 title: AI 審查
 description: 一個 pull request 如何成為已審查的 pull request —— 審查空間、審查節點與同行共識、群體與軸向、Ship/Hold/Block 判定，以及為何發佈始終是你要親自執行的一步。
 slug: zh-HK/手冊/概念/ai-審查
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## 一次審查的形態
@@ -164,10 +164,12 @@ Hold。
   可能留下最破壞信任的東西；如果 GitHub 仍然拒絕某個行內錨點，整份審查會重新送出，
   並把每一項發現項歸入正文，確保沒有任何東西被悄悄丟棄。
 - **Block** 判定會以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 則由
-  按鈕以 `APPROVE` 提交（`approve_on_ship: true`）。除非你傳入 `approve_on_ship`，
-  否則 MCP 工具會把 Ship 保留為 `COMMENT`。
-- 審查會以伺服器的應用程式身分發佈。究竟是誰按下發佈，會為角色閘門與稽核日誌記錄
-  下來；發佈者並不是 GitHub 上的作者。
+  按鈕以 `APPROVE` 提交（`approve_on_ship: true`）。MCP 工具以自動化身分發佈，一律
+  把 Ship 保留為 `COMMENT`。
+- **發佈到 GitHub** 按鈕會以按下它的人的身分、用他自己的 GitHub 登入發佈審查：放行
+  關卡是他的，所以審查也是他的。背後沒有人的發佈屬於自動化，而自動化絕不核准：此時
+  Ship 會以 `COMMENT` 送出；在 Control Center Connect 上，帖文會加上
+  `**Control Center** (for @login):` 前綴以註明歸屬。
 
 發佈會宣告 `prPublish` 動作類別，因此護欄檢查點會像對待任何變更類操作一樣對它施加閘門
 —— 它預設會彈出確認提示，並在未連接任何核准人時以失敗關閉的方式處理。

@@ -14,6 +14,7 @@ import 'package:cc_domain/features/sandboxing/domain/network_baseline.dart'
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart'
     show NetworkConfig;
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
 import 'package:cc_infra/src/rigs/qemu_argv.dart';
 import 'package:cc_infra/src/rigs/qmp_client.dart';
@@ -136,7 +137,7 @@ class SystemRigProcessProbe implements RigProcessProbe {
     }
     // A ProcessException (no `ps` on this host) deliberately propagates: the
     // caller must not read "the probe is broken" as "the process is gone".
-    final result = await Process.run('ps', ['-p', '$pid', '-o', 'pid=']);
+    final result = await ChildProcess.run('ps', ['-p', '$pid', '-o', 'pid=']);
     return result.exitCode == 0 && '${result.stdout}'.trim().isNotEmpty;
   }
 
@@ -162,7 +163,12 @@ class SystemRigProcessProbe implements RigProcessProbe {
     if (Platform.isWindows) {
       return null;
     }
-    final result = await Process.run('ps', ['-p', '$pid', '-o', 'command=']);
+    final result = await ChildProcess.run('ps', [
+      '-p',
+      '$pid',
+      '-o',
+      'command=',
+    ]);
     if (result.exitCode != 0) {
       return null;
     }
@@ -510,7 +516,7 @@ class QemuEnclosureBackend {
 
     String? version;
     try {
-      final result = await Process.run(resolved, ['-version']);
+      final result = await ChildProcess.run(resolved, ['-version']);
       final line = '${result.stdout}'.split('\n').first.trim();
       if (line.isNotEmpty) {
         version = line;
@@ -749,7 +755,7 @@ class QemuEnclosureBackend {
       }
       final argv = buildQemuArgv(plan);
       CcInfraLog.info('rig/$rigId: $binary ${argv.join(' ')}');
-      process = await Process.start(
+      process = await ChildProcess.start(
         binary,
         argv,
         workingDirectory: runtimeDir.path,
@@ -1161,7 +1167,7 @@ class QemuEnclosureBackend {
       }
       ProcessResult result;
       try {
-        result = await Process.run(binary, args);
+        result = await ChildProcess.run(binary, args);
       } on Object catch (e) {
         failures.add('$tool: could not be run: $e');
         return false;
@@ -1694,7 +1700,7 @@ class QemuEnclosureBackend {
     String fileName,
   ) async {
     try {
-      final result = await Process.run(qemuBinary, ['-L', 'help']);
+      final result = await ChildProcess.run(qemuBinary, ['-L', 'help']);
       for (final line in '${result.stdout}'.split('\n')) {
         final dir = line.trim();
         if (dir.isEmpty) {
@@ -1727,7 +1733,7 @@ class QemuEnclosureBackend {
   }) async {
     ProcessResult result;
     try {
-      result = await Process.run(executable ?? tool, arguments);
+      result = await ChildProcess.run(executable ?? tool, arguments);
     } on Object catch (e) {
       throw RigToolException(
         tool: tool,
@@ -1771,20 +1777,7 @@ class QemuEnclosureBackend {
     );
   }
 
-  static Future<String?> _which(String binary) async {
-    try {
-      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-        binary,
-      ]);
-      if (result.exitCode != 0) {
-        return null;
-      }
-      final path = '${result.stdout}'.split('\n').first.trim();
-      return path.isEmpty ? null : path;
-    } on Object {
-      return null;
-    }
-  }
+  static Future<String?> _which(String binary) => ChildProcess.which(binary);
 
   static Future<int> _freePort() async {
     // Bind :0, read the port, release it. There is a race between releasing

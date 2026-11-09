@@ -2,12 +2,12 @@
 title: cc_server CLI
 description: Elke flag, omgevingsvariabele, subcommando en datadirectorypad van de headless server.
 slug: nl-NL/handleiding/referentie/cc-server-cli
-sourceHash: f18330f8028244afe533d32fe595b7167b925804
+sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 ---
 
 Elke procesflag heeft een CLI-flag of een omgevingsvariabele; de flag wint, dan
-de omgeving, dan de standaardwaarde. Inloggegevens van derden zijn de
-uitzondering — zie hieronder.
+de omgeving, dan de standaardwaarde. Inloggegevens van providers zijn de
+uitzondering — zie [Provider-apps en Connect](#provider-apps-en-connect).
 
 :::caution[Onbekende flags worden stil genegeerd]
 De argumentparser is handmatig geschreven en slaat alles over wat hij niet
@@ -44,7 +44,7 @@ opstarten wanneer een flag geen effect lijkt te hebben.
 | `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | niet ingesteld                | Verwachte SHA-256 van die binary, vóór elke spawn geverifieerd                                                                                                 |
 | `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | leeg                          | Door komma's gescheiden extra argumenten voor de tunnel-aanroep                                                                                               |
 
-## Indexering en inloggegevens van derden
+## Indexering en runtime
 
 | Flag                     | Env                             | Standaard                               | Betekenis                                                                                                                     |
 | ------------------------ | ------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -54,16 +54,41 @@ opstarten wanneer een flag geen effect lijkt te hebben.
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                    | Of harness-runs een kleine residente toolset plus een naamindex meesturen en de rest bij het eerste gebruik laden. Zie hieronder |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                   | Seconden dat een run wacht tot een mens een inloggegeven herstelt dat hem niet kan bedienen (begrensd op 0–3600). Zie hieronder |
 
-Een lege waarde voor een inloggegeven geldt als niet ingesteld, dus de ingebouwde
-fallback blijft van toepassing. Een build uit de source bevat helemaal geen
-ingebouwde inloggegevens.
+## Provider-apps en Connect
 
-Google Calendar en de Klipy GIF-kiezer zijn **alleen via de omgeving** te
-configureren — er is geen `--google-client-id` / `--klipy-app-key`-flag
-(onbekende flags worden genegeerd). Stel `GOOGLE_OAUTH_CLIENT_ID` +
-`GOOGLE_OAUTH_CLIENT_SECRET` en `KLIPY_APP_KEY` in de omgeving in (of in een
-`.env` naast de server). Leeg schakelt die functie uit in plaats van de boot te
-laten mislukken.
+Geen enkele build bevat inloggegevens van providers. Met Control Center Connect aan voert Connect elke provider uit, en eigen apps blijven opgeslagen maar ongebruikt.
+Onder **Mijn eigen apps gebruiken** draait elke provider op de eigen app van de server als die volledig is
+geconfigureerd, en anders is hij niet beschikbaar. De app van de werkruimte geldt in beide gevallen. Eigen apps
+stel je in via **Instellingen → Server → Single sign-on → Provider-apps**, of ze
+worden eenmalig gevuld vanuit het `.env`-bestand van de server. Er zijn geen
+flags voor: een secret op een commandoregel is leesbaar via `ps`.
+
+| Variabele                      | Betekenis                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_APP_ID`                | Het id van de GitHub App van de server                                                        |
+| `GITHUB_APP_PRIVATE_KEY`       | De privésleutel ervan, op één regel met `\n`-escapes. **Alleen `.env`**                       |
+| `GITHUB_CLIENT_ID`             | De client-id ervan, om mensen aan te melden                                                   |
+| `GITHUB_CLIENT_SECRET`         | Het client-secret ervan. **Alleen `.env`**                                                    |
+| `GOOGLE_OAUTH_CLIENT_ID`       | De Google-client van de server van het type Webapplicatie                                     |
+| `GOOGLE_OAUTH_CLIENT_SECRET`   | Het secret ervan. **Alleen `.env`**                                                           |
+| `LINEAR_CLIENT_ID`             | De Linear-applicatie van de server (PKCE, zonder secret)                                      |
+| `LINEAR_API_KEY`               | Een Linear-servicesleutel voor automatisering. **Alleen `.env`**                              |
+| `KLIPY_APP_KEY`                | De eigen Klipy-sleutel van de server voor GIF-zoeken. Alleen gebruikt onder **Mijn eigen apps gebruiken**     |
+| `CC_CONNECT_URL`               | `hosted`, `off` of een Connect-URL. Legt de Connect-keuze vast; Instellingen kan die dan niet wijzigen |
+| `CC_SERVER_CONNECT_HOST`       | `on` bouwt Control Center Connect in op `<server>/connect`, geconfigureerd met `CONNECT_*`-variabelen. Zie [Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/#connect-in-cc_server-inbouwen) |
+
+Het `.env`-bestand wordt gelezen uit de werkmap van de server, naast het
+uitvoerbare bestand, of uit een source-checkout erboven; koppel het in Docker aan
+`/app/bin/.env`. De server **weigert te starten** (exitcode `78`) wanneer
+`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+`LINEAR_API_KEY` of een `SLACK_*SECRET*` in zijn procesomgeving is geëxporteerd,
+waar elk kindproces het kan lezen. Vullen vanuit `.env` gebeurt één keer per
+veld, dus een latere bewerking in Instellingen wordt niet ongedaan gemaakt door
+een herstart. Een lege waarde geldt als niet ingesteld.
+
+Achtergrondwerk voor GitLab en Bitbucket leest ook `GITLAB_TOKEN` /
+`CI_JOB_TOKEN` en `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` met
+`BITBUCKET_EMAIL`. GitHub heeft geen inloggegeven uit de omgeving.
 
 ### `--sandbox`
 
@@ -118,7 +143,7 @@ slecht inloggegeven beëindigt de beurt precies zoals voordat de gate bestond.
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Draait de server tot `SIGINT`/`SIGTERM`                                                             |
 | `cc_server pair`                              | Provisioneert een apparaat en drukt het id en de koppelingssleutel af. Veilig tegen een datadirectory die een server al bedient — de draaiende server neemt het apparaat over zonder herstart |
-| `cc_server calendar connect --workspace <id>` | Verbindt een Google-account via de devicecode-flow met een werkruimte en sluit daarna af             |
+| `cc_server connect <command>`                 | Toont of wijzigt welke Control Center Connect deze server gebruikt, zonder hem te starten          |
 | `cc_server update`                            | Controleert op, downloadt en verifieert een nieuwere standalone release                             |
 | `cc_server --version`                         | Drukt de buildversie en git-SHA af — dezelfde identiteit die `/healthz` en de RPC-handshake adverteren |
 
@@ -145,6 +170,25 @@ een andere payload, aangemaakt vanuit het koppelingspaneel in de app — de voll
 verbindingsdescriptor van de server plus een vervaldatum. De twee zijn niet
 uitwisselbaar — zie [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/).
 :::
+
+### `connect`
+
+Leest en schrijft dezelfde instellingen als de kaart **Control Center Connect** in
+**Instellingen → Server → Single sign-on**, vanuit de datadirectory. Een draaiende
+server pikt een wijziging binnen 10 minuten of bij een herstart op.
+
+| Commando                        | Wat het doet                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cc_server connect status`      | Drukt de modus af, de URL, of `CC_CONNECT_URL` hem vastlegt, het installatie-ID, de status en de bron van elke route (`own`, `connect` of `off`) |
+| `cc_server connect enable`      | Gebruikt de gehoste Connect van Control Center                                                                   |
+| `cc_server connect enable --url <url>` | Gebruikt een eigen Connect op die URL (HTTPS, of `http` op loopback)                                      |
+| `cc_server connect disable`     | Stopt met Connect. Alleen de eigen apps van de server melden mensen aan                                          |
+| `cc_server connect rotate-key --yes` | Maakt een nieuwe installatiesleutel en een nieuw installatie-ID. Iedereen die zich via Connect heeft aangemeld, meldt zich opnieuw aan. Zonder `--yes` waarschuwt het alleen en sluit af met `2` |
+
+`status` zonder commando is de standaard. Elk commando accepteert `--data-dir`.
+`CC_CONNECT_URL` gaat voor wat deze commando's opslaan. Een onbekend commando
+sluit af met `64`. Zie [Control Center Connect](/nl-NL/handleiding/referentie/connect/)
+voor de modi, installatie-identiteit en statuscodes.
 
 ### `update`
 
@@ -189,7 +233,7 @@ cwd wordt alleen gebruikt als er geen home- of app-gegevensmap kan worden bepaal
 | `global.db`                       | Het werkruimteregister, gebruikers, gekoppelde apparaten, de nieuwsfeed en de fleetwachtrij |
 | `<workspaceId>/workspace.db`      | Eén database per werkruimte — agenten, ruimtes, tickets, geheugen, de codegraph  |
 | `<workspaceId>/chat_credentials/` | Tokens van de chatbot, als platte JSON, zodat ze met de werkruimte meegaan       |
-| `secrets.json`                    | Koppelingssleutels, de app-identiteit van de provider, tokens per gebruiker en Google-tokens, SSO (`0600`) |
+| `secrets.json`                    | Koppelingssleutels, de installatiesleutel voor Connect, provider-apps, de aanmeldingen van mensen (verzegeld wanneer gemaakt via Connect), SSO (`0600`) |
 | `backups/<timestamp>/`            | Eén momentopname van de installatie — `manifest.json`, `global.db` en een kopie van elke werkruimte |
 | `backups/exports/`                | Exportbestanden van één werkruimte, `<workspaceId>-<timestamp>.db`               |
 | `backups/transfer/`               | Staging voor het downloaden en uploaden van back-ups; opgeruimd door de route die erin schrijft |

@@ -2,7 +2,7 @@
 title: 术语表
 description: 贯穿 Control Center 全站的关键术语定义。
 slug: zh-CN/手册/参考/术语表
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['流水线', '基于 DAG 的工作流，把各个步骤（智能体派发、脚本、条件）串联起来。由模板定义；以运行的形式执行。'],
 ['会议', '在本地录制并转录的会议会话。捕获麦克风与系统音频，使用可选的 ASR 模型在设备上转录（默认是 Parakeet TDT v3；Parakeet TDT v2、Whisper large-v3-turbo 和 Whisper base.en 是备选方案），区分说话人，并总结为笔记、行动项和决策。选定的 ASR 模型会在启动时强制安装，录制相关功能在重启一次后启用。以工作区为作用域。'],
 ['CalendarEvent', '同步的 Google Calendar 条目，以某个工作区和已连接账号为作用域。与会议不同：事件是已安排的承诺，会议是已录制的会话。'],
-['CalendarAccount', '已连接的 Google 账号，按工作区和邮箱区分。OAuth 刷新令牌以 google_* 键的形式存储在数据目录下的 secrets.json 文件中，永远不会到达客户端；authExpiredAt 标志驱动重新连接横幅。'],
+['CalendarAccount', '已连接的 Google 账号，按工作区、成员和邮箱区分。其凭据以 google_* 键的形式存储在数据目录下的 secrets.json 文件中，永远不会到达客户端；通过 Connect 的登录只保存一份凭据封存。authExpiredAt 标志驱动重新连接横幅。'],
 ['AgentRole', '枚举角色（CEO、coder、reviewer、QA、designer、security、devops、PM、general）。决定人格、记忆访问权限和层级。'],
 ['AgentSkills', '一组不区分大小写的技能标识符，在派发时把相关上下文注入提示词。'],
 ['技能源', '按工作区注册为技能目录的 GitHub 仓库。按构造即不可信：该仓库的元数据仅用于展示，且每次安装都必须先通过失败即关闭的扫描闸门，之后任何内容才能落到磁盘或进入提示词。'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', '单次智能体运行的令牌/成本统计（输入令牌、输出令牌、以分为单位的估算成本）。'],
 ['唤醒原因', '智能体被派发的原因。共六个取值：用户消息、工单指派、失败后的恢复性重派、子工单完成、定时的后续心跳和流水线步骤。'],
 ['SandboxPort', '管理沙盒生命周期（探测、启动、事件、exec、销毁）。'],
-['CredentialBrokerPort', '为沙盒启动铸造按作用域限定的凭据（智能体环境中为只读，写入权限仅用于服务器端的推送路径），并在拆除时撤销它们。'],
+['CredentialBrokerPort', '为沙盒启动铸造按作用域限定的凭据（智能体环境中为仅针对一个仓库的令牌，写入权限仅用于服务器端的推送路径），并在拆除时释放它们。'],
 ['GitRepoInspectorPort', '从本地 Git 仓库路径中提取元数据（owner、repo、branch）。'],
 ['EmbeddingPort', '生成用于语义搜索的单位范数文本嵌入向量。'],
 ['NotificationPort', '显示原生的桌面通知，并遵守类别/路由门控。'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['审查判定', 'ship、hold 或 block。任何置信度 >= 0.7 的 P0 发现项都会阻断；任何其他 P0 或任何 P1 则拖住；否则就是 ship。受门禁约束且失败的轴会强制阻断，且无法被发现项投票推翻。'],
 ['SessionRecording', '为单次运行捕获的事件流，加上 HTTP/LLM 录像带和工具 I/O，并配有一个 AgentConfigHash。'],
 ['金样会话', '按智能体或 playbook 固定的、经认可的 SessionRecording。'],
+['Control Center Connect', '一项可选服务，为没有自有应用的服务器运行供应商登录（GitHub、Google、Linear）。由 Control Center 托管、自行托管或关闭。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。'],
+['凭据封存', '一份加密的凭据，只有签发它的那个 Connect 能够打开，并绑定到提供商、Connect 地址、安装 ID、工作区、账户、应用与密钥世代。服务器保存封存；访问令牌只留在内存中。'],
+['安装 ID', '服务器面对某个 Connect 地址时的身份，由其安装密钥派生。Connect 以安装 ID 为允许列表来识别服务器。轮换密钥会得到新的安装 ID，并让所有人从 Connect 通道登出。'],
+['安装绑定', 'Connect 记录的信息，表明哪些服务器可以使用共享 App 的某个 GitHub 安装。通过安装完成绑定；组织管理员的**授权此服务器**则绑定另一台。'],
+['登录通道', '某个提供商的浏览器登录：github、google、linear、linear_app 或 slack。当服务器自己的应用配置完整时，通道使用它；否则通过 Connect；否则不可用。'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**：管理沙盒生命周期（探测、启动、事件、exec、销毁）。
 
-**CredentialBrokerPort**：为沙盒启动铸造按作用域限定的凭据——智能体环境中为只读，写入权限仅用于服务器端的推送路径——并在拆除时撤销它们。
+**CredentialBrokerPort**：为沙盒启动铸造按作用域限定的凭据——智能体环境中为仅针对一个仓库的令牌，写入权限仅用于服务器端的推送路径——并在拆除时释放它们。
 
 **GitRepoInspectorPort**：从本地 Git 仓库路径中提取元数据（owner、repo、branch）。
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**：同步的 Google Calendar 条目，以某个工作区和已连接账号为作用域。与会议不同：事件是已安排的承诺；会议是已录制的会话。通过 `MeetingCalendarLink` 一对一关联。
 
-**CalendarAccount**：已连接的 Google 账号，按工作区和邮箱区分。OAuth 刷新令牌以 `google_*` 键的形式存储在 `<dataDir>/secrets.json` 中，永远不会到达客户端；设备码流程在服务器上完成。一个 `authExpiredAt` 标志驱动重新连接横幅。
+**CalendarAccount**：已连接的 Google 账号，按工作区、成员和邮箱区分（`google:<workspaceId>:<userId>:<email>`）。其凭据以 `google_*` 键的形式存储在 `<dataDir>/secrets.json` 中，永远不会到达客户端；浏览器登录在服务器上完成。通过 Connect 的登录只保存一份凭据封存。一个 `authExpiredAt` 标志驱动重新连接横幅。
 
 ## 架构术语
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**：手机瘦客户端——一个 Flutter Web PWA，通过经代理中转的中继远程控制机群，并采用默认拒绝的工具策略。
 
 **cc_signaling_server**：无状态的 WebSocket 中继代理，托管需邀请才能加入的房间——一个笨拙的中继，只转发端到端密封的帧，不保存任何应用数据，也永远看不到配对 PSK。
+
+**Control Center Connect**：一项可选服务，为没有注册自有应用的服务器运行供应商登录（GitHub、Google Calendar、Linear、Slack）：Control Center 托管的 Connect、组织自行运行的 Connect（`cc-connect`，或挂载在 `cc_server` 的 `/connect` 下），或不使用。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。参见 [Control Center Connect](/zh-CN/手册/参考/connect/)。
+
+**凭据封存**：一份加密的凭据（`credential_seal`），只有签发它的那个 Connect 能够打开，并绑定到提供商、Connect 地址、安装 ID、工作区、账户、应用与密钥世代。服务器保存封存以及为其签发时所用的安装 ID；访问令牌只留在内存中。安装 ID 不再匹配的封存会被丢弃，其所有者需要重新登录。
+
+**安装 ID**：服务器面对某个 Connect 地址时的身份（`install_id`），由其机密文件中的安装密钥派生。Connect 以安装 ID 为允许列表来识别服务器。轮换密钥会得到新的安装 ID，并让所有人从 Connect 通道登出。
+
+**安装绑定**：Connect 的记录（`install_binding`），表明哪些服务器可以使用共享 App 的某个 GitHub 安装。通过安装完成绑定；组织管理员的**授权此服务器**则绑定另一台。
+
+**登录通道**：某个提供商的浏览器登录——`github`、`google`、`linear`、`linear_app` 或 `slack`。当服务器自己的应用配置完整时，通道使用它；否则通过 Connect；否则不可用。配置不完整的自有应用属于错误，绝不会回退。
 
 ## 相关内容
 

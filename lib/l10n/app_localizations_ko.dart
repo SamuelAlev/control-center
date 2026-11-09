@@ -1123,6 +1123,91 @@ class AppLocalizationsKo extends AppLocalizations {
   String get calendarRsvpFailed => '응답을 업데이트할 수 없습니다';
 
   @override
+  String get calendarNewEvent => '새 일정';
+
+  @override
+  String get calendarComposerTitleHint => '제목 추가';
+
+  @override
+  String get calendarComposerStarts => '시작';
+
+  @override
+  String get calendarComposerEnds => '종료';
+
+  @override
+  String get calendarComposerDate => '날짜';
+
+  @override
+  String get calendarComposerEndDate => '마지막 날';
+
+  @override
+  String get calendarComposerGuestsHint => '이메일로 게스트 추가';
+
+  @override
+  String get calendarComposerMeet => 'Google Meet 링크 추가';
+
+  @override
+  String get calendarComposerLocationHint => '위치 추가';
+
+  @override
+  String get calendarComposerDescriptionHint => '설명 추가';
+
+  @override
+  String get calendarComposerCalendar => '캘린더';
+
+  @override
+  String get calendarComposerTitleRequired => '일정을 저장하려면 제목을 추가하세요';
+
+  @override
+  String get calendarComposerInvalidGuests => '게스트 이메일 중 하나가 올바르지 않습니다';
+
+  @override
+  String get calendarComposerEndBeforeStart => '일정은 시작 시간 이후에 끝나야 합니다';
+
+  @override
+  String get calendarComposerSaveFailed => '일정을 만들 수 없습니다. 다시 시도하세요.';
+
+  @override
+  String get calendarComposerGuestsNotified => '게스트에게는 Google에서 초대 이메일이 전송됩니다.';
+
+  @override
+  String get calendarDeleteEvent => '일정 삭제';
+
+  @override
+  String calendarDeleteConfirmTitle(String title) {
+    return '“$title”을(를) 삭제할까요?';
+  }
+
+  @override
+  String get calendarDeleteConfirmBody => 'Google Calendar에서 삭제됩니다.';
+
+  @override
+  String get calendarDeleteConfirmGuests =>
+      'Google Calendar에서 삭제되며, 모든 게스트에게 일정이 취소되었다고 알립니다.';
+
+  @override
+  String get calendarDeleteConfirmInvite =>
+      '내 캘린더에서만 삭제됩니다. 주최자와 다른 게스트에게는 일정이 그대로 남습니다.';
+
+  @override
+  String get calendarDeleteConfirmRecurring => '이 일정만 삭제되며, 나머지 반복 일정은 유지됩니다.';
+
+  @override
+  String get calendarDeleteFailed => '일정을 삭제할 수 없습니다. 다시 시도하세요.';
+
+  @override
+  String get calendarMoveFailed => '일정을 이동할 수 없습니다. 원래 자리로 돌아갔습니다.';
+
+  @override
+  String get activityCreatedCalendarEvent => '캘린더 일정을 만들었습니다';
+
+  @override
+  String get activityMovedCalendarEvent => '캘린더 일정을 이동했습니다';
+
+  @override
+  String get activityDeletedCalendarEvent => '캘린더 일정을 삭제했습니다';
+
+  @override
   String get calendarAddAccount => '캘린더 계정 추가';
 
   @override
@@ -1133,9 +1218,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'Google 계정을 연결해 이 작업 공간으로 일정을 동기화합니다. 이 캘린더는 여기에서 당신 것입니다.';
 
   @override
-  String get calendarConnecting => '연결 중…';
-
-  @override
   String get calendarSyncNow => '지금 동기화';
 
   @override
@@ -1143,32 +1225,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get calendarConnectError => 'Google Calendar에 연결할 수 없습니다';
-
-  @override
-  String get calendarClientIdLabel => '클라이언트 ID';
-
-  @override
-  String get calendarClientSecretLabel => '클라이언트 시크릿';
-
-  @override
-  String get calendarConnectCredsHint =>
-      '프로젝트의 Google OAuth 기기 코드 클라이언트 ID와 시크릿을 입력하세요. 서버가 연결과 동기화를 실행합니다 — 브라우저는 토큰을 절대 보관하지 않습니다.';
-
-  @override
-  String get calendarConnectApproveInstruction =>
-      '아무 기기에서나 확인 페이지를 열고 로그인한 후 이 코드를 입력하세요:';
-
-  @override
-  String get calendarConnectOpenPage => '확인 페이지 열기';
-
-  @override
-  String get calendarConnectWaiting => '승인 대기 중…';
-
-  @override
-  String get calendarConnectDenied => '인증이 거부되었습니다. 다시 시도해 주세요.';
-
-  @override
-  String get calendarConnectExpired => '코드가 만료되었습니다. 다시 시도해 주세요.';
 
   @override
   String get notificationMeetingStartsSoon => '회의가 곧 시작됩니다';
@@ -2375,9 +2431,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get activityChangedMemberRepoAccess => '멤버의 리포지토리 접근 권한 변경됨';
 
   @override
-  String get activityUpdatedGitHubToken => 'GitHub 토큰 업데이트됨';
-
-  @override
   String get activityRefreshedWeather => '일기예보 새로 고침됨';
 
   @override
@@ -2412,9 +2465,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get activityRespondedToInvitation => '일정 초대 응답됨';
-
-  @override
-  String get activityStartedCalendarConnect => '캘린더 연결 시작됨';
 
   @override
   String get activityDisconnectedCalendar => '캘린더 연결 해제됨';
@@ -4657,7 +4707,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchGifs => 'GIF 검색';
 
   @override
-  String get searchGifsHint => 'GIF 검색...';
+  String get searchGifsHint => 'KLIPY 검색';
 
   @override
   String get searchInDiffHint => 'diff에서 검색…';
@@ -5135,9 +5185,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get unnamedAgent => '이름 없는 에이전트';
-
-  @override
-  String get updateKey => '키 업데이트';
 
   @override
   String get updateLabel => '업데이트';
@@ -6163,7 +6210,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nodeConfigScriptHelp =>
-      'bash -c로 실행됩니다. GITHUB_TOKEN이 설정됩니다. 플레이스홀더는 실행 전에 치환됩니다.';
+      'OS 샌드박스에서 bash -c로 실행됩니다. GH_TOKEN과 GITHUB_TOKEN에는 연결된 저장소에 대한 읽기 전용 토큰이 들어 있습니다. 플레이스홀더는 실행 전에 따옴표로 감싸져 치환됩니다.';
 
   @override
   String get nodeConfigRouteKeys => '라우트 키';
@@ -6812,7 +6859,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub에 로그인하거나 설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 토큰을 추가하세요';
+      '설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 GitHub에 로그인하세요';
 
   @override
   String get connectGitHubToLoadPrs => '풀 리퀘스트를 불러오려면 GitHub를 연결하세요';
@@ -11686,7 +11733,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String chatProviderDescription(String provider, String command) {
-    return '$provider에서 봇을 멘션해 에이전트에게 작업을 맡기거나, $command로 티켓을 만드세요.';
+    return '$provider에서 봇을 멘션해 에이전트에게 작업을 맡기거나, $command로 티켓 초안을 만드세요.';
   }
 
   @override
@@ -11773,7 +11820,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String chatLinkCodeInstruction(String provider) {
-    return '$provider에서 봇에게 이 명령을 보내세요. 한 번만 사용할 수 있으며 15분 후 만료됩니다.';
+    return '이 코드를 $provider 봇에게 다이렉트 메시지로 보내세요. 한 번만 사용할 수 있으며 15분 후 만료됩니다.';
   }
 
   @override
@@ -11936,20 +11983,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get chatStepInstallHint => 'Install app → bot user OAuth 토큰을 복사하세요.';
-
-  @override
-  String get calendarUseBuiltinApp => 'Control Center의 Google 앱 사용';
-
-  @override
-  String get calendarUseBuiltinAppHint =>
-      'Google 계정으로 승인하세요. Google Cloud에서 설정할 것은 없습니다.';
-
-  @override
-  String get calendarUseOwnClient => '내 Google Cloud 클라이언트 사용';
-
-  @override
-  String get calendarUseOwnClientHint =>
-      '내 Google Cloud 프로젝트의 OAuth 클라이언트를 입력하세요.';
 
   @override
   String get aboutTitle => '정보';
@@ -12606,17 +12639,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get signInAgain => '다시 로그인';
 
   @override
-  String get signInNotFinished => '로그인이 아직 완료되지 않았습니다. 브라우저에서 마친 뒤 다시 확인해 주세요.';
+  String get forgeSignInBannerTitle => '이 워크스페이스에 코드 호스팅이 연결되어 있지 않습니다';
 
   @override
-  String get signedOutTitle => '로그아웃되었습니다';
+  String get forgeSignInBannerBody =>
+      '로그인이 만료되었거나 취소되었거나, 이 워크스페이스가 자체 GitHub App을 사용합니다. 로그인할 때까지 풀 리퀘스트, 리뷰, 저장소 동기화가 일시 중지됩니다.';
 
   @override
-  String get signedOutSubtitle =>
-      '코드 호스팅 연결이 더 이상 유효하지 않습니다. 토큰이 만료되었거나 액세스가 취소되었습니다. 다른 것은 바뀌지 않았습니다. 다시 로그인하면 그대로입니다.';
-
-  @override
-  String get viaServerApp => '이 서버의 앱을 통해';
+  String get forgeSignInBannerAction => '로그인';
 
   @override
   String get ticketing => '티켓팅';
@@ -12634,14 +12664,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ticketProviderLocal => '로컬';
 
   @override
-  String get addKey => '키 추가';
-
-  @override
   String get providerApps => '프로바이더 앱';
 
   @override
   String get providerAppsDescription =>
-      '작업 공간은 다른 App이나 개인 액세스 토큰을 고르지 않으면 이 GitHub App을 상속합니다. 웹훅, 폴링, 동기화 같은 백그라운드 작업은 앱에서 실행되며 개인 토큰에서는 실행되지 않습니다.';
+      '이 서버가 각 제공업체에 직접 등록한 앱입니다. 사용자는 이 앱을 통해 로그인하고, 웹훅, 폴링, 동기화 같은 백그라운드 작업도 이 앱에서 실행되며 개인의 로그인으로 실행되지 않습니다.';
 
   @override
   String get providerAppId => '앱 ID';
@@ -12654,9 +12681,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerClientSecret => '클라이언트 시크릿';
-
-  @override
-  String get providerApiKey => 'API 키';
 
   @override
   String get providerCallbackUrl => '콜백 URL';
@@ -12677,17 +12701,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String providerAppInstalledOn(String accounts) {
     return '자격 증명이 정상입니다. 설치된 계정: $accounts';
   }
-
-  @override
-  String deviceCodeInstructions(String provider) {
-    return '방금 열린 $provider 페이지에 이 코드를 입력하세요. 클립보드에 복사되어 있습니다.';
-  }
-
-  @override
-  String get deviceCodeWaiting => '브라우저에서 완료할 때까지 기다리는 중…';
-
-  @override
-  String get copyCodeAndOpen => '코드 복사 후 열기';
 
   @override
   String get couldNotOpenBrowser => '브라우저를 열 수 없습니다. 링크를 복사해 직접 로그인을 완료하세요.';
@@ -13014,7 +13027,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '이 설치의 GitHub App을 상속하는 작업 공간이 사용합니다. 자체 App이나 PAT는 작업 공간 → 일반에서 설정합니다.';
+      '이 설치의 GitHub 앱을 상속하는 워크스페이스에서 사용합니다. 자체 앱이 있는 워크스페이스는 워크스페이스 → 일반에서 설정합니다.';
 
   @override
   String get providerAppsGroupPrConversations => '풀 리퀘스트 대화';
@@ -14534,7 +14547,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get workspaceGitHubIdentityDescription =>
-      '이 작업 공간의 백그라운드 GitHub 작업이 인증하는 방식입니다. 이 설치의 App을 상속하거나, 다른 App, 또는 개인 액세스 토큰만 사용합니다.';
+      '이 워크스페이스의 백그라운드 GitHub 작업이 인증하는 방식: 이 설치의 앱 또는 워크스페이스 고유의 앱.';
 
   @override
   String get workspaceGitHubModeInherit => '이 설치의 GitHub App 사용';
@@ -14543,27 +14556,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceGitHubModeApp => '다른 GitHub App 사용';
 
   @override
-  String get workspaceGitHubModePat => '개인 액세스 토큰만';
-
-  @override
   String get workspaceGitHubInheritHint => '서버 → 제공자 앱의 GitHub App을 사용합니다.';
 
   @override
   String get workspaceGitHubAppHint =>
       '이 작업 공간의 봇 및 폴링 신원입니다. 구성원은 나에서 이 App으로 로그인합니다.';
-
-  @override
-  String get workspaceGitHubPatLabel => '백그라운드 토큰';
-
-  @override
-  String get workspaceGitHubPatDescription =>
-      '이 작업 공간의 폴링과 에이전트용입니다. 구성원의 프로필 토큰이 아닙니다.';
-
-  @override
-  String get workspaceGitHubHasPat => '백그라운드 토큰이 저장되어 있습니다.';
-
-  @override
-  String get workspaceGitHubNoPat => '저장된 백그라운드 토큰이 없습니다.';
 
   @override
   String get profileOverlayHint =>
@@ -16371,4 +16368,530 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get trayPanelSwitchWorkspace => '워크스페이스 전환';
+
+  @override
+  String signInToProvider(String provider) {
+    return '$provider에 로그인';
+  }
+
+  @override
+  String get linearConnectAutomation => '자동화를 위해 Linear 연결';
+
+  @override
+  String signInOpeningBrowser(String provider) {
+    return '브라우저에서 $provider 여는 중…';
+  }
+
+  @override
+  String signInWaitingOwn(String provider) {
+    return '브라우저의 $provider 페이지에서 요청을 승인하세요. 완료되면 이 창이 알아서 감지합니다.';
+  }
+
+  @override
+  String signInWaiting(String provider) {
+    return '$provider 기다리는 중…';
+  }
+
+  @override
+  String get signInFailedTitle => '로그인이 완료되지 않았습니다';
+
+  @override
+  String get signInReopenPage => '로그인 페이지 다시 열기';
+
+  @override
+  String get signInCodePrompt => '브라우저에 표시된 코드를 입력하세요';
+
+  @override
+  String get signInCodeMalformed => '로그인 코드가 아닌 것 같습니다. 코드는 영문자와 숫자 8자입니다.';
+
+  @override
+  String get signInCodeDeepLinkHint =>
+      '브라우저가 Control Center를 열지 물으면 허용하세요. 그러면 코드를 입력하지 않아도 됩니다.';
+
+  @override
+  String signInSucceeded(String provider, String account) {
+    return '$account(으)로 $provider에 로그인했습니다';
+  }
+
+  @override
+  String signInSucceededNoAccount(String provider) {
+    return '$provider에 로그인했습니다';
+  }
+
+  @override
+  String get signInErrorExpired => '이 로그인이 만료되었습니다. 다시 시작하세요.';
+
+  @override
+  String signInErrorAccessDenied(String provider) {
+    return '$provider 로그인이 취소되었거나 거부되었습니다.';
+  }
+
+  @override
+  String signInErrorScopeMismatch(String provider) {
+    return '$provider이(가) Control Center에 필요한 것보다 적은 권한을 부여했습니다. 다시 로그인하고 모든 권한을 승인하세요.';
+  }
+
+  @override
+  String get signInErrorInvalidCode =>
+      '이 코드는 이 로그인과 일치하지 않습니다. 확인한 뒤 다시 시도하세요.';
+
+  @override
+  String signInErrorProviderUnavailable(String provider) {
+    return '$provider이(가) 지금 응답하지 않습니다. 몇 분 뒤에 다시 시도하세요.';
+  }
+
+  @override
+  String signInErrorExchangeFailed(String provider) {
+    return '$provider이(가) 로그인을 수락했지만 서버가 완료하지 못했습니다. 다시 시도하세요.';
+  }
+
+  @override
+  String signInErrorMisconfigured(String provider) {
+    return '이 서버의 $provider 앱 설정이 잘못되었습니다. 서버 소유자에게 설정 → 서버 → 싱글 사인온을 확인해 달라고 요청하세요.';
+  }
+
+  @override
+  String signInErrorNeedsSignIn(String provider) {
+    return '$provider 로그인이 만료되었습니다. 본인으로 계속 작업하려면 다시 로그인하세요.';
+  }
+
+  @override
+  String signInErrorNotInstalled(String provider) {
+    return '필요한 곳에 $provider 앱이 설치되어 있지 않습니다. 설치한 뒤 다시 시도하세요.';
+  }
+
+  @override
+  String get signInErrorInstallationBoundElsewhere =>
+      '이 GitHub 앱 설치는 이미 다른 Control Center 서버에 승인되어 있습니다.';
+
+  @override
+  String get signInErrorTeamBoundElsewhere =>
+      '이 Linear 워크스페이스는 이미 다른 Control Center 서버에 연결되어 있습니다.';
+
+  @override
+  String get signInErrorNotAdmin =>
+      'Slack 워크스페이스를 처음으로 Control Center에 연결할 수 있는 사람은 해당 워크스페이스의 관리자나 소유자뿐입니다. 그중 한 명에게 앱 추가를 요청하세요.';
+
+  @override
+  String signInErrorSuspended(String provider) {
+    return '$provider 앱이 정지되었습니다. $provider에서 정지를 해제한 뒤 다시 시도하세요.';
+  }
+
+  @override
+  String get signInErrorInstallBlocked =>
+      'Control Center Connect가 이 서버를 차단했습니다. Connect 서버 운영자에게 문의하세요.';
+
+  @override
+  String get signInErrorUnknown => '서버가 알리지 않은 이유로 로그인에 실패했습니다. 다시 시도하세요.';
+
+  @override
+  String get signInPhishingTitle => '여기서 시작한 로그인이 아닙니다';
+
+  @override
+  String get signInPhishingBody =>
+      '이 로그인은 이 앱에서 시작되지 않았습니다. 누군가 이 링크를 보냈다면 계속하지 마세요.';
+
+  @override
+  String get signInPhishingDetail =>
+      '아무것도 전송되지 않았습니다. 다른 사람이 시작한 로그인을 완료하면 내 계정이 그 사람의 서버에 연결됩니다.';
+
+  @override
+  String signInRequiredTitle(String provider) {
+    return '$provider 로그인이 필요합니다';
+  }
+
+  @override
+  String signInRequiredBody(String provider) {
+    return '이 작업은 $provider에서 본인 이름으로 실행되는데, 로그인되어 있지 않습니다. 로그인한 뒤 다시 시도하세요.';
+  }
+
+  @override
+  String signInRequiredBanner(String provider) {
+    return '$provider에 로그인되어 있지 않습니다. 여기서 하는 모든 작업은 본인 이름으로 실행되므로 먼저 로그인하세요.';
+  }
+
+  @override
+  String signInUnavailable(String provider) {
+    return '이 서버에는 아직 $provider 로그인이 설정되지 않았습니다.';
+  }
+
+  @override
+  String get githubInstallations => 'GitHub 앱 설치';
+
+  @override
+  String get githubInstallationsDescription =>
+      'GitHub 앱이 설치된 곳으로, 이 워크스페이스의 리포지토리가 속한 계정만 표시됩니다. 조직의 설치는 그 조직 관리자가 승인한 서버에서만 작동합니다.';
+
+  @override
+  String get githubInstallationsEmpty =>
+      '이 워크스페이스의 리포지토리가 속한 계정 중에는 GitHub 앱이 설치된 곳이 없습니다.';
+
+  @override
+  String get githubInstallApp => 'GitHub 앱 설치';
+
+  @override
+  String get githubAuthorizeServer => '이 서버 승인';
+
+  @override
+  String githubServerAuthorized(String account) {
+    return '이제 이 서버에서 $account의 설치를 사용할 수 있습니다.';
+  }
+
+  @override
+  String get githubInstallationSuspended => '정지됨';
+
+  @override
+  String get githubInstallationAuthorized => '승인됨';
+
+  @override
+  String get githubInstallationNotAuthorized => '승인되지 않음';
+
+  @override
+  String get linearAutomationTitle => 'Linear 자동화';
+
+  @override
+  String get linearAutomationHint =>
+      '이 워크스페이스의 에이전트와 파이프라인이 사람이 아닌 앱으로 Linear에서 작업하게 합니다. 워크스페이스 관리자가 연결합니다.';
+
+  @override
+  String linearAutomationConnectedAs(String account) {
+    return '$account에 연결됨';
+  }
+
+  @override
+  String get connectModeHosted => 'Control Center의 앱 사용';
+
+  @override
+  String get connectModeHostedDisclosure =>
+      '로그인은 Control Center Connect를 거칩니다. Connect는 각 로그인을 이 서버만 열 수 있도록 봉인하고, 저장소 하나로 제한된 GitHub 토큰을 발급하며, 저장소 키를 보관하지 않고, 소스 코드를 받지 않습니다.';
+
+  @override
+  String get connectModeOwn => '내 앱 사용';
+
+  @override
+  String get connectModeOwnHint =>
+      'GitHub, Google, Linear 앱을 설정 → 서버 → 싱글 사인온에서 직접 등록하고, 각 워크스페이스의 자체 Slack 앱은 해당 워크스페이스 설정에서 연결하세요. \"내 GitHub 앱 만들기\"를 사용하면 GitHub를 한 번에 설정할 수 있습니다.';
+
+  @override
+  String get connectModeCustom => '사용자 지정 Connect 서버 사용';
+
+  @override
+  String get connectModeCustomHint =>
+      '조직에서 자체 Connect 서버를 운영합니다. 로그인은 Control Center 서버 대신 그곳으로 갑니다.';
+
+  @override
+  String get connectModeUnset => '아직 설정되지 않음';
+
+  @override
+  String get connectCustomUrlLabel => 'Connect 서버 URL';
+
+  @override
+  String get connectCustomUrlInvalid =>
+      'https://connect.example.com 같은 HTTPS 주소를 입력하세요.';
+
+  @override
+  String get connectCustomUrlLoopbackHint =>
+      '암호화되지 않은 HTTP는 이 컴퓨터의 Connect에만 연결됩니다. 네트워크상의 대상에는 HTTPS를 사용하세요.';
+
+  @override
+  String get connectErrorHostedUnprovisioned =>
+      '이 빌드에서는 아직 Control Center의 호스팅 앱을 사용할 수 없습니다. 내 앱이나 사용자 지정 Connect 서버를 사용하세요.';
+
+  @override
+  String get connectErrorSignature =>
+      'Connect 구성이 서명 검증에 실패했습니다. 다시 검증될 때까지 Connect를 통한 로그인이 일시 중지됩니다.';
+
+  @override
+  String get connectErrorRollback =>
+      'Connect가 이 서버가 이미 받은 것보다 오래된 구성을 제공해 거부했습니다. Connect를 통한 로그인이 일시 중지됩니다.';
+
+  @override
+  String get connectErrorUnreachable =>
+      '이 서버가 지금 Connect에 연결할 수 없습니다. 복구될 때까지 Connect를 사용하는 로그인은 실패합니다.';
+
+  @override
+  String get connectErrorInstallBlocked =>
+      'Connect가 이 서버의 설치 ID를 차단했습니다. Connect 서버 운영자에게 문의하세요.';
+
+  @override
+  String get connectErrorPinsChanged => 'Connect 앱이 변경되었습니다';
+
+  @override
+  String get connectErrorProtocol =>
+      'Connect가 이 서버가 이해할 수 없는 방식으로 응답했습니다. 서버를 업데이트하거나 Connect URL을 확인하세요.';
+
+  @override
+  String get connectErrorUnknown =>
+      'Connect가 설명 없이 문제를 보고했습니다. 테스트를 실행해 다시 시도하세요.';
+
+  @override
+  String get connectPinsConfirmHint =>
+      'Connect 서버가 이 서버가 처음 사용할 때 고정한 것과 다른 GitHub, Google, Linear 또는 Slack 앱을 알리고 있습니다. 운영자가 미리 알려 준 경우에만 신뢰하세요.';
+
+  @override
+  String get connectConfirmPins => '새 앱 신뢰';
+
+  @override
+  String get connectStale => '사용 중인 구성이 예상보다 오래되었습니다. 테스트를 실행해 새로 고치세요.';
+
+  @override
+  String get connectLaneSourceOwn => '내 앱';
+
+  @override
+  String get connectLaneSourceConnect => 'Connect';
+
+  @override
+  String get connectLaneSourceOff => '꺼짐';
+
+  @override
+  String get connectTitle => 'Control Center Connect';
+
+  @override
+  String get connectDescription =>
+      '이 서버가 GitHub, Google Calendar, Linear, Slack, GIF 검색에 누구의 앱을 사용하는지입니다.';
+
+  @override
+  String get connectFactMode => '로그인 앱';
+
+  @override
+  String get connectFactHealth => '상태';
+
+  @override
+  String get connectFactEpoch => '구성 버전';
+
+  @override
+  String get connectHealthOff => '사용 안 함';
+
+  @override
+  String get connectHealthOk => '작동 중';
+
+  @override
+  String get connectHealthDown => '작동하지 않음';
+
+  @override
+  String get connectLocked =>
+      '이 서버 환경의 CC_CONNECT_URL이 이 설정을 정합니다. 그곳에서 변경한 뒤 서버를 다시 시작하세요.';
+
+  @override
+  String get connectLanesTitle => '각 로그인이 실행되는 곳';
+
+  @override
+  String get connectLanesDescription =>
+      '내 앱이 있으면 해당 공급자에서는 항상 Connect보다 우선합니다.';
+
+  @override
+  String get connectServerGroup => '이 서버';
+
+  @override
+  String get connectInstallId => '설치 ID';
+
+  @override
+  String get connectInstallIdHint =>
+      'Connect에 이 서버를 식별시킵니다. 요청하는 조직 소유자나 Connect 운영자에게 알려 주세요.';
+
+  @override
+  String get connectInstallIdEmpty => '이 서버가 처음 Connect를 사용할 때 할당됩니다.';
+
+  @override
+  String get connectTestOk => 'Connect가 작동 중입니다.';
+
+  @override
+  String get connectRotateKey => '키 교체';
+
+  @override
+  String get connectRotateKeyTitle => '이 서버의 Connect 키를 교체할까요?';
+
+  @override
+  String get connectRotateKeyBody =>
+      '이 서버에 새 키와 새 설치 ID가 발급됩니다. Connect를 통한 모든 로그인이 더 이상 작동하지 않으며 모두 다시 로그인해야 합니다. 내 앱을 통한 로그인에는 영향이 없습니다.';
+
+  @override
+  String get connectRotateKeyDone =>
+      '키를 교체했습니다. Connect로 로그인했던 모든 사람은 다시 로그인해야 합니다.';
+
+  @override
+  String get connectCliLabel => '터미널에서';
+
+  @override
+  String get onboardingStepSignIn => '로그인';
+
+  @override
+  String get onboardingConnectTitle => '로그인 방식 선택';
+
+  @override
+  String get onboardingConnectSubtitle =>
+      'Control Center는 각 공급자에 등록된 앱을 통해 GitHub, Google Calendar, Linear, Slack, GIF 검색과 연동됩니다. 이 서버가 누구의 앱을 사용할지 선택하세요. 나중에 설정 → 서버 → 싱글 사인온에서 변경할 수 있습니다.';
+
+  @override
+  String get onboardingConnectOwnNext =>
+      '지금 이 서버용 GitHub 앱을 만들거나, 나중에 설정 → 서버 → 싱글 사인온에서 앱을 추가하세요.';
+
+  @override
+  String get providerServiceApiKey => '서비스 API 키';
+
+  @override
+  String get providerAppPartial => '설정이 완료되지 않음';
+
+  @override
+  String providerAppMissingFields(String fields) {
+    return '아직 없음: $fields. 모든 필드가 설정될 때까지 이 공급자의 로그인은 Connect로 넘어가지 않고 거부됩니다.';
+  }
+
+  @override
+  String get providerAppsGroupSignInLinearDescription =>
+      '클라이언트 ID로 구성원이 로그인합니다. 서비스 API 키가 있으면 이 서버가 직접 Linear를 읽고 쓸 수 있습니다.';
+
+  @override
+  String get providerCallbackUrls => '콜백 URL';
+
+  @override
+  String get providerCallbackUrlHint => '표시된 그대로 공급자에 등록하세요.';
+
+  @override
+  String get providerAppCreateGitHubTitle => 'GitHub 앱 만들기';
+
+  @override
+  String get providerAppCreateGitHubHint =>
+      'GitHub가 올바른 권한과 콜백으로 앱을 등록한 뒤 자격 증명을 이 서버에 넘겨줍니다. 직접 복사할 것이 없습니다.';
+
+  @override
+  String get providerAppCreateGitHub => '내 GitHub 앱 만들기';
+
+  @override
+  String get providerAppCreateGitHubOrg => '조직(선택 사항)';
+
+  @override
+  String get providerAppCreateGitHubOrgHint =>
+      '비워 두면 내 GitHub 계정 아래에 앱을 만듭니다. 조직 아래에 만들려면 해당 조직의 소유자여야 합니다.';
+
+  @override
+  String get providerAppSignInReady => '사람들이 로그인할 수 있습니다.';
+
+  @override
+  String get chatLinkWaiting => '다이렉트 메시지를 기다리는 중…';
+
+  @override
+  String chatLinkClaimTitle(String provider) {
+    return '본인의 $provider 계정인가요?';
+  }
+
+  @override
+  String chatLinkClaimBody(String provider) {
+    return '이 계정이 봇에게 코드를 보냈습니다. 본인 계정일 때만 확인하세요. 연결하면 이 계정이 $provider에서 보내는 내용이 이 워크스페이스에서 본인으로 처리됩니다.';
+  }
+
+  @override
+  String get chatLinkDecline => '거절';
+
+  @override
+  String chatLinkDeclined(String provider) {
+    return '아무것도 연결되지 않았습니다. $provider 계정을 계속 연결하려면 새 코드를 받으세요.';
+  }
+
+  @override
+  String get chatLinkNewCode => '새 코드 받기';
+
+  @override
+  String signInAddControlCenter(String provider) {
+    return '$provider에 Control Center 추가';
+  }
+
+  @override
+  String signInAddedControlCenter(String workspace) {
+    return '$workspace에 Control Center가 추가되었습니다';
+  }
+
+  @override
+  String chatSharedAppHint(String provider) {
+    return '공유 Control Center 앱을 $provider 워크스페이스에 설치합니다. 만들 앱도, 붙여넣을 토큰도 없습니다.';
+  }
+
+  @override
+  String chatAddToProvider(String provider) {
+    return '$provider에 추가';
+  }
+
+  @override
+  String get chatSharedAppConnected =>
+      '공유 Control Center 앱에서 실행되므로 여기서 관리할 토큰이나 봇 설정이 없습니다.';
+
+  @override
+  String get chatTicketDraftsTitle => '채팅에서 만든 티켓 초안';
+
+  @override
+  String get chatTicketDraftsDescription =>
+      '초안은 여기서 만들 때만 백로그 티켓이 됩니다. 남겨 둔 초안은 하루 뒤 삭제됩니다.';
+
+  @override
+  String chatTicketDraftFrom(String provider) {
+    return '$provider에서';
+  }
+
+  @override
+  String get chatTicketDraftCreate => '티켓 만들기';
+
+  @override
+  String chatTicketDraftCreated(String key) {
+    return '$key 생성됨';
+  }
+
+  @override
+  String get workspaceProviderApps => '프로바이더 앱';
+
+  @override
+  String get workspaceProviderAppsDescription =>
+      '이 워크스페이스가 사용하는 Google Calendar, Linear, Klipy 앱입니다. 기본적으로 이 서버의 앱 또는 Control Center Connect를 사용합니다. 워크스페이스 전용 앱을 쓰면 이 서버의 앱으로 대체되지 않습니다.';
+
+  @override
+  String get workspaceProviderAppModeInherit => '이 서버의 앱 사용';
+
+  @override
+  String get workspaceProviderAppModeInheritHint =>
+      '로그인과 요청에는 이 서버의 앱 또는 Control Center Connect가 사용됩니다.';
+
+  @override
+  String get workspaceProviderAppModeOwn => '이 워크스페이스의 앱 사용';
+
+  @override
+  String get workspaceProviderAppModeOwnHint =>
+      '이 워크스페이스의 앱만 사용됩니다. 설정이 끝나기 전까지 이 프로바이더는 대체되지 않고 여기서 꺼져 있습니다.';
+
+  @override
+  String get workspaceProviderAppStatusInherit => '서버 앱';
+
+  @override
+  String get workspaceProviderAppStatusOwn => '자체 앱';
+
+  @override
+  String workspaceProviderAppMissingFields(String fields) {
+    return '아직 누락됨: $fields. 모든 항목을 설정하기 전까지 이 워크스페이스에서 이 프로바이더는 꺼져 있습니다. 이 서버의 앱으로 대체되지 않습니다.';
+  }
+
+  @override
+  String get workspaceProviderAppClientChangeHint =>
+      '앱을 변경하면 이 워크스페이스의 모든 사용자가 로그아웃됩니다. 새 앱으로 다시 로그인해야 합니다.';
+
+  @override
+  String get workspaceProviderAppKlipyKey => '앱 키';
+
+  @override
+  String get workspaceProviderAppKlipyHint => '이 워크스페이스의 GIF 검색에는 이 키가 사용됩니다.';
+
+  @override
+  String workspaceProviderAppSwitchTitle(String provider) {
+    return '$provider 앱을 전환할까요?';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToOwnBody(String provider) {
+    return '이 서버의 앱으로 이 워크스페이스의 $provider에 연결된 모든 사용자는 워크스페이스 앱으로 다시 로그인해야 합니다.';
+  }
+
+  @override
+  String workspaceProviderAppSwitchToServerBody(String provider) {
+    return '이 워크스페이스의 $provider 자격 증명이 삭제됩니다. 워크스페이스 앱으로 연결된 모든 사용자는 다시 로그인해야 합니다.';
+  }
+
+  @override
+  String get workspaceProviderAppSwitchAction => '앱 전환';
 }

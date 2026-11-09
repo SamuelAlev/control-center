@@ -2,7 +2,7 @@
 title: "Revisión con IA"
 description: "Cómo una pull request pasa a estar revisada: espacios de revisión, nodos de revisión y consenso entre pares, cohortes y ejes, el veredicto Ship/Hold/Block y por qué publicar sigue siendo un paso que das tú."
 slug: es-MX/manual/conceptos/revision-con-ia
-sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
+sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
 ---
 
 ## La forma de una revisión
@@ -218,11 +218,14 @@ usuario, así que una revisión nunca puede publicarse dos veces. Cuando presion
   integrados en el cuerpo para que nada se descarte en silencio.
 - Un veredicto **Block** se envía como `REQUEST_CHANGES`; **Hold** como
   `COMMENT`; **Ship** como `APPROVE` desde el botón (`approve_on_ship: true`).
-  La herramienta MCP deja Ship como `COMMENT` a menos que pases
-  `approve_on_ship`.
-- La revisión se publica con la identidad de la app del servidor. Quién presionó
-  Publicar queda registrado para la compuerta de roles y el registro de
-  auditoría; no es el autor en GitHub.
+  La herramienta MCP publica como automatización y siempre deja Ship como
+  `COMMENT`.
+- El botón **Publicar en GitHub** publica la revisión en nombre de quien lo
+  presionó, con su propio inicio de sesión de GitHub: la decisión de publicar es
+  suya, así que la revisión también. Una publicación sin una persona detrás es
+  automatización, que nunca aprueba: Ship sale entonces como `COMMENT` y, en
+  Control Center Connect, la publicación se atribuye con el prefijo
+  `**Control Center** (for @login):`.
 
 Publicar declara la clase de acción `prPublish`, así que el punto de control de
 las barandillas lo condiciona como cualquier acción que muta: pide aprobación de

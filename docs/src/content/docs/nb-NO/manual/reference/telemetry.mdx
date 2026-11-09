@@ -2,7 +2,7 @@
 title: Bruksanalyse
 description: Hva Control Center registrerer når bruksanalyse er slått på, hvem som bestemmer, og hva som aldri sendes.
 slug: nb-NO/handbok/referanse/bruksanalyse
-sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
 ---
 
 Control Center kan sende **pseudonyme brukshendelser** til en [Umami](https://umami.is)-instans. Bruksanalyse er **av til serveroperatøren slår den på**. Innstillingen hører til serveren og gjelder for alle klienter som er koblet til den: skrivebordsappen, nettappen, telefonen og selve serveren.
@@ -95,9 +95,12 @@ Registreres av skrivebordsappen, nettappen og telefonen for ting en person gjør
 | `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | En mislykket kjøring ble forsøkt på nytt |
 | `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | En kjøring ble avbrutt fra appen |
 | `pipeline_step_killed` | `workspace_id`, `step_run_id` | Et kjørende trinn ble tvangsavsluttet |
-| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Et påloggingsforsøk mot en kalender ble avsluttet |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client` (true når påloggingen gikk via Control Center Connect i stedet for serverens egen Google-klient), `duration_s` | Et påloggingsforsøk mot en kalender ble avsluttet |
 | `calendar_disconnected` | `workspace_id` | En kalenderkonto ble koblet fra |
 | `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | En invitasjon ble besvart |
+| `calendar_event_created` | `workspace_id`, `all_day`, `guests` (antall), `conference` | En hendelse ble booket i Google Calendar |
+| `calendar_event_moved` | `workspace_id`, `calendar_event_id`, `had_guests` | En hendelse ble flyttet eller endret størrelse på i kalenderrutenettet |
+| `calendar_event_deleted` | `workspace_id`, `calendar_event_id`, `had_guests` | En hendelse ble slettet fra Google Calendar |
 | `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Et opptak ble startet fra en kalenderhendelse |
 | `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | En møtelenke ble åpnet (telefon). Bare leverandøren utledes fra lenken |
 | `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Varslingssenteret ble brukt |

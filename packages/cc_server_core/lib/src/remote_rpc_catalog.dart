@@ -112,7 +112,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
-    show BuiltInBodyKeys, SkillAnalysisTemplate;
+    show SkillAnalysisTemplate;
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/playbook.dart';
 import 'package:cc_domain/features/plan_studio/domain/repositories/plan_studio_repositories.dart';
@@ -194,8 +194,9 @@ import 'package:cc_server_core/src/catalog/mobile_space_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/catalog/pending_question_watch.dart';
+import 'package:cc_server_core/src/catalog/pipeline_shell_guard.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
-import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
+import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/space_provisioning_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
@@ -203,6 +204,8 @@ import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
+import 'package:cc_server_core/src/connect/sign_in_service.dart'
+    show providerOAuthRedirectUri;
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
@@ -212,7 +215,6 @@ import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
 import 'package:cc_server_core/src/identity/managed_policy_service.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
-import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
@@ -335,6 +337,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required NewsfeedRepository newsfeedRepository,
   required AgentRepository agentRepository,
   required RepoRepository repoRepository,
+  // Refuses a forge repository link the caller cannot see themselves (throws
+  // a `ValidationException`). Null only in bare test catalogs.
+  Future<void> Function({
+    required String workspaceId,
+    required String userId,
+    required Repo repo,
+  })?
+  verifyRepoLink,
   EnvironmentPort? environments,
   required SpaceReadRepository spaceReadRepository,
   required MemoryDomainRepository memoryDomainRepository,
@@ -507,22 +517,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Optional as a group: absent in bare test catalogs.
   TakeoverService? takeoverService,
   // The thin client READS this surface (synced events + connected accounts) and
-  // drives the GUI connect over [calendarConnect] (below). The sync reconciler,
+  // disconnects accounts over [calendarAccounts] (below). The sync reconciler,
   // token refresh and alert sweep all run host-side against the host-resident
   // OAuth tokens + Google API client and are never reached from a client.
   required CalendarRepository calendarRepository,
-  // Backs the GUI device-code connect (`calendar.beginConnect` /
-  // `calendar.pollConnect` / `calendar.disconnect`): a thin (web/desktop) client
-  // supplies a Google client id + secret, the host runs the device flow and
-  // stores the refresh token server-side, then the host sync writes events the
-  // client reads. Optional — when null those three ops are absent (default-deny)
-  // and the connect form reports that the host owns calendar connection.
-  CalendarConnectService? calendarConnect,
-  // Backs the `calendar.rsvp` write: the host PATCHes the user's response to a
-  // Google Calendar invitation on its own OAuth token (the thin client holds
-  // none) and optimistically upserts the local event. Optional — null leaves
-  // the op absent (the RSVP buttons report it is host-managed).
-  CalendarRsvpFn? calendarRsvp,
+  // Backs `calendar.disconnect` (deletes the account row and its stored
+  // credential). Accounts connect through the `oauth.*` sign-in (lane
+  // `google`), not a calendar op. Optional — when null the op is absent
+  // (default-deny).
+  CalendarAccountService? calendarAccounts,
   // Trigger an immediate sync / on-demand range load on the host (the thin
   // client holds no Google token, so the manual refresh + calendar navigation
   // drive the host's sync). Null leaves those ops as no-ops.
@@ -613,10 +616,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Per-account 5h/weekly quota, so the picker can show which login still has
   // headroom. Null ⇒ accounts list without usage.
   ClaudeAccountUsageFetcher? fetchClaudeAccountUsage,
-  // Klipy GIF search / trending for the composer's GIF picker. Null (no Klipy
-  // app key) → the `gif.*` ops return empty.
-  GifSearchFetcher? gifSearch,
-  GifTrendingFetcher? gifTrending,
   // The workspace-scoped cache backing the SWR PR/commit reference previews.
   // Optional: when null, previews skip caching and hit the fetcher directly.
   // Inspecting + registering a repo runs `git` on the SERVER's filesystem, so
@@ -651,15 +650,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // wire, tokens never do. Absent when null → those ops are not declared and
   // the client shows every forge disconnected.
   ForgeCredentialPort? forgeCredentials,
-  // Runs the browser sign-in that mints a user's own provider credential,
-  // backing `oauth.*`. Absent when null → the client offers only the
-  // paste-a-token path, which is exactly what a server with no app configured
-  // should show.
-  ProviderOAuthService? providerOAuth,
   // The SERVER's own app identity (GitHub App, Linear app), backing
   // `providerApps.*`. Operator-only; absent when null.
   ProviderAppSettings? providerApps,
-  // Per-workspace GitHub App / background PAT. The `workspaceGitHub.*` ops
+  // Per-workspace GitHub App. The `workspaceGitHub.*` ops
   // live in extraOps (`buildWorkspaceGitHubOps`); this port stays here so
   // `workspace.delete` can wipe that workspace's secrets. Absent when null.
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
@@ -941,7 +935,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Both ops are workspace-scoped: they source `ctx.workspaceId!` (never a
   // client arg); the use-cases re-validate the orchestration belongs to that
   // workspace (defense in depth).
-  OrchestrationActionFn? approveOrchestration,
+  OrchestrationApproveFn? approveOrchestration,
   OrchestrationActionFn? cancelOrchestration,
   // The plan surface: revision history + operator edits (`orchestration.
   // saveRevision` / `revisions`), partial approval (`approve` with
@@ -962,8 +956,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   Future<void> Function(
     String workspaceId,
     String orchestrationId,
-    Set<String>? approvedNodeKeys,
-  )?
+    Set<String>? approvedNodeKeys, {
+    String? approvedByUserId,
+  })?
   approveOrchestrationScoped,
   Future<void> Function(
     String workspaceId,
@@ -991,6 +986,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     required String planId,
     Set<String>? approvedNodeKeys,
     int? maxCostCents,
+    String? approvedByUserId,
   })?
   approvePlanDocument,
   Future<Map<String, dynamic>> Function({
@@ -1079,12 +1075,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // (migration 46) — for the studio read ops. Wired alongside the studio repos.
   ReviewPrExternalIdResolver? resolveStudioKey,
   // Dispatches a review-fix agent into a space on the SERVER (see
-  // [ReviewDispatchFn]). Wired only by a host that owns the dispatch stack (the
-  // desktop in-process host); a headless cc_server leaves it null → the
-  // `dispatch.reviewFeedbackAgent` op is absent and the web "send findings to
-  // agent" action degrades to "runs on the server host". Workspace-scoped: the
-  // handler sources `ctx.workspaceId!` and asserts space ownership; the host
-  // closure resolves the working directory from the bound workspace.
+  // [ReviewDispatchFn]); null leaves `dispatch.reviewFeedbackAgent` absent.
+  // Workspace-scoped: the handler sources `ctx.workspaceId!` and asserts space
+  // ownership; the closure resolves the working directory from the workspace.
   ReviewDispatchFn? reviewDispatch,
   // The phone (cc_remote) approves/declines destructive agent commands. The
   // host-side [PendingConfirmationRegistry] bridges the agent's blocking
@@ -1575,7 +1568,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final identityActivity = userActivityRepository;
   final identityPrefs = userPreferencesRepository;
   final identityInviteService = inviteService;
-  final identityCredentials = userCredentials;
 
   /// The users [callerId] may see: themselves plus everyone they share a
   /// workspace with (the server owner sees all).
@@ -1972,18 +1964,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ? buildForgePrClient?.call(repo, actingUserId, workspaceId: workspaceId)
       : null;
 
-  /// [userId] is the caller: it gates repo access and keys the cache.
-  ///
-  /// [asApp] posts under the SERVER's app identity instead of the caller's
-  /// account, for content the caller did not write. The access check still runs
-  /// against [userId] — this changes whose name is on the write, never whether
-  /// they were allowed to make it.
+  /// [userId] is the caller: it gates repo access, keys the cache and is
+  /// whose GitHub sign-in every read and write rides.
   Future<PrReviewRepository> resolvePrReviewRepository(
     String workspaceId,
     String owner,
     String repo, {
     required String userId,
-    bool asApp = false,
   }) async {
     if (forgeProviderRegistryFor == null) {
       return const EmptyPrReviewRepository();
@@ -2012,13 +1999,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       userId: userId,
       repoId: match.id,
     );
-    // Cache key: forge + coordinate + acting user + `asApp`. Same owner/repo
-    // on two forges are different repos; the cached instance holds the
+    // Cache key: forge + coordinate + acting user. Same owner/repo on two
+    // forges are different repos; the cached instance holds the
     // authenticated write client (sharing would mis-attribute).
-    final identity = asApp ? '\u0000app' : userId;
     final key =
         '$workspaceId|${match.forge.wire}|'
-        '${owner.toLowerCase()}|${repo.toLowerCase()}|$identity';
+        '${owner.toLowerCase()}|${repo.toLowerCase()}|$userId';
     final existing = prRepoCache[key];
     if (existing != null) {
       return existing;
@@ -2028,10 +2014,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // repo whose forge has no credential resolves to the empty repository
     // rather than throwing, keeping one unconnected forge from breaking the
     // others.
-    final created = forgeProviderRegistryFor(
-      asApp ? null : userId,
-      workspaceId: workspaceId,
-    ).resolve(ForgeProviderContext(repo: match, workspaceId: workspaceId));
+    // Cached rows are shared across members only for a repo linked to the
+    // workspace; otherwise they are keyed by this member.
+    final linkedHere = await workspaceRepository.isRepoLinkedToWorkspace(
+      workspaceId,
+      match.id,
+    );
+    final created = forgeProviderRegistryFor(userId, workspaceId: workspaceId)
+        .resolve(
+          ForgeProviderContext(
+            repo: match,
+            workspaceId: workspaceId,
+            userId: userId,
+            linkedToWorkspace: linkedHere,
+          ),
+        );
     prRepoCache[key] = created;
     return created;
   }
@@ -2876,28 +2873,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'onboarding_finished_at': at.toIso8601String()};
         },
       ),
-      // Per-user GitHub credentials. Strictly self-service: the target is
-      // always `ctx.userId` — no principal can set or probe another member's
-      // token. Write-only: the stored value is NEVER returned (only a
-      // configured flag) and it is never logged. User-scoped like `prefs.*`,
-      // so the ops are global (`workspaceScoped: false`).
-      if (identityCredentials != null) ...[
-        // Stores the CALLER's own GitHub token; an empty/absent `token`
-        // deletes it (the member reverts to the server's broker credential).
-        RepoOp(
-          name: 'credentials.setGitHubToken',
-          kind: RepoOpKind.mutate,
-          workspaceScoped: false,
-          handler: (ctx) async {
-            final token = ctx.args['token'];
-            await identityCredentials.setGitHubToken(
-              ctx.userId,
-              token is String ? token : '',
-            );
-            return {'ok': true};
-          },
-        ),
-      ],
       // Change a member's role. Admin-gated; ownership is transferred
       // explicitly (never via this op), so the owner's row is immutable here
       // and `owner` is not grantable.
@@ -3770,10 +3745,30 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       requiredArgs: ['repo'],
       handler: (ctx) async {
-        final id = await repoRepository.upsert(
-          ctx.workspaceId!,
-          repoFromWire((ctx.args['repo'] as Map).cast<String, dynamic>()),
+        final repo = repoFromWire(
+          (ctx.args['repo'] as Map).cast<String, dynamic>(),
         );
+        final existing = await repoRepository.getById(
+          ctx.workspaceId!,
+          repo.id,
+        );
+        // A new link, or one retargeted at another forge repository, is
+        // checked against the caller's own access before automation may
+        // mint for it.
+        final retargeted =
+            existing == null ||
+            existing.forge != repo.forge ||
+            existing.remoteOwner.toLowerCase() !=
+                repo.remoteOwner.toLowerCase() ||
+            existing.remoteName.toLowerCase() != repo.remoteName.toLowerCase();
+        if (retargeted && repo.hasForgeRemote) {
+          await verifyRepoLink?.call(
+            workspaceId: ctx.workspaceId!,
+            userId: ctx.userId,
+            repo: repo,
+          );
+        }
+        final id = await repoRepository.upsert(ctx.workspaceId!, repo);
         return {'repo_id': id};
       },
     ),
@@ -3821,6 +3816,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final repo = await useCase.execute(
             ctx.args['path'] as String,
             workspaceId: ctx.workspaceId!,
+            verify: verifyRepoLink == null
+                ? null
+                : (repo) => verifyRepoLink(
+                    workspaceId: ctx.workspaceId!,
+                    userId: ctx.userId,
+                    repo: repo,
+                  ),
           );
           return {'repo': repoToWire(repo)};
         },
@@ -3967,14 +3969,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           )).toJson();
         },
       ),
-    // Stores or clears the CALLER's own forge credential — the paste-a-token
-    // path, for a server with no app configured or a user who prefers a PAT.
+    // Stores the CALLER's own GitLab or Bitbucket token. GitHub is sign-in
+    // only: a pasted GitHub token is refused by `ForgeCredentials.setToken`.
     //
     // Strictly self-service: the target is always `ctx.userId`, so there is no
-    // admin gate (a member managing their own credential is not privileged)
-    // and no way to write another member's. Takes effect on the next request —
-    // tokens are read per call, so there is no restart and no stale
-    // interceptor holding the old value.
+    // admin gate and no way to write another member's. Tokens are read per
+    // call, so the next request uses it.
     if (forgeCredentials != null)
       RepoOp(
         name: 'credentials.setForgeToken',
@@ -3990,26 +3990,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             throw const NotFoundException('Missing or invalid argument: token');
           }
           final workspaceId = await overlayWorkspaceIdChecked(ctx);
-          final oauth = providerOAuth;
-          final app = ProviderApp.fromWire(forge.wire);
-          if (oauth != null && app != null && token.isNotEmpty) {
-            // Resolve WHO the token belongs to while storing it, so a pasted
-            // credential shows the same "signed in as …" line a minted one
-            // does instead of an anonymous "connected".
-            await oauth.storePastedToken(
-              userId: ctx.userId,
-              provider: app,
-              token: token,
-              workspaceId: workspaceId,
-            );
-          } else {
-            await forgeCredentials.setToken(
-              forge,
-              token,
-              userId: ctx.userId,
-              workspaceId: workspaceId,
-            );
-          }
+          await forgeCredentials.setToken(
+            forge,
+            token,
+            userId: ctx.userId,
+            workspaceId: workspaceId,
+          );
           return (await forgeCredentials.testConnection(
             forge,
             userId: ctx.userId,
@@ -4075,19 +4061,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (provider == TicketProvider.local) {
             throw const NotFoundException('Local tickets need no credential.');
           }
+          if (provider == TicketProvider.linear) {
+            throw const ValidationException(
+              'Linear uses sign-in. Sign in to Linear instead of pasting a '
+              'key.',
+            );
+          }
           final token = ctx.args['token'];
           if (token is! String) {
             throw const NotFoundException('Missing or invalid argument: token');
-          }
-          final oauth = providerOAuth;
-          final app = ProviderApp.fromWire(provider.name);
-          if (oauth != null && app != null && token.isNotEmpty) {
-            final account = await oauth.storePastedToken(
-              userId: ctx.userId,
-              provider: app,
-              token: token,
-            );
-            return {'ok': true, 'username': account};
           }
           await userCredentials.setTicketToken(
             ctx.userId,
@@ -4128,12 +4110,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               for (final status in await providerApps.statuses())
                 {
                   ...status.toJson(),
-                  'redirect_uri': origin.isEmpty
-                      ? ''
-                      : providerOAuthRedirectUri(
-                          origin,
-                          status.provider.wire,
-                        ).toString(),
+                  // What the operator registers with the provider. Linear has
+                  // a second lane for the workspace's app actor.
+                  'redirect_uris': origin.isEmpty
+                      ? const <String>[]
+                      : [
+                          providerOAuthRedirectUri(
+                            origin,
+                            status.provider.wire,
+                          ).toString(),
+                          if (status.provider == ProviderApp.linear)
+                            providerOAuthRedirectUri(
+                              origin,
+                              'linear_app',
+                            ).toString(),
+                        ],
                 },
             ],
           };
@@ -4741,7 +4732,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               ? await resolveWorkspaceGitIdentity(
                   users: users,
                   members: members,
-                  ownerUserId: serverOwnerUserId ?? ctx.userId,
                   userId: ctx.userId,
                   workspaceId: ctx.workspaceId,
                 )
@@ -7489,9 +7479,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // into the space. The agent process spawns on the SERVER; the working
     // directory is resolved host-side from the bound workspace (NOT a client
     // path), so a thin client can't aim the agent at an arbitrary directory.
-    // Present only when the host wired a [ReviewDispatchFn] (desktop in-process
-    // host); a headless server leaves it absent. Space ownership is asserted
-    // before dispatch (isolation invariant).
+    // Present only when a [ReviewDispatchFn] is wired. Space ownership is
+    // asserted before dispatch (isolation invariant).
     if (reviewDispatcher != null)
       RepoOp(
         name: 'dispatch.reviewFeedbackAgent',
@@ -10401,9 +10390,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // READ surface only. Every read sources `ctx.workspaceId!` (the bound
     // session, never a client arg) as the leading `workspaceId` — the impl
     // scopes every query by it, so a foreign-workspace row simply yields
-    // nothing. The WRITE surface (account connect/disconnect, RSVP, the sync
-    // reconciler, the alert sweep, meeting linking) depends on the host-resident
-    // OAuth tokens + Google API client and is intentionally NOT exposed here.
+    // nothing. The person's Google writes (RSVP, create, delete) ship in
+    // `catalog/calendar_write_ops.dart`; the sync reconciler and the alert
+    // sweep stay host-side.
     RepoOp(
       name: 'calendar.getAccounts',
       kind: RepoOpKind.read,
@@ -10465,29 +10454,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // RSVP write: the host PATCHes the response on its own Google OAuth token
-    // (the thin client holds none) and optimistically upserts the event. The
-    // event id is the LOCAL id, looked up workspace-scoped (a foreign id is
-    // simply not found — the isolation boundary).
-    RepoOp(
-      name: 'calendar.rsvp',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['event_id', 'response'],
-      handler: (ctx) async {
-        final fn = calendarRsvp;
-        if (fn == null) {
-          throw const NotFoundException(
-            'Calendar RSVP is managed on the server host',
-          );
-        }
-        await fn(
-          workspaceId: ctx.workspaceId!,
-          eventId: ctx.args['event_id'] as String,
-          responseStatus: ctx.args['response'] as String,
-        );
-        return {'ok': true};
-      },
-    ),
     // Manual "refresh now" — sync the bound workspace on the host immediately.
     RepoOp(
       name: 'calendar.refreshNow',
@@ -10514,67 +10480,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // Google calendar connect: client supplies id+secret or `use_builtin`;
-    // host runs device-code flow and stores the refresh token. Built-in
-    // connect stores a marker (never the server secret). Ops use
-    // `ctx.workspaceId!`; handles/accounts are workspace-bound. Only when
-    // [calendarConnect] is wired.
-    if (calendarConnect != null) ...[
-      RepoOp(
-        // Says only WHETHER this server has a Google app of its own, so the
-        // connect dialog knows whether to offer "use Control Center's Google
-        // app". Deliberately not the client id: the client has no use for it,
-        // and the pair never leaves the server.
-        name: 'calendar.connectInfo',
-        kind: RepoOpKind.read,
-        handler: (ctx) async => {
-          'builtin_available': calendarConnect.builtinAvailable,
-        },
-      ),
-      RepoOp(
-        name: 'calendar.beginConnect',
-        kind: RepoOpKind.mutate,
-        // Neither credential is required: `use_builtin` authorizes with the
-        // server's own client instead. The service refuses the combination that
-        // is actually empty, naming which box to fill.
-        handler: (ctx) async {
-          final begin = await calendarConnect.begin(
-            workspaceId: ctx.workspaceId!,
-            userId: ctx.userId,
-            useBuiltin: ctx.args['use_builtin'] == true,
-            clientId: ctx.args['client_id'] as String? ?? '',
-            clientSecret: ctx.args['client_secret'] as String? ?? '',
-          );
-          return {
-            'handle': begin.handle,
-            'user_code': begin.userCode,
-            'verification_url': begin.verificationUrl,
-            'interval_seconds': begin.intervalSeconds,
-            'expires_in_seconds': begin.expiresInSeconds,
-          };
-        },
-      ),
-      RepoOp(
-        name: 'calendar.pollConnect',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['handle'],
-        handler: (ctx) async {
-          final poll = await calendarConnect.poll(
-            workspaceId: ctx.workspaceId!,
-            handle: ctx.args['handle'] as String,
-          );
-          return {
-            'status': poll.status.name,
-            if (poll.accountEmail != null) 'account_email': poll.accountEmail,
-          };
-        },
-      ),
+    // Google calendar accounts connect through `oauth.begin {lane: google}`;
+    // this op only removes one. Uses `ctx.workspaceId!`; the account id embeds
+    // its workspace. Only when [calendarAccounts] is wired.
+    if (calendarAccounts != null) ...[
       RepoOp(
         name: 'calendar.disconnect',
         kind: RepoOpKind.mutate,
         requiredArgs: ['account_id'],
         handler: (ctx) async {
-          await calendarConnect.disconnect(
+          await calendarAccounts.disconnect(
             workspaceId: ctx.workspaceId!,
             accountId: ctx.args['account_id'] as String,
             userId: ctx.userId,
@@ -10844,6 +10759,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ghRepos,
           ctx.args['query'] as String,
           workspaceId: ctx.workspaceId!,
+          userId: ctx.userId,
         );
         return {
           'repos': [
@@ -10915,7 +10831,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (owners.isEmpty) {
           return {'members': <Map<String, dynamic>>[]};
         }
-        return {'members': await fetch(owners, workspaceId: ctx.workspaceId!)};
+        return {
+          'members': await fetch(
+            owners,
+            workspaceId: ctx.workspaceId!,
+            userId: ctx.userId,
+          ),
+        };
       },
     ),
     // Profile analytics are workspace-scoped: the linked repo set is derived
@@ -11518,34 +11440,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // The composer's GIF picker. Run on the host's Klipy app key (the thin
-    // client holds none and the browser can't reach Klipy cross-origin). Null
-    // fetchers (no app key) → empty results.
-    RepoOp(
-      name: 'gif.search',
-      kind: RepoOpKind.read,
-      workspaceScoped: false,
-      requiredArgs: ['query'],
-      handler: (ctx) async {
-        final fetch = gifSearch;
-        if (fetch == null) {
-          return {'gifs': <Map<String, dynamic>>[]};
-        }
-        return {'gifs': await fetch(ctx.args['query'] as String)};
-      },
-    ),
-    RepoOp(
-      name: 'gif.trending',
-      kind: RepoOpKind.read,
-      workspaceScoped: false,
-      handler: (ctx) async {
-        final fetch = gifTrending;
-        if (fetch == null) {
-          return {'gifs': <Map<String, dynamic>>[]};
-        }
-        return {'gifs': await fetch()};
-      },
-    ),
     // The PR-list "load more": the next REST page of open PRs on `owner/repo`.
     RepoOp(
       name: 'pr.openPageForRepo',
@@ -11940,6 +11834,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             parentPipelineRunId: ctx.args['parent_pipeline_run_id'] as String?,
             parentStepId: ctx.args['parent_step_id'] as String?,
             dryRun: ctx.args['dry_run'] as bool? ?? false,
+            // The caller, from the session: agents the run dispatches are
+            // bounded by their access.
+            requestedByUserId: ctx.userId,
           );
           return {'run': run == null ? null : pipelineRunToWire(run)};
         },
@@ -12012,11 +11909,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               ctx.workspaceId!,
               ctx.args['orchestration_id'] as String,
               nodeKeys,
+              approvedByUserId: ctx.userId,
             );
           } else {
             await approveOrch(
               ctx.workspaceId!,
               ctx.args['orchestration_id'] as String,
+              approvedByUserId: ctx.userId,
             );
           }
           return {'ok': true};
@@ -12307,6 +12206,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 ? rawKeys.whereType<String>().toSet()
                 : null,
             maxCostCents: (ctx.args['max_cost_cents'] as num?)?.toInt(),
+            approvedByUserId: ctx.userId,
           );
         },
       ),
@@ -12714,12 +12614,24 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline template belongs to a different workspace',
           );
         }
-        if (rejectBashNodes &&
-            definition.steps.any(
-              (step) => step.bodyKey == BuiltInBodyKeys.bashScript,
-            )) {
+        if (rejectBashNodes && hasShellStep(definition)) {
           throw const ValidationException(
             'Bash steps are not available in the demo',
+          );
+        }
+        // A shell step is operator code on this host. Creating one, or editing
+        // a pipeline that already has one, is an admin decision.
+        if (!(ctx.role?.isAdmin ?? false) &&
+            (hasShellStep(definition) ||
+                hasShellStep(
+                  await pipelineTemplateRepository.getById(
+                    ctx.workspaceId!,
+                    definition.templateId,
+                  ),
+                ))) {
+          throw const AuthException(
+            'Only a workspace admin can create or edit a pipeline with a '
+            'shell step',
           );
         }
         await pipelineTemplateRepository.upsert(definition);
@@ -12758,6 +12670,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline trigger belongs to a different workspace',
           );
         }
+        await requireAdminForShellTriggers(ctx, pipelineTemplateRepository, [
+          trigger.templateId,
+        ]);
         await pipelineTriggerRepository.insert(trigger);
         return {'ok': true};
       },
@@ -12777,6 +12692,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline trigger belongs to a different workspace',
           );
         }
+        final previous = await pipelineTriggerRepository.getById(
+          ctx.workspaceId!,
+          trigger.id,
+        );
+        await requireAdminForShellTriggers(ctx, pipelineTemplateRepository, [
+          trigger.templateId,
+          ?previous?.templateId,
+        ]);
         await pipelineTriggerRepository.update(trigger);
         return {'ok': true};
       },
@@ -13083,7 +13006,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               );
         // Older clients omit the GitHub identity fields. Carry the stored
         // values over so a rename cannot silently reset a workspace that
-        // picked its own App or a PAT.
+        // picked its own App.
         final previous = existing;
         if (previous != null) {
           if (!raw.containsKey('github_auth_mode')) {

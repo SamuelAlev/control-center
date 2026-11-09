@@ -2,7 +2,7 @@
 title: Rychlý start
 description: Nainstaluj Control Center, nastav jednoho agenta a sleduj, jak pracuje na tvém repozitáři.
 slug: cs-CZ/prirucka/rychly-start
-sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
+sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
 ---
 
 Tohle je nejkratší úplná cesta od nuly k agentovi, který pracuje na tvém vlastním kódu. Jdi v tomhle pořadí. Každý krok stojí na tom předchozím.
@@ -26,13 +26,14 @@ nastavovat nemusíš. Cestu prohlížečem popisuje
 
 ## Krok 2: Projdi úvodní nastavení
 
-Úvodní nastavení má pět kroků a jdou po řadě. Dopředu se přeskočit nedá.
+Kroky úvodního nastavení jdou po řadě. Dopředu se přeskočit nedá. První se ukáže jen vlastníkovi serveru, což jsi na desktopu s vlastním serverem ty.
 
-1. **Připojit**: přihlas se přes GitHub, nebo vlož osobní přístupový token s oprávněními `repo` a `read:org`. Pověření se uloží na server a připojí se k tvému účtu.
-2. **Pracovní prostor**: pojmenuj první pracovní prostor a volitelně vyber logo. Jeho vytvoření založí pět agentů, CEO a `qa`, `architect`, `engineer` a `librarian`, a vestavěné šablony pipeline.
-3. **Sandbox**: zapíše preferenci sandboxu. Pokračovat jde po obou volbách.
-4. **Adaptér**: vyber adaptér a model, které mají mít agenti jako výchozí. Zvol **Control Center (built-in)** a ve výběru poskytovatele, který se objeví, se přihlas k poskytovateli modelů. Seznam modelů zůstane prázdný, dokud jednoho nepřipojíš. Dokončení tohohle kroku zapíše adaptér a model i agentovi CEO v pracovním prostoru.
-5. **Hlas (volitelné)**: nainstaluj řečový model na zařízení pro diktování, nebo krok přeskoč.
+1. **Přihlášení** (jen vlastník serveru): vyber, jak tento server přihlašuje lidi ke GitHubu, Google Calendar a Linear: **Použít aplikace Control Center**, **Použít vlastní aplikace** nebo **Použít vlastní server Connect**. S vlastními aplikacemi nastaví **Vytvořit moji aplikaci GitHub** GitHub v jednom kroku. Později to změníš v **Nastavení → Server → Jednotné přihlášení**.
+2. **Připojit**: přihlas se ke GitHubu, nebo vlož token GitLabu či Bitbucketu. Pověření se uloží na server a připojí se k tvému účtu.
+3. **Pracovní prostor**: pojmenuj první pracovní prostor a volitelně vyber logo. Jeho vytvoření založí pět agentů, CEO a `qa`, `architect`, `engineer` a `librarian`, a vestavěné šablony pipeline.
+4. **Sandbox**: zapíše preferenci sandboxu. Pokračovat jde po obou volbách.
+5. **Adaptér**: vyber adaptér a model, které mají mít agenti jako výchozí. Zvol **Control Center (built-in)** a ve výběru poskytovatele, který se objeví, se přihlas k poskytovateli modelů. Seznam modelů zůstane prázdný, dokud jednoho nepřipojíš. Dokončení tohohle kroku zapíše adaptér a model i agentovi CEO v pracovním prostoru.
+6. **Hlas (volitelné)**: nainstaluj řečový model na zařízení pro diktování, nebo krok přeskoč.
 
 Control Center pak otevře doručenou poštu pracovního prostoru.
 

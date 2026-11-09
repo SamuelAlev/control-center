@@ -2,7 +2,7 @@
 title: Opprett en pipeline-mal
 description: Skriv en DAG-arbeidsflytmal i pipeline-editoren — legg til noder, koble dem sammen, erklær inndata og gjør den kjørbar.
 slug: nb-NO/handbok/slik-gjor-du/opprett-pipeline
-sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
+sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 ---
 
 Pipeline-maler lages i innstillingene for arbeidsområdet. Oppføringen
@@ -126,10 +126,21 @@ Legger til **Bash-skript**. Det finnes ingen felt for arbeidskatalog eller
 miljøvariabler, fordi ingen av delene kan konfigureres:
 
 - Hvert bash-steg i en kjøring deler arbeidskatalogen `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` injiseres fra lageret for påloggingsinformasjon, så `gh` og
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` fungerer uten oppsett.
+- Skriptet kjører i vertens OS-sandkasse, som kommandoene til en agent. En vert
+  uten sandkasse (Windows, eller Linux uten `bwrap`) lar steget feile i stedet
+  for å kjøre det uten begrensninger. Serverens datakatalog og `.env`-fil kan
+  ikke leses innenfra.
+- Git og `gh` ser ingen vertskonfigurasjon: ingen lagret innlogging, ingen
+  credential helper og ingen globale hooks.
+- Når pipelinen navngir et GitHub-repo som er koblet til arbeidsområdet
+  (`repo_full_name` i tilstanden eller i utløserens nyttelast), inneholder
+  `GH_TOKEN` og `GITHUB_TOKEN` et token som bare kan lese det ene repoet, så `gh`
+  og `git clone` mot det fungerer uten oppsett. Ellers finnes det ikke noe
+  GitHub-token.
+- Bare en administrator i arbeidsområdet kan opprette eller redigere en pipeline
+  med et bash-steg.
 - Skriptet startes som den bokstavelige kjørbare filen `bash`, så `bash` må
-  ligge i `PATH` på serververten. Det er noe å tenke på i Windows.
+  ligge i `PATH` på serververten.
 
 ### Ruter
 

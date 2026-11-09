@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
+sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -25,7 +25,7 @@ export const glossaryTerms = [
 ['Pipeline', 'Un flux de lucru bazat pe DAG care înlănțuie pași (trimitere de agent, scripturi, condiții). Definit prin șabloane; executat sub formă de rulări.'],
 ['Întâlnire', 'O sesiune de întâlnire înregistrată și transcrisă local. Capturează microfonul și audio-ul de sistem, transcrie pe dispozitiv cu un model ASR selectabil (Parakeet TDT v3 implicit; Parakeet TDT v2, Whisper large-v3-turbo și Whisper base.en sunt alternative), diarizează vorbitorii și rezumă în notițe, elemente de acțiune și decizii. Modelul ASR selectat este instalat forțat la pornire, iar operațiile de înregistrare devin active după o repornire. Limitat la spațiul de lucru.'],
 ['CalendarEvent', 'O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată, o Întâlnire este o sesiune înregistrată.'],
-['CalendarAccount', 'Un cont Google conectat, per spațiu de lucru și e-mail. Tokenurile de reîmprospătare OAuth sunt stocate pe server ca chei google_* în fișierul secrets.json din directorul de date și nu ajung niciodată la un client; un indicator authExpiredAt declanșează bannerul de reconectare.'],
+['CalendarAccount', 'Un cont Google conectat, per spațiu de lucru, membru și e-mail. Acreditarea lui este stocată pe server ca o cheie google_* în fișierul secrets.json din directorul de date și nu ajunge niciodată la un client; o autentificare prin Connect stochează doar un sigiliu de acreditare. Un indicator authExpiredAt declanșează bannerul de reconectare.'],
 ['AgentRole', 'Rol enumerat (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determină persona, accesul la memorie și ierarhia.'],
 ['AgentSkills', 'Set de identificatori de skill-uri, insensibil la majuscule, care injectează contextul relevant în prompturi în momentul trimiterii.'],
 ['Sursă de skill-uri', 'Un depozit GitHub înregistrat per spațiu de lucru ca catalog de skill-uri. Considerat nefiabil prin construcție: metadatele depozitului sunt doar pentru afișare, iar fiecare instalare trece poarta de scanare cu refuz implicit înainte ca vreun conținut să ajungă pe disc sau într-un prompt.'],
@@ -38,7 +38,7 @@ export const glossaryTerms = [
 ['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.'],
 ['WakeReason', 'Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.'],
 ['SandboxPort', 'Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).'],
-['CredentialBrokerPort', 'Emite credențiale limitate pentru lansarea sandbox-ului (doar pentru citire în mediul unui agent, cu scriere doar pentru calea de push de pe server) și le revocă la demolarea lui.'],
+['CredentialBrokerPort', 'Emite credențiale limitate pentru lansarea sandbox-ului (un token pentru un singur depozit în mediul unui agent, cu scriere doar pentru calea de push de pe server) și le eliberează la demolarea lui.'],
 ['GitRepoInspectorPort', 'Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.'],
 ['EmbeddingPort', 'Produce vectori de embedding de text cu normă unitară pentru căutarea semantică.'],
 ['NotificationPort', 'Afișează notificări native de desktop, respectând filtrarea pe categorii și rute.'],
@@ -88,6 +88,11 @@ export const glossaryTerms = [
 ['Verdict de revizuire', 'ship, hold sau block. Orice constatare P0 cu încredere >= 0,7 blochează; orice altă P0 sau orice P1 ține; în rest, ship. O axă cu poartă care eșuează forțează block și nu poate fi contrazisă la vot de constatări.'],
 ['SessionRecording', 'Un flux de evenimente plus casete HTTP/LLM și I/O de instrumente, capturate pentru o singură rulare și asociate cu un AgentConfigHash.'],
 ['Sesiune de referință', 'O SessionRecording validată, fixată per agent sau playbook.'],
+['Control Center Connect', 'Un serviciu opțional care rulează autentificările la provideri (GitHub, Google, Linear) pentru serverele fără aplicații proprii. Găzduit de Control Center, găzduit de tine sau dezactivat. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor.'],
+['Sigiliu de acreditare', 'O acreditare criptată pe care o poate deschide doar Connect-ul care a creat-o, legată de provider, adresa Connect, ID-ul de instalare, spațiul de lucru, cont, aplicație și generația secretului. Serverul stochează sigiliul; tokenurile de acces rămân în memorie.'],
+['ID de instalare', 'Identitatea unui server față de o adresă Connect, derivată din cheia lui de instalare. Connect permite serverele după ID-ul de instalare; schimbarea cheii îl modifică și deconectează pe toată lumea de pe benzile Connect.'],
+['Legătură de instalare', 'Evidența Connect a serverelor care pot folosi o instalare GitHub a aplicației partajate. O instalare într-o organizație are nevoie ca un administrator să autorizeze fiecare server.'],
+['Bandă de autentificare', 'Autentificarea în browser la un provider: github, google, linear, linear_app sau slack. Fiecare bandă rulează pe aplicația proprie a serverului când aceasta este completă, altfel prin Connect, altfel nu este disponibilă.'],
 ];
 
 <StructuredData
@@ -157,7 +162,7 @@ export const glossaryTerms = [
 
 **SandboxPort**: Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).
 
-**CredentialBrokerPort**: Emite credențiale limitate pentru lansarea sandbox-ului — doar pentru citire în mediul unui agent, cu scriere doar pentru calea de push de pe server — și le revocă la demolarea lui.
+**CredentialBrokerPort**: Emite credențiale limitate pentru lansarea sandbox-ului — un token pentru un singur depozit în mediul unui agent, cu scriere doar pentru calea de push de pe server — și le eliberează la demolarea lui.
 
 **GitRepoInspectorPort**: Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.
 
@@ -203,7 +208,7 @@ export const glossaryTerms = [
 
 **CalendarEvent**: O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată; o Întâlnire este o sesiune înregistrată. Legate unu-la-unu printr-un `MeetingCalendarLink`.
 
-**CalendarAccount**: Un cont Google conectat, per spațiu de lucru și e-mail. Tokenurile de reîmprospătare OAuth sunt stocate pe server ca chei `google_*` în `<dataDir>/secrets.json` și nu ajung niciodată la un client; fluxul de cod de dispozitiv se încheie pe server. Un indicator `authExpiredAt` declanșează bannerul de reconectare.
+**CalendarAccount**: Un cont Google conectat, per spațiu de lucru, membru și e-mail (`google:<workspaceId>:<userId>:<email>`). Acreditarea lui este stocată pe server ca o cheie `google_*` în `<dataDir>/secrets.json` și nu ajunge niciodată la un client; autentificarea în browser se încheie pe server. O autentificare prin Connect stochează doar un sigiliu de acreditare. Un indicator `authExpiredAt` declanșează bannerul de reconectare.
 
 ## Termeni de arhitectură
 
@@ -274,6 +279,16 @@ export const glossaryTerms = [
 **cc_remote**: Clientul subțire de telefon — o PWA Flutter web care controlează de la distanță flota prin releul intermediat, cu o politică de instrumente cu refuz implicit.
 
 **cc_signaling_server**: Un broker releu WebSocket fără stare, care găzduiește camere cu acces pe bază de invitație — un releu simplu: transmite doar cadre sigilate end-to-end, nu deține date de aplicație și nu vede niciodată PSK-ul de asociere.
+
+**Control Center Connect**: Un serviciu opțional care rulează autentificările la provideri (GitHub, Google Calendar, Linear) pentru serverele care nu și-au înregistrat propriile aplicații: cel găzduit de Control Center, unul pe care îl rulează o organizație (`cc-connect` sau montat în `cc_server` la `/connect`) sau niciunul. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor. Vezi [Control Center Connect](/ro-RO/manual/referinta/connect/).
+
+**Sigiliu de acreditare**: O acreditare criptată (`credential_seal`) pe care o poate deschide doar Connect-ul care a creat-o, legată de provider, adresa Connect, ID-ul de instalare, spațiul de lucru, cont, aplicație și generația secretului. Serverul stochează sigiliul și ID-ul de instalare pentru care a fost creat; tokenurile de acces rămân în memorie. Un sigiliu al cărui ID de instalare nu se mai potrivește este eliminat, iar proprietarul lui se autentifică din nou.
+
+**ID de instalare**: Identitatea unui server față de o adresă Connect (`install_id`), derivată din cheia de instalare din fișierul lui de secrete. Connect permite serverele după ID-ul de instalare. Schimbarea cheii dă unul nou și deconectează pe toată lumea de pe benzile Connect.
+
+**Legătură de instalare**: Evidența Connect (`install_binding`) a serverelor care pot folosi o instalare GitHub a aplicației partajate. Instalarea printr-un server îl leagă pe acesta; **Autorizează acest server** apăsat de un administrator al organizației leagă un altul.
+
+**Bandă de autentificare**: Autentificarea în browser la un provider — `github`, `google`, `linear`, `linear_app` sau `slack`. O bandă rulează pe aplicația proprie a serverului când acea aplicație este completă, altfel prin Connect, altfel nu este disponibilă; o aplicație proprie configurată parțial este o eroare, niciodată o revenire la alternativă.
 
 ## Vezi și
 

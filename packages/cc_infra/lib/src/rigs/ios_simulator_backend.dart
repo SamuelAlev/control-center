@@ -7,6 +7,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.da
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/ios_automation_store.dart';
 import 'package:cc_infra/src/rigs/wda_client.dart';
 import 'package:crypto/crypto.dart';
@@ -940,11 +941,13 @@ class IosSimulatorBackend {
     String executable,
     List<String> arguments, {
     Map<String, String>? environment,
-  }) => Process.run(
+  }) => ChildProcess.run(
     executable,
     arguments,
     environment: environment,
-    includeParentEnvironment: true,
+    // `xcrun`/`xcodebuild` resolve Xcode and its SDKs through
+    // `DEVELOPER_DIR`/`SDKROOT` when the operator set them.
+    toolchain: true,
   );
 
   static Future<IosRunnerProcess> _defaultStart(
@@ -952,11 +955,11 @@ class IosSimulatorBackend {
     List<String> arguments, {
     Map<String, String>? environment,
   }) async => _RealIosRunnerProcess(
-    await Process.start(
+    await ChildProcess.start(
       executable,
       arguments,
       environment: environment,
-      includeParentEnvironment: true,
+      toolchain: true,
     ),
   );
 
@@ -971,7 +974,7 @@ class IosSimulatorBackend {
     if (Platform.isWindows) {
       return;
     }
-    final result = await Process.run('/bin/chmod', ['600', path]);
+    final result = await ChildProcess.run('/bin/chmod', ['600', path]);
     if (result.exitCode != 0) {
       throw IosSimulatorException(
         'Could not protect iOS device registry $path: ${result.stderr}',

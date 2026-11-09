@@ -2,16 +2,16 @@
 title: Mapa de rotas
 description: Todas as rotas que o Control Center registra, com sua tela e seus parâmetros de consulta.
 slug: pt-BR/manual/referencia/mapa-de-rotas
-sourceHash: 874fc29ee5b703fd43d7da81521809740b0afef0
+sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 ---
 
 ## Shell do app
 
-O shell do app (`ControlCenterLayout`) envolve toda rota dentro do espaço de trabalho por meio de um `ShellRoute`. **Todo destino dentro do shell tem o prefixo do espaço de trabalho — `/workspaces/:workspaceId/…` — e o id do espaço de trabalho na URL é a única fonte de verdade do espaço de trabalho ativo.** Só as superfícies anteriores ao contexto não têm prefixo: `/splash`, `/onboarding`, `/signed-out` e o seletor puro `/workspaces`, todas em tela cheia e fora do shell.
+O shell do app (`ControlCenterLayout`) envolve toda rota dentro do espaço de trabalho por meio de um `ShellRoute`. **Todo destino dentro do shell tem o prefixo do espaço de trabalho — `/workspaces/:workspaceId/…` — e o id do espaço de trabalho na URL é a única fonte de verdade do espaço de trabalho ativo.** Só as superfícies anteriores ao contexto não têm prefixo: `/splash`, `/onboarding` e o seletor puro `/workspaces`, todas em tela cheia e fora do shell.
 
 O portão é considerado completo quando pelo menos um forge está conectado **para o usuário autenticado** e existe pelo menos um espaço de trabalho.
 
-Uma credencial ausente e uma configuração ausente são telas diferentes, e o discriminador é `users.onboarding_finished_at`, lido do próprio `identity.me` de quem chama — nunca "existem espaços de trabalho", o que já está errado no momento em que alguém é convidado para um espaço de trabalho que nunca criou. Sem nenhum forge conectado, uma conta que passou pelo onboarding vai para `/signed-out` para se autenticar de novo; uma que não passou vai para `/onboarding`. Enquanto o sinalizador ainda é desconhecido, a guarda mantém a splash em vez de adivinhar, porque ela nunca redireciona de volta para fora do onboarding.
+Uma credencial ausente e uma configuração ausente são tratadas de forma diferente, e o discriminador é `users.onboarding_finished_at`, lido do próprio `identity.me` de quem chama — nunca "existem espaços de trabalho", o que já está errado no momento em que alguém é convidado para um espaço de trabalho que nunca criou. Sem nenhum forge conectado, uma conta que passou pelo onboarding continua no app: o shell do espaço de trabalho mostra um aviso com link para Configurações → Espaço de trabalho → Perfil e identidade, onde fica o login; uma que não passou vai para `/onboarding`. Enquanto o sinalizador ainda é desconhecido, a guarda mantém a splash em vez de adivinhar, porque ela nunca redireciona de volta para fora do onboarding.
 
 ## Rotas sem prefixo
 
@@ -19,7 +19,6 @@ Uma credencial ausente e uma configuração ausente são telas diferentes, e o d
 | -------------------------- | ------------------------------------------------ |
 | `/splash`                  | Splash de inicialização que resolve o portão de onboarding |
 | `/onboarding`              | Conectar um forge, criar ou entrar em um espaço de trabalho, sandbox, adaptador padrão e depois voz. A etapa do espaço de trabalho é dispensada quando a conta já pertence a um |
-| `/signed-out`              | Autenticar-se de novo: o mesmo cartão de conexões de forge que a tela Configurações renderiza, sem barra de etapas e sem botão de continuar — o roteador sai sozinho assim que um forge se reporta |
 | `/workspaces`              | Lista e seletor de espaços de trabalho           |
 | `/workspaces/:workspaceId` | Redireciona para `/workspaces/:workspaceId/inbox` |
 

@@ -1,0 +1,286 @@
+---
+title: הפעלת שרת Connect
+description: הפעילו Control Center Connect משלכם מתמונת cc-connect ב-Docker, או הרכיבו אותו בתוך cc_server, כך ששרתיכם יכניסו אנשים דרך אפליקציות ספק שאתם רשמתם.
+slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-connect
+sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+---
+
+Control Center Connect מפעיל את הכניסות לספקים (GitHub, Google Calendar, Linear
+ו-Slack) עבור שרתים שלא רשמו אפליקציות משלהם. המדריך הזה מראה איך להפעיל Connect
+משלכם, כך שהאפליקציות אצל הספקים, הסודות שלהן ורשימת השרתים שרשאים להשתמש בהן
+יישארו אצלכם.
+
+מה ש-Connect יכול לראות ומה לא נמצא ב[עזר של Connect](/he-IL/מדריך-למשתמש/עזר/connect/).
+קראו אותו קודם אם אתם מחליטים אם להפעיל מופע כזה.
+
+:::note[ייתכן שלא תצטרכו אותו]
+שרת יכול לרשום אפליקציות משלו במקום זאת: **הגדרות ← שרת ← כניסה מאוחדת ← אפליקציות ספק**,
+שם **יצירת אפליקציית GitHub שלי** מגדירה את GitHub בצעד אחד. אפליקציות השרת חלות
+רק תחת **שימוש באפליקציות שלי**: עם Control Center או Connect משלכם, Connect מריץ כל מסלול, ואפליקציה של סביבת העבודה עדיין תקפה. הפעילו Connect כאשר כמה שרתים צריכים לחלוק קבוצה
+אחת של אפליקציות.
+:::
+
+## דרישות מקדימות
+
+- כתובת **HTTPS** ציבורית ל-Connect, כמו `https://connect.example.com`, שעומדת מאחורי
+  פרוקסי שמסיים TLS. `http` רגיל מתקבל רק ב-loopback
+- Docker, או `cc_server` שאפשר להפעיל מחדש עם משתני סביבה נוספים
+- הרשאה לרשום אפליקציות אצל כל ספק שתרצו לשרת
+- השרתים שישתמשו בו, ובעליהם בהישג יד: לכל שרת יש מזהה התקנה (install id) שמוסיפים
+  לרשימת ההיתרים של Connect
+
+## צעד 1: בחרו את הכתובת
+
+בחרו עכשיו את הכתובת ושמרו אותה. `CONNECT_PUBLIC_URL` משפיע על כל מה ש-Connect
+עושה: חתימות הבקשות, פרטי הגישה המוצפנים, כתובות ההפניה של הספקים ומזהה ההתקנה
+של כל שרת קשורים אליו. שינוי שלו בהמשך פירושו רישום מחדש של ההפניות וכניסה מחדש
+של כל אדם.
+
+## צעד 2: רשמו את אפליקציות הספקים
+
+רשמו רק את הספקים שתרצו לשרת. ספק שמשתני הסביבה שלו לא שלמים יוצא מהתצורה של
+Connect, והשרתים רואים אותו כלא זמין. `<base>` שלהלן הוא `CONNECT_PUBLIC_URL` שלכם.
+
+| ספק            | רישום                                                                                                                                                                                                                                                                 | שמרו                                    |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **GitHub App** | Callback URL ‏`<base>/oauth/github/callback`. Setup URL ‏`<base>/oauth/github/setup` עם **Redirect on update** פעיל. השאירו את **Request user authorization (OAuth) during installation** כבוי: כשהוא פעיל, GitHub מתעלם מכתובת ההתקנה. השאירו את **Expire user authorization tokens** פעיל | App id, slug, client id, client secret |
+| **Google**     | OAuth client מסוג **Web application** עם redirect URI ‏`<base>/oauth/google/callback`, ו-Google Calendar API מופעל                                                                                                                                                  | Client id, client secret                |
+| **Linear**     | OAuth application עם callback URLs ‏`<base>/oauth/linear/callback` ו-`<base>/oauth/linear_app/callback`                                                                                                                                                             | Client id בלבד                          |
+| **Slack**      | Redirect URLs ‏`<base>/oauth/slack_oidc/callback` ו-`<base>/oauth/slack/callback`. Event Subscriptions בכתובת ‏`<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands בכתובת ‏`<base>/v1/hooks/slack/commands`. Token rotation פעיל | App id, client id, client secret, signing secret |
+
+תנו ל-GitHub App את הרשאות המאגר האלה: **Metadata** לקריאה, **Contents** לקריאה
+וכתיבה, **Pull requests** לקריאה וכתיבה, **Issues** לקריאה וכתיבה, ו-**Checks**,
+**Actions** ו-**Commit statuses** לקריאה. הוסיפו ל-organization את **Members**
+לקריאה, עבור בקשות סקירה של צוותים. אפשר להשאיר את ה-Webhooks כבויים: השרתים
+שואלים את Connect באופן תקופתי.
+
+Connect לעולם אינו צריך את המפתח הפרטי של GitHub App. במקומו הוא מנפיק אסימוני
+מאגר בודד מתוך הכניסה של האדם עצמו. גם ל-Linear אין צורך בסוד: Connect מחזיר את
+הקוד לשרת, והשרת משלים את ההחלפה בעצמו.
+
+## צעד 3: אספו את מזהי ההתקנה
+
+Connect עונה רק לשרתים שברשימת ההיתרים שלו. בכל שרת, הפנו אותו אל Connect שלכם, ואז
+קראו את מזהה ההתקנה שלו:
+
+1. עברו אל **הגדרות ← שרת ← כניסה מאוחדת**, פתחו את הכרטיס **Control Center Connect**
+   ובחרו **שימוש בשרת Connect מותאם**
+2. הזינו את הכתובת שלכם ושמרו. הכרטיס מציג את **Install id** של השרת
+
+מהטרמינל במארח השרת, אותו דבר נראה כך:
+
+```bash
+cc_server connect enable --url https://connect.example.com
+cc_server connect status
+```
+
+`status` מדפיס את מזהה ההתקנה. הוא מציג `install_blocked` עד שמבצעים את צעד 5,
+וזה צפוי.
+
+מזהה ההתקנה נגזר מכתובת ה-Connect, ולכן לאותו שרת יש מזהה שונה לכל Connect
+שהוא מדבר איתו. המזהה משתנה רק כאשר הבעלים שלו מחליף את המפתח.
+
+## צעד 4: צרו מפתח אטימה
+
+Connect מצפין כל פרטי גישה שהוא מחזיר באמצעות **מפתח אטימה** (seal key). צרו מפתח
+אחד ושמרו אותו כקובץ סודי:
+
+```bash
+docker run --rm ghcr.io/samuelalev/cc-connect:latest \
+  cc-connect-config seal-key > seal_keys
+chmod 600 seal_keys
+```
+
+אובדן מפתח האטימה ינתק את כולם: אי אפשר לפתוח אף אטם בלעדיו.
+
+## צעד 5: הפעילו את הקונטיינר
+
+כל גרסה מפרסמת את `ghcr.io/samuelalev/cc-connect` עם הוכחת מקור (build provenance).
+בסביבת ייצור, נעצו תג גרסה.
+
+```bash
+docker run -d --name cc-connect -p 8790:8790 \
+  -e CONNECT_PUBLIC_URL=https://connect.example.com \
+  -e CONNECT_ALLOWED_INSTALLS=<install id>,<install id> \
+  -e CONNECT_SEAL_KEYS_FILE=/run/secrets/seal_keys \
+  -v "$PWD/seal_keys:/run/secrets/seal_keys:ro" \
+  -e CONNECT_GITHUB_APP_ID=123456 \
+  -e CONNECT_GITHUB_APP_SLUG=acme-control-center \
+  -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
+  -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
+  -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -v cc-connect-data:/data \
+  ghcr.io/samuelalev/cc-connect:latest
+```
+
+הפנו את פרוקסי ההיפוך אל הפורט `8790`. האימג' רץ כמשתמש ללא הרשאות מיוחדות,
+שומר את מצבו בנפח `/data` ויש לו בדיקת תקינות מובנית (`cc-connect --healthcheck`,
+שבודקת את `/healthz`).
+
+Connect מסרב לעלות (קוד יציאה `78`) כאשר התצורה שלו פתוחה, לא בטוחה או חצי
+גמורה, ומדפיס איזה משתנה שגוי. רשימת היתרים חסרה, כתובת `http` שאינה loopback,
+מפתח אטימה לא תקין, או הגדרה של גם `NAME` וגם `NAME_FILE` — כל אלה עוצרים אותו.
+
+נקודת ביקורת: בכל שרת, הכרטיס של Connect מציג **Working**, ו-**Where each sign-in
+runs** מציין את **Connect** עבור כל ספק שרשמתם. `cc_server connect status` מדפיס
+`Health: ok` ואת אותם מסלולים.
+
+## הרכבת Connect בתוך cc_server
+
+שרת יכול להריץ Connect בעצמו במקום קונטיינר נפרד. השירות המורכב הוא אותו שירות
+שהאימג' מריץ.
+
+1. שימו את משתני `CONNECT_*` בקובץ `.env` של השרת (או בסביבה שלו), כמו בצעד 5
+2. הוסיפו `CC_SERVER_CONNECT_HOST=on`
+3. הפעילו מחדש את השרת. היומן שלו מדפיס `embedded Connect at <url>`
+
+```bash
+CC_SERVER_CONNECT_HOST=on
+CONNECT_ALLOWED_INSTALLS=<install id>
+CONNECT_SEAL_KEYS=<output of cc-connect-config seal-key>
+CONNECT_GITHUB_APP_ID=123456
+CONNECT_GITHUB_APP_SLUG=acme-control-center
+CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
+CONNECT_GITHUB_CLIENT_SECRET=<secret>
+```
+
+Connect זמין אז ב-`<server>/connect`:
+
+- `CONNECT_PUBLIC_URL` ברירת המחדל היא מקור הכתובת הציבורית של השרת ועוד `/connect`.
+  הגדירו אותו במפורש מאחורי פרוקסי. הנתיב חייב להיות בדיוק `/connect`, והוא חייב
+  להיות HTTPS אלא אם הוא loopback
+- רק משתני `CONNECT_*` מגיעים לשירות המורכב, ולכן הוא לעולם אינו משתמש באפליקציות
+  הספק של השרת עצמו
+- `CONNECT_ALLOWED_INSTALLS` עדיין נדרש, כולל עבור השרת המארח עצמו
+- הרכבה שגויה מונעת מהשרת לעלות, במקום להציע מתווך פתוח
+- שרת הדמו לעולם אינו מרכיב אותו
+
+רשמו את הפניות הספקים מול `https://<server>/connect`, ואז הפנו את השרתים (כולל
+המארח) לכתובת הזו כמו בצעד 3.
+
+## הפניה לתצורה
+
+כל הגדרה היא משתנה סביבה. כל סוד יכול להגיע מקובץ מורכב: הגדירו `NAME_FILE` במקום
+`NAME`. Connect קורא את הקובץ מחדש לכל היותר פעם ב-30 שניות, ושומר את הערך התקין
+האחרון. סודות המסומנים **dual** מקבלים גם `NAME_PREVIOUS` (או `NAME_PREVIOUS_FILE`)
+במהלך החלפה.
+
+### כתובת וגישה
+
+| משתנה                           | ברירת מחדל | משמעות                                                                                                                              |
+| ------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `CONNECT_PUBLIC_URL`            | נדרש       | הכתובת הציבורית הקנונית. HTTPS, או `http` ב-loopback בלבד. נתיב מציין הרכבה. ללא query או fragment                                    |
+| `CONNECT_ALLOWED_INSTALLS`      | נדרש       | מזהי התקנה מופרדים בפסיקים. `*` מתקבל רק יחד עם `CONNECT_SIGNED_CONFIG_FILE`                                                          |
+| `CONNECT_DENY_INSTALLS`         |            | מזהי התקנה שנדחים גם כשהם מותרים                                                                                                     |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |            | מזהי בעלים מספריים ב-GitHub. כשמוגדר, אסימוני מאגר מונפקים רק למאגרים שהבעלים הללו הם הבעלים שלהם                                  |
+| `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | כתובת ה-bind והפורט                                                                                                          |
+| `CONNECT_TRUST_PROXY`           | `0`        | מספר קפיצות הפרוקסי המהימנות ב-`X-Forwarded-For` (0 עד 8). משמש רק למגבלת הקצב לכל כתובת                                             |
+
+### מסלולי ספקים
+
+| משתנה                                                                       | ברירת מחדל | משמעות                                                                      |
+| --------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------- |
+| `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |            | ה-GitHub App                                                                |
+| `CONNECT_GITHUB_CLIENT_SECRET`                                              |            | סוד, dual                                                                   |
+| `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |            | לקוח Google. הסוד הוא dual                                                  |
+| `CONNECT_LINEAR_CLIENT_ID`                                                  |            | אפליקציית Linear. ללא סוד                                                   |
+| `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |            | אפליקציית Slack                                                             |
+| `CONNECT_SLACK_CLIENT_SECRET`, `CONNECT_SLACK_SIGNING_SECRET`               |            | סודות, dual                                                                 |
+| `CONNECT_KLIPY_APP_KEY`                                                     |            | מפתח לחיפוש GIF של Klipy. סוד, dual                                         |
+| `CONNECT_KLIPY_MODE`                                                        | `proxy`    | `proxy` שומר את המפתח ב-Connect; `key` מוסר אותו לשרתים                     |
+| `CONNECT_<LANE>_SECRET_GENERATION`                                          | `1`        | GitHub, Google ו-Slack: הדור שנרשם בחותמים חדשים                            |
+| `CONNECT_<LANE>_MIN_SEAL_GENERATION`                                        | `1`        | GitHub, Google ו-Slack: חותמים ישנים צריכים להתחבר מחדש                     |
+| `CONNECT_<LANE>_ACCEPTS_NEW`                                                | `true`     | כל המסלולים: `false` עוצר כניסות חדשות, בעוד הקיימות ממשיכות להתחדש          |
+
+### אטמים, מצב ואחסון
+
+| משתנה                                                     | ברירת מחדל                 | משמעות                                                                                                     |
+| --------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` או `gcp-kms`                                                                                       |
+| `CONNECT_SEAL_KEYS`                                       |                            | סוד, נדרש עבור `local`. רשימת `kid:key` מופרדת בפסיקים, החדש ביותר ראשון; רשומות ישנות עדיין מפענחות        |
+| `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, נדרש עבור `gcp-kms`                                      |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` למופע יחיד, `redis` למספר מופעים                                                                  |
+| `CONNECT_REDIS_URL`                                       |                            | סוד. `redis://` או `rediss://`                                                                             |
+| `CONNECT_REDIS_CA_FILE`                                   |                            | חבילת CA עבור `rediss://`                                                                                  |
+| `CONNECT_BINDINGS`                                        | `file`                     | היכן נשמרים הקשרי ההתקנה של GitHub: `file` או `firestore`                                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` באימג')    | מכיל את `bindings.json`                                                                                    |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | מסד הנתונים `(default)`    | עבור `CONNECT_BINDINGS=firestore`                                                                          |
+
+### תצורה, יומנים ומגבלות
+
+| משתנה                                   | ברירת מחדל         | משמעות                                                                                              |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `CONNECT_SIGNED_CONFIG_FILE`            |                    | תצורה חתומה מחוץ לרשת, מוגשת כמות שהיא. משמשת את ה-Connect המאוחסן של Control Center                 |
+| `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | המפתחות שהתצורה החתומה חייבת לעבור אימות מולם                                                        |
+| `CONNECT_CONFIG_EPOCH`                  | `1`                | ה-epoch של התצורה ש-Connect מאוחסן עצמית מייצר                                                       |
+| `CONNECT_LOG_HMAC_KEY`                  | אקראי לכל תהליך    | סוד. הגדירו אותו כדי לשמור על התגים שמייצגים מזהי התקנה יציבים בין הפעלות מחדש ומופעים               |
+| `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | מדווח על ידי `/v1/version`                                                                          |
+| `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | בקשות לכל התקנה                                                                                     |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | בקשות לכל כתובת                                                                                     |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | בקשות לכל השירות                                                                                    |
+| `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | אירועי Slack לכל צוות                                                                               |
+| `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | חיפושי GIF לכל התקנה                                                                                |
+
+## הרצת יותר ממופע אחד
+
+מופע יחיד עם `CONNECT_STATE=memory` מספיק לרוב הארגונים. מספר מופעים מאחורי כתובת
+אחת דורש `CONNECT_STATE=redis`, וגם תיקיית נתונים משותפת (`CONNECT_DATA_DIR`) או
+`CONNECT_BINDINGS=firestore`, כדי שכניסה שהחלה במופע אחד תוכל להסתיים במופע אחר.
+
+## החלפת סוד של ספק
+
+אף אחד לא מתנתק:
+
+1. צרו את הסוד החדש אצל הספק, ושמרו את הישן
+2. העבירו את הערך הישן ל-`NAME_PREVIOUS`, שימו את החדש ב-`NAME`, והעלו את
+   `CONNECT_<LANE>_SECRET_GENERATION`. קבצים מורכבים נקלטים תוך 30 שניות
+3. המתינו עד שהכניסות יתחדשו, ואז מחקו את הסוד הישן אצל הספק והסירו את `NAME_PREVIOUS`
+
+כדי להחליף מפתח אטימה, הוסיפו קודם רשומה חדשה של `cc-connect-config seal-key` בראש
+`CONNECT_SEAL_KEYS`, והשאירו את הרשומה הישנה עד שהאטמים שלה התחדשו.
+
+## החלפת אפליקציה
+
+שרתים זוכרים את מזהי האפליקציה והלקוח ש-Connect שלכם הכריז עליהם בפעם הראשונה
+שבה השתמשו בו. אם תחליפו אפליקציה, לכרטיס Connect של כל שרת יופיע **Connect's apps
+changed**, והכניסות דרך Connect ייעצרו עד שהבעלים שלו ילחץ על **Trust new apps**.
+הודיעו לבעלי השרתים לפני המעבר, כדי שידעו שההנחיה באה מכם.
+
+## חסימת שרת
+
+הוסיפו את מזהה ההתקנה שלו ל-`CONNECT_DENY_INSTALLS` והפעילו מחדש. הבעלים שלו יראה
+"Connect has blocked this server's install id", וכל כניסה דרך Connect בשרת תיעצר.
+
+## פתרון תקלות
+
+### שרת מדווח ש-Connect חסם אותו
+
+מזהה ההתקנה שלו אינו ב-`CONNECT_ALLOWED_INSTALLS`, או שהוא נמצא ב-`CONNECT_DENY_INSTALLS`.
+המזהה משתנה כאשר הבעלים שלו מחליף את המפתח; בקשו את החדש.
+
+### ספק מופיע כלא זמין
+
+אחד ממשתני הסביבה שלו חסר, ולכן Connect השמיט את המסלול. בדקו את יומן ההפעלה
+ואת הטבלאות לעיל. GitHub צריך את ארבעתם: app id, slug, client id ו-client secret;
+Google צריך גם client id וגם secret.
+
+### כניסות נכשלות עם אי התאמה בהפניה
+
+ההפניה שנרשמה אצל הספק אינה תואמת ל-`CONNECT_PUBLIC_URL` במדויק. השוו את הסכמה,
+המארח, הפורט והנתיב `/connect` עבור Connect מורכב.
+
+### כולם נאלצו להתחבר מחדש
+
+מפתח האטימה השתנה או אבד, שרת החליף את המפתח שלו, או שנתוני שרת שוחזרו על מכונה
+אחרת. פרטי גישה אטומים נפתחים רק עבור ההתקנה וה-Connect שיצרו אותם.
+
+## מדריכים קשורים
+
+- [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)
+- [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)
+- [חיבור לוח שנה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
+
+## עזר קשור
+
+- [Control Center Connect](/he-IL/מדריך-למשתמש/עזר/connect/)
+- [`cc_server` CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/)
